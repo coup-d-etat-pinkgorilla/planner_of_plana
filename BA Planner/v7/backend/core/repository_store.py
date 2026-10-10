@@ -29,6 +29,7 @@ from core.current_history import (
     summary as history_summary,
 )
 from core.history_query import query_events, query_diff
+from core.scan_commit_history_context import ScanCommitHistoryContext
 
 
 STORE_VERSION = 1
@@ -566,18 +567,27 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
-    def _update_current(self, profile_id: str, bucket: str, canonical: object, expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None, manual: bool) -> dict[str, Any]:
+    def _update_current(self, profile_id: str, bucket: str, canonical: object, expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None, manual: bool) -> dict[str, Any]:
         source = "manual" if manual else "unattributed"
         operation = f"{bucket}:{canonical_json(canonical)}"
         if history_context is not None:
             if manual:
                 raise RepositoryError("invalid_payload", "Manual RPC cannot claim scanner context")
             try:
+                flat_context = None
+                if isinstance(history_context, ScanCommitHistoryContext):
+                    if history_context.bucket != bucket:
+                        raise HistoryError("scan_scope_mismatch", "Scan context belongs to another writer bucket")
+                    validated = ScanCommitHistoryContext.from_wire(history_context.to_wire(), bucket=bucket)
+                    flat_context = validated.to_wire()
+                    history_context = validated.to_history_context()
                 history_context = ScanHistoryContext.from_wire(history_context.to_wire())
             except (HistoryError, AttributeError) as error:
                 raise RepositoryError("invalid_payload", str(error)) from error
             source = "scan"
             operation = f"{bucket}-history:{canonical_json({'current': canonical, 'history_context': history_context.to_wire()})}"
+            if flat_context is not None:
+                operation = f"{bucket}-scan-commit-history-v1:{canonical_json({'current': canonical, 'history_context': history_context.to_wire(), 'scan_commit_history_context': flat_context})}"
         def mutate(_catalog: dict, profile: dict) -> None:
             try:
                 before = projection(profile["students"], profile["inventory"])
@@ -595,14 +605,14 @@ class JsonRepository:
                 raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, operation, mutate)
 
-    def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
+    def update_students(self, profile_id: str, students: list[dict[str, Any]], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
         try:
             canonical = canonical_students(students)
         except HistoryError as error:
             raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
         return self._update_current(profile_id, "students", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
 
-    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
+    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
         canonical = rebase_inventory_snapshot(inventory)
         return self._update_current(profile_id, "inventory", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
 

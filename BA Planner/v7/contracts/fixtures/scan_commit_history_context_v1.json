@@ -1,0 +1,1441 @@
+{
+  "version": 1,
+  "notes": [
+    "Server-internal flat provenance; public event and nested context unchanged.",
+    "JSON Schema verdict differs from exact-int/UTF-8/canonical identity runtime constraints.",
+    "retry_of opaque; no new retry permission."
+  ],
+  "cases": [
+    {
+      "id": "raw-unknown-preserved",
+      "bucket": "students",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "nullable-profile-and-opaque-retry",
+      "bucket": "students",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": null,
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": " opaque retry "
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": null,
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": " opaque retry "
+      }
+    },
+    {
+      "id": "whitespace-not-trimmed",
+      "bucket": "students",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": " ",
+        "generation": 1,
+        "candidate_id": " ",
+        "candidate_revision": 0,
+        "scan_kind": " ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          " "
+        ],
+        "excluded_keys": [],
+        "retry_of": null
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": " ",
+        "generation": 1,
+        "candidate_id": " ",
+        "candidate_revision": 0,
+        "scan_kind": " ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          " "
+        ],
+        "excluded_keys": [],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "inventory-known-alias-canonicalized",
+      "bucket": "inventory",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "Item_Icon_SkillBook_Ultimate_Piece"
+        ],
+        "excluded_keys": [
+          "unknown-resource"
+        ],
+        "retry_of": null
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "Item_Icon_SkillBook_Ultimate"
+        ],
+        "excluded_keys": [
+          "unknown-resource"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "inventory-unknown-raw-kind-profile",
+      "bucket": "inventory",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Inventory ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "unknown-resource"
+        ],
+        "excluded_keys": [],
+        "retry_of": null
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Inventory ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "unknown-resource"
+        ],
+        "excluded_keys": [],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "all-text-fields-1024-bytes",
+      "bucket": "students",
+      "valid": true,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation": 1,
+        "candidate_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "candidate_revision": 0,
+        "scan_kind": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55ca",
+        "inventory_scan_profile": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "applied_keys": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "excluded_keys": [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "retry_of": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "canonical": {
+        "source": "scan",
+        "session_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generation": 1,
+        "candidate_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "candidate_revision": 0,
+        "scan_kind": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55ca",
+        "inventory_scan_profile": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "applied_keys": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "excluded_keys": [
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        ],
+        "retry_of": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "invalid-generation-True",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": true,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-generation-1.0",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1.0,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-generation-0",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 0,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_revision-False",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": false,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_revision-0.0",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0.0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_revision--1",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": -1,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-source-'manual'",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "manual",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "missing-retry",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ]
+      }
+    },
+    {
+      "id": "extra-version",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null,
+        "version": 1
+      }
+    },
+    {
+      "id": "wrong-bucket",
+      "bucket": "tactical",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "empty-applied",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "applied-not-array",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": "aru",
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "unidentified-excluded-slot",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          null
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "duplicate-applied",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru",
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "duplicate-excluded",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "a",
+          "a"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "raw-overlap",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "aru"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "alias-duplicate",
+      "bucket": "inventory",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "Item_Icon_SkillBook_Ultimate",
+          "Item_Icon_SkillBook_Ultimate_Piece"
+        ],
+        "excluded_keys": [],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "alias-overlap",
+      "bucket": "inventory",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "Item_Icon_SkillBook_Ultimate_Piece"
+        ],
+        "excluded_keys": [
+          "Item_Icon_SkillBook_Ultimate"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-session_id-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-session_id-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-session_id-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "\ud800",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-session_id-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_id-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_id-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_id-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "\ud800",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-candidate_id-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-scan_kind-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": "",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-scan_kind-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-scan_kind-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": "\ud800",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-scan_kind-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-inventory_scan_profile-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": "",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-inventory_scan_profile-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-inventory_scan_profile-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": "\ud800",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-inventory_scan_profile-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-retry_of-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": ""
+      }
+    },
+    {
+      "id": "invalid-retry_of-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab"
+      }
+    },
+    {
+      "id": "invalid-retry_of-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": "\ud800"
+      }
+    },
+    {
+      "id": "invalid-retry_of-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "id": "invalid-applied_keys-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          ""
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-applied_keys-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-applied_keys-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "\ud800"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-applied_keys-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-excluded_keys-empty",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          ""
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-excluded_keys-1025-bytes",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55c\ud55cab"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-excluded_keys-surrogate",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": true,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "\ud800"
+        ],
+        "retry_of": null
+      }
+    },
+    {
+      "id": "invalid-excluded_keys-1025-characters",
+      "bucket": "students",
+      "valid": false,
+      "schema_valid": false,
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "retry_of": null
+      }
+    }
+  ],
+  "repository_cases": [
+    {
+      "id": "students-first-write",
+      "bucket": "students",
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      },
+      "initial": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 0
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 0
+          }
+        }
+      ],
+      "payload": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 1
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 0
+          }
+        }
+      ],
+      "nochange": false
+    },
+    {
+      "id": "students-nochange",
+      "bucket": "students",
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": " \u672a\u77e5 profile ",
+        "applied_keys": [
+          "aru"
+        ],
+        "excluded_keys": [
+          "shiroko"
+        ],
+        "retry_of": null
+      },
+      "initial": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 0
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 0
+          }
+        }
+      ],
+      "payload": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 0
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 0
+          }
+        }
+      ],
+      "nochange": true
+    },
+    {
+      "id": "inventory-first-write",
+      "bucket": "inventory",
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": null,
+        "applied_keys": [
+          "a"
+        ],
+        "excluded_keys": [
+          "b"
+        ],
+        "retry_of": null
+      },
+      "initial": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "a",
+            "quantity": "0"
+          },
+          {
+            "key": "b",
+            "quantity": "7"
+          }
+        ]
+      },
+      "payload": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "a",
+            "quantity": "1"
+          },
+          {
+            "key": "b",
+            "quantity": "7"
+          }
+        ]
+      },
+      "nochange": false
+    },
+    {
+      "id": "inventory-nochange",
+      "bucket": "inventory",
+      "context": {
+        "source": "scan",
+        "session_id": "session",
+        "generation": 1,
+        "candidate_id": "candidate",
+        "candidate_revision": 0,
+        "scan_kind": " Future Kind ",
+        "inventory_scan_profile": null,
+        "applied_keys": [
+          "a"
+        ],
+        "excluded_keys": [
+          "b"
+        ],
+        "retry_of": null
+      },
+      "initial": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "a",
+            "quantity": "0"
+          },
+          {
+            "key": "b",
+            "quantity": "7"
+          }
+        ]
+      },
+      "payload": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "a",
+            "quantity": "0"
+          },
+          {
+            "key": "b",
+            "quantity": "7"
+          }
+        ]
+      },
+      "nochange": true
+    }
+  ]
+}

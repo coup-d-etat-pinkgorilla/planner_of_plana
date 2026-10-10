@@ -942,6 +942,47 @@ no-change scan/session counts, compaction and strict schema/runtime verdicts.
 structure of an actual 217-student/614-item profile, with no account identifiers
 or original quantities; targeted tests measure full apply and 10,000 commits.
 
+### Internal scan commit provenance v1 (H1)
+
+`scan-commit-history-context-v1.schema.json` fixes the server-internal ten keys
+`source`, `session_id`, `generation`, `candidate_id`, `candidate_revision`,
+`scan_kind`, `inventory_scan_profile`, `applied_keys`, `excluded_keys`, and
+`retry_of`. No version property or public RPC payload field is added.
+`ScanCommitHistoryContext.from_wire(value, bucket="students"|"inventory")`
+returns an immutable validated object. Pass it only to the internal
+`JsonRepository.update_students/update_inventory(..., history_context=context)`
+port. The writer bucket must match the object's bucket; raw kind never selects
+it. `to_history_context()` returns the existing nested `ScanHistoryContext`.
+
+Source is scan; generation is an exact integer >=1 and candidate revision an
+exact integer >=0 (scanner public commit remains >=1). All raw identifiers and
+new flat applied/excluded/retry IDs must encode as valid UTF-8 1..1024 bytes;
+profile and retry may be null. No trimming, case folding or kind/profile enum
+conversion occurs. Schema maxLength counts characters, so runtime additionally
+rejects byte overflow, invalid surrogates and bool/float integers. Existing
+stored events, old nested context and old caches retain their previous bounds.
+
+Student keys are student_id; inventory keys pass through canonical_resource_key
+before uniqueness and applied/excluded disjointness checks. Unknown resource
+identities remain unchanged. Applied keys must be nonempty, are the actual
+approved scope and retain their order. Excluded keys are identified entries,
+never fabricated IDs for unknown slots. Their current values and scan freshness
+must remain untouched. Diff outside approved scope is still rejected by the
+existing event validator. An unchanged approved application records one scan.
+
+The flat object's complete canonical provenance, including excluded_keys and
+retry_of, joins the new scan-only request fingerprint. Stored event/public DTO
+shapes stay unchanged: no excluded/retry field is persisted. Contextless/manual
+and old nested context fingerprints and `{revision}` replay remain unchanged.
+retry_of is nullable opaque provenance, not retry authority. Reusing the same
+idempotency key with different excluded keys or retry_of conflicts. Exact replay
+keeps the first canonical submitted bucket, expected revision, context and array
+order, including original null retry_of; restart or an intervening write returns
+the original response without creating another event or overwriting current.
+Capturing the first scanner request and preventing re-merge on retry is the next
+S-FB2b slice; H1 does not wire scanner commits, change Mock, or extend summary.
+Shared policy cases are `fixtures/scan_commit_history_context_v1.json`.
+
 ### Current history period queries (FB-2c)
 
 `repository-history-query-v1.schema.json` defines strict payloads/results for
