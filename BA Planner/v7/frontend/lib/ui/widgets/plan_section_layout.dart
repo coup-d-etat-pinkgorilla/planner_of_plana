@@ -1345,6 +1345,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   PlanFlowSaveOutcome? _flowSaveOutcome;
   bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
+
+  /// 넘어온 학생(FE4-g)으로 흐름을 여는 중(흐름 상태를 읽는 동안). 이 동안 계획 홈 섹션을 들이지 않는다.
+  bool _handoffPending = false;
   PlanningStudentSeed? _builderSeed;
   List<PlanningStudentSeed> _builderStudentQueue = const [];
   int _builderStudentQueueIndex = 0;
@@ -1759,26 +1762,114 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
+  /// 계획 탭으로 넘어온 학생(성장 계산기 "이 목표로 계획에 추가", FE4-g, FD-171 (a)).
+  ///
+  /// 계획 만들기 흐름을 2단계(목표 정하기)로 열고 그 학생 단계를 넘긴 목표로 채운다
+  /// ([PlanFlowController.receiveHandoff]). 진행 중 흐름이 있으면 그 초안에 덧붙인다. 흐름을 열 수 없는 서비스(계정
+  /// 상태·시나리오 저장소 없음)면 예전처럼 요소 편집기로 연다(목표는 싣지 않는다).
   void _consumeInitialSeed() {
     final seed = widget.initialSeed;
     if (seed == null || seed.handoffId == _consumedHandoffId) return;
     _consumedHandoffId = seed.handoffId;
-    _builderSeed = seed;
-    _studentSeedsById[seed.studentId] = seed;
-    _builderStudentQueue = [seed];
-    _builderStudentQueueIndex = 0;
-    _showElementBuilder = true;
+    final flow = _flow;
+    if (flow != null) {
+      // didUpdateWidget(빌드 중)에서 흐름 리스너를 깨우지 않게 다음 프레임에 넣는다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !identical(_flow, flow)) return;
+        _notifyHandoff(flow, flow.receiveHandoff(seed), seed.studentId);
+      });
+      return;
+    }
+    // 흐름이 들어올 자리를 비운다. 넘길 때는 계획 탭이 보이지 않으므로 모션 없이 내린다.
+    _handoffPending = true;
+    _showElementBuilder = false;
     _showPhaseEditor = false;
     _showPresetManager = false;
     _showStudentSelector = false;
     _showScenarioList = false;
     _showScenarioComparison = false;
-    _discardFlow();
+    _scenarioListController.value = 0;
+    for (final controller in _controllers.values) {
+      controller.value = 0;
+    }
+    _openHandoffFlow(seed);
+  }
+
+  /// [seed]로 새 흐름을 연다(FE4-g). 상태를 읽는 사이 흐름이 생겼으면 그 초안에 넣는다.
+  Future<void> _openHandoffFlow(PlanningStudentSeed seed) async {
+    PlanFlowContext? flowContext;
+    if (widget.service is PlanningScenarioRepositoryService) {
+      try {
+        flowContext = await _flowContext();
+      } on Object {
+        flowContext = null;
+      }
+    }
+    // 그 사이 다른 학생이 넘어왔으면 그쪽이 연다(대기 표시도 그쪽이 푼다).
+    if (!mounted || _consumedHandoffId != seed.handoffId) return;
+    var opened = false;
+    try {
+      final existing = _flow;
+      if (existing != null) {
+        _notifyHandoff(existing, existing.receiveHandoff(seed), seed.studentId);
+        opened = true;
+        return;
+      }
+      if (flowContext == null) {
+        setState(() {
+          _builderSeed = seed;
+          _studentSeedsById[seed.studentId] = seed;
+          _builderStudentQueue = [seed];
+          _builderStudentQueueIndex = 0;
+          _showElementBuilder = true;
+        });
+        return;
+      }
+      final flow = PlanFlowController(
+        purpose: PlanFlowPurpose.newScenario,
+        context: flowContext,
+        service: widget.service,
+      );
+      final result = flow.receiveHandoff(seed);
+      setState(() => _flow = flow);
+      opened = true;
+      _notifyHandoff(flow, result, seed.studentId);
+    } finally {
+      // 흐름을 못 열었으면(요소 편집기 대체 · 오류) 계획 홈 섹션을 다시 들인다.
+      if (mounted) {
+        setState(() => _handoffPending = false);
+        if (!opened) _setActive(widget.active);
+      }
+    }
+  }
+
+  /// 넘긴 목표를 어떻게 넣었는지 알린다(새 학생 1단계는 화면으로 보이므로 알리지 않는다).
+  void _notifyHandoff(
+    PlanFlowController flow,
+    PlanFlowHandoffResult result,
+    String studentId,
+  ) {
+    final name = flow.context.displayName(studentId);
+    final message = switch (result.kind) {
+      PlanFlowHandoffKind.added || PlanFlowHandoffKind.ignored => null,
+      PlanFlowHandoffKind.appendedToDraft =>
+        '만들던 초안에 이어 $name ${result.step}단계로 계산기 목표를 넣었습니다.',
+      PlanFlowHandoffKind.appendedAfterActive =>
+        '$name 학생은 활성 계획에 있어 활성 계획 마지막 단계에 이어지는 단계로 계산기 목표를 넣었습니다.',
+      PlanFlowHandoffKind.nothingNew =>
+        '계산기 목표가 이미 $name 학생의 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.',
+      PlanFlowHandoffKind.noTargets =>
+        '계산기에서 올린 목표가 없어 $name 학생을 목표 없이 더했습니다.',
+    };
+    if (message == null || !mounted) return;
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _setActive(bool active) {
-    // 흐름 화면은 자기 섹션 모션을 `active`로 튼다.
-    if (_flow != null) return;
+    // 흐름 화면은 자기 섹션 모션을 `active`로 튼다. 넘어온 학생으로 흐름을 여는 중에도 홈 섹션을 들이지 않는다.
+    if (_flow != null || _handoffPending) return;
     if (_showScenarioList || _showScenarioComparison) {
       for (final entry in _controllers.entries) {
         if (entry.key == 'element-1') {
@@ -1980,7 +2071,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         for (final entry in _controllers.entries)
           if (entry.key != 'element-1') entry.value.reverse(),
       ]);
-      if (!mounted) return;
+      // 그 사이 계산기에서 학생이 넘어와 흐름이 열리면(FE4-g) 목록을 열지 않는다.
+      if (!mounted || _flow != null || _handoffPending) return;
       setState(() {
         _showScenarioList = !comparison;
         _showScenarioComparison = comparison;

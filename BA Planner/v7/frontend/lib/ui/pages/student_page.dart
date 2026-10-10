@@ -49,7 +49,7 @@ class StudentPage extends StatefulWidget {
   final AppService service;
 
   /// 계획 만들기로 학생을 넘긴다. FD-160 (a)로 학생 S1의 "포커스 학생으로 계획 열기" 자리가 "성장 계산기
-  /// 열기"가 되어 지금은 쓰지 않는다. FE4-g에서 계산기 "이 목표로 계획에 추가"가 쓴다.
+  /// 열기"가 되어, 성장 계산기 "이 목표로 계획에 추가"(FE4-g, FD-171 (a))만 쓴다. 시드에 계산기 목표를 싣는다.
   final ValueChanged<PlanningStudentSeed> onAddToPlan;
   final VoidCallback? onOpenScan;
   final StudentCandidateContext? candidateContext;
@@ -254,6 +254,38 @@ class _StudentPageState extends State<StudentPage> {
   }
 
   void _calculatorChanged() => _scheduleCalculation();
+
+  /// "이 목표로 계획에 추가"(FE4-g, FD-171 (a)): 선택 학생과 계산기 목표를 계획 만들기 2단계로 넘긴다.
+  ///
+  /// - 목표는 계산기가 지금 현재값보다 올린 키만 싣는다(19키 중 고르지 않은 키는 넘기지 않아 계획 쪽에서 null로
+  ///   남는다). 직접 입력(FD-168)이어도 그 입력 현재값 자체는 넘기지 않는다.
+  /// - 학생 현재값은 확정값(repository)이다. 계획 쪽은 이 값이 아니라 흐름의 확정값을 바닥으로 쓴다.
+  /// - 인연 목표도 올렸을 때만 싣는다. 현재 인연을 목표로 복사하지 않는다(FB-1b 연결 메모 4).
+  /// - 계산기 상태·최근 계산(FD-170)은 그대로 둔다. 학생 탭으로 돌아오면 계산기가 그대로 열려 있다.
+  void _addCalculatorToPlan() {
+    final state = _calculator;
+    final entry = _selectedEntry;
+    if (state == null || entry == null || entry.studentId != state.studentId) {
+      return;
+    }
+    final current = state.current;
+    final targets = state.targets;
+    widget.onAddToPlan(
+      PlanningStudentSeed(
+        handoffId:
+            'growth-calculator-${state.studentId}-${DateTime.now().microsecondsSinceEpoch}',
+        studentId: state.studentId,
+        metadata: entry.metadata,
+        currentValues: _selectedState?.values ?? const {},
+        owned: _selectedState != null,
+        targets: {
+          for (final target in targets.entries)
+            if (target.value > (current[target.key] ?? target.value))
+              target.key: target.value,
+        },
+      ),
+    );
+  }
 
   /// S4 "최근 계산"을 누르면 그때의 학생·기준·목표로 다시 연다(FD-170). catalog에 없는 학생은 무시한다.
   void _openRecentCalculation(GrowthCalculationRecord record) {
@@ -604,6 +636,7 @@ class _StudentPageState extends State<StudentPage> {
                       engine: _calculatorEngine,
                       student: _selectedEntry,
                       onOpenScan: widget.onOpenScan,
+                      onAddToPlan: _addCalculatorToPlan,
                       planMembership: growthCalculatorPlanMembership(
                         _activePlan,
                         state.studentId,

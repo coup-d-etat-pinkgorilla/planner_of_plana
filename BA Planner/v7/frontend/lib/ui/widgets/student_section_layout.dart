@@ -1243,7 +1243,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
 
   /// 계산기 S1 버튼 세트(Calc-Student, 학생 S1과 같은 자리):
   /// 보기 토글 → 확정값 기준/직접 입력(FD-168), 정렬 → 빠른 목표(FD-169), 계획 열기 → 이 목표로 계획에 추가
-  /// (FE4-g 전 비활성), 학생 스캔 → 학생 스캔으로 현재값 갱신, 필터 → 현재값으로 되돌리기.
+  /// (FE4-g, FD-171 (a)), 학생 스캔 → 학생 스캔으로 현재값 갱신, 필터 → 현재값으로 되돌리기.
   List<Widget> _calculatorRail(Size size, GrowthCalculatorModeData calculator) {
     final state = calculator.state;
     final paths = studentViewTogglePaths(size);

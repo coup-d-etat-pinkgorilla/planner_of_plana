@@ -4717,3 +4717,109 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_023726\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-g 계산기 → 계획 넘김 (구현 끝, gate 전)
+
+### FE4-g 착수 기록 (2026-10-10 03:30)
+
+- 진행 중: FE4-g. 시작 SHA `c9258cb1aa9507d3f8ac0dae2dacc408006844f3`(FE4-f2 `fe_commit` 뒤 HEAD, 브랜치 scanner-consolidation).
+- 범위: FD-171 (a). `PlanningStudentSeed`에 계산기 목표를 싣고, 성장 계산기 "이 목표로 계획에 추가"(S1 container-16 · 아래 큰 버튼)를 누르면 계획 탭 계획 만들기 흐름을 2단계로 열어 그 학생 단계를 채운다. 진행 중 초안이 있으면 덧붙이고, 초안이나 활성 계획에 그 학생이 있으면 마지막 단계 뒤 새 단계로 넣는다.
+- 막힘: 대장 "slice별 막힘 요약" FE4-g 행은 "—"(열림 0건). FD-171은 워커 재량(권장안 (a)).
+- 고칠 기존 파일(사본 `debug/frontend_fe4g/pre/frontend/...`): `lib/ui/models/planning_models.dart`, `lib/ui/models/plan_flow_draft.dart`, `lib/ui/models/plan_flow_goal_editor.dart`, `lib/ui/widgets/plan_section_layout.dart`, `lib/ui/pages/student_page.dart`, `lib/ui/widgets/growth_calculator_section.dart`, `lib/ui/widgets/student_section_layout.dart`(주석만), `test/growth_calculator_view_test.dart`, `test/student_page_test.dart`. 새 파일: `test/plan_flow_handoff_test.dart`. 서비스 계층·app_shell·backend·contracts·스캐너·tactic 파일은 고치지 않는다.
+- 환경: 이 세션은 PC 셸이 없다(파일을 가져와 고친 뒤 되돌려 쓴다). Flutter·Python을 돌리지 못하므로 정적 검토만 한다.
+
+### FE4-g 종료 기록 (2026-10-10 03:55, 커밋 전)
+
+상태: 구현 끝, gate 미실행. 시작 SHA `c9258cb1aa9507d3f8ac0dae2dacc408006844f3`. `debug/frontend_fe4g/commit.json`(slice=fe4g, baseline whole, status=true)을 두었다. 직접 커밋하지 않았다. 착수 기록의 파일 목록 그대로 고쳤고(사본 `debug/frontend_fe4g/pre/frontend/...`), 새 파일은 `test/plan_flow_handoff_test.dart` 하나다. 서비스 계층(`lib/services/**`)·app_shell·backend·contracts·스캐너·tactic 파일은 고치지 않았다. `plan_section_layout.dart`는 CRLF를 유지했다.
+
+#### 실행 명령·결과
+
+- 실행한 명령 없음. 이 세션은 PC 셸이 없고 작업 공간에서 Flutter SDK도 받을 수 없다(storage.googleapis.com·github.com 프록시 403). analyze·테스트·golden 모두 돌리지 않았고 통과를 주장하지 않는다.
+- 정적 검토: 별도 검토 에이전트 1회(컴파일·lint·테스트 기대값을 코드와 mock으로 대조). 지적 반영 — `plan_flow_handoff_test.dart`에 `TestWidgetsFlutterBinding.ensureInitialized()`(mock catalog가 asset 번들을 읽음), `_openHandoffFlow` 대기 표시를 `try/finally`로 풀기, 진행 중 흐름에 넣는 경로를 다음 프레임으로 미루기(didUpdateWidget 빌드 중 리스너 깨우기 방지), 닫힌 흐름이면 `ignored`(알림 없음), 시나리오 목록 열기 도중 넘어오면 목록을 열지 않기.
+
+#### 바뀐 것
+
+1. **시드**(`planning_models.dart`): `PlanningStudentSeed.targets`(선택, 19키 정수 절대값). null이면 목표 없이 넘긴다.
+2. **계산기 버튼**(`student_page.dart`): S1 container-16 "이 목표로 계획에 추가"와 아래 큰 버튼이 켜진다(`_addCalculatorToPlan`). 시드에는 계산기가 **지금 현재값보다 올린 키만** 싣는다. 고르지 않은 키는 싣지 않으므로 계획 쪽에서 null로 남는다(0·현재값으로 채우지 않음). 시드의 currentValues는 확정값이고 계획 쪽은 쓰지 않는다. 계산기 상태·최근 계산(FD-170)은 건드리지 않는다(학생 탭으로 돌아오면 계산기가 그대로 열려 있다). 계획 흐름의 이전·취소는 계획 탭 안에서 끝나고 계산기와 상태를 나누지 않는다.
+3. **초안에 넣기**(`plan_flow_draft.dart` `PlanFlowController.receiveHandoff`, 순수 함수 `planFlowHandoffStageTargets`·`planFlowActiveLastTargets`):
+   - 바닥 snapshot: 초안에 그 학생 단계가 있으면 그 마지막 단계(정수 보기) → 없고 활성 계획(`PlanFlowContext.activePlan`)에 있으면 활성 계획 마지막 단계(`planFlowDocumentIntegerTargets`, null은 앞 단계 값) → 둘 다 없으면 확정 지금 값. 활성 계획을 고치는 흐름(`editActivePlan`)은 초안이 곧 활성 계획이라 초안만 본다.
+   - 새 단계 = 바닥 snapshot 복제 + 계산기 값이 바닥보다 높은 키만 그 값으로 올림 → `normalizePlanningGrowthTargets(changedKeys: 올린 키)`(선행 조건이 함께 오름, 예 전용무기 → ★5). 바닥보다 낮거나 같은 계산기 값은 쓰지 않는다(퇴행 없음). 오르는 키가 없으면 단계를 만들지 않는다.
+   - 그 학생 단계 끝에 붙이고(id `<학생>-calc-<n>`, 이름 `n단계`) v2 변환·칸 배치 정리는 2단계 편집과 같은 `setStudentStages`가 한다: 정수 → v2는 `PlanFlowGoalCodec.fromEditor`(지금 값보다 처음 올라간 단계부터 목표, 끝까지 안 오른 키는 모든 단계 null). 단계가 늘면 그 학생 단계는 칸에서 빠져 3단계에서 다시 배치한다(plan-element-builder-lessons "목표를 바꾸거나 단계를 추가·삭제한 학생은 페이즈 배정을 다시").
+   - 끝나면 2단계로 가고 그 학생을 목표 순번·편집기 초점(`goalFocusStudentId`/`goalFocusSerial`)으로 잡는다. 편집기는 마지막 단계(넘긴 단계)를 고른 상태로 연다.
+4. **2단계 편집기**(`plan_flow_goal_editor.dart`): 흐름의 초점 요청이 바뀌면 이미 있는 편집기도 그 학생 탭으로 바꾼다. 다른 동작은 그대로다.
+5. **계획 화면**(`plan_section_layout.dart` `_consumeInitialSeed`): 넘어온 시드로 예전 요소 편집기를 여는 대신 계획 만들기 흐름(새 시나리오 목적)을 2단계로 연다. 진행 중 흐름이 있으면 그 초안에 넣는다. 흐름 상태를 읽는 동안(`_handoffPending`) 계획 홈 섹션을 들이지 않는다. 흐름을 열 수 없는 서비스(계정 상태·시나리오 저장소 없음)만 예전 요소 편집기로 연다(목표는 싣지 않음). 넣은 결과 안내(~습니다체 SnackBar): 초안 학생 뒤 새 단계 / 활성 계획 학생 / 이미 들어 있음 / 올린 목표 없음. 초안·활성 계획에 없던 학생은 화면으로 보이므로 알리지 않는다.
+6. 주석(`growth_calculator_section.dart`, `student_section_layout.dart`), 테스트 주석(`student_page_test.dart`).
+
+#### 판단(확인 부탁)
+
+- **FD-171 (a) 워커 재량, 권장안대로.** 활성 계획에 그 학생이 있을 때 새 단계는 활성 계획 마지막 단계 snapshot을 복제한다. 그래서 초안의 그 단계는 활성 계획이 정한 키도 같은 값으로 들고 있다(계산기에서 고르지 않은 키라도 활성 계획이 정했으면 null이 아니다). 근거: 단계 누적 snapshot 계약("새 단계는 선택 단계 바로 뒤에 그 snapshot을 복제")이고, FE4-e "페이즈로 추가"(`planFlowMergedPlanDocument`)는 활성 값과 같은 값을 퇴행으로 보지 않으므로 기존 병합 규칙을 바꾸지 않는다. "시나리오로 저장"하면 활성 계획 목표를 포함한 독립 snapshot이 된다. 바닥보다 낮은 계산기 값은 버린다(예: 활성 레벨 70, 계산기 60 → 70).
+- **계산기 13행 → v2 변환.** FE3-f1 계산 어댑터(`growthCalculatorDocument`)는 v1 정수 19키 임시 문서를 만들 뿐 nullable 변환이 없다. 그래서 계산기 쪽은 "현재값보다 올린 키만"을 넘기고, 계획 쪽은 흐름이 이미 쓰는 `PlanFlowGoalCodec.fromEditor`로 v2를 만든다. 새 변환 규칙은 만들지 않았다.
+- **인연 목표.** 계산기에서 인연을 올렸을 때만 `bond_rank`를 싣는다. 현재 인연을 목표로 복사하지 않고, 확정 인연을 모르는 학생(바닥 1)도 올린 값만 목표가 된다(FB-1b 프런트 연결 메모 4·5: bond 목표는 문서의 nullable 값, 모르는 현재 인연을 1로 만들지 않음 — 계산 current 쪽은 이번에 바꾸지 않았다).
+- **기존 코드와 충돌하는 규칙은 찾지 못했다.** 멈출 사유 없음.
+- 새 단계 이름은 기본 이름(`n단계`)이다(편집기의 기본 이름 번호 다시 매기기와 맞음). "계산기 목표" 같은 출처 이름은 붙이지 않았다.
+
+#### 처리한 FD
+
+- FD-171 (a)(워커 재량): 위와 같다.
+- FD-168: 직접 입력 현재값은 넘기지 않는다(올린 키만, 계획 바닥은 확정값).
+- FD-170: 넘긴 뒤 최근 계산 그대로.
+- FD-172: S4 "계획에 있음/없음"은 FE4-h 그대로(활성 문서 기준). 이번에 바꾸지 않았다.
+- FD-160 한 명 모드 C 보조 링크(워커 재량): 하지 않았다.
+
+#### 테스트
+
+- 새 `test/plan_flow_handoff_test.dart`(12건): 순수 함수 3건(바닥 복제 · 퇴행 없음, 올린 키 정규화로 선행 조건 · 규칙 위반 없음, 오르는 키 없으면 null) · 초안 없음(1단계 = 계산기 목표, 고르지 않은 키 null, goal_metadata 기본값, 2단계 · 초점) · 초안 있음·학생 없음(뒤에 덧붙임, 다른 학생 단계 · 칸 그대로) · 초안에 학생 있음(마지막 단계 뒤 2단계, 레벨 이어 받음 · 낮추지 않음, 칸에서 빠짐) · 초안 마지막 단계에 이미 있음(nothingNew, 칸 그대로) · 활성 계획에 학생 있음(snapshot 레벨 70 + 스킬, 나머지 null) · 활성 snapshot에 이미 있음 · 활성 계획 고치는 흐름은 초안만 · 목표 없음 · 이미 있는 편집기의 학생 탭 전환.
+- `growth_calculator_view_test.dart`: "FE4-g 전까지 비활성" 테스트를 바꿨다 — 두 버튼이 켜지고, 일반 스킬 MAX 뒤 누르면 계획 탭 흐름 2단계가 그 학생으로 열리며 단계 `skill1` 10 · `level`/`bond_rank` null, 학생 탭으로 돌아오면 계산기 값 그대로. 새 테스트 "직접 입력 현재값은 계획으로 넘기지 않는다"(직접 입력 레벨 50 → 단계 없음 · "목표 없이 더했습니다" 안내). 인연 안내 단언은 바꾼 테스트로 옮겼다. 지운 테스트 없음.
+- `planning_page_test.dart`에는 시드 테스트가 없었다(바꾸지 않음).
+
+#### golden 예측
+
+- 바뀜(확실): `students-calculator`·`students-calculator-bond-popover` — 계산기 S1 container-16(`calculator-add-to-plan`) 아이콘이 흐린 색(textMuted 45%)에서 본문 색으로, 아래 큰 버튼 "이 목표로 계획에 추가 / 계획 만들기 2 · 목표 정하기로 넘깁니다"가 비활성 모양에서 활성(primary) 모양으로. 그 밖의 영역은 같다.
+- 그대로: 계획 장면 전부(시드를 넘기는 장면이 없음), `plan-flow-step2*`, 학생 · 계정 · 스캔 장면.
+- 새 장면 제안: 하지 않는다. 계산기에서 연 2단계는 기존 `plan-flow-step2`와 같은 화면 구성(학생 탭 하나 · 단계 카드 하나)이고 값만 다르다. 원하면 `plan-flow-step2-from-calculator`(활성 계획 학생 → snapshot 단계 + 안내)를 다음 slice에서 더할 수 있다.
+
+#### 검수표
+
+| artboard / 확인 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Calc-Student "이 목표로 계획에 추가" | mock 모드 → 학생 탭 → 학생 고르기 → S1 "성장 계산기 열기" | S1 container-16 아이콘과 아래 큰 버튼이 켜져 있음 |
+| 계산기 → 계획 2단계 | 위에서 목표 몇 개 올리고 큰 버튼(또는 S1 버튼) | 계획 탭 계획 만들기 2단계, 그 학생 탭 · 1단계 카드가 올린 값, 현재 → 최종 줄에 올린 항목만 |
+| 진행 중 초안에 덧붙임 | 계획 탭 "시나리오 생성"으로 다른 학생 고른 뒤 학생 탭 계산기에서 넘기기 | 같은 초안에 학생 탭이 하나 더, 기존 학생 그대로 |
+| 초안에 이미 있는 학생 | 같은 학생을 계산기에서 다시 넘기기 | 그 학생 2단계 카드 추가(앞 단계 값 이어 받음), 안내 "만들던 초안에 이어 … 2단계로 …" |
+| 활성 계획 학생 | 활성 계획에 있는 학생을 넘기기 | 1단계 카드가 활성 계획 마지막 단계 값 + 올린 값, 안내 "… 활성 계획 마지막 단계에 이어지는 단계로 …" |
+| 계산기 그대로 | 넘긴 뒤 학생 탭 | 계산기 · 최근 계산 그대로 |
+
+#### 확인하지 못한 것
+
+- analyze · 테스트 · golden 실행 전부. 정적 검토만 했다.
+- 위젯 테스트의 탭 전환 뒤 계획 화면이 onstage인지(`AnimatedSectionStack`을 읽지 못함), SnackBar 타이머 정리.
+- ProcessAppService(실제 Python)에서 계산기 → 2단계 → 4단계 저장 왕복.
+- 탭 전환 중 넘김의 그림(계획 홈 섹션을 모션 없이 내린 뒤 흐름이 들어옴).
+
+#### 발견 사항
+
+- 초안에 그 학생의 "나중에" 칸 단계가 있으면 새 단계가 체인 끝(나중에 단계 뒤)에 붙는다. 3단계에서 그 단계를 칸에 넣으려면 같은 학생 체인 규칙(배치 prefix + 나중에 suffix) 때문에 나중에 칸에 두거나 앞 단계를 칸으로 옮겨야 한다. 막지는 않았다.
+- `PlanFlowContext.activePlan`은 문서만 있고 authoring이 없어, 활성 계획의 "나중에" 단계는 바닥 snapshot에 들어가지 않는다. FE4-e 병합(활성 배치 → 초안 배치 → 활성 나중에)에서 활성 나중에 단계가 새 단계보다 낮으면 기존 병합 규칙대로 처리된다(이번에 바꾸지 않음).
+- 활성 계획 학생을 넘긴 초안의 2단계 "현재 → 최종" 줄 · 계산은 초안 기준이라 활성 계획 이전 단계의 비용은 넣지 않는다(FE4-e 초안과 같은 동작).
+
+#### 다음 행동
+
+- 오케스트레이터: gate ① 결과 검토(golden 2장 예측 대조), 위 판단 3건 확인.
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다(students-calculator · -bond-popover RED 예상, 새 장면 없음)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 승인 뒤 기준 이미지 갱신 → gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4g -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe4g
+```
+
+### fe4g commit record (2026-10-10 14:04, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261010_135343\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -8,7 +8,8 @@
 // - 오른쪽: 크레딧 타일(합계 + 9범주 내역, 보유는 "스캔 없음" 빗금), 인연 타일(FE3-g, 세 안 + 선물 팝오버,
 //   [GrowthCalculatorBondTile]), 성장 재화 목록(정렬 3종, 6행 + 접힘). 성장 계산 경고는 "필요 재화" 제목 줄에,
 //   인연 경고는 인연 타일에 둔다. 선물은 성장 재화 목록·"부족 n종"에 넣지 않는다(FD-165).
-// - 아래: "이 목표로 계획에 추가"(FE4-g 전 비활성). "인벤토리 · 부족 위험에서 보기"는 숨긴다(FD-173 (c)).
+// - 아래: "이 목표로 계획에 추가"(FE4-g, FD-171 (a): 계획 만들기 2단계로 넘김). "인벤토리 · 부족 위험에서 보기"는
+//   숨긴다(FD-173 (c)).
 // - 계산 상태: 기다리는 동안 직전 결과를 흐리게, 실패하면 오류 문구와 직전 결과를 보인다.
 // 목표는 저장하지 않고, 학생 탭 인연 게이지의 활성 계획 목표(FD-049)와 섞지 않는다.
 import 'dart:math' as math;
@@ -406,7 +407,7 @@ class GrowthCalculatorModeData {
   /// S1 "학생 스캔으로 현재값 갱신".
   final VoidCallback? onOpenScan;
 
-  /// "이 목표로 계획에 추가". FE4-g 전에는 null(비활성, FD-171).
+  /// "이 목표로 계획에 추가"(FE4-g, FD-171 (a)). null이면 비활성이다.
   final VoidCallback? onAddToPlan;
 
   /// S4 선택 학생 요약의 계획 포함 여부(FD-172, FE4-h부터 저장된 활성 계획 문서 기준).
@@ -446,7 +447,7 @@ class GrowthCalculatorSection extends StatefulWidget {
   final GrowthCalculatorEngine? engine;
   final StudentCatalogEntry? student;
 
-  /// "이 목표로 계획에 추가". FE4-g 전에는 null(비활성, FD-171).
+  /// "이 목표로 계획에 추가"(FE4-g, FD-171 (a)). null이면 비활성이다.
   final VoidCallback? onAddToPlan;
 
   @override

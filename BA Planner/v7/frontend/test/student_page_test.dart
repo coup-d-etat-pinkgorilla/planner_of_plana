@@ -63,8 +63,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('student-ayane')));
     await tester.pump();
 
-    // FD-160 (a): S1의 예전 "포커스 학생으로 계획 열기" 자리는 성장 계산기 입구다. 계산기는 계획에
-    // 넘기지 않는다("이 목표로 계획에 추가"는 FE4-g까지 비활성).
+    // FD-160 (a): S1의 예전 "포커스 학생으로 계획 열기" 자리는 성장 계산기 입구다. 계산기를 여는 것만으로는
+    // 계획에 넘기지 않는다("이 목표로 계획에 추가"를 눌러야 넘긴다, FE4-g).
     await _reveal(
       tester,
       find.byKey(const ValueKey('student-open-calculator')),

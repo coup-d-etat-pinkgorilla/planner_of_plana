@@ -1,5 +1,6 @@
 // FE3-f2a·f2b 성장 계산기 화면 연결 테스트(FD-160·FD-161·FD-162·FD-166·FD-167·FD-168·FD-169·FD-170·
-// FD-172·FD-173). f2b부터 계산은 단일 학생 계산(`calculateStudent`, FB-11a)을 부른다.
+// FD-172·FD-173). f2b부터 계산은 단일 학생 계산(`calculateStudent`, FB-11a)을 부른다. FE4-g(FD-171)부터 "이 목표로
+// 계획에 추가"가 계획 탭 계획 만들기 2단계로 넘긴다.
 //
 // 앱 셸(BAPlannerApp)로 학생 탭을 열고 S1 "성장 계산기 열기"로 들어간다. 계산 디바운스(Timer)와
 // 플라이아웃(OverlayPortal)이 있어 pumpAndSettle 대신 명시적인 pump를 쓰는 곳이 있다.
@@ -14,11 +15,13 @@ import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_rules.dart';
 import 'package:ba_planner_v7/ui/models/growth_calculator_state.dart';
+import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/pages/settings_page.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_bond_tile.dart';
 import 'package:ba_planner_v7/ui/widgets/growth_calculator_section.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -416,26 +419,87 @@ void main() {
     expect(find.textContaining('장비 1 · '), findsOneWidget);
   });
 
-  testWidgets('"이 목표로 계획에 추가"는 FE4-g 전까지 비활성, 인벤토리 버튼은 숨긴다', (tester) async {
+  testWidgets('"이 목표로 계획에 추가"는 계획 탭 2단계를 그 학생 · 계산기 목표로 연다(FE4-g), 인벤토리 버튼은 숨긴다', (
+    tester,
+  ) async {
     await _openStudents(tester, _CalculatorService());
     await _openCalculator(tester);
+    expect(find.text('인벤토리 · 부족 위험에서 보기'), findsNothing);
+    // FE3-g: 이 mock의 첫 학생(아루)은 미보유라 현재 인연을 모른다. 인연 타일은 안내 상태다(1로 채우지 않는다).
+    expect(find.byKey(const ValueKey('calculator-bond-guide')), findsOneWidget);
+    expect(_text(tester, 'calculator-bond-title'), startsWith('인연 미확인'));
+    // S1 버튼과 아래 큰 버튼이 모두 켜져 있다.
     expect(
       tester
           .widget<RailButton>(
             find.byKey(const ValueKey('calculator-add-to-plan-primary')),
           )
           .onPressed,
-      isNull,
+      isNotNull,
     );
     final railButton = find.descendant(
       of: find.byKey(const ValueKey('calculator-add-to-plan')),
       matching: find.byType(InkWell),
     );
-    expect(tester.widget<InkWell>(railButton).onTap, isNull);
-    expect(find.text('인벤토리 · 부족 위험에서 보기'), findsNothing);
-    // FE3-g: 이 mock의 첫 학생(아루)은 미보유라 현재 인연을 모른다. 인연 타일은 안내 상태다(1로 채우지 않는다).
-    expect(find.byKey(const ValueKey('calculator-bond-guide')), findsOneWidget);
-    expect(_text(tester, 'calculator-bond-title'), startsWith('인연 미확인'));
+    expect(tester.widget<InkWell>(railButton).onTap, isNotNull);
+
+    final studentId = _state(tester).studentId;
+    await tester.tap(find.byKey(const ValueKey('calculator-row-normalSkill-max')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-add-to-plan-primary')),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(planFlowCalculationDebounce);
+    await tester.pumpAndSettle();
+
+    // 계획 탭 계획 만들기 2단계가 그 학생으로 열린다.
+    final workspace = find.byType(PlanFlowWorkspace);
+    expect(workspace, findsOneWidget);
+    final flow = tester.widget<PlanFlowWorkspace>(workspace).flow;
+    expect(flow.step, PlanFlowStep.goals);
+    expect(flow.draft.studentIds, [studentId]);
+    expect(find.byKey(const ValueKey('plan-flow-goal-body')), findsOneWidget);
+    expect(
+      find.byKey(ValueKey('plan-flow-goal-tab-$studentId')),
+      findsOneWidget,
+    );
+    final stage = flow.draft.stagesByStudent[studentId]!.single;
+    expect(stage.targets['skill1'], 10);
+    // 계산기에서 고르지 않은 키는 null(목표 없음)이다.
+    expect(stage.targets['level'], isNull);
+    expect(stage.targets['bond_rank'], isNull);
+
+    // 학생 탭으로 돌아오면 계산기가 그대로 열려 있다.
+    await tester.tap(find.byKey(const ValueKey('top-tab-students')));
+    await tester.pumpAndSettle();
+    expect(_section, findsOneWidget);
+    expect(_text(tester, 'calculator-row-normalSkill-value'), 'M');
+    await _settleCalculation(tester);
+  });
+
+  testWidgets('직접 입력 현재값은 계획으로 넘기지 않는다(FE4-g, FD-168)', (tester) async {
+    await _openStudents(tester, _CalculatorService());
+    await _openCalculator(tester);
+    final state = _state(tester);
+    state.setBasis(GrowthCalculatorBasis.direct);
+    // 직접 입력으로 현재 레벨을 올리면 목표도 따라 오르지만, 계산기에서 올린 목표는 아니다.
+    state.setDirectCurrentRow(GrowthCalculatorRow.level, 50);
+    await _settleCalculation(tester);
+    expect(state.targets['level'], 50);
+    await tester.tap(
+      find.byKey(const ValueKey('calculator-add-to-plan-primary')),
+    );
+    await tester.pumpAndSettle();
+    final flow = tester
+        .widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace))
+        .flow;
+    expect(flow.step, PlanFlowStep.goals);
+    expect(flow.draft.studentIds, [state.studentId]);
+    expect(flow.draft.stagesByStudent[state.studentId], isNull);
+    expect(find.textContaining('목표 없이 더했습니다'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('능력 개방 행은 HP/ATK/HEAL 플라이아웃을 연다', (tester) async {

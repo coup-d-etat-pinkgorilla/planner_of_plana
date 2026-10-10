@@ -63,6 +63,11 @@ PlanningStudentSeed _seed({
   owned: owned,
 );
 
+/// FE4-g부터 계획 탭으로 넘어온 시드는 계획 만들기 흐름(2단계)을 연다. 선택된 계정이 없어 흐름을 열 수 없을
+/// 때만 예전 요소 편집기로 여는 대체 경로가 남는다. 이 파일의 페이지 통합 테스트는 계정 없는 mock으로 그
+/// 대체 경로를 연다(요소 편집기와 함께 FE5-f에서 정리).
+MockAppService _legacyBuilderService() => MockAppService(profiles: const []);
+
 PlanElementPreset _threeStageTestPreset() => PlanElementPreset(
   id: 'balanced-growth',
   name: '테스트 프리셋',
@@ -794,7 +799,7 @@ void main() {
   testWidgets('planning seed opens the four-section element builder', (
     tester,
   ) async {
-    final service = MockAppService();
+    final service = _legacyBuilderService();
     addTearDown(service.dispose);
     await tester.binding.setSurfaceSize(const Size(2560, 1392));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -806,6 +811,8 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    // 대체 경로는 계정 목록을 읽은 뒤(비동기) 요소 편집기를 연다.
     await tester.pump();
 
     expect(find.byKey(const ValueKey('plan-starter-element-3')), findsOne);
@@ -1804,7 +1811,7 @@ void main() {
   testWidgets(
     'preset overwrites the draft and confirmation creates unassigned items',
     (tester) async {
-      final service = MockAppService();
+      final service = _legacyBuilderService();
       addTearDown(service.dispose);
       await tester.binding.setSurfaceSize(const Size(2560, 1392));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1916,7 +1923,7 @@ void main() {
   testWidgets(
     'builder deletes only the selected unassigned stage and return preserves the rest',
     (tester) async {
-      final service = MockAppService();
+      final service = _legacyBuilderService();
       addTearDown(service.dispose);
       await tester.binding.setSurfaceSize(const Size(2560, 1392));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1981,7 +1988,7 @@ void main() {
   testWidgets('phase completion exits the builder and returns to plan main', (
     tester,
   ) async {
-    final service = MockAppService();
+    final service = _legacyBuilderService();
     addTearDown(service.dispose);
     await tester.binding.setSurfaceSize(const Size(2560, 1392));
     addTearDown(() => tester.binding.setSurfaceSize(null));

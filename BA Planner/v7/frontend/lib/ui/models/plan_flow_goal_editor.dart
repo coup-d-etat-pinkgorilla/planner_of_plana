@@ -73,6 +73,7 @@ class PlanFlowGoalEditor extends ChangeNotifier {
     List<PlanElementPreset> presets = const [],
   }) : _presets = List.unmodifiable(presets) {
     _studentId = flow.goalSeed?.studentId;
+    _seenFocusSerial = flow.goalFocusSerial;
     flow.addListener(_flowChanged);
   }
 
@@ -94,6 +95,9 @@ class PlanFlowGoalEditor extends ChangeNotifier {
   int _nextStageNumber = 1;
   bool _syncing = false;
   bool _disposed = false;
+
+  /// 마지막으로 따른 흐름의 학생 보기 요청([PlanFlowController.goalFocusSerial], FE4-g 계산기에서 넘기기).
+  late int _seenFocusSerial;
 
   /// 프리셋 바·C 목록에 보이는 단계 프리셋. 프로필 저장소(FB-14)의 프리셋이 먼저, 계획 화면 프리셋 관리의
   /// 인메모리 프리셋이 뒤다(FE4-i).
@@ -574,11 +578,24 @@ class PlanFlowGoalEditor extends ChangeNotifier {
   /// 단계 포함)를 그대로 둔다.
   void _flowChanged() {
     if (_syncing || _disposed) return;
+    var changed = false;
+    // 계산기에서 넘긴 학생(FE4-g)을 2단계에서 바로 보여 준다. 편집기가 이미 있어도 그 학생 탭으로 바꾼다.
+    if (flow.goalFocusSerial != _seenFocusSerial) {
+      _seenFocusSerial = flow.goalFocusSerial;
+      final focus = flow.goalFocusStudentId;
+      if (focus != null && focus != _studentId) {
+        _studentId = focus;
+        _expandedStageId = null;
+        changed = true;
+      }
+    }
     final draft = flow.draft;
-    if (identical(draft, _seenDraft)) return;
+    if (identical(draft, _seenDraft)) {
+      if (changed) notifyListeners();
+      return;
+    }
     _seenDraft = draft;
     final ids = draft.studentIds.toSet();
-    var changed = false;
     for (final studentId in _stages.keys.toList()) {
       final stale =
           !ids.contains(studentId) ||

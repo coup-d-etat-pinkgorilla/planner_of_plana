@@ -19,7 +19,8 @@ import 'package:flutter/foundation.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
-import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
+import '../widgets/plan_element_builder.dart'
+    show planElementCurrentTargets, planStudentHasFavoriteItemMetadata;
 import 'planning_growth_rules.dart';
 import 'planning_models.dart';
 import 'repository_plan_snapshot.dart';
@@ -248,6 +249,76 @@ Map<String, Map<String, int>> planFlowDocumentIntegerTargets(
       ]))
         stage.id: stage.targets,
   };
+}
+
+/// 계산기에서 넘긴 목표(FE4-g, FD-171 (a))를 받은 결과.
+enum PlanFlowHandoffKind {
+  /// 초안·활성 계획에 없던 학생: 그 학생 1단계를 계산기 목표로 채웠다.
+  added,
+
+  /// 초안에 이미 그 학생 단계가 있다: 마지막 단계 뒤 새 단계로 넣었다.
+  appendedToDraft,
+
+  /// 활성 계획에 그 학생이 있다: 활성 계획 마지막 단계 snapshot 뒤 새 단계로 넣었다.
+  appendedAfterActive,
+
+  /// 계산기 목표가 이미 바닥 snapshot(초안·활성 계획 마지막 단계 또는 지금 값)에 들어 있어 단계를 만들지 않았다.
+  nothingNew,
+
+  /// 넘긴 목표가 없거나 비었다(계산기에서 올린 목표가 없음, 학생만 더했다).
+  noTargets,
+
+  /// 흐름이 이미 닫혀(dispose) 아무것도 하지 않았다.
+  ignored,
+}
+
+/// [PlanFlowController.receiveHandoff] 결과. [step]은 새로 만든 단계의 학생 안 순번(1부터)이다.
+typedef PlanFlowHandoffResult = ({PlanFlowHandoffKind kind, int? step});
+
+/// 활성 계획 [active]에서 [studentId]의 마지막 단계를 정수 snapshot으로 읽는다([planFlowDocumentIntegerTargets]: v2
+/// null은 앞 단계 값, 첫 단계는 [seed]의 지금 값). 그 학생 단계가 없으면 null이다.
+Map<String, int>? planFlowActiveLastTargets(
+  PlanningDocument? active,
+  String studentId,
+  PlanningStudentSeed seed,
+) {
+  if (active == null) return null;
+  String? lastId;
+  for (final stage in active.stages) {
+    if (stage.studentId == studentId) lastId = stage.id;
+  }
+  if (lastId == null) return null;
+  return planFlowDocumentIntegerTargets(
+    active,
+    seedFor: (id) => id == studentId ? seed : null,
+  )[lastId];
+}
+
+/// 계산기에서 올린 목표 [raised](현재값보다 올린 키만, 정수 절대값)를 바닥 snapshot [floor] 뒤 새 단계 정수 목표로
+/// 만든다(FE4-g, FD-171 (a)).
+///
+/// 단계 누적 snapshot 계약(plan-element-builder-lessons "단계와 프리셋의 확정 계약")을 그대로 따른다: 새 단계는 바닥
+/// snapshot을 복제하고, [raised]가 바닥보다 높은 키만 그 값으로 올린 뒤 성장 규칙으로 정규화한다(올린 키 = 바뀐 키라
+/// 선행 조건이 함께 오른다). 바닥보다 낮거나 같은 계산기 값은 쓰지 않는다(퇴행 없음). 바닥보다 오른 키가 하나도
+/// 없으면 null(증가가 없는 단계는 만들지 않는다).
+Map<String, int>? planFlowHandoffStageTargets({
+  required Map<String, int> floor,
+  required Map<String, int> raised,
+  required bool hasFavoriteItem,
+}) {
+  final changed = <String>{
+    for (final key in planningDocumentTargetKeys)
+      if (raised[key] case final value? when value > floor[key]!) key,
+  };
+  if (changed.isEmpty) return null;
+  final next = normalizePlanningGrowthTargets({
+    for (final key in planningDocumentTargetKeys)
+      key: changed.contains(key) ? raised[key]! : floor[key]!,
+  }, changedKeys: changed, hasFavoriteItem: hasFavoriteItem);
+  final rises = planningDocumentTargetKeys.any(
+    (key) => next[key]! > floor[key]!,
+  );
+  return rises ? next : null;
 }
 
 /// 초안의 학생 단계 하나(같은 학생의 [step]번째 누적 목표).
@@ -1710,6 +1781,94 @@ class PlanFlowController extends ChangeNotifier {
     ]);
     _goalIndex = 0;
     notifyListeners();
+  }
+
+  // --- 계산기에서 넘기기(FE4-g, FD-171 (a)) -------------------------------------
+
+  String? _goalFocusStudentId;
+  int _goalFocusSerial = 0;
+
+  /// 2단계 목표 편집기가 앞으로 보여 줄 학생. [goalFocusSerial]이 바뀔 때마다 편집기가 그 학생 탭을 고른다.
+  String? get goalFocusStudentId => _goalFocusStudentId;
+  int get goalFocusSerial => _goalFocusSerial;
+
+  /// 성장 계산기 "이 목표로 계획에 추가"가 넘긴 학생 [handoff]를 초안에 넣고 2단계에서 그 학생을 연다.
+  ///
+  /// 바닥 snapshot은 초안에 그 학생 단계가 있으면 그 마지막 단계, 없고 활성 계획([PlanFlowContext.activePlan])에
+  /// 있으면 활성 계획 마지막 단계, 둘 다 없으면 지금 값이다. 활성 계획을 고치는 흐름([PlanFlowPurpose.editActivePlan])은
+  /// 초안이 곧 활성 계획이라 초안만 본다. 새 단계는 [planFlowHandoffStageTargets]로 만들어 그 학생 단계 끝에 붙이고
+  /// v2 변환·칸 배치 정리는 2단계 편집과 같은 [setStudentStages]가 한다(단계가 늘면 그 학생 단계는 다시 배치한다).
+  /// 학생의 지금 값은 초안·계정의 확정값이다([handoff]의 currentValues는 쓰지 않는다: 계산기 "직접 입력"은 휘발값).
+  PlanFlowHandoffResult receiveHandoff(PlanningStudentSeed handoff) {
+    final studentId = handoff.studentId;
+    if (_disposed) return (kind: PlanFlowHandoffKind.ignored, step: null);
+    final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
+    final editor = _draft.editorStagesFor(studentId);
+    final activeLast =
+        editor.isEmpty && purpose != PlanFlowPurpose.editActivePlan
+        ? planFlowActiveLastTargets(context.activePlan, studentId, seed)
+        : null;
+    final floor = editor.isNotEmpty
+        ? editor.last.targets
+        : activeLast ?? planElementCurrentTargets(seed);
+    final raised = handoff.targets;
+    final next = raised == null || raised.isEmpty
+        ? null
+        : planFlowHandoffStageTargets(
+            floor: floor,
+            raised: raised,
+            hasFavoriteItem: planStudentHasFavoriteItemMetadata(seed.metadata),
+          );
+    final PlanFlowHandoffResult result;
+    if (next != null) {
+      setStudentStages(studentId, [
+        ...editor,
+        PlanElementStageDraft(
+          id: _newHandoffStageId(studentId),
+          name: '${editor.length + 1}단계',
+          targets: next,
+        ),
+      ]);
+      result = (
+        kind: editor.isNotEmpty
+            ? PlanFlowHandoffKind.appendedToDraft
+            : activeLast != null
+            ? PlanFlowHandoffKind.appendedAfterActive
+            : PlanFlowHandoffKind.added,
+        step: editor.length + 1,
+      );
+    } else {
+      if (_draft.seedOf(studentId) == null) {
+        _draft = _draft.copyWith(students: [..._draft.students, seed]);
+      }
+      result = (
+        kind: raised == null || raised.isEmpty
+            ? PlanFlowHandoffKind.noTargets
+            : PlanFlowHandoffKind.nothingNew,
+        step: null,
+      );
+    }
+    _resetGoalQueue();
+    final index = _goalQueue.indexWhere(
+      (item) => item.studentId == studentId,
+    );
+    if (index >= 0) _goalIndex = index;
+    _goalFocusStudentId = studentId;
+    _goalFocusSerial += 1;
+    _step = PlanFlowStep.goals;
+    notifyListeners();
+    return result;
+  }
+
+  String _newHandoffStageId(String studentId) {
+    final used = {
+      for (final stages in _draft.stagesByStudent.values)
+        for (final stage in stages) stage.id,
+    };
+    for (var number = 1; ; number++) {
+      final id = '$studentId-calc-$number';
+      if (!used.contains(id)) return id;
+    }
   }
 
   /// 칸에 넣지 않은 단계의 이름을 바꾼다.

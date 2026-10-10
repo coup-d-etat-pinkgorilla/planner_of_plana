@@ -10,14 +10,20 @@ class PlanningStudentSeed {
     required Map<String, dynamic> metadata,
     required Map<String, dynamic> currentValues,
     this.owned = true,
+    Map<String, int>? targets,
   }) : metadata = Map.unmodifiable(metadata),
-       currentValues = Map.unmodifiable(currentValues);
+       currentValues = Map.unmodifiable(currentValues),
+       targets = targets == null ? null : Map.unmodifiable(targets);
 
   final String handoffId;
   final String studentId;
   final Map<String, dynamic> metadata;
   final Map<String, dynamic> currentValues;
   final bool owned;
+
+  /// 넘길 목표(19키 정수 절대값, FE4-g, FD-171 (a)). 성장 계산기 "이 목표로 계획에 추가"가 계산기 목표를 싣는다.
+  /// 계획 만들기 2단계가 이 값으로 그 학생의 다음 단계를 채운다. null이면 목표 없이 넘긴다.
+  final Map<String, int>? targets;
 }
 
 @immutable
