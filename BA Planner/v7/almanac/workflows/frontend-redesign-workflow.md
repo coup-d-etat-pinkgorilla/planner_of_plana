@@ -271,7 +271,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE4-d 3단계 단계 순서 | 칸(=페이즈) 보드, 드래그, 같은 학생 선행 강제(기존 `_sequenceOrderIsValid` 재사용), 상태 배지, 자동 정렬, Many 모드 | — **분할(2026-10-09)**: d1 = Flow-3-Order(칸 보드·드래그·드롭 거부·같은 학생 회색 화살표·상태 배지 FD-035·C 상세·자동 정렬 3종·칸 이름/추가 FD-069·071, 3단계 축소 페이즈 편집기 교체 FD-070). d2 = Flow-3-Order-Many(12개 초과 작게 보기·크게/작게 seg·선택 카드 확장·이어진 선만·툴바·줄바꿈 스크롤). 직접 선행(분홍 점선)·"나중에" 칸은 FE4-f — **완료 2026-10-09**: d1(fb1c 뒤 커밋, golden `plan-flow-step3`), d2 `7cd9592e`(golden `plan-flow-step3-many` 추가, 펼친 카드는 칩을 가리지 않고 아래를 민다). 후속: 사이 줄 칩 위를 지나는 곡선은 FE4-f에서 |
 | FE4-e 4단계 저장 | 미리보기, 활성 계획 비교, 시나리오로 저장(기존 `createScenario`), 활성 계획에 페이즈로 추가/이걸로 바꾸기(FB-1) | FB-1, FD-031 — **완료 2026-10-09**: 커밋 `3af5246c`(gate ② `20261009_215639`, golden `plan-flow-step4`·`plan-flow-step4-append` 추가). 후속(FE4-i): golden 비교 대역과 계산 대역 기준 맞추기 |
 | FE4-f 교차 선행·나중에 칸 | 학생 간 선행 연결, "나중에" 칸 저장 | FB-8, FD-068. FB-8 조사의 소비자 표(초안 복원·명시 deferred와 임시 미배치 구별·칸별 stable topological sort를 document 배열에 반영·편입 ID remap)가 입력 — **f1 완료 2026-10-10**: 커밋 `7bff91ec`(gate ② `20261010_004148`, 직접 선행·나중에 칸·authoring 저장/복원, golden `plan-flow-step3`·`-many` 갱신, `plan-flow-step3-deferred` 추가). **f2 완료 2026-10-10**: 커밋 `c736bbca`(gate ② `20261010_023726`): 칩 사이 틈으로 꺾는 선 경로, `_incorporateScenario` stage ID remap(deferred·직접 edge·학생 체인, 끝점 잃은 edge는 알림과 함께 명시 제외), 활성 계획 홈의 "흐름으로 열기" 아이콘 버튼(FE5-c에서 라벨 있는 진입으로 교체) |
-| FE4-g 계산기 → 계획 넘김 | `PlanningStudentSeed`에 목표를 실어 계획 만들기 2단계를 계산기 목표로 열기, 이미 초안·활성 계획에 있는 학생 처리(FD-171) | FE4-c, FE3-f |
+| FE4-g 계산기 → 계획 넘김 | `PlanningStudentSeed`에 목표를 실어 계획 만들기 2단계를 계산기 목표로 열기, 이미 초안·활성 계획에 있는 학생 처리(FD-171) | FE4-c, FE3-f — **완료 2026-10-10**: 커밋 `af745731`(gate `20261010_135343`, golden `students-calculator`·`-bond-popover` 갱신). 활성 계획 학생은 활성 마지막 단계 snapshot을 복제한 새 단계, 계산기는 올린 키만 넘김 |
 | FE4-h 저장 문서 읽기 연결 | 계획 화면·학생 탭·계산기가 `repository.plan.get` 문서를 읽도록 전환(`_loadRepositoryPlan` 메모리 변환 제거, 빈 문서를 goals로 되살리지 않음, state·plan revision 일치 재조회, `get.calculation=null`은 계산 불가 표시). 학생 →N은 문서의 마지막 nullable bond. 통계·인벤토리는 호환 경로 유지 | FB-1b. FE4-e 전에 끝낸다 — **완료 2026-10-09**: 커밋 `8beab94e`(gate `20261009_171109` GREEN, golden 변경 0). 후속(FE4-e): 기존 페이즈 편집기·편입 뒤 작업 문서를 정수 v1로 다시 만드는 경로가 남아 있다. 저장 때 v2 null이 정수로 바뀌지 않게 한다 |
 | FE4-i 프리셋·내 그룹 저장 연결 (2026-10-09 추가) | FB-14 `repository.presets.get/save`(프로필별, 자체 revision, 전체 교체 + idempotency)를 화면에 연결: FE4-c 2단계 프리셋 바·C 패널의 단계 프리셋 저장·적용·이름 바꾸기·삭제(단계 이름 포함, nullable 목표 그대로), FE4-b 1단계 "내 그룹" 칩 저장·불러오기. 필터 프리셋은 범위 밖(FD-074 (b), 칩 숨김 유지). FD-169 계산기 "빠른 목표"의 프리셋 항목도 같은 저장소를 읽는다 | FB-14, FD-074. FE4-e 뒤, FE4-f 전(FB-8b를 기다리는 동안) — **완료 2026-10-09**: 커밋 `e5555b52`(gate ② `20261009_231201`, golden 7장 갱신, `plan-flow-step2-saved` 추가), golden 비교 대역을 계산 대역 기준으로 맞춤. 후속(FE5-b): 계산 대역을 문서 의존으로 바꿔 비교 차이 표현을 golden에 다시 담는다 |
 
@@ -279,7 +279,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE5-a 목록 v2 | 정렬 seg·필터 칩·검색·오래된 개수·펼침 행 액션(열기/복제/이름·설명/삭제 — 서비스는 있음), 활성 계획 고정 행, 비교 담기(최대 4) | FE2 |
+| FE5-a 목록 v2 | 정렬 seg·필터 칩·검색·오래된 개수·펼침 행 액션(열기/복제/이름·설명/삭제 — 서비스는 있음), 활성 계획 고정 행, 비교 담기(최대 4) | FE2 — **완료 2026-10-10**: gate `20261010_162247`(golden `plan-scenario-list` 갱신, `plan-scenario-list-expanded` 추가). 목록 동안 홈 섹션 1을 내리고 S1 = 목록 메뉴·비교 슬롯, "열기"는 FE5-c까지 꺼짐, "나란히 비교"는 A + 1개만(FE5-e 전) |
 | FE5-b 미리보기 | 선택 시 `getScenario` + `compareScenarios(active, s)`, 지연 표시·캐시 | FE5-a |
 | FE5-c 보기 모드 + 병목 탭 | 읽기 전용 보기 상태, 3섹션 레이아웃(활성 계획 홈 포함, FD-082), 활성 대비 KPI 4개·delta 칩, 병목 카드. 요약 행 3종을 상수(`planOverallProgressPercent = 72` 등)에서 projection으로 | FD-034, FD-082 |
 | FE5-d 페이즈별·전체 탭 | 진입/필요/종료 + 막대 + delta, 전체 2~5열 그리드 | FD-031, (필요시 FB-9) |
@@ -332,7 +332,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE8-a 타이틀 diff | T1~T11(A 보고서 §2.4): 시작 380, 설정·나가기 크기, 보유율 진행 막대, `보유 217 / 265`, 카드 전체 버튼, 로고 glow, Space 키캡. Studio JSON 재저장 + projection 테스트 | — |
+| FE8-a 타이틀 diff | T1~T11(A 보고서 §2.4): 시작 380, 설정·나가기 크기, 보유율 진행 막대, `보유 217 / 265`, 카드 전체 버튼, 로고 glow, Space 키캡. Studio JSON 재저장 + projection 테스트 | — — **완료 2026-10-10**: 커밋 `815e0589`(Lane B, golden `title` 갱신). T 표 밖 차이(설정·나가기 외곽선, `나가기` 15px, 계정 카드 채움 .9·외곽선, 버튼 반경 8)는 FE8-b로 |
 | FE8-b 계정 관리 목록 + 추가 모달 | 행 그라데이션·진행 막대·`지금` 칩·포그, 추가 = 이름만 받는 모달 | FE2-c |
 | FE8-c 편집기·초상 통합 | 확장 패널(편집기 + 6열 초상), 메타 줄(마지막 스캔은 FB-2 전까지 숨김) | (FB-2) |
 | FE8-d 게임 창 연결 상태 | 앱 전역 `connectedTarget`, 헤더 칩(회색 미연결 / 녹색 "연결됨 · Blue Archive · 2560×1440") | FB-4, FD-116 |
@@ -390,6 +390,17 @@ FE8-f1~f3은 이 조건 없이 진행한다. 형식이 요청서와 다르게 �
 | M4~M6 탭 UI | 자산 검증·업데이트·배포 탭 내용 | 각 M 단계의 XB 백엔드 커밋 |
 | A2 애니메이션 스펙트럼 화면 | `frontend/lib/developer_tools/animation_spectrum/` 새 파일 + 데이터 읽기 서비스 새 파일, 가상 스크롤·검색, 공유 파일 수정 없음, golden 영향 0 | A1 표본(비나 + 학생 1명, CM), `contracts/animation-spectrum-v1.schema.json` 확정(CM). tactic 로그 10-08 09:05 |
 | A2 등록 1줄 | M2가 끝났으면 `tool_registry.dart`, 아니면 `developer_tools_main.dart`에 진입 함수 1줄 | A2 |
+
+### XB 연결 Dart slice (CF, 헌장 2026-10-10)
+
+XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·process E2E)과, 스캐너·전술 소유자가 사라진 화면의 revision 전파를 CF가 맡는다. 공유 서비스 파일은 pre/post + `post_dir`. 근거는 오케스트레이터 로그 2026-10-10 11:55·14:20.
+
+| slice | 범위 | 선행 |
+|---|---|---|
+| fb4-dart | `ScannerTarget`에 client_width·client_height·game, 응답 검사, Mock 기본 target, 공유 fixture 14 cases·process E2E. 화면 표시는 FE8-d/e | XB FB-4 `b685d9ac`(완료), 연결 메모 `debug/xb_fb4_target_metadata_20261010/artifacts/dart-connection-memo.md` — **완료 2026-10-10**: gate `20261010_162247`(golden 변화 0, 일반 +19·process +1). `game`은 enum(모름 = null) |
+| S-FB1b | `scan_page.dart`: state 반환 revision을 profile 표시·cache·첫 세션 base에 전파, 순차 commit 응답 revision 이어 쓰기, `repository_busy` 지수 backoff 3회, `revision_conflict` 재조회 | FB-1b. XB 초안 `debug/xb_fb_history_port_review_20261010/artifacts/S-FB1b-work-instruction-draft.md` |
+| T-FB1b | `tactical_page.dart`: `profileRevision`/`tacticalRevision` 분리, 반환 state로 profile·cache 갱신 | FB-1b. XB 초안 `T-FB1b-work-instruction-draft.md` |
+| S-FB2b-dart | Mock scanner commit을 Python upsert·승인 scope·history helper와 맞춤, summary 확장 DTO | XB S-FB2b·history context 커밋과 Dart 변경 목록 |
 
 ### FE10 — 마감
 
@@ -471,3 +482,5 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-10(새벽 2): FB-2a `000aaa85`, FE4-f1 `7bff91ec`, 문서 `64f29afe`. 레인 헌장 수용(CF = 프론트만). FE4-f2·FB-2c gate ① 검토 승인. 다음 행동: gate ② + FB-2c Python 전체 → fb2c → fe4f2 → 문서, 프론트 FE4-g. 백엔드 요청은 XB(로그 02:25 목록).
 - 2026-10-10(새벽 3): FB-2c `4d9bbd5b`(Python 990), FE4-f2 `c736bbca`, 문서 `c9258cb1`. FE4-f·FB-2c 완료, CF 레인 백엔드 워커 종료. 새 CF 세션: FB 백엔드 인계 메모와 첫 XB 요청서 FB-4를 status-backend 끝에 썼다. M2·A2 착수 조건 기록(둘 다 아직 불가, "개발자 도구 화면" 절). 다음 행동: 프론트 FE4-g(프롬프트 `debug/frontend_redesign_handoff/fe4g-worker-prompt-20261010.md`), XB 보고 오면 `fb4-dart`.
 - 2026-10-10(새벽 3, 2): 사용자 결정으로 Lane A·B 프론트 병렬. Lane A FE4-g, Lane B FE8-a(프롬프트 `debug/frontend_redesign_handoff/fe8a-worker-prompt-20261010.md`, 상태 `frontend-redesign-status-lane-b.md`). 다음 행동: 두 워커 멈춤 → gate ① → 검토 → ② → fe8a → fe4g → 문서.
+- 2026-10-10(오후): FE8-a `815e0589`, FE4-g `af745731`, 문서 `1fa86194`(gate `20261010_135343` GREEN). XB FB-4 `b685d9ac` 커밋, 승인 체계 변경(헌장 §3.2: XB 커밋 계약부터 연결, CM 승인 없음). 다음 행동: Lane A FE5-a, Lane B fb4-dart → S-FB1b → T-FB1b → FE8-b.
+- 2026-10-10(저녁): FE5-a·fb4-dart gate `20261010_162247` GREEN, 커밋 순서 fb4dart → fe5a → redesigndocs. XB H1 `d53331da` 커밋, S-FB2b+FB-2b 묶음 구현 중(같은 소스 CF gate 요청 예정), FB-3 설계 확정. 다음 행동: Lane A FE5-b(미리보기), Lane B S-FB1b.

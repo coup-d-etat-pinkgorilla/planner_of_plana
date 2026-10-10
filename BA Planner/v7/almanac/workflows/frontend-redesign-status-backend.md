@@ -1943,3 +1943,28 @@ process E2E는 legacy 첫 get→새 문서 save→재시작 get→goals/문서 �
 - **Dart 호환 확인**: `ScannerTarget.fromWire`(`frontend/lib/services/scanner_service.dart` 74행)는 아는 키만 읽는다. `planning_protocol_client.dart`의 응답 검사기가 scanner 응답의 새 키를 막는지 워커가 읽기만으로 확인해 메모에 적는다. 막는다면 XB 커밋 전에 프론트 로그로 알려 같은 gate에 묶는다.
 - **완료 조건**: Python 전체 녹색, `codealmanac validate`, `git diff --check`. fixture를 Dart 테스트가 읽게 되면 CF fe_gate GREEN 뒤 커밋. XB 로그에 커밋 해시·근거 output.md·테스트 수, 프론트 로그 끝에 "XB 보고(FB-4)".
 - **왕복 확인**: CF가 프론트 로그에 `fb4-dart` 착수·커밋을 적으면 첫 왕복이 끝난다. 그 다음 FB-3 요청서를 이 문서 끝에 낸다.
+
+# FB-2b 요청서 (CF → XB, 2026-10-10 14:30) — history summary 확장
+
+- **목적**: 계정 메타의 학생 마지막 스캔(FE8-c), 스캔 탭 "종류별 마지막 스캔" 막대(FE8-g1), 인벤토리 아이템별 "n일 전 스캔"(FE6-a·FE6-f), 통계 이력(FE7-h)이 쓸 최신 스캔 시각. 지금 `repository.history.summary`는 manual·import 시각과 count만 준다.
+- **선행**: XB가 진행 중인 history context 확정과 S-FB2b(scanner commit → `history_context` source=scan 연결). 이 요청은 그 다음 작은 slice로, S-FB2b와 묶어도 된다.
+- **요청**(FB-2a 연결 메모 "FB-2b summary" 행 그대로):
+  1. 프로필별 `last_scan_at`(scan source만, manual·import·unattributed 시각으로 대체 금지).
+  2. raw `(scan_kind, inventory_scan_profile)` 튜플별 마지막 scan 시각·session_id. 원문 문자열 그대로(enum·trim 금지), 모르는 튜플도 그대로.
+  3. 학생별(student_id)·아이템별(canonical resource_key) 최신 scan 적용 시각. 승인 scope에 든 key만 갱신(FD-147 동값 적용 포함, 제외 key·건너뛴 적용은 갱신 안 함). 응답이 커질 수 있으니 대상 ID 필터나 별도 메서드 중 XB가 고르고 이유를 적어 달라.
+  4. 기존 `latest_scans`·`scan_session_ids` 저장을 쓰고 session 수를 원시 commit 수로 바꾸지 않는다. prefix 정리 뒤에도 최신 시각이 유지되는지 fixture로.
+- **Dart**: summary DTO는 strict다(모르는 키 거부). 응답에 키를 더하면 기존 Dart가 깨질 수 있으므로, 커밋 전에 **바뀌는 Dart DTO·메서드 목록**을 프론트 로그 끝에 보내 달라. CF가 `fb2b-dart`를 같은 gate에 묶는다.
+- **완료 조건**: 전체 Python, codealmanac, diff --check, Flutter에 닿으면 CF gate 뒤 커밋. 프론트 로그 끝 "XB 보고(FB-2b)".
+
+# FB-3 요청서 (CF → XB, 2026-10-10 14:30) — 아이템 카탈로그 메타
+
+- **목적**: 인벤토리 분석·티어 화면(FE6-c 학교별 BD·노트, 장비 부위×티어, FE6-e 학교×티어·오파츠 종류×티어), 아이템 상세의 "보충 방법"(FE6-a), 주요 재화 카드의 크레딧·엘리그마 줄(FD-096 (c)). 근거: 결정 대장 §6 FD-096·FD-098·FD-101·FD-102, 조사 `docs/frontend-redesign/survey/E-inventory.md` §1.5·§3.5·§5.5.
+- **현재**: `planning.inventory.catalog` 항목 = resource_key, item_id, display_name, category, profile_id, order_index, zero_fill_allowed(`additionalProperties: false`). Dart `InventoryCatalogEntry.fromWire`는 **고정 키 검사**라 새 키가 오면 실패한다.
+- **요청**:
+  1. 항목에 `school`(BD·노트 등 학교가 있는 것만, 없으면 null), `family`(오파츠 종류·장비 부위 등 묶음, 없으면 null), `tier`(family 안 정수 순위 1부터, FD-098; 표시 라벨은 프론트 맵).
+  2. 크레딧·엘리그마 **카탈로그 항목**(FD-096 (c)). 보유량은 스캔(FB-10)으로만 채우고 수동 입력은 두지 않는다 — 스캔이 생기기 전 프론트는 "스캔 없음" 빗금으로 그린다. resource_key·category 이름은 XB가 정하되 기존 카탈로그 순서·`zero_fill_allowed` 의미와 맞춰 달라.
+  3. "보충 방법"(획득처·주간량·선택권, FD-102): 백엔드 메타데이터에 수기 표로 시작해도 된다(없는 항목은 비움 → 프론트 "획득처 정보 없음"). 이 표를 어디에 둘지는 메타데이터 M3(출처 전환)와 맞춰 XB가 정한다. 공용 저장소·`data/extracted/pipeline/*`를 고쳐야 하면 그 부분만 CM 요청.
+  4. 학생·단계별 필요량 분해(FD-101): 활성 문서 계산의 `stage_results[].resources`로 충분한지 먼저 확인해 달라. 부족한 키가 있으면 같은 slice에서 보강하거나 분리 제안.
+- **진행 방식**: 계약이 크므로 먼저 **읽기 전용 설계 조사**(지금 메타데이터에 학교·family·tier를 만들 근거가 있는지, 통화 항목의 key, 획득처 표 위치, 분할 제안)를 이 문서 끝이나 XB 로그에 남기고 프론트 로그에 알려 달라. CF는 소비자 쪽 문제만 짚고 막지 않는다(헌장 §3.2: 설계 확정은 XB). 그다음 구현.
+- **Dart**: 새 키가 기존 Dart를 깨므로 XB 커밋과 CF `fb3-dart`(`InventoryCatalogEntry` 확장, Mock 카탈로그, fixture)를 **같은 gate**에 묶는다. 커밋 전에 바뀌는 키 목록·fixture 경로를 프론트 로그로.
+- **필요 시점**: Lane A가 FE5(시나리오 a~f) → FE6-a·b 뒤 FE6-c에서 쓴다. 조사는 지금, 구현은 FB-2b 다음이면 맞는다.
