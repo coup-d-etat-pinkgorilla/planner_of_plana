@@ -15,7 +15,6 @@ from core.repository_store import JsonRepository, RepositoryError
 from core.scan_commit_history_context import FIELDS, ScanCommitHistoryContext
 
 ROOT = Path(__file__).resolve().parents[2]
-TMP = ROOT / "debug/xb_history_context_finalize_20261010/artifacts/runtime_tmp"
 AT = datetime(2026, 10, 10, 6, 0, tzinfo=timezone.utc)
 
 
@@ -25,10 +24,9 @@ class ScanCommitContextTests(unittest.TestCase):
         cls.fixture = json.loads((ROOT / "contracts/fixtures/scan_commit_history_context_v1.json").read_text(encoding="utf-8"))
         cls.schema = json.loads((ROOT / "contracts/scan-commit-history-context-v1.schema.json").read_text(encoding="utf-8"))
         cls.validator = Draft202012Validator(cls.schema)
-        TMP.mkdir(parents=True, exist_ok=True)
 
     def repository(self, *, clock=None):
-        temporary = tempfile.TemporaryDirectory(dir=TMP)
+        temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         repo = JsonRepository(Path(temporary.name), clock=clock or (lambda: AT))
         pid = repo.create_profile("Synthetic H1", "synthetic-h1")["profile"]["profile_id"]

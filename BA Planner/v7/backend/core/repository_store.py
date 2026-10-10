@@ -17,6 +17,7 @@ from core.planning_authoring import (
     AUTHORING_UNSET, PlanningAuthoringError, planning_authoring_from_wire,
     default_authoring, authoring_is_default, authoring_has_content,
 )
+from core.repository_inventory import rebase_inventory_snapshot
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord, canonical_json
 from core.repository_merge import resolve_inventory_snapshot
 from core.repository_plan import canonical_active_document, document_from_goals, goals_from_document, legacy_write_loss, LegacyGoalsConflict
@@ -36,33 +37,6 @@ STORE_VERSION = 1
 DEFAULT_PROFILE_AVATAR = "hasumi"
 
 
-def rebase_inventory_snapshot(inventory: dict[str, Any]) -> dict[str, Any]:
-    """Rebase version-scoped ordinals while retaining observed screen slots."""
-    snapshot = InventorySnapshot.from_dict(inventory)
-    entries: list[dict[str, Any]] = []
-    for item in snapshot.entries:
-        entry = item.to_dict()
-        # D18: an old catalog key (e.g. 비의서 stored as *_Ultimate_Piece) is rebased to the current key.
-        entry["key"] = canonical_resource_key(entry["key"])
-        if entry.get("item_id") is not None:
-            entry["item_id"] = canonical_resource_key(entry["item_id"])
-        identity = entry.get("item_id") or entry["key"]
-        catalog_row = INVENTORY_CATALOG_BY_KEY.get(identity)
-        if catalog_row is not None:
-            if (
-                entry.get("observed_slot") is None
-                and entry.get("profile_id") == "visible-grid"
-                and entry.get("index") is not None
-            ):
-                entry["observed_slot"] = entry["index"]
-            entry["index"] = catalog_row.order_index
-            entry["profile_id"] = catalog_row.profile_id
-        entries.append(entry)
-    return InventorySnapshot.from_dict({
-        "version": 1,
-        "catalog_revision": CATALOG_REVISION,
-        "entries": entries,
-    }).to_dict()
 
 
 class RepositoryError(RuntimeError):
@@ -450,6 +424,18 @@ class JsonRepository:
             raise RepositoryError("invalid_payload", "profile_ids must contain 1..128 unique IDs")
         profiles = [self._profile(profile_id) for profile_id in profile_ids]
         return {"profiles": [history_summary(profile["profile_id"], profile["revision"], profile.get("current_history")) for profile in profiles]}
+
+    @locked(RepositoryError)
+    def get_history_scan_latest(self, payload: dict) -> dict:
+        from core.history_scan_latest import scan_latest_request, query_scan_latest
+        try:
+            data = scan_latest_request(payload)
+            profile = self._profile(data['profile_id'])
+            return query_scan_latest(profile['profile_id'], profile['revision'],
+                                     profile.get('current_history'), payload)
+        except HistoryError as error:
+            code = 'corrupt_data' if error.reason == 'corrupt_data' else 'invalid_payload'
+            raise RepositoryError(code, str(error), details={'reason': error.reason}) from error
 
     @locked(RepositoryError)
     def get_history_events(self, payload: dict) -> dict:

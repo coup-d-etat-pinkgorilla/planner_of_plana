@@ -69,6 +69,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
         expected = {
             "protocol-envelope-v1.schema.json", "planning-types-v1.schema.json",
             "current-history-v1.schema.json", "repository-history-query-v1.schema.json",
+            "repository-history-scan-latest-v1.schema.json",
             "scan-commit-history-context-v1.schema.json",
             "planning-protocol-v1.schema.json", "protocol-error-v1.schema.json",
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",

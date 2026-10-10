@@ -1101,3 +1101,68 @@ outside FB-2c, and current statistics `snapshot_count` retains its inventory-ent
 meaning. `fixtures/repository_history_query_v1.json` is shared by Python schema/
 policy and strict Dart/Mock/Process tests, including raw/null filters, no-change
 scans, session ends, pagination, unknown values, compaction and clock rollback.
+
+
+## S-FB2b scanner current commit
+
+Public scanner commit request7/success4 and student/inventory DTOs are unchanged.
+The server binds approved scope and raw session metadata to the H1 flat context,
+canonicalizes identities before merging, and freezes the original complete
+bucket/expected/public request/context for pending response-loss retries. Same
+session/key changed generation/candidate/profile/expected fields conflict before
+new candidate/session validation. Exact successful receipt replay does not read
+current, remerge, rereview, write, sample clock, train or repeat cleanup.
+
+Success stores the original public signature and exact response then releases
+the large frozen submission before specimen cleanup. Pending requests retain
+the frozen submission, including retry_of=null. No eviction/new response or
+persistent scanner sessions are added. Actual process restart has no old session.
+The existing inventory rebasing function is unchanged in repository_inventory;
+repository_store re-exports its existing name and scanner imports the pure helper.
+Old4arg callbacks are decided before calling; internal TypeError is never retried
+as a compatibility fallback. Unknown signatures fail persistence_deferred before
+writing. Empty scope rejects before state read; manual/history events unchanged.
+
+
+## Repository scan latest query v1 (FB-2b)
+
+`repository.history.summary` items now have thirteen required fields, including
+nullable `last_scan_at` from `last_applied_at.scan` (null iff total scan count is
+zero). The existing request, other summary fields, and current history events
+are unchanged. The same CF gate must include strict summary consumers.
+
+`repository.history.scan_latest` uses
+`repository-history-scan-latest-v1.schema.json` and shared
+`fixtures/repository_history_scan_latest_v1.json`. Its one required request
+field is `profile_id`; six optional fields are `student_ids`, `resource_keys`,
+`include_by_kind`, `by_kind_limit`, `by_kind_after_sequence`, and
+`anchor_history_sequence`. Targets default to [], at most 256 each, valid UTF-8
+1..1024 bytes; resource aliases canonicalize before duplicate rejection.
+Unknown raw IDs, kinds, sessions, nullable profiles, and whitespace are retained.
+Kinds default off, limit defaults 100 and is at most 200. Explicit paging
+controls require include_by_kind=true; positive after requires anchor and
+after<=anchor. A changed history sequence returns invalid_payload, reason
+stale_scan_latest, retryable=false; discard accumulated pages and restart.
+
+Success has exactly profile_id/revision/history_sequence/last_scan_at/by_kind/
+by_student_id/by_resource_key/by_kind_next_after_sequence. Scan entries have
+sequence/recorded_at/session_id/scan_kind/inventory_scan_profile. Entity rows
+have student_id or resource_key, latest_scan, reason. Requested canonical IDs
+are unique and Unicode scalar sorted; null entries use unrecorded (no history)
+or scan_not_found. A null profile scan time keeps requested rows as null scans
+and empties kinds. Empty filters/results never imply a null profile scan time.
+
+Latest follows apply sequence, including clock rollback and no-change approved
+scope; excluded targets retain prior scan or null. Kinds sort by latest sequence
+ASC, after is exclusive, and next-after is this page's last sequence only if
+more rows remain. Replay/goal revision changes keep the history anchor.
+Persisted latest indices survive pruning; never recompute them from events.
+Impossible duplicate kind latest sequences are corrupt_data without repair.
+New UTF-8 checks apply to this endpoint boundary; legacy stored validators and
+cache semantics remain unchanged. Reads use the existing common lock/recovery
+and _profile, never migrate/prune/sample clock/create history or cache.
+
+The fixture separates validated full in-memory current-history inputs from
+independent metadata policy oracles; the latter are not persisted profiles.
+Full in-memory fixture cases and metadata policy oracles remain distinct.
+Actual store/RPC/stdio integration and matching Dart gates are verified separately.

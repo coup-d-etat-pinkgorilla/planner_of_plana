@@ -16,7 +16,7 @@ METHODS = frozenset({
     "repository.plan.get", "repository.plan.save", "repository.plan.replace",
     "repository.presets.get", "repository.presets.save",
     "repository.migration.preview", "repository.migration.import",
-    "repository.history.summary",
+    "repository.history.summary", "repository.history.scan_latest",
     "repository.history.events", "repository.history.diff",
 })
 
@@ -97,6 +97,8 @@ class RepositoryProtocolV1:
             if not isinstance(ids, list):
                 raise RepositoryError("invalid_payload", "profile_ids must be an array")
             return self.repository.get_history_summary([_text(item, "profile_id") for item in ids])
+        if method == "repository.history.scan_latest":
+            return self.repository.get_history_scan_latest(payload)
         if method == "repository.history.events":
             return self.repository.get_history_events(payload)
         if method == "repository.history.diff":

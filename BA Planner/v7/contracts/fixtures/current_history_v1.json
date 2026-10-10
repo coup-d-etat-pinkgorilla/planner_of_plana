@@ -4461,7 +4461,8 @@
       "first_retained_at": "2026-10-09T14:25:00.123456Z",
       "complete": true,
       "timestamps_monotonic": true
-    }
+    },
+    "last_scan_at": "2026-10-09T14:25:00.123456Z"
   },
   "messages": [
     {
@@ -4518,7 +4519,8 @@
                 "first_retained_at": "2026-10-09T14:25:00.123456Z",
                 "complete": true,
                 "timestamps_monotonic": true
-              }
+              },
+              "last_scan_at": "2026-10-09T14:25:00.123456Z"
             }
           ]
         }
@@ -4579,7 +4581,8 @@
                 "first_retained_at": "2026-10-09T14:25:00.123456Z",
                 "complete": true,
                 "timestamps_monotonic": true
-              }
+              },
+              "last_scan_at": "2026-10-09T14:25:00.123456Z"
             }
           ]
         }

@@ -365,6 +365,7 @@ def summary(profile_id: str, revision: int, history: dict | None) -> dict:
     times = ([baseline['recorded_at']] if baseline and baseline['recorded_at'] else []) + [event['recorded_at'] for event in events]
     return {'profile_id': profile_id, 'revision': revision,
             'history_sequence': history['next_sequence'] - 1 if history else 0,
+            'last_scan_at': history['last_applied_at']['scan'] if history else None,
             'last_manual_at': history['last_applied_at']['manual'] if history else None,
             'last_import_at': history['last_applied_at']['import'] if history else None,
             'total_event_count': sum(counts.values()), 'retained_event_count': len(events),
