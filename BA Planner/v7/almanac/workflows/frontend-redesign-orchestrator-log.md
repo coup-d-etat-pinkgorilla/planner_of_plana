@@ -1507,3 +1507,93 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 
 - **커밋 해시** `abbd3bfa5e9e9c800fadbb7158666b18d9e1c036` (exact source26 M16/A10). 최종 근거 `debug/xb_fb3_commit_20261011/output.md`16882B/SHA256 `8f4c88c0459019f9f84b1501755d5af6eed092944aa3522fc52e971a0ac8025e`; 실제69 artifacts/1411554B 전수 확인, 별도 manifest17926B/SHA256 `7de87b5b02e945468a25da633f2cef8dbb28cf7fbf88b5b2a102c39c31c62a42`까지 read-back 일치. 해당 task/output/artifacts는 이제 동결이다.
 - 원 전체Python1107 PASS·같은-source CF gate20261011_135529 GREEN과 새 Almanac45/공백 검사 PASS 근거 유지. 기록 뒤 재확인도 working26/동결watch2269/기존tracked WIP95 변경0, indexempty, push0. CFfb3dart→fe5c2→redesigndocs 후속이며 CF커밋 전 XB backend/contracts 추가변경0 유지; FB-3 왕복/P0-P6 전체완료 선언 없음.
+
+## 2026-10-11 14:45 — 커밋 확인(FB-3 왕복 완료), 다음 배정 FE5-d·FE6-a
+
+- XB FB-3 `abbd3bfa`(14:24, 정확 26경로, 기존 WIP 보존) → fb3dart `739f3bfe`(15파일) → fe5c2 `bcec036f`(20파일) → redesigndocs `dfd1d620`. fb3dart 커밋 때 공유 서비스 3파일의 작업 트리 차이(스캐너 WIP)는 그대로 남았다(정상). 사용자가 보낸 해시 순서는 XB·redesigndocs·fe5c2·fb3dart였고 run.log로 대응을 확인했다.
+- FB-3 왕복 완료를 XB·tactic 로그에 보고. XB backend/contracts 동결 해제, 다음 FB 요청 없음(FE5-d의 FB-9 판단 대기).
+- **배정**:
+  · Lane A **FE5-d** — `debug/frontend_redesign_handoff/fe5d-worker-prompt-20261011.md`. Detail S3 페이즈별·전체를 시안대로, 홈·시나리오 보기 모두. 진입/종료 잔량이 현재 응답으로 정확히 안 나오면 추측 금지·"FB-9 필요" 보고. 옛 `PlanConsumptionSection` 삭제·`legacyHome` 제거는 FE5-f.
+  · Lane B **FE6-a** — `fe6a-worker-prompt-20261011.md`. 인벤토리 컨트롤러 추출(재화 읽기 전용 규칙 고정), 4섹션, 위험도 FD-030 (b), 상세(사용 학생 FD-101, 획득처는 FB-3 서비스 빈 표 상태), `_CandidatePanel`은 FE8-g5까지 유지. 새 장면은 harness를 고치지 않는 별도 파일로만. Lane B에 둔 이유: fb3-dart로 인벤토리·서비스 맥락이 이 레인에 있고, 계획 탭은 Lane A가 이어 간다. FE8-c는 그다음 Lane B 후보로 남긴다.
+
+## 2026-10-11 14:45 — 회신(XB): CF14:45 수신·FB-3 COMPLETE·후속 큐
+
+- 실제 `abbd3bfa→739f3bfe→bcec036f→dfd1d620` parent chain 확인. FB-3 왕복 COMPLETE와 backend/contracts 동결 해제를 XB/CM 로그·P0에 기록했다.
+- 새 FB 요청0 수신. 가용 큐는 M1 기본 조회→저장소 도구 제품화→FB-10/삭제 복구 설계다. 이번은 사용자 요청에 따른 작업 정리이며 제품/계약 변경·새 배정·stage/commit/push0.
+- 메인 backend/contracts 새 반영 전 먼저 이 backend 로그에 통지한다. Dart DTO 변경목록은 커밋 전 이 CF 로그에 게시하고 gate를 조율한다. FE5-d의 FB-9 요청이 나오면 우선 처리한다.
+
+
+## 2026-10-11 15:23 — 사전 알림(XB): M1 기본 조회·저장소 도구 격리 구현, 메인 반영 전
+
+- 사용자 “가능한 작업들은 바로 진행” 지시에 따라 M1 exact10 + 신규 저장소 도구8을 `debug/xb_m1_actual_20261011/artifacts/v7`에 준비했다. 메인 backend/contracts는 아직 변경0, 기존 WIP 보존. 전체 Python ONE이 15:22에 시작됐으며 exclusions/origin wrapper0이다. focused M1 27 + store35 + legacydeveloper17 + planningcontract6 =85 PASS.
+- **Dart 변경 목록(커밋 전 사전 게시)**: 기존20 developer_tools 메서드/응답과 Planner DTO는 변경0. M2 연결 때 아래6 dotted method에 신규 strict DTO가 필요하다. 공통 요청은 exact `version/method/params`(version=1), success exact `version/ok/result`, error exact `version/ok/error`와 `error.type/message`. 다른 레거시 envelope 허용 동작은 그대로다. 필드 상세·null/enum/중첩 정의는 `artifacts/dart-new-method-fields.json`, 계약은 후보 `contracts/developer-tools-metadata-manager-v1.schema.json`, fixture는 `contracts/fixtures/developer_tools_metadata_manager_m1_v1.json`이다.
+
+| 새 method | params 키 | result 필수 키 |
+|---|---|---|
+| `store.status` | `` | `state, store_root, pins, extracts, verification, missing_kinds` |
+| `store.versions` | `` | `state, versions` |
+| `store.diff` | `from, to` | `state, from, to, report, coverage, verification` |
+| `metadata.source.view` | `student_id` | `student_id, fields, comparison_state, unavailable_groups, note` |
+| `asset_map.list` | `` | `map_version, inventory_status, assets, verification` |
+| `asset_map.check` | `scope` | `scope, rows, physical_validation, source_verification` |
+
+- source view의 미입증 출처는 provenance=null/source=unknown, comparisons=[]/not_verified이다. store.diff는 기존 report만 읽으며 새 비교 실행0, missing/disconnected를 차이0으로 바꾸지 않는다. asset map check는 local_structure_only/M4_required이며 실물검증 완료가 아니다. 저장소 도구8은 Python CLI만이고 Dart 변경0.
+- 메인 반영은 전체 Python 결과 후 **backend 로그에 먼저 시점·경로·최종 SHA를 게시**하고 수행한다. 그 이후 이 additive 계약 영향의 같은-source `fe_gate.ps1`을 요청한다. CF는 FE5-d/FE6-a gate와 겹치는 시점이면 backend 로그로 알려 달라. 새 FB 요청은 우선 처리한다. 현재 CF gate GREEN·제품 commit·M1전체완료를 주장하지 않는다.
+
+
+## 2026-10-11 15:33 — 알림(XB): FB-10a 검토 가능한 계약·회귀 fixture 준비
+
+- `debug/xb_followup_ready_20261011/artifacts/fb10-slice-plan.md`, `scanner-pause-fb10a-draft.schema.json`, `scanner-pause-fb10a-fixtures.json`을 준비했고 schema positive11/negative10 PASS. 실제 methods는 신규 scanner.session.pause/resume, events는 paused/resumed, control_state는 running/pause_requested/paused/terminal, reason은 user/input_detected/target_minimized|null이다. acknowledgement와 실제 안전지점 paused를 구분하며 입력 감지/최소화에서 자동resume0·Esccancel 유지.
+- **현재는 standalone draft이며 “FB-10 형식 고정” 선언이나 커밋된 계약이 아니다.** 현제품 pause/resume0, snapshot additive/OS checkpoint/stdio/Dart Mock/full Python·CF gate가 남는다. FE8-g2~g5의 형식 고정 선행조건을 풀지 않는다. fallback crop→entry 승인/needs_review→증분feedback→재화scan을 독립slice로 계획했다. 고정 선언 때 `contracts/scan-commit-history-context-v1.schema.json`도 포함한다.
+- 삭제 복구의 before-image/journal 설계·40 모델 fixture도 같은 output에 있다. 실제tactical helper/rootguard writer참여 커밋 후 FB2d outerjournal 순서 유지. frontend 변경0이다.
+
+
+## 2026-10-11 15:54 — 알림(XB): M1 메인 반영은 v2 whole GREEN 뒤
+
+- 첫whole1169의 errors1은 격리 output empty directory 누락이고 source 변경0/원FAIL보존이다. 별도v2에서 기존1 PASS 후15:53 whole ONE 진행. 아직 메인 backend/contracts는 이전대로 HEAD+기존WIP이며 M1반영0, CF gate에 새source를 노출하지 않았다. 반영은 v2 GREEN 뒤 backend 로그에 먼저 통지한다. 기존 FE5-d/FE6-a와 새FB우선 규칙 유지.
+
+## 2026-10-11 16:10 — gate ① `20261011_153855` 검토: FE5-d·FE6-a 승인(lint 1건 CF 수정), XB M1 반영 보류 요청
+
+- 결과: analyze info 1, 테스트 297 + 673 + 397, process 56, golden −6(바뀜 3 + 새 3), almanac·diff 녹색. 메인 = HEAD `dfd1d620` + 기존 WIP(XB M1·FB-10a는 아직 격리, 15:54 확인).
+- analyze info `prefer_collection_literals`(`lib/ui/models/plan_scenario_detail.dart:1062`, FE5-d)는 CF가 고쳤다: `[...].toSet().toList()` → `{...}.toList()`(set literal, 삽입 순서 유지 — 같은 결과).
+- **FE5-d 승인**: 예측 그대로 plan-by-phase(페이즈 카드 3장 — 크레딧 진입/필요/종료, 재화 타일 진입·필요·종료 + 충족 막대, S2 P1 강조), plan-overall(재화 7종 · 한 행에 4, 크레딧 행, 그룹 3), plan-scenario-detail-bottleneck(seg 세 칸 켜짐, 정렬 칩 기본값 "기본 순서"), 새 plan-scenario-detail-phase·-all은 ② 뒤 기준 검토. FB-9 불필요 판단(페이즈 줄 `owned` = 진입 잔량, 종료 = max(0, 진입 − 필요)) 승인.
+  · 관찰(후속): golden 대역은 페이즈 진입값이 고정이라 plan-by-phase에서 S2 "P2 부족 2종"과 S3 P2 카드 "부족 5종"이 다르게 보인다. 실제 백엔드에서는 같은 재화 집합이 된다(페이즈 부족 ⇔ 그 페이즈 어떤 단계 부족). 대역을 백엔드 의미로 고치는 일은 `plan-flow-step4`도 바꾸므로 별도 소단위(FE5-f 앞)로 둔다.
+  · 페이즈 단위 활성 대비(시안 P1 +12 · P2 +30)는 페이즈 맞춤 규칙이 없어 재화 전체 차이로 대신했다. 새 FD 후보로 결정 대장에 올릴지는 FE5-e(비교)와 함께 본다.
+- **FE6-a 승인**(기존 장면 변화 0, 새 inventory는 ② 뒤 검토). 워커 발견에 대한 결정:
+  · FD-095 "아이템·장비": 카탈로그 profile 기준(장비 = `equipment` profile, 설계도·장비·무기 부품 포함)으로 둔다. 시안의 "아이템 모드 장비 설계도" 배치와 다르지만 데이터 원천과 맞고, FE6-b(전체 아이템)에서 다시 본다.
+  · Studio 문서 위치(`lib/ui/inventory/inventory_studio_layout.dart`): 불변식(`ui/studio/*_studio_layout.dart`)에 맞추어 FE6-b에서 옮긴다.
+  · 인벤토리 탭의 셸 시작 시 오프스테이지 계산(실제 백엔드에서 부족·문서 계산 1회씩 추가): 탭 활성 신호가 필요해 `app_shell.dart` 소단위로 FE6-b 또는 FE10에서.
+  · Mock 기본 실행에 시안 fixture를 여는 길은 서비스 쪽 요청 — 지금은 테스트 fixture로 충분.
+- XB M1 메인 반영은 CF 커밋 뒤로 보류 요청(backend 로그 16:10).
+- 다음: ② `-UpdateGoldens` + compare → 새 기준 3장 검토 → 커밋 fe5d → fe6a → redesigndocs.
+
+
+## 2026-10-11 16:12 — 수신·보류(XB): CF16:10 FE5-d·FE6-a 커밋 완료 뒤 M1 반영
+
+- 사용자 지시·CF16:10 요청을 읽었다. CF gate ②와 fe5d→fe6a→redesigndocs 3건 커밋이 끝나고 CF가 backend 로그에 "FE5-d·FE6-a 커밋 완료"를 기록할 때까지 M1은 격리 사본에 유지한다. 함께 준비한 storetools8도 메인에 올리지 않는다. 현재 backend/contracts named2269 bytes/SHA 변화0, 신규후보15 메인부재, HEAD `dfd1d620a8cde99486177f1f571c0848efa33676`, indexempty·overlay/commit/push0 확인.
+- 격리 v2 표준 whole Python은 계속 진행한다. main 반영 스크립트에 실제 CF 완료 항목/3개 커밋/현재 HEAD 검증 receipt 조건을 추가했다. CF 완료 이전에는 해당 receipt를 만들거나 overlay/CF gate/XB commit을 실행하지 않는다. 근거 `debug/xb_m1_store_main_commit_20261011/artifacts/cf-freeze-20261011-1610-receipt.json`, P0/M1 상태에도 보류·다음 순서를 기록했다.
+- 재개 순서: CF 완료 기록·커밋 확인 → exact 경로/SHA 사전 통지 → M1 반영 → 같은-source CF compare gate → XB exact commit. 현재 Dart 변경0이며 M2는 M1 커밋 뒤 CF 착수다.
+
+
+## XB 보고 — 2026-10-11 16:21: M1 격리 전체 GREEN·CF16:10 메인 반영 보류 유지
+
+- **완료(격리 준비)**: M1 기본조회 exact10 + storetools8의 v2 표준 whole Python **1169/1509.032s/OK/exit0**, exclusions0/origin wrapper0. focused85와 schema root title/$comment만의 validation 동일 proof·후속16 PASS. 최초 whole1169의 FileNotFoundError1는 출력 폴더 누락으로 원 log/receipt를 그대로 보존했다. 새 source18/입력4751·메인2269·승인 readonly fixture4 보존을 확인했다.
+- **인계 근거**: `debug/xb_m1_actual_20261011/output.md` 896568B/SHA `10aad607ed8272b48008a4955e7c8d94c36123d22d3fe7855755765665deef91`(실제4993 artifacts), `debug/xb_m1_full_v2_20261011/output.md` 891370B/SHA `7040d56eb27fe5cc02455c453345165a46384e61f114426e4222552ccaee9a69`(실제4969 artifacts). 부모4992/v2 4968 manifest 항목을 직접 전수 재검증했다. `debug/xb_m1_store_main_commit_20261011/artifacts/isolated-ready-handoff-receipt.json`에 수신·메인 동결 근거를 남겼다. completed output/packages는 이제 불변이다.
+- **현재 변경 범위·커밋**: 격리 source/산출물 및 XB·CF·CM 로그/P0/M1 상태 문서만 갱신. main backend/contracts named2269 변화0, 신규후보15 메인부재, HEAD `dfd1d620a8cde99486177f1f571c0848efa33676`·indexempty. 제품 overlay/stage/commit/push0이며 새 커밋 해시는 없다. 기존 인식/프론트/README WIP를 보존했다.
+- **CF 대기·다음 순서**: 사용자·CF16:10 지시대로 CF gate ②와 fe5d→fe6a→redesigndocs 3개 커밋 뒤 CF가 backend 로그에 **"FE5-d·FE6-a 커밋 완료"**를 기록하기 전에는 M1/storetools를 메인에 올리지 않는다. 완료 항목/3개 커밋/현재 HEAD 검증 receipt가 없으면 반영 스크립트는 파일 쓰기 전 중단한다. 기록 확인→exact 경로/SHA 사전 통지→M1 반영→**CF/사용자가 실행한 같은-source compare GREEN 수신**→XB exact commit 순서다. 헌장 §4대로 XB 직접 Flutter gate 실행 준비는 제거하고 CF 요청만 남겼다. Dart 변경0, M2는 M1 커밋 후 CF 착수다.
+- **남은 작업**: M1 실제 출처 비교/provenance와 CM pin별 표 근거·XB crosswalk, 현재2pins 실제 self-diff·외부 저장소 반영, M2/M3/M4는 미완료다. 이전 FB10/삭제복구/C6/M3 준비25·C6 scalar8 인계는 불변이며 원 C6실패/O3미승격을 유지한다. 새 FB 요청 우선, 전체 M1/P0-P6 완료 선언0.
+
+### 사용자에게 전할 3줄
+
+프론트의 이번 검증과 커밋이 끝났다는 회신까지 공유 백엔드는 그대로 둡니다.
+저장소 조회 기능은 별도 사본에서 전체 검증을 통과했고 인계를 준비했습니다.
+회신을 확인한 뒤 기능을 반영하고 프론트 검증을 받아 커밋합니다.
+
+## 2026-10-11 17:00 — gate ② GREEN, 새 기준 3장 승인, 커밋 순서
+
+- `20261011_164434` compare GREEN: analyze 0, 테스트 297 + 673 + 397, process 56, golden 40, almanac 45, diff 0. 메인 backend = HEAD + 기존 WIP(XB M1 보류 확인, 16:12·16:21).
+- 새 기준 검토:
+  · `plan-scenario-detail-phase`: 07 시나리오 보기 → 페이즈별. P1 카드 강조(S2 P1 헤더·단계 분홍), 크레딧 진입 99M · 필요 36.4M · 종료 62.6M, 재화 타일 진입·필요·종료·충족 % + 활성 대비 칩(−180 · −54 · −64 · "이 시나리오에만"), 요약 "활성보다 −180 부족", KPI 4칸. P2 이하 진입값은 golden 대역 고정값이라 백엔드 의미(앞 페이즈 종료 = 다음 진입)와 다르게 보이는 곳이 있다 — 16:10 관찰과 같은 대역 문제, 화면 계산은 백엔드 의미. 승인.
+  · `plan-scenario-detail-all`: 재화 7종 · 한 행에 4, 범례(= 같음 · 신규 · ± 활성 대비), 크레딧 행 "활성보다 −38.2M", 엘레프 그룹 "신규", 요약 "활성 50% → 50%". 승인.
+  · `inventory`: 탭 머리 + 사이드바(목록·분석 seg — 분석 꺼짐, 아이템·장비 seg, 부족한 것 5종 · 모름 1 / 전체 9종, 종류 버튼 + "부족 n" 칩, 주요 재화 크레딧·엘리그마 카드), KPI 6칸(이력 값 —), 부족 위험도 순위(리오 엘레프 1/450 · 1명 → 100, FD-030 (b) 기대 99.8 반올림), 보유 모름 행은 빗금 막대 + "—", 상세(kv · 사용 학생 · 보충 방법 "아직 정리된 획득처가 없습니다." · 최근 변화 빈 상태 · 액션 3). 학생 엘레프 아이콘은 테스트 자산이 없어 빈 타일로 보인다(게임 자산 저장소 제외 규칙, 앱에서는 사용자 설치본 추출 자산). 승인.
+- 커밋 순서(한 줄씩): fe5d → fe6a → redesigndocs. 이 항목·워크플로 완료 표시는 redesigndocs에 들어간다. 커밋 확인 뒤 backend 로그에 "FE5-d·FE6-a 커밋 완료"를 적어 XB M1 반영을 풀고, M1 같은 소스 compare gate를 돌린다(Dart 변경 0이면 CF slice 없음).
