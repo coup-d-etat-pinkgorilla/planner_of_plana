@@ -284,8 +284,8 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE5-b 미리보기 | 선택 시 `getScenario` + `compareScenarios(active, s)`, 지연 표시·캐시 | FE5-a — **완료 2026-10-10**: 커밋 `a640f14a`, gate `20261010_220311`(golden plan-flow-step2~4 8장·`plan-scenario-list-expanded` 갱신, `plan-scenario-list-shortage` 추가). golden 계산 대역을 문서 의존으로 바꿈(10-09 23:25 후속 해결) |
 | FE5-c1 시나리오 보기 + 병목 탭 | 목록·미리보기의 "열기" → 읽기 전용 보기 상태, Detail 3섹션 레이아웃(메뉴 400 / 페이즈 864 / 재화 1664) 위젯, 활성 대비 KPI 4개·delta 칩(FD-034·FD-038), 병목 카드(같은 단계 재화 묶음·지연 단계)와 왼쪽 단계 행 강조(FD-035), 요약 행 3종을 상수(`planOverallProgressPercent = 72` 등)에서 projection으로, "계획에 적용…"(FD-088, FE4-e 저장 경로 재사용). 활성 계획 홈은 바꾸지 않음 | FD-034, FD-082, FE5-b — **완료 2026-10-11**: gate `20261011_025111`(golden plan-bottleneck·by-phase·overall·scenario-list-expanded·-shortage 갱신, `plan-scenario-detail-bottleneck` 추가). FD-034는 병목 단계 뒤 affected만 막힘으로 셈(FD-035와 같은 원천). c2용 `PlanDetailWorkspace(showComparison:false)` 매개변수는 status FE5-c1 종료 기록 |
 | FE5-c2 활성 계획 홈 = Detail 레이아웃 | 첫 화면을 c1 레이아웃으로(비교 KPI·delta 숨김, FD-082 (a)), S1 = 시나리오 목록·계획 만들기·페이즈 편집 메뉴(FE5-a 목록 메뉴와 맞춤), FE4-f2 아이콘 버튼 → 라벨 있는 진입, FE4-g 발견 사항(나중에 칸 뒤 새 단계·바닥 snapshot) 재검토, FE5-b 발견(4단계 increases의 크레딧 줄) 판단 | FE5-c1 — **완료 2026-10-11**: 커밋 `bcec036f`, gate `20261011_135529`(FB-3 같은 소스, golden plan-bottleneck·by-phase·overall·scenario-compare·flow-step4·-append 갱신). 페이즈별·전체는 옛 위젯으로 켬(FE5-d에서 시안화), `legacyHome` 다리는 FE5-f에서 제거 |
-| FE5-d 페이즈별·전체 탭 | 진입/필요/종료 + 막대 + delta, 전체 2~5열 그리드 | FD-031, (필요시 FB-9) — **완료 2026-10-11**: gate `20261011_164434`(golden plan-by-phase·plan-overall·plan-scenario-detail-bottleneck 갱신, `plan-scenario-detail-phase`·`-all` 추가). 홈·시나리오 보기 모두 켬. FB-9 불필요(페이즈 `owned` = 진입 잔량). 페이즈 단위 활성 대비는 페이즈 맞춤 규칙 부재로 재화 전체 차이 사용 |
-| FE5-e 4열 비교 | 기준 계획 선택, 행 그룹, 세로 넘침 처리 | FD-034, (필요시 FB-9 다중 비교) |
+| FE5-d 페이즈별·전체 탭 | 진입/필요/종료 + 막대 + delta, 전체 2~5열 그리드 | FD-031, (필요시 FB-9) — **완료 2026-10-11**: 커밋 `b8be647a`, gate `20261011_164434`(golden plan-by-phase·plan-overall·plan-scenario-detail-bottleneck 갱신, `plan-scenario-detail-phase`·`-all` 추가). 홈·시나리오 보기 모두 켬. FB-9 불필요(페이즈 `owned` = 진입 잔량). 페이즈 단위 활성 대비는 페이즈 맞춤 규칙 부재로 재화 전체 차이 사용 |
+| FE5-e 4열 비교 | 기준 계획 선택, 행 그룹, 세로 넘침 처리 | FD-034, (필요시 FB-9 다중 비교) — **완료 2026-10-11**: gate `20261011_195443`(golden plan-scenario-list-expanded·-shortage 갱신, `plan-scenario-compare-4` 추가, plan-scenario-compare 변화 0). FB-9 다중 비교는 실기 지연 확인 전까지 불필요. FD-086은 결정 대장대로(시안 메모와의 차이는 FE5-f) |
 | FE5-f 정리 | 옛 계획 메인 Section 1 버튼 묶음, 페이즈 편집 진입점, `_PlanWorkspaceSnapshot` 왕복 로직 폐기·이관, `planning_page_test`·`plan_element_builder_test` 재작성 | FE4·FE5 전부 (옛 `PlanPhaseEditor` 제거도 여기, c2는 진입만 바꿈) |
 
 ### FB-2 · FB-3 — 이력과 아이템 메타
@@ -306,8 +306,8 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE6-a 로직 추출 + 부족 위험 | `_InventoryPageState`의 로드·편집·저장·부족 계산을 컨트롤러로, 4섹션 배치, 위험도 행, 상세(kv·사용 학생·직접 고치기·스캔/계획 이동). 이력·획득처는 빈 상태. 후보 승인 `_CandidatePanel`은 스캔 탭 아이템 검토(FE8-g5)로 옮기므로, FE8-g5가 끝난 뒤 제거한다(그전에는 그대로 둔다). FD-146이 영속 "확인 필요"로 정해지면 그 표시를 그린다 | FD-030, FD-031 — **완료 2026-10-11**: gate `20261011_164434`(새 `inventory` 장면, 기존 장면 변화 0). FD-095는 profile 기준(장비 = `equipment`). Studio 문서 `ui/studio/`로 이동·오프스테이지 계산 지연은 FE6-b 이후 |
-| FE6-b 전체 아이템 | 종류별 타일 + 충족 막대 + 플라이아웃 | FE6-a |
+| FE6-a 로직 추출 + 부족 위험 | `_InventoryPageState`의 로드·편집·저장·부족 계산을 컨트롤러로, 4섹션 배치, 위험도 행, 상세(kv·사용 학생·직접 고치기·스캔/계획 이동). 이력·획득처는 빈 상태. 후보 승인 `_CandidatePanel`은 스캔 탭 아이템 검토(FE8-g5)로 옮기므로, FE8-g5가 끝난 뒤 제거한다(그전에는 그대로 둔다). FD-146이 영속 "확인 필요"로 정해지면 그 표시를 그린다 | FD-030, FD-031 — **완료 2026-10-11**: gate `20261011_164434`(새 `inventory` 장면, 기존 장면 변화 0). 커밋 `2f88e65f`. FD-095는 profile 기준(장비 = `equipment`). Studio 문서 `ui/studio/`로 이동·오프스테이지 계산 지연은 FE6-b 이후 |
+| FE6-b 전체 아이템 | 종류별 타일 + 충족 막대 + 플라이아웃 | FE6-a — **완료 2026-10-11**: gate `20261011_195443`(새 `inventory-all`, 기존 장면 변화 0). Studio 문서 `ui/studio/inventory_studio_layout.dart`로 이동(옛 파일은 별도 삭제 커밋), 인벤토리 계산을 탭 처음 열 때로(`app_shell.dart` 최소 diff) |
 | FE6-c 분석 | 학교별 BD·노트, 장비 부위×티어 히트맵, 부족 상위 행 | FB-3, FD-031 |
 | FE6-d 오파츠 확장 | 확장 버튼 → 다른 섹션 퇴장 → 오파츠 확대 → 선택 상세. `plan_phase_editor`의 rect morph(`phaseEditorElements`/`_lerpGridRect`)를 공용 섹션 morph로 추출(실수 rect 보간) | FE6-c |
 | FE6-e 티어별 충족률 | 노트·BD 학교×티어, 오파츠 종류×티어 | FB-3, FD-031 |
@@ -495,3 +495,5 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-11(오후): fb3-dart·FE5-c2 gate `20261011_135529` GREEN(XB FB-3 source26 같은 소스). 커밋 순서 XB FB-3 → fb3dart → fe5c2 → redesigndocs. 다음 후보: Lane A FE5-d 또는 FE4-g2, Lane B FE8-c 또는 FE6-a.
 - 2026-10-11(오후 2): XB FB-3 `abbd3bfa` → fb3dart `739f3bfe` → fe5c2 `bcec036f` → 문서 `dfd1d620`. FB-3 왕복 완료. 다음 행동: Lane A FE5-d, Lane B FE6-a, 그다음 후보 FE4-g2·FE8-c·FE5-e.
 - 2026-10-11(저녁): FE5-d·FE6-a gate `20261011_164434` GREEN(②, 새 장면 3 승인). 커밋 순서 fe5d → fe6a → redesigndocs → XB M1 반영 해제·같은 소스 gate. 다음 후보: Lane A FE5-e(4열 비교) 또는 FE4-g2, Lane B FE6-b 또는 FE8-c, M2(M1 커밋 뒤).
+- 2026-10-11(저녁 2): fe5d `b8be647a`·fe6a `2f88e65f`·문서 `f1ca4713`. XB M1 반영 해제 → M1 같은 소스 gate(Dart 변경 0) → XB 커밋. 다음 행동: M1 gate GREEN 뒤 Lane A FE5-e, Lane B FE6-b 워커 시작, M2는 M1 커밋 뒤.
+- 2026-10-11(밤): FE5-e·FE6-b gate `20261011_195443` GREEN(②, 새 장면 2 승인). 커밋 fe5e → fe6b → 옛 inventory_studio_layout 삭제 커밋 → redesigndocs. 다음: XB FB-10a·M2 release2 반영 시점 회신 → 같은 소스 gate + CF fb10a-dart, M2(먼저 빈 레인), 후보 FE4-g2·FE6-c·FE8-c·FE5-f.

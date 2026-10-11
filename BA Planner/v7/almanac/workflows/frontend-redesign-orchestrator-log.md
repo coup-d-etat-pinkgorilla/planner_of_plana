@@ -1597,3 +1597,195 @@ Common migration/recovery may precede a guard rejection and increment revision. 
   · `plan-scenario-detail-all`: 재화 7종 · 한 행에 4, 범례(= 같음 · 신규 · ± 활성 대비), 크레딧 행 "활성보다 −38.2M", 엘레프 그룹 "신규", 요약 "활성 50% → 50%". 승인.
   · `inventory`: 탭 머리 + 사이드바(목록·분석 seg — 분석 꺼짐, 아이템·장비 seg, 부족한 것 5종 · 모름 1 / 전체 9종, 종류 버튼 + "부족 n" 칩, 주요 재화 크레딧·엘리그마 카드), KPI 6칸(이력 값 —), 부족 위험도 순위(리오 엘레프 1/450 · 1명 → 100, FD-030 (b) 기대 99.8 반올림), 보유 모름 행은 빗금 막대 + "—", 상세(kv · 사용 학생 · 보충 방법 "아직 정리된 획득처가 없습니다." · 최근 변화 빈 상태 · 액션 3). 학생 엘레프 아이콘은 테스트 자산이 없어 빈 타일로 보인다(게임 자산 저장소 제외 규칙, 앱에서는 사용자 설치본 추출 자산). 승인.
 - 커밋 순서(한 줄씩): fe5d → fe6a → redesigndocs. 이 항목·워크플로 완료 표시는 redesigndocs에 들어간다. 커밋 확인 뒤 backend 로그에 "FE5-d·FE6-a 커밋 완료"를 적어 XB M1 반영을 풀고, M1 같은 소스 compare gate를 돌린다(Dart 변경 0이면 CF slice 없음).
+
+## 2026-10-11 17:05 — 커밋 확인, XB M1 반영 해제, 다음 배정(FE5-e·FE6-b, M1 gate 뒤 시작)
+
+- fe5d `b8be647a`(13파일), fe6a `2f88e65f`(13파일), redesigndocs `f1ca4713`. 한 줄씩, 충돌 없음.
+- backend 로그에 "FE5-d·FE6-a 커밋 완료"(17:05) — XB M1(+storetools8) 반영 → 같은 소스 compare gate → XB 커밋. M1은 Dart 변경 0(XB 15:23)이라 CF slice 없이 gate만.
+- **결정: 새 워커는 M1 gate 뒤 시작.** 워커가 frontend를 고치는 중에 M1 gate를 돌리면 미완성 변경이 섞여 RED가 나고 원인이 갈린다. 사용자에게 순서(XB 반영 완료 → gate → GREEN 확인 → 워커 시작)를 안내.
+- 배정(프롬프트 준비):
+  · Lane A **FE5-e** 4열 비교 — `fe5e-worker-prompt-20261011.md`. FD-034·FD-085(2개는 A↔B 상세 유지, 후보 목록 제거)·FD-086(라벨 열 + 4열 한 Scrollable)·FD-092(N−1 쌍 비교, 느리면 FB-9 다중 비교 요청)·FD-093. 페이즈 단위 활성 대비(FE5-d 발견)는 페이즈 맞춤 규칙 FD 제안만.
+  · Lane B **FE6-b** 전체 아이템 — `fe6b-worker-prompt-20261011.md`. 종류별 타일·충족 막대(FD-040 과잉 노랑)·"부족 n" 플라이아웃, FD-095 재검토, FE6-a 후속 2건(Studio 문서 `ui/studio/`로 이동, 인벤토리 오프스테이지 계산을 탭 처음 열 때로 — `app_shell.dart` 최소 diff 허용).
+  · 대역 정리(golden 페이즈 진입값을 백엔드 의미로, plan-flow-step4 영향)와 FE4-g2는 그다음 Lane A 소단위로 둔다.
+
+
+## XB 보고 — 2026-10-11 17:03: **M1(+storetools8) 메인 반영 완료**·exact18 경로/SHA·CF gate 대기
+
+- **반영 완료**: CF17:05 및 사용자 지시 수신, 실제 FE5-d `b8be647abff2e6e67d0ce532cdcb42ddf400bec4`→FE6-a `2f88e65f8e85c0af32ea7cac7774f5213616d873`→docs `f1ca471374a1c3bb7ba29cb9b64a1d58984693a7` 확인 후 사전 경로/SHA를 backend 로그에 게시하고 메인 exact18(A15/M3)을 그대로 반영했다. **M1 10개 + 저장소 도구8개 모두 아래 actual bytes/SHA 일치**. 기존 인식/공유 README WIP는 working에 유지하며 selectedHEAD bytes는 source18-received.json에 별도로 보존했다.
+- **같은-source 근거·보존**: 격리 표준 Python1169/1509.032s/OK, focused85 및 annotation validation 동일/후속16 PASS를 받은 동일 source다. 이번 추가 runtime 실행0. 기존 backend/contracts 비선택 변화0, unrelated tracked WIP73 및 frontend/ba-data.lock1436 지문 보존. indexempty, HEAD 그대로·stage/새commit/push0. 원 completed output/manifest 및 최초 FAIL은 불변이다.
+- **CF 다음 작업**: 이제 이 메인 소스로 `frontend/tool/fe_gate.ps1` **compare**를 실행할 수 있다. Dart 변경0이므로 CF 별도 slice 없음, UpdateGoldens 요청0. CF/사용자가 실행하며 actual 같은-source GREEN 회신을 받은 뒤 XB exact commit→CF 확인, M2는 M1 커밋 뒤 CF 착수다. **그동안 backend/contracts 추가 변경0 유지**한다. 기존 CF gate20261011_164434는 FE5-d·FE6-a 근거이고 이번 M1 gate GREEN으로 재사용하지 않는다.
+- **근거**: `debug/xb_m1_store_main_commit_20261011/artifacts/overlay-receipt.json`, `source18-received.json`, `cf-fe5d-fe6a-release.json`; 검증 후보 `debug/xb_m1_actual_20261011/output.md`, v2 whole `debug/xb_m1_full_v2_20261011/output.md`. M1 실제 출처 비교/provenance·CM 표 근거/XB crosswalk·현재2pins selfdiff/외부 저장소 반영·M3/M4는 아직 미완료다.
+
+| 메인 exact 경로 | 범위 | bytes | 실제 SHA256 |
+|---|---|---:|---|
+| `backend/core/client_data_store.py` | M1 | 13931 | `f35a2d6536358f9ebb9f9dd23b3e90dea9c03cfed1ce07689cd1513e1d1cba08` |
+| `backend/tools/metadata_manager_m1.py` | M1 | 6551 | `4ef53d34cf734d29ddfbf44f4aa5bd6bdd9fc934177fab35a3e16a4c3f3a08f6` |
+| `backend/tools/developer_tools.py` | M1 | 53801 | `9465b934f4f53b0dae0caef59c2fadfd3a9e4734e5a64c473f43da687b86aa53` |
+| `backend/tests/test_client_data_store_m1.py` | M1 | 8870 | `240077d5cb5724a237b9cc11b7d327995a2f18081c370e8681570a7ff478ebfb` |
+| `backend/tests/test_metadata_manager_m1.py` | M1 | 11222 | `6ba7ceb9a03dbaba4919c8ec17501a346774a5fb83eb5808567bd735a9e72771` |
+| `backend/tests/fixtures/client_data_store_m1.json` | M1 | 5432 | `8815649c9fa8e2c8612e853f27d42d4c0e866d72472e74370e97c65dd5df91f1` |
+| `contracts/developer-tools-metadata-manager-v1.schema.json` | M1 | 21958 | `687730c00a1240315027d8a4885dd3ebb16af86edec63a2e65a9de7cd7020442` |
+| `contracts/fixtures/developer_tools_metadata_manager_m1_v1.json` | M1 | 11310 | `7411495f2ae8df96a8a4bb0348093638ece76f259cb0e967fb317d70301abddc` |
+| `contracts/README.md` | M1 | 82733 | `97d1b3178ed38ac53ab402300a01262738e360b2150190693e66ca8c2bc54ae7` |
+| `backend/tests/test_planning_protocol_contract.py` | M1 | 7596 | `a34afffdaf05f4d0f1bffbe76b5ddb021fbc8c17b144bc80849485a60c7e8980` |
+| `backend/tests/test_client_data_store_tools.py` | storetools | 15981 | `ec4af83db915111568914820f36563bb0a6c0d9d8c75e4938cdbff913821ba07` |
+| `backend/tools/client_data_store_tools/__init__.py` | storetools | 82 | `9f1341590b5d9a433eadff60de655fc198a4991e94784b1f1ef1ad899cd354d3` |
+| `backend/tools/client_data_store_tools/_common.py` | storetools | 3901 | `223e347ce05ff9f4416d37eadcf7e62a91acd44f51c030dc3ac5fdf2c8a86f60` |
+| `backend/tools/client_data_store_tools/_validation.py` | storetools | 1349 | `18a806c13ee5a3742e275e04098d084de563761640d6ae5a1c6f5a8ab01adf68` |
+| `backend/tools/client_data_store_tools/diff_versions.py` | storetools | 8829 | `5b32fb4f3ffe35a47e2916286ba70ba475d5fe517223a01124cc6dfb01b41d27` |
+| `backend/tools/client_data_store_tools/register_client.py` | storetools | 7684 | `280438fd9945e381164d12dbce3d330ba819c00b20028e9523c7faa1e99e8c5f` |
+| `backend/tools/client_data_store_tools/reviewed-row-keys.json` | storetools | 965 | `5bceb19660afa7740f46f986a3c8ee9bab0e31da906b80928239826c33493a70` |
+| `backend/tools/client_data_store_tools/row_identity.py` | storetools | 4500 | `6b89d89c281c302e4858ec5f0b96860d64f4a580bbce0d1ca5f063fa801c82de` |
+
+### 사용자에게 전할 3줄
+
+저장소 조회 기능과 비교 도구를 공유 백엔드에 반영했습니다.
+반영한 모든 파일의 경로와 지문을 기록했고 기존 작업도 보존했습니다.
+이 상태로 프론트 검증을 받은 뒤 커밋합니다.
+
+
+## 2026-10-11 17:04 — 요청(XB): M1 source18 반영 완료·CF 같은-source compare gate
+
+- CF FE5-d·FE6-a 커밋 완료 기록/3개 커밋을 확인한 뒤 exact18을 반영했다. 경로/지문은 backend 로그와 debug/xb_m1_store_main_commit_20261011/artifacts/overlay-receipt.json을 따른다. 현재 HEAD `f1ca471374a1c3bb7ba29cb9b64a1d58984693a7`, backend/contracts는 이 소스로 고정한다.
+- 새 dotted method6 Dart 목록은15:23 게시했다. 최종schema SHA `687730c00a1240315027d8a4885dd3ebb16af86edec63a2e65a9de7cd7020442`, fixture SHA `7411495f2ae8df96a8a4bb0348093638ece76f259cb0e967fb317d70301abddc`. 기존 Planner/Dart 변경0이며 M2는 M1 커밋 후 CF가 연결한다.
+- 헌장 §4와 XB master prompt대로 CF에 수정 없는 frontend/tool/fe_gate.ps1 compare 실행을 요청한다. 실행은 CF/사용자이며 XB는 Flutter gate를 직접 실행하지 않는다. 같은 소스 GREEN 회신과 실제 summary/log 및 source 전후 지문을 받은 뒤 M1 exact10을 커밋한다. UpdateGoldens 요청0이며 RED이면 원 결과를 보존한다.
+
+## 2026-10-11 17:40 — M1 같은 소스 gate GREEN, XB M1 커밋 요청, 워커 시작 허가
+
+- XB 17:03 "M1(+storetools8) 메인 반영 완료"(exact18 경로·SHA 게시) 뒤 사용자가 `20261011_171338` compare 실행 → GREEN(analyze 0, 테스트 297 + 673 + 397, process 56, golden 40 변화 0, almanac 45, diff 0). Dart 변경 0 확인(CF slice 없음).
+- backend 로그 17:40에 XB M1 exact18 커밋 요청. 커밋 해시가 오면 M2 배정(M1 착수 조건 ① 충족; ② M0 계약 CM 승인은 헌장 §3.2 개정으로 XB 커밋 계약 기준 — M1 커밋에 계약 `developer-tools-metadata-manager-v1` 포함).
+- 이제 FE5-e(Lane A)·FE6-b(Lane B) 워커를 시작해도 된다(17:05 결정: M1 gate 뒤).
+
+
+## 2026-10-11 17:48 — 커밋 인덱스 정리 알림(XB): JSON2 표준 Git 줄바꿈 정규화·메인 불변
+
+- raw selected bytes를 직접 stage한 첫 시도는 새 JSON2의 CRLF를 trailing whitespace426으로 잡아 커밋 전에 중단됐다. 원 script/index/check log·FAIL을 보존하고 own exact18만 unstage했다. HEAD f1ca4713/메인 source18/WIP 변화0이다.
+- core.autocrlf=true의 표준 Git clean과 동일한 CRLF→LF만 index에 적용한다. JSON 값 완전 동일·runtime 변경0, 메인파일/원 completed packages 수정0이며 다른16 raw selected bytes도 그대로다. 이 표의 Git SHA는 커밋에 저장될 bytes이고 메인 SHA는 반영 완료 표 그대로다. CF 같은-source gate 근거와 method/DTO/schema validation은 변하지 않는다. fresh cached diff 검사 뒤 exact18 단일 커밋한다.
+
+| exact path | 메인·원 selected SHA256 | 정규화 Git blob SHA256 |
+|---|---|---|
+| `contracts/fixtures/developer_tools_metadata_manager_m1_v1.json` | `7411495f2ae8df96a8a4bb0348093638ece76f259cb0e967fb317d70301abddc` | `3b02087ffbd06c3c43d071a6f1c29677f4c457d14113f3c73cefd133d8689479` |
+| `backend/tools/client_data_store_tools/reviewed-row-keys.json` | `5bceb19660afa7740f46f986a3c8ee9bab0e31da906b80928239826c33493a70` | `4e5ef4d9ada43e19a6900f1169fc863ddb0f6f8a7bf8f7ad6b5015a4613fb268` |
+
+
+## 2026-10-11 17:49 — 회신(XB): **M1 exact18 커밋 완료 — 1fbc4ddd540124d70cb095267229018152286801**
+
+- CF17:40·사용자 요청대로 M1 10+storetools8을 단일 XB 레인 커밋 **`1fbc4ddd540124d70cb095267229018152286801`**으로 확정했다. parent `f1ca471374a1c3bb7ba29cb9b64a1d58984693a7`, exact18(A15/M3)만 포함, frontend/로그/P0·다른 WIP는 커밋 제외. commit18 raw blob SHA 전수 확인·working18/동결2284·unrelated tracked WIP73 변화0, indexempty·push0이다.
+- 근거 `debug/xb_m1_actual_20261011/output.md`와 `debug/xb_m1_store_main_commit_20261011/artifacts/exact18-commit-receipt.json`. 동일 후보 whole Python1169/1509.032s·focused85·annotation16 PASS, CF same-source gate20261011_171338 compare GREEN(analyze0/일반1367/process56/golden40/Almanac45/diff0), fresh Almanac45/working·cached diff --check PASS를 수신했다. 새 전체 runtime 재실행0.
+- 첫 raw index 체크의 CRLF426 오류는 커밋 전 중단·원FAIL/script/log 보존했다. JSON2는 core.autocrlf=true 표준 Git clean과 같은 LF로 저장했으며 JSON 값/런타임 변경0·메인 파일 불변이다. 커밋된 fixture SHA는 `3b02087ffbd06c3c43d071a6f1c29677f4c457d14113f3c73cefd133d8689479`, schema SHA는 `687730c00a1240315027d8a4885dd3ebb16af86edec63a2e65a9de7cd7020442`다. contracts README의 기존 WIP219B는 working에 보존했다.
+- **CF 후속**: Dart 변경0이므로 이번 짝 커밋 없음, CF 확인 및 M2 배정으로 이어 간다. strict DTO6은15:23 목록과 이 커밋 계약을 기준으로 CF가 만든다. FE5-e·FE6-b gate 때 메인 backend는 이 커밋+기존 인식 WIP 상태를 유지하며 새 backend/contracts 반영 전 CF 로그로 먼저 조율한다. 실제 출처 비교/provenance·현재2pins selfdiff/외부 저장소 반영·M3/M4·전체 M1/P0-P6 완료는 별도다.
+
+
+## XB 보고 — 2026-10-11 17:53: **M1+storetools exact18 커밋 완료 — 1fbc4ddd540124d70cb095267229018152286801**
+
+- **완료·해시**: `1fbc4ddd540124d70cb095267229018152286801`(parent `f1ca471374a1c3bb7ba29cb9b64a1d58984693a7`), M1 10+storetools8 exact18(A15/M3) 단일 XB 커밋만 포함했다. frontend/로그/P0·다른 WIP는 제외했다. 실제 commit blob18 SHA 전수 일치·working18/동결2284 및 unrelated tracked WIP73/공유 README219B 보존, indexempty·push0 확인. 새 전체 runtime 실행0이다.
+- **근거·검증**: `debug/xb_m1_store_main_commit_20261011/output.md` 16159B/SHA `0620055391e925a6032cf043cdd15151cf662d4be590114f8ecde19cc2d4ef60`, 실제82 artifacts(내부 manifest81 전수 bytes/SHA 재검증). 원 후보 `debug/xb_m1_actual_20261011/output.md`·v2 whole1169/1509.032s·focused85·annotation16 PASS, CF same-source gate20261011_171338 compare GREEN(analyze0/일반1367/process56/golden40/Almanac45/diff0). 최종 Almanac45/working·cached·commit diff --check 모두 exit0이다.
+- **첫 오류·표준 저장**: raw stage의 CRLF JSON2 공백 오류426은 커밋 전에 중단·원FAIL/script/index/log 보존했다. 표준 Git clean과 같은 LF 저장만 적용, JSON 값/코드/메인 SHA 변화0. committed fixture SHA `3b02087ffbd06c3c43d071a6f1c29677f4c457d14113f3c73cefd133d8689479`; reviewed-row-keys SHA `4e5ef4d9ada43e19a6900f1169fc863ddb0f6f8a7bf8f7ad6b5015a4613fb268`. schema SHA `687730c00a1240315027d8a4885dd3ebb16af86edec63a2e65a9de7cd7020442`는 그대로다. 원 completed packages/whole FAIL은 불변이다.
+- **진행·CF 다음**: Dart 변경0·CF 짝 커밋0, CF 확인 뒤 M2 배정. strict DTO6은15:23 사전 목록과 커밋된 계약을 기준으로 CF가 연결한다. P0/M1 상태를 기본조회 커밋 완료로 갱신했다. FE5-e/FE6-b 동안 새 backend/contracts를 올리기 전 CF에 사전 조율하며 현재 메인 source를 유지한다.
+- **남은 조건**: M1 실제 source comparison/provenance·CM 표 근거/XB crosswalk·현재2pins 실제 selfdiff/외부 저장소 반영·M3 생성 parity/M4 실물검증은 후속이다. M1 전체/P0-P6 완료 또는 O3 승격을 선언하지 않는다.
+
+### 사용자에게 전할 3줄
+
+요청한 조회 기능과 저장소 도구만 한 커밋에 담았습니다.
+프론트 검증과 커밋 검사를 통과했고 기존 작업은 그대로 보존했습니다.
+해시를 프론트에 회신했으며 푸시는 하지 않았습니다.
+
+## 2026-10-11 18:15 — 알림(XB): FB-10a 격리 구현·커밋 전 Dart 변경 목록 사전 게시
+
+- FD142 일시정지/이어서를 debug/xb_fb10a_actual_20261011에서 실제 구현 중이다. 현재 첫 신규16/Python JSONL PASS, 기존 스캐너 회귀 진행·전체 Python/CF gate는 미수신이다. **메인 backend/contracts 변경0**, FE5-e/FE6-b gate에는 M1 커밋 1fbc4ddd+기존 WIP 유지. 새 후보 반영 시점은 결과/정확 SHA를 게시하고 CF 회신을 받은 뒤로 한다.
+- 신규 method scanner.session.pause/resume request는 exact session_id/generation, reply는 exact accepted(bool)/control_state(running,pause_requested,paused,terminal)/reason(user,input_detected,target_minimized|null)/terminal(completed,cancelled,failed|null). pause_requested는 수락이며 paused 이벤트가 실제 안전 지점 멈춤이다. 자동 resume0, 취소는 기존 cancel과 동일하다.
+- 변경 Dart 목록: ScannerEventKind에 paused/resumed; 새 ScannerSessionControl DTO(위4키) 및 control/pause reason enum; ScannerSessionSnapshot에 control_state/reason; ScannerService/ScannerProtocolClient의 pauseScannerSession/resumeScannerSession; MockScannerService의 같은 응답·이벤트·sequence/snapshot. ProcessAppService/MockAppService 위임은 실제 인터페이스 구현 위치에 맞춰 CF가 연결한다. 스캔 controller/dock는 enum switch exhaustive 분기와 paused 표시/이어서·Esc 취소(FD142)를 CF가 연결한다. XB frontend 편집0이다.
+- 후보 계약/fixture는 격리 v7/contracts/scanner-protocol-v1.schema.json·contracts/fixtures/scanner_pause_fb10a_v1.json(41 positive/negative cases)이다. history attribution의 contracts/scan-commit-history-context-v1.schema.json은 그대로다. **현재 “FB-10 형식 고정” 선언이 아니다**. 최종 소스/전체 gate를 고정한 뒤 작은 FB-10a 범위로 후속을 알린다. crop·inventory entry 승인·재화 스캔은 이번 범위 밖이다.
+
+## 2026-10-11 18:50 — M1 커밋 확인, M2 프롬프트 준비
+
+- XB M1 `1fbc4ddd`(17:49, exact18 단일 커밋) 확인. 03:35 M2 착수 조건: ① M1 커밋·메서드 목록·응답 fixture — 충족(커밋 `1fbc4ddd`, 계약 `developer-tools-metadata-manager-v1` + fixture, XB 15:23 Dart 목록). ② M0 계약 CM 승인 — 헌장 §3.2 개정(XB 커밋 계약부터 연결, CM 승인 없음)으로 충족.
+- M2 프롬프트 `debug/frontend_redesign_handoff/m2-worker-prompt-20261011.md`: `tool_registry.dart` 신설(도구 1개당 1줄, 기존 도구 이전), `--tool=metadata-manager` 탭 5개(④⑤ 자리만), `student-metadata` 편집기를 ① 탭으로 흡수(+ alias), 새 6 메서드 strict DTO, mock 모드 빈 상태. 미입증 출처·local_structure_only는 있는 그대로 표시(값 지어내기 금지). golden 범위 밖.
+- **레인 결정**: 지금 Lane A·B가 FE5-e·FE6-b를 진행 중이다. M2는 파일이 겹치지 않아(developer_tools_main.dart·developer_tools/**) 세 번째 워커로도 가능하지만, gate가 세 워커 모두 멈출 때까지 늦어진다. 기본은 **먼저 커밋을 마친 레인이 이어 받는다**(그 레인 상태 문서 사용). 사용자가 바로 세 번째로 돌리고 싶으면 그래도 된다.
+- 배포본 제외 테스트는 XB에 요청(backend 로그 18:50).
+
+## 2026-10-11 18:48 — 알림(XB): FB-10a v2 수정 후보·공개 DTO 변경0·메인 동결 유지
+
+- 18:15 목록의 method/DTO/schema/fixture shape는 그대로다. 실제 UserInputGuard에서 resume/start 버튼의 과거 recent 입력이 즉시 재정지를 일으키는 오류2를 재현했고, 이미 승인된 명령 입력을 control Event로 소모하는 v2를 만들었다. 이후 새 입력은 계속 멈춘다. native cancel cleanup은 종전 guard를 사용하며 resume를 기다리지 않는다.
+- **최종 후보는 debug/xb_fb10a_resume_input_v2_20261011**이다. source10-final.json에 working/selectedHEAD10 SHA를 고정했다. focused23 PASS·unrelated AST76/schema 의미 보존, 별도 whole Python 실행 중이다. 원 후보 debug/xb_fb10a_actual_20261011 whole1189/1591.713s PASS는 보존하지만 **SUPERSEDED_NOT_FOR_MAIN**이며 수정 후보를 검증한 gate로 재사용하지 않는다.
+- 메인 backend/contracts2284·M1 1fbc4ddd+기존 WIP 상태를 유지한다. FE5-e/FE6-b의 현재 gate/커밋 종료 및 **FB-10a 메인 반영 시작** 회신 전 overlay/stage/commit0. 새 full 결과/최종 SHA를 받은 뒤 CF와 반영 시점을 조율한다. 원 패키지·로그FAIL은 불변, frontend 편집0·push0, “FB-10 형식 고정” 아직0이다.
+
+## 2026-10-11 18:53 — 요청(XB): FB-2d 삭제 경로 추가1의 범위 결정
+
+- 기존 승인6경로의 actual helper5/40 FS조합·journal prototype3/실제 child 종료50(주 matrix40/복구중단4/손상6)을 격리에서 검증했다. debug/xb_tfb2d_helper_actual_20261011/output.md 및 debug/xb_delete_journal_fs_20261011/output.md가 실제 근거이며 제품 연결·전체writer/root참여·실사용 삭제는 아직 아니다.
+- 현재 코드의 TacticalShareV1Store._path(backend/core/tactical_share_v1.py:155)는 별도 **tactical-share/{profile_id}.v1.json**을 소유한다. 승인6목록과 현 delete_profile에서 빠져 있다. 코드 경로·SHA·writer 목록은 debug/xb_delete_writer_audit_20261011/artifacts/source-pins.json·entrypoints.json·findings.md다.
+- 결정 요청: profile 삭제에 이 **7번째 local share 파일**도 포함하는지, 아니면 명시 보존하는지와 consent/tombstone 의미를 CM/CF가 정해 달라. 새 삭제 의미는 사용자 결정 대상이므로 현재6경로를 자동 확장하지 않는다. ordinary backend 계약/커밋의 CM 승인 요청은 아니다. 메인 backend/contracts·user profiles 변경0이다.
+
+## 2026-10-11 19:05 — gate ① `20261011_184427` RED: FE6-b 컴파일 오류 1건(CF 수정), 재실행 요청
+
+- 원인 하나: `lib/ui/inventory/inventory_workspace.dart:759` `const Semantics(... child: ExcludeSemantics(child: BaChip(...)))` — BaChip이 const 생성자가 아니라 컴파일 실패(`const_with_non_const`). 이 파일을 import하는 테스트 파일 전부(앱 셸·타이틀·통계·스캔 등)와 golden 4파일이 컴파일 단계에서 떨어져 test-1 −6·test-3 −7·golden −4가 났다. 실제 기대 실패는 없다(process 56·test-2 녹색).
+- CF 직접 수정(slice 파일, 사소한 컴파일·lint): `const Semantics(` → `Semantics(` + `key: const ValueKey(...)`, 1678행 info `prefer_if_null_operators` → `${owned ?? '모름'}`.
+- FE6-b는 post_dir를 쓰므로 post 사본도 같아야 한다. 사본 경로가 기기 깊이 제한(7단)을 넘어 CF가 쓸 수 없어 사용자가 작업 트리 파일을 post 사본으로 복사한다(inventory_workspace.dart는 FE6 새 파일이라 스캐너 WIP 없음).
+- 다음: 복사 → gate ① 재실행 → FE5-e·FE6-b golden 검토.
+
+
+## 2026-10-11 19:09 — 진행(XB): CF M2 배포 제외 요청 수신·격리 source2
+
+- CF18:50 요청을 처리했다. 실제 production Copy-BackendRuntime 함수와 main staging/publish를 TempDirectory에 실행하는 테스트1개를 만들었다. inert fake Flutter output만 사용하며 실제 release/exe/외부store 쓰기0이다. main runtime6 파일 목록·Dart main import/export closure·reader mutation 경로·별도 developer target을 검사한다. 금지4 변형에서 각각 예상 failure1을 받아 sentry를 확인했다.
+- 별도 bundle 보존 조건을 같은 테스트로 추가하자 원 스크립트가 release/developer_tools를 지우는 실제 failure1이 나왔다. 격리 sync_windows_release.ps1에 기존 별도 bundle을 새 stage로 보존하는7줄을 추가했고 최종1/3.036s PASS다. 원 powershell5 module-path Get-FileHash 환경오류와 실제 보존 failure 모두 별도 log로 보존했다. main 소스나 실제 release에는 적용하지 않았다.
+- source2는 아래 두 경로뿐이다. Dart/DTO 변경0·frontend/lib/test 편집0. 기존 최종 FB10a source10을 byte 그대로 포함한 새 full-v7 사본에서 source2를 추가하여 표준 whole1193을 준비했다. FB10a1192 완료 뒤 별도 whole1193을 실행하며, 실제 build/binary·CF gate·전체phase 완료는 아직 NOT_VERIFIED다.
+- FB10a와 함께 main 반영시점은 CF FE5-e/FE6-b(+M2) gate/commit 종료 후 **명시 반영시점 회신**을 받아 조율한다. M2 source2는 요청대로 별도 커밋 후보이며 backend/contracts 동결·기존 WIP/index 보존·main overlay/commit/push0이다.
+
+| path | bytes | SHA256 |
+|---|---:|---|
+| `frontend/tool/sync_windows_release.ps1` | 10851 | `a5a1d4c1c4f24034af7fa8bed5d77d152054fb1d9e800175c77f9192180d959f` |
+| `backend/tests/test_release_developer_tools_exclusion.py` | 9021 | `9ee1191aa0d3245c48d810097cb4e334aad2be18691344c5280c467ce6a4af18` |
+
+
+## 2026-10-11 19:13 — 회신(XB): FB-10a 수정 source10·whole GREEN·격리 인계
+
+- 최종 수정 후보 debug/xb_fb10a_resume_input_v2_20261011/output.md **2225740B/SHA `c77b95a5dbb8644e82225f6cc5741976672ce5e9447a2debc5184c132078658b`**를 actual artifact 전수 bytes/SHA 확인 후 마지막에 작성했다. whole **1192/1643.752s PASS**·focused23/0.647s PASS·selectedHEAD bounded100/10.445s PASS. main backend/contracts2284·전체 입력4753·readonly external4 보존, exclusions0·unexpected/missing0이다. 기존 관련 없는 Python AST76/schema 의미는 HEAD와 같다.
+- 원 resume/start 입력 오류2·preparation 실패와 부모 whole1189 PASS를 보존한다. 부모는 SUPERSEDED_NOT_FOR_MAIN이며 새 소스 검증으로 재사용하지 않는다. working10은 WIP 보존 overlay용, selected10은 Git commit-only다. Dart18:15 공개목록 shape 변경0/fixture41/history schema 그대로이며 아직 **“FB-10 형식 고정” 선언0**이다.
+- 메인 overlay·stage·commit·push·frontend 편집0. source10 경로/working SHA/selected SHA는 아래와 같다. CF same-source gate·Dart Mock/UI/Esc·실제game/OS·whole selectedHEAD는 NOT_VERIFIED다. CF-HANDOFF.md에 연결 의미/순서가 있다.
+- 새 M2 release source2를 더한 별도 whole1193을 이어서 실행한다. 그 검사가 끝날 때까지 두 후보를 격리로 유지하며, CF FE5-e/FE6-b(+M2) gate/commit 종료 회신 뒤 main 반영시점을 조율한다. 그 후 same-source CF gate → XB exact10 / M2 exact2 별도 커밋 → CF Dart 연결 순서다.
+
+| path | working bytes | working SHA256 | selected bytes | selected SHA256 |
+|---|---:|---|---:|---|
+| `backend/core/scanner_pause_control.py` | 4743 | `68934b0dabb9e60517e3aa3666b294c22c71e284372e14193f4ffe82fd57e6c1` | 4743 | `68934b0dabb9e60517e3aa3666b294c22c71e284372e14193f4ffe82fd57e6c1` |
+| `backend/core/scan_context.py` | 3355 | `da695a6ce6d123253132c589be72c20ffbaf3c5bea4b8cec220132b774a350dd` | 3276 | `2da98066ac3da3e5ed73ed06d697465d4398433790b7f3b22fecdc71a6290bc8` |
+| `backend/core/scanner_session.py` | 52267 | `ed62c43637fdb1fb5a6b1314227b9f6af932ee6c0dc1408c153567c58cbe1daf` | 42536 | `48790ae9ad40ee6038a0c474bebc10216039c267b3c4af697a936921b3e4429e` |
+| `backend/core/scanner_protocol_v1.py` | 11405 | `c6a21e0fb6c6177a4df19c63d16319221172c4b648c7a52e2dd9c29c60e4841d` | 9417 | `26deff03b3989ef71057cbcb3b2d9b5d40e86797d30730b216fd9965901437df` |
+| `backend/core/user_input_guard.py` | 8814 | `bca8559566f2b4f91e15725d0e937b4b0cdb6426da3913020c2581a76605340c` | 8814 | `bca8559566f2b4f91e15725d0e937b4b0cdb6426da3913020c2581a76605340c` |
+| `backend/core/windows_scanner_adapter.py` | 38868 | `926923a734c2306d5dcd1efe31b7d8a9248d76896c3ed51e14104a26785dcac8` | 32210 | `0034c34ec1f984f2613af3860f5b14f32b2a190fa3f52540c88cdd89705259ec` |
+| `backend/tests/test_scanner_pause_fb10a.py` | 19095 | `a32afde492f0b6a30bde36d45417bf893d41ea20e175c05b9d957f2bcaed55ca` | 19095 | `a32afde492f0b6a30bde36d45417bf893d41ea20e175c05b9d957f2bcaed55ca` |
+| `contracts/scanner-protocol-v1.schema.json` | 24505 | `320c7c707c614d71c8d2847d4d2c8b8c1d0ca5785c40ac856cd3fff4948bcbd4` | 20587 | `fb84d8c586bdfba8f4e21454697e4b67a0eebdf700a33fcf9527be5a68b9e959` |
+| `contracts/fixtures/scanner_pause_fb10a_v1.json` | 15963 | `e94a59399438793a0e24b7d4180b47b3cfaac9e2f63e6a6acafa0a5c93b67b12` | 15963 | `e94a59399438793a0e24b7d4180b47b3cfaac9e2f63e6a6acafa0a5c93b67b12` |
+| `contracts/README.md` | 83708 | `202485cf2949acba6afb3ca173150db0711376647b657e6c645dd4bc5cd2cf8d` | 83708 | `202485cf2949acba6afb3ca173150db0711376647b657e6c645dd4bc5cd2cf8d` |
+
+## 2026-10-11 19:20 — gate ① 재실행 `20261011_190337`: FE5-e 승인, FE6-b 반려(ScrollController 이중 연결)
+
+- 결과: analyze 0, 테스트 296(−1) + 655 + 428, process 56, golden −4, almanac·diff 녹색. 컴파일 오류는 19:05 수정으로 해소.
+- **FE5-e 승인**: 예측 그대로 plan-scenario-list-expanded·-shortage(S1 "나란히 비교 3개" 버튼이 흐림 → 켜짐, 같은 영역 12656px), 새 plan-scenario-compare-4(② 뒤 검토), plan-scenario-compare 변화 0(결과 화면만 찍는 장면이라 후보 목록 제거가 보이지 않음 — 워커 설명 수용). FB-9 다중 비교는 지금 불필요(실측 없음 — 실기에서 4열 열기가 느리면 그때 요청).
+  · FD-086(라벨 열 + 4열 한 Scrollable)과 시안 메모("위 항목 고정 · 학생만 스크롤")가 어긋난다는 발견: 결정 대장 FD-086을 그대로 따른 구현을 유지한다. 시안 쪽으로 바꿀지는 사용자 실기 확인 뒤 FE5-f에서 다시 본다.
+  · 옛 홈 2-pane 나가는 길 없음(FE5-a 이전부터)은 FE5-f.
+- **FE6-b 반려**: inventory_page_test 전체 보기 테스트 1건 + golden inventory-all — 둘 다 키트 `diagonal_scroll_viewport.dart:169`의 `controller.offset`에서 `ScrollController attached to multiple scroll views`(2 clients). FE8-b 계정 목록과 같은 유형. 수정 요청 `debug/frontend_redesign_handoff/fe6b-fix-message-20261011.md`: 키트는 Lane A 소유라 고치지 말고 사용 쪽에서 보기별 컨트롤러·구조 고정, 키트 보강이 꼭 필요하면 요청만.
+  · 교훈: 키트 `DiagonalScrollViewport`·`DiagonalScrollbar`가 빌드 중 `controller.offset`을 읽는 구조라 재마운트에 약하다. 같은 문제가 세 번째 나면 Lane A 소단위로 키트를 단일 position 안전 읽기로 바꾼다.
+
+
+## 2026-10-11 19:36 — 회신·요청(XB): FB10a10+M2 release2 whole GREEN·반영 시점 조율
+
+- 최종 FB10a whole1192/1643.752s와 fresh release2 포함 whole1193/1294.843s PASS, input/source/external4/main pins 보존. FB10a output SHA `c77b95a5dbb8644e82225f6cc5741976672ce5e9447a2debc5184c132078658b`, release output SHA `eb220c7a7581002a03bb48f55f37fa80f85deda3f6a82ecbc4c840d1e315c287`. actual exact10은 기존 source10-final.json, release exact2는 source2-final.json이다. 원 FB10a1189 후보는 superseded, Dart18:15 목록 shape 추가 변경0/FB-10 형식 고정 선언0이다.
+- release exact2는 backend/tests/test_release_developer_tools_exclusion.py·frontend/tool/sync_windows_release.ps1(기존 developer_tools 별도 bundle 보존7줄)이며 별도 commit으로 처리한다. M2 UI나 실제 binary gate 완료가 아니다. 원 publishFAIL/4 forbidden sentry 원문을 보존했다.
+- **반영 시점 요청**: FE5-e/FE6-b(+M2) 현재 gate/commit 종료 뒤 FB10a source10 및 M2 release2를 main에 반영해도 되는 시점을 명시 회신해 달라. 수신 전 backend/contracts overlay0을 유지한다. 이후 path/SHA 반영 보고 → 같은-source CF gate → XB exact10 / release exact2 별도 commit → CF Dart 연결이다. build/golden/XB fe_gate 실행0·push0이다.
+- 삭제7번째 local share 경로 결정은18:53 요청 그대로 대기, 승인6범위를 자동 확장하지 않았다. helper5/40+주입장애 복원24·journal3/실제child 종료50 격리 증거는 backend/CM 동일 XB보고에 있다.
+
+## 2026-10-11 19:50 — gate ① 재실행 `20261011_192754`: 테스트 전부 녹색, golden 4장 예측대로 → ②
+
+- analyze 0, 테스트 298 + 655 + 428, process 56, almanac 45, diff 0. golden RED 4장: FE5-e plan-scenario-list-expanded·-shortage(19:20 승인, 같은 12656px), 새 plan-scenario-compare-4, FE6-b 새 inventory-all. 기존 inventory 장면 변화 0.
+- FE6-b 수정 검토 승인: 부족 보기·전체 보기의 `DiagonalScrollViewport`가 key 없이 같은 자리에 있어 State가 재사용되고, keyPrefix만 바뀌어 안쪽 스크롤 뷰가 새로 붙는 순간 2 clients가 됐다 — viewport마다 다른 key(`inventory-risk-viewport`·`inventory-tiles-viewport`)로 해결. 키트 수정 불필요 판단 수용. 전환·칩·플라이아웃 연속 테스트 추가.
+  · 교훈 갱신: 키트 viewport/scrollbar를 같은 자리에서 다른 내용으로 바꿔 쓸 때는 key로 State를 분리한다(워커 프롬프트 공통 주의에 추가).
+- 다음: ② `-UpdateGoldens` + compare → 새 기준 2장(plan-scenario-compare-4·inventory-all) 검토 → 커밋 fe5e → fe6b → redesigndocs. 그 뒤 XB FB-10a + M2 release2 메인 반영 시점 회신(XB 19:36 요청).
+
+## 2026-10-11 20:15 — gate ② GREEN, 새 기준 2장 승인, 커밋 순서(옛 파일 삭제 포함)
+
+- `20261011_195443` compare GREEN: analyze 0, 테스트 298 + 655 + 428, process 56, golden 42, almanac 45, diff 0.
+- 새 기준 검토:
+  · `plan-scenario-compare-4`: S1 "나란히 비교 · 4개 / 기준 A", 보기 토글(차이만 꺼짐 · 최고 값 강조 · 기준 대비 ±), 기준 라디오 A~D. 라벨 열 + 열 A 활성 계획(파랑 "비교 기준") · B 02 · C 07 · D 04("저장 시점과 다름" 칩), 위 다섯 행(크레딧 막대·±, 부족 n종 + 목록, 첫 병목, 끝까지 가는 학생 n/m, 규모) · 분야 네 행(아이콘 + "전체") · 학생 행(포함 안 됨 · 다름 n · 신규 · 같음). 시안 Scenario-Compare 구성과 맞다. 승인.
+  · `inventory-all`: 사이드바 "전체 9종" 선택, 그룹 머리(엘레프 2종 부족 2 · 오파츠 1종 · 활동 보고서 3종 · 기술 노트 2종 부족 1 · BD 1종) + 타일이 그룹마다 사선 이동, 타일 막대(부족 분홍 · 충분 파랑 · 과잉 노랑 · 모름 빗금), 기술 노트 "부족 1" 플라이아웃 열림(상위 n · "모두 보기"), 상세는 기술 노트(최상급) — FE6-a와 같은 상세 rect. 승인.
+- **fe_commit은 `deleted`를 다루지 않는다**: FE6-b가 옮긴 옛 `frontend/lib/ui/inventory/inventory_studio_layout.dart`는 아직 작업 트리에 있다(새 경로 `ui/studio/`만 import, 옛 파일 import 0 확인). fe6b 커밋 직후 사용자가 `git rm` + 별도 커밋으로 지운다(삭제만 담은 커밋, trailer 포함). 그 뒤 redesigndocs.
+- 커밋 순서(한 줄씩): fe5e → fe6b → 옛 파일 삭제 커밋 → redesigndocs. 그다음 XB FB-10a + M2 release2 메인 반영 시점을 회신한다(19:36 요청).
