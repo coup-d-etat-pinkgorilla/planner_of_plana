@@ -5994,3 +5994,116 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_195443\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## M2 착수 기록 (2026-10-11 21:05, Lane A)
+
+- 상태: 진행 중. 범위는 M2 — `developer_tools_main.dart --tool=metadata-manager` 도구 창(탭 ① 학생 ② 출처 ③ 자산, ④ 업데이트 · ⑤ 배포는 자리만), `tool_registry.dart`, 새 6 메서드 strict DTO, mock 모드다. 레인은 Lane A이고 상태 문서는 이 파일이다(오케스트레이터 로그 20:45 배정).
+- 시작 SHA = `feb4dc2b`(redesigndocs, 오케스트레이터 로그 20:45의 커밋 순서 fe5e `c3374b21` → fe6b `e45194bc` → 옛 파일 삭제 → redesigndocs `feb4dc2b`). 그 뒤 XB FB-10a · release2 반영 커밋이 있을 수 있다. 이 환경에서는 `.git`을 읽을 수 없어 로그의 SHA를 적는다.
+- WIP 유무: `developer_tools_main.dart`(mtime 2026-10-06, SHA256 `210a912f2584bb468ce7abda01779ad5edb366b8f001a487130bf401f0ac4fb0`)와 `developer_tools/tool_backend_client.dart`의 미커밋 변경은 이 환경에서 **확인할 수 없다**(`.git` 읽기 불가). 사용자 확인 명령: `git status --short frontend/lib/developer_tools_main.dart frontend/lib/developer_tools run_student_metadata_editor.cmd`. 있든 없든 pre 사본(`debug/frontend_m2/pre/<경로>`)과 끝 사본(`debug/frontend_m2/post/<경로>`)을 두고 commit.json에 `post_dir`를 적는다.
+- 고칠 기존 파일(pre 사본 3개):
+  - `frontend/lib/developer_tools_main.dart`
+  - `frontend/lib/developer_tools/tool_backend_client.dart`
+  - `run_student_metadata_editor.cmd`(저장소 루트, ASCII만)
+- 새 파일(예정): `frontend/lib/developer_tools/tool_registry.dart`, 기존 세 도구 화면을 옮길 파일, 새 6 메서드 DTO · 서비스(실제 · mock) · `metadata-manager` 화면 파일, `frontend/test/`의 새 개발자 도구 테스트(DTO 양성 · 음성, 화면 탭 전환 · 빈 상태 · 오류).
+- 계약 · fixture SHA 대조(기기 작업 트리 파일 = XB 17:02 · 17:04 게시값):
+
+| 경로 | 기기 SHA256 | XB 게시값 |
+|---|---|---|
+| `contracts/developer-tools-metadata-manager-v1.schema.json` | `687730c00a1240315027d8a4885dd3ebb16af86edec63a2e65a9de7cd7020442` | 같음 |
+| `contracts/fixtures/developer_tools_metadata_manager_m1_v1.json` | `7411495f2ae8df96a8a4bb0348093638ece76f259cb0e967fb317d70301abddc` | 같음(작업 트리 값. 커밋 blob은 CRLF→LF 정규화 `3b02087f…`, XB 17:49) |
+| `contracts/README.md` | `97d1b3178ed38ac53ab402300a01262738e360b2150190693e66ca8c2bc54ae7` | 같음 |
+| `backend/tools/developer_tools.py` | `9465b934f4f53b0dae0caef59c2fadfd3a9e4734e5a64c473f43da687b86aa53` | 같음 |
+
+- `debug/xb_m1_actual_20261011/artifacts/dart-new-method-fields.json`(SHA256 `902ae4f3…`)의 6 메서드 params · result 정의는 커밋된 schema `$defs`와 바이트 의미가 같다(키 정렬 JSON 비교로 6개 모두 일치 확인).
+- 이 환경에는 flutter · python이 없다(정적 검토만 가능). `backend/**` · `contracts/**` · `frontend/lib/ui/**` · `services/**` · golden · `app_shell.dart` · `release/**`는 고치지 않는다.
+
+## M2 종료 기록 (2026-10-11 21:29, Lane A)
+
+- 상태: 구현 끝, **정적 검토만 했다**. 이 환경에는 flutter · dart · python이 없다. analyze · 테스트 · 실제 창 · 실제 Python 메서드 호출은 한 번도 돌리지 않았다. 통과를 주장하지 않는다.
+- 근거: XB M1 커밋 `1fbc4ddd`, 계약 `contracts/developer-tools-metadata-manager-v1.schema.json`(SHA256 `687730c0…`) · fixture `contracts/fixtures/developer_tools_metadata_manager_m1_v1.json`(작업 트리 `7411495f…`), 필드 정의 `debug/xb_m1_actual_20261011/artifacts/dart-new-method-fields.json`(커밋 schema `$defs`와 6개 모두 같음).
+- 시작 SHA `feb4dc2b`. pre 사본 3개 `debug/frontend_m2/pre/`, 끝 사본 10개 `debug/frontend_m2/post/`(바꾼 3 + 새 7).
+- commit.json: `debug/frontend_m2/commit.json`(slice=m2, modified 3, added 7, `post_dir` = `debug/frontend_m2/post`, status=false, whole = 이 상태 문서).
+- WIP: 착수 기록대로 `developer_tools_main.dart` · `tool_backend_client.dart` · 런처의 미커밋 변경은 이 환경에서 확인하지 못했다. fe_commit의 3-way merge(pre/HEAD/post)가 겹침을 잡는다.
+
+### 실행 명령 · 결과
+
+- `flutter analyze` · `flutter test` · `py -3.11 -m unittest`: 실행하지 못했다(SDK 없음).
+- 계약 대조: 6 메서드의 params · result를 커밋 schema `$defs`와 `dart-new-method-fields.json`에서 키 정렬 JSON으로 비교했다(같음). backend `developer_tools.py`(`dispatch` · `validate_envelope`)와 `metadata_manager_m1.py`는 의미 확인용으로만 읽었다.
+- 정적 검토 에이전트 2회(바뀐 파일 전부 · 키트 API 시그니처 대조 · 계약 대비 DTO 엄격도 · lint · 새 테스트와 기존 `developer_tools_app_test.dart` 손 추적).
+  1. 1회차 지적, 모두 고쳤다:
+     - 막는 결함 1건: mock 레거시 백엔드가 `fields: []`를 주면 옮긴 편집기가 "읽는 중" 스피너를 끝없이 돌린다 → mock 테스트 `pumpAndSettle`이 시간 초과되고, 실제 `--mock` 창의 ① 탭도 영원히 스피너다. 기본 네 필드(`student_id` · `display_name` · `template_name` · `group`)를 주고 학생은 비웠다.
+     - 늦은 응답 덮어쓰기 3곳(② 상태 · 버전 다시 읽기, ② 비교 도중 대상 바꾸기, ③ 매핑 목록) → 세대 번호로 막았다. 서비스가 바뀌면 세 탭이 다시 읽는다.
+     - DTO 경계 2건: `generated_utc`는 RFC 3339 정규식으로 본다(`DateTime.tryParse`는 날짜만 · 공백 구분도 받는다), `plannerPath`는 줄바꿈 문자를 거절한다(계약 정규식과 같게).
+     - `DeveloperTool` enum에 넣은 `metadataManager`를 맨 뒤로 옮겼다(기존 값의 순번 유지).
+  2. 2회차: 고친 곳 재확인, mock 모드에서 무한 애니메이션 없음, 테스트 결과가 바뀐 곳 없음. 남은 문제 없음.
+- 기기 반영: 바꾼 · 새 파일 10개와 post 사본을 쓰고, 본 파일은 다시 읽어 `cmp`로 같음을, post · pre 사본은 크기로 확인했다.
+
+### 구현
+
+- **도구 등록**(`developer_tools/tool_registry.dart`): 항목 = id · 창 제목 · 빌더(+ 옛 이름 `aliases`). `metadata-manager`(aliases `student-metadata`) · `student-template` · `inventory-grid`. 모르는 이름 · 이름 없음은 `metadata-manager`다(옛 기본값 = 편집기와 같은 자리). A2는 이 표에 항목 한 줄을 더하면 된다.
+- **진입점**(`developer_tools_main.dart`): `--tool`은 등록표를 읽는다. `--mock`(또는 `--mock=true`, `BA_PLANNER_DEVELOPER_TOOL_MOCK=true`)이면 Python 없이 연다. 기존 세 화면은 `developer_tools/legacy_tool_pages.dart`로 그대로 옮겼다(바이트 비교: 추가는 `MetadataEditorPage.onSelectedStudentChanged` 매개변수와 호출 3줄뿐). `DeveloperToolApp(tool:, client:)`와 `DeveloperTool` enum은 기존 호출 · 테스트 호환으로 남겼고, `DeveloperTool.metadata`는 메타데이터 관리자 ① 탭을 연다. 창 제목: 편집기 → "BA Planner v7 · 메타데이터 관리자", 나머지 두 도구는 그대로.
+- **전송**(`tool_backend_client.dart`): `ToolEnvelopeTransport.send`(응답 envelope를 해석하지 않고 돌려줌)를 더했다. 프로세스 실행만 `_run`으로 뽑았고, 기존 `call`의 요청 · 오류 문구 · `ok` 처리 · `result` 반환은 그대로다.
+- **DTO**(`developer_tools/metadata_manager_dto.dart`): 요청 exact `version/method/params`(version=1, params 키도 계약대로, `version_id` · `student_id` 정규식 검사), 응답 exact `version/ok/result` · `version/ok/error`(+ `error.type/message` → `MetadataManagerRemoteError`). 객체마다 키 집합이 정확해야 하고(additionalProperties false), enum · const · nullable · SHA-256 모양 · `minProperties` · if/then(`store.versions` 미연결 = 빈 목록, `store.diff` available ⇔ 보고서 + `report_identity_only`, 그 밖 ⇔ null + `not_verified`, asset catalog ⇔ 주소 키 · `*.bundle`, manual ⇔ 셋 다 null)을 검사한다. 미입증 출처(`provenance: null` · `source_state: unknown` · `comparisons: []`)만 받는다. 위반은 `MetadataManagerProtocolException`.
+- **서비스**(`developer_tools/metadata_manager_service.dart`): 실제 = `ProtocolMetadataManagerService`(envelope 전송 → DTO). mock = `OfflineMetadataManagerService`(아무것도 부르지 않고 `MetadataManagerUnavailable` → 화면은 오류가 아니라 "저장소 미연결 · 빈 상태"). 레거시 백엔드만 있으면 "새 메서드 연결 없음"으로 같은 빈 상태다. 새 서비스 메서드(Python 쪽)는 없다.
+- **창**(`developer_tools/metadata_manager_page.dart`, 키트만: `SkewSegmented` · `SkewToggleChip` · `TonalButton` · `BaChip` · `DiagonalRow` · `KitPressable` · `PanelTitle` · `TileTitle` · `SubHeader` · `KV`):
+  - 탭 바(① 학생 ② 출처 ③ 자산 ④ 업데이트 ⑤ 배포) + 오프라인 칩. 탭은 처음 열 때 읽고 그 뒤 상태를 둔다(`IndexedStack`).
+  - ① 학생: 기존 편집기 + 오른쪽 "이 값은 어디서 왔나" 패널(필드 · 값 · 출처 · 버전 열). 출처 · 버전은 계약대로 "확인되지 않음", 값이 없으면 "값 없음", `note` · `unavailable_groups`를 그대로 보인다. 창 폭 1400 이상이면 펼쳐 시작하고, 좁으면 접힌 띠(40px)의 버튼으로 연다(편집기의 900px 넓은 배치 기준을 지키려고).
+  - ② 출처: 연결 칩(연결됨 / 저장소 미연결 + "기존 기능은 그대로 동작합니다"), store_root, 검증 안 함(not_verified), 빠진 kind, lock 고정 버전(서버 · 버전 · 클라이언트 · 번들 · 파일 해시 앞 12자리), extract 목록, 등록된 버전(lock 고정 표시 · manifest만 확인), 기존 보고서 비교(서버 · 이전 · 다음 선택, 기본 = 고정 버전 → 마지막 다른 버전). 결과: 보고서 있음(L1 파일 판정 · L2 표별 요약 원문 · L3 문구) / 보고서 없음 · 저장소 미연결은 "차이 0이 아닙니다"라고 적는다.
+  - ③ 자산: "실물 검증 아님(M4 필요)" 안내를 늘 보인다. `asset_map.list`(M0 초안 요약)와 `asset_map.check(scope)` 행을 (역할, 경로)로 합쳐 표(경로 · 역할 · 매핑 · 로컬 파일 · 주소 키 · 번들 · 텍스처 · 실물 확인 안 됨)로 그린다. 범위(전체 · UI · 인식), 필터 누락 · 수동(개수), 이름 변경 · 해시 변경은 M4 판정이라 꺼 둔 칩이다.
+  - ④ "M5에서 채웁니다." ⑤ "M6에서 채웁니다."
+- **런처**(`run_student_metadata_editor.cmd`, ASCII): `--tool=student-metadata` → `--tool=metadata-manager`(두 갈래 모두).
+- 키트는 고치지 않았고 요청할 것도 없다.
+
+### 탭별 검수표
+
+| 탭 | 실제 Python 메서드로 채워짐 | mock 빈 상태 | 테스트(작성, 미실행) |
+|---|---|---|---|
+| ① 학생 | 편집기 = 기존 메서드 그대로. 패널 = `metadata.source.view` — **미검증**(실창 필요). fixture 응답으로는 채워짐 | 빈 편집기(기본 네 필드, 학생 0) + "학생을 고르면…" | 패널 요청 exact envelope, "확인되지 않음" ×3, "값 없음", 레거시 백엔드면 연결 없음 안내 |
+| ② 출처 | `store.status` · `store.versions` · `store.diff` — **미검증**(실창 필요). fixture로는 채워짐 | "저장소 미연결" 칩 두 개 + mock 사유, 비교 불가 안내 | 연결 · 고정 버전 · 버전 행 · diff 요청 envelope · L1 행 · L3, 서버 실패 · 계약 불일치 · 보고서 없음 표시 |
+| ③ 자산 | `asset_map.list` · `asset_map.check` — **미검증**(실창 필요). fixture로는 채워짐 | M4 안내 + "빈 상태" 두 개 | 행 키 · 로컬 누락 · 개수 문구 · 필터 · M4 칩 꺼짐 · check 요청 1회(scope all) |
+| ④ 업데이트 | 자리만 | "M5에서 채웁니다." | 문구 |
+| ⑤ 배포 | 자리만 | "M6에서 채웁니다." | 문구 |
+
+### DTO 테스트 목록(`frontend/test/metadata_manager_dto_test.dart`)
+
+- 양성(계약 fixture): 요청 6개 읽기 → 같은 envelope로 다시 쓰기, 서비스 요청 생성 = fixture 요청, `store.status` · `store.versions` · `store.diff` 상태 3종(disconnected · missing = 보고서 없음 · not_verified, available = 보고서 있음), `metadata.source.view` + `unknown_existing_provenance`, `asset_map.list` · `asset_map.check`, `envelope_error` → 서버 실패(type · message).
+- 음성 요청(fixture `negative_requests`): params null · `version_id` 경로 탈출 · `student_id` 경로 탈출은 거절. 섞인 버전은 계약 모양으로는 맞아서 보내고 서버가 `store_mixed_version`으로 거절한다(그대로 둔다). 키 더함 · 모르는 메서드 · 범위 enum 밖도 거절.
+- 음성 응답(fixture를 한 곳씩 바꿈):
+  - envelope: 키 더함 · 빠짐 · version 2 · version true · ok 문자열 · 성공에 error · 오류에 message 없음 · 배열.
+  - `store.status`: 상태 enum · 검증 const · 빈 pins · 해시 모양 · 빈 files · 모르는 서버 · extract 서버 · provenance 해시 63자 · missing_kinds 타입 · pin 키 빠짐.
+  - `store.versions`: 미연결인데 목록 · manifest 검증 const · pinned 타입.
+  - `store.diff`: available에 보고서 없음 · 검증 짝 · missing에 보고서 · 보고서 schema · L1 판정 · 날짜 · from 경로 탈출.
+  - `metadata.source.view`: provenance를 채움 · comparisons를 채움 · source_state · value_state · comparison_state.
+  - `asset_map.list`: manual에 주소 키 · catalog인데 주소 키 없음 · 번들 경로 · 경로 탈출 · 절대 경로 · 줄바꿈 경로 · 빈 note · 상태 const · 검증 const(+ 올바른 catalog는 받음).
+  - `asset_map.check`: 실물 검증 주장 · 구조 상태 · 로컬 상태 · 범위.
+- 화면(`frontend/test/metadata_manager_page_test.dart`): 등록표(id · 옛 이름 · 기본값 · enum id), mock 모드 다섯 탭, fixture로 세 탭 채우기(exact 요청), 오류 표시, 보고서 없음, 옛 이름 alias, 서비스 선택.
+- 기존 `developer_tools_app_test.dart`는 고치지 않았다. `DeveloperTool.metadata` 테스트가 이제 메타데이터 관리자 창을 연다. 편집기는 1200px에서 1159px(넓은 배치 유지)이고, 높이는 탭 바만큼(약 54px) 줄었지만 스크롤 영역이 흡수한다. 정적 추적으로는 모든 기대(`'호시노'` ×1, `'저장'` ×1, 다른 화면 제목)가 그대로 맞는다(미실행).
+
+### XB 요청
+
+- **XB 요청: 배포본에 `developer_tools*` · 저장소 쓰기 경로가 없는지 검사하는 테스트**(사용자 결정 3, M2 완료 조건에 들어가는 테스트). XB 19:09 · 19:36의 release exact2(`backend/tests/test_release_developer_tools_exclusion.py` + `frontend/tool/sync_windows_release.ps1` 보존 7줄)가 이 요청의 후보다. M2가 더한 Dart 파일(`frontend/lib/developer_tools/` 아래 `tool_registry.dart` · `legacy_tool_pages.dart` · `metadata_manager_*.dart`)이 그 테스트의 "Dart main import/export closure" 검사에서 배포본 main 쪽에 닿지 않는지 함께 확인해 달라. 배포본 앱 진입점 `lib/main.dart`는 `developer_tools`를 import하지 않고, `lib/ui/**`에서도 참조가 없다(이 세션에서 확인. `services/**`는 확인하지 않았다). 새 파일을 import하는 것은 개발자 도구 진입점 `developer_tools_main.dart`뿐이다.
+
+### 미검증 항목
+
+- analyze 0건(info 포함), 새 테스트 · 기존 개발자 도구 테스트 통과.
+- 실제 창: 세 탭이 실제 Python 메서드로 채워지는지(저장소 연결 여부, 실제 asset-map 행 수 UI 1,045 + 인식 780 기대, 1,825행 목록 스크롤), 출처 패널이 실제 학생으로 채워지는지.
+- mock 창 실행(`--mock`), 옛 이름 `--tool=student-metadata` 실행.
+- 배포본 제외 테스트(XB 쪽).
+
+### 발견 사항
+
+- 이미 빌드된 개발자 도구 번들 `release/developer_tools/ba_planner_v7.exe`는 `metadata-manager`를 모른다. 옛 진입점은 모르는 이름을 편집기로 돌리므로 런처는 다시 빌드할 때까지 옛 편집기를 연다(망가지지는 않는다). 번들을 다시 만드는 일은 XB 릴리스 스크립트 몫이다.
+- M1 계약은 `provenance`를 null, `comparisons`를 빈 배열로만 허용한다. M3에서 생성 출처를 기록하면 계약 버전이 바뀌어야 하고, 이 DTO도 함께 바꿔야 한다(지금 DTO는 출처가 채워진 응답을 계약 위반으로 거절한다 — 의도된 동작).
+- ③의 이름 변경 · 해시 변경 필터는 M4 판정(`bundle-renamed` · `bundle-hash-changed`)이 계약에 들어와야 켤 수 있다.
+- `DeveloperToolApp`의 기본 생성자는 이제 `const`가 아니다(기존 테스트는 `const`로 부르지 않는다).
+
+### 다음 행동
+
+- 사용자 실행 명령(순서는 오케스트레이터가 정한다):
+  1. 워커가 모두 멈춘 뒤 `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1` → 결과를 오케스트레이터에게 보내고 기다린다(golden 변화 0 예상 — 개발자 도구는 golden 범위 밖).
+  2. `fe_commit.ps1 -Slice m2 -DryRun` → `fe_commit.ps1 -Slice m2`.
+  3. 실제 창 확인(v7 루트에서, 기존 런처와 같은 인자):
+     - 실제 백엔드: `run_student_metadata_editor.cmd`. 또는 `set BA_PLANNER_BACKEND_DIR=%CD%\backend` → `cd frontend` → `flutter run -d windows -t lib/developer_tools_main.dart --dart-entrypoint-args=--tool=metadata-manager`.
+     - mock: `cd frontend` → `flutter run -d windows -t lib/developer_tools_main.dart --dart-entrypoint-args=--tool=metadata-manager --dart-entrypoint-args=--mock`.
+     - 옛 이름: `... --dart-entrypoint-args=--tool=student-metadata`(같은 창 ① 탭).
+     - 기대: ①에서 학생을 고르면 패널이 필드마다 "확인되지 않음"을 보인다. ②는 저장소 연결 상태 · lock 고정 버전 · 등록된 버전을 보이고, 비교는 저장소에 보고서가 없으면 "보고서 없음"이다. ③은 "실물 검증 아님(M4 필요)"과 asset-map 행을 보인다. ④⑤는 자리 문구다.
