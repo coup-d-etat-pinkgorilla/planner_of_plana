@@ -313,6 +313,13 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
 
   /// 보기 모드에서 고른 병목 카드(0부터). 시안처럼 처음에는 병목 1이다.
   int? _selectedCard = 0;
+
+  /// 보기 모드 S3 탭 · 칩 · 페이즈별(처음 P1) · 전체(고른 재화 · 열 수) 상태(FE5-d).
+  PlanDetailResourceTab _resourceTab = PlanDetailResourceTab.bottleneck;
+  PlanDetailResourceFilter _filter = const PlanDetailResourceFilter();
+  int? _selectedPhase = 1;
+  String? _selectedResource;
+  int _overallColumns = planDetailOverallDefaultColumns;
   final _renameName = TextEditingController();
   final _renameDescription = TextEditingController();
   PlanningScenarioSummary? _renameTarget;
@@ -347,6 +354,8 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     if (oldWidget.profileId != widget.profileId) _load();
     if (oldWidget.viewingScenarioId != widget.viewingScenarioId) {
       _selectedCard = 0;
+      _selectedPhase = 1;
+      _selectedResource = null;
     }
     // 비교의 A 문서가 바뀌면(같은 revision이라도) 캐시를 버린다(FD-089 키 밖의 입력).
     if (!identical(oldWidget.activeDocument, widget.activeDocument) ||
@@ -745,6 +754,28 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       selectedCard: _selectedCard,
       onSelectCard: enabled
           ? (index) => setState(() => _selectedCard = index)
+          : null,
+      // FE5-d: 페이즈별 · 전체 탭을 연다(비교 응답의 projection_b · 비교 줄로 그린다).
+      resourceTab: _resourceTab,
+      onResourceTab: (tab) => setState(() => _resourceTab = tab),
+      filter: _filter,
+      onFilter: enabled
+          ? (filter) => setState(() {
+              _filter = filter;
+              _selectedResource = null;
+            })
+          : null,
+      selectedPhase: _selectedPhase,
+      onSelectPhase: enabled
+          ? (number) => setState(() => _selectedPhase = number)
+          : null,
+      selectedResource: _selectedResource,
+      onSelectResource: enabled
+          ? (key) => setState(() => _selectedResource = key)
+          : null,
+      overallColumns: _overallColumns,
+      onOverallColumns: enabled
+          ? (columns) => setState(() => _overallColumns = columns)
           : null,
       shortageKpi: data == null || preview == null
           ? null

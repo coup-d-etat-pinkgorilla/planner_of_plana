@@ -7,11 +7,9 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
-import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
-import '../kit/kit_pressable.dart';
 import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_save.dart'
@@ -1392,6 +1390,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 활성 계획 문서 계산 응답 그대로(FE5-c2 Detail 홈 = [PlanDetailData.fromProjection]). 계산 전 · 다시 읽는 중이면 null.
   Map<String, dynamic>? _homeProjection;
 
+  /// 홈 페이즈별 탭에서 고른 페이즈 번호(시안처럼 처음에는 P1)와 전체 탭에서 고른 재화 · 열 수(FE5-d).
+  int? _homeSelectedPhase = 1;
+  String? _homeSelectedResource;
+  int _homeOverallColumns = planDetailOverallDefaultColumns;
+
   /// Detail 홈에서 고른 병목 카드(0부터). 처음에는 병목 1이다.
   int? _homeSelectedCard = 0;
 
@@ -1567,6 +1570,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _calculationUnavailable = plan != null && plan.calculation == null;
         _homeProjection = null;
         _homeSelectedCard = 0;
+        _homeSelectedPhase = 1;
+        _homeSelectedResource = null;
       });
       // 계산할 수 없는 문서는 자세한 계산도 부르지 않는다. 문서 내용(섹션 2)은 그대로 보인다.
       if (_calculationUnavailable) return;
@@ -2369,8 +2374,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   // --- FE5-c2 Detail 홈 ---------------------------------------------------------
 
   /// 첫 화면: 활성 계획을 시나리오 보기와 같은 Detail 3섹션으로 그린다(FD-082 (a)). 비교 KPI · delta 칩 · "활성 계획과
-  /// 다른 단계"는 없다(`showComparison: false`). 병목 탭은 Detail 카드, 페이즈별 · 전체 탭은 옛 홈의 페이즈별 · 전체
-  /// 위젯([PlanConsumptionSection])과 요약 행을 그대로 S3에 넣는다(FE5-d가 시안대로 다시 그린다).
+  /// 다른 단계"는 없다(`showComparison: false`). 병목 탭은 Detail 카드, 페이즈별 · 전체 탭은 FE5-d Detail 본문(페이즈
+  /// 카드 · 전체 목록, 시안 Scenario-Detail-Phase · -All)이다. 옛 [PlanConsumptionSection]은 옛 홈(`legacyHome`)만 쓴다.
   Widget _detailHome() {
     final document = _document;
     final projection = _homeProjection;
@@ -2383,12 +2388,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _handoffPending;
     // 조건을 삼항에 바로 둔다(따로 담은 bool로는 document의 null이 풀리지 않는다).
     final data = document != null && document.stages.isNotEmpty
-        ? _filterHomeData(
-            PlanDetailData.fromProjection(
-              document: document,
-              projection: projection ?? const <String, dynamic>{},
-              format: planScenarioPreviewAmount,
-            ),
+        ? PlanDetailData.fromProjection(
+            document: document,
+            projection: projection ?? const <String, dynamic>{},
+            format: planScenarioPreviewAmount,
           )
         : null;
     final Widget? resourceNotice;
@@ -2427,20 +2430,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     final Widget phaseNotice = calculationError != null && document == null
         ? _homeNotice('활성 계획을 읽지 못했습니다.', 'plan-home-load-error')
         : (resourceNotice ?? const SizedBox.shrink());
-    final summary = PlanResourceSummaryProjection.of(
-      bottlenecks: _bottleneckDetails,
-      phases: _phaseConsumptions,
-      overall: _overallConsumption,
-      planPhases: _planPhases,
-    );
-    List<PlanConsumptionGroupPreview> filtered(
-      List<PlanConsumptionGroupPreview> groups,
-    ) => filterPlanConsumptionGroups(
-      groups,
-      categories: _selectedResourceCategories,
-      hideSatisfied: _hideSatisfiedResources,
-      sort: _resourceSort,
-    );
     String count(int? value, String unit) =>
         value == null ? '—' : '$value$unit';
     final credits = data?.kpis.credits.b;
@@ -2457,32 +2446,29 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           : (index) => setState(() => _homeSelectedCard = index),
       placeholder: phaseNotice,
       resourcePlaceholder: resourceNotice,
+      // S3 seg는 옛 홈과 같은 탭 상태를 쓴다. 페이즈별 · 전체는 FE5-d 새 위젯이다(옛 PlanConsumptionSection 아님).
       resourceTab: PlanDetailResourceTab.values[_selectedResourceView.index],
       onResourceTab: (tab) =>
           _selectResourceView(PlanResourceView.values[tab.index]),
-      tabBody: (tab, bodyPath) => PlanConsumptionSection(
-        containerPath: bodyPath,
-        groups: tab == PlanDetailResourceTab.byPhase
-            ? filtered(_phaseConsumptions)
-            : filtered([_overallConsumption]),
-        keyPrefix: tab == PlanDetailResourceTab.byPhase
-            ? 'plan-phase-consumption'
-            : 'plan-overall-consumption',
-        selectedResourceKey: _selectedSection3ResourceKey,
-        onToggleResource: _toggleSection3Resource,
+      // 칩 3개는 옛 홈 섹션 4 · 6과 같은 재화 유형 · 충족 재화 숨기기 · 정렬 상태다.
+      filter: PlanDetailResourceFilter(
+        categories: _selectedResourceCategories,
+        hideSatisfied: _hideSatisfiedResources,
+        sort: _resourceSort,
       ),
-      tabSummary: (tab) => tab == PlanDetailResourceTab.byPhase
-          ? PlanPhaseResourceSummary(
-              projection: summary.phase,
-              highlighted: false,
-              onTap: null,
-            )
-          : PlanOverallResourceSummary(
-              projection: summary.overall,
-              highlighted: false,
-              onTap: null,
-            ),
-      toolbarChips: _homeToolbarChips(enabled: !busy),
+      onFilter: busy ? null : _applyHomeFilter,
+      selectedPhase: _homeSelectedPhase,
+      onSelectPhase: busy
+          ? null
+          : (number) => setState(() => _homeSelectedPhase = number),
+      selectedResource: _homeSelectedResource,
+      onSelectResource: busy
+          ? null
+          : (key) => setState(() => _homeSelectedResource = key),
+      overallColumns: _homeOverallColumns,
+      onOverallColumns: busy
+          ? null
+          : (columns) => setState(() => _homeOverallColumns = columns),
       menuBuilder: (frame) => PlanDetailRailMenu(
         key: const ValueKey('plan-home-menu'),
         frame: frame,
@@ -2563,127 +2549,19 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     return studentId;
   }
 
-  /// 홈 병목 카드에 재화 유형 필터 · 충족 재화 숨기기를 건다(정렬은 병목 번호 = 문서 순서를 지키려고 걸지 않는다).
-  PlanDetailData _filterHomeData(PlanDetailData data) {
-    final allCategories =
-        _selectedResourceCategories.length ==
-        PlanResourceCategory.values.length;
-    if (allCategories && !_hideSatisfiedResources) return data;
-    bool selected(PlanDetailCardResource resource) =>
-        allCategories ||
-        _selectedResourceCategories.contains(
-          planResourceCategory(
-            id: resource.resourceKey,
-            iconAsset:
-                planningResourceIconAsset(
-                  category: resource.category,
-                  itemId: resource.itemId,
-                ) ??
-                resource.category,
-          ),
-        );
-    final cards = [
-      for (final card in data.cards)
-        if (card.resources.any(
-          (resource) => resource.shortage > 0 && selected(resource),
-        ))
-          PlanDetailBottleneckCard(
-            number: card.number,
-            phase: card.phase,
-            stageId: card.stageId,
-            studentId: card.studentId,
-            stageName: card.stageName,
-            targets: card.targets,
-            resources: [
-              for (final resource in card.resources)
-                if (selected(resource) &&
-                    (!_hideSatisfiedResources || resource.shortage > 0))
-                  resource,
-            ],
-            hiddenShortages: card.hiddenShortages,
-            delayed: card.delayed,
-            delta: card.delta,
-          ),
-    ];
-    return PlanDetailData(
-      phases: data.phases,
-      cards: cards,
-      kpis: data.kpis,
-      studentCount: data.studentCount,
-      stageCount: data.stageCount,
-    );
-  }
-
-  /// 홈 S3 칩 3개(옛 홈 섹션 4 · 6의 재화 유형 필터 · 충족 재화 숨기기 · 정렬과 같은 상태).
-  List<Widget> _homeToolbarChips({required bool enabled}) {
-    final allCategories =
-        _selectedResourceCategories.length ==
-        PlanResourceCategory.values.length;
-    return [
-      // 값: −1 = 전체, 그 밖 = [PlanResourceCategory.index](null 값은 메뉴가 취소로 본다).
-      PopupMenuButton<int>(
-        key: const ValueKey('plan-home-filter-category'),
-        enabled: enabled,
-        tooltip: '재화 유형',
-        onSelected: (value) => value < 0
-            ? _toggleAllResourceCategories()
-            : _toggleResourceCategory(PlanResourceCategory.values[value]),
-        itemBuilder: (context) => [
-          CheckedPopupMenuItem<int>(
-            value: -1,
-            checked: allCategories,
-            child: const Text('전체'),
-          ),
-          for (final category in PlanResourceCategory.values)
-            CheckedPopupMenuItem<int>(
-              value: category.index,
-              checked: _selectedResourceCategories.contains(category),
-              child: Text(category.label),
-            ),
-        ],
-        child: BaChip(
-          label: allCategories
-              ? '재화 유형 · 전체'
-              : '재화 유형 · ${_selectedResourceCategories.length}종',
-          tone: allCategories ? AppTones.gray : AppTones.pink,
-          leading: const Icon(Icons.filter_list_rounded, size: 13),
-        ),
-      ),
-      const SizedBox(width: 8),
-      KitPressable(
-        key: const ValueKey('plan-home-hide-satisfied'),
-        onPressed: enabled ? _toggleHideSatisfiedResources : null,
-        toggled: _hideSatisfiedResources,
-        semanticLabel: '충족 재화 숨기기',
-        builder: (context, state) => BaChip(
-          label: '충족 재화 숨기기',
-          tone: _hideSatisfiedResources ? AppTones.pink : AppTones.gray,
-          leading: const Icon(Icons.visibility_off_outlined, size: 13),
-        ),
-      ),
-      const SizedBox(width: 8),
-      PopupMenuButton<PlanResourceSort>(
-        key: const ValueKey('plan-home-sort'),
-        enabled: enabled,
-        tooltip: '정렬',
-        onSelected: _selectResourceSort,
-        itemBuilder: (context) => [
-          for (final sort in PlanResourceSort.values)
-            CheckedPopupMenuItem<PlanResourceSort>(
-              value: sort,
-              checked: sort == _resourceSort,
-              child: Text(sort.menuLabel),
-            ),
-        ],
-        child: BaChip(
-          label: _resourceSort.menuLabel,
-          tone: _resourceSort == PlanResourceSort.defaultOrder
-              ? AppTones.gray
-              : AppTones.pink,
-          leading: const Icon(Icons.sort_rounded, size: 13),
-        ),
-      ),
-    ];
+  /// 홈 S3 칩(FE5-d [PlanDetailFilterChips])을 옛 홈 필터 상태에 쓴다(옛 토글과 같이 섹션 3 강조를 지운다).
+  void _applyHomeFilter(PlanDetailResourceFilter filter) {
+    setState(() {
+      _selectedResourceCategories = {
+        ...(filter.categories ?? PlanResourceCategory.values.toSet()),
+      };
+      _hideSatisfiedResources = filter.hideSatisfied;
+      _resourceSort = filter.sort;
+      _homeSelectedResource = null;
+      _highlightedStudentIds = const {};
+      _highlightedStageKeys = const {};
+      _selectedSection3ResourceKey = null;
+    });
   }
 
   /// [_flowContext]를 읽다 실패하면 null(목록 S1 "새 시나리오"가 예외를 버튼 밖으로 내보내지 않게 한다).

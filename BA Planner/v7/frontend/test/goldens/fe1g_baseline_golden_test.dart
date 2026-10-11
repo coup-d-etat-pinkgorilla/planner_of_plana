@@ -238,6 +238,28 @@ Future<Map<String, String>> _openScenarioListScene(
   return ids;
 }
 
+/// 시나리오 보기 모드(07 3단계 우선순위)를 열고 S3 seg [label] 탭을 누른다(FE5-d).
+Future<void> _openScenarioDetailTab(
+  WidgetTester tester,
+  GoldenScenarioListMockAppService service,
+  String label,
+) async {
+  final ids = await _openScenarioListScene(tester, service);
+  await _tapKey(tester, 'plan-scenario-open-${ids['07 3단계 우선순위']}');
+  await pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey('plan-scenario-detail-card-1')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(const ValueKey('plan-scenario-detail-tab')),
+      matching: find.text(label),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 /// 계획 홈 장면(FE5-c2): 활성 계획을 저장하고 읽어 Detail 홈을 연다(계산 대역 + 페이즈별 결과).
 Future<void> _openActivePlanHome(WidgetTester tester) async {
   final service = GoldenActivePlanHomeMockAppService();
@@ -542,25 +564,49 @@ void main() {
     await expectGoldenScene(tester, 'plan-bottleneck');
   }, variant: goldenPlatform);
 
+  // FE5-d 시안 Scenario-Detail-Phase(비교 없음): 페이즈 카드 3장(P1 선택 → S2 P1 헤더 · 단계 강조), 크레딧 진입/필요/
+  // 종료, 재화 타일 진입 · 필요 · 종료 + 충족 막대. 요약 행은 P1 네브라(최상급) 76/450(5명 중 0명만 완료).
   testWidgets('plan-by-phase', (tester) async {
     setGoldenViewport(tester);
     await _openActivePlanHome(tester);
     await _tapHomeTab(tester, '페이즈별');
+    for (final number in const [1, 2, 3]) {
+      expect(
+        find.byKey(ValueKey('plan-home-phase-card-$number')),
+        findsOneWidget,
+        reason: 'P$number',
+      );
+    }
     expect(
-      find.byKey(const ValueKey('plan-home-tab-body-byPhase')),
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-home-summary-byPhase-title')),
+        matching: find.textContaining('P1에서 5명 중 0명만 완료'),
+        matchRoot: true,
+      ),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('plan-home-kpis')), findsNothing);
     await expectGoldenScene(tester, 'plan-by-phase');
   }, variant: goldenPlatform);
 
+  // FE5-d 시안 Scenario-Detail-All(비교 없음): "재화 7종 · 한 행에 4", 크레딧 행 + 분야 그룹 3개(오파츠 · 노트 · BD ·
+  // 장비 설계도), 마크 · 범례 · 활성 대비 칩 없음.
   testWidgets('plan-overall', (tester) async {
     setGoldenViewport(tester);
     await _openActivePlanHome(tester);
     await _tapHomeTab(tester, '전체');
     expect(
-      find.byKey(const ValueKey('plan-home-tab-body-overall')),
+      find.byKey(const ValueKey('plan-home-overall-credits')),
       findsOneWidget,
     );
+    for (final field in const ['ooparts', 'notes', 'equipment']) {
+      expect(
+        find.byKey(ValueKey('plan-home-overall-group-$field')),
+        findsOneWidget,
+        reason: field,
+      );
+    }
+    expect(find.byKey(const ValueKey('plan-home-overall-legend')), findsNothing);
     await expectGoldenScene(tester, 'plan-overall');
   }, variant: goldenPlatform);
 
@@ -1086,6 +1132,42 @@ void main() {
       findsOneWidget,
     );
     await expectGoldenScene(tester, 'plan-scenario-detail-bottleneck');
+  }, variant: goldenPlatform);
+
+  // FE5-d 시안 Scenario-Detail-Phase(비교 있음): 위 보기 모드에서 페이즈별 탭. 07 시나리오 페이즈 카드 3장(P1 선택,
+  // P2 카드는 타일이 많아 패널 아래로 이어진다), 타일 활성 대비 칩(재화 줄 단위 FD-038 (c), 아루 엘레프 "이 시나리오에만"),
+  // 요약 행 칩 "활성보다 … 부족", KPI 4칸 그대로.
+  testWidgets('plan-scenario-detail-phase', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    await _openScenarioDetailTab(tester, service, '페이즈별');
+    expect(
+      find.byKey(const ValueKey('plan-scenario-detail-phase-card-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-scenario-detail-kpis')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-scenario-detail-phase');
+  }, variant: goldenPlatform);
+
+  // FE5-d 시안 Scenario-Detail-All(비교 있음): 전체 탭, 한 행에 4, 범례 · 마크(= / ±n / 신규) · "활성 a% → b%" 칩.
+  testWidgets('plan-scenario-detail-all', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    await _openScenarioDetailTab(tester, service, '전체');
+    expect(
+      find.byKey(const ValueKey('plan-scenario-detail-overall-legend')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-scenario-detail-summary-overall-delta')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-scenario-detail-all');
   }, variant: goldenPlatform);
 
   testWidgets('plan-scenario-compare', (tester) async {

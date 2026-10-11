@@ -13,8 +13,23 @@
 //   함수([planScenarioStudentDelta])를 그대로 쓴다.
 // - 재화 ±(FD-038 (c)): 기본은 부족량 차이(FE5-b [planScenarioShortageDelta]), 두 문서 모두 부족 0이면 필요량 차이를
 //   회색으로, 크레딧은 필요량 차이.
+//
+// FE5-d(시안 Scenario-Detail-Phase · -All): 페이즈별 · 전체 탭 재화.
+// - 페이즈 진입/필요/종료(FD-037): 백엔드 `calculate_document_projection`의 `phase_results[].resources[].owned`는 그
+//   페이즈에 들어설 때 남은 양(앞 페이즈 단계들이 쓰고 남은 재고, `phase_remaining`)이다. 백엔드는 단계마다
+//   `max(0, 남은 양 − 필요량)`으로 줄이므로 페이즈 끝 잔량은 `max(0, owned − required)`와 같다(음이 아닌 필요량을
+//   차례로 빼고 0에서 자르는 것은 합을 한 번에 빼고 자르는 것과 같다). 그래서 종료 = max(0, 진입 − 필요)를 클라이언트가
+//   계산한다(FB-9 없음). 보유를 모르는 재화(owned null)는 진입 · 종료 모두 모른다("—").
+// - 충족 막대: min(진입 또는 보유, 필요) / 필요, 내림 %(시안 12/42 → 28%).
+// - 활성 대비 ±(FD-038 (c)): 재화 줄 단위(비교 `resources[]`)다. 두 문서의 페이즈를 맞추는 규칙이 없어서(FD-039는 단계만
+//   맞춘다) 페이즈 타일의 칩도 그 재화의 계획 전체 차이다. 활성 계획에 없는 재화(필요 0 → 시나리오 > 0)는 "이 시나리오에만".
+// - 전체 확보율(FD-031 (a)): `overall.resources[]`의 재화별 min(보유, 필요)/필요 단순 평균(크레딧 포함, 보유 모름 제외 ·
+//   "보유 모름 n종" 병기). 활성 쪽은 비교 `resources[]`의 a쪽으로 같은 식([planFlowFulfillment])을 쓴다.
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 
+import 'plan_flow_save.dart' show planFlowFulfillment;
 import 'plan_scenario_preview.dart';
 import 'planning_models.dart';
 
@@ -263,6 +278,39 @@ PlanScenarioDelta? planScenarioResourceDelta(
   };
 }
 
+/// 페이즈별 · 전체 탭 재화의 활성 대비(FD-038 (c), FE5-d). 활성 계획이 그 재화를 쓰지 않고(필요 0) 시나리오만 쓰면
+/// "이 시나리오에만"(전체 타일 마크는 위젯이 "신규"로 줄인다), 그 밖은 [planScenarioResourceDelta]와 같다.
+PlanScenarioDelta? planDetailResourceDelta(
+  Map<String, dynamic>? row, {
+  required PlanScenarioAmountFormat format,
+  String prefix = '',
+}) {
+  if (row == null) return null;
+  final requiredA = _int(row['required_a']);
+  final requiredB = _int(row['required_b']);
+  if (requiredA != null && requiredA <= 0 && (requiredB ?? 0) > 0) {
+    return const PlanScenarioDelta('이 시나리오에만', PlanScenarioDeltaTone.only);
+  }
+  return planScenarioResourceDelta(row, format: format, prefix: prefix);
+}
+
+/// 페이즈별 요약 행 칩(시안 "활성보다 +12 부족"): 부족량 차이면 "활성보다 ±n 부족", 필요량 차이 · 같음 · 신규는
+/// [planDetailResourceDelta] 그대로(앞에 "활성보다 ").
+PlanScenarioDelta? planDetailSummaryDelta(
+  Map<String, dynamic>? row, {
+  required PlanScenarioAmountFormat format,
+}) {
+  final delta = planDetailResourceDelta(row, format: format, prefix: '활성보다 ');
+  if (row == null || delta == null) return null;
+  final credits = row['category']?.toString() == 'credits';
+  final noShortage = _int(row['shortage_a']) == 0 && _int(row['shortage_b']) == 0;
+  final directional =
+      delta.tone == PlanScenarioDeltaTone.better ||
+      delta.tone == PlanScenarioDeltaTone.worse;
+  if (credits || noShortage || !directional) return delta;
+  return PlanScenarioDelta('${delta.label} 부족', delta.tone);
+}
+
 /// 병목 카드의 활성 대비 칩(비교 `bottlenecks[]` 한 줄: 재화마다 처음 모자라는 페이즈 · 단계 · 부족량).
 ///
 /// 활성 계획에 없으면 "이 시나리오에만", 더 이른 페이즈면 "활성보다 n페이즈 빨리"(경고), 늦으면 "… 늦게"(ok), 같은
@@ -435,6 +483,176 @@ class PlanDetailBottleneckCard {
   PlanDetailCardResource get primary => resources.first;
 }
 
+/// 페이즈별 · 전체 탭의 재화 한 줄(FE5-d).
+///
+/// 페이즈 줄의 [owned]는 그 페이즈에 들어설 때 남은 양(진입, FD-037), 전체 줄의 [owned]는 지금 보유량이다. 모르면 null.
+@immutable
+class PlanDetailResourceTile {
+  PlanDetailResourceTile({
+    required this.resourceKey,
+    required this.name,
+    required this.category,
+    required this.required,
+    this.itemId,
+    this.owned,
+    this.exit,
+    this.delta,
+    List<String> affectedStageIds = const [],
+  }) : affectedStageIds = List.unmodifiable(affectedStageIds);
+
+  final String resourceKey;
+  final String name;
+  final String? itemId;
+  final String category;
+  final int required;
+
+  /// 진입 잔량(페이즈) 또는 보유량(전체). 모르면 null.
+  final int? owned;
+
+  /// 페이즈 종료 잔량 = max(0, 진입 − 필요). 전체 줄 · 모르면 null.
+  final int? exit;
+
+  /// 활성 대비(FD-038 (c), [planDetailResourceDelta]). 비교가 없으면 null.
+  final PlanScenarioDelta? delta;
+
+  /// 이 재화를 쓰는 단계(문서 순서). 전체 탭에서 누르면 왼쪽에서 강조한다.
+  final List<String> affectedStageIds;
+
+  bool get isCredits => category == 'credits' || resourceKey == 'credits';
+
+  PlanScenarioResourceField get field => PlanScenarioResourceField.of(category);
+
+  /// 모자라는 양. 보유를 모르면 null.
+  int? get shortage {
+    final value = owned;
+    return value == null ? null : math.max(0, required - value);
+  }
+
+  /// 충족 비율 min(보유, 필요)/필요. 보유를 모르면 null.
+  double? get fraction {
+    final value = owned;
+    if (value == null) return null;
+    if (required <= 0) return 1;
+    return math.min(value, required) / required;
+  }
+
+  /// 충족률(내림 %). 보유를 모르면 null.
+  int? get percent {
+    final value = fraction;
+    return value == null ? null : (value * 100).floor();
+  }
+
+  /// 보유로 필요량을 채운다(모르면 false).
+  bool get satisfied {
+    final value = owned;
+    return value != null && value >= required;
+  }
+}
+
+/// 페이즈별 탭 페이즈 카드 하나(FE5-d, 시안 `.srow` 300px).
+@immutable
+class PlanDetailPhaseResources {
+  PlanDetailPhaseResources({
+    required this.number,
+    required this.name,
+    required List<String> studentIds,
+    required List<PlanDetailResourceTile> tiles,
+    this.credits,
+    this.calculated = true,
+  }) : studentIds = List.unmodifiable(studentIds),
+       tiles = List.unmodifiable(tiles);
+
+  /// 페이즈 번호(1부터, 문서 순서).
+  final int number;
+  final String name;
+
+  /// 이 페이즈 단계의 학생(처음 나온 순서).
+  final List<String> studentIds;
+
+  /// 크레딧 밖의 재화(백엔드 순서).
+  final List<PlanDetailResourceTile> tiles;
+
+  /// 크레딧 진입/필요/종료 줄. 이 페이즈가 크레딧을 쓰지 않으면 null.
+  final PlanDetailResourceTile? credits;
+
+  /// 계산 응답(`phase_results`)에 이 페이즈 줄이 있었다.
+  final bool calculated;
+
+  /// 모자라는 재화 종 수(크레딧 포함). 보유를 하나도 모르면 null.
+  int? get shortageKinds {
+    final known = [
+      ?credits,
+      ...tiles,
+    ].where((tile) => tile.owned != null).toList();
+    if (known.isEmpty) return null;
+    return known.where((tile) => (tile.shortage ?? 0) > 0).length;
+  }
+}
+
+/// 전체 탭(FE5-d, 시안 Scenario-Detail-All): `overall.resources[]`와 확보율(FD-031 (a)).
+@immutable
+class PlanDetailOverallResources {
+  PlanDetailOverallResources({
+    required List<PlanDetailResourceTile> tiles,
+    required this.rate,
+    required this.unknownKinds,
+    required this.shortageKinds,
+    required this.affectedStudents,
+    required this.totalStudents,
+    this.credits,
+    this.activeRate,
+  }) : tiles = List.unmodifiable(tiles);
+
+  /// 크레딧 밖의 재화(백엔드 순서).
+  final List<PlanDetailResourceTile> tiles;
+  final PlanDetailResourceTile? credits;
+
+  /// 확보율(0~1). 보유를 아는 재화가 없으면 null.
+  final double? rate;
+
+  /// 보유를 모르는 재화 종 수.
+  final int unknownKinds;
+
+  /// 모자라는 재화 종 수(크레딧 포함).
+  final int shortageKinds;
+
+  /// 모자라는 재화를 쓰는 단계의 학생 수 / 문서 학생 수.
+  final int affectedStudents;
+  final int totalStudents;
+
+  /// 활성 계획 확보율(비교 a쪽, 같은 식). 비교가 없으면 null.
+  final double? activeRate;
+}
+
+/// 페이즈별 요약 행 "가장 부족한 재화"(FE5-d): 처음으로 모자라는 재화가 있는 페이즈에서 충족률이 가장 낮은(같으면
+/// 부족량이 큰) 재화.
+@immutable
+class PlanDetailPhaseSummary {
+  const PlanDetailPhaseSummary({
+    required this.tile,
+    required this.phase,
+    required this.students,
+    required this.completable,
+    required this.laterStages,
+    this.delta,
+  });
+
+  final PlanDetailResourceTile tile;
+
+  /// 페이즈 번호(1부터).
+  final int phase;
+
+  /// 그 페이즈 학생 수와 그중 그 페이즈 단계가 모두 막히지 않은(FD-035 상태가 없는) 학생 수.
+  final int students;
+  final int completable;
+
+  /// 뒤 페이즈에서 이 재화를 더 쓰는 단계 수.
+  final int laterStages;
+
+  /// 활성 대비(시안 "활성보다 +12 부족"). 비교가 없으면 null.
+  final PlanScenarioDelta? delta;
+}
+
 /// 활성 대비 KPI 4개(a = 활성 계획, b = 이 문서). 비교가 없으면 a가 모두 null이다.
 @immutable
 class PlanDetailKpis {
@@ -481,8 +699,12 @@ class PlanDetailData {
     this.differentStageCount,
     this.differentBottlenecks,
     this.activeOnlyBottlenecks,
+    List<PlanDetailPhaseResources> phaseResources = const [],
+    this.overall,
+    this.phaseSummary,
   }) : phases = List.unmodifiable(phases),
-       cards = List.unmodifiable(cards);
+       cards = List.unmodifiable(cards),
+       phaseResources = List.unmodifiable(phaseResources);
 
   /// 병목 카드 한 장에 싣는 재화 타일 수.
   static const maxCardResources = 3;
@@ -501,6 +723,31 @@ class PlanDetailData {
 
   /// "활성 계획에만 있는 병목 n개". 비교가 없으면 null.
   final int? activeOnlyBottlenecks;
+
+  /// 페이즈별 탭 페이즈 카드(단계가 있는 페이즈, FE5-d).
+  final List<PlanDetailPhaseResources> phaseResources;
+
+  /// 전체 탭. 계산 응답에 `overall`이 없으면 null(FE5-d).
+  final PlanDetailOverallResources? overall;
+
+  /// 페이즈별 요약 행. 모자라는 재화가 있는 페이즈가 없으면 null(FE5-d).
+  final PlanDetailPhaseSummary? phaseSummary;
+
+  /// 병목 카드만 바꾼 사본(재화 유형 필터 · 충족 재화 숨기기).
+  PlanDetailData withCards(List<PlanDetailBottleneckCard> cards) =>
+      PlanDetailData(
+        phases: phases,
+        cards: cards,
+        kpis: kpis,
+        studentCount: studentCount,
+        stageCount: stageCount,
+        differentStageCount: differentStageCount,
+        differentBottlenecks: differentBottlenecks,
+        activeOnlyBottlenecks: activeOnlyBottlenecks,
+        phaseResources: phaseResources,
+        overall: overall,
+        phaseSummary: phaseSummary,
+      );
 
   /// 비교 KPI · 칩을 그릴 수 있다.
   bool get hasComparison => differentStageCount != null;
@@ -759,6 +1006,149 @@ class PlanDetailData {
       activeOnlyBottlenecks = activeOnlyCount;
     }
 
+    // 페이즈별 · 전체 탭(FE5-d).
+    PlanDetailResourceTile tile(
+      Map<String, dynamic> row, {
+      required bool phase,
+    }) {
+      final key =
+          row['resource_key']?.toString() ?? row['item_id']?.toString() ?? '';
+      final required = _int(row['required']) ?? 0;
+      final owned = _int(row['owned']);
+      final affected = row['affected_stage_ids'];
+      return PlanDetailResourceTile(
+        resourceKey: key,
+        itemId: row['item_id']?.toString(),
+        name:
+            row['display_name']?.toString() ??
+            row['item_id']?.toString() ??
+            '알 수 없는 재화',
+        category: row['category']?.toString() ?? 'unresolved',
+        required: required,
+        owned: owned,
+        exit: phase && owned != null ? math.max(0, owned - required) : null,
+        delta: comparison == null
+            ? null
+            : planDetailResourceDelta(resourceRows[key], format: format),
+        affectedStageIds: [
+          for (final id in affected is List ? affected : const <Object?>[])
+            id.toString(),
+        ],
+      );
+    }
+
+    final phaseResultRows = _rows(projection['phase_results']);
+    final phaseResultById = <String, Map<String, dynamic>>{
+      for (final row in phaseResultRows)
+        if (row['phase_id'] != null) row['phase_id'].toString(): row,
+    };
+    final phaseResources = <PlanDetailPhaseResources>[];
+    for (final (index, phase) in document.phases.indexed) {
+      if (phase.stages.isEmpty) continue;
+      final indexed = index < phaseResultRows.length
+          ? phaseResultRows[index]
+          : null;
+      final row =
+          phaseResultById[phase.id] ??
+          (indexed != null && indexed['phase_id'] == null ? indexed : null);
+      final all = [
+        for (final resource in _rows(row?['resources']))
+          tile(resource, phase: true),
+      ];
+      phaseResources.add(
+        PlanDetailPhaseResources(
+          number: index + 1,
+          name: phase.name,
+          studentIds: {
+            for (final stage in phase.stages) stage.studentId,
+          }.toList(),
+          tiles: [
+            for (final item in all)
+              if (!item.isCredits) item,
+          ],
+          credits: all.where((item) => item.isCredits).firstOrNull,
+          calculated: row != null,
+        ),
+      );
+    }
+
+    PlanDetailOverallResources? overallResources;
+    final overallTiles = [
+      for (final row in overallRows) tile(row, phase: false),
+    ];
+    if (overall is Map) {
+      final fulfillment = planFlowFulfillment([
+        for (final row in overallRows)
+          {'required_a': row['required'], 'owned': row['owned']},
+      ], 'a');
+      final short = overallTiles.where((item) => (item.shortage ?? 0) > 0);
+      overallResources = PlanDetailOverallResources(
+        tiles: [
+          for (final item in overallTiles)
+            if (!item.isCredits) item,
+        ],
+        credits: overallTiles.where((item) => item.isCredits).firstOrNull,
+        rate: fulfillment.rate,
+        unknownKinds: fulfillment.unknown,
+        shortageKinds: short.length,
+        affectedStudents: {
+          for (final item in short)
+            for (final id in item.affectedStageIds) ?stageInfo[id]?.studentId,
+        }.length,
+        totalStudents: students.length,
+        activeRate: comparison == null
+            ? null
+            : planFlowFulfillment(_rows(comparisonRows?['resources']), 'a').rate,
+      );
+    }
+
+    PlanDetailPhaseSummary? phaseSummary;
+    final overallAffected = {
+      for (final item in overallTiles) item.resourceKey: item.affectedStageIds,
+    };
+    for (final phase in phaseResources) {
+      final short = [
+        for (final (order, item) in [?phase.credits, ...phase.tiles].indexed)
+          if ((item.shortage ?? 0) > 0) (order: order, item: item),
+      ];
+      if (short.isEmpty) continue;
+      short.sort((a, b) {
+        final ratio = (a.item.fraction ?? 0).compareTo(b.item.fraction ?? 0);
+        if (ratio != 0) return ratio;
+        final amount = (b.item.shortage ?? 0).compareTo(a.item.shortage ?? 0);
+        return amount != 0 ? amount : a.order.compareTo(b.order);
+      });
+      final top = short.first.item;
+      final stages = document.phases[phase.number - 1].stages;
+      final stuck = <String>{
+        for (final stage in stages)
+          if ((states?.stateOf(stage.id) ?? PlanDetailStageState.clear) !=
+                  PlanDetailStageState.clear ||
+              (stageResources[stage.id] ?? const []).any(
+                (row) => (_int(row['shortage_at_entry']) ?? 0) > 0,
+              ))
+            stage.studentId,
+      };
+      phaseSummary = PlanDetailPhaseSummary(
+        tile: top,
+        phase: phase.number,
+        students: phase.studentIds.length,
+        completable: phase.studentIds
+            .where((student) => !stuck.contains(student))
+            .length,
+        laterStages: (overallAffected[top.resourceKey] ?? const <String>[])
+            .where((id) => (stageInfo[id]?.phase ?? 0) > phase.number)
+            .length,
+        delta: comparison == null
+            ? null
+            : planDetailSummaryDelta(
+                resourceRows[top.resourceKey],
+                format: format,
+              ),
+      );
+      break;
+    }
+
     return PlanDetailData(
       phases: phases,
       cards: cards,
@@ -768,6 +1158,9 @@ class PlanDetailData {
       differentStageCount: comparison == null ? null : different,
       differentBottlenecks: differentBottlenecks,
       activeOnlyBottlenecks: activeOnlyBottlenecks,
+      phaseResources: phaseResources,
+      overall: overallResources,
+      phaseSummary: phaseSummary,
     );
   }
 }

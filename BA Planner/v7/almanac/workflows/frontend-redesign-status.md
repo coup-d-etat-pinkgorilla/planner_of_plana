@@ -5638,3 +5638,195 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_135529\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-d 착수 기록 (2026-10-11 14:52, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `dfd1d620`(scanner-consolidation HEAD, redesigndocs 커밋. 이 환경에서는 `.git`을 읽을 수 없어 오케스트레이터 로그 14:45의 짧은 SHA를 적는다).
+- 범위: Detail S3 페이즈별 · 전체 탭을 시안(Scenario-Detail-Phase · -All)대로 새로 그리고 활성 계획 홈 · 시나리오 보기 모두에서 켠다. 홈의 옛 `PlanConsumptionSection` 연결을 새 위젯으로 바꾸고, 칩 3개(재화 유형 · 충족 재화 숨기기 · 정렬)를 새 두 탭에 연결한다.
+- 막힘 요약의 이 slice 열림 FD 0건 확인. FD-037(페이즈 진입/종료)은 백엔드 `planning_document.py`를 먼저 읽고 판단한다(FB-9 필요 여부는 종료 기록에 적는다).
+- 고칠 기존 파일(사본: `debug/frontend_fe5d/pre/<경로>`):
+  - `frontend/lib/ui/models/plan_scenario_detail.dart`
+  - `frontend/lib/ui/widgets/plan_scenario_detail.dart`
+  - `frontend/lib/ui/widgets/plan_section_layout.dart`
+  - `frontend/lib/ui/widgets/plan_scenario_list.dart`
+  - `frontend/test/plan_home_detail_test.dart`, `frontend/test/plan_scenario_detail_test.dart`
+  - `frontend/test/goldens/fe1g_baseline_golden_test.dart`, `frontend/test/goldens/golden_harness.dart`
+- 새 파일(예정): 없음(필요하면 종료 기록에 적는다).
+- 이 환경에는 flutter가 없다(정적 검토만 가능). `frontend/lib/services/**` · 인벤토리 파일 · app_shell은 고치지 않는다.
+
+## FE5-d 종료 기록 (2026-10-11 15:30, Lane A)
+
+- 상태: 구현 끝, **정적 검토만 했다**. 이 환경에는 flutter · dart가 없다. analyze · 테스트 · golden은 한 번도 돌리지 않았다. 통과를 주장하지 않는다.
+- 시작 SHA `dfd1d620`. 사본 8개는 `debug/frontend_fe5d/pre/frontend/`에 있다. `plan_scenario_detail_test.dart` · `golden_harness.dart` 사본도 두었지만 두 파일은 결국 고치지 않았다(commit.json `modified`에 없음).
+- commit.json: `debug/frontend_fe5d/commit.json`(slice=fe5d, status=true). modified 6, added 3(새 테스트 1 + 새 기준 이미지 2), whole = 바뀌는 기준 이미지 3장(하나씩).
+
+### 실행 명령 · 결과
+
+- `flutter analyze` · `flutter test`: 실행하지 못했다(SDK 없음).
+- FD-037 확인: 백엔드 `backend/core/planning_document.py` `calculate_document_projection`을 읽었다(아래 "FB-9 필요 여부").
+- 시안: `dc_outline.py --abs`로 Scenario-Detail-Phase · -All 사본만 읽었다.
+- 정적 검토 에이전트 1회(바뀐 파일 전부 · 쓰는 API 시그니처 대조 · 테스트 기대값 손 계산 · test/ 전체 grep). 컴파일 오류는 0건이었다. 지적은 모두 고쳤다.
+  1. 테스트 실패 2건: golden `plan-by-phase`와 `plan_home_detail_test`의 요약 행 finder가 키가 붙은 `Text` 자신을 찾지 못한다 → `matchRoot: true`.
+  2. analyzer info 후보 2건: `x == null ? null : x.m()`(prefer_null_aware_operators) → if 문으로 바꿨다. const로 쓸 수 있는 `Text('크레딧')` → const.
+  3. 화면 위험 4건:
+     - 전체 그룹 행 머리 줄이 칩(24)보다 낮았다(22 → 24).
+     - 그룹 · 크레딧 행 안쪽 여백이 사선에 먹혔다 → 사선 깊이 + 10. 시안 값과 같다(크레딧 19.5, 1줄 28.0, 2줄 38.2).
+     - 좁은 칸(5열 · 작은 창)에서 전체 타일의 마크 · 막대가 넘칠 수 있다 → 폭 150 미만이면 둘을 빼고 "보유 / 필요"만 보인다.
+     - 크레딧 행 "보유 · 필요" 글자는 폭 220으로 묶었다.
+  4. 페이즈별 요약 행이 계산 전이나 보유를 모를 때 "부족한 재화가 없습니다"라고 말했다 → 계산 못 함 · 보유 모름 · 재화 없음 문구를 나눴다.
+- 장치 반영: 바뀐 파일 6개 · 새 파일 1개를 `expectedMtimeMs`로 쓰고 다시 받아 `cmp`로 7개 모두 같음을 확인했다. `plan_section_layout.dart`는 CRLF 그대로다(8647줄 모두 CRLF).
+
+### 한 일
+
+1. **페이즈별**(Scenario-Detail-Phase): `PlanDetailWorkspace`가 직접 그린다.
+   - 요약 행 "가장 부족한 재화":
+     - 대상: 처음으로 모자라는 재화가 있는 페이즈에서 충족률이 가장 낮은 재화(같으면 부족량이 큰 것).
+     - 제목: "이름 · Pn에서 m명 중 k명만 완료". 완료 = 그 페이즈 단계에 FD-035 상태나 진입 부족이 없는 학생.
+     - 설명: "Pn 종료 시 x개 남습니다". 종료 0이고 뒤 페이즈에서 그 재화를 더 쓰면 "…0개 남아서 뒤 페이즈 단계 n개가 막힙니다".
+     - 보기 모드 칩: "활성보다 ±n 부족".
+   - 페이즈 카드(시안 `.srow` 300px):
+     - 머리 줄: P번호 · 이름 · 학생 초상 · 부족 n종/충분.
+     - 크레딧 진입/필요/종료 줄.
+     - 재화 타일 2열: 진입 · 필요 · 종료, 충족 막대 + 내림 %(100% 초록 · 50% 이상 노랑 · 그 밖 분홍), 보기 모드에서만 활성 대비 칩.
+   - 카드를 누르면 S2에서 그 페이즈 헤더(`srow sel`)와 단계 행이 강조된다. 페이즈별 탭에서는 단계 행을 눌러도 그 페이즈를 고른다.
+2. **전체**(Scenario-Detail-All):
+   - 요약 행 "전체 요구량": "필요량의 n% 확보 · n종 부족 · m명 중 k명의 계획에 영향(· 보유 모름 n종)" + 고정 설명. 보기 모드 칩 "활성 a% → b%"(오르면 ok, 내리면 경고).
+   - 본문 위 줄(시안 471 → 패널 511): "재화 n종 · 한 행에 [2|3|4|5]"(기본 4) + 보기 모드 범례 "= 같음 · 신규 = 이 시나리오에만 · ± 활성 대비".
+   - 본문: 크레딧 행(보유 · 필요, 막대, 부족/충분, "활성보다 ±n") + 분야 그룹 행. 분야는 `PlanScenarioResourceField` 순서(엘레프 · 오파츠 · 노트 · BD · 장비 설계도 · 그 밖)이고, 머리 줄은 "n종 · 부족 n종/충분"이다.
+   - n열 타일: 이름 + 마크 = / ±n / 신규, "보유 / 필요", 막대 + %.
+   - 타일을 누르면 S2에서 그 재화를 쓰는 단계(`affected_stage_ids`)가 강조된다. 다시 누르면 해제된다.
+3. **두 화면 모두 켬**:
+   - 활성 계획 홈(`showComparison: false`): ± 칩 · 마크 · 범례 · 활성 대비 칩이 없다.
+   - 시나리오 보기: 비교 응답의 `projection_b`(페이즈 · 전체 재화)와 비교 `resources[]`(±)로 그린다. 시나리오 보기는 탭 · 칩 · 고른 페이즈/재화 · 열 수를 자기 상태로 들고, 다른 시나리오를 열면 고른 것만 처음(P1 · 없음)으로 돌린다.
+4. **홈 연결 교체**: `_detailHome`이 옛 `PlanConsumptionSection` · `PlanPhaseResourceSummary` · `PlanOverallResourceSummary`를 더는 쓰지 않는다. `tabBody` · `tabSummary` · `toolbarChips` 매개변수와 `_filterHomeData` · `_homeToolbarChips`를 지웠다.
+5. **칩 3개**: 새 `PlanDetailResourceFilter` + `PlanDetailFilterChips`.
+   - 키는 `<keyPrefix>-filter-category` · `-hide-satisfied` · `-sort`로, FE5-c2 홈 칩과 같다.
+   - 재화 유형 · 충족 재화 숨기기는 병목 카드 · 페이즈 타일(크레딧 줄 포함) · 전체 타일에 건다. 정렬은 페이즈 · 전체 타일에만 건다. 보유를 모르는 재화는 숨기지 않는다.
+   - 홈은 옛 홈 필터 상태(`_selectedResourceCategories` 등)를 그대로 넘겨 받고, `_applyHomeFilter`로 쓴다.
+   - 병목 카드 거르기는 홈 전용 함수에서 워크스페이스로 옮겨, 시나리오 보기에도 같이 걸린다.
+
+### 처리한 FD
+
+- FD-037(워커 재량): 백엔드 의미를 먼저 확인했다. 진입 = `phase_results[].resources[].owned`, 종료 = max(0, 진입 − 필요)를 클라이언트가 계산한다. FB-9를 쓰지 않는다.
+- FD-038 (c): 페이즈 타일 칩 · 전체 마크 · 크레딧 "활성보다 ±n" · 요약 칩을 기존 `planScenarioResourceDelta`로 낸다. 활성 계획 필요 0인 재화는 "이 시나리오에만"(마크 "신규", `planDetailResourceDelta`)이다.
+- FD-031 (a): 전체 확보율과 활성 쪽 확보율은 같은 식(`planFlowFulfillment`)이다.
+- FD-087: 새 두 목록에 공용 사선 스크롤바 · 포그(`DiagonalScrollViewport`)를 쓴다.
+- FD-035: S2 상태 칩은 그대로다. 페이즈별 요약 행의 "완료 가능 학생"이 같은 상태를 쓴다.
+
+### FB-9 필요 여부
+
+- **필요 없다.** `calculate_document_projection`은 페이즈마다 `phase_remaining = dict(remaining)`을 떠 두고, 단계마다 `remaining[key] = max(0, before − required)`로 줄인다. 페이즈 줄 `owned`는 `phase_remaining.get(key)`다.
+  - 그래서 `owned` = 그 페이즈 진입 잔량(앞 페이즈까지 쓰고 남은 양)이다.
+  - 음이 아닌 필요량을 차례로 빼고 0에서 자르는 것은 페이즈 합을 한 번에 빼고 자르는 것과 같다. 따라서 종료 = max(0, owned − required)는 정확하다.
+  - 다음 페이즈 진입 = 이 페이즈 종료다(시안 P1 종료 70.8M = P2 진입). 보유를 모르는 재화는 진입 · 종료 모두 "—"다.
+- 정확히 만들 수 없는 값: **페이즈 단위 활성 대비 ±**(시안 P1 노트 +12 · P2 노트 +30처럼 페이즈마다 다른 값).
+  - 두 문서의 페이즈를 맞추는 규칙이 없다(FD-039는 단계만 맞춘다). 그래서 타일 칩은 그 재화의 계획 전체 차이(비교 `resources[]`)를 쓴다. 추측해서 페이즈끼리 맞추지 않았다.
+  - 페이즈별 차이가 꼭 필요하면 FB-9가 아니라 페이즈 맞춤 규칙(FD)을 먼저 정해야 한다(아래 발견 사항).
+
+### 판단(워커 재량, 기록)
+
+- 칩 · 고른 페이즈 · 고른 재화 · 열 수는 화면(홈 · 시나리오 보기)이 들고 워크스페이스에 넘긴다. 홈의 탭 · 칩은 옛 홈 상태를 그대로 쓴다(`legacyHome`과 공유).
+- 처음 고른 페이즈 = P1(시안 상태 "P1 강조"), 전체 탭은 고른 재화 없음.
+- "충족 재화 숨기기"는 보유를 모르는 재화를 숨기지 않는다. 옛 홈은 "알려진 부족"만 남겨 모름도 숨겼다.
+- 전체 탭 그룹 · "재화 n종"은 칩으로 걸러진 뒤의 수다. 페이즈 카드 머리 줄 "부족 n종"은 거르기 전 그 페이즈 전체 수다.
+- 크레딧 줄은 재화 유형 "크레딧"과 충족 재화 숨기기에 함께 걸린다.
+- 빈 상태 문구: 계산 응답 없음 "…계산하지 못했습니다.", 재화 없음 "이 계획에 필요한 재화가 없습니다.", 칩에 다 걸림 "조건에 맞는 재화가 없습니다."
+- 페이즈 카드 높이 = 18 + 32 + (8 + 24) + 12 + 줄 × 88 + (줄 − 1) × 12 + 18(시안 2줄 300). 전체 그룹 행 = 44 + 줄 × 58(시안 102 · 160).
+
+### golden 예측(장면별)
+
+바뀜(whole 3장):
+
+- `plan-by-phase`: 옛 `PlanConsumptionSection` → 새 페이즈 카드 3장.
+  - P1: 크레딧 진입 99M · 필요 91M · 종료 8M. 네브라(최상급) 76/450 16% · 볼프세크 30/90 33% · 기술 노트 24/120 20%, 부족 3종.
+  - P2 · P3 카드가 이어진다.
+  - S2에서 P1 헤더와 단계 5개가 분홍 강조된다(처음 고른 페이즈 P1).
+  - 요약 행: "오파츠 · 네브라 디스크 (최상급) · P1에서 5명 중 0명만 완료" / "P1 종료 시 0개 남습니다".
+  - golden 대역의 페이즈 진입값은 대역 고정값이다(백엔드처럼 앞 페이즈 소비를 빼지 않는다). `_goldenPhaseResults`를 고치면 `plan-flow-step4`의 페이즈 상태도 바뀌므로 그대로 두었다.
+- `plan-overall`: 옛 전체 목록 → 본문 위 "재화 7종 · 한 행에 4", 크레딧 행(500M / 112M, 100% 충분), 그룹 3개(오파츠 4 · 노트 · BD 2 · 장비 설계도 1). 요약 행은 "필요량의 n% 확보 · 6종 부족 · …"이다. 마크 · 범례 · 칩은 없다.
+- `plan-scenario-detail-bottleneck`: S3 맨 위 seg가 "병목 + 꺼진 페이즈별 · 전체"(두 묶음) → 켜진 세 칸 한 묶음으로 바뀐다. 표시용 정렬 칩 "부족량 많은 순"은 동작하는 칩의 기본값 "기본 순서"로 바뀐다. 본문 · KPI · S1 · S2는 같다.
+
+새 장면(added 2장):
+
+- `plan-scenario-detail-phase`(시안 Scenario-Detail-Phase 상태): 보기 모드 → 페이즈별.
+  - 07 시나리오 페이즈 카드 3장(P2는 패널 아래로 이어짐), 타일 활성 대비 칩(아루 엘레프 "이 시나리오에만").
+  - 요약 행: 네브라(최상급) P1 76/180, 칩 "활성보다 −180 부족"(계획 전체 부족 374 → 194). KPI 4칸, caption "페이즈를 누르면 왼쪽 단계가 강조됩니다".
+- `plan-scenario-detail-all`(시안 Scenario-Detail-All 상태): 보기 모드 → 전체. 범례, 엘레프 그룹(아루 "신규"), 마크 = / ±n, 크레딧 "활성보다 −n", 요약 칩 "활성 a% → b%".
+
+그대로(이유):
+
+- `plan-bottleneck`: 병목 탭은 그대로다. 카드 거르기는 홈 함수 → 워크스페이스로 옮겼지만 기본 칩(전체 · 숨기기 꺼짐)에서는 카드가 같다. 칩은 같은 BaChip 세 개를 한 Row로 감쌌을 뿐이라 크기 · 자리가 같다.
+- `plan-scenario-list` · `-expanded` · `-shortage` · `plan-scenario-compare`: 홈은 화면 밖이고, 목록 · 미리보기 · 비교 S1은 고치지 않았다.
+- `plan-flow-*` 전부: 흐름이 열리면 홈을 그리지 않는다. golden 대역 · `_goldenPhaseResults`는 고치지 않았다(4단계 페이즈 상태 그대로).
+- `plan-phase-editor` · `plan-student-selector` · `plan-element-builder` · `plan-preset-manager`: 옛 홈(`legacyHome`)이거나 홈을 그리지 않는다. 옛 홈의 필터 · 소비 목록 코드는 고치지 않았다.
+- 계획 밖 장면(`title` · `account-*` · `home` · `students-*` · `scan-student-review` · `account-new`): 계획 탭이 offstage다.
+
+### 테스트 변경(의도된 변경)
+
+- 새 `test/plan_detail_tabs_test.dart`:
+  - 모델 4건: 진입/필요/종료 · %, 확보율 · 영향 학생, 요약 행, 활성 대비.
+  - 위젯 4건: 페이즈 카드 ↔ S2 강조, 전체 타일 ↔ S2 강조 · 열 수, 칩 거르기, 비교 범례 · 마크 · 칩.
+- `test/plan_home_detail_test.dart`(FE5-c2 테스트):
+  - 위젯 그룹: `tabBody` · `tabSummary` 매개변수가 없어졌으므로 "새 본문 · 요약 행 키"로 바꿨다.
+  - 화면 테스트: "옛 홈 위젯을 보인다" → "새 위젯이고 `PlanConsumptionSection` 없음, 칩 누를 수 있음"(의도 그대로 FE5-d의 목표).
+- golden 테스트: `plan-by-phase` · `plan-overall`의 기대 키를 새 위젯 키로 바꿨다. 새 장면 2개와 `_openScenarioDetailTab`을 더했다.
+- 영향 grep: test/ 전체에서 `tabBody` · `tabSummary` · `toolbarChips` · `tab-body-` · `tab-later` · 홈 칩 키 · `PlanDetailWorkspace(`를 찾았다. 나머지(`plan_scenario_detail_test`의 c1 위젯 테스트)는 `onResourceTab`을 넘기지 않아 예전 꺼진 seg 그대로라 바꿀 필요가 없다. 옛 홈 테스트는 `legacyHome: true`라 영향이 없다.
+
+### 남긴 옛 코드(FE5-f에서 정리)
+
+- `PlanConsumptionSection` · `PlanConsumptionCard` 계열, `PlanPhaseResourceSummary` · `PlanOverallResourceSummary` · `PlanResourceSummaryProjection`, `filterPlanConsumptionGroups` · `filterPlanBottleneckDetails`. 이제 옛 홈(`legacyHome`)만 쓴다.
+- `_calculateDocument`의 `_phaseConsumptions` · `_overallConsumption` · `_bottleneckDetails` 만들기와 섹션 3 강조(`_toggleSection3Resource` · `_selectedSection3ResourceKey`). 옛 홈만 쓴다.
+- 옛 홈 필터 토글(`_toggleResourceCategory` 등)과 섹션 4 · 6 필터 위젯. 새 홈은 `_applyHomeFilter`로 같은 상태만 쓴다.
+- `PlanDetailWorkspace._lockedTabs`(seg를 넘기지 않을 때의 꺼진 모양). 앱에서는 쓰지 않고 c1 위젯 테스트만 쓴다.
+- FE5-c2 종료 기록의 목록(옛 홈 섹션 1~6, `legacyHome`, 옛 진입 버튼, A/B 후보 고르기, `PlanPhaseEditor` 등)은 그대로다.
+
+### 미검증 항목
+
+- analyze · 테스트 · golden 실행 전부.
+- 1280×720 같은 작은 창에서 페이즈 카드 · 전체 5열 그림(넘침은 코드로 막았지만 보지 못함).
+- 실제 백엔드(ProcessAppService)에서 크레딧이 인벤토리 snapshot에 있는지. 없으면 크레딧 진입 · 종료 · 보유가 "—"다.
+- 칩 메뉴(PopupMenu)가 FittedBox로 줄어든 툴바에서 열리는 위치.
+
+### 검수표
+
+| 프롬프트 항목 | 상태 |
+|---|---|
+| 1 페이즈별: 크레딧 진입/필요/종료 · 타일 진입 · 필요 · 종료 + 막대 % + ± 칩 · 페이즈 → S2 강조 | 했다(±는 재화 줄 단위) |
+| 1 FD-037 원천 · FB-9 | 백엔드 확인, FB-9 불필요 |
+| 2 전체: 한 행에 2~5 · 분야 그룹 + 크레딧 행 · 마크 = / ± / 신규 · 확보율 + 활성 a → b 칩 | 했다 |
+| 3 홈 · 시나리오 보기 모두 켬(홈은 칩 없이, 보기는 비교 응답) | 했다 |
+| 4 홈 옛 `PlanConsumptionSection` 연결 → 새 위젯, 옛 파일 · `legacyHome` 안 지움 | 했다(남긴 목록 위) |
+| 5 칩 3개가 새 두 탭에서 동작 | 했다(홈 · 시나리오 보기) |
+| services/** · 인벤토리 · backend · contracts · scan/tactical/title_page · account_* · app_shell 안 고침 | 지켰다 |
+| golden 장면별 예측 · 새 장면 2개 이하 | 지켰다(새 2) |
+| 정적 검토만 · 직접 커밋 안 함 · ~습니다체 | 지켰다 |
+
+### 발견 사항
+
+- 페이즈 단위 활성 대비(시안 P1 +12 · P2 +30)를 만들려면 두 문서의 페이즈를 맞추는 규칙이 먼저 필요하다(FD-039는 단계 맞춤뿐). 지금은 재화 줄 전체 차이를 쓴다. 필요하면 새 FD로 정하기를 제안한다. 그다음 `projection_a.phase_results`로 클라이언트 계산이 가능하다.
+- golden 대역 `_goldenPhaseResults`의 페이즈 진입값은 첫 단계 `owned_at_entry`(대역 고정값)라, 백엔드처럼 앞 페이즈 소비가 빠지지 않는다. 화면 문구 · 계산식은 백엔드 의미로 맞췄다. 대역을 백엔드 의미로 바꾸면 `plan-flow-step4` 페이즈 상태도 바뀌므로 별도 slice에서 판단해야 한다.
+- 옛 `planResourceCategory`는 경로 문자열로 분류해서 기술 노트(`skill_book` 폴더)를 "기술 노트"가 아니라 오파츠로 센다(키 `skill_note` · `skillnote`만 본다). FE5-c2부터 홈 칩이 같은 함수를 쓴다. 칩 분류를 `category` 기준으로 바꾸는 것은 FE5-f(옛 필터 정리) 몫으로 남긴다.
+
+### 다음 행동
+
+- 오케스트레이터: gate 결과를 검토한다. 기대는 다음과 같다.
+  - analyze · UI 테스트 녹색.
+  - golden RED는 위 3장 변경 + 새 2장(기준 없음)이다. 그 밖의 변화는 이 slice 몫인지 먼저 본다(Lane B FE6-a는 인벤토리 파일만).
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 오케스트레이터 승인 뒤 기준 이미지 갱신 → 다시 gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5d -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5d
+```
+
+### fe5d commit record (2026-10-11 16:56, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_164434\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

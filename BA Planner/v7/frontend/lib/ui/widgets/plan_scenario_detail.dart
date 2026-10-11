@@ -8,10 +8,17 @@
 //   목표 요약 · 활성 대비 칩(FD-039)). 고른 병목 카드의 단계 행은 분홍 테두리다.
 // - S3: 맨 위 한 줄 = seg 병목/페이즈별/전체 + 칩 3개, 요약 행(가장 심한 병목), "활성 계획 대비" + KPI 4칸(필요 크레딧 ·
 //   부족 재화 · 첫 병목 · 끝까지 가는 학생, FD-034 (a)), 본문 패널 = 병목 카드(214px, 같은 단계 재화 묶음 · 지연 단계).
-//   페이즈별 · 전체 탭: [PlanDetailWorkspace.onResourceTab]을 넘기면 seg가 켜지고 그 탭 본문은
-//   [PlanDetailWorkspace.tabBody](활성 계획 홈은 기존 계획 홈의 페이즈별 · 전체 위젯, FE5-c2)가 채운다. 넘기지 않으면
-//   (시나리오 보기, FE5-c1) seg 자리만 두고 꺼 둔다. 칩 3개는 [PlanDetailWorkspace.toolbarChips]로 바꿀 수 있다
-//   (기본은 자리 · 상태 표시만). 시안대로 다시 그리는 것은 FE5-d다.
+//   페이즈별 · 전체 탭(FE5-d, 시안 Scenario-Detail-Phase · -All): [PlanDetailWorkspace.onResourceTab]을 넘기면 seg가
+//   켜진다(활성 계획 홈 · 시나리오 보기 모두).
+//   · 페이즈별: 요약 행 "가장 부족한 재화"(+ 활성 대비 칩), 본문 = 페이즈 카드(번호 · 이름 · 학생 · 부족 n종, 크레딧
+//     진입/필요/종료, 재화 타일 2열 = 진입 · 필요 · 종료 + 충족 막대 % + 활성 대비 칩). 카드를 누르면 S2에서 그
+//     페이즈 헤더와 단계 행이 강조된다.
+//   · 전체: 요약 행 "전체 요구량"(확보율 FD-031 (a) + "활성 a% → b%" 칩), 본문 위 한 줄 = "재화 n종 · 한 행에
+//     [2|3|4|5]" + 범례, 본문 = 크레딧 행 + 분야별 그룹 행(n열 타일, 마크 = / ±n / 신규). 타일을 누르면 S2에서 그
+//     재화를 쓰는 단계가 강조된다(다시 누르면 해제).
+//   칩 3개(재화 유형 · 충족 재화 숨기기 · 정렬, [PlanDetailResourceFilter])는 [PlanDetailWorkspace.onFilter]를
+//   넘기면 동작한다. 재화 유형 · 숨기기는 병목 카드 · 페이즈 타일 · 전체 타일에, 정렬은 페이즈 · 전체 타일에만 건다
+//   (병목 번호 = 막히는 순서를 지킨다). 넘기지 않으면 표시만 한다.
 // 좌표는 시안(기준 viewport, 섹션 위 y=209.2)의 값이고, 섹션 rect는 Studio 문서([planDetailStudioDocument])를 따른다.
 import 'dart:math' as math;
 
@@ -24,8 +31,10 @@ import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/diagonal_scroll_viewport.dart';
 import '../kit/item_icon_tile.dart';
+import '../kit/kit_pressable.dart';
 import '../kit/portrait_strip.dart';
 import '../kit/scroll_viewport_fog.dart';
+import '../kit/skew_bar.dart';
 import '../kit/skew_box.dart';
 import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
@@ -35,7 +44,12 @@ import '../models/planning_resource_assets.dart';
 import '../studio/plan_scenario_detail_studio_layout.dart';
 import 'growth_calculator_section.dart' show growthCalculatorCompactNumber;
 import 'plan_scenario_preview.dart';
-import 'plan_section_layout.dart' show PlanSectionMotion;
+import 'plan_section_layout.dart'
+    show
+        PlanResourceCategory,
+        PlanResourceSort,
+        PlanSectionMotion,
+        planResourceCategory;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 
@@ -44,8 +58,12 @@ const planDetailMenuMotion = (intro: 0.0, outro: 180.0);
 const planDetailPhaseMotion = (intro: 80.0, outro: 260.0);
 const planDetailResourceMotion = (intro: 180.0, outro: 0.0);
 
-/// S3 맨 위 seg. 페이즈별 · 전체는 FE5-d에서 연다.
+/// S3 맨 위 seg.
 enum PlanDetailResourceTab { bottleneck, byPhase, overall }
+
+/// 전체 탭 "한 행에" 열 수(시안 2~5, 기본 4).
+const planDetailOverallColumnChoices = [2, 3, 4, 5];
+const planDetailOverallDefaultColumns = 4;
 
 /// 시안 값(섹션 위 y=209.2 기준).
 abstract final class PlanDetailMetrics {
@@ -104,6 +122,42 @@ abstract final class PlanDetailMetrics {
   static const bodyInset = 12.0;
   static const cardHeight = 214.0;
   static const cardGap = 12.0;
+
+  // 페이즈별 탭 페이즈 카드(시안 `.srow` 300px: 머리 줄 · 크레딧 줄 · 타일 2열 × 2줄).
+  static const phaseCardPadding = 18.0;
+  static const phaseCardHeader = 32.0;
+  static const phaseCardCreditsGap = 8.0;
+  static const phaseCardCredits = 24.0;
+  static const phaseCardTilesGap = 12.0;
+  static const phaseCardTile = 88.0;
+  static const phaseCardTileGap = 12.0;
+  static const phaseCardColumnGap = 18.0;
+  static const phaseCardGap = 12.0;
+
+  /// 페이즈 카드 높이(타일 [rows]줄, 크레딧 줄 유무). 시안 2줄 + 크레딧 = 300.
+  static double phaseCardHeight(int rows, {required bool credits}) =>
+      phaseCardPadding * 2 +
+      phaseCardHeader +
+      (credits ? phaseCardCreditsGap + phaseCardCredits : 0) +
+      (rows <= 0
+          ? 0
+          : phaseCardTilesGap +
+                rows * phaseCardTile +
+                (rows - 1) * phaseCardTileGap);
+
+  // 전체 탭(시안: 본문 위 30px 줄 → 10 아래 패널, 크레딧 행 54, 그룹 행 = 44 + 줄마다 58).
+  static const overallHeaderHeight = 30.0;
+  static const overallPanelOffset = 40.0;
+  static const overallCreditsHeight = 54.0;
+  static const overallGroupHeader = 44.0;
+  static const overallTileRow = 58.0;
+  static const overallTileHeight = 50.0;
+  static const overallTileGap = 12.0;
+  static const overallGap = 10.0;
+
+  /// 그룹 행 높이(타일 [rows]줄).
+  static double overallGroupHeight(int rows) =>
+      overallGroupHeader + math.max(1, rows) * overallTileRow;
 }
 
 const _muted = TextStyle(
@@ -242,8 +296,9 @@ class PlanDetailMenuLayer extends StatelessWidget {
 /// "활성 계획과 다른 단계" · S3 "활성 계획 대비" 줄 · KPI 줄을 그리지 않고 본문 패널이 요약 행 아래
 /// ([PlanDetailMetrics.bodyTopWithoutComparison])부터 시작한다), [selectedCard] · [onSelectCard](카드 ↔ 단계 행 강조),
 /// [shortageKpi](부족 재화 KPI 칸 팝오버, 비교가 있을 때만). FE5-c2부터: [resourceTab] · [onResourceTab](S3 seg 세 탭),
-/// [tabBody] · [tabSummary](페이즈별 · 전체 탭의 본문 · 요약 행), [toolbarChips](칩 3개 자리), [resourcePlaceholder]
-/// (재화를 그릴 수 없을 때 S3 안내, 예: 계산 중 · 계산할 수 없음).
+/// [resourcePlaceholder](재화를 그릴 수 없을 때 S3 안내, 예: 계산 중 · 계산할 수 없음). FE5-d부터: [filter] ·
+/// [onFilter](칩 3개), [selectedPhase] · [onSelectPhase](페이즈 카드 ↔ S2 페이즈 강조), [selectedResource] ·
+/// [onSelectResource](전체 타일 ↔ S2 단계 강조), [overallColumns] · [onOverallColumns](전체 "한 행에").
 class PlanDetailWorkspace extends StatelessWidget {
   const PlanDetailWorkspace({
     super.key,
@@ -259,9 +314,14 @@ class PlanDetailWorkspace extends StatelessWidget {
     this.placeholder,
     this.resourceTab = PlanDetailResourceTab.bottleneck,
     this.onResourceTab,
-    this.tabBody,
-    this.tabSummary,
-    this.toolbarChips,
+    this.filter = const PlanDetailResourceFilter(),
+    this.onFilter,
+    this.selectedPhase,
+    this.onSelectPhase,
+    this.selectedResource,
+    this.onSelectResource,
+    this.overallColumns = planDetailOverallDefaultColumns,
+    this.onOverallColumns,
     this.resourcePlaceholder,
   });
 
@@ -288,22 +348,32 @@ class PlanDetailWorkspace extends StatelessWidget {
   /// seg를 바꾼다. null이면 병목만 켜지고 페이즈별 · 전체는 꺼진다(FE5-c1).
   final ValueChanged<PlanDetailResourceTab>? onResourceTab;
 
-  /// 페이즈별 · 전체 탭 본문. [bodyPath]는 S3 본문 패널 자리(콘텐츠 캔버스 좌표)다.
-  final Widget Function(PlanDetailResourceTab tab, Path bodyPath)? tabBody;
+  /// 칩 3개 상태. [onFilter]가 없어도 이 값으로 거른다.
+  final PlanDetailResourceFilter filter;
 
-  /// 페이즈별 · 전체 탭의 요약 행 내용.
-  final Widget Function(PlanDetailResourceTab tab)? tabSummary;
+  /// 칩을 바꾼다. null이면 칩은 표시만 한다.
+  final ValueChanged<PlanDetailResourceFilter>? onFilter;
 
-  /// S3 맨 위 칩 자리. null이면 표시만 하는 칩 3개다.
-  final List<Widget>? toolbarChips;
+  /// 고른 페이즈 카드(페이즈 번호, 1부터). null이면 고르지 않음.
+  final int? selectedPhase;
+  final ValueChanged<int>? onSelectPhase;
+
+  /// 고른 전체 탭 재화(`resource_key`). null이면 고르지 않음.
+  final String? selectedResource;
+
+  /// 전체 타일을 누른다(같은 재화를 다시 누르면 null).
+  final ValueChanged<String?>? onSelectResource;
+
+  /// 전체 탭 "한 행에" 열 수(2~5).
+  final int overallColumns;
+  final ValueChanged<int>? onOverallColumns;
 
   /// 재화를 그릴 수 없을 때(계산 중 · 계산 오류 · 계산할 수 없음) S3 본문 안내. 있으면 요약 행 · 본문 대신 보인다.
   final Widget? resourcePlaceholder;
 
-  bool get _otherTab =>
-      resourceTab != PlanDetailResourceTab.bottleneck &&
-      onResourceTab != null &&
-      tabBody != null;
+  /// 지금 보이는 탭(seg가 꺼져 있으면 병목).
+  PlanDetailResourceTab get _tab =>
+      onResourceTab == null ? PlanDetailResourceTab.bottleneck : resourceTab;
 
   bool get _comparing => showComparison && (data?.hasComparison ?? false);
 
@@ -314,6 +384,10 @@ class PlanDetailWorkspace extends StatelessWidget {
         constraints.maxWidth,
         constraints.maxHeight.isFinite ? constraints.maxHeight : 660,
       );
+      // 병목 카드에는 재화 유형 · 충족 재화 숨기기를 건다(페이즈 · 전체 타일은 그 탭 본문이 거른다).
+      final source = data;
+      PlanDetailData? view;
+      if (source != null) view = source.withCards(filter.cards(source.cards));
       return SizedBox.fromSize(
         key: ValueKey('$keyPrefix-workspace'),
         size: size,
@@ -326,7 +400,7 @@ class PlanDetailWorkspace extends StatelessWidget {
                 animation: animation,
                 introDegrees: planDetailResourceMotion.intro,
                 outroDegrees: planDetailResourceMotion.outro,
-                child: _resources(size),
+                child: _resources(size, view),
               ),
             ),
             Positioned.fill(
@@ -335,7 +409,7 @@ class PlanDetailWorkspace extends StatelessWidget {
                 animation: animation,
                 introDegrees: planDetailPhaseMotion.intro,
                 outroDegrees: planDetailPhaseMotion.outro,
-                child: _phases(size),
+                child: _phases(size, view),
               ),
             ),
             Positioned.fill(
@@ -361,7 +435,7 @@ class PlanDetailWorkspace extends StatelessWidget {
 
   // --- S2 페이즈 --------------------------------------------------------------
 
-  Widget _phases(Size size) {
+  Widget _phases(Size size, PlanDetailData? data) {
     final points = planDetailSectionPolygon(size, planDetailPhaseSectionId);
     final topLeft = points[0];
     final topRight = points[1];
@@ -385,7 +459,6 @@ class PlanDetailWorkspace extends StatelessWidget {
       panelBottom,
     );
     final titleLeft = leftAt(titleBottom) + PlanDetailMetrics.phaseTitleLeft;
-    final data = this.data;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -461,11 +534,11 @@ class PlanDetailWorkspace extends StatelessWidget {
         for (final stage in phase.stages) (phase: phase, stage: stage),
       ],
     ];
-    final selectedStage = switch (selectedCard) {
-      final index? when index >= 0 && index < data.cards.length =>
-        data.cards[index].stageId,
-      _ => null,
-    };
+    final highlighted = _highlightedStages(data);
+    final highlightedPhase = _tab == PlanDetailResourceTab.byPhase
+        ? selectedPhase
+        : null;
+    final onSelectPhase = this.onSelectPhase;
     return DiagonalScrollViewport(
       key: ValueKey('$keyPrefix-phase-list'),
       keyPrefix: '$keyPrefix-phase-diagonal',
@@ -492,6 +565,7 @@ class PlanDetailWorkspace extends StatelessWidget {
             child: _PhaseHeader(
               key: ValueKey('$keyPrefix-phase-${item.phase.number}'),
               phase: item.phase,
+              selected: item.phase.number == highlightedPhase,
             ),
           );
         }
@@ -503,26 +577,62 @@ class PlanDetailWorkspace extends StatelessWidget {
             keyPrefix: '$keyPrefix-stage-${stage.stageId}',
             stage: stage,
             name: studentName(stage.studentId),
-            highlighted: stage.stageId == selectedStage,
+            highlighted: highlighted.contains(stage.stageId),
             showDelta: _comparing,
-            onTap: onSelectCard == null || number == null
-                ? null
-                : () {
-                    // 카드 목록이 걸러졌을 수 있다(활성 계획 홈의 재화 유형 필터). 번호로 찾는다.
-                    final index = data.cards.indexWhere(
-                      (card) => card.number == number,
-                    );
-                    if (index >= 0) onSelectCard!(index);
-                  },
+            onTap: switch (_tab) {
+              PlanDetailResourceTab.bottleneck =>
+                onSelectCard == null || number == null
+                    ? null
+                    : () {
+                        // 카드 목록이 걸러졌을 수 있다(재화 유형 필터). 번호로 찾는다.
+                        final index = data.cards.indexWhere(
+                          (card) => card.number == number,
+                        );
+                        if (index >= 0) onSelectCard!(index);
+                      },
+              PlanDetailResourceTab.byPhase =>
+                onSelectPhase == null
+                    ? null
+                    : () => onSelectPhase(stage.phase),
+              PlanDetailResourceTab.overall => null,
+            },
           ),
         );
       },
     );
   }
 
+  /// S2에서 강조할 단계: 병목 = 고른 카드의 단계, 페이즈별 = 고른 페이즈의 단계, 전체 = 고른 재화를 쓰는 단계.
+  Set<String> _highlightedStages(PlanDetailData data) {
+    switch (_tab) {
+      case PlanDetailResourceTab.bottleneck:
+        final index = selectedCard;
+        if (index == null || index < 0 || index >= data.cards.length) {
+          return const {};
+        }
+        return {data.cards[index].stageId};
+      case PlanDetailResourceTab.byPhase:
+        final number = selectedPhase;
+        return {
+          for (final phase in data.phases)
+            if (phase.number == number)
+              for (final stage in phase.stages) stage.stageId,
+        };
+      case PlanDetailResourceTab.overall:
+        final key = selectedResource;
+        final overall = data.overall;
+        if (key == null || overall == null) return const {};
+        final tile = [
+          ?overall.credits,
+          ...overall.tiles,
+        ].where((item) => item.resourceKey == key).firstOrNull;
+        return {...?tile?.affectedStageIds};
+    }
+  }
+
   // --- S3 재화 ----------------------------------------------------------------
 
-  Widget _resources(Size size) {
+  Widget _resources(Size size, PlanDetailData? data) {
     final points = planDetailSectionPolygon(size, planDetailResourceSectionId);
     final topRight = points[0];
     final bottomLeft = points[2];
@@ -531,8 +641,8 @@ class PlanDetailWorkspace extends StatelessWidget {
     final bottom = bottomLeft.dy;
     double leftAt(double y) => _edgeX(topLeft, bottomLeft, y);
     final right = topRight.dx - PlanDetailMetrics.resourceRight;
-    final data = this.data;
     final comparing = _comparing;
+    final tab = _tab;
 
     final toolbarTop = top + PlanDetailMetrics.toolbarTop;
     final toolbarLeft =
@@ -549,11 +659,23 @@ class PlanDetailWorkspace extends StatelessWidget {
       );
     }
 
-    final bodyTop =
+    final listTop =
         top +
         (comparing
             ? PlanDetailMetrics.bodyTop
             : PlanDetailMetrics.bodyTopWithoutComparison);
+    // 전체 탭은 본문 위에 "재화 n종 · 한 행에" 줄을 두고 패널을 40 내린다(시안 471 → 511).
+    final overallKinds =
+        tab == PlanDetailResourceTab.overall &&
+            resourcePlaceholder == null &&
+            data != null
+        ? _overallGroups(
+            data,
+          ).fold<int>(0, (sum, group) => sum + group.tiles.length)
+        : null;
+    final bodyTop =
+        listTop +
+        (overallKinds != null ? PlanDetailMetrics.overallPanelOffset : 0);
     final bodyBottom = math.max(
       bodyTop + 40,
       bottom - PlanDetailMetrics.bodyInset,
@@ -592,6 +714,21 @@ class PlanDetailWorkspace extends StatelessWidget {
           ),
           child: _summary(data, comparing),
         ),
+        if (overallKinds != null)
+          Positioned.fromRect(
+            rect: row(
+              listTop - top,
+              PlanDetailMetrics.overallHeaderHeight,
+            ),
+            child: _OverallHeader(
+              key: ValueKey('$keyPrefix-overall-header'),
+              keyPrefix: '$keyPrefix-overall',
+              kinds: overallKinds,
+              columns: overallColumns,
+              onColumns: onOverallColumns,
+              showLegend: comparing,
+            ),
+          ),
         if (comparing && data != null) ...[
           Positioned.fromRect(
             rect: row(
@@ -603,9 +740,14 @@ class PlanDetailWorkspace extends StatelessWidget {
               child: PlanScenarioCaption(
                 '활성 계획 대비',
                 key: ValueKey('$keyPrefix-compare-caption'),
-                note:
+                note: switch (tab) {
+                  PlanDetailResourceTab.bottleneck =>
                     '활성 계획과 다른 병목 ${data.differentBottlenecks ?? 0}개 · '
-                    '활성 계획에만 있는 병목 ${data.activeOnlyBottlenecks ?? 0}개',
+                        '활성 계획에만 있는 병목 ${data.activeOnlyBottlenecks ?? 0}개',
+                  PlanDetailResourceTab.byPhase => '페이즈를 누르면 왼쪽 단계가 강조됩니다',
+                  PlanDetailResourceTab.overall =>
+                    '재화를 누르면 왼쪽에서 그 재화를 쓰는 단계가 강조됩니다',
+                },
               ),
             ),
           ),
@@ -617,55 +759,58 @@ class PlanDetailWorkspace extends StatelessWidget {
             ),
           ),
         ],
-        if (resourcePlaceholder == null && _otherTab)
-          Positioned.fill(
-            child: KeyedSubtree(
-              key: ValueKey('$keyPrefix-tab-body-${resourceTab.name}'),
-              child: tabBody!(
-                resourceTab,
-                _parallelogramPath(bodyRect.size).shift(bodyRect.topLeft),
-              ),
-            ),
-          )
-        else
-          Positioned.fromRect(
-            rect: bodyRect,
-            child: CustomPaint(
-              key: ValueKey('$keyPrefix-body-panel'),
-              painter: const _DetailPanelPainter(),
-              child: ClipPath(
-                clipper: const _ParallelogramClipper(),
-                child: switch ((resourcePlaceholder, data)) {
-                  (final Widget notice, _) => Center(child: notice),
-                  (null, null) => Center(
-                    child: placeholder ?? const SizedBox.shrink(),
-                  ),
-                  (null, final PlanDetailData value) => _cards(value),
+        Positioned.fromRect(
+          rect: bodyRect,
+          child: CustomPaint(
+            key: ValueKey('$keyPrefix-body-panel'),
+            painter: const _DetailPanelPainter(),
+            child: ClipPath(
+              clipper: const _ParallelogramClipper(),
+              child: switch ((resourcePlaceholder, data)) {
+                (final Widget notice, _) => Center(child: notice),
+                (null, null) => Center(
+                  child: placeholder ?? const SizedBox.shrink(),
+                ),
+                (null, final PlanDetailData value) => switch (tab) {
+                  PlanDetailResourceTab.bottleneck => _cards(value),
+                  PlanDetailResourceTab.byPhase => _phaseCards(value),
+                  PlanDetailResourceTab.overall => _overallList(value),
                 },
-              ),
+              },
             ),
           ),
+        ),
       ],
     );
   }
 
-  /// S3 요약 행: 병목 탭은 "가장 심한 병목", 페이즈별 · 전체 탭은 [tabSummary], 재화를 그릴 수 없으면 빈 행.
+  /// S3 요약 행: 병목 = "가장 심한 병목", 페이즈별 = "가장 부족한 재화", 전체 = "전체 요구량". 재화를 그릴 수 없으면
+  /// 빈 행.
   Widget _summary(PlanDetailData? data, bool comparing) {
-    final tabSummary = this.tabSummary;
-    if (resourcePlaceholder == null && _otherTab && tabSummary != null) {
-      return DiagonalRow(
-        key: ValueKey('$keyPrefix-summary-${resourceTab.name}'),
-        variant: DiagonalRowVariant.row,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final cut = diagonalCutDepth(constraints.maxHeight);
-            return Padding(
-              padding: EdgeInsets.fromLTRB(cut / 2 + 18, 6, cut / 2 + 14, 6),
-              child: tabSummary(resourceTab),
-            );
-          },
-        ),
-      );
+    final shown = resourcePlaceholder == null ? data : null;
+    switch (_tab) {
+      case PlanDetailResourceTab.byPhase:
+        return _PhaseSummaryRow(
+          key: ValueKey('$keyPrefix-summary-byPhase'),
+          keyPrefix: '$keyPrefix-summary-byPhase',
+          data: shown,
+          showDelta: comparing,
+          onTap: shown == null || onSelectPhase == null
+              ? null
+              : switch (shown.phaseSummary) {
+                  final summary? => () => onSelectPhase!(summary.phase),
+                  null => null,
+                },
+        );
+      case PlanDetailResourceTab.overall:
+        return _OverallSummaryRow(
+          key: ValueKey('$keyPrefix-summary-overall'),
+          keyPrefix: '$keyPrefix-summary-overall',
+          data: shown,
+          showDelta: comparing,
+        );
+      case PlanDetailResourceTab.bottleneck:
+        break;
     }
     return _SummaryRow(
       key: ValueKey('$keyPrefix-summary'),
@@ -685,7 +830,16 @@ class PlanDetailWorkspace extends StatelessWidget {
 
   Widget _toolbar() {
     final onResourceTab = this.onResourceTab;
-    final chips = toolbarChips;
+    final onFilter = this.onFilter;
+    final chips = onFilter == null
+        ? null
+        : [
+            PlanDetailFilterChips(
+              keyPrefix: keyPrefix,
+              filter: filter,
+              onChanged: onFilter,
+            ),
+          ];
     return Row(
       key: ValueKey('$keyPrefix-toolbar'),
       children: [
@@ -735,7 +889,8 @@ class PlanDetailWorkspace extends StatelessWidget {
     );
   }
 
-  /// 시나리오 보기(FE5-c1): 병목만 켜고 페이즈별 · 전체는 꺼 둔다.
+  /// [onResourceTab]이 없을 때(FE5-c1 시나리오 보기와 같은 모양): 병목만 켜고 페이즈별 · 전체는 꺼 둔다. FE5-d부터
+  /// 활성 계획 홈 · 시나리오 보기 모두 [onResourceTab]을 넘긴다.
   List<Widget> _lockedTabs() => [
     SkewSegmented<PlanDetailResourceTab>(
       key: ValueKey('$keyPrefix-tab'),
@@ -779,7 +934,7 @@ class PlanDetailWorkspace extends StatelessWidget {
     ),
   ];
 
-  /// 표시만 하는 칩 3개(시나리오 보기).
+  /// 표시만 하는 칩 3개([onFilter]가 없을 때).
   static const _displayChips = <Widget>[
     BaChip(
       label: '재화 유형 · 전체',
@@ -912,6 +1067,155 @@ class PlanDetailWorkspace extends StatelessWidget {
       },
     );
   }
+
+  /// 페이즈별 탭 본문: 걸러진 크레딧 줄 · 타일이 있는 페이즈 카드.
+  Widget _phaseCards(PlanDetailData data) {
+    final cards = [
+      for (final phase in data.phaseResources)
+        (
+          phase: phase,
+          credits: switch (phase.credits) {
+            final value? when filter.shows(value) => value,
+            _ => null,
+          },
+          tiles: filter.apply(phase.tiles),
+        ),
+    ].where((card) => card.credits != null || card.tiles.isNotEmpty).toList();
+    if (cards.isEmpty) {
+      final hasResources = data.phaseResources.any(
+        (phase) => phase.credits != null || phase.tiles.isNotEmpty,
+      );
+      return Center(
+        key: ValueKey('$keyPrefix-phase-cards-empty'),
+        child: Text(
+          hasResources
+              ? '조건에 맞는 재화가 없습니다.'
+              : data.phaseResources.any((phase) => phase.calculated)
+              ? '이 계획에 필요한 재화가 없습니다.'
+              : '페이즈별 재화를 계산하지 못했습니다.',
+          style: _muted.copyWith(fontSize: AppType.bodySize),
+        ),
+      );
+    }
+    final onSelectPhase = this.onSelectPhase;
+    return DiagonalScrollViewport(
+      key: ValueKey('$keyPrefix-phase-cards'),
+      keyPrefix: '$keyPrefix-phase-card-diagonal',
+      itemCount: cards.length,
+      itemHeight: (index) => PlanDetailMetrics.phaseCardHeight(
+        (cards[index].tiles.length + 1) ~/ 2,
+        credits: cards[index].credits != null,
+      ),
+      itemGap: PlanDetailMetrics.phaseCardGap,
+      verticalInset: 14,
+      horizontalInset: 18,
+      scrollbarReserve: 10,
+      fog: const ScrollFogSpec.panel(color: _panelFill),
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        final number = card.phase.number;
+        return _PhaseResourceCard(
+          key: ValueKey('$keyPrefix-phase-card-$number'),
+          keyPrefix: '$keyPrefix-phase-card-$number',
+          phase: card.phase,
+          credits: card.credits,
+          tiles: card.tiles,
+          selected: number == selectedPhase,
+          showDelta: _comparing,
+          onTap: onSelectPhase == null ? null : () => onSelectPhase(number),
+        );
+      },
+    );
+  }
+
+  /// 전체 탭 분야별 그룹(크레딧 밖, [PlanScenarioResourceField] 순서, 빈 그룹 없음).
+  List<({PlanScenarioResourceField field, List<PlanDetailResourceTile> tiles})>
+  _overallGroups(PlanDetailData data) {
+    final overall = data.overall;
+    if (overall == null) return const [];
+    return [
+      for (final field in PlanScenarioResourceField.values)
+        if (field != PlanScenarioResourceField.credits)
+          if (filter.apply([
+                for (final tile in overall.tiles)
+                  if (tile.field == field) tile,
+              ])
+              case final tiles when tiles.isNotEmpty)
+            (field: field, tiles: tiles),
+    ];
+  }
+
+  /// 전체 탭 본문: 크레딧 행 + 분야별 그룹 행.
+  Widget _overallList(PlanDetailData data) {
+    final overall = data.overall;
+    final credits = switch (overall?.credits) {
+      final value? when filter.shows(value) => value,
+      _ => null,
+    };
+    final groups = _overallGroups(data);
+    if (overall == null || (credits == null && groups.isEmpty)) {
+      return Center(
+        key: ValueKey('$keyPrefix-overall-empty'),
+        child: Text(
+          overall == null
+              ? '전체 재화를 계산하지 못했습니다.'
+              : overall.credits != null || overall.tiles.isNotEmpty
+              ? '조건에 맞는 재화가 없습니다.'
+              : '이 계획에 필요한 재화가 없습니다.',
+          style: _muted.copyWith(fontSize: AppType.bodySize),
+        ),
+      );
+    }
+    final columns = overallColumns.clamp(
+      planDetailOverallColumnChoices.first,
+      planDetailOverallColumnChoices.last,
+    );
+    final offset = credits == null ? 0 : 1;
+    final onSelectResource = this.onSelectResource;
+    void Function()? select(String key) => onSelectResource == null
+        ? null
+        : () => onSelectResource(selectedResource == key ? null : key);
+    return DiagonalScrollViewport(
+      key: ValueKey('$keyPrefix-overall-list'),
+      keyPrefix: '$keyPrefix-overall-diagonal',
+      itemCount: groups.length + offset,
+      itemHeight: (index) => index < offset
+          ? PlanDetailMetrics.overallCreditsHeight
+          : PlanDetailMetrics.overallGroupHeight(
+              (groups[index - offset].tiles.length + columns - 1) ~/ columns,
+            ),
+      itemGap: PlanDetailMetrics.overallGap,
+      verticalInset: 14,
+      horizontalInset: 18,
+      scrollbarReserve: 10,
+      fog: const ScrollFogSpec.panel(color: _panelFill),
+      itemBuilder: (context, index) {
+        if (index < offset && credits != null) {
+          return _OverallCreditsRow(
+            key: ValueKey('$keyPrefix-overall-credits'),
+            keyPrefix: '$keyPrefix-overall-credits',
+            tile: credits,
+            selected: selectedResource == credits.resourceKey,
+            showDelta: _comparing,
+            onTap: select(credits.resourceKey),
+          );
+        }
+        final group = groups[index - offset];
+        return _OverallGroupRow(
+          key: ValueKey('$keyPrefix-overall-group-${group.field.name}'),
+          keyPrefix: '$keyPrefix-overall',
+          field: group.field,
+          tiles: group.tiles,
+          columns: columns,
+          selectedResource: selectedResource,
+          showDelta: _comparing,
+          onSelect: onSelectResource == null
+              ? null
+              : (key) => onSelectResource(selectedResource == key ? null : key),
+        );
+      },
+    );
+  }
 }
 
 /// 섹션 표면(공용 [paintSectionSurface]).
@@ -987,58 +1291,62 @@ AppTone _phaseTone(int phase) => phase.isOdd ? AppTones.info : AppTones.pink;
 
 /// 페이즈 헤더(시안 `.plain` 44px).
 class _PhaseHeader extends StatelessWidget {
-  const _PhaseHeader({super.key, required this.phase});
+  const _PhaseHeader({super.key, required this.phase, this.selected = false});
 
   final PlanDetailPhase phase;
+
+  /// 페이즈별 탭에서 고른 페이즈(시안 Scenario-Detail-Phase P1 `srow sel`).
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final kinds = phase.shortageKinds;
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final cut = diagonalCutDepth(constraints.maxHeight);
+        return Padding(
+          padding: EdgeInsets.fromLTRB(cut / 2 + 14, 0, cut / 2 + 14, 0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 22,
+                child: Text(
+                  '${phase.number}',
+                  maxLines: 1,
+                  style: kitDisplayStyle(
+                    AppType.headlineSize,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  phase.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _bold.copyWith(fontSize: AppType.bodyLargeSize),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('단계 ${phase.stages.length}', maxLines: 1, style: _muted),
+              const Spacer(),
+              if (kinds != null)
+                BaChip(
+                  label: kinds == 0 ? '충분' : '부족 $kinds종',
+                  tone: kinds == 0 ? AppTones.ok : AppTones.warn,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected) {
+      return DiagonalRow(mark: DiagonalRowMark.selected, child: content);
+    }
     return ClipPath(
       clipper: const DiagonalRowClipper(DiagonalRowVariant.plain),
-      child: ColoredBox(
-        color: _phaseHeaderFill,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final cut = diagonalCutDepth(constraints.maxHeight);
-            return Padding(
-              padding: EdgeInsets.fromLTRB(cut / 2 + 14, 0, cut / 2 + 14, 0),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 22,
-                    child: Text(
-                      '${phase.number}',
-                      maxLines: 1,
-                      style: kitDisplayStyle(
-                        AppType.headlineSize,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      phase.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _bold.copyWith(fontSize: AppType.bodyLargeSize),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text('단계 ${phase.stages.length}', maxLines: 1, style: _muted),
-                  const Spacer(),
-                  if (kinds != null)
-                    BaChip(
-                      label: kinds == 0 ? '충분' : '부족 $kinds종',
-                      tone: kinds == 0 ? AppTones.ok : AppTones.warn,
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+      child: ColoredBox(color: _phaseHeaderFill, child: content),
     );
   }
 }
@@ -1515,6 +1823,1218 @@ class _CardResourceTile extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- 칩 3개 · 페이즈별 · 전체 탭(FE5-d) ------------------------------------------
+
+/// S3 칩 3개 상태(재화 유형 · 충족 재화 숨기기 · 정렬). 활성 계획 홈은 옛 홈과 같은 상태를 넘긴다.
+@immutable
+class PlanDetailResourceFilter {
+  const PlanDetailResourceFilter({
+    this.categories,
+    this.hideSatisfied = false,
+    this.sort = PlanResourceSort.defaultOrder,
+  });
+
+  /// 고른 재화 유형. null이면 전체.
+  final Set<PlanResourceCategory>? categories;
+  final bool hideSatisfied;
+  final PlanResourceSort sort;
+
+  /// 재화 유형을 모두 골랐다.
+  bool get allCategories {
+    final value = categories;
+    return value == null || value.length == PlanResourceCategory.values.length;
+  }
+
+  /// 고른 재화 유형 수.
+  int get categoryCount =>
+      categories?.length ?? PlanResourceCategory.values.length;
+
+  /// 기본값과 다르다(빈 목록 문구를 고른다).
+  bool get active =>
+      !allCategories || hideSatisfied || sort != PlanResourceSort.defaultOrder;
+
+  /// 고른 재화 유형인가(옛 홈과 같은 분류 [planResourceCategory]).
+  bool includes({
+    required String resourceKey,
+    required String category,
+    String? itemId,
+  }) {
+    final value = categories;
+    if (value == null || allCategories) return true;
+    return value.contains(
+      planResourceCategory(
+        id: resourceKey,
+        iconAsset:
+            planningResourceIconAsset(category: category, itemId: itemId) ??
+            category,
+      ),
+    );
+  }
+
+  /// 페이즈 · 전체 타일을 보인다(유형 + 충족 재화 숨기기. 보유를 모르는 재화는 숨기지 않는다).
+  bool shows(PlanDetailResourceTile tile) =>
+      includes(
+        resourceKey: tile.resourceKey,
+        category: tile.category,
+        itemId: tile.itemId,
+      ) &&
+      (!hideSatisfied || !tile.satisfied);
+
+  /// 거르고 정렬한다(기본 순서 = 백엔드 순서).
+  List<PlanDetailResourceTile> apply(List<PlanDetailResourceTile> tiles) {
+    final result = tiles.where(shows).toList();
+    if (sort == PlanResourceSort.defaultOrder) return result;
+    int compare(PlanDetailResourceTile a, PlanDetailResourceTile b) {
+      final value = switch (sort) {
+        PlanResourceSort.defaultOrder => 0,
+        PlanResourceSort.shortageDescending => (b.shortage ?? -1).compareTo(
+          a.shortage ?? -1,
+        ),
+        PlanResourceSort.requiredDescending => b.required.compareTo(
+          a.required,
+        ),
+        PlanResourceSort.ownedAscending => (a.owned ?? 1 << 52).compareTo(
+          b.owned ?? 1 << 52,
+        ),
+        PlanResourceSort.nameAscending => a.name.compareTo(b.name),
+      };
+      return value != 0 ? value : a.name.compareTo(b.name);
+    }
+
+    result.sort(compare);
+    return result;
+  }
+
+  /// 병목 카드: 고른 유형의 모자란 재화가 있는 카드만, 타일도 고른 유형(숨기기면 모자란 재화만). 정렬은 걸지 않는다.
+  List<PlanDetailBottleneckCard> cards(List<PlanDetailBottleneckCard> cards) {
+    if (allCategories && !hideSatisfied) return cards;
+    bool selected(PlanDetailCardResource resource) => includes(
+      resourceKey: resource.resourceKey,
+      category: resource.category,
+      itemId: resource.itemId,
+    );
+    return [
+      for (final card in cards)
+        if (card.resources.any(
+          (resource) => resource.shortage > 0 && selected(resource),
+        ))
+          PlanDetailBottleneckCard(
+            number: card.number,
+            phase: card.phase,
+            stageId: card.stageId,
+            studentId: card.studentId,
+            stageName: card.stageName,
+            targets: card.targets,
+            resources: [
+              for (final resource in card.resources)
+                if (selected(resource) &&
+                    (!hideSatisfied || resource.shortage > 0))
+                  resource,
+            ],
+            hiddenShortages: card.hiddenShortages,
+            delayed: card.delayed,
+            delta: card.delta,
+          ),
+    ];
+  }
+
+  /// [category]를 넣거나 뺀다.
+  PlanDetailResourceFilter toggleCategory(PlanResourceCategory category) {
+    final next = {...(categories ?? PlanResourceCategory.values.toSet())};
+    next.contains(category) ? next.remove(category) : next.add(category);
+    return PlanDetailResourceFilter(
+      categories: next,
+      hideSatisfied: hideSatisfied,
+      sort: sort,
+    );
+  }
+
+  /// 전체: 모두 골랐으면 모두 빼고, 아니면 모두 고른다(옛 홈과 같다).
+  PlanDetailResourceFilter toggleAllCategories() => PlanDetailResourceFilter(
+    categories: allCategories
+        ? <PlanResourceCategory>{}
+        : PlanResourceCategory.values.toSet(),
+    hideSatisfied: hideSatisfied,
+    sort: sort,
+  );
+
+  PlanDetailResourceFilter withHideSatisfied(bool value) =>
+      PlanDetailResourceFilter(
+        categories: categories,
+        hideSatisfied: value,
+        sort: sort,
+      );
+
+  PlanDetailResourceFilter withSort(PlanResourceSort value) =>
+      PlanDetailResourceFilter(
+        categories: categories,
+        hideSatisfied: hideSatisfied,
+        sort: value,
+      );
+}
+
+/// S3 칩 3개(재화 유형 메뉴 · 충족 재화 숨기기 토글 · 정렬 메뉴). 키는 `<keyPrefix>-filter-category` ·
+/// `-hide-satisfied` · `-sort`다(FE5-c2 홈 칩과 같다). [onChanged]가 null이면 누를 수 없다.
+class PlanDetailFilterChips extends StatelessWidget {
+  const PlanDetailFilterChips({
+    super.key,
+    required this.keyPrefix,
+    required this.filter,
+    required this.onChanged,
+  });
+
+  final String keyPrefix;
+  final PlanDetailResourceFilter filter;
+  final ValueChanged<PlanDetailResourceFilter>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final onChanged = this.onChanged;
+    final enabled = onChanged != null;
+    final all = filter.allCategories;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 값: −1 = 전체, 그 밖 = [PlanResourceCategory.index](null 값은 메뉴가 취소로 본다).
+        PopupMenuButton<int>(
+          key: ValueKey('$keyPrefix-filter-category'),
+          enabled: enabled,
+          tooltip: '재화 유형',
+          onSelected: (value) => onChanged?.call(
+            value < 0
+                ? filter.toggleAllCategories()
+                : filter.toggleCategory(PlanResourceCategory.values[value]),
+          ),
+          itemBuilder: (context) => [
+            CheckedPopupMenuItem<int>(
+              value: -1,
+              checked: all,
+              child: const Text('전체'),
+            ),
+            for (final category in PlanResourceCategory.values)
+              CheckedPopupMenuItem<int>(
+                value: category.index,
+                checked:
+                    all || (filter.categories?.contains(category) ?? true),
+                child: Text(category.label),
+              ),
+          ],
+          child: BaChip(
+            label: all ? '재화 유형 · 전체' : '재화 유형 · ${filter.categoryCount}종',
+            tone: all ? AppTones.gray : AppTones.pink,
+            leading: const Icon(Icons.filter_list_rounded, size: 13),
+          ),
+        ),
+        const SizedBox(width: 8),
+        KitPressable(
+          key: ValueKey('$keyPrefix-hide-satisfied'),
+          onPressed: onChanged == null
+              ? null
+              : () => onChanged(filter.withHideSatisfied(!filter.hideSatisfied)),
+          toggled: filter.hideSatisfied,
+          semanticLabel: '충족 재화 숨기기',
+          builder: (context, state) => BaChip(
+            label: '충족 재화 숨기기',
+            tone: filter.hideSatisfied ? AppTones.pink : AppTones.gray,
+            leading: const Icon(Icons.visibility_off_outlined, size: 13),
+          ),
+        ),
+        const SizedBox(width: 8),
+        PopupMenuButton<PlanResourceSort>(
+          key: ValueKey('$keyPrefix-sort'),
+          enabled: enabled,
+          tooltip: '정렬',
+          onSelected: (value) => onChanged?.call(filter.withSort(value)),
+          itemBuilder: (context) => [
+            for (final sort in PlanResourceSort.values)
+              CheckedPopupMenuItem<PlanResourceSort>(
+                value: sort,
+                checked: sort == filter.sort,
+                child: Text(sort.menuLabel),
+              ),
+          ],
+          child: BaChip(
+            label: filter.sort.menuLabel,
+            tone: filter.sort == PlanResourceSort.defaultOrder
+                ? AppTones.gray
+                : AppTones.pink,
+            leading: const Icon(Icons.sort_rounded, size: 13),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 충족률 색(시안 `.bar2`: 100% 초록 #7fe3bd, 50% 이상 노랑 #ffc66d, 그 아래 분홍 #f2b3ef, 모르면 흐림).
+Color _coverageColor(int? percent) {
+  if (percent == null) return AppColors.textMuted;
+  if (percent >= 100) return AppTones.ok.foreground;
+  if (percent >= 50) return AppColors.warning;
+  return AppColors.accent;
+}
+
+/// 막대 + "n%"(시안: 막대 높이 [height], % 칸 [percentWidth]).
+class _CoverageBar extends StatelessWidget {
+  const _CoverageBar({
+    super.key,
+    required this.tile,
+    required this.height,
+    required this.percentWidth,
+    required this.fontSize,
+  });
+
+  final PlanDetailResourceTile tile;
+  final double height;
+  final double percentWidth;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = tile.percent;
+    final color = _coverageColor(percent);
+    return Row(
+      children: [
+        Expanded(
+          child: SkewBar(fraction: tile.fraction, color: color, height: height),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: percentWidth,
+          child: Text(
+            percent == null ? '—' : '$percent%',
+            maxLines: 1,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontFamily: AppFonts.body,
+              fontFamilyFallback: AppFonts.fallback,
+              fontSize: fontSize,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "라벨 값"(흐린 라벨 + 굵은 값).
+Widget _labeledAmount(String label, String value, {Color? color}) => Text.rich(
+  TextSpan(
+    text: '$label ',
+    children: [
+      TextSpan(
+        text: value,
+        style: TextStyle(
+          color: color ?? AppColors.text,
+          fontWeight: AppType.bold,
+        ),
+      ),
+    ],
+  ),
+  maxLines: 1,
+  style: _muted,
+);
+
+/// 페이즈별 요약 행(시안 `.row` 70px "가장 부족한 재화").
+class _PhaseSummaryRow extends StatelessWidget {
+  const _PhaseSummaryRow({
+    super.key,
+    required this.keyPrefix,
+    required this.data,
+    required this.showDelta,
+    this.onTap,
+  });
+
+  final String keyPrefix;
+  final PlanDetailData? data;
+  final bool showDelta;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = this.data;
+    final summary = data?.phaseSummary;
+    final tile = summary?.tile;
+    final String title;
+    final String detail;
+    if (summary != null && tile != null) {
+      final exit = tile.exit;
+      title =
+          '${tile.name} · P${summary.phase}에서 ${summary.students}명 중 '
+          '${summary.completable}명만 완료';
+      detail = exit == 0 && summary.laterStages > 0
+          ? 'P${summary.phase} 종료 시 0개 남아서 뒤 페이즈 단계 ${summary.laterStages}개가 막힙니다'
+          : 'P${summary.phase} 종료 시 ${_amount(exit)}개 남습니다';
+    } else if (data == null) {
+      title = '—';
+      detail = '';
+    } else if (!data.phaseResources.any((phase) => phase.calculated)) {
+      title = '—';
+      detail = '페이즈별 재화를 계산하지 못했습니다.';
+    } else if (data.phaseResources.every(
+      (phase) => phase.shortageKinds == null,
+    )) {
+      // 재화가 없거나 보유를 하나도 모른다.
+      final any = data.phaseResources.any(
+        (phase) => phase.credits != null || phase.tiles.isNotEmpty,
+      );
+      title = any ? '보유량을 모릅니다' : '필요한 재화가 없습니다';
+      detail = any ? '보유를 아는 재화가 없어 부족을 판단할 수 없습니다.' : '';
+    } else {
+      title = '부족한 재화가 없습니다';
+      detail = '알려진 보유로는 모든 페이즈를 마칠 수 있습니다.';
+    }
+    final delta = summary?.delta;
+    return _ResourceSummaryFrame(
+      caption: '가장 부족한 재화',
+      title: title,
+      detail: detail,
+      keyPrefix: keyPrefix,
+      icon: tile == null
+          ? null
+          : ItemIconTile(
+              iconAsset: planningResourceIconAsset(
+                category: tile.category,
+                itemId: tile.itemId,
+              ),
+              size: const Size(64, 52),
+              semanticLabel: tile.name,
+            ),
+      reserveIcon: true,
+      chip: showDelta && delta != null
+          ? BaChip(
+              key: ValueKey('$keyPrefix-delta'),
+              label: delta.label,
+              tone: planScenarioDeltaTone(delta.tone),
+            )
+          : null,
+      onTap: onTap,
+    );
+  }
+}
+
+/// 전체 요약 행(시안 `.row` 70px "전체 요구량", 아이콘 없음).
+class _OverallSummaryRow extends StatelessWidget {
+  const _OverallSummaryRow({
+    super.key,
+    required this.keyPrefix,
+    required this.data,
+    required this.showDelta,
+  });
+
+  final String keyPrefix;
+  final PlanDetailData? data;
+  final bool showDelta;
+
+  @override
+  Widget build(BuildContext context) {
+    final overall = data?.overall;
+    String percent(double? rate) =>
+        rate == null ? '—' : '${(rate * 100).round()}%';
+    final title = overall == null
+        ? '—'
+        : [
+            '필요량의 ${percent(overall.rate)} 확보',
+            '${overall.shortageKinds}종 부족',
+            '${overall.totalStudents}명 중 ${overall.affectedStudents}명의 계획에 영향',
+            if (overall.unknownKinds > 0) '보유 모름 ${overall.unknownKinds}종',
+          ].join(' · ');
+    final active = overall?.activeRate;
+    final rate = overall?.rate;
+    final AppTone tone;
+    if (active == null || rate == null) {
+      tone = AppTones.gray;
+    } else if ((rate * 100).round() == (active * 100).round()) {
+      tone = AppTones.gray;
+    } else {
+      tone = rate > active ? AppTones.ok : AppTones.warn;
+    }
+    return _ResourceSummaryFrame(
+      caption: '전체 요구량',
+      title: title,
+      detail: overall == null
+          ? ''
+          : '모든 페이즈를 합친 요구량과 지금 보유량 기준 · 페이즈 순서는 따지지 않습니다',
+      keyPrefix: keyPrefix,
+      reserveIcon: false,
+      chip: showDelta && overall != null && active != null
+          ? BaChip(
+              key: ValueKey('$keyPrefix-delta'),
+              label: '활성 ${percent(active)} → ${percent(rate)}',
+              tone: tone,
+            )
+          : null,
+    );
+  }
+}
+
+/// 요약 행 틀(아이콘 · 분홍 캡션 · 굵은 제목 · 흐린 설명 · 칩). [_SummaryRow]와 같은 배치다.
+class _ResourceSummaryFrame extends StatelessWidget {
+  const _ResourceSummaryFrame({
+    required this.keyPrefix,
+    required this.caption,
+    required this.title,
+    required this.detail,
+    required this.reserveIcon,
+    this.icon,
+    this.chip,
+    this.onTap,
+  });
+
+  final String keyPrefix;
+  final String caption;
+  final String title;
+  final String detail;
+
+  /// 아이콘 자리(64×52)를 둔다(페이즈별). 전체는 아이콘 없이 글자가 왼쪽부터다.
+  final bool reserveIcon;
+  final Widget? icon;
+  final Widget? chip;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = this.chip;
+    return DiagonalRow(
+      variant: onTap == null ? DiagonalRowVariant.row : DiagonalRowVariant.srow,
+      onTap: onTap,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cut = diagonalCutDepth(constraints.maxHeight);
+          return Padding(
+            padding: EdgeInsets.fromLTRB(cut / 2 + 18, 0, cut / 2 + 14, 0),
+            child: Row(
+              children: [
+                if (reserveIcon) ...[
+                  SizedBox(width: 64, height: 52, child: icon),
+                  const SizedBox(width: 14),
+                ],
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        caption,
+                        maxLines: 1,
+                        style: _captionStyle.copyWith(color: AppColors.accent),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        title,
+                        key: ValueKey('$keyPrefix-title'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _bold.copyWith(
+                          fontSize: AppType.titleMediumSize,
+                        ),
+                      ),
+                      if (detail.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          detail,
+                          key: ValueKey('$keyPrefix-detail'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _muted,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (chip != null) ...[const SizedBox(width: 10), chip],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 페이즈별 탭 페이즈 카드(시안 `.srow` 300px).
+class _PhaseResourceCard extends StatelessWidget {
+  const _PhaseResourceCard({
+    super.key,
+    required this.keyPrefix,
+    required this.phase,
+    required this.credits,
+    required this.tiles,
+    required this.selected,
+    required this.showDelta,
+    this.onTap,
+  });
+
+  final String keyPrefix;
+  final PlanDetailPhaseResources phase;
+
+  /// 걸러진 크레딧 줄(없으면 그리지 않는다).
+  final PlanDetailResourceTile? credits;
+
+  /// 걸러지고 정렬된 재화 타일.
+  final List<PlanDetailResourceTile> tiles;
+  final bool selected;
+  final bool showDelta;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final kinds = phase.shortageKinds;
+    final credits = this.credits;
+    final rows = (tiles.length + 1) ~/ 2;
+    Widget tile(int index) => index < tiles.length
+        ? _PhaseResourceTile(
+            key: ValueKey('$keyPrefix-resource-${tiles[index].resourceKey}'),
+            keyPrefix: '$keyPrefix-resource-${tiles[index].resourceKey}',
+            tile: tiles[index],
+            showDelta: showDelta,
+          )
+        : const SizedBox.shrink();
+    return DiagonalRow(
+      mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
+      onTap: onTap,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cut = diagonalCutDepth(constraints.maxHeight);
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              cut + 10,
+              PlanDetailMetrics.phaseCardPadding,
+              cut + 10,
+              PlanDetailMetrics.phaseCardPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: PlanDetailMetrics.phaseCardHeader,
+                  child: Row(
+                    children: [
+                      Text(
+                        'P${phase.number}',
+                        key: ValueKey('$keyPrefix-number'),
+                        maxLines: 1,
+                        style: kitDisplayStyle(
+                          AppType.headlineSize,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          phase.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _bold.copyWith(
+                            fontSize: AppType.bodyLargeSize,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      PortraitStrip(
+                        studentIds: phase.studentIds,
+                        maxVisible: 6,
+                        portraitSize: const Size(28, 23),
+                      ),
+                      const Spacer(),
+                      if (kinds != null)
+                        BaChip(
+                          key: ValueKey('$keyPrefix-shortage'),
+                          label: kinds == 0 ? '충분' : '부족 $kinds종',
+                          tone: kinds == 0 ? AppTones.ok : AppTones.warn,
+                        ),
+                    ],
+                  ),
+                ),
+                if (credits != null) ...[
+                  const SizedBox(height: PlanDetailMetrics.phaseCardCreditsGap),
+                  SizedBox(
+                    key: ValueKey('$keyPrefix-credits'),
+                    height: PlanDetailMetrics.phaseCardCredits,
+                    child: Row(
+                      children: [
+                        ItemIconTile(
+                          iconAsset: planningResourceIconAsset(
+                            category: credits.category,
+                            itemId: credits.itemId,
+                          ),
+                          size: const Size(30, 24),
+                          semanticLabel: credits.name,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('크레딧', maxLines: 1, style: _muted),
+                        const SizedBox(width: 16),
+                        _labeledAmount('진입', _amount(credits.owned)),
+                        const SizedBox(width: 14),
+                        _labeledAmount('필요', _amount(credits.required)),
+                        const SizedBox(width: 14),
+                        _labeledAmount(
+                          '종료',
+                          _amount(credits.exit),
+                          color: AppTones.ok.foreground,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (rows > 0) ...[
+                  const SizedBox(height: PlanDetailMetrics.phaseCardTilesGap),
+                  for (var row = 0; row < rows; row += 1) ...[
+                    if (row > 0)
+                      const SizedBox(height: PlanDetailMetrics.phaseCardTileGap),
+                    SizedBox(
+                      height: PlanDetailMetrics.phaseCardTile,
+                      child: Row(
+                        children: [
+                          Expanded(child: tile(row * 2)),
+                          const SizedBox(
+                            width: PlanDetailMetrics.phaseCardColumnGap,
+                          ),
+                          Expanded(child: tile(row * 2 + 1)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 페이즈 카드 재화 타일(시안: 바탕 skewX −10° rgba(16,24,35,.55), 아이콘 59×48, 이름 + 활성 대비 칩, "진입 · 필요 ·
+/// 종료", 막대 6px + %).
+class _PhaseResourceTile extends StatelessWidget {
+  const _PhaseResourceTile({
+    super.key,
+    required this.keyPrefix,
+    required this.tile,
+    required this.showDelta,
+  });
+
+  final String keyPrefix;
+  final PlanDetailResourceTile tile;
+  final bool showDelta;
+
+  @override
+  Widget build(BuildContext context) {
+    final delta = tile.delta;
+    return SkewBox(
+      fill: _tileFill,
+      radius: 7,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
+        child: Row(
+          children: [
+            ItemIconTile(
+              iconAsset: planningResourceIconAsset(
+                category: tile.category,
+                itemId: tile.itemId,
+              ),
+              size: const Size(59, 48),
+              semanticLabel: tile.name,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          tile.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _bold.copyWith(fontSize: AppType.bodyPlusSize),
+                        ),
+                      ),
+                      if (showDelta && delta != null) ...[
+                        const SizedBox(width: 8),
+                        BaChip(
+                          key: ValueKey('$keyPrefix-delta'),
+                          label: delta.label,
+                          tone: planScenarioDeltaTone(delta.tone),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '진입 ${_amount(tile.owned)} · 필요 ${_amount(tile.required)} · '
+                    '종료 ${_amount(tile.exit)}',
+                    key: ValueKey('$keyPrefix-amounts'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _muted.copyWith(fontSize: AppType.captionPlusSize),
+                  ),
+                  const SizedBox(height: 6),
+                  _CoverageBar(
+                    key: ValueKey('$keyPrefix-coverage'),
+                    tile: tile,
+                    height: 6,
+                    percentWidth: 34,
+                    fontSize: AppType.captionSize,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 전체 탭 본문 위 줄(시안 `.plain` 30px "재화 n종 · 한 행에 [2|3|4|5]" + 범례).
+class _OverallHeader extends StatelessWidget {
+  const _OverallHeader({
+    super.key,
+    required this.keyPrefix,
+    required this.kinds,
+    required this.columns,
+    required this.onColumns,
+    required this.showLegend,
+  });
+
+  final String keyPrefix;
+  final int kinds;
+  final int columns;
+  final ValueChanged<int>? onColumns;
+
+  /// "= 같음 · 신규 = 이 시나리오에만 · ± 활성 대비"(비교가 있을 때).
+  final bool showLegend;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 16),
+    child: Row(
+      children: [
+        SubHeader('재화 $kinds종', fontSize: AppType.microSize),
+        const SizedBox(width: 16),
+        Text(
+          '한 행에',
+          maxLines: 1,
+          style: _muted.copyWith(fontSize: AppType.captionPlusSize),
+        ),
+        const SizedBox(width: 8),
+        SkewSegmented<int>(
+          key: ValueKey('$keyPrefix-columns'),
+          segments: [
+            for (final count in planDetailOverallColumnChoices)
+              SkewSegment(value: count, label: '$count'),
+          ],
+          selected: columns,
+          onChanged: onColumns,
+          height: 26,
+          fontSize: AppType.captionSize,
+          horizontalPadding: 10,
+          spacing: 4,
+        ),
+        if (showLegend) ...[
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              '= 같음 · 신규 = 이 시나리오에만 · ± 활성 대비',
+              key: ValueKey('$keyPrefix-legend'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _muted.copyWith(fontSize: AppType.captionSize),
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+/// 전체 탭 크레딧 행(시안 `.srow` 54px: 보유 · 필요, 막대 8px + %, 부족, 활성 대비 칩).
+class _OverallCreditsRow extends StatelessWidget {
+  const _OverallCreditsRow({
+    super.key,
+    required this.keyPrefix,
+    required this.tile,
+    required this.selected,
+    required this.showDelta,
+    this.onTap,
+  });
+
+  final String keyPrefix;
+  final PlanDetailResourceTile tile;
+  final bool selected;
+  final bool showDelta;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final shortage = tile.shortage;
+    final delta = tile.delta;
+    final deltaLabel = delta == null
+        ? null
+        : delta.tone == PlanScenarioDeltaTone.same ||
+              delta.tone == PlanScenarioDeltaTone.only
+        ? delta.label
+        : '활성보다 ${delta.label}';
+    return DiagonalRow(
+      mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
+      onTap: onTap,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cut = diagonalCutDepth(constraints.maxHeight);
+          // 안쪽 여백 = 사선 깊이 + 10(시안 19.5).
+          return Padding(
+            padding: EdgeInsets.fromLTRB(cut + 10, 0, cut + 10, 0),
+            child: Row(
+              children: [
+                ItemIconTile(
+                  iconAsset: planningResourceIconAsset(
+                    category: tile.category,
+                    itemId: tile.itemId,
+                  ),
+                  size: const Size(44, 36),
+                  semanticLabel: tile.name,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '크레딧',
+                  maxLines: 1,
+                  style: _bold.copyWith(fontSize: AppType.titleSmallSize),
+                ),
+                const SizedBox(width: 14),
+                // 좁은 창에서 막대 자리를 남기도록 폭을 묶는다.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 220),
+                  child: Text.rich(
+                    TextSpan(
+                      text: '보유 ',
+                      children: [
+                        TextSpan(
+                          text: _amount(tile.owned),
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontWeight: AppType.bold,
+                          ),
+                        ),
+                        const TextSpan(text: ' · 필요 '),
+                        TextSpan(
+                          text: _amount(tile.required),
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontWeight: AppType.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    key: ValueKey('$keyPrefix-amounts'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _muted,
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: _CoverageBar(
+                    key: ValueKey('$keyPrefix-coverage'),
+                    tile: tile,
+                    height: 8,
+                    percentWidth: 40,
+                    fontSize: AppType.bodySmallSize,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  shortage == null
+                      ? '—'
+                      : shortage > 0
+                      ? '−${_amount(shortage)}'
+                      : '충분',
+                  key: ValueKey('$keyPrefix-shortage'),
+                  maxLines: 1,
+                  style: kitDisplayStyle(
+                    AppType.titleSize,
+                    color: (shortage ?? 0) > 0
+                        ? AppColors.accent
+                        : AppTones.ok.foreground,
+                  ),
+                ),
+                if (showDelta && delta != null && deltaLabel != null) ...[
+                  const SizedBox(width: 12),
+                  BaChip(
+                    key: ValueKey('$keyPrefix-delta'),
+                    label: deltaLabel,
+                    tone: planScenarioDeltaTone(delta.tone),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 전체 탭 분야 그룹 행(시안 `.srow`: 머리 줄 "분야 · n종 · 부족 n종/충분" + [columns]열 타일).
+class _OverallGroupRow extends StatelessWidget {
+  const _OverallGroupRow({
+    super.key,
+    required this.keyPrefix,
+    required this.field,
+    required this.tiles,
+    required this.columns,
+    required this.selectedResource,
+    required this.showDelta,
+    this.onSelect,
+  });
+
+  final String keyPrefix;
+  final PlanScenarioResourceField field;
+  final List<PlanDetailResourceTile> tiles;
+  final int columns;
+  final String? selectedResource;
+  final bool showDelta;
+  final ValueChanged<String>? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final known = tiles.where((tile) => tile.owned != null).toList();
+    final short = known.where((tile) => (tile.shortage ?? 0) > 0).length;
+    final rows = (tiles.length + columns - 1) ~/ columns;
+    final onSelect = this.onSelect;
+    return DiagonalRow(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cut = diagonalCutDepth(constraints.maxHeight);
+          // 안쪽 여백 = 사선 깊이 + 10(시안 1줄 28.0 · 2줄 38.2).
+          return Padding(
+            padding: EdgeInsets.fromLTRB(cut + 10, 12, cut + 10, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 24,
+                  child: Row(
+                    children: [
+                      SubHeader(field.label, fontSize: AppType.captionSize),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${tiles.length}종',
+                        maxLines: 1,
+                        style: _muted.copyWith(
+                          fontSize: AppType.captionPlusSize,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (known.isNotEmpty)
+                        BaChip(
+                          key: ValueKey('$keyPrefix-group-${field.name}-shortage'),
+                          label: short == 0 ? '충분' : '부족 $short종',
+                          tone: short == 0 ? AppTones.ok : AppTones.warn,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (var row = 0; row < rows; row += 1)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: row == 0
+                          ? 0
+                          : PlanDetailMetrics.overallTileRow -
+                                PlanDetailMetrics.overallTileHeight,
+                    ),
+                    child: SizedBox(
+                      height: PlanDetailMetrics.overallTileHeight,
+                      child: Row(
+                        children: [
+                          for (var column = 0; column < columns; column += 1) ...[
+                            if (column > 0)
+                              const SizedBox(
+                                width: PlanDetailMetrics.overallTileGap,
+                              ),
+                            Expanded(
+                              child: switch (row * columns + column) {
+                                final index when index < tiles.length =>
+                                  _OverallTile(
+                                    key: ValueKey(
+                                      '$keyPrefix-tile-${tiles[index].resourceKey}',
+                                    ),
+                                    keyPrefix:
+                                        '$keyPrefix-tile-${tiles[index].resourceKey}',
+                                    tile: tiles[index],
+                                    selected:
+                                        selectedResource ==
+                                        tiles[index].resourceKey,
+                                    showMark: showDelta,
+                                    onTap: onSelect == null
+                                        ? null
+                                        : () => onSelect(
+                                            tiles[index].resourceKey,
+                                          ),
+                                  ),
+                                _ => const SizedBox.shrink(),
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 전체 탭 타일(시안: 바탕 skewX −10°, 아이콘 44×36, 이름 + 마크 = / ±n / 신규, "보유 / 필요", 막대 4px + %).
+class _OverallTile extends StatelessWidget {
+  const _OverallTile({
+    super.key,
+    required this.keyPrefix,
+    required this.tile,
+    required this.selected,
+    required this.showMark,
+    this.onTap,
+  });
+
+  final String keyPrefix;
+  final PlanDetailResourceTile tile;
+  final bool selected;
+  final bool showMark;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final delta = tile.delta;
+    // 마크(시안 범례 "= 같음 · 신규 = 이 시나리오에만 · ± 활성 대비").
+    final (String? mark, Color markColor) = switch (delta) {
+      null => (null, AppColors.textMuted),
+      PlanScenarioDelta(tone: PlanScenarioDeltaTone.only) => (
+        '신규',
+        AppColors.accent,
+      ),
+      PlanScenarioDelta(tone: PlanScenarioDeltaTone.same, :final label) => (
+        label == '활성 계획과 같음' ? '=' : label,
+        AppColors.textMuted,
+      ),
+      PlanScenarioDelta(tone: PlanScenarioDeltaTone.better, :final label) => (
+        label,
+        AppTones.ok.foreground,
+      ),
+      PlanScenarioDelta(tone: PlanScenarioDeltaTone.worse, :final label) => (
+        label,
+        AppColors.warning,
+      ),
+      PlanScenarioDelta(:final label) => (label, AppColors.textMuted),
+    };
+    return KitPressable(
+      onPressed: onTap,
+      semanticLabel: tile.name,
+      builder: (context, state) => SkewBox(
+        fill: selected ? const Color.fromRGBO(52, 36, 58, 0.85) : _tileFill,
+        border: selected ? AppColors.accent : null,
+        borderWidth: selected ? 1.5 : 0,
+        radius: 6,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+          child: Row(
+            children: [
+              ItemIconTile(
+                iconAsset: planningResourceIconAsset(
+                  category: tile.category,
+                  itemId: tile.itemId,
+                ),
+                size: const Size(44, 36),
+                semanticLabel: tile.name,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                // 좁은 칸(5열 · 작은 창)에서는 마크 · 막대를 빼고 이름 · "보유 / 필요"만 줄여 보인다.
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final narrow = constraints.maxWidth < 150;
+                    final amounts = Text(
+                      '${_amount(tile.owned)} / ${_amount(tile.required)}',
+                      key: ValueKey('$keyPrefix-amounts'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _muted.copyWith(fontSize: AppType.captionSize),
+                    );
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                tile.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: _bold.copyWith(
+                                  fontSize: AppType.bodySmallSize,
+                                ),
+                              ),
+                            ),
+                            if (showMark && mark != null && !narrow) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                mark,
+                                key: ValueKey('$keyPrefix-mark'),
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontFamily: AppFonts.body,
+                                  fontFamilyFallback: AppFonts.fallback,
+                                  fontSize: AppType.microPlusSize,
+                                  height: 1,
+                                  fontWeight: FontWeight.w800,
+                                  color: markColor,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        if (narrow)
+                          Row(children: [Flexible(child: amounts)])
+                        else
+                          Row(
+                            children: [
+                              amounts,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _CoverageBar(
+                                  tile: tile,
+                                  height: 4,
+                                  percentWidth: 30,
+                                  fontSize: AppType.microPlusSize,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,9 +1,10 @@
 // 계획 홈 = Detail 3섹션 테스트(FE5-c2, FD-082 (a) · FD-070 · FD-035).
 //
-// - Detail 위젯: seg를 켜면 페이즈별 · 전체 탭이 tabBody · tabSummary로 바뀌고, resourcePlaceholder가 있으면 S3에 안내만
-//   보인다(활성 계획 홈이 쓰는 매개변수).
+// - Detail 위젯: seg를 켜면 페이즈별 · 전체 탭이 FE5-d 새 본문(페이즈 카드 · 전체 목록)으로 바뀌고, resourcePlaceholder가
+//   있으면 S3에 안내만 보인다(활성 계획 홈이 쓰는 매개변수).
 // - 계획 화면: 첫 화면이 비교 없는 Detail 홈이다(KPI · 활성 대비 칩 없음). S1은 시나리오 목록 · 계획 만들기 · 페이즈
-//   편집 + 정보 줄이고, 옛 섹션 1 진입 버튼은 없다. S3 seg 페이즈별 · 전체는 옛 홈의 페이즈별 · 전체 위젯을 보인다.
+//   편집 + 정보 줄이고, 옛 섹션 1 진입 버튼은 없다. S3 seg 페이즈별 · 전체는 FE5-d 새 위젯이고 옛
+//   `PlanConsumptionSection`은 쓰지 않는다(FE5-d).
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/plan_scenario_detail.dart';
@@ -119,9 +120,6 @@ void main() {
                 showComparison: false,
                 resourceTab: tab,
                 onResourceTab: onTab,
-                tabBody: (tab, bodyPath) =>
-                    SizedBox(key: ValueKey('body-${tab.name}')),
-                tabSummary: (tab) => Text('summary-${tab.name}'),
                 resourcePlaceholder: resourcePlaceholder,
               ),
             ),
@@ -131,7 +129,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('seg가 켜지고 페이즈별 · 전체는 tabBody · tabSummary로 바뀐다', (tester) async {
+    testWidgets('seg가 켜지고 페이즈별 · 전체는 FE5-d 본문 · 요약 행으로 바뀐다', (tester) async {
       var tab = PlanDetailResourceTab.bottleneck;
       await pump(tester, tab: tab, onTab: (value) => tab = value);
       expect(find.byKey(const ValueKey('home-tab-later')), findsNothing);
@@ -139,11 +137,23 @@ void main() {
       await _tapTab(tester, 'home', '페이즈별');
       expect(tab, PlanDetailResourceTab.byPhase);
 
+      // 이 데이터는 계산 응답이 비어 있어(projection {}) 페이즈 카드 대신 "계산하지 못했습니다"다.
       await pump(tester, tab: tab, onTab: (value) => tab = value);
-      expect(find.byKey(const ValueKey('body-byPhase')), findsOneWidget);
-      expect(find.text('summary-byPhase'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('home-phase-cards-empty')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('home-summary-byPhase')), findsOneWidget);
       expect(find.byKey(const ValueKey('home-cards-empty')), findsNothing);
       expect(find.byKey(const ValueKey('home-summary')), findsNothing);
+
+      await pump(
+        tester,
+        tab: PlanDetailResourceTab.overall,
+        onTab: (value) => tab = value,
+      );
+      expect(find.byKey(const ValueKey('home-overall-empty')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-summary-overall')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -155,8 +165,17 @@ void main() {
         resourcePlaceholder: const Text('계산 중', key: ValueKey('notice')),
       );
       expect(find.byKey(const ValueKey('notice')), findsOneWidget);
-      expect(find.byKey(const ValueKey('body-overall')), findsNothing);
-      expect(find.text('summary-overall'), findsNothing);
+      expect(find.byKey(const ValueKey('home-overall-list')), findsNothing);
+      expect(find.byKey(const ValueKey('home-overall-header')), findsNothing);
+      // 요약 행은 빈 행("—")이다.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('home-summary-overall-title')),
+          matching: find.text('—'),
+          matchRoot: true,
+        ),
+        findsOneWidget,
+      );
       // S2 단계 행은 그대로 보인다.
       expect(
         find.byKey(const ValueKey('home-stage-ayane-stage-1')),
@@ -211,28 +230,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('S3 seg 페이즈별 · 전체는 옛 홈의 페이즈별 · 전체 위젯이다', (tester) async {
+    testWidgets('S3 seg 페이즈별 · 전체는 FE5-d 새 위젯이다(옛 PlanConsumptionSection 없음)', (tester) async {
       final service = await _seededService();
       await _pumpHome(tester, service);
 
+      // mock 계산은 재화 줄이 없다: 페이즈 카드 · 전체 목록 대신 "필요한 재화가 없습니다".
       await _tapTab(tester, 'plan-home', '페이즈별');
       expect(
-        find.byKey(const ValueKey('plan-home-tab-body-byPhase')),
+        find.descendant(
+          of: find.byKey(const ValueKey('plan-home-phase-cards-empty')),
+          matching: find.text('이 계획에 필요한 재화가 없습니다.'),
+        ),
         findsOneWidget,
       );
-      expect(find.byType(PlanConsumptionSection), findsOneWidget);
+      expect(find.byType(PlanConsumptionSection), findsNothing);
       expect(
         find.byKey(const ValueKey('plan-home-summary-byPhase')),
         findsOneWidget,
       );
       await _tapTab(tester, 'plan-home', '전체');
       expect(
-        find.byKey(const ValueKey('plan-home-tab-body-overall')),
+        find.byKey(const ValueKey('plan-home-overall-header')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('plan-overall-summary')), findsOneWidget);
-      await _tapTab(tester, 'plan-home', '병목');
+      expect(find.text('재화 0종'), findsOneWidget);
+      expect(find.byKey(const ValueKey('plan-home-overall-empty')), findsOneWidget);
       expect(find.byType(PlanConsumptionSection), findsNothing);
+      // 칩 3개는 홈에서 누를 수 있다(옛 홈 필터 상태).
+      expect(
+        tester
+            .widget<PopupMenuButton<int>>(
+              find.byKey(const ValueKey('plan-home-filter-category')),
+            )
+            .enabled,
+        isTrue,
+      );
+      await _tapTab(tester, 'plan-home', '병목');
       expect(find.byKey(const ValueKey('plan-home-summary')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
