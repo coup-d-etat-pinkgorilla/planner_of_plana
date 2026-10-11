@@ -198,6 +198,8 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 **Lane A·B 프론트 병렬(2026-10-10 03:20, 사용자 승인).** Lane A 백엔드 워커 자리에 Lane B 프론트 워커를 둔다(첫 slice FE8-a). Lane B는 상태를 `frontend-redesign-status-lane-b.md`에만 쓰고 commit.json은 `status=false`, whole = 그 문서 + 바뀐 기준 이미지 파일 단위(baseline 폴더 통째 금지). 공용 키트·geometry·section_surface·`app_shell.dart`·`lib/services/**`·golden harness와 golden 테스트 파일은 Lane A만 고치고, 새 golden 장면도 Lane A만 추가한다. gate는 두 워커가 모두 멈춘 뒤 한 번, 커밋은 Lane B(파일 단위 이미지) → Lane A(baseline whole) → redesigndocs 순서.
 
+**로컬 Claude Code 운용(2026-10-11, 헌장 §3 4-1).** CF와 CF 워커는 사용자 PC의 Claude Code에서 돈다. 워커는 `flutter analyze`와 자기 slice의 `flutter test <파일>`을 직접 실행해 status에 적고, git 쓰기를 하지 않는다. 전체 `fe_gate.ps1`은 레인 워커가 모두 멈춘 뒤 CF가 한 번 실행한다(XB paired gate 포함). golden 승인(`failures/` 이미지 검토 → `-UpdateGoldens` → 재비교)과 `fe_commit.ps1`은 CF가 하고, push는 사용자만 한다. 위 불변식·검증 절에서 "사용자가 gate·커밋을 실행"한다고 쓴 곳은 이 문단으로 대체한다. 워커 프롬프트는 아래 템플릿(개정판)으로 만든다.
+
 ### FE0 — 준비 (코드 편집 없음)
 
 | 항목 | 내용 | 상태 |
@@ -272,7 +274,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE4-e 4단계 저장 | 미리보기, 활성 계획 비교, 시나리오로 저장(기존 `createScenario`), 활성 계획에 페이즈로 추가/이걸로 바꾸기(FB-1) | FB-1, FD-031 — **완료 2026-10-09**: 커밋 `3af5246c`(gate ② `20261009_215639`, golden `plan-flow-step4`·`plan-flow-step4-append` 추가). 후속(FE4-i): golden 비교 대역과 계산 대역 기준 맞추기 |
 | FE4-f 교차 선행·나중에 칸 | 학생 간 선행 연결, "나중에" 칸 저장 | FB-8, FD-068. FB-8 조사의 소비자 표(초안 복원·명시 deferred와 임시 미배치 구별·칸별 stable topological sort를 document 배열에 반영·편입 ID remap)가 입력 — **f1 완료 2026-10-10**: 커밋 `7bff91ec`(gate ② `20261010_004148`, 직접 선행·나중에 칸·authoring 저장/복원, golden `plan-flow-step3`·`-many` 갱신, `plan-flow-step3-deferred` 추가). **f2 완료 2026-10-10**: 커밋 `c736bbca`(gate ② `20261010_023726`): 칩 사이 틈으로 꺾는 선 경로, `_incorporateScenario` stage ID remap(deferred·직접 edge·학생 체인, 끝점 잃은 edge는 알림과 함께 명시 제외), 활성 계획 홈의 "흐름으로 열기" 아이콘 버튼(FE5-c에서 라벨 있는 진입으로 교체) |
 | FE4-g 계산기 → 계획 넘김 | `PlanningStudentSeed`에 목표를 실어 계획 만들기 2단계를 계산기 목표로 열기, 이미 초안·활성 계획에 있는 학생 처리(FD-171) | FE4-c, FE3-f — **완료 2026-10-10**: 커밋 `af745731`(gate `20261010_135343`, golden `students-calculator`·`-bond-popover` 갱신). 활성 계획 학생은 활성 마지막 단계 snapshot을 복제한 새 단계, 계산기는 올린 키만 넘김 |
-| FE4-g2 흐름 handoff 정리 | ① 계산기 handoff 초안에 그 학생의 "나중에" 칸 단계가 있으면 새 단계가 나중에 단계 뒤에 붙는 문제(`PlanFlowController.receiveHandoff`) ② `PlanFlowContext.activePlan`에 활성 authoring이 없어 활성 계획의 "나중에" 단계가 바닥 snapshot에 빠지는 문제(서비스 모델 확인 필요) | FE4-g·FE4-f. FE5-c2 발견(10-11), FE5-f 앞 소단위 |
+| FE4-g2 흐름 handoff 정리 | ① 계산기 handoff 초안에 그 학생의 "나중에" 칸 단계가 있으면 새 단계가 나중에 단계 뒤에 붙는 문제(`PlanFlowController.receiveHandoff`) ② `PlanFlowContext.activePlan`에 활성 authoring이 없어 활성 계획의 "나중에" 단계가 바닥 snapshot에 빠지는 문제(서비스 모델 확인 필요) | FE4-g·FE4-f. FE5-c2 발견(10-11), FE5-f 앞 소단위 — **완료 2026-10-12**: 커밋 `4b820f51`, gate `20261012_002617`(golden 변화 0). ① 새 단계는 배치 마지막 단계 뒤·나중에 단계 앞, 바닥 = 그 앞 단계, 뒤 나중에 단계 자동 올림 ② 활성 문서 phases = 배치 단계만이라 코드 변경 없음. 후속(로그 10-12 00:45): 편집기 선택 단계·SnackBar 문구, 병합 퇴행 규칙 |
 | FE4-h 저장 문서 읽기 연결 | 계획 화면·학생 탭·계산기가 `repository.plan.get` 문서를 읽도록 전환(`_loadRepositoryPlan` 메모리 변환 제거, 빈 문서를 goals로 되살리지 않음, state·plan revision 일치 재조회, `get.calculation=null`은 계산 불가 표시). 학생 →N은 문서의 마지막 nullable bond. 통계·인벤토리는 호환 경로 유지 | FB-1b. FE4-e 전에 끝낸다 — **완료 2026-10-09**: 커밋 `8beab94e`(gate `20261009_171109` GREEN, golden 변경 0). 후속(FE4-e): 기존 페이즈 편집기·편입 뒤 작업 문서를 정수 v1로 다시 만드는 경로가 남아 있다. 저장 때 v2 null이 정수로 바뀌지 않게 한다 |
 | FE4-i 프리셋·내 그룹 저장 연결 (2026-10-09 추가) | FB-14 `repository.presets.get/save`(프로필별, 자체 revision, 전체 교체 + idempotency)를 화면에 연결: FE4-c 2단계 프리셋 바·C 패널의 단계 프리셋 저장·적용·이름 바꾸기·삭제(단계 이름 포함, nullable 목표 그대로), FE4-b 1단계 "내 그룹" 칩 저장·불러오기. 필터 프리셋은 범위 밖(FD-074 (b), 칩 숨김 유지). FD-169 계산기 "빠른 목표"의 프리셋 항목도 같은 저장소를 읽는다 | FB-14, FD-074. FE4-e 뒤, FE4-f 전(FB-8b를 기다리는 동안) — **완료 2026-10-09**: 커밋 `e5555b52`(gate ② `20261009_231201`, golden 7장 갱신, `plan-flow-step2-saved` 추가), golden 비교 대역을 계산 대역 기준으로 맞춤. 후속(FE5-b): 계산 대역을 문서 의존으로 바꿔 비교 차이 표현을 golden에 다시 담는다 |
 
@@ -308,7 +310,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 |---|---|---|
 | FE6-a 로직 추출 + 부족 위험 | `_InventoryPageState`의 로드·편집·저장·부족 계산을 컨트롤러로, 4섹션 배치, 위험도 행, 상세(kv·사용 학생·직접 고치기·스캔/계획 이동). 이력·획득처는 빈 상태. 후보 승인 `_CandidatePanel`은 스캔 탭 아이템 검토(FE8-g5)로 옮기므로, FE8-g5가 끝난 뒤 제거한다(그전에는 그대로 둔다). FD-146이 영속 "확인 필요"로 정해지면 그 표시를 그린다 | FD-030, FD-031 — **완료 2026-10-11**: gate `20261011_164434`(새 `inventory` 장면, 기존 장면 변화 0). 커밋 `2f88e65f`. FD-095는 profile 기준(장비 = `equipment`). Studio 문서 `ui/studio/`로 이동·오프스테이지 계산 지연은 FE6-b 이후 |
 | FE6-b 전체 아이템 | 종류별 타일 + 충족 막대 + 플라이아웃 | FE6-a — **완료 2026-10-11**: 커밋 `e45194bc`(+ 옛 파일 삭제 커밋), gate `20261011_195443`(새 `inventory-all`, 기존 장면 변화 0). Studio 문서 `ui/studio/inventory_studio_layout.dart`로 이동(옛 파일은 별도 삭제 커밋), 인벤토리 계산을 탭 처음 열 때로(`app_shell.dart` 최소 diff) |
-| FE6-c 분석 | 학교별 BD·노트, 장비 부위×티어 히트맵, 부족 상위 행 | FB-3, FD-031 |
+| FE6-c 분석 | 학교별 BD·노트, 장비 부위×티어 히트맵, 부족 상위 행 | FB-3, FD-031 — **완료 2026-10-12**: 커밋 `6305171c`, gate `20261012_002617`(새 `inventory-analysis`, `inventory`·`inventory-all`은 사이드바 "분석" 칸 활성화만). S2 산점도 포함(확장은 FE6-d), S5 빈 상태(FE6-f) |
 | FE6-d 오파츠 확장 | 확장 버튼 → 다른 섹션 퇴장 → 오파츠 확대 → 선택 상세. `plan_phase_editor`의 rect morph(`phaseEditorElements`/`_lerpGridRect`)를 공용 섹션 morph로 추출(실수 rect 보간) | FE6-c |
 | FE6-e 티어별 충족률 | 노트·BD 학교×티어, 오파츠 종류×티어 | FB-3, FD-031 |
 | FE6-f 이력 연동 | KPI 델타, 상세 스파크라인, 최근 변화 | FB-2 |
@@ -426,22 +428,66 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 
 ## 세션 시작 프롬프트 템플릿
 
+2026-10-11 개정(헌장 §3 4-1): 워커는 사용자 PC의 Claude Code 세션 또는 CF 하위 에이전트로 돌고, `flutter analyze`와 자기 slice에 걸린
+`flutter test <파일>`을 직접 실행한다. 전체 `fe_gate.ps1`·`-UpdateGoldens`·`fe_commit.ps1`·git 쓰기는 워커가 하지 않는다(CF가 레인 워커가
+모두 멈춘 뒤 gate 1회 → golden 검토 → 커밋). `<…>` 자리는 CF가 slice마다 채우고, 레인·선행·XB 연결 조건 같은 slice 고유 지시는
+"이번 세션의 범위" 아래에 덧붙인다. 프롬프트 파일은 `debug/frontend_redesign_handoff/<slice>-worker-prompt-<날짜>.md`.
+
 ```
-BA Planner v7 프론트 개편(시안 구현) 작업이다. 다음 순서로 읽어라:
-AGENTS.md → README.md → almanac/workflows/frontend-redesign-workflow.md
-→ almanac/workflows/frontend-redesign-status.md(없으면 FE1 시작 때 만든다)
+BA Planner v7 프론트 개편 작업이다. 저장소는 C:\Users\brigh\planner_of_plana\BA Planner\v7(브랜치 scanner-consolidation)이고,
+너는 사용자 PC의 Claude Code에서 도는 <Lane A|Lane B> 프론트 워커다. 오케스트레이터는 CF(클로드 프론트)다. <다른 레인이 동시에 하는 slice>.
+다음 순서로 읽어라:
+AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§3, 특히 4-1)
+→ almanac/workflows/frontend-redesign-workflow.md(불변식, 검증, 실행 순서 절의 운용 문단, <slice> 행)
+→ <status 문서: Lane A는 frontend-redesign-status.md, Lane B는 frontend-redesign-status-lane-b.md>의 끝 기록과 선례 <slice>
 → docs/frontend-redesign/decision-register.md의 <절>과 "slice별 막힘 요약"
 → docs/frontend-redesign/survey/<그룹 보고서>
-→ docs/frontend-redesign/artboard-map.md의 <slice> 행.
+→ docs/frontend-redesign/artboard-map.md의 <slice> 행
+→ <필요하면 CF 로그·backend 로그의 해당 항목>.
 
 이번 세션의 범위는 <slice ID — 제목>이다. 워크플로의 해당 slice 항목과 불변식만 수행한다.
-시안은 docs/frontend-redesign/prototype/2026-10-05/ 사본을 tools/dc_outline.py로 읽는다(원문 통째 읽기 금지).
-막힘 요약에서 이 slice를 막는 '열림' FD가 있으면 시작하지 말고 보고하라. '워커 재량' FD는 권장안대로 처리하고 status에 ID로 남겨라.
-시작 전에 status에 진행 중 표시와 시작 SHA를 적고, 고칠 기존 파일마다 사본을 debug/frontend_<slice>/pre/<경로>에 둔다.
-종료 시 debug/frontend_<slice>/commit.json(slice, message, modified, added, status)을 쓰고,
-status에 실행 명령·결과·미검증 항목·검수표·다음 행동과 사용자 실행 명령
-(fe_gate.ps1 → fe_commit.ps1 -Slice <slice> -DryRun → fe_commit.ps1 -Slice <slice>)을 적어라.
-flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마라. 직접 커밋하지 않는다.
+<slice 고유 지시: 할 일 목록, 범위 밖, 고치지 말 것, golden 예측 대상>
+
+[읽기·결정]
+- 시안은 docs/frontend-redesign/prototype/2026-10-05/ 사본을 docs/frontend-redesign/tools/dc_outline.py로 읽는다(원문 통째 읽기 금지).
+- 막힘 요약에서 이 slice를 막는 '열림' FD가 있으면 시작하지 말고 status에 적고 멈춰라. '워커 재량' FD는 권장안대로 처리하고 status에 ID로 남겨라.
+- 새 모호점은 status "발견 사항"에만 적는다. 다른 slice의 문제는 적기만 하고 고치지 않는다.
+
+[착수]
+- status 끝에 "<slice> 착수 기록": 진행 중, 시작 SHA(git rev-parse HEAD), 고칠 파일 목록, 파일별 기존 미커밋 변경(WIP) 유무.
+- 고칠 기존 파일마다 사본을 debug/frontend_<slice>/pre/<v7 기준 경로>에 둔다. WIP가 있는 파일(스캐너 WIP가 있는 공유 서비스 파일·scan_page 등)은
+  slice 끝 사본도 debug/frontend_<slice>/post/<경로>에 두고 commit.json에 post_dir를 적는다. WIP를 지우거나 정리하지 않는다.
+
+[실행해도 되는 것 — 헌장 §3 4-1]
+- 코드 읽기·편집(이 slice 파일만), frontend 폴더에서 `flutter analyze`, 이 slice에 걸린 `flutter test test/<파일>.dart`(여러 파일 가능).
+  바뀐 동작에 걸리는 기존 테스트를 grep으로 모두 찾아 함께 실행한다. 테스트 기대가 맞으면 구현을 고친다.
+- 로그는 통째로 읽지 말고 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾는다.
+- golden 테스트(test/goldens/**)는 돌리지 않는다. 바뀔 장면은 장면별로 "변화 예상"으로 예측해 status에 적는다. 새 golden 장면은 CF가 지시한 경우만 만든다.
+- 다른 워커와 동시에 `flutter test`를 돌리다 build/·.dart_tool/ 잠금으로 실패하면 한 번만 재시도하고, 계속되면 status에 적고 CF에 넘긴다(우회 금지).
+
+[실행하지 않는 것]
+- 전체 `frontend/tool/fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`(CF만), 맨 `flutter test`(golden·process E2E 병렬로 시간 초과).
+- git 쓰기 전부: add·commit·push·stash·checkout·restore·reset·clean·rm·merge·rebase. 읽기(status·diff·log·show)만 된다.
+- `flutter pub upgrade`·의존성 변경, backend/**·contracts/**(XB) 수정, 다른 레인·택틱·스캐너 소유 파일 수정(워크플로 "파일 소유권").
+- 게임 프로세스·키 값·원본·Viewer/Arena·holdout 접근, ../v6 import, Qt/Tk 반입. 오케스트레이터 로그·다른 레인 로그 쓰기.
+
+[워커 표준 주의]
+- setState 클로저에서 쓰는 nullable 값은 final 지역 변수로 받는다. 테스트 파일 최상위에 expect를 두지 않는다.
+- analyze는 info까지 0이어야 한다(예: use_null_aware_elements, prefer_collection_literals, const_with_non_const, prefer_if_null_operators).
+- 키트 DiagonalScrollViewport·DiagonalScrollbar는 build 중 controller.offset을 읽는다. 같은 자리에서 다른 내용으로 바꿔 쓰는 viewport에는
+  서로 다른 key를 준다. 리스트 항목 안에서 ScrollController를 읽을 때는 그 항목의 Scrollable position을 쓴다.
+- 고정 높이 카드·그리드는 폭이 줄면 넘친다. 텍스트에 maxLines·ellipsis를 둔다.
+- 앱 문구는 ~습니다체, PowerShell 도구 파일은 ASCII만, Markdown·소스 끝은 개행 하나(git diff --check).
+
+[종료]
+- debug/frontend_<slice>/commit.json: slice, message(줄 배열, 근거 경로 포함), modified, added, <post_dir>, status(Lane A true / Lane B·백엔드 false),
+  whole(Lane B는 자기 status 문서 + 바뀌는 기준 이미지 파일 하나씩).
+- status 끝에 "<slice> 종료 기록": 실제로 실행한 명령과 결과 수치(analyze 이슈 수, 테스트 파일별 통과·실패 수), 처리한 '워커 재량' FD,
+  golden 변화 예상(장면별), 미검증 항목(실행하지 않은 것은 "미실행" — 통과를 주장하지 않는다), 검수표(artboard → 여는 방법 → 확인 포인트),
+  WIP 보존 확인, 다음 행동. 사용자 실행 명령은 적지 않는다(gate·커밋은 CF가 한다).
+- 마지막에 slave-artifact-handoff 형식의 debug/frontend_<slice>/output.md(작업 ID <slice>, 상태 COMPLETED|BLOCKED, 수정·추가 파일의
+  경로·크기·SHA-256 표, 요구사항 확인, 실행한 검증, CF 몫 검증은 "MASTER_REQUIRED: fe_gate.ps1 …")를 쓰고 TASK_OUTPUT_READY로 보고한다.
+  같은 PC라 결과물은 작업 트리 파일과 pre/post 사본이며 artifacts/에 따로 복사하지 않는다.
 ```
 
 ## 재개 지점
@@ -500,3 +546,4 @@ flutter·python이 이 환경에서 돌지 않으면 통과를 주장하지 마�
 - 2026-10-11(밤): FE5-e·FE6-b gate `20261011_195443` GREEN(②, 새 장면 2 승인). 커밋 fe5e → fe6b → 옛 inventory_studio_layout 삭제 커밋 → redesigndocs. 다음: XB FB-10a·M2 release2 반영 시점 회신 → 같은 소스 gate + CF fb10a-dart, M2(먼저 빈 레인), 후보 FE4-g2·FE6-c·FE8-c·FE5-f.
 - 2026-10-11(밤 2): fe5e `c3374b21`·fe6b `e45194bc`·옛 파일 삭제 커밋·문서 `feb4dc2b`. XB FB-10a + release2 반영 허가. 다음 행동: Lane A M2, Lane B fb10a-dart(XB 반영 완료 뒤), 같은 소스 gate → XB 커밋 2건 → fb10adart → m2. FB-2d 7번째 파일 삭제 여부 사용자 결정 대기.
 - 2026-10-11(밤 3): 같은 소스 gate `20261011_220445` GREEN → XB FB-10a `b76d5591` · release 제외 `1c9dd9d9` → fb10adart `e53fee9e` · m2 `d2a53fed` → 문서. FB-10a 왕복 완료, XB 동결 해제. 사용자 결정: 다음 세션부터 CF와 CF 워커를 사용자 PC의 Claude Code로 옮긴다(헌장 §3.4 개정 요청은 tactic 로그 22:40, CM 몫). 인계 `debug/frontend_redesign_handoff/handoff-prompt-20261011-local.md`. 다음 후보: FE4-g2 · FE5-f · FE6-c · FE8-c · FE8-f2/g2/g3 · FB-2d Dart(XB 구현 뒤) · A2(CM A1 뒤).
+- 2026-10-12(새벽): CF 로컬 Claude Code 첫 세션. 워커 템플릿 §3 4-1 개정, `fe_commit.ps1` `-Session` 선택화, 워커 git 쓰기 막기(로컬 설정). Lane A FE4-g2 `4b820f51` · Lane B FE6-c `6305171c`(gate `20261012_002617` GREEN, golden 3장 승인) → 문서. 다음 후보: FE4-g3(편집기 선택 단계·문구) · 병합 퇴행 규칙 결정 · FE5-f · FE6-d · FE6-e · FE8-c · FE8-f2 · 골든 페이즈 진입값 대역 정리.

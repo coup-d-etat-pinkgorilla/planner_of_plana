@@ -38,6 +38,7 @@ Usage (from the v7 folder)
   powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
   powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe1b -DryRun
   powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe1b
+  optional: -Session <url> adds a "Claude-Session:" trailer after Co-Authored-By.
 
 Checks
   - index must be empty.
@@ -49,6 +50,7 @@ Checks
 param(
   [Parameter(Mandatory = $true)][string]$Slice,
   [string]$GateSummary = '',
+  [string]$Session = '',
   [switch]$DryRun
 )
 $ErrorActionPreference = 'Stop'
@@ -314,7 +316,10 @@ if ($withStatus) {
 }
 
 # 7. commit
-$msg = (($msgLines | ForEach-Object { [string]$_ }) -join "`n").TrimEnd() + "`n`nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`nClaude-Session: https://claude.ai/code/session_01UaZ2mrTb3dngp8E3h8jpFB`n"
+# -Session <url> adds a Claude-Session trailer; omitted (local Claude Code) -> Co-Authored-By only.
+$trailer = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`n"
+if ($Session) { $trailer += "Claude-Session: $Session`n" }
+$msg = (($msgLines | ForEach-Object { [string]$_ }) -join "`n").TrimEnd() + "`n`n" + $trailer
 $msgFile = Join-Path $work 'message.txt'
 [System.IO.File]::WriteAllText($msgFile, $msg, $utf8)
 Git-Run @('commit', '-F', $msgFile) | Out-Null

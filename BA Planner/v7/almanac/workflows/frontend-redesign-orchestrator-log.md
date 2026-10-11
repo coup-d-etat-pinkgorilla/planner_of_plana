@@ -1852,3 +1852,36 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - backend 로그 22:40: 커밋 완료 회신 + **backend/contracts/frontend/tool 동결 해제**(redesigndocs는 whole 문서만이고 fe_commit이 whole을 시각 검사하지 않아 XB 변경과 무관).
 - **사용자 결정(22:34)**: 이 커밋들 뒤 CF와 CF 워커를 전부 사용자 PC의 Claude Code로 옮긴다. 이유: 워커가 analyze·관련 테스트를 직접 돌려 오늘 같은 gate RED(19:05 const, 19:20 ScrollController, 22:05 1px 넘침)를 스스로 잡고, 기기 깊이 제한·Copy-Item 중계가 사라진다. 헌장 §3.4("gate는 사용자가 실행")와 §1 CF 행 개정안을 tactic 로그 22:40에 "요청(CF)"로 올렸다 — CM이 개정한다. 사용자가 CM에 직접 알린다.
 - 새 인계 문서 `debug/frontend_redesign_handoff/handoff-prompt-20261011-local.md`: 로컬 환경 규칙(워커 허용·금지 명령, 전체 gate 1회, golden·커밋은 CF만, git 쓰기 금지 권한 설정), 현재 상태, 다음 후보, 워커 표준 주의.
+
+## 2026-10-11 23:10 — 세션 시작(로컬 Claude Code 이전 후 첫 CF 세션) — 읽은 것, 미회신 항목, 계획
+
+- 읽은 것: AGENTS.md, README.md, 헌장(개정 2026-10-11, §1 CF 행·§3 4-1), CF 프롬프트(CM 개정판), 워크플로(실행 순서·개발자 도구 화면·XB 연결 Dart 절, 세션 운영 규칙, 템플릿, 재개 지점), 인계 `debug/frontend_redesign_handoff/handoff-prompt-20261011-local.md`, 이 로그 22:05~22:40, tactic 로그 22:40·22:55, backend 로그 22:15~22:40, metadata 로그 끝(10-10 18:48), `slave-artifact-handoff.md`.
+- 상태: HEAD `9d959d15`(redesigndocs, 22:39) — 인계의 "남은 일 1개"는 끝났다. 레인 A·B 비어 있음. XB 동결 해제 상태.
+- 미회신: CF 앞 새 요청 없음. tactic 22:55 CM 회신 = 헌장 개정 반영(§1 CF 행, §3 4-1), CF 프롬프트 줄 수정 완료, **워크플로 템플릿은 CF가 고친다**. backend 로그 22:40 이후 XB 새 항목 없음(FB-2d 커밋 대기).
+- 계획: ① 템플릿을 §3 4-1에 맞게 개정(이 세션 첫 작업) ② `fe_commit.ps1` 317행 고정 `Claude-Session:` URL 제거(-Session 선택 매개변수) ③ 사용자에게 워커 방식(별도 세션/하위 에이전트)·git 쓰기 막기 설정을 묻고 ④ 다음 slice 두 개 배정(후보 FE4-g2·FE5-f·FE6-c·FE8-c·FE8-f2/g2/g3).
+
+## 2026-10-11 23:20 — 워커 템플릿 개정(헌장 §3 4-1)·fe_commit trailer
+
+- 워크플로 "세션 시작 프롬프트 템플릿"을 개정판으로 바꿨다: 저장소·레인·로컬 Claude Code 명시, 읽기 순서에 헌장 §2·§3(4-1), 착수(시작 SHA·WIP 유무·pre/post 사본), **실행해도 되는 것**(`flutter analyze`, 자기 slice `flutter test <파일>`, grep으로 찾은 관련 테스트, 실패 줄만 읽기, golden은 돌리지 않고 장면별 예측, 잠금 실패는 1회 재시도 후 보고), **실행하지 않는 것**(전체 fe_gate·`-UpdateGoldens`·fe_commit·맨 `flutter test`, git 쓰기 전부, pub upgrade, backend/contracts·다른 레인·택틱·스캐너 소유 파일), 인계 문서의 "워커 표준 주의" 흡수, 종료(commit.json, 실행 수치, golden 예측, 미실행 표기, 검수표, 사용자 실행 명령 제거, slave-artifact-handoff 형식 `output.md` + `TASK_OUTPUT_READY` — 같은 PC라 artifacts/ 복사 없음).
+- "실행 순서와 gate" 절에 "로컬 Claude Code 운용(2026-10-11, 헌장 §3 4-1)" 문단을 더해, 불변식·검증 절의 "사용자가 gate·커밋 실행" 표현을 대체한다고 적었다.
+- `frontend/tool/fe_commit.ps1`: 고정 `Claude-Session:` URL을 빼고 선택 매개변수 `-Session <url>`로 바꿨다(없으면 Co-Authored-By만). ASCII 유지, PowerShell 구문 검사 오류 0. 이 변경은 다음 redesigndocs 커밋에 whole로 담는다.
+
+## 2026-10-11 23:35 — 사용자 결정 3건, git 쓰기 막기, 배정(Lane A FE4-g2 · Lane B FE6-c)
+
+- 사용자 결정: ① 워커 = 같은 PC의 **별도 Claude Code 세션**(사용자가 프롬프트 파일을 붙여 넣음) ② git 쓰기 막기 설정 추가 ③ 다음 slice Lane A FE4-g2 · Lane B FE6-c.
+- `.claude/settings.local.json`(v7, 로컬·미커밋 — 저장소 `.git/info/exclude`에 등록)에 `permissions.deny` 22개: Bash·PowerShell 각각 `git add/commit/push/stash/checkout/restore/reset/clean/rm/merge/rebase`. 확인: 이 세션의 `git stash list`가 거부됨. CF 커밋은 `powershell -File frontend\tool\fe_commit.ps1` 안의 git이라 이 규칙에 걸리지 않는다. 사용자가 승인한 삭제 커밋(`git rm`)은 사용자가 직접 한다.
+- 배정(개정 템플릿 첫 적용, 시작 SHA `9d959d15` 이후):
+  · Lane A **FE4-g2** — `debug/frontend_redesign_handoff/fe4g2-worker-prompt-20261011.md`. ① 계산기 handoff 새 단계를 그 학생의 배치 마지막 단계 뒤·"나중에" 단계 앞에(바닥 = 들어갈 자리 앞 단계; "단계가 늘면 칸 해제" 규칙과 충돌하면 멈추고 권장안) ② 활성 계획 authoring 부재 — 기존 서비스 응답으로 되면 PlanFlowContext에 싣고, backend 변경이 필요하면 발견 사항으로(CF가 XB 요청서). golden 변화 0 예상.
+  · Lane B **FE6-c** — `debug/frontend_redesign_handoff/fe6c-worker-prompt-20261011.md`. 분석 모드(사이드바 seg·비교 기준 FD-097), S1 학교별 BD·노트(FD-031/032/099/100/101), S2 오파츠 산점도(확장 비활성, FE6-d), S4 종류×티어 히트맵 + 부족 상위, S5 빈 상태(FE6-f). 새 장면 `inventory-analysis` 1장(새 파일), 기존 `inventory`·`inventory-all` 변화 0.
+- 미뤄 둔 Lane A 소단위: golden 페이즈 진입값 대역 정리(17:05, plan-flow-step4 영향).
+- 다음: 두 워커 TASK_OUTPUT_READY → CF가 status·output.md 검토 → 전체 `fe_gate.ps1` 1회 → golden(①→②) → `fe_commit` fe4g2 → fe6c → redesigndocs(이 로그·워크플로 템플릿·`fe_commit.ps1` 포함).
+
+## 2026-10-12 00:45 — 두 워커 검토, gate GREEN, golden 3장 승인, fe4g2·fe6c 커밋
+
+- 수신: Lane A FE4-g2·Lane B FE6-c 모두 `TASK_OUTPUT_READY`. `output.md`의 파일 13개 SHA-256·크기를 작업 트리와 대조해 전부 일치, 범위 밖 수정 0(추적 안 된 asset·scan_inventory_identity_review는 이전부터 있던 스캐너 WIP).
+- gate ① `20261012_001507` RED: analyze 0, 테스트 316 + 685 + 460 + 22, process 57 PASS. golden 3건 RED(예측과 같음: `inventory`·`inventory-all`의 사이드바 "분석" 칸이 흐림 → 활성, `inventory-analysis` 기준 없음). diff-check 1건은 `tactic-editor-orchestrator-log.md` 끝 빈 줄(CM 22:55 항목 뒤) — tactic 로그에 CF 보고 항목(00:35)을 덧붙여 파일 끝을 개행 하나로 돌렸다(기존 내용 수정 없음).
+- golden 검토: isolatedDiff 2장은 "분석" 칸 한 곳만 차이 → 승인. `-UpdateGoldens` 실행이 갱신 뒤 비교까지 돌아 gate ② `20261012_002617` **GREEN**(golden 43, diff-check 0). 새 `inventory-analysis` 기준 이미지 검토: 시안 배치대로 사이드바 분석 모드·S1 학교 6행 + 밀레니엄 플라이아웃·S2 산점도·S4 히트맵(목걸이 T9 빗금) + 부족 상위 3·S5 빈 상태, 넘침·잘림 없음 → 승인. 사용자 캔버스 대조 몫: 학교 엠블럼이 흐림, 산점도 점 겹침, 섹션 안 요소 ±2px.
+- 커밋(DryRun → 실행, 충돌 없음, 새 trailer 확인): **fe4g2 `4b820f51`**(3파일) → **fe6c `6305171c`**(15파일, commit.json에 CF가 `optional_added` = 새 기준 이미지 추가).
+- FE4-g2 판단 수용: ① 초안 단계가 모두 나중에면 바닥 = 지금 값 ② 뒤 나중에 단계 자동 올림(초안 안 단계 계약). 후속 등록: **FE4-g3**(2단계 편집기가 새 단계를 고른 상태로 열기 + `nothingNew` 문구, `plan_flow_goal_editor.dart`·`plan_section_layout.dart`), **병합 퇴행 규칙**(발견 2: "페이즈로 추가"가 활성 나중에 단계를 올리지 않아 `target_regression`으로 막힘 — 자동 올림 vs 막기 결정 필요, FE4-e "몰래 올리지 않는다" 규칙과 충돌하므로 사용자 결정 후보).
+- FE6-c 발견 처리: 3(학교 이름·엠블럼 맵 공용화)은 FE6-e(학교 9개 전부) 때 공용 모델로 합치는 것을 권장 — 그때 결정. 4(키트 `TonalButton` 아이콘 슬롯)는 FE6-d(확장 버튼이 실제로 동작할 때) 키트 소단위로. 6(S5 예측 규칙)은 FE6-f 착수 전 FD 신설 필요(FD-042와 함께). 7은 fixture만의 문제(다음 인벤토리 slice에서 `rio_armed` → `rio_battle`).
+- 남은 일: redesigndocs(워크플로·이 로그·`fe_commit.ps1`). tactic 로그 CF 보고(해시)는 CM 소유 파일이라 커밋하지 않는다.
