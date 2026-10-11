@@ -1,4 +1,4 @@
-// FE2-b tonal 버튼·레일 버튼(+그룹) 테스트.
+// FE2-b tonal 버튼·레일 버튼(+그룹) 테스트. FE6-d: tonal 버튼 앞 위젯 슬롯 · 의미 라벨.
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/ui/geometry/diagonal_geometry.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
@@ -79,6 +79,45 @@ void main() {
       tester.widget<Opacity>(find.byType(Opacity)).opacity,
       kitDisabledOpacity,
     );
+  });
+
+  testWidgets('tonal button: widget leading slot and semantic label (FE6-d)', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    // 앞 위젯은 Material 아이콘 자리(16 + 간격 8)에 같은 크기로 들어간다.
+    var pressed = 0;
+    await pumpKit(
+      tester,
+      TonalButton(
+        label: '축소',
+        leading: const SizedBox(
+          key: ValueKey('tonal-leading'),
+          width: 14,
+          height: 14,
+        ),
+        icon: Icons.layers_outlined,
+        semanticLabel: '패널 축소',
+        onPressed: () => pressed++,
+      ),
+    );
+    expect(find.byKey(const ValueKey('tonal-leading')), findsOneWidget);
+    expect(find.byType(Icon), findsNothing);
+    final leading = tester.getTopRight(find.byKey(const ValueKey('tonal-leading')));
+    expect(tester.getTopLeft(find.text('축소')).dx - leading.dx, closeTo(8, 0.01));
+    expect(find.bySemanticsLabel(RegExp('패널 축소')), findsOneWidget);
+    await tester.tap(find.text('축소'));
+    await tester.pump();
+    expect(pressed, 1);
+
+    // 슬롯을 주지 않으면 지금과 같다(아이콘 · 의미 라벨 없음).
+    await pumpKit(
+      tester,
+      TonalButton(label: '확장', icon: Icons.layers_outlined, onPressed: () {}),
+    );
+    expect(find.byType(Icon), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('패널')), findsNothing);
+    semantics.dispose();
   });
 
   test('rail button looks follow the prototype classes', () {

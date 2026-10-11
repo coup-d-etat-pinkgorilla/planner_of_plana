@@ -257,6 +257,89 @@ abstract final class InventoryAnalysisMetrics {
   static const changeCaptionTop = 78.0;
 }
 
+/// 오파츠 확장 완료 상태(FE6-d, 시안 Inventory-Analysis-Opa, E 보고서 §4.1). 사이드바 · S1 · S4 · S5가 모두 퇴장하고 S2만
+/// 오른쪽 · 위 부착을 유지한 채 커진 한 섹션이다. 확대 중 rect는 grid를 거치지 않는 실수 보간이다(키트 `section_morph.dart`).
+///
+/// - S2 확장 `inventory-analysis-ooparts-expanded`: 오른쪽 면에 붙은 사다리꼴, rect (0,2,96,94), face 0+96, 깊이 96.
+///   꼭짓점 (208.6,209.2)·(2560,209.2)·(2560,1392)·(0,1392). 시안 (220.6,209.2)·(2560,209.2)·(2560,1392)·(12,1392) 대비
+///   위 · 오른쪽 변은 0px, **왼쪽 사선 변 두 꼭짓점 −12px**(±1px 예외). 오른쪽 면 사다리꼴의 아래 왼쪽 x는
+///   `rect.left + 폭 × (1 − 깊이/96)`라 rect x = 0이면 깊이 96 → 0px · 95 → 26.7px만 되고(12px 사이 값 없음), rect x ≥ 1칸이면
+///   26.7px보다 오른쪽이다. 가장 가까운 깊이 96을 골랐다(FE6-e 발견 1과 같은 grid 한계).
+final SectionStudioDocument inventoryAnalysisOpaStudioDocument = SectionStudioDocument(
+  headerRows: 12,
+  viewport: 'standard',
+  showGrid: false,
+  showSafeArea: true,
+  selectedElementId: inventoryAnalysisOopartsExpandedSectionId,
+  placementGap: 0,
+  elements: const [
+    SectionCanvasElement(
+      id: inventoryAnalysisOopartsExpandedSectionId,
+      label: '오파츠 확장',
+      rect: SectionGridRect(0, 2, 96, 94),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.right,
+        faceSpan: 96,
+        height: 96,
+      ),
+    ),
+  ],
+);
+
+/// S2 확장 완료 섹션.
+const inventoryAnalysisOopartsExpandedSectionId =
+    'inventory-analysis-ooparts-expanded';
+
+SectionCanvasElement get inventoryAnalysisOopartsExpandedSection =>
+    inventoryAnalysisOpaStudioDocument.elements.single;
+
+/// 확장 상태 섹션 안 좌표(시안 값, 섹션 위 기준). 제목 줄 · 규칙선 · 티어 토글 · 산점도 위치는 접힌 S2와 같은
+/// [InventoryAnalysisMetrics] 값이고(왼쪽 사선 변에서 잰다), 크기와 오른쪽 상세 열만 여기 둔다.
+abstract final class InventoryOpaMetrics {
+  // 산점도 svg 1974×1034.8(접힘 1012×420). 섹션 높이 − 148(위 120 + 아래 28)과 같다.
+  static const scatterWidth = 1974.0;
+  static const scatterHeight = 1034.8;
+
+  // 상세 열(SelectedOopartPanel): 섹션 오른쪽 변에서 504 왼쪽, 위 115.8(y 325), 폭 474, 묶음 사이 14.
+  static const detailRight = 504.0;
+  static const detailTop = 115.8;
+  static const detailWidth = 474.0;
+  static const detailGap = 14.0;
+
+  // 머리: 아이콘 64×52 · 간격 12 · 캡션 / 이름(22px) · "핵심 병목" 칩.
+  static const headerIconWidth = 64.0;
+  static const headerIconHeight = 52.0;
+
+  // 상자(rgba(14,21,31,.45) r8): 안쪽 10 · 14, 캡션 아래 4.
+  static const boxPaddingVertical = 10.0;
+  static const boxPaddingHorizontal = 14.0;
+  static const boxCaptionGap = 4.0;
+
+  // 티어별 보유 / 필요 행: 높이 40 · 간격 2, 티어 칸 46 · 수치 96 · 상태 52, 행 안 간격 12, 막대 10(r3, skew −10°).
+  static const tierRowHeight = 40.0;
+  static const tierRowGap = 2.0;
+  static const tierLabelWidth = 46.0;
+  static const tierValueWidth = 96.0;
+  static const tierStatusWidth = 52.0;
+
+  // 사용 학생: 캡션 70 · 간격 12 · 초상 줄 시작 16 · 줄 폭 260(초상 34×28, 간격 4, 5명 + `…+n`).
+  static const studentCaptionWidth = 70.0;
+  static const studentStripLeft = 16.0;
+  static const studentStripWidth = 260.0;
+
+  // 병목 순위 행: 높이 38, 순위 18 · 아이콘 35×28 · 티어 · 부족 44, 간격 10, 최대 5행.
+  static const rankRowHeight = 38.0;
+  static const rankNumberWidth = 18.0;
+  static const rankIconWidth = 35.0;
+  static const rankIconHeight = 28.0;
+  static const rankValueWidth = 44.0;
+  static const rankRows = 5;
+
+  // "계획에서 쓰는 단계 보기" 버튼 높이 38 · 안쪽 14.
+  static const actionHeight = 38.0;
+}
+
 /// 인벤토리 티어별 충족률 5-Section(FE6-e, 시안 Inventory-Tiers, E 보고서 §5.1). 분석 모드 사이드바의 "따로 여는
 /// 화면 → 티어별 충족률"이 여는 같은 페이지 안 섹션 교체다(사이드바는 분석 모드와 같은 element).
 ///

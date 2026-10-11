@@ -61,13 +61,16 @@ class TonalButtonColors {
   final Color foreground;
 }
 
-/// tonal 버튼(`.tonal`). [icon]은 16px 앞 아이콘이다.
+/// tonal 버튼(`.tonal`). [icon]은 16px 앞 아이콘이다. [leading]은 시안 svg 선 아이콘처럼 Material 아이콘이 아닌 앞 위젯이고
+/// (FE6-d, 둘 다 주면 [leading]), [semanticLabel]은 보이는 글자 대신 읽을 의미 라벨이다(시안 `aria-label`).
 class TonalButton extends StatelessWidget {
   const TonalButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
+    this.semanticLabel,
     this.variant = TonalButtonVariant.normal,
     this.height = AppControlHeights.tonalButton,
     this.horizontalPadding = 16,
@@ -79,6 +82,12 @@ class TonalButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+
+  /// 앞 위젯(글자 앞 간격 8). 색은 [TonalButtonColors.of]`(variant).foreground`를 쓴다.
+  final Widget? leading;
+
+  /// 의미 라벨. 없으면 보이는 글자다.
+  final String? semanticLabel;
   final TonalButtonVariant variant;
   final double height;
   final double horizontalPadding;
@@ -92,10 +101,12 @@ class TonalButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = TonalButtonColors.of(variant);
     final icon = this.icon;
+    final leading = this.leading;
     final button = KitPressable(
       onPressed: onPressed,
       hovered: hovered,
       focusNode: focusNode,
+      semanticLabel: semanticLabel,
       builder: (context, state) => Container(
         height: height,
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -111,7 +122,10 @@ class TonalButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
+            if (leading != null) ...[
+              leading,
+              const SizedBox(width: 8),
+            ] else if (icon != null) ...[
               Icon(icon, size: 16, color: colors.foreground),
               const SizedBox(width: 8),
             ],

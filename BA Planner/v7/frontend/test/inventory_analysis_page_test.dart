@@ -230,7 +230,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('S2 scatter: series, bottleneck, tier toggles, disabled expand', (
+  testWidgets('S2 scatter: series, bottleneck, tier toggles, expand enabled, point select', (
     tester,
   ) async {
     await _standardSurface(tester);
@@ -240,10 +240,13 @@ void main() {
 
     expect(find.text('오파츠 · 보유율 × 수요'), findsOneWidget);
     expect(find.text('왼쪽 위 = 핵심 병목'), findsOneWidget);
+    // FE6-d: "확장"이 켜지고 시안 aria-label을 가진다(확장 동작은 inventory_opa_page_test.dart).
     final expand = tester.widget<TonalButton>(
       find.byKey(const ValueKey('inventory-oopart-expand')),
     );
-    expect(expand.onPressed, isNull);
+    expect(expand.onPressed, isNotNull);
+    expect(expand.label, '확장');
+    expect(expand.semanticLabel, '오파츠 패널 확장');
     var painter = _scatterPainter(tester);
     expect(painter.analysis.series, hasLength(8));
     expect(painter.analysis.series.first.label, '네브라 디스크');
@@ -266,7 +269,9 @@ void main() {
     await _tapSegment(tester, 'inventory-oopart-tier-4', 'T4');
     expect(_scatterPainter(tester).visiblePoints(), hasLength(32));
 
-    // 점 위를 누르면(마우스 hover와 같은 hit) 말풍선이 뜬다.
+    // 점 위를 누르면(마우스 hover와 같은 hit) 말풍선이 뜨고, 그 오파츠를 고른다(FD-103). 고르기 전에는 선택 표시가 없다.
+    expect(controller.oopartSelectionExplicit, isFalse);
+    expect(_scatterPainter(tester).selectedFamily, isNull);
     final (point, center) = _scatterPainter(tester).visiblePoints().first;
     final frame = find.byKey(const ValueKey('inventory-oopart-scatter'));
     await tester.tapAt(tester.getTopLeft(frame) + center);
@@ -278,6 +283,9 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(controller.selectedOopartFamily, 'oopart:Nebra');
+    expect(controller.oopartSelectionExplicit, isTrue);
+    expect(_scatterPainter(tester).selectedFamily, 'oopart:Nebra');
     expect(tester.takeException(), isNull);
   });
 

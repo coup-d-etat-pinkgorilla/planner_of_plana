@@ -15,6 +15,10 @@
 //   (부유 패널) · T4 오파츠 · T5 부족 상위 · T6 요약을 그린다(`inventory_tiers_sections.dart`). 분석 ↔ 티어 교체는 섹션
 //   모션 규칙(부착면별 intro/outro, frontend-section-direction-and-user-flows.md §1.4)을 따른다: 나가는 섹션이 outro
 //   방향으로 빠진 뒤 들어오는 섹션이 intro 방향으로 들어온다(각 360ms). 목록 ↔ 분석은 FE6-c 그대로 바로 바뀐다.
+// - 오파츠 확장(FE6-d, 시안 Inventory-Analysis-Opa): S2 "확장"을 누르면 사이드바(180°) · S1(80°) · S4(0°) · S5(260°)가
+//   부착면 쪽으로 빠지고(360ms), S2가 오른쪽 · 위 부착을 유지한 채 확장 rect로 커지며(360ms, 키트 `section_morph.dart` 실수
+//   보간, 점 → 아이콘 크로스페이드) 마지막에 선택 오파츠 상세 열이 나타난다(220ms). "축소"는 같은 값을 거꾸로 지나는
+//   역순이다(`inventory_opa_sections.dart`).
 // 섹션 rect는 Studio 문서(`ui/studio/inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
 // 작은 창에서는 각 내용 묶음이 시안 최소 크기 아래로 줄지 않고 자기 상자(사선을 따라 계산한 rect)로 잘린다(전체
 // 화면을 줄이지 않는다).
@@ -34,8 +38,10 @@ import '../kit/diagonal_scroll_viewport.dart';
 import '../kit/game_assets.dart';
 import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
+import '../kit/kit_overlay.dart' show KitOverlayAlign, KitOverlayPlacement;
 import '../kit/kit_pressable.dart';
 import '../kit/scroll_viewport_fog.dart';
+import '../kit/section_morph.dart';
 import '../kit/shortage_flyout.dart';
 import '../kit/skew_bar.dart';
 import '../kit/portrait_strip.dart';
@@ -46,7 +52,6 @@ import '../models/planning_resource_assets.dart';
 import '../models/school_labels.dart';
 import '../studio/inventory_studio_layout.dart';
 import '../studio/section_template.dart' show SectionCanvasElement;
-import '../widgets/animated_section_stack.dart' show sectionMotionOffset;
 import '../widgets/growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
 import '../widgets/section_surface.dart';
@@ -58,6 +63,7 @@ import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
 
 part 'inventory_analysis_sections.dart';
+part 'inventory_opa_sections.dart';
 part 'inventory_tiers_sections.dart';
 
 /// 시안 값(섹션 위 기준, A·B는 y=209.2, C·D는 y=365.2).
@@ -186,11 +192,12 @@ class _SectionQuad {
         : analysis
         ? inventoryAnalysisSection(id)
         : inventorySection(id);
-    final rect = sectionCanvasElementRect(size, section);
-    final points = [
-      for (final point in buildAttachedSectionPolygon(rect.size, section.spec))
-        point + rect.topLeft,
-    ]..sort((a, b) => a.dy.compareTo(b.dy));
+    return _SectionQuad.fromPolygon(sectionCanvasElementPolygon(size, section));
+  }
+
+  /// 캔버스 좌표 꼭짓점 넷(섹션 polygon · 확장 중 morph polygon)에서.
+  factory _SectionQuad.fromPolygon(List<Offset> polygon) {
+    final points = [...polygon]..sort((a, b) => a.dy.compareTo(b.dy));
     final top = [points[0], points[1]]..sort((a, b) => a.dx.compareTo(b.dx));
     final bottom = [points[2], points[3]]
       ..sort((a, b) => a.dx.compareTo(b.dx));
@@ -285,6 +292,7 @@ class InventoryWorkspace extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
+            // 분석 모드의 사이드바 내용은 stage가 맨 위에 둔다(오파츠 확장 때 사이드바도 섹션처럼 빠진다).
             if (analysis)
               Positioned.fill(
                 child: _InventoryAnalysisStage(
@@ -292,6 +300,8 @@ class InventoryWorkspace extends StatelessWidget {
                   onOpenPlan: onOpenPlan,
                   size: size,
                   tiers: controller.tiersOpen,
+                  expanded: controller.oopartExpanded,
+                  sidebar: _sidebar(size),
                 ),
               )
             else ...[
@@ -308,8 +318,8 @@ class InventoryWorkspace extends StatelessWidget {
               Positioned.fill(child: _detail(context, size)),
               Positioned.fill(child: _risk(context, size)),
               Positioned.fill(child: _kpis(size)),
+              Positioned.fill(child: _sidebar(size)),
             ],
-            Positioned.fill(child: _sidebar(size)),
           ],
         ),
       );
@@ -1509,15 +1519,20 @@ class _InventorySurfacesPainter extends CustomPainter {
   }
 }
 
-/// 분석 모드 본문(사이드바 표면 포함). 분석 ↔ 티어별 충족률을 섹션 모션으로 바꾼다: 앞 360ms는 나가는 섹션이 outro로,
-/// 뒤 360ms는 들어오는 섹션이 intro로 움직인다. 움직이지 않을 때는 한 painter가 표면을 모두 그리고 그 위에 섹션 내용을
-/// 둔다(FE6-c와 같은 그림 순서).
+/// 분석 모드 본문(사이드바 표면 · 내용 포함). 분석 ↔ 티어별 충족률을 섹션 모션으로 바꾼다: 앞 360ms는 나가는 섹션이
+/// outro로, 뒤 360ms는 들어오는 섹션이 intro로 움직인다. 움직이지 않을 때는 한 painter가 표면을 모두 그리고 그 위에 섹션
+/// 내용, 맨 위에 사이드바 내용을 둔다(FE6-c와 같은 그림 순서).
+///
+/// 오파츠 확장(FE6-d)은 [_expand] 하나(0 접힘 → 1 확장)를 [inventoryOpaTimeline] 세 구간으로 나눠 그린다: 사이드바 · S1 ·
+/// S4 · S5 퇴장 → S2 morph → 상세 열 등장. "축소"는 같은 값을 거꾸로 지난다. 움직이는 동안은 입력을 받지 않는다.
 class _InventoryAnalysisStage extends StatefulWidget {
   const _InventoryAnalysisStage({
     required this.controller,
     required this.onOpenPlan,
     required this.size,
     required this.tiers,
+    required this.expanded,
+    required this.sidebar,
   });
 
   final InventoryController controller;
@@ -1527,17 +1542,37 @@ class _InventoryAnalysisStage extends StatefulWidget {
   /// 티어별 충족률 화면이 목표다.
   final bool tiers;
 
+  /// S2 오파츠 확장이 목표다(FE6-d).
+  final bool expanded;
+
+  /// 사이드바 내용(workspace가 만든다). 표면은 이 stage가 그린다.
+  final Widget sidebar;
+
   @override
   State<_InventoryAnalysisStage> createState() =>
       _InventoryAnalysisStageState();
 }
 
+/// 오파츠 확장 시퀀스 구간: 퇴장 `AppMotion.section`(360ms) → morph `AppMotion.section`(360ms) → 상세 등장
+/// `AppMotion.header`(220ms), 합계 940ms. 곡선은 `AppMotion.sectionCurve`.
+const inventoryOpaTimeline = SectionMorphTimeline();
+
+/// 확장 때 빠지는 섹션과 outro 각도(§1.4: 사이드바 왼쪽 180 · S1 위 80 · S4 오른쪽 0 · S5 아래 260).
+double inventoryOpaExitAngle(String id) => id == inventorySidebarSectionId
+    ? 180
+    : _inventorySectionMotion(id).outro;
+
 class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _motion = AnimationController(
     vsync: this,
     duration: AppMotion.section * 2,
   )..addStatusListener(_motionStatus);
+
+  late final AnimationController _expand = AnimationController(
+    vsync: this,
+    duration: inventoryOpaTimeline.total,
+  );
 
   /// 다 들어와 있는 화면(움직이지 않을 때 그린다). `late` 초기화는 처음 읽을 때 일어나므로 initState에서 정한다.
   late bool _shown;
@@ -1550,6 +1585,7 @@ class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
     _shown = widget.tiers;
     _from = widget.tiers;
     _to = widget.tiers;
+    _expand.value = widget.expanded ? 1 : 0;
   }
 
   void _motionStatus(AnimationStatus status) {
@@ -1561,7 +1597,16 @@ class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
   @override
   void didUpdateWidget(_InventoryAnalysisStage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.expanded != oldWidget.expanded) {
+      if (widget.expanded) {
+        _expand.forward();
+      } else {
+        _expand.reverse();
+      }
+    }
     if (widget.tiers == _to) return;
+    // 티어 화면은 접힌 분석에서만 연다(컨트롤러가 확장을 접는다).
+    _expand.value = 0;
     _from = _motion.isAnimating ? _to : _shown;
     _to = widget.tiers;
     _motion.forward(from: 0);
@@ -1570,6 +1615,7 @@ class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
   @override
   void dispose() {
     _motion.dispose();
+    _expand.dispose();
     super.dispose();
   }
 
@@ -1587,94 +1633,213 @@ class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
     common: _analysis,
   );
 
+  Widget get _sidebar => Positioned.fill(child: widget.sidebar);
+
   @override
   Widget build(BuildContext context) {
-    if (!_motion.isAnimating) {
-      final shown = _shown;
+    if (_motion.isAnimating) return _swap();
+    if (_shown) return _still(tiers: true);
+    return AnimatedBuilder(
+      animation: _expand,
+      builder: (context, _) => _expand.value > 0 || _expand.isAnimating
+          ? _expansion(_expand.value)
+          : _still(tiers: false),
+    );
+  }
+
+  /// 움직이지 않는 분석 · 티어 화면.
+  Widget _still({required bool tiers}) => Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Positioned.fill(
+        child: IgnorePointer(
+          child: CustomPaint(
+            key: ValueKey(
+              tiers ? 'inventory-tiers-surfaces' : 'inventory-analysis-surfaces',
+            ),
+            painter: _InventorySurfacesPainter(
+              tiers
+                  ? _InventoryScreen.tiers.surfaces
+                  : _InventoryScreen.analysis.surfaces,
+            ),
+          ),
+        ),
+      ),
+      Positioned.fill(child: tiers ? _tiers : _analysis),
+      _sidebar,
+    ],
+  );
+
+  /// 분석 ↔ 티어 섹션 교체.
+  Widget _swap() => AnimatedBuilder(
+    animation: _motion,
+    builder: (context, _) {
+      final value = _motion.value;
+      final leaving = value < 0.5;
+      final tiers = leaving ? _from : _to;
+      final progress = AppMotion.sectionCurve.transform(
+        ((leaving ? value : value - 0.5) * 2).clamp(0.0, 1.0).toDouble(),
+      );
+      final screen = tiers ? _InventoryScreen.tiers : _InventoryScreen.analysis;
+      Offset offsetFor(String id) {
+        final motion = _inventorySectionMotion(id);
+        return leaving
+            ? sectionExitOffset(widget.size, motion.outro, progress)
+            : sectionEntryOffset(widget.size, motion.intro, progress);
+      }
+
       return Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: IgnorePointer(
-              child: CustomPaint(
-                key: ValueKey(
-                  shown
-                      ? 'inventory-tiers-surfaces'
-                      : 'inventory-analysis-surfaces',
-                ),
-                painter: _InventorySurfacesPainter(
-                  shown
-                      ? _InventoryScreen.tiers.surfaces
-                      : _InventoryScreen.analysis.surfaces,
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(child: shown ? _tiers : _analysis),
-        ],
-      );
-    }
-    return AnimatedBuilder(
-      animation: _motion,
-      builder: (context, _) {
-        final value = _motion.value;
-        final leaving = value < 0.5;
-        final tiers = leaving ? _from : _to;
-        final progress = AppMotion.sectionCurve.transform(
-          ((leaving ? value : value - 0.5) * 2).clamp(0.0, 1.0).toDouble(),
-        );
-        final screen = tiers
-            ? _InventoryScreen.tiers
-            : _InventoryScreen.analysis;
-        Offset offsetFor(String id) {
-          final motion = _inventorySectionMotion(id);
-          return leaving
-              ? sectionMotionOffset(widget.size, motion.outro) * progress
-              : sectionMotionOffset(widget.size, motion.intro) *
-                    -(1 - progress);
-        }
-
-        return IgnorePointer(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              for (final section in screen.swapped)
-                Positioned.fill(
-                  key: ValueKey('inventory-motion-${section.id}'),
-                  child: Transform.translate(
-                    offset: offsetFor(section.id),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: _InventorySurfacesPainter([section]),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: tiers
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (final section in screen.swapped)
+                    Positioned.fill(
+                      key: ValueKey('inventory-motion-${section.id}'),
+                      child: Transform.translate(
+                        offset: offsetFor(section.id),
+                        child: _sectionLayer(
+                          section,
+                          tiers
                               ? _tiers.content(section.id)
                               : _analysis.content(section.id),
                         ),
-                      ],
+                      ),
+                    ),
+                  // 사이드바 표면은 움직이지 않고 지나가는 섹션 위에 둔다(사이드바 내용은 그 위).
+                  Positioned.fill(
+                    child: CustomPaint(
+                      key: const ValueKey('inventory-motion-surfaces'),
+                      painter: _InventorySurfacesPainter([
+                        inventoryAnalysisSection(inventorySidebarSectionId),
+                      ]),
                     ),
                   ),
-                ),
-              // 사이드바 표면은 움직이지 않고 지나가는 섹션 위에 둔다(사이드바 내용은 workspace가 그 위에 그린다).
+                ],
+              ),
+            ),
+          ),
+          // 사이드바 내용은 움직이지 않고 그대로 누를 수 있다(FE6-e와 같다).
+          _sidebar,
+        ],
+      );
+    },
+  );
+
+  /// 섹션 하나의 표면 + 내용.
+  Widget _sectionLayer(SectionCanvasElement section, Widget content) => Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Positioned.fill(
+        child: CustomPaint(painter: _InventorySurfacesPainter([section])),
+      ),
+      Positioned.fill(child: content),
+    ],
+  );
+
+  /// 오파츠 확장 중 · 확장 완료 화면([value] 0~1).
+  Widget _expansion(double value) {
+    final exit = inventoryOpaTimeline.exitProgress(value);
+    final morph = inventoryOpaTimeline.morphProgress(value);
+    final reveal = inventoryOpaTimeline.revealProgress(value);
+    final settled = value >= 1 && !_expand.isAnimating;
+    Widget leaving(String id, Widget child) => Positioned.fill(
+      key: ValueKey('inventory-opa-exit-$id'),
+      child: Transform.translate(
+        offset: sectionExitOffset(widget.size, inventoryOpaExitAngle(id), exit),
+        child: child,
+      ),
+    );
+    final analysis = _analysis;
+    final stack = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 그림 순서는 멈춘 분석과 같다(S4 · S5 → S2 → S1 → 사이드바).
+        if (exit < 1)
+          for (final id in const [
+            inventoryAnalysisTiersSectionId,
+            inventoryAnalysisChangesSectionId,
+          ])
+            leaving(
+              id,
+              _sectionLayer(inventoryAnalysisSection(id), analysis.content(id)),
+            ),
+        Positioned.fill(
+          key: const ValueKey('inventory-opa-ooparts'),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
               Positioned.fill(
-                child: CustomPaint(
-                  key: const ValueKey('inventory-motion-surfaces'),
-                  painter: _InventorySurfacesPainter([
-                    inventoryAnalysisSection(inventorySidebarSectionId),
-                  ]),
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    key: const ValueKey('inventory-opa-surface'),
+                    painter: _InventoryMorphSurfacePainter(morph),
+                  ),
                 ),
+              ),
+              Positioned.fill(
+                child: analysis.ooparts(morph: morph, reveal: reveal),
               ),
             ],
           ),
-        );
-      },
+        ),
+        if (exit < 1) ...[
+          leaving(
+            inventoryAnalysisSchoolsSectionId,
+            _sectionLayer(
+              inventoryAnalysisSection(inventoryAnalysisSchoolsSectionId),
+              analysis.content(inventoryAnalysisSchoolsSectionId),
+            ),
+          ),
+          leaving(
+            inventorySidebarSectionId,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _InventorySurfacesPainter([
+                      inventoryAnalysisSection(inventorySidebarSectionId),
+                    ]),
+                  ),
+                ),
+                _sidebar,
+              ],
+            ),
+          ),
+        ],
+      ],
     );
+    return settled ? stack : IgnorePointer(child: stack);
   }
+}
+
+/// 확장 중 S2 표면(접힘 → 확장 morph path, 키트 [buildSectionMorphPath]).
+class _InventoryMorphSurfacePainter extends CustomPainter {
+  const _InventoryMorphSurfacePainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) => paintSectionSurface(
+    canvas,
+    buildSectionMorphPath(
+      size,
+      inventoryAnalysisSection(inventoryAnalysisOopartsSectionId),
+      inventoryAnalysisOopartsExpandedSection,
+      progress,
+    ),
+  );
+
+  @override
+  bool? hitTest(Offset position) => false;
+
+  @override
+  bool shouldRepaint(_InventoryMorphSurfacePainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 /// C 안쪽 스크롤 패널(시안 rgba(26,44,59,.9) + 1px rgba(56,81,107,.72)).

@@ -12,6 +12,10 @@
 // 4개 중 하나(그 섹션을 강조한 채 분석으로) · "목록"을 누르면 닫힌다. T1 · T2 · T4 표시 칩은 표마다 따로 든다. 집계
 // (`inventory_tiers.dart`)도 같은 메모 규칙이다.
 //
+// 오파츠 확장(FE6-d): S2 "확장"은 탭 안 로컬 상태([oopartExpanded], FD-103)다. 분석 모드 · 티어 화면이 아닐 때만 켜지고,
+// 목록으로 가거나 티어 화면을 열면 접힌다. 고른 오파츠([selectOopart])는 확장 전후 그대로이고, 고르지 않았으면 병목 순위
+// 1위가 기본이다(FD-103). 병목 순위 · 상세도 같은 메모 규칙이다.
+//
 // 재화 읽기 전용(fb3-dart, FB-3 `currency_read_only`):
 // - 재화 키(credits·엘리그마)는 draft·dirty가 되지 않는다([setDraft]·[beginEdit]가 거절한다).
 // - 저장 wire는 재화 항목을 저장된 map 그대로(이름·메타 포함) 두고, 없는 재화는 만들지 않으며 null을 '0'으로 바꾸지
@@ -92,6 +96,8 @@ class InventoryController extends ChangeNotifier {
   InventoryChangeWindow _changeWindow = InventoryChangeWindow.week1;
   bool _tiersOpen = false;
   final Map<InventoryHeatmapKind, InventoryHeatmapValue> _tierValues = {};
+  bool _oopartExpanded = false;
+  String? _selectedOopart;
 
   // 분석 집계 메모(보드·사용 단계가 바뀌면 다시 센다).
   InventoryBoard? _analysisBoard;
@@ -100,6 +106,8 @@ class InventoryController extends ChangeNotifier {
   InventoryOopartAnalysis? _oopartAnalysis;
   final Map<InventoryHeatmapKind, InventoryHeatmap> _heatmaps = {};
   InventoryTiersAnalysis? _tiersAnalysis;
+  List<InventoryOopartRank>? _oopartRanking;
+  final Map<String, InventoryOopartDetail?> _oopartDetails = {};
 
   InventoryListMode _mode = InventoryListMode.items;
   InventoryView _view = InventoryView.shortage;
@@ -180,6 +188,8 @@ class InventoryController extends ChangeNotifier {
     _oopartAnalysis = null;
     _heatmaps.clear();
     _tiersAnalysis = null;
+    _oopartRanking = null;
+    _oopartDetails.clear();
   }
 
   /// S1 학교 행(FD-099 활성 계획이 쓰는 학교만).
@@ -196,6 +206,45 @@ class InventoryController extends ChangeNotifier {
   InventoryOopartAnalysis get oopartAnalysis {
     _syncAnalysis();
     return _oopartAnalysis ??= inventoryOopartAnalysis(_board, _uses);
+  }
+
+  /// S2 "확장"(FE6-d): 분석 모드에서 티어 화면이 닫혀 있을 때만 참이다.
+  bool get oopartExpanded =>
+      _screenMode == InventoryScreenMode.analysis && !_tiersOpen && _oopartExpanded;
+
+  /// 상세 열 병목 순위(오파츠마다 가장 부족한 티어, 부족량 큰 순 5행).
+  List<InventoryOopartRank> get oopartRanking {
+    _syncAnalysis();
+    return _oopartRanking ??= inventoryOopartRanking(oopartAnalysis);
+  }
+
+  /// 사용자가 고른 오파츠가 산점도에 있다(선택 표시는 이때만 그린다. 기본 선택은 상세 열에만 쓴다).
+  bool get oopartSelectionExplicit {
+    final selected = _selectedOopart;
+    return selected != null &&
+        oopartAnalysis.series.any((series) => series.family == selected);
+  }
+
+  /// 상세 열의 오파츠 family: 고른 것, 없거나 산점도에 없으면 병목 순위 1위(FD-103).
+  String? get selectedOopartFamily => oopartSelectionExplicit
+      ? _selectedOopart
+      : inventoryDefaultOopartFamily(oopartAnalysis, oopartRanking);
+
+  /// 상세 열 값. 고를 오파츠가 없으면 null.
+  InventoryOopartDetail? get selectedOopartDetail {
+    final family = selectedOopartFamily;
+    if (family == null) return null;
+    _syncAnalysis();
+    return _oopartDetails.putIfAbsent(
+      family,
+      () => inventoryOopartDetail(
+        _board,
+        _uses,
+        family,
+        analysis: oopartAnalysis,
+        studentName: studentName,
+      ),
+    );
   }
 
   /// 티어별 충족률 화면 값(FD-099 Tiers: 카탈로그 전부).
@@ -480,7 +529,10 @@ class InventoryController extends ChangeNotifier {
   void setScreenMode(InventoryScreenMode mode) {
     if (_screenMode == mode) return;
     _screenMode = mode;
-    if (mode == InventoryScreenMode.list) _tiersOpen = false;
+    if (mode == InventoryScreenMode.list) {
+      _tiersOpen = false;
+      _oopartExpanded = false;
+    }
     _notify();
   }
 
@@ -503,6 +555,25 @@ class InventoryController extends ChangeNotifier {
   void toggleTiers() {
     if (_screenMode != InventoryScreenMode.analysis) return;
     _tiersOpen = !_tiersOpen;
+    _oopartExpanded = false;
+    _notify();
+  }
+
+  /// S2 "확장" · "축소"(FE6-d). 분석 모드이고 티어 화면이 닫혀 있을 때만 켠다.
+  void setOopartExpanded(bool expanded) {
+    if (expanded &&
+        (_screenMode != InventoryScreenMode.analysis || _tiersOpen)) {
+      return;
+    }
+    if (_oopartExpanded == expanded) return;
+    _oopartExpanded = expanded;
+    _notify();
+  }
+
+  /// 산점도 점(오파츠)을 고른다(확장 전후 모두, FD-103). 상세 열이 그 오파츠를 보인다.
+  void selectOopart(String family) {
+    if (_selectedOopart == family) return;
+    _selectedOopart = family;
     _notify();
   }
 

@@ -7,7 +7,8 @@
 //   FD-097).
 // - S1 학교별 BD · 기술 노트 충족률: 학교 행(엠블럼 · 이름 · BD 막대 + % · 노트 막대 + % · 부족 티어 · "계획 n명" 칩 →
 //   학생별 부족 필요량 플라이아웃). "계획 필요 환산량 기준" 칩은 숨김(FD-100).
-// - S2 오파츠 · 보유율 × 수요: 티어 토글 + 산점도(`inventory_analysis_charts.dart`). "확장"은 FE6-d 전까지 비활성.
+// - S2 오파츠 · 보유율 × 수요: 티어 토글 + 산점도(`inventory_analysis_charts.dart`). 점을 누르면 그 오파츠를 고른다.
+//   "확장"(FE6-d)은 사이드바 · S1 · S4 · S5를 빼고 S2를 키운 뒤 선택 오파츠 상세 열을 보인다(`inventory_opa_sections.dart`).
 // - S4 종류 × 티어 충족률: 종류 seg · 표시 칩 · 히트맵 · 범례 · 부족 상위 3행.
 // - S5 최근 변화: 틀 · 기간 seg · 빈 상태(데이터 FE6-f).
 part of 'inventory_workspace.dart';
@@ -181,13 +182,22 @@ enum _AnalysisGlyph {
 
   /// `M5 12h14M13 6l6 6-6 6`
   arrow,
+
+  /// 확장(FE6-d, 시안 "확장" 버튼) `M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7`
+  expand,
+
+  /// 축소(FE6-d, 시안 "축소" 버튼) `M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7`
+  collapse,
+
+  /// 단계(FE6-d, 시안 "계획에서 쓰는 단계 보기") `M12 3l9 5-9 5-9-5 9-5z` + `M3 13l9 5 9-5`
+  layers,
 }
 
 class _AnalysisGlyphPainter extends CustomPainter {
-  const _AnalysisGlyphPainter(this.glyph);
+  const _AnalysisGlyphPainter(this.glyph, {this.color = AppColors.textSecondary});
 
   final _AnalysisGlyph glyph;
-  static const color = AppColors.textSecondary;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -204,6 +214,40 @@ class _AnalysisGlyphPainter extends CustomPainter {
           ..moveTo(13, 6)
           ..lineTo(19, 12)
           ..lineTo(13, 18),
+      _AnalysisGlyph.expand =>
+        Path()
+          ..moveTo(15, 3)
+          ..lineTo(21, 3)
+          ..lineTo(21, 9)
+          ..moveTo(9, 21)
+          ..lineTo(3, 21)
+          ..lineTo(3, 15)
+          ..moveTo(21, 3)
+          ..lineTo(14, 10)
+          ..moveTo(3, 21)
+          ..lineTo(10, 14),
+      _AnalysisGlyph.collapse =>
+        Path()
+          ..moveTo(4, 14)
+          ..lineTo(10, 14)
+          ..lineTo(10, 20)
+          ..moveTo(20, 10)
+          ..lineTo(14, 10)
+          ..lineTo(14, 4)
+          ..moveTo(14, 10)
+          ..lineTo(21, 3)
+          ..moveTo(3, 21)
+          ..lineTo(10, 14),
+      _AnalysisGlyph.layers =>
+        Path()
+          ..moveTo(12, 3)
+          ..lineTo(21, 8)
+          ..lineTo(12, 13)
+          ..lineTo(3, 8)
+          ..close()
+          ..moveTo(3, 13)
+          ..lineTo(12, 18)
+          ..lineTo(21, 13),
     };
     canvas.save();
     canvas.scale(size.width / 24);
@@ -221,7 +265,7 @@ class _AnalysisGlyphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_AnalysisGlyphPainter oldDelegate) =>
-      oldDelegate.glyph != glyph;
+      oldDelegate.glyph != glyph || oldDelegate.color != color;
 }
 
 /// 분석 모드 네 섹션(S1 · S2 · S4 · S5)과 강조 외곽선.
@@ -258,7 +302,7 @@ class _InventoryAnalysisSections extends StatelessWidget {
   /// 섹션 [id] 하나의 내용(섹션 교체 모션이 섹션마다 따로 움직일 때 쓴다).
   Widget content(String id) => switch (id) {
     inventoryAnalysisSchoolsSectionId => _schools(),
-    inventoryAnalysisOopartsSectionId => _ooparts(),
+    inventoryAnalysisOopartsSectionId => ooparts(),
     inventoryAnalysisTiersSectionId => _tiers(),
     _ => _changes(),
   };
@@ -272,7 +316,7 @@ class _InventoryAnalysisSections extends StatelessWidget {
       children: [
         Positioned.fill(child: _tiers()),
         Positioned.fill(child: _changes()),
-        Positioned.fill(child: _ooparts()),
+        Positioned.fill(child: ooparts()),
         Positioned.fill(child: _schools()),
         if (focusId != null)
           Positioned.fill(
@@ -443,35 +487,62 @@ class _InventoryAnalysisSections extends StatelessWidget {
 
   // --- S2 오파츠 ----------------------------------------------------------------
 
-  Widget _ooparts() {
-    final quad = _quad(inventoryAnalysisOopartsSectionId);
+  /// S2 내용. [morph]는 접힘 0 → 확장 1 섹션 morph 진행(섹션 모양 · 산점도 크기 · 점 → 아이콘), [reveal]은 상세 열 등장
+  /// 진행이다(FE6-d). 둘 다 0이면 FE6-c 접힌 S2 그대로다.
+  Widget ooparts({double morph = 0, double reveal = 0}) {
+    final quad = morph <= 0
+        ? _quad(inventoryAnalysisOopartsSectionId)
+        : _SectionQuad.fromPolygon(
+            sectionMorphPolygon(
+              size,
+              inventoryAnalysisSection(inventoryAnalysisOopartsSectionId),
+              inventoryAnalysisOopartsExpandedSection,
+              morph,
+            ),
+          );
+    final ready = _blocker == null && !_waiting;
+    final expanded = controller.oopartExpanded;
+    final buttonColors = TonalButtonColors.of(TonalButtonVariant.normal);
     final children = <Widget>[
       _title(
         quad,
         '오파츠 · 보유율 × 수요',
-        minWidth: 640,
+        // 작은 창에서도 "확장" · "축소"가 잘리지 않게 제목 글자를 먼저 줄인다(기준 viewport는 폭이 넉넉해 그대로).
+        minWidth: 400,
         trailing: [
           const SizedBox(width: 10),
           BaChip(label: '왼쪽 위 = 핵심 병목', tone: AppTones.pink),
           const SizedBox(width: 18),
-          // FE6-d(확장 애니메이션) 전까지 보이기만 하고 꺼 둔다.
-          Semantics(
-            label: '오파츠 패널 확장은 준비 중입니다',
-            child: const TonalButton(
-              key: ValueKey('inventory-oopart-expand'),
-              label: '확장',
-              icon: Icons.open_in_full,
-              height: 30,
-              horizontalPadding: 12,
-              fontSize: AppType.bodySmallSize,
-              onPressed: null,
+          // 시안 aria-label "오파츠 패널 확장", 축소는 FD-103으로 "오파츠 패널 축소"를 더한다. 아이콘은 시안 svg(14px)를
+          // 기존 16px 자리 가운데에 그린다.
+          TonalButton(
+            key: const ValueKey('inventory-oopart-expand'),
+            label: expanded ? '축소' : '확장',
+            semanticLabel: expanded ? '오파츠 패널 축소' : '오파츠 패널 확장',
+            leading: SizedBox.square(
+              dimension: 16,
+              child: Center(
+                child: CustomPaint(
+                  size: const Size.square(14),
+                  painter: _AnalysisGlyphPainter(
+                    expanded ? _AnalysisGlyph.collapse : _AnalysisGlyph.expand,
+                    color: buttonColors.foreground,
+                  ),
+                ),
+              ),
             ),
+            height: 30,
+            horizontalPadding: 12,
+            fontSize: AppType.bodySmallSize,
+            onPressed: ready
+                ? () => controller.setOopartExpanded(!expanded)
+                : null,
           ),
         ],
       ),
       _rule(quad),
     ];
-    if (_blocker != null || _waiting) {
+    if (!ready) {
       return Stack(clipBehavior: Clip.none, children: children);
     }
     final analysis = controller.oopartAnalysis;
@@ -532,8 +603,9 @@ class _InventoryAnalysisSections extends StatelessWidget {
         ),
       ),
     );
+    final geometry = InventoryScatterGeometry.at(morph);
     final frameTop = quad.top + InventoryAnalysisMetrics.scatterTop;
-    const frameHeight = InventoryAnalysisMetrics.scatterHeight;
+    final frameHeight = geometry.viewBox.height;
     final frameLeft =
         quad.leftAt(frameTop + frameHeight) +
         InventoryAnalysisMetrics.scatterLeft;
@@ -545,11 +617,11 @@ class _InventoryAnalysisSections extends StatelessWidget {
         width: frameWidth,
         height: math.max(0.0, math.min(frameHeight, quad.bottom - frameTop)),
         child: _Fit(
-          minWidth: InventoryAnalysisMetrics.scatterWidth,
+          minWidth: geometry.viewBox.width,
           minHeight: frameHeight,
           child: analysis.isEmpty
               ? SizedBox(
-                  width: InventoryAnalysisMetrics.scatterWidth,
+                  width: geometry.viewBox.width,
                   height: frameHeight,
                   child: _AnalysisNotice(
                     key: const ValueKey('inventory-ooparts-empty'),
@@ -561,10 +633,20 @@ class _InventoryAnalysisSections extends StatelessWidget {
                         : null,
                   ),
                 )
-              : _OopartScatter(analysis: analysis, tiers: tiers),
+              : _OopartScatter(
+                  analysis: analysis,
+                  tiers: tiers,
+                  geometry: geometry,
+                  icons: morph,
+                  selectedFamily: controller.oopartSelectionExplicit
+                      ? controller.selectedOopartFamily
+                      : null,
+                  onSelect: controller.selectOopart,
+                ),
         ),
       ),
     );
+    if (reveal > 0) children.add(_oopartDetail(quad, reveal));
     return Stack(clipBehavior: Clip.none, children: children);
   }
 
@@ -1202,12 +1284,27 @@ class _BottleneckRing extends StatelessWidget {
   );
 }
 
-/// S2 산점도. 마우스를 올린 점의 이름 · 보유율 · 학생 수를 작은 말풍선으로 보인다(시안 `<title>`).
+/// S2 산점도. 마우스를 올린 점의 이름 · 보유율 · 학생 수를 작은 말풍선으로 보인다(시안 `<title>`). 점을 누르면 그
+/// 오파츠를 고른다(FD-103, 확장 전후 모두). 확장(FE6-d)에서는 [geometry]가 커지고 점 자리에 오파츠 아이콘이 [icons]만큼
+/// 나타난다(크로스페이드). 아이콘 그림이 없으면 이름 앞 두 글자다(시안 "아우" · "오브" · "구스" · "토리").
 class _OopartScatter extends StatefulWidget {
-  const _OopartScatter({required this.analysis, required this.tiers});
+  const _OopartScatter({
+    required this.analysis,
+    required this.tiers,
+    required this.geometry,
+    required this.icons,
+    required this.selectedFamily,
+    required this.onSelect,
+  });
 
   final InventoryOopartAnalysis analysis;
   final Set<int> tiers;
+  final InventoryScatterGeometry geometry;
+  final double icons;
+
+  /// 사용자가 고른 오파츠(선택 표시). 기본 선택은 null로 받는다.
+  final String? selectedFamily;
+  final ValueChanged<String> onSelect;
 
   @override
   State<_OopartScatter> createState() => _OopartScatterState();
@@ -1220,6 +1317,9 @@ class _OopartScatterState extends State<_OopartScatter> {
     analysis: widget.analysis,
     tiers: widget.tiers,
     hovered: _hovered?.key,
+    geometry: widget.geometry,
+    icons: widget.icons,
+    selectedFamily: widget.selectedFamily,
   );
 
   void _hover(Offset position) {
@@ -1228,24 +1328,35 @@ class _OopartScatterState extends State<_OopartScatter> {
     setState(() => _hovered = hit);
   }
 
+  void _tap(Offset position) {
+    _hover(position);
+    final hit = _painter.hitTest(position);
+    final family = hit?.view.item.family;
+    if (family != null) widget.onSelect(family);
+  }
+
   @override
   Widget build(BuildContext context) {
     final hovered = _hovered;
     final analysis = widget.analysis;
+    final geometry = widget.geometry;
+    final viewBox = geometry.viewBox;
+    final painter = _painter;
     final points = analysis.series.fold<int>(
       0,
       (sum, series) => sum + series.points.length,
     );
     final center = hovered == null
         ? null
-        : InventoryScatterGeometry.pointFor(
+        : geometry.pointFor(
             hovered.fulfillment,
             hovered.students,
             analysis.maxStudents,
           );
+    final icons = widget.icons.clamp(0.0, 1.0).toDouble();
     return SizedBox(
-      width: InventoryScatterGeometry.viewBox.width,
-      height: InventoryScatterGeometry.viewBox.height,
+      width: viewBox.width,
+      height: viewBox.height,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1256,17 +1367,32 @@ class _OopartScatterState extends State<_OopartScatter> {
             },
             child: StatChartFrame(
               key: const ValueKey('inventory-oopart-scatter'),
-              viewBox: InventoryScatterGeometry.viewBox,
+              viewBox: viewBox,
               scale: 1,
-              painter: _painter,
-              onTapAt: _hover,
+              painter: painter,
+              onTapAt: _tap,
               semanticLabel:
                   '오파츠 보유율과 사용 학생 수, ${analysis.series.length}종 $points점',
             ),
           ),
+          if (icons > 0)
+            for (final (point, center, radius) in painter.iconSlots())
+              Positioned(
+                key: ValueKey('inventory-oopart-icon-${point.key}'),
+                left: center.dx - radius,
+                top: center.dy - radius,
+                width: radius * 2,
+                height: radius * 2,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: icons,
+                    child: _OopartPointIcon(point: point, radius: radius),
+                  ),
+                ),
+              ),
           if (hovered != null && center != null)
             Positioned(
-              left: math.min(center.dx + 12, InventoryScatterGeometry.viewBox.width - 260),
+              left: math.min(center.dx + 12, viewBox.width - 260),
               top: math.max(0.0, center.dy - 40),
               child: IgnorePointer(
                 child: Container(
@@ -1289,6 +1415,69 @@ class _OopartScatterState extends State<_OopartScatter> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 확장 산점도 점 하나의 아이콘(원으로 자른 오파츠 그림, 시안 clipPath r 13 · 병목 20, 그림 30 · 44). 그림이 없으면
+/// 이름 앞 두 글자(11px · 병목 16px, 굵게)다. 원 바탕 · 테두리 · 티어 글자는 painter가 그린다.
+class _OopartPointIcon extends StatelessWidget {
+  const _OopartPointIcon({required this.point, required this.radius});
+
+  final InventoryOopartPoint point;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final view = point.view;
+    final fallback = _OopartInitials(
+      view: view,
+      fontSize: point.bottleneck ? 16 : 11,
+    );
+    final asset = planningResourceIconAsset(
+      category: view.item.category,
+      itemId: view.item.itemId,
+    );
+    if (asset == null) return fallback;
+    return ClipOval(
+      child: OverflowBox(
+        maxWidth: radius * 2 + 4,
+        maxHeight: radius * 2 + 4,
+        child: Image(
+          image: ItemIconAssetImage(asset),
+          width: radius * 2 + 4,
+          height: radius * 2 + 4,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => fallback,
+        ),
+      ),
+    );
+  }
+}
+
+/// 오파츠 이름 앞 두 글자(아이콘 그림 대신).
+class _OopartInitials extends StatelessWidget {
+  const _OopartInitials({required this.view, required this.fontSize});
+
+  final InventoryItemView view;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = inventoryOopartLabel(view);
+    return Center(
+      child: Text(
+        label.substring(0, math.min(2, label.length)),
+        key: ValueKey('inventory-oopart-initials-${view.key}'),
+        maxLines: 1,
+        overflow: TextOverflow.clip,
+        style: _muted.copyWith(
+          fontSize: fontSize,
+          fontWeight: AppType.bold,
+          color: AppColors.text,
+        ),
       ),
     );
   }

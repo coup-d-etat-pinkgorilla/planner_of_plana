@@ -9,6 +9,8 @@
 // - 학교 행 순서: 두 충족률(BD · 기술 노트) 중 낮은 값이 낮은 순(막히는 학교가 위). 충족률을 모르면 뒤, 같으면 계획
 //   학생이 많은 순 → 카탈로그 순서.
 // - 오파츠 "핵심 병목": 보유율 50% 미만이고 사용 학생 수가 축 최대의 절반보다 많다(산점도 왼쪽 위 4분면).
+// - 오파츠 확장(FE6-d): 선택 오파츠 상세(티어별 보유 / 필요 · 사용 학생별 티어 부족 FD-101)와 병목 순위(오파츠마다 가장
+//   부족한 티어 하나, 부족량 큰 순). 기본 선택은 병목 순위 1위(FD-103).
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -512,6 +514,261 @@ InventoryOopartAnalysis inventoryOopartAnalysis(
     series: series,
     maxStudents: maxStudents,
     unknownKinds: unknown,
+  );
+}
+
+// --- FE6-d 오파츠 확장(시안 Inventory-Analysis-Opa, E 보고서 §4) ----------------------------------------------
+
+/// 오파츠 "가장 부족한 티어": 보유를 알고 모자라는 티어 중 충족률이 가장 낮은 것 → 높은 티어 → 부족량 큰 것 → 카탈로그
+/// 순서(FE6-e "가장 부족" 칸 규칙과 같다). 모자라는 티어가 없으면 null.
+InventoryItemView? inventoryOopartWeakestTier(Iterable<InventoryItemView> views) {
+  InventoryItemView? best;
+  for (final view in views) {
+    if (!view.knownShortage) continue;
+    final current = best;
+    if (current == null) {
+      best = view;
+      continue;
+    }
+    final fulfillment = view.fulfillment!.compareTo(current.fulfillment!);
+    if (fulfillment != 0) {
+      if (fulfillment < 0) best = view;
+      continue;
+    }
+    final tier = (view.item.tier ?? 0).compareTo(current.item.tier ?? 0);
+    if (tier != 0) {
+      if (tier > 0) best = view;
+      continue;
+    }
+    final amount = view.shortageAmount!.compareTo(current.shortageAmount!);
+    if (amount > 0 || (amount == 0 && view.order < current.order)) best = view;
+  }
+  return best;
+}
+
+/// 상세 열 "병목 순위 · 가장 부족한 티어 기준" 한 줄.
+@immutable
+class InventoryOopartRank {
+  const InventoryOopartRank({
+    required this.family,
+    required this.label,
+    required this.view,
+    required this.bottleneck,
+    required this.order,
+  });
+
+  final String family;
+  final String label;
+
+  /// 그 오파츠의 가장 부족한 티어.
+  final InventoryItemView view;
+
+  /// 산점도 핵심 병목(왼쪽 위 4분면) 점이 있는 오파츠.
+  final bool bottleneck;
+  final int order;
+
+  int get tier => view.item.tier ?? 0;
+  int get shortage => view.shortageAmount ?? 0;
+}
+
+/// 병목 순위 줄 수(시안 5행).
+const inventoryOopartRankCount = 5;
+
+/// 병목 순위: 산점도의 오파츠(FD-099 계획이 쓰고 보유를 아는 것)마다 가장 부족한 티어 하나, 그 부족량 큰 순 → 충족률
+/// 낮은 순 → 카탈로그 순서. 서로 다른 재화의 수량을 더하지 않는다(FD-033, 줄마다 재화 하나).
+List<InventoryOopartRank> inventoryOopartRanking(
+  InventoryOopartAnalysis analysis, {
+  int limit = inventoryOopartRankCount,
+}) {
+  final ranks = <InventoryOopartRank>[
+    for (final series in analysis.series)
+      if (inventoryOopartWeakestTier([
+            for (final point in series.points) point.view,
+          ])
+          case final weakest?)
+        InventoryOopartRank(
+          family: series.family,
+          label: series.label,
+          view: weakest,
+          bottleneck: series.bottleneck,
+          order: series.order,
+        ),
+  ];
+  ranks.sort((a, b) {
+    final amount = b.shortage.compareTo(a.shortage);
+    if (amount != 0) return amount;
+    final fulfillment = a.view.fulfillment!.compareTo(b.view.fulfillment!);
+    return fulfillment != 0 ? fulfillment : a.order.compareTo(b.order);
+  });
+  return List.unmodifiable(ranks.take(limit));
+}
+
+/// 기본 선택 오파츠(FD-103): 병목 순위 1위, 순위가 없으면 산점도 첫 오파츠. 둘 다 없으면 null.
+String? inventoryDefaultOopartFamily(
+  InventoryOopartAnalysis analysis,
+  List<InventoryOopartRank> ranking,
+) => ranking.isNotEmpty
+    ? ranking.first.family
+    : (analysis.series.isEmpty ? null : analysis.series.first.family);
+
+/// 학생 한 명의 오파츠 티어별 부족(모자라는 티어만, 높은 티어 먼저).
+@immutable
+class InventoryOopartStudent {
+  InventoryOopartStudent({
+    required this.studentId,
+    required List<InventoryStudentNeed> needs,
+    required this.unknown,
+  }) : needs = List.unmodifiable(needs);
+
+  final String studentId;
+
+  /// 이 학생 몫의 티어별 부족량(FD-101 `stage_results[].resources`의 `shortage_at_entry`를 같은 재화 안에서만 더한다).
+  final List<InventoryStudentNeed> needs;
+
+  /// 단계의 부족을 모르는 티어가 있다(보유 모름 또는 단계 정보 없음).
+  final bool unknown;
+
+  bool get short => needs.isNotEmpty;
+
+  /// 이 학생 몫의 [tier] 부족량. 모자라지 않으면 null.
+  int? need(int tier) {
+    for (final need in needs) {
+      if (need.tier == tier) return need.amount;
+    }
+    return null;
+  }
+}
+
+/// 선택 오파츠 상세(SelectedOopartPanel).
+@immutable
+class InventoryOopartDetail {
+  InventoryOopartDetail({
+    required this.family,
+    required this.label,
+    required this.icon,
+    required this.bottleneck,
+    required List<InventoryItemView> tiers,
+    required List<InventoryOopartStudent> students,
+  }) : tiers = List.unmodifiable(tiers),
+       students = List.unmodifiable(students);
+
+  final String family;
+  final String label;
+
+  /// 머리 아이콘으로 쓸 티어(가장 부족한 티어, 없으면 가장 높은 티어).
+  final InventoryItemView icon;
+
+  /// 산점도 핵심 병목 점이 있다("핵심 병목" 칩).
+  final bool bottleneck;
+
+  /// 카탈로그의 그 오파츠 티어(티어 순). 보유 · 필요 · 충족률은 [InventoryItemView] 그대로다(계획 밖이면 필요 없음).
+  final List<InventoryItemView> tiers;
+
+  /// 그 오파츠를 쓰는 계획 학생(모자람 있음 → 가장 높은 티어 → 그 부족량 → 이름 → 문서 순서).
+  final List<InventoryOopartStudent> students;
+
+  /// 학생 줄에 보일 티어: 누군가 모자라는 티어, 높은 티어 먼저(시안 `T4 12 · T3 8` 두 칸).
+  List<int> get studentTiers {
+    final tiers = <int>{
+      for (final student in students)
+        for (final need in student.needs) need.tier,
+    }.toList()..sort((a, b) => b.compareTo(a));
+    return tiers;
+  }
+}
+
+/// [family](`oopart:<Key>`)의 상세. 카탈로그에 그 오파츠가 없으면 null. [analysis]는 핵심 병목 표시, [studentName]은
+/// 동점 정렬용이다.
+InventoryOopartDetail? inventoryOopartDetail(
+  InventoryBoard board,
+  Map<String, List<InventoryStageUse>> uses,
+  String family, {
+  required InventoryOopartAnalysis analysis,
+  String Function(String studentId)? studentName,
+}) {
+  final tiers = [
+    for (final view in board.items)
+      if (view.item.category == inventoryOopartCategory &&
+          view.item.family == family &&
+          view.item.tier != null)
+        view,
+  ]..sort((a, b) {
+      final tier = a.item.tier!.compareTo(b.item.tier!);
+      return tier != 0 ? tier : a.order.compareTo(b.order);
+    });
+  if (tiers.isEmpty) return null;
+  final byOrder = [...tiers]..sort((a, b) => a.order.compareTo(b.order));
+  final planned = [
+    for (final view in tiers)
+      if (view.planned) view,
+  ];
+  final order = <String>[];
+  final seen = <String>{};
+  for (final view in planned) {
+    for (final student in inventoryResourceStudents(
+      view,
+      uses[view.key] ?? const [],
+    )) {
+      if (seen.add(student)) order.add(student);
+    }
+  }
+  InventoryOopartStudent studentOf(String student) {
+    var unknown = false;
+    final needs = <InventoryStudentNeed>[];
+    for (final view in planned) {
+      final viewUses = uses[view.key] ?? const <InventoryStageUse>[];
+      if (viewUses.isEmpty) {
+        // 단계 정보가 없으면 학생 몫을 알 수 없다.
+        if (view.shortage?.affectedStudentIds.contains(student) ?? false) {
+          unknown = true;
+        }
+        continue;
+      }
+      final amount = inventoryStudentShortage(student, viewUses);
+      if (amount == null) {
+        unknown = true;
+      } else if (amount > 0) {
+        needs.add(InventoryStudentNeed(tier: view.item.tier!, amount: amount));
+      }
+    }
+    needs.sort((a, b) => b.tier.compareTo(a.tier));
+    return InventoryOopartStudent(
+      studentId: student,
+      needs: needs,
+      unknown: unknown,
+    );
+  }
+
+  final students = [for (final student in order) studentOf(student)];
+  final position = {for (var i = 0; i < order.length; i++) order[i]: i};
+  int topTier(InventoryOopartStudent student) =>
+      student.short ? student.needs.first.tier : 0;
+  int topAmount(InventoryOopartStudent student) =>
+      student.short ? student.needs.first.amount : 0;
+  students.sort((a, b) {
+    final short = (b.short ? 1 : 0).compareTo(a.short ? 1 : 0);
+    if (short != 0) return short;
+    final tier = topTier(b).compareTo(topTier(a));
+    if (tier != 0) return tier;
+    final amount = topAmount(b).compareTo(topAmount(a));
+    if (amount != 0) return amount;
+    if (studentName != null) {
+      final name = studentName(a.studentId).compareTo(studentName(b.studentId));
+      if (name != 0) return name;
+    }
+    return position[a.studentId]!.compareTo(position[b.studentId]!);
+  });
+  var bottleneck = false;
+  for (final series in analysis.series) {
+    if (series.family == family) bottleneck = series.bottleneck;
+  }
+  return InventoryOopartDetail(
+    family: family,
+    label: inventoryOopartLabel(byOrder.first),
+    icon: inventoryOopartWeakestTier(tiers) ?? tiers.last,
+    bottleneck: bottleneck,
+    tiers: tiers,
+    students: students,
   );
 }
 

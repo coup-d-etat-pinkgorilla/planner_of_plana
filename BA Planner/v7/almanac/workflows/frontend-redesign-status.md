@@ -6297,3 +6297,175 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_014658\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE6-d 오파츠 확장 (Lane A, 로컬 Claude Code)
+
+### FE6-d 착수 기록 (2026-10-12, Lane A)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록). 시작 SHA = `861eea5629550fa343fe8d6af32af1b17dd3254c`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 워커 프롬프트 `debug/frontend_redesign_handoff/fe6d-worker-prompt-20261012.md`(CF 02:00 배정).
+- 범위: 인벤토리 분석 S2 오파츠 확장(시안 `Inventory-Analysis-Opa.dc.html`). 키트 공용 섹션 morph(실수 rect 보간 + 섹션별 퇴장), 확장 시퀀스(A 180° · S1 80° · S4 0° · S5 260° 퇴장 → S2 확대 → 상세 열), 확장 상태 산점도(아이콘 점, 크로스페이드), 선택 오파츠 상세 열, 확장 전 점 선택, "축소" 의미 라벨. 키트 `TonalButton`에 위젯 아이콘 슬롯 · 의미 라벨(기존 동작 그대로).
+- 막힘: 대장 막힘 요약의 FE6-d 행은 `—`(막는 열림 FD 없음). FD-103은 워커 재량(권장안대로), FD-031·FD-033 확정, FD-099·FD-101 워커 재량.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6d/pre/<v7 기준 경로>`, 사본과 작업 트리 cmp 일치 확인):
+  - `frontend/lib/ui/kit/buttons.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis_charts.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis_sections.dart`
+  - `frontend/lib/ui/inventory/inventory_controller.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/studio/inventory_studio_layout.dart`
+  - `frontend/test/kit/buttons_test.dart`
+  - `frontend/test/inventory_analysis_page_test.dart`
+- 새 파일(예정): `frontend/lib/ui/kit/section_morph.dart`, `frontend/lib/ui/inventory/inventory_opa_sections.dart`(workspace의 part), 테스트 `frontend/test/kit/section_morph_test.dart`·`frontend/test/inventory_opa_test.dart`·`frontend/test/inventory_opa_page_test.dart`, 검수 fixture `frontend/test/inventory_fe6d_fixture.dart`, golden 1장 `frontend/test/goldens/fe6d_inventory_opa_golden_test.dart`(`inventory-analysis-opa`, 실행하지 않음).
+- WIP: 고칠 기존 파일 9개 모두 `git status --short <경로>`가 비어 있다(미커밋 변경 없음). 모두 LF(`git ls-files --eol`: i/lf w/lf).
+- 고치지 않음: `plan_phase_editor.dart`(같은 일을 하는 private `_lerpGridRect`·`phaseEditorElements`·`_PhaseEditorMotion`이 거기 남는다. FE5-f에서 지울 예정), `lib/services/**`, `account_section_cluster.dart`, `app_shell.dart`·`app_section.dart`, `school_labels.dart`, golden harness·기존 golden 테스트, `frontend/tool/**`, backend·contracts.
+
+### FE6-d 종료 기록 (2026-10-12, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+시안 Inventory-Analysis-Opa(확장 완료 상태)의 S2 오파츠 확장을 끝냈다. 헤더 부제("· 분석 · 오파츠 확장")는 `app_section.dart`·`app_shell.dart` 몫이라 바꾸지 않았다(발견 사항 2).
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차) | 이슈 3(`lerpDouble` 미정의 2 · 쓰지 않는 import 1) → 고침 |
+| `flutter analyze`(최종, test 포함) | **No issues found**(info 포함 0) |
+| `flutter test test/kit/section_morph_test.dart`(1차) | 6 통과 · 1 실패(path bounds float32 오차 2.4e-4 > 1e-6) → 허용치 1e-3 |
+| `flutter test test/kit/section_morph_test.dart`(최종) | 7 통과 · 0 실패 |
+| `flutter test test/inventory_opa_test.dart`(1차) | 컴파일 실패(`InventoryCatalogEntry.school` 필수 인자) → `school: null` |
+| `flutter test test/inventory_opa_test.dart`(최종) | 9 통과 · 0 실패 |
+| `flutter test test/inventory_opa_page_test.dart`(1차) | 4 통과 · 2 실패: ① 테스트가 Opa fixture에 없는 `inventory-heatmap` 키를 찾음 → S4 제목으로 ② 1280×720에서 S2 제목 줄(`_Fit` 최소 640)이 "확장" 버튼을 잘라 누를 수 없음 → 최소 폭 400(발견 사항 5) |
+| `flutter test test/inventory_opa_page_test.dart`(최종) | 6 통과 · 0 실패 |
+| `flutter test test/inventory_analysis_page_test.dart`(첫 실행) | 600초 넘게 응답 없음 → 중지. 같은 시각 다른 dart 프로세스가 있어 빌드 잠금 경합으로 본다. 재시도 1회: 8 통과 · 0 실패(4초) |
+| 회귀(파일 하나씩, 46개) | 전부 통과 · 실패 0: `test/kit/*_test.dart` 25개(anchored_flyout 8 · ba_chip 4 · ba_modal_a11y 4 · ba_modal 5 · buttons 6 · diagonal_row 6 · diagonal_scroll_viewport 5 · diagonal_scrollbar 9 · info_popover 8 · item_icon_tile 7 · kit_overlay 7 · kpi_tile 2 · range_controls 12 · scroll_viewport_fog 6 · section_morph 7 · skew_bar 8 · skew_controls 7 · stat_chart 7 · stepper 6 · titles 4 · ui_kit_gallery_controls 2 · _data 2 · _overlays 4 · _range 2 · ui_kit_gallery 6), inventory 12개(analysis_page 8 · analysis 16 · controller 13 · currency_readonly 2 · fb3_service 15 · opa_page 6 · opa 9 · page 9 · shell_lazy 1 · tiers_page 7 · tiers 9 · view_model 13), `TonalButton` 사용처 9개(plan_flow_goal_step 23 · plan_flow_presets 13 · plan_flow_save 15 · plan_flow_student_step 8 · plan_scenario_list 10 · plan_scenario_preview 9 · plan_scenario_compare 7 · student_filter_modal 7 · growth_calculator_view 24 · metadata_manager_page 7) |
+| `git diff --check`(고친 · 새 파일) | 0(경고는 autocrlf 안내뿐). 새 파일 7개 · 고친 파일 9개 모두 LF · 끝 개행 하나 |
+
+- 걸리는 기존 테스트는 `TonalButton`·`inventory-oopart-expand`·`InventoryOopartScatterPainter`·`InventoryScatterGeometry`·`inventory_studio_layout`·`InventoryWorkspace`를 grep해서 찾았다. 기존 inventory_* 전부와 키트 · `TonalButton` 사용처 테스트를 실행했다.
+- 고친 기존 테스트 기대(사유 = 바뀐 동작): `inventory_analysis_page_test.dart` "S2 … disabled expand" → "확장"이 켜지고 의미 라벨 `오파츠 패널 확장`, 점을 누르면 그 오파츠가 선택(FD-103). 지운 테스트 없음.
+- 일회성 렌더 확인: 실제 글꼴(harness `loadGoldenFonts`·`settleGoldenScene`)로 접힘 · 퇴장 중 · morph 중 · 확장 완료 · 학생 플라이아웃과 FE6-c `inventory-analysis` 장면을 scratchpad PNG로 한 번 보았다(임시 테스트 파일은 실행 뒤 지웠다, golden 비교 아님). 확장 장면 배치 · 상세 열 · 아이콘 점이 시안 자리에 들어오고, FE6-c 장면은 "확장" 버튼만 달라졌다.
+- 실행하지 않음: golden(`test/goldens/**`, 새 `fe6d_inventory_opa_golden_test.dart` 포함), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 고친 파일
+
+- **키트 `lib/ui/kit/section_morph.dart`(새)**: `sectionMorphRect`(실수 `Rect.lerp`, grid `.round()` 없음) · `sectionCanvasElementPolygon` · `sectionMorphPolygon`(같은 mode · face 두 element 꼭짓점의 실수 보간, 80° 사선 유지, 보간 rect 안) · `buildSectionMorphPath`(같은 둥근 모서리 함수 + 캔버스 경계, 0 · 1에서 원래 element path) · `sectionExitOffset`/`sectionEntryOffset`(`sectionMotionOffset` 재사용) · `SectionMorphTimeline`(퇴장 → morph → 상세 구간).
+- **키트 `lib/ui/kit/buttons.dart`**: `TonalButton`에 `leading`(위젯 아이콘 슬롯, 간격 8)과 `semanticLabel`(→ `KitPressable`)을 더했다. 둘 다 없으면 지금과 같다(FE6-c 발견 4 해소).
+- **`lib/ui/studio/inventory_studio_layout.dart`**: 확장 S2 Studio 문서 `inventoryAnalysisOpaStudioDocument`(element `inventory-analysis-ooparts-expanded`, rect (0,2,96,94), 오른쪽 면 사다리꼴 face 0+96 · 깊이 96)와 상세 열 좌표 `InventoryOpaMetrics`.
+- **`lib/ui/inventory/inventory_analysis.dart`**: 순수 함수 `inventoryOopartWeakestTier` · `inventoryOopartRanking` · `inventoryDefaultOopartFamily` · `inventoryOopartDetail`(+ `InventoryOopartRank` · `InventoryOopartStudent` · `InventoryOopartDetail`).
+- **`lib/ui/inventory/inventory_analysis_charts.dart`**: `InventoryScatterGeometry`를 접힘(1012×420) ↔ 확장(1974×1034.8) 실수 보간 배치로(0에서 FE6-c 값 그대로), 산점도 painter에 `geometry` · `icons`(점 → 아이콘 원 크로스페이드) · `selectedFamily` · `iconSlots()`.
+- **`lib/ui/inventory/inventory_controller.dart`**: `oopartExpanded`(탭 안 로컬, 분석 모드 · 티어 화면 닫힘일 때만) · `setOopartExpanded` · `selectOopart` · `selectedOopartFamily`(고른 것, 없으면 병목 1위) · `oopartSelectionExplicit` · `oopartRanking` · `selectedOopartDetail`(메모). 목록으로 가거나 티어 화면을 열면 접힌다.
+- **`lib/ui/inventory/inventory_workspace.dart`**: `_SectionQuad.fromPolygon`, 분석 모드 사이드바 내용을 stage 안 맨 위로(그림 순서 같음), `_InventoryAnalysisStage`에 확장 컨트롤러 · `_expansion`(퇴장 섹션 Transform · S2 morph 표면 `_InventoryMorphSurfacePainter` · 상세), 분석 ↔ 티어 교체는 키트 오프셋 함수로(같은 식).
+- **`lib/ui/inventory/inventory_analysis_sections.dart`**: S2 `ooparts(morph:, reveal:)`(morph 꼭짓점으로 quad, 산점도 크기 보간), "확장"/"축소" 버튼 활성 · 시안 글리프 · 의미 라벨, 제목 줄 최소 폭 640 → 400, 산점도 점 누름 = 선택, 확장 아이콘 겹(그림 없으면 이름 앞 두 글자), 글리프 3종(확장 · 축소 · 단계)과 글리프 색 인자.
+- **`lib/ui/inventory/inventory_opa_sections.dart`(새, workspace의 part)**: 선택 오파츠 상세 열(머리 · 티어별 보유/필요 · 사용 학생 + 플라이아웃 · 병목 순위 · 계획 이동).
+- 테스트: `test/kit/section_morph_test.dart`(7) · `test/kit/buttons_test.dart`(+1) · `test/inventory_opa_test.dart`(9) · `test/inventory_opa_page_test.dart`(6) · `test/inventory_analysis_page_test.dart`(기대 변경) · 검수 fixture `test/inventory_fe6d_fixture.dart` · golden `test/goldens/fe6d_inventory_opa_golden_test.dart`(1장, 실행 안 함).
+- 고치지 않음: `plan_phase_editor.dart`(같은 일을 하는 private `_lerpGridRect` · `phaseEditorElements` · `_PhaseEditorMotion`이 그대로 남는다 — FE5-f에서 지울 때 키트 morph로 대체 가능), 계획 화면, `lib/services/**`, `account_section_cluster.dart`, `app_shell.dart`·`app_section.dart`, `school_labels.dart`, golden harness · 기존 golden 테스트, `frontend/tool/**`, backend · contracts, 택틱 · 스캐너 파일, FE6-c · FE6-e fixture.
+
+#### 배치(기준 viewport 2560×1392)
+
+| 대상 | 값 | 시안 대비 |
+|---|---|---|
+| 확장 S2 rect · spec | (0,2,96,94) 오른쪽 면 사다리꼴, face 0+96, 깊이 96 → (208.6,209.2)·(2560,209.2)·(2560,1392)·(0,1392) | 위 · 오른쪽 변 0px, **왼쪽 사선 두 꼭짓점 −12px**(±1px 예외, 발견 사항 1) |
+| 제목 줄 · 규칙선 · 티어 토글 · 산점도 위치 | 접힌 S2와 같은 `InventoryAnalysisMetrics`(왼쪽 사선 변 기준 22 · 21.8 · 30 · 28.9, 위 20 · 65 · 78 · 120) | 사선 변 기준 0, 절대 x는 섹션과 함께 −12px |
+| 산점도 svg | 1974×1034.8(플롯 56→1788.6, 사선 175.4, 축 글자 (922,1020.8) · (130,497) 14.3px) | 0 |
+| 점 아이콘 | 원 r 15 · 병목 22(티어 색 28% + 테두리 2 · 병목 분홍 3), 그림 원 r 13 · 20, 티어 글자 (0.72r, r+2) 10px 800 | ±0.5px |
+| 상세 열 | 오른쪽 변에서 504(x 2056) · 위 115.8(y 325) · 폭 474 · 묶음 간격 14 | 0 |
+| 상세 열 안 | 머리 64×52 · 간격 12 · 이름 22px, 상자 안쪽 10 · 14 · 캡션 아래 4, 티어 행 40 · 간격 2 · 칸 46 / 막대 / 96 / 52 · 간격 12 · 막대 10, 학생 캡션 70 · 줄 시작 +16 · 줄 260, 순위 행 38 · 18 / 35×28 / 이름 / 티어 / 44 · 간격 10, 버튼 38 · 안쪽 14 | 시안 flex 값 그대로(±2px 안, 화면에서 재지 않음) |
+
+#### 처리한 FD
+
+- **FD-103(워커 재량, 권장안)**: ① 점 → 아이콘은 크로스페이드(morph 구간에서 점 불투명도 1 → 0, 아이콘 원 · 그림 0 → 1) ② 확장 상태는 탭 안 로컬(컨트롤러 `oopartExpanded`, 라우팅 아님). 부제 변경은 `app_section` 몫이라 하지 않았다(발견 사항 2) ③ "축소"에 의미 라벨 `오파츠 패널 축소`(확장은 시안 `오파츠 패널 확장`) ④ 확장 전에도 점 선택 가능, 고른 오파츠가 확장 상세에 그대로 보인다. 기본 선택 = 병목 순위 1위.
+- **FD-031(확정)**: 상세 막대 = 재화별 min(보유, 필요)/필요.
+- **FD-033(확정)**: 병목 순위는 오파츠마다 재화(티어) 하나의 부족량이고, 티어끼리 더하지 않는다(네브라 T3 −37 + T4 −46을 합치지 않음). 보유 모름은 빗금 막대 · `보유 —` · `—`.
+- **FD-099(워커 재량)**: 산점도 · 순위는 FE6-c S2 범위(계획이 쓰고 보유를 아는 오파츠)를 그대로 쓴다. 상세 티어 행은 그 오파츠의 카탈로그 티어 전부(계획 밖 티어도 행).
+- **FD-101(워커 재량)**: 학생별 티어 부족 = 활성 문서 계산 `stage_results[].resources`의 `shortage_at_entry`를 같은 재화 안에서만 더한다. 단계 정보가 없으면 학생은 세고 몫은 `—`.
+
+이번에 정한 규칙(시안 · 대장에 근거 없음, 워커 결정):
+1. "가장 부족한 티어": 보유를 알고 모자라는 티어 중 충족률 가장 낮은 것 → 높은 티어 → 부족량 큰 것 → 카탈로그 순서(FE6-e "가장 부족" 칸 규칙과 같다).
+2. 병목 순위: 그 티어 부족량 큰 순 → 충족률 낮은 순 → 카탈로그 순서, 5행. 모자라는 오파츠가 없으면 "모자라는 오파츠가 없습니다." 핵심 병목 오파츠는 분홍 이름, 고른 오파츠는 굵게. 행을 누르면 그 오파츠를 고른다(시안은 정보 행).
+3. 선택 표시는 사용자가 고른 뒤에만 산점도에 그린다(선 2px 흰색 + 점 고리). 기본 선택은 상세 열에만 쓴다(시안 확장 장면에 선택 표시가 없고, `inventory-analysis` 기준 이미지가 바뀌지 않게).
+4. 티어 행: 계획 밖 티어는 `보유 n / 필요 0`, 빈 막대, `—`. 충분이면 초록 `충분`, 모자라면 분홍 `−n`.
+5. 사용 학생 = 그 오파츠 계획 티어를 쓰는 학생 합집합(문서 순서). 줄 순서는 FE6-c 규칙 3과 같다(모자람 있음 → 가장 높은 부족 티어 → 그 부족량 → 이름 → 문서 순서). 플라이아웃 칸 = 누군가 모자라는 티어 중 높은 둘, 최대 8줄 + `… 외 n명`. 플라이아웃은 초상 줄 전체를 트리거로 둔다(시안은 `…+n` 칩 자리).
+6. 머리 아이콘 = 가장 부족한 티어(없으면 가장 높은 티어)의 그림.
+7. "확장"은 계획 계산이 있고 막는 안내가 없을 때만 켠다. 티어 화면이 열려 있으면 거절하고, 목록으로 가거나 티어 화면을 열면 접힌다. 확장 중에는 사이드바가 퇴장해 있어 다른 섹션 버튼은 누를 수 없다.
+
+#### §4.6 모호점별 결론
+
+1. **점 → 아이콘 전환**: 크로스페이드(FD-103). 같은 morph 구간에서 산점도 크기 · 배치를 실수 보간하고 점 불투명도 ↓ · 아이콘 ↑.
+2. **헤더 부제**: 확장 상태는 탭 안 로컬 상태. 부제 "· 분석 · 오파츠 확장"은 `app_section`·`app_shell` 몫이라 이번에 바꾸지 않았다(FE6-e 발견 5와 같은 묶음).
+3. **"축소" aria-label**: `오파츠 패널 축소`를 붙였다(키트 `TonalButton.semanticLabel`).
+4. **확장 전 점 선택**: 있다. 점을 누르면 고르고(말풍선도 뜬다) 확장 상세가 그 오파츠다. 확장 산점도 · 병목 순위 행에서도 고를 수 있다.
+
+#### 모션 시간 · 순서(AppMotion 안)
+
+- 확장(합계 940ms, `SectionMorphTimeline`, 곡선 `AppMotion.sectionCurve`): ① 0–360ms(`AppMotion.section`) 사이드바 180° · S1 80° · S4 0° · S5 260°가 `sectionMotionOffset`만큼 동시에 퇴장, S2는 제자리 ② 360–720ms(`AppMotion.section`) S2가 오른쪽 · 위 부착을 유지한 채 확장 rect로 실수 morph(표면 path · 제목 줄 · 토글 · 산점도 1012×420 → 1974×1034.8), 점 → 아이콘 크로스페이드 ③ 720–940ms(`AppMotion.header`) 상세 열 등장(불투명도 0 → 1, 오른쪽 24px에서 제자리).
+- 축소: 같은 값을 거꾸로 지난다 — 상세 사라짐(220) → S2 축소(360) → 네 섹션이 부착면 쪽에서 돌아옴(360, 각 intro 방향). 움직이는 동안 입력을 받지 않는다(IgnorePointer).
+- 분석 ↔ 티어 교체(FE6-e)는 그대로(키트 오프셋 함수로 같은 식).
+
+#### golden 변화 예상
+
+- **`inventory-analysis`(바뀜, S2 버튼 하나)**: "확장" 버튼이 비활성(불투명도 .45, Material `open_in_full` 16px)에서 활성(불투명)으로, 아이콘이 시안 svg 글리프(14px, 기존 16px 자리 가운데)로 바뀐다. 버튼 크기 · 위치 · 칩 · 제목은 같다(아이콘 자리 16 유지). 산점도 · 다른 섹션 · 사이드바는 변화 0: 산점도 배치는 t = 0에서 FE6-c 상수 그대로, 점 불투명도 .95 × 1, 기본 선택은 표시하지 않음, 사이드바 내용은 stage 안으로 옮겼지만 같은 순서로 맨 위에 그린다. 제목 줄 최소 폭 640 → 400은 기준 viewport(실제 폭 약 940)에서 영향 없음. → 기준 이미지를 commit.json `whole`에 파일 단위로 넣었다.
+- **`inventory`·`inventory-all`(변화 0)**: 목록 모드 Stack 순서(표면 → D · C · B → 사이드바) 그대로.
+- **`inventory-tiers`(변화 0)**: 티어 정지 화면은 표면 → 티어 섹션 → 사이드바 같은 순서.
+- **키트 `TonalButton` 사용 장면 전부(변화 0)**: `leading`·`semanticLabel`이 없으면 같은 위젯 트리 · 그림이다.
+- **다른 장면**: 변화 0.
+- **새 장면 `inventory-analysis-opa`**(`fe6d_inventory_opa_golden_test.dart`, 기준 이미지 없음 → RED, CF가 만든다). 기대 모습(일회성 렌더로 확인한 배치):
+  - 헤더는 지금과 같다(부제 "보유 재화와 장비"). 사이드바 · S1 · S4 · S5 없음.
+  - 섹션 하나: 위 209 · 오른쪽 · 아래 끝까지, 왼쪽 사선 변 x 208.6(위) → 0(아래).
+  - 제목 "오파츠 · 보유율 × 수요" + "왼쪽 위 = 핵심 병목" 분홍 칩 + "축소"(시안 축소 글리프), T1~T4 토글(모두 켜짐) + 범례.
+  - 산점도 1974×1035: 플롯 평행사변형, 4분면 점선, 축 글자 14.3px, 점은 지름 30 아이콘 원(티어 색 테두리, 아래 오른쪽 `T1`~`T4`), 네브라 디스크 T4 · 로혼치 사본 T4는 지름 44 + 분홍 테두리, 두 이름 분홍 굵게. 네브라 · 로혼치 · 파에스토스 · 안티키테라는 게임 아이콘, 아우름 코인 · 오브 오브 위트 · 구스타프 총알 · 토리노 수의는 원 안에 "아우" · "오브" · "구스" · "토리". 보유율 100% 티어 점이 오른쪽 끝에 겹친다.
+  - 오른쪽 상세 열(x 2056, y 325): 네브라 아이콘 64×52 · "선택한 오파츠" · "네브라 디스크" · "핵심 병목" 칩 / "티어별 보유 / 필요 (계획 요구량)" T1 210/180 충분 · T2 160/120 충분 · T3 96/133 −37(막대 72%) · T4 12/58 −46(막대 21%) / "사용 학생" 초상 5 + "…+1" / "병목 순위 · 가장 부족한 티어 기준" 1 네브라 디스크(분홍 굵게) T4 −46 · 2 로혼치 사본(분홍) T4 −31 · 3 파에스토스 원반 T3 −22 · 4 안티키테라 장치 T4 −18 · 5 토리노 수의 T3 −9(아이콘 자리 "토리") / 분홍 "계획에서 쓰는 단계 보기".
+
+#### 검수표
+
+artboard `Inventory-Analysis-Opa.dc.html` → 앱:
+- 여는 방법: 인벤토리 탭 → 사이드바 맨 위 "분석" → S2 제목 줄 "확장". Mock 기본 실행은 계획이 없어 "확장"이 흐리다(안내만). 시안 숫자 장면은 fixture로만 열린다(golden `inventory-analysis-opa`, `test/inventory_opa_page_test.dart`).
+- 확인 포인트:
+  1. 애니메이션: 확장을 누르면 사이드바는 왼쪽, S1은 위(약간 오른쪽), S4는 오른쪽, S5는 아래(약간 왼쪽)로 동시에 빠지는가 → S2가 위 · 오른쪽에 붙은 채 왼쪽 · 아래로 커지는가(계단 없이 매끄럽게) → 점이 아이콘으로 바뀌는가 → 상세 열이 오른쪽에서 살짝 들어오며 나타나는가(합계 약 0.94초).
+  2. "축소"(의미 라벨 "오파츠 패널 축소"): 상세가 먼저 사라지고 S2가 줄어든 뒤 네 섹션이 각자 붙은 면에서 돌아오는가.
+  3. 확장 섹션 모양: 위 · 오른쪽 변이 시안과 같고, 왼쪽 사선이 시안보다 12px 왼쪽(아래 끝이 화면 왼쪽 경계에 닿음).
+  4. 산점도: 아이콘 원 크기(30 · 병목 44), 분홍 병목 테두리, 티어 글자, 그림 없는 오파츠의 두 글자, 이름 위치(가장 높은 티어 점 왼쪽).
+  5. 상세 열: 머리 · 칩, 티어 4행(skew 막대 · 수치 · 충분/−n), 사용 학생 줄과 hover/누름 플라이아웃("네브라 디스크 · 사용 학생 6명", 학생별 `T4 n` 보라 · `T3 n` 노랑), 병목 순위 5행, 분홍 버튼 → 계획 탭.
+  6. 선택: 확장 전 점을 누르면 그 오파츠 선이 흰색으로 굵어지고, 확장하면 상세가 그 오파츠다. 병목 순위 행 · 확장 산점도 점을 눌러도 바뀐다.
+  7. 작은 창(1280×720)에서 "확장"이 보이고 시퀀스 중 예외가 없는가.
+
+#### 미검증 항목
+
+- golden(새 장면 `inventory-analysis-opa`, 바뀌는 `inventory-analysis`, 변화 0 예상 `inventory`·`inventory-all`·`inventory-tiers`·키트 사용 장면): 미실행(CF가 `fe_gate.ps1`·`failures/` 검토·`-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(다른 테스트 · process E2E · `codealmanac validate`): 미실행.
+- 상세 열 안 요소 ±2px는 시안 flex 값을 옮긴 것이고 화면에서 재지 않았다(렌더 한 번은 배치 넘침 여부만 보았다). 특히 티어 행 수치 칸(최소 96, 긴 수는 막대가 줄어듦)과 플라이아웃 위치(아래 · 오른쪽 맞춤 outset 20).
+- 실제 백엔드 카탈로그(오파츠 20종)에서 확장 산점도 점 겹침 · 성능은 보지 않았다.
+- 실제 앱 창에서의 애니메이션 체감(프레임)은 위젯 테스트(진행 0.25 · 0.5 · 0.75 예외 없음)로만 확인했다.
+
+#### WIP 보존 확인
+
+- 고친 기존 파일 9개는 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. 착수 사본은 `debug/frontend_fe6d/pre/`에 있고 9개 모두 작업 트리와 다르다(cmp).
+- 작업 트리의 다른 미커밋 변경(Lane B `lib/services/**`·`account_section_cluster.dart`·`title_page.dart`, 스캐너 파일들, 문서들)은 읽지도 고치지도 않았다.
+- git 쓰기는 하지 않았다.
+
+#### 발견 사항
+
+1. **확장 S2 −12px**: 시안 확장 섹션의 왼쪽 사선 아래 끝 x 12가 grid 밖이라(오른쪽 면 사다리꼴 아래 왼쪽 = `rect.left + 폭 × (1 − 깊이/96)` → 0 또는 26.7px) ±1px가 안 된다. FE6-e 발견 1(T2 부유 −2.6px)과 같은 Studio grid 한계 — 섹션 꼭짓점을 grid 밖 값으로 줄 수 있는 spec이 필요하다(키트 · Studio 소단위).
+2. **헤더 부제**: 시안 확장 부제 "보유 재화와 장비 · 분석 · 오파츠 확장"(분석 "· 분석", 티어 "· 티어별 충족률")은 `app_section`·`app_shell` 몫이라 이번에도 바꾸지 않았다. FD-103 권장안은 "부제 포함 탭 안 로컬 상태"라, 부제를 탭 상태에서 받는 `app_section` 소단위가 필요하다(FE6-e 발견 5와 묶음).
+3. **`plan_phase_editor.dart` 중복**: 같은 일을 하는 private `_lerpGridRect`(정수 grid `.round()` 보간) · `phaseEditorElements` · `_PhaseEditorMotion`이 남아 있다. FE5-f에서 그 파일을 지울 때 키트 `section_morph.dart`로 대체하면 된다.
+4. **"계획에서 쓰는 단계 보기"**: 지금은 계획 탭으로 이동만 한다. 재화 · 그 재화를 쓰는 단계에 초점을 넘기는 인계(E §4.5)는 계획 탭 진입점이 필요한 후속이다.
+5. **S2 제목 줄 최소 폭(FE6-c)**: `_Fit` 최소 640이라 작은 창(1280×720)에서 "확장" 버튼이 잘려 누를 수 없었다. 400으로 줄여 제목 글자가 먼저 줄게 했다(기준 viewport 영향 없음). 다른 분석 섹션 제목 줄(S4 · S5)도 같은 위험이 있는지 보지 않았다.
+6. **시안 견본 순서**: 시안 플라이아웃은 문서 순서(… 호시노 · 아루 · 미카)인데 구현은 FE6-c 규칙 3(부족 큰 순 → 이름)이라 미카(T4 6)가 호시노(T4 6)보다 위다. 산점도는 FE6-c 발견 2처럼 같은 값의 점이 겹친다(시안은 티어마다 y를 조금씩 어긋나게 그렸다).
+7. **확장 중 S1 · S4 · S5 상태**: 확장 완료 동안 세 섹션은 트리에서 빠지므로 축소 뒤 S1 학교 목록 스크롤 위치가 처음으로 돌아간다.
+8. **빌드 잠금**: 첫 `inventory_analysis_page_test` 실행이 600초 넘게 멈췄다(같은 시각 다른 dart 프로세스, Lane B 추정). 한 번 재시도해 4초에 통과했다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe6d/pre/<경로>`(고친 기존 파일 9개). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe6d/commit.json`: slice `fe6d`, `status=true`, modified 9, added 7(새 기준 이미지 `inventory-analysis-opa.png`는 CF가 넣는다), `whole = [frontend/test/goldens/baseline/inventory-analysis.png]`. message 근거: Inventory-Analysis-Opa artboard, E §4, FD-103(+ FD-031 · 033 · 099 · 101).
+- 인계: `debug/frontend_fe6d/output.md`.
+
+#### 다음 행동
+
+- FE6-d 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 +23(키트 morph 7 + 버튼 1 + 집계 9 + 위젯 6), golden은 새 장면 `inventory-analysis-opa` 기준 없음 RED + `inventory-analysis` S2 "확장" 버튼만 RED, 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe6d`.
+- 발견 사항 1(grid 밖 섹션 spec) · 2(부제) · 4(단계 포커스 인계) · 5(다른 제목 줄)는 CF 판단을 기다린다. 3은 FE5-f에서.
+
+### fe6d commit record (2026-10-12 07:56, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_074656\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
