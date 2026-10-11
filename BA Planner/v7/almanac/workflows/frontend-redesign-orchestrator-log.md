@@ -1789,3 +1789,66 @@ Common migration/recovery may precede a guard rejection and increment revision. 
   · `inventory-all`: 사이드바 "전체 9종" 선택, 그룹 머리(엘레프 2종 부족 2 · 오파츠 1종 · 활동 보고서 3종 · 기술 노트 2종 부족 1 · BD 1종) + 타일이 그룹마다 사선 이동, 타일 막대(부족 분홍 · 충분 파랑 · 과잉 노랑 · 모름 빗금), 기술 노트 "부족 1" 플라이아웃 열림(상위 n · "모두 보기"), 상세는 기술 노트(최상급) — FE6-a와 같은 상세 rect. 승인.
 - **fe_commit은 `deleted`를 다루지 않는다**: FE6-b가 옮긴 옛 `frontend/lib/ui/inventory/inventory_studio_layout.dart`는 아직 작업 트리에 있다(새 경로 `ui/studio/`만 import, 옛 파일 import 0 확인). fe6b 커밋 직후 사용자가 `git rm` + 별도 커밋으로 지운다(삭제만 담은 커밋, trailer 포함). 그 뒤 redesigndocs.
 - 커밋 순서(한 줄씩): fe5e → fe6b → 옛 파일 삭제 커밋 → redesigndocs. 그다음 XB FB-10a + M2 release2 메인 반영 시점을 회신한다(19:36 요청).
+
+## 2026-10-11 20:45 — 커밋 확인, XB FB-10a·release2 반영 허가, 배정(Lane A M2 · Lane B fb10a-dart), FB-2d 사용자 결정 요청
+
+- 커밋: fe5e `c3374b21`(14파일), fe6b `e45194bc`(15파일), 옛 `ui/inventory/inventory_studio_layout.dart` 삭제 커밋(사용자 git rm, 작업 트리에서 사라짐 확인 — 해시는 사용자 기록), redesigndocs `feb4dc2b`.
+- backend 로그 20:45: FB-10a source10 + M2 release exact2 메인 반영 시작 허가. paired 방식(반영 → fb10a-dart·M2 → 같은 소스 gate → XB 커밋 2건 → CF fb10adart → m2).
+- **배정**:
+  · Lane A **M2** — `m2-worker-prompt-20261011.md`(18:50 준비), 상태 문서 `frontend-redesign-status.md`.
+  · Lane B **fb10a-dart** — `fb10adart-worker-prompt-20261011.md`: XB 18:15 목록(이벤트 paused/resumed, `ScannerSessionControl`, snapshot control_state/reason, pause/resume 메서드, Process/Mock) + exhaustive 분기 + 지금 스캔 화면 최소 연결(일시정지 버튼·paused 사유·이어서·Esc 중지). 본격 일시정지 화면은 FE8-f2·g2·g3. XB "반영 완료" 기록 전에는 코드 수정 금지.
+  · Lane B에 둔 이유: S-FB1b·fb4-dart로 스캔 화면·스캐너 서비스 맥락이 이 레인에 있다. M2는 파일이 겹치지 않는 Lane A.
+- **사용자 결정 요청(XB 18:53, FB-2d)**: 프로필 삭제 때 7번째 파일 `tactical-share/{profile_id}.v1.json`(프로필별 로컬 전술 공유 저장소)을 함께 지울지, 명시 보존할지. CF 권장: 함께 삭제(같은 consent·tombstone) — 프로필 단위 데이터라 남기면 주인 없는 파일이 되고, 삭제 후 같은 id 재사용 때 섞일 위험이 있다. 사용자 답을 받아 XB·tactic 로그에 기록한다.
+
+## 2026-10-11 20:50 — FB-2d 사용자 결정: `tactical-share` 함께 삭제, 워커 시작 순서
+
+- 사용자 결정: **함께 삭제**(CF 권장안). 프로필 삭제는 `tactical-share/{profile_id}.v1.json`을 기존 6경로와 같은 consent·tombstone으로 포함. backend 로그·tactic 로그 20:50에 기록, XB가 FB-2d를 넓힌다. CF 몫: FB-2d Dart 슬라이스 때 삭제 확인 문구에 전술 공유 데이터 포함 표시.
+- 워커 시작 순서(사용자 질문 답): Lane A **M2**는 반영과 파일·의존이 없어 바로 시작한다. Lane B **fb10a-dart**는 XB "FB-10a 메인 반영 완료" 기록 뒤 시작한다(먼저 띄우면 프롬프트 규칙대로 읽기만 하고 멈춰 다시 깨워야 한다). gate는 두 워커가 모두 멈춘 뒤 한 번.
+
+## 2026-10-11 20:55 — 회신(XB): FB-10a 메인 반영 완료·M2 release exact2 반영 완료·CF20:50 삭제 범위 수신
+
+- **FB-10a 메인 반영 완료**. CF20:45 허가의 corrected source10 working판과 M2 release exact2를 반영했고, backend/CM 로그의 같은 시각 XB 보고에 정확12 경로/bytes/SHA를 게시했다. 실제 receipt: `debug/xb_fb10a_m2_main_overlay_20261011/artifacts/overlay-receipt.json`. 모두 고정 후보/combined whole1193 입력과 byte-identical, 기존 인식 WIP·frontend 지문 보존, HEAD `feb4dc2b67e331892d856bc3d110260b00164183`/index empty, 신규 commit/push0이다.
+- **backend/contracts/frontend/tool 동결 시작, CF 커밋 전 추가 변경0**. Lane B fb10a-dart(18:15 목록,18:48 공개 shape 변화0,최소 scan 연결)와 Lane A M2가 연결해 같은-source full gate GREEN을 남기면 XB exact10 및 release exact2를 따로 커밋하고 CF fb10adart→m2로 잇는다. 현재 새 CF gate/커밋은 PENDING이며 기존195443은 새 소스 gate가 아니다. 반영 직후 Dart exhaustive 분기/키 관련 RED 가능성은20:45 합의대로다.
+- CF20:50 사용자 결정 수신: FB2d는 기존6 + `tactical-share/{profile_id}.v1.json` 총7경로를 같은 consent·tombstone/없으면 건너뜀으로 삭제한다. 별도 확인 없음. 후속 journal/tombstone·테스트와 FB2d Dart 확인 문구의 기준으로 기록했다. 이번12에는 삭제 구현을 추가하지 않았다.
+- 격리 corrected whole1192·focused23·selectedHEAD100 및 combined whole1193·temp publish1/금지4 PASS. real binary/native game·OS/UI 검증은 별도다. 이후 backend 변경 없이 CF paired 작업을 기다린다.
+
+## 2026-10-11 22:05 — paired gate ① `20261011_215045` RED(1건) → CF 수정
+
+- 두 워커 종료 확인: Lane A M2(21:29, 정적 검토만), Lane B fb10a-dart(코드 작성 완료·gate 미실행). XB 20:55 FB-10a source10 + release2 메인 반영 완료·동결 중. 같은 소스 gate.
+- 결과: analyze 0, test-2/3/4·process 57·golden 42·almanac·diff-check PASS. **test-1 1건 실패**: `developer_tools_app_test.dart` "metadata SchaleDB preview compares students and gifts visually" — SchaleDB 학생 카드(grid `mainAxisExtent: 268`, 안쪽 244px) Column이 1px 넘침. fb10a-dart 쪽 실패 0(process E2E 포함).
+- 원인: M2가 편집기를 메타데이터 관리자 ① 탭에 넣고 오른쪽 접힌 출처 띠(40px)를 두어 카드 폭이 347.7px로 줄었다. 머리 줄 부제(`hoshino · SchaleDB 10045`)가 한 줄 더 감겨 머리 높이가 portrait 72px을 넘었다. 고정 높이 카드라 폭에 따라 넘칠 수 있던 기존 약점이 드러난 것.
+- CF 수정(M2 슬라이스, `legacy_tool_pages.dart` `_schaleStudentCard`): 이름 `maxLines: 1`, 부제 `maxLines: 2`(둘 다 ellipsis). 머리 높이가 portrait 72px 안에 들어간다. 4줄 추가, 다른 변경 0. post 사본은 깊이 제한으로 사용자 Copy-Item.
+- 다음: Copy-Item → gate ① 재실행. golden 범위 변화 없음(개발자 도구는 golden 밖, fb10a-dart도 golden 42 PASS 그대로)이라 GREEN이면 ② 없이 커밋 순서(XB FB-10a exact10 → XB release exact2 → CF fb10adart → m2 → redesigndocs)로 간다.
+
+## 2026-10-11 22:10 — CF 세션 인계
+
+- 사용자 요청으로 CF 역할을 새 세션에 넘긴다. 인계 문서: `debug/frontend_redesign_handoff/handoff-prompt-20261011.md`(지금 상태, GREEN 뒤 커밋 순서, 다음 후보, 워커 표준 주의, 기기 쓰기 절차, fe_commit 요점).
+- 넘기는 시점 상태: HEAD `feb4dc2b`, XB FB-10a + release2 반영·동결 중, M2·fb10a-dart 워커 종료, gate `20261011_215045` RED 1건은 CF가 `legacy_tool_pages.dart`로 수정(22:05). 사용자 Copy-Item(M2 post 사본) + gate 재실행 대기.
+
+## 2026-10-11 22:12 — 세션 시작(인계) — 읽은 것, 미회신 항목, 계획
+
+- 읽은 것: 인계 문서 `handoff-prompt-20261011.md`, CF 프롬프트(10-10), 헌장, 워크플로(개발자 도구 화면·XB 연결 Dart 절, 세션 운영 규칙·템플릿, 재개 지점), 이 로그 18:15~22:10, backend 로그 20:45~20:55, tactic 로그 20:45~20:55, metadata 로그 끝(10-10 18:48, CF 앞 없음), Lane A "M2 종료 기록 21:29", Lane B "fb10a-dart 종료 기록", `commit.json` 2개(m2: modified 3·added 7, fb10adart: modified 8·added 3, 둘 다 `post_dir`).
+- 미회신: CF 앞 새 요청·알림 없음(XB 20:55는 반영 완료 회신, 다음 CF 회신은 같은 소스 gate 결과). XB에 함께 물을 것 1건: release 제외 테스트(`test_release_developer_tools_exclusion.py`)의 "Dart main import/export closure" 검사가 M2 새 파일(`developer_tools/tool_registry.dart`·`legacy_tool_pages.dart`·`metadata_manager_*.dart`)도 덮는지(M2 종료 기록 "XB 요청").
+- 확인: M2 post 사본 `legacy_tool_pages.dart`가 작업 트리와 크기 109999·수정 시각이 같다 → 사용자 Copy-Item 완료로 본다. gate `20261011_220445`(22:04 시작, 22:03 수정 뒤) 진행 중: analyze 0, test-1 298(215045의 실패 1건 해소), test-2 675, test-3 475, test-4 5 PASS. process·golden·almanac·diff 대기.
+- 계획: summary GREEN 확인 → backend 로그 회신(XB FB-10a exact10 → release exact2 별도 커밋, 위 질문 포함) → XB 해시 → fb10adart → m2 커밋(한 줄씩, DryRun 먼저) → 워크플로 행·재개 지점·로그·tactic "CF 보고"·backend 회신 → redesigndocs → 다음 후보 배정(FE4-g2·FE5-f·FE6-c·FE8-c·FE8-f2/g2/g3·FB-2d Dart).
+
+## 2026-10-11 22:15 — paired gate `20261011_220445` GREEN → XB 커밋 요청
+
+- 결과: analyze 0, 테스트 298 + 675 + 475 + 5, process 57, golden 42(변화 0 → ② 없음), almanac 45, diff-check 0. 22:05 SchaleDB 카드 수정으로 test-1 실패 1건 해소, 나머지는 215045와 같은 수치.
+- backend 로그 22:15 회신: XB FB-10a exact10 → release exact2 별도 커밋, 해시 회신 뒤 CF fb10adart → m2. release 제외 테스트가 M2 새 `developer_tools/*.dart`를 덮는지 질문 동봉. 개발자 도구 번들 재빌드·M3 provenance 계약 변경은 후속 메모로 전달.
+- 다음: XB 해시 수신 → `fe_commit.ps1 -Slice fb10adart -DryRun` → `-Slice fb10adart` → `-Slice m2 -DryRun` → `-Slice m2`(한 줄씩). fb10adart는 스캐너 WIP 공유 파일 5개 이상을 고치므로 3-way 병합 충돌이 나면 fb2bdart 때처럼 HEAD판 + slice 변경 병합본으로 pre·post를 바꾼다.
+
+## 2026-10-11 22:21 — 회신(XB): FB10a exact10→M2 release exact2 커밋 완료·release closure 답
+
+- FB10a **`b76d5591d3a1e1ca2a177f6e327e80f8ae73ec92`** → release exact2 **`1c9dd9d973d0324a5568928452d6ebf744e34b03`** 순서로 완료했다. actual10/2 path·blob 전수 확인/빈 index·push0, 새메인 source 편집0·고정working12/동결4094/CF소스 보존이다. FB10a는 사전인계된 commit-only selectedHEAD 투영을 index에 넣어 기존 공유5파일 WIP를 제외했고 main working판은 바꾸지 않았다. backend/CM 같은 시각보고와 `debug/xb_fb10a_m2_exact_commit_20261011/artifacts/`에 receipts/patches가 있다.
+- release 질문 답: 네. 이 테스트는 고정 파일 목록 대신 `lib/main.dart`부터 상대·자기 package·조건부 import/export를 재귀 추적하고 `developer_tools/` 경로 전체의 유입을 금지하므로 M2 새5파일의 직접·간접 유입도 자동 검출한다. 현재 main closure157 밖/developer entry closure17 안임을 actual 계산으로 확인했고, 현재M2 source 대상 release 제외 테스트1/1.820s PASS다(소스/packaging 경계 검증이며 실제 binary 내용 검증은 아님). 새5개 (`tool_registry`/`legacy_tool_pages`/`metadata_manager_dto`/`metadata_manager_service`/`metadata_manager_page`) 모두 확인했다.
+- 같은-source CF220445 GREEN 수신, corrected whole1192/combined1193·selected100 PASS, fresh release1·Almanac/working/cached diff PASS. 이제 CF fb10adart→m2→docs 순서로 진행하면 된다. **CF 커밋 완료/해제 회신 전 backend/contracts/frontend/tool 추가 변경0 유지**.
+- old developer binary metadata-manager 이름 미지원은 다음 별도 bundle 재빌드, M3 filled provenance는 계약버전+strict Dart DTO paired 변경으로 후속 처리한다. 실제 build0·FB10a 형식고정/전체M2 완료 선언0이다.
+
+## 2026-10-11 22:40 — FB-10a·M2 커밋 완료, XB 동결 해제, CF 레인 로컬 이전 결정
+
+- 커밋 순서(모두 gate `20261011_220445` GREEN): XB FB-10a exact10 `b76d5591` → XB M2 release exact2 `1c9dd9d9` → CF **fb10adart `e53fee9e`**(12파일: 고친 8·새 테스트 3·Lane B 상태, 3-way 병합 충돌 없음) → CF **m2 `d2a53fed`**(11파일: 고친 3·새 7·Lane A 상태). 다음은 문서 커밋 redesigndocs.
+- XB 22:21 답: release 제외 테스트는 `lib/main.dart`부터 import/export를 재귀 추적하고 `developer_tools/` 유입을 금지하므로 M2 새 5파일도 자동 검출한다(main closure 157 밖, developer entry closure 17 안, 현재 소스로 1/1 PASS). M2 완료 조건 충족. 개발자 도구 번들 재빌드·M3 provenance 계약 변경·FB-2d 7경로는 XB 후속.
+- backend 로그 22:40: 커밋 완료 회신 + **backend/contracts/frontend/tool 동결 해제**(redesigndocs는 whole 문서만이고 fe_commit이 whole을 시각 검사하지 않아 XB 변경과 무관).
+- **사용자 결정(22:34)**: 이 커밋들 뒤 CF와 CF 워커를 전부 사용자 PC의 Claude Code로 옮긴다. 이유: 워커가 analyze·관련 테스트를 직접 돌려 오늘 같은 gate RED(19:05 const, 19:20 ScrollController, 22:05 1px 넘침)를 스스로 잡고, 기기 깊이 제한·Copy-Item 중계가 사라진다. 헌장 §3.4("gate는 사용자가 실행")와 §1 CF 행 개정안을 tactic 로그 22:40에 "요청(CF)"로 올렸다 — CM이 개정한다. 사용자가 CM에 직접 알린다.
+- 새 인계 문서 `debug/frontend_redesign_handoff/handoff-prompt-20261011-local.md`: 로컬 환경 규칙(워커 허용·금지 명령, 전체 gate 1회, golden·커밋은 CF만, git 쓰기 금지 권한 설정), 현재 상태, 다음 후보, 워커 표준 주의.
