@@ -5830,3 +5830,167 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_164434\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-e 착수 기록 (2026-10-11 17:51, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `1fbc4ddd`(scanner-consolidation HEAD, XB M1 exact18 커밋. 부모 `f1ca4713`. 이 환경에서는 `.git`을 읽을 수 없어 오케스트레이터 로그 17:49의 SHA를 적는다).
+- 범위: 시나리오 나란히 비교 최대 4열(Scenario-Compare). 목록 비교 슬롯 3~4개 → 4열 비교, 2개 → 기존 A↔B 2-pane 유지(FD-085)하되 후보 목록(`_ComparisonCandidateDiagonalList`) 제거. 기준 대비 N−1회 `compareScenarios`(FD-092)와 FE5-b 미리보기 캐시 키 규칙의 캐시.
+- 막힘 요약의 이 slice 열림 FD 0건 확인. 처리할 FD: FD-034 · FD-038 · FD-039 · FD-085 · FD-086 · FD-092 · FD-093.
+- 고칠 기존 파일(사본: `debug/frontend_fe5e/pre/<경로>`. 결국 고치지 않은 파일은 종료 기록에 적는다):
+  - `frontend/lib/ui/widgets/plan_section_layout.dart`
+  - `frontend/lib/ui/widgets/plan_scenario_list.dart`, `frontend/lib/ui/models/plan_scenario_list_state.dart`
+  - `frontend/test/planning_page_test.dart`, `frontend/test/plan_scenario_comparison_test.dart`, `frontend/test/plan_scenario_list_test.dart`
+  - `frontend/test/goldens/fe1g_baseline_golden_test.dart`, `frontend/test/goldens/golden_harness.dart`
+- 새 파일(예정): `frontend/lib/ui/models/plan_scenario_compare.dart`, `frontend/lib/ui/widgets/plan_scenario_compare.dart`, `frontend/lib/ui/studio/plan_scenario_compare_studio_layout.dart`, `frontend/test/plan_scenario_compare_test.dart`, 새 golden 장면 하나(필요하면).
+- 이 환경에는 flutter가 없다(정적 검토만 가능). `frontend/lib/services/**` · 인벤토리 파일 · app_shell은 고치지 않는다.
+
+## FE5-e 종료 기록 (2026-10-11 18:38, Lane A)
+
+- 상태: 구현 끝, **정적 검토만 했다**. 이 환경에는 flutter · dart가 없다. analyze · 테스트 · golden은 한 번도 돌리지 않았다. 통과를 주장하지 않는다.
+- 시작 SHA `1fbc4ddd`(XB M1, 부모 `f1ca4713`). 사본 8개는 `debug/frontend_fe5e/pre/frontend/`에 있다. 그중 `lib/ui/models/plan_scenario_list_state.dart` · `test/goldens/golden_harness.dart`는 결국 고치지 않았다(commit.json `modified`에 없음).
+- commit.json: `debug/frontend_fe5e/commit.json`(slice=fe5e, status=true). modified 6, added 5(새 lib 3 + 새 테스트 1 + 새 기준 이미지 1), whole = 바뀌는 기준 이미지 2장(하나씩).
+
+### 실행 명령 · 결과
+
+- `flutter analyze` · `flutter test`: 실행하지 못했다(SDK 없음).
+- 시안: `dc_outline.py`로 Scenario-Compare 사본만 읽었다(원문 통째 읽기 없음). 백엔드 `compare_document_projections`는 의미 확인용으로만 읽었다(수정 없음).
+- 정적 검토 에이전트 2회(바뀐 파일 전부 · 쓰는 API 시그니처 대조 · lint · 테스트 흐름 손 추적 · test/ 전체 grep).
+  1. 1회차 지적, 모두 고쳤다:
+     - 컴파일 오류 1건: `plan_section_layout.dart`가 `planCompareActiveId`를 import하지 않았다 → `show` import를 더했다.
+     - 새 화면 테스트 준비 실패 1건: 시나리오 대역 목표(Lv.2 + 장비 T9 · T2 애장품)가 v1 성장 규칙(장비 2칸 Lv.10, T2 인연 20)에 걸려 `createScenario`가 거절한다 → Lv.80 · 인연 20으로 바꿨다.
+     - analyzer 경고 3건: 후보 목록을 지우며 쓰이지 않게 된 `_ScenarioStudentPortraits`(삭제), 늘 같은 값만 받게 된 `_PlanScenarioListCardPainter`의 `accent` 매개변수(삭제), `_loadCatalog`의 불필요한 cast(삭제).
+     - 형식: 옛 홈 섹션 반복의 들여쓰기를 고쳤다.
+  2. 2회차: 고친 곳 재확인과 시드 목표의 v1 규칙 전수 대조. 남은 문제는 없었다.
+- 기기 반영: 바꾼 파일 10개를 쓰고 다시 읽어 `cmp`로 같음을 확인했다. 사본 8개는 크기로 확인했다(경로가 깊어 다시 읽지 못한다).
+
+### 구현
+
+- 목록(`plan_scenario_list.dart`): "나란히 비교"를 시나리오 1~3개(활성 계획 포함 2~4개)에서 켠다. "셋 이상은 아직 열 수 없습니다" Tooltip을 지웠다. 보기 모드 S3 첫 탭 `initialResourceTab`(4열 "전체"용)을 더했다.
+- 계획 화면(`plan_section_layout.dart`):
+  - `_compareFromList`는 하나면 A↔B 2-pane, 둘~셋이면 4열(`_compareScenarioIds`)을 연다.
+  - 목록 상태(`PlanScenarioListController`)를 계획 화면이 들고 목록에 넘긴다. 계획 홈에서 목록을 열 때마다 새로 만들고, 목록 ↔ 비교를 오가는 동안 정렬 · 필터 · 비교 슬롯을 이어 쓴다.
+  - 4열 열 헤더 연결:
+    - "비교에서 빼기"는 목록 슬롯에서도 뺀다. 둘이 남으면 A↔B 2-pane으로 바꾼다(목록 모션을 내렸다 올림).
+    - "열기"는 A면 계획 홈, 시나리오면 목록 보기 모드다.
+    - "전체"는 A면 계획 홈 전체 탭, 시나리오면 보기 모드 전체 탭이다(FD-093).
+    - "계획에 적용…"은 2선택 모달 뒤 기존 `_applyScenarioFromView`(FE4-e 저장 4단계)로 간다. `_openFlowFromView`가 비교 화면에서도 열리게 했다.
+  - 2-pane(`PlanScenarioComparisonSection`)의 후보 목록(`_ComparisonCandidateDiagonalList` · `_ComparisonCandidateCard`)과 "두 계획 나란히 보기" 버튼을 지웠다. 결과 전에는 읽는 중 · 실패(다시 불러오기) · 안내만 보인다(FD-085).
+  - 옛 홈 섹션 1 "시나리오 비교"는 시나리오 목록을 연다(후보 고르기가 목록 슬롯으로 옮겨 감). 옛 홈의 4열 비교는 옛 섹션 1 자리에 자기 S1을 둔다.
+- 새 파일:
+  - `models/plan_scenario_compare.dart`: 열 모델 · 기준 대비 · 최고 값 · 차이만 보기 판정(`PlanCompareTable`), 쌍 캐시(`PlanComparePairLoader`).
+  - `studio/plan_scenario_compare_studio_layout.dart`: 라벨 열 + 열 A~D.
+  - `widgets/plan_scenario_compare.dart`: `PlanScenarioCompareView`.
+
+### 처리한 FD
+
+- FD-085(워커 재량, 권장안): 2개면 기존 2-pane 유지, 후보 목록 제거.
+- FD-086(워커 재량, 권장안): 섹션은 화면 높이(94칸)에 두고 열 헤더 아래 행 전부(라벨 열 + 4열)가 **한 `SingleChildScrollView`**로 함께 세로 스크롤한다. 학생 수 제한은 없다. 행은 섹션 왼쪽 80° 변을 따라 민다(행 아래 경계 기준 + 14px). 행 안에서는 그 Scrollable의 position을 읽는다(`Scrollable.maybeOf(context)`). 스크롤바는 마지막 열 오른쪽 변과 평행한 공용 `DiagonalScrollbar`이고, 포그는 다섯 섹션 모양으로 자른다.
+- FD-092(워커 재량, 권장안): 기준 대비 N−1회 `compareScenarios`. 키 = (기준 id, 기준 revision, 열 id, 열 revision, 프로필 revision)으로 FD-089와 같은 규칙이다. 활성 계획 revision은 저장된 활성 계획 revision이다. 키 밖 입력(활성 계획 문서 · 확정 상태)이 바뀌면 캐시를 버린다. 기준을 바꾸면 새 기준 쌍이 모두 올 때까지 앞 표를 두고 S1 부제에 "기준을 바꾸는 중입니다"를 보인다. 새 서비스 메서드는 없다.
+- FD-093(워커 재량, 권장안): "목록" · "+n종 더"는 부족 재화 팝오버(FD-090 키트 `GroupedShortageFlyout`, 칩 = 기준 대비 부족량 차이)를 연다. "전체"는 그 열의 Detail 전체 탭으로 간다. stale은 열 헤더 "저장 시점과 다름" 칩이다.
+- FD-034 (a): 끝까지 가는 학생 = `PlanDetailStageStates.finishingStudents` / 문서 계산 학생 수(FE5-c1 함수 재사용).
+- FD-038 (c): 크레딧은 필요량 차이, 부족 재화는 종 수 차이, 재화 팝오버 칩은 부족량 차이다(FE5-b `planScenarioShortageDelta`를 "기준과 같음" · "기준에 없음" 문구로).
+- FD-039: 4열은 단계 행이 없어 단계 맞춤을 쓰지 않는다. 학생 칸은 비교 응답 `students[]`(학생별 마지막 단계 목표)를 쓴다(백엔드와 같은 정의).
+
+### FB-9 필요 여부
+
+- **지금은 "FB-9 다중 비교 필요"로 보지 않는다.** 근거와 한계는 다음과 같다(실측 없음).
+  - 호출 수: 4열을 열 때 3회(3열이면 2회), 기준을 바꿀 때마다 새 기준이면 3회 더, 본 기준으로 돌아오면 0회(캐시)다. 세 호출은 한꺼번에 보낸다(응답을 기다려 순서대로 보내지 않음).
+  - 응답 크기: 호출마다 projection 두 개(`stage_results` · `phase_results` · `overall.resources` · `bottlenecks`)와 비교 줄을 받는다. 기준 projection은 호출마다 다시 계산되어 중복으로 온다. 같은 기준에서는 4열 한 화면에 projection 6개(필요 4개)가 오므로 중복은 1.5배다. 기준을 4번 다 바꾸면 12회 · projection 24개다.
+  - 체감 지연은 이 환경에서 잴 수 없었다. gate · 실기에서 4열 열기 · 기준 바꾸기가 느리면 FB-9(`compare` 다중 문서 + 기준 index, D §3-5)로 올리자고 적어 둔다.
+
+### 페이즈 단위 기준 대비
+
+- 비교 화면에 필요하지 않다. 시안 Compare에 페이즈 단위 행이 없어서다(첫 병목은 각 열 자기 projection의 페이즈 번호만 보인다). 그래서 만들지 않았다.
+- FE5-d 발견 사항은 그대로 열려 있다. 참고용 FD 안(정하지 않음):
+  - (a) 페이즈 순번 맞춤
+  - (b) `phase_id` 일치 우선, 없으면 순번
+  - (c) 단계 맞춤(FD-039)으로 맞은 단계가 가장 많은 페이즈끼리 맞춤
+  - 권장 (b): FD-039와 같은 "id 우선 → 순번" 모양이고 계산이 싸다.
+
+### 시안과 다른 점 · 남긴 것
+
+- 고정 · 스크롤: 시안 메모 "위 항목은 고정 · 학생만 스크롤"과 칩 "다른 학생만" · "포함 안 된 칸 접기"는 FD-086(전부 함께 스크롤)과 맞지 않아 따르지 않았다. 칩도 만들지 않았다. 열 헤더(128px)만 고정이다.
+- 섹션 rect: 시안 열 간격 461.5(17.3칸)는 정수 칸이 아니다. 열은 16칸 · 17칸 간격이다. 열마다 10.8px 좁고, 오른쪽 열일수록 왼쪽으로 붙는다(D 오른쪽 끝 −34.2px). 라벨 열은 윗변 −2.1px이다.
+- 표기:
+  - 분야 칸은 시안 점 세 개 + "전체 n" 대신 "+n종 더"(팝오버) + "전체"(Detail 전체 탭)다. FD-093 문구를 따랐다.
+  - 부족이 없으면 "충분", 모르면 "—"다.
+  - 수정 시각은 목록과 같은 `수정 9.22 23:10` 형식이다(시안 `9.22 23:10 수정`).
+  - S 칩은 최댓값을 M으로 쓴다(EX 5도 M, FE5-b 목표 요약과 같은 규칙). 시안 "5·M·M·M"과 "M·M·M·M"이 서로 맞지 않아 규칙 쪽을 따랐다.
+- 최고 값: 모든 열이 같거나 아는 값이 둘보다 적으면 칠하지 않는다. 동점은 모두 칠한다. 규모 · 학생 행은 칠하지 않는다.
+- ± 표시 토글은 크레딧 · 부족 재화의 기준 대비 글자만 숨긴다. 학생 "같음 / 다름 n / 신규"는 늘 보인다.
+- 빠진 것:
+  - 팝오버 아래 "항목을 누르면 그 재화가 막는 단계로 이동합니다" · "인벤토리에서 보기"는 없다(이동 대상 · 인벤토리 연결이 없고 app_shell은 이번 범위 밖).
+  - 학생 목표 팝오버(시안 "호시노 · 최종 목표 전체")는 선택 요소라 만들지 않았다.
+  - 헤더 부제 "육성 목표와 필요 재화 · 시나리오 비교"는 바꾸지 않았다.
+- golden 장면 `plan-scenario-compare-4`의 열 D는 시안의 "01 단기 집중"이 아니라 "04 공격대 핵심"이다. stale 칩(FD-093)을 장면에 담으려고 골랐다.
+
+### 테스트 변경(의도된 변경)
+
+- `planning_page_test.dart`:
+  - "scenario comparison …"은 `initialSelectedIds`로 두 대상을 넘긴다. 후보 카드 사선 배치 검사를 지우고, 후보 목록 · 확인 버튼이 없음을 확인한다. 후보 목록을 없앤 것이 FD-085 권장안이어서다.
+  - "comparison workspace incorporates …"(옛 홈)은 "시나리오 비교" → 목록 → 슬롯 담기 → "나란히 비교" → 편입 순서다. 옛 진입 버튼이 목록을 열게 바뀌어서다.
+- `plan_scenario_comparison_test.dart`: `initialSelectedIds`로 연다. 후보 배지 A/B 글자 검사는 지웠다(같은 이유).
+- `plan_scenario_list_test.dart`: 4/4에서 "나란히 비교"가 켜진다(`isTrue`). FE5-e가 "A + 하나만" 제한을 풀어서다.
+- `grep`으로 test/ 전체에서 `plan-compare-candidate-*` · `plan-scenario-compare-confirm` · `-candidates` · 옛 진입 · 3개 이상 비활성 기대를 찾았다. 위 세 파일 밖에는 없었다.
+- 새 `plan_scenario_compare_test.dart`:
+  - 모델: 열 값 · 기준 대비 · 학생 표시 · 칩 값 · 최고 값 · 차이만 보기 · 기준 바꾸기 · 쌍 캐시.
+  - 화면 2개:
+    - 4열 → 호출 3 → 기준 B(6) → 기준 A(캐시, 6) → ± 끄기 → 빼기 2번(3열 → 2-pane) → 목록 "2 / 4"
+    - 목록으로 돌아가 슬롯 유지("3 / 4") → 다시 4열 → "열기" → 보기 모드
+- `fe1g_baseline_golden_test.dart`: 새 장면 `plan-scenario-compare-4`를 더했다.
+
+### golden 예측(장면별)
+
+- **바뀜 `plan-scenario-list-expanded`**: 비교 3/4(02 · 07)라 S1 "나란히 비교 3개" 버튼이 꺼진 모양(흐림)에서 켜진 모양으로 바뀐다. Tooltip 제거는 보이지 않는다. 나머지 영역은 같다.
+- **바뀜 `plan-scenario-list-shortage`**: 같은 목록 장면이라 S1 버튼이 위와 같이 바뀐다. 팝오버 · 미리보기는 같다.
+- **추가 `plan-scenario-compare-4`**(새 기준 이미지, commit.json `added`):
+  - S1: 나란히 비교 · 4개 / 기준 A, 토글 차이만 끔 · 최고 값 켬 · ± 켬, 기준 라디오 A~D.
+  - 라벨 열과 열 A 활성 계획(파랑 헤더 · "비교 기준"), B 02, C 07, D 04(저장 시점과 다름 칩).
+  - 위 다섯 행 · 분야 네 행 · 학생 행 일부(화면 아래는 잘리고 스크롤된다).
+- **안 바뀜 `plan-scenario-compare`**: 오케스트레이터 예상과 다르다. 이 장면은 목록에서 하나를 담아 연 뒤 자동 비교가 끝난 **결과 화면**(2-pane 전체 결과 탭)을 찍는다. 후보 목록은 결과 전 선택 상태에만 있었으므로 픽셀이 같다. 결과 화면 · FE5-c2 S1 메뉴는 고치지 않았다. 바뀌면 원인을 다시 보겠다.
+- **안 바뀜**:
+  - `plan-scenario-list`: 담은 시나리오 0개라 버튼은 그대로 꺼져 있다.
+  - `plan-scenario-detail-bottleneck` · `-phase` · `-all`: 보기 모드 S1은 Detail 메뉴라 비교 슬롯이 없다. 첫 탭 기본값은 병목 그대로다.
+  - 계획 홈 · 옛 홈 장면(`plan-bottleneck` · `plan-by-phase` · `plan-overall` 등): 옛 "시나리오 비교" 버튼의 글자 · 켜짐 조건이 같다.
+  - 계획 만들기 · 학생 · 인벤토리 · 계정 · 타이틀 · 스캔 장면: 코드 경로가 같다.
+
+### 미검증 항목
+
+- analyze 0건, 일반 테스트 · 새 테스트 통과, golden 2장 차이 · 새 장면 모양(gate 필요).
+- 4열 실기 확인: 스크롤 동기, 팝오버 위치, 열 헤더 버튼 hit test, 2560 이외 폭에서의 겹침.
+- 체감 지연(FB-9 판단 근거). 실제 백엔드에서 세 쌍을 한꺼번에 보낼 때의 동작.
+- 옛 홈 4열(옛 섹션 1을 숨기고 자기 S1)과 4열 → 2-pane 전환 모션.
+
+### 검수표
+
+| 항목 | 결과 |
+|---|---|
+| 목록 슬롯 3~4개 → 4열, 2개 → A↔B 2-pane, 후보 목록 제거(FD-085) | 구현 · 테스트 작성(미실행) |
+| 라벨 열 + 4열 행 높이 맞춤 · 한 Scrollable(FD-086) | 구현(정적) |
+| 열 A 파랑 "비교 기준", 기준 라디오로 ± · 같음/다름 재계산 | 구현 · 테스트 작성 |
+| 보기 토글 3(차이만 · 최고 값 · ±) | 구현 · 일부 테스트(± 끄기) |
+| 행 그룹(위 다섯 · 분야 네 · 학생) | 구현 |
+| "+n종 더" · "목록" → 팝오버, "전체" → Detail 전체 탭, stale 칩(FD-093) | 구현 · golden 장면에 stale 칩 |
+| N−1회 쌍 비교 · FD-089 키 캐시 · 새 서비스 메서드 없음(FD-092) | 구현 · 테스트 작성(호출 수) |
+| FD-034 (a) · FD-038 (c) 재사용 | 구현 · 모델 테스트 |
+| 페이즈 단위 기준 대비 | 만들지 않음(필요 없음, FD 안만) |
+| services · inventory · app_shell · backend · contracts 수정 없음 | 지킴 |
+| analyze 0 · 테스트 · golden | 미실행(SDK 없음) |
+
+### 발견 사항
+
+- 옛 홈(`legacyHome`)의 A↔B 2-pane에는 나가는 길이 없다. 결과 화면 "목록으로 이동" · 편입 · 편집 말고는 섹션 1 버튼이 모두 꺼져 있다. FE5-a 이전부터 그렇다. FE5-f에서 옛 홈을 정리할 때 함께 보면 된다. 이번에는 고치지 않았다.
+- FD-086과 시안 메모("위 항목은 고정 · 학생만 스크롤") · 칩 두 개가 서로 맞지 않는다. decision-register 문구를 시안 메모와 맞출지는 오케스트레이터가 판단할 일이다.
+
+### 다음 행동
+
+- 사용자 실행 명령(순서는 오케스트레이터가 정한다):
+  1. 두 워커가 모두 멈춘 뒤 `frontend/tool/fe_gate.ps1` → 결과를 오케스트레이터에게 보내고 기다린다(golden은 위 2장 RED + 새 장면 1장 예상).
+  2. 승인 뒤 `fe_gate.ps1 -UpdateGoldens` → `fe_gate.ps1`.
+  3. `fe_commit.ps1 -Slice fe5e -DryRun` → `fe_commit.ps1 -Slice fe5e`.
+- gate에서 analyze · 테스트가 실패하면 그 출력으로 고친다. 4열 열기 · 기준 바꾸기가 느리면 FB-9로 올린다.
+
+### fe5e commit record (2026-10-11 20:32, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_195443\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -140,24 +140,13 @@ void main() {
                   size.height - 40,
                 ),
                 active: true,
+                // FE5-e(FD-085): 후보 목록이 없다. 두 대상은 시나리오 목록 비교 슬롯이 넘긴다.
+                initialSelectedIds: ['active-plan', created.scenarioId],
                 onEdit: (_, _) async {},
                 onIncorporate: (_) async {},
               ),
             ),
           ),
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
-        );
-        await tester.tap(
-          find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
-        );
-        await tester.pump();
-        expect(find.text('A'), findsOneWidget);
-        expect(find.text('B'), findsOneWidget);
-        await tester.tap(
-          find.byKey(const ValueKey('plan-scenario-compare-confirm')),
         );
         await tester.pumpAndSettle();
         expect(find.text('1,200,000'), findsOneWidget);

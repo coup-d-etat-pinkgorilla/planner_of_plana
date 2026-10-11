@@ -1186,6 +1186,42 @@ void main() {
     await expectGoldenScene(tester, 'plan-scenario-compare');
   }, variant: goldenPlatform);
 
+  // FE5-e 시안 Scenario-Compare: 목록 장면(02 · 07을 담음)에서 04(저장 시점과 다름)를 더 담아 4열 비교를 연다.
+  // 열 A 활성 계획(기준, 파랑) · B 02 · C 07 · D 04(stale 칩), 보기 토글은 시안 기본(최고 값 강조 · ± 표시 켬).
+  testWidgets('plan-scenario-compare-4', (tester) async {
+    setGoldenViewport(tester);
+    final service = GoldenScenarioListMockAppService();
+    addTearDown(service.dispose);
+    final ids = await _openScenarioListScene(tester, service);
+    await _tapKey(tester, 'plan-scenario-compare-${ids['04 공격대 핵심']}');
+    await _tapKey(tester, 'plan-scenario-compare-run');
+    await pumpUntilFound(
+      tester,
+      find.byKey(const ValueKey('plan-compare-cell-active-plan-credits')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-compare-cell-active-plan-credits')),
+        matching: find.text('112M'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('plan-compare-base-chip')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('plan-compare-stale-${ids['04 공격대 핵심']}')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(ValueKey('plan-compare-column-${ids['02 지원진 집중']}')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-scenario-compare-4');
+  }, variant: goldenPlatform);
+
   // --- 스캔 검토(스캐너 세션 소유 위젯, 그리기만 한다) --------------------------
   testWidgets('scan-student-review', (tester) async {
     setGoldenViewport(tester);

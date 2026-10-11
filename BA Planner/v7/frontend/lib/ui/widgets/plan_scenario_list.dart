@@ -3,8 +3,8 @@
 // 계획 탭 안의 뷰 전환이다(D §0-1·§0-2). 목록을 열면 계획 홈 섹션이 모두 나가고 3섹션이 들어온다.
 // - S1 메뉴(왼쪽 사다리꼴): "계획 / 보는 중" + 상태 버튼 "시나리오 목록 · 저장된 시나리오 n"(누르면 다시 읽기),
 //   "활성 계획으로"(목록 닫기), "새 시나리오"(계획 만들기 1단계), "프리셋 관리", 비교할 계획 슬롯 A~D(A = 활성 계획
-//   고정, FD-084), "나란히 비교 n개". 둘(A + 시나리오 하나)이면 기존 A↔B 비교 화면을 그 둘로 연다. 셋 이상의 4열
-//   비교는 FE5-e까지 열지 않는다.
+//   고정, FD-084), "나란히 비교 n개". 둘(A + 시나리오 하나)이면 기존 A↔B 비교 화면을 그 둘로 열고, 셋 이상이면
+//   4열 비교(FE5-e, `plan_scenario_compare.dart`)를 연다.
 // - S2 목록(평행사변형): 제목 줄(시나리오 n개 + (i) + 정렬 seg 4종), 필터 줄("현재 데이터 기준만" · 학생 · 이름·설명
 //   검색 · 오래된 시나리오 n개), 활성 계획 고정 행(FD-083: `plan.get`의 계산 요약), 사선 목록(행 100px, 고른 행은
 //   146px로 펼쳐져 행 액션). 목록은 공용 [DiagonalScrollViewport](translate)와 포그·사선 스크롤바를 쓴다(FD-087).
@@ -234,6 +234,7 @@ class PlanScenarioListSection extends StatefulWidget {
     this.onOpenPresets,
     this.onCompare,
     this.controller,
+    this.initialResourceTab = PlanDetailResourceTab.bottleneck,
     this.viewingScenarioId,
     this.onOpenScenario,
     this.onCloseScenario,
@@ -267,11 +268,16 @@ class PlanScenarioListSection extends StatefulWidget {
   /// S1 "프리셋 관리".
   final VoidCallback? onOpenPresets;
 
-  /// S1 "나란히 비교": 슬롯 B~D에 담은 시나리오 id(A = 활성 계획은 늘 포함). 지금은 하나일 때만 부른다.
+  /// S1 "나란히 비교": 슬롯 B~D에 담은 시나리오 id(A = 활성 계획은 늘 포함). 하나 이상 담았을 때 부른다(하나 = A↔B
+  /// 비교, 둘 이상 = 4열 비교, FE5-e).
   final ValueChanged<List<String>>? onCompare;
 
-  /// 없으면 화면이 직접 만든다(테스트·golden이 상태를 미리 정할 때 넘긴다).
+  /// 없으면 화면이 직접 만든다(테스트·golden이 상태를 미리 정할 때, 계획 화면이 비교 화면을 오가며 슬롯을 이어 쓸 때
+  /// 넘긴다).
   final PlanScenarioListController? controller;
+
+  /// 보기 모드 S3의 처음 탭(위젯을 만들 때 한 번 읽는다). 4열 비교 "전체"가 전체 탭으로 연다(FD-093).
+  final PlanDetailResourceTab initialResourceTab;
 
   /// 보기 모드로 연 시나리오(FE5-c1). null이면 목록이다.
   final String? viewingScenarioId;
@@ -338,6 +344,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   @override
   void initState() {
     super.initState();
+    _resourceTab = widget.initialResourceTab;
     _state.addListener(_listChanged);
     _searchController.text = _state.query;
     _load();
@@ -617,7 +624,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
 
   void _runCompare() {
     final ids = _state.compareIds;
-    if (ids.length != 1) return;
+    if (ids.isEmpty) return;
     widget.onCompare?.call(List.unmodifiable(ids));
   }
 
@@ -1121,8 +1128,9 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       children.add(Positioned.fromRect(rect: rect, child: child));
     }
     final compareCount = _state.compareCount;
+    // FE5-e: 시나리오 하나(A↔B)부터 셋(4열)까지 연다.
     final canCompare =
-        enabled && compareIds.length == 1 && widget.onCompare != null;
+        enabled && compareIds.isNotEmpty && widget.onCompare != null;
     final runButton = RailButton(
       key: const ValueKey('plan-scenario-compare-run'),
       variant: RailButtonVariant.tri,
@@ -1158,14 +1166,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
           PlanScenarioListMetrics.compareRunTop,
           PlanScenarioListMetrics.compareRunHeight,
         ),
-        // Tooltip은 문구가 비면 child만 돌려주므로 감싸는 구조는 어차피 바뀐다. 담은 수가 바뀌는 순간은
-        // 목록 체크를 누르는 중이라 이 버튼의 hover 상태를 잃어도 괜찮다.
-        child: compareIds.length >= 2
-            ? Tooltip(
-                message: '셋 이상 나란히 비교하는 화면은 아직 열 수 없습니다.',
-                child: runButton,
-              )
-            : runButton,
+        child: runButton,
       ),
     );
     children.add(

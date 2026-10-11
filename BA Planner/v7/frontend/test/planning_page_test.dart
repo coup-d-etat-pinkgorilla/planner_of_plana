@@ -3665,7 +3665,8 @@ void main() {
   );
 
   testWidgets(
-    'scenario comparison selects active plan and exposes side-by-side actions',
+    // FE5-e(FD-085): 비교 화면의 후보 목록을 없앴다. 두 대상은 시나리오 목록 비교 슬롯에서 담아 넘긴다(initialSelectedIds).
+    'scenario comparison opens the two given plans and exposes side-by-side actions',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -3702,6 +3703,7 @@ void main() {
               ),
               section1Bounds: const Rect.fromLTWH(16, 20, 360, 940),
               active: true,
+              initialSelectedIds: ['active-plan', created.scenarioId],
               onEdit: (_, _) async => edited = true,
               onIncorporate: (_) async => incorporated = true,
             ),
@@ -3710,35 +3712,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final activeCandidateRect = tester.getRect(
-        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
-      );
-      final scenarioCandidateRect = tester.getRect(
-        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
-      );
-      expect(scenarioCandidateRect.left, lessThan(activeCandidateRect.left));
-      expect(scenarioCandidateRect.right, lessThan(activeCandidateRect.right));
-
-      await tester.tap(
-        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
-      );
-      await tester.tap(
-        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
-      );
-      await tester.pump();
       expect(
-        tester
-            .widget<FilledButton>(
-              find.byKey(const ValueKey('plan-scenario-compare-confirm')),
-            )
-            .onPressed,
-        isNotNull,
+        find.byKey(const ValueKey('plan-scenario-compare-candidates')),
+        findsNothing,
       );
-      await tester.tap(
+      expect(
         find.byKey(const ValueKey('plan-scenario-compare-confirm')),
+        findsNothing,
       );
-      await tester.pumpAndSettle();
-
       expect(find.text('활성 계획  ↔  비교 후보'), findsOneWidget);
       expect(find.text('전체 결과'), findsOneWidget);
       final firstSummaryRow = tester.getRect(
@@ -3831,21 +3812,21 @@ void main() {
         find.byKey(const ValueKey('plan-scenario-compare-launch')),
       );
       expect(launch.onPressed, isNotNull);
+      // FE5-e(FD-085): 옛 섹션 1 "시나리오 비교"는 시나리오 목록을 연다. 비교 후보는 목록 비교 슬롯에 담는다.
       await tester.tap(
         find.byKey(const ValueKey('plan-scenario-compare-launch')),
       );
       await tester.pumpAndSettle();
+      expect(find.byType(PlanScenarioListSection), findsOneWidget);
       await tester.tap(
-        find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
-      );
-      await tester.tap(
-        find.byKey(ValueKey('plan-compare-candidate-${created.scenarioId}')),
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-scenario-compare-confirm')),
+        find.byKey(ValueKey('plan-scenario-compare-${created.scenarioId}')),
       );
       await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('plan-scenario-compare-run')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlanScenarioComparisonSection), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('plan-scenario-b-incorporate')),
       );

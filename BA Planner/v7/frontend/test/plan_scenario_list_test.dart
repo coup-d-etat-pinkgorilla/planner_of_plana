@@ -463,7 +463,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('비교 담기: 슬롯 B~D, 넷이 넘으면 안내, 둘이면 A↔B 비교 화면을 그 둘로 연다', (
+    testWidgets('비교 담기: 슬롯 B~D, 넷이 넘으면 안내, 둘이면 A↔B 비교 화면을 그 둘로 연다(셋 이상은 FE5-e 4열)', (
       tester,
     ) async {
       final service = MockAppService();
@@ -501,7 +501,8 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(find.text('4 / 4'), findsOneWidget);
-      expect(runEnabled(), isFalse);
+      // FE5-e: 넷(활성 계획 + 셋)이면 4열 비교로 연다(FE5-a의 "A + 하나만" 제한 해제).
+      expect(runEnabled(), isTrue);
       await tester.tap(find.byKey(ValueKey('plan-scenario-compare-${ids['넷']}')));
       await tester.pumpAndSettle();
       expect(find.textContaining('4개까지 담을 수 있습니다'), findsOneWidget);
