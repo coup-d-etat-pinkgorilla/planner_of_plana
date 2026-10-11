@@ -108,6 +108,12 @@ class PlanningProtocolClient {
       'invalid_payload',
       'shortage_calculation_failed',
     },
+    // FB-3: 획득처 조회 오류 집합(protocol-error-v1 `inventoryAcquisition`). unknown_method는 받지 않는다.
+    'planning.inventory.acquisition.get': {
+      'invalid_payload',
+      'resource_not_found',
+      'resource_acquisition_failed',
+    },
     'repository': {
       'invalid_payload',
       'profile_not_found',
@@ -481,6 +487,9 @@ class PlanningProtocolClient {
         isValidScenarioSuccessPayload(method, payload),
       'planning.inventory.catalog' => _validInventoryCatalog(payload),
       'planning.plan.shortages' => _validInventoryShortages(payload),
+      'planning.inventory.acquisition.get' => _validResourceAcquisition(
+        payload,
+      ),
       _ when method.startsWith('repository.') =>
         isValidRepositorySuccessPayload(method, payload),
       _ when method.startsWith('scanner.') => _validScannerSuccessPayload(
@@ -532,6 +541,15 @@ class PlanningProtocolClient {
   bool _validInventoryCatalog(Map<String, dynamic> payload) {
     try {
       InventoryCatalogResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  bool _validResourceAcquisition(Map<String, dynamic> payload) {
+    try {
+      ResourceAcquisitionResult.fromWire(payload);
       return true;
     } on Object {
       return false;

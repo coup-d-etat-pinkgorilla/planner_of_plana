@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**T-FB1b·FE8-b 코드 작성 완료, FE8-b gate ① RED 수정 완료 → gate 재실행 대기(2026-10-11).** 시작 커밋 `18c5f0b0`. 아래 "T-FB1b 착수 기록"·"T-FB1b 종료 기록"·"FE8-b 착수 기록"·"FE8-b 종료 기록"·"사용자 실행 명령"·"FE8-b gate ① RED 수정 기록". S-FB1b는 커밋 `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`로 끝났다(오케스트레이터 로그 2026-10-10 23:00·23:35).
+**fb3-dart gate ① RED 수정 완료, 같은 소스 gate 재실행 대기(2026-10-11).** 시작 커밋 `84f645c3`. 아래 "fb3-dart 착수 기록"·"fb3-dart 종료 기록"·"fb3-dart gate ① RED 수정 기록"(맨 끝 다음 행동). T-FB1b는 커밋 `5c78c83c`, FE8-b `8268abb3`로 끝났다(오케스트레이터 로그 2026-10-11 03:20). 그 전: S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -725,3 +725,333 @@ gate ① `debug/frontend_gate/20261011_012751`에서 FE8-b 테스트 13건(`acco
 ### 다음 행동
 
 위 "사용자 실행 명령"을 1번(`fe_gate.ps1`)부터 다시 한다. 예상 golden RED: `title`·`account-manager`·`account-editor`·`account-picker`, 그리고 기준 이미지가 없는 `account-new`. Lane B는 여기서 멈춘다.
+
+## fb3-dart 착수 기록 (2026-10-11, 진행 중)
+
+- 시작 조건 확인: `almanac/workflows/backend-orchestrator-log.md` 끝에 XB "FB-3 source26 메인 반영 완료·backend/contracts 고정"(XB 보고 03:16)이 있다.
+  - 처음 읽었을 때(03:14 무렵)는 XB 세션 시작 항목만 있어서 읽기·계획만 했다.
+  - 반영 완료 기록을 확인한 뒤에 코드를 고치기 시작했다.
+- 범위: CF 로그 10-11 00:02 "커밋 전 정확 Dart 변경 목록" 표의 행을 그대로 구현한다. 날짜 경계는 00:11(year 1..9999, `0000-01-01` 거부), 재화 guard는 02:09(`invalid_payload` + `reason=currency_read_only`), 소스는 01:27 source26을 따른다. 인벤토리 화면의 재화 행은 읽기 전용으로 바꾼다(00:02 "Currency editor UI follow-up").
+- 범위 밖:
+  - FD101 UI 어댑터(`PlanFlowStageCost` ID 보존 등)는 FE6-a 몫이다(CF 03:20).
+  - backend/**·contracts/**는 XB 소유다.
+  - 계획·학생 화면, golden harness·golden 테스트·기준 이미지는 Lane A 소유다.
+  - `app_shell.dart`, `scan_page.dart`·`tactical_page.dart`의 동작은 건드리지 않는다.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `84f645c391f54cc312ce12f21d85ed34789f325b`.
+- XB 반영 SHA 대조: 메인 작업 트리 파일을 직접 읽어 SHA256을 XB 03:16 표와 비교했다.
+  - 비교한 파일: 계약·fixture 8개, `README.md`, `backend/core/{inventory_catalog,protocol_v1,repository_store,resource_acquisition}.py`, `backend/tests/test_inventory_currencies_fb3b.py`·`test_resource_acquisition_fb3c.py`.
+  - 결과: 모두 일치한다. 계약·fixture 8개의 SHA는 아래 표와 같다.
+
+  | 경로 | SHA256 |
+  |---|---|
+  | `contracts/planning-inventory-catalog-v1.schema.json` | `f54f5f9f2a42e37d7184462b22c68ada06f0f24d679157d968e404f1035ae6bd` |
+  | `contracts/planning-inventory-acquisition-get-v1.schema.json` | `40bb6db9b8c2b9ca71430a0f82ad626393e3a43484f96fef463d382b0573cac1` |
+  | `contracts/planning-protocol-v1.schema.json` | `bbe811baf4c2e22264075fc37b46760ea5052ec125b66d2a3286c0cb34350071` |
+  | `contracts/protocol-error-v1.schema.json` | `8890bc1fcbce8c2e763312c2600634221976b9fcbeeb8c88cf1ca88a16021842` |
+  | `contracts/fixtures/inventory_catalog_fb3_metadata.json` | `a25af4aed55947a946665c122ede19562dfa0594841ad34fa508ae655fb40808` |
+  | `contracts/fixtures/resource_acquisition_v1.json` | `22eb6845d7c597189c32cf696e38a4608dbd755f5c96e87c2b04edca5f8b7a9d` |
+  | `contracts/fixtures/planning_protocol_v1.json` | `64e36b1b4012680a820278bde395af98a53725a20d6d8aba3afe0c374703d183` |
+  | `contracts/fixtures/inventory_catalog_v6_parity.json` | `2d6fa950c4a1f395219cf5360fcbea95711afbb1328428bf7c11bab774c05c40` |
+
+- 막힘: 없음.
+- 고칠 기존 파일과 미커밋(WIP) 여부. 작업 트리 내용을 git index blob과 비교했고, 줄바꿈 차이는 제외했다. 호출처는 편집 전에 다시 grep했고, XB 목록과 같다.
+
+  | 파일 | WIP | 비고 |
+  |---|---|---|
+  | `frontend/lib/services/app_service.dart` | 없음(LF) | |
+  | `frontend/lib/services/planning_protocol_client.dart` | 있음(CRLF, LF 줄 일부) | 스캐너 WIP: 오류 code 5줄, `scanner.review.*` 검사, `_validScannerUnresolvedSlots`. HEAD blob(loose)을 풀어 위치를 확인했다 |
+  | `frontend/lib/services/process_app_service.dart` | 있음(CRLF, LF 줄 일부) | 스캐너 WIP: `confirmedFields`, `scannerUnresolvedSlots`·`assignScannerIdentity` |
+  | `frontend/lib/services/mock_app_service.dart` | 있음(CRLF, LF 줄 일부) | 스캐너 WIP: `_assignedScannerSlots`, `confirmedFields` 재검증, unresolved slot API |
+  | `frontend/lib/ui/pages/inventory_page.dart` | 없음(CRLF) | |
+  | `frontend/test/planning_protocol_contract_test.dart` | 없음(CRLF) | |
+  | `frontend/test/planning_protocol_client_test.dart` | 없음(CRLF) | |
+  | `frontend/test/inventory_page_test.dart` | 없음(CRLF) | |
+  | `frontend/test/statistics_projection_test.dart` | 없음(CRLF) | |
+  | `frontend/test/scan_inventory_identity_review_test.dart` | **git 밖(미추적, LF)** | 스캐너 WIP 파일로 보인다. 호출처라서 생성자 인자만 고친다. commit.json에는 넣지 않는다(발견 사항) |
+
+  - 착수 전 사본은 `debug/frontend_fb3dart/pre/<경로>`, slice 끝 사본은 `debug/frontend_fb3dart/post/<경로>`에 둔다.
+  - WIP는 지우거나 정리하지 않는다. 원래 줄바꿈도 그대로 두고, 새 줄은 주변 줄바꿈을 따른다.
+- 새 파일(예정): fb3 서비스·Mock 테스트, 획득처 process E2E, 인벤토리 재화 읽기 전용 위젯 테스트.
+- golden 변화 0 예정. 인벤토리 화면은 golden 장면에 없다. Mock 카탈로그 행이 늘지만, golden 장면 중 카탈로그를 그리는 화면이 있는지는 종료 때 장면별로 확인한다.
+
+## fb3-dart 종료 기록 (2026-10-11, 코드 작성 완료·gate 미실행)
+
+이 환경에는 Flutter·Dart가 없다(SDK 내려받기도 프록시가 막는다). analyze·테스트·process E2E·golden을 돌리지 못했으므로 통과를 주장하지 않는다.
+- 정적 검토만 했다. 별도 검토 에이전트가 바뀐 파일을 원본·공유 fixture·백엔드 Python(`inventory_catalog.py`·`resource_acquisition.py`·`repository_store.py`)과 대조해 읽었다. 확인한 것:
+  - 컴파일·lint: import, dynamic 승격, record·pattern 문법, const 문맥, `noSuchMethod` 대역.
+  - 00:02 목록 행별 의미.
+  - 새·바뀐 테스트의 기대값. 검토 에이전트는 새 Dart 검사기를 Python으로 다시 구현해 fixture 전 case를 대조했다.
+  - Mock 행 증가가 기존 테스트에 주는 영향.
+  - 결과: 막는 문제 없음. 지적 4건을 반영했다.
+    - Mock의 잘못된 질의 오류를 Process와 같게 맞췄다(보내기 전 `FormatException`).
+    - Mock 오류 순서를 백엔드와 같게 했다(질의 → 카탈로그 → 표 실패).
+    - Mock unattributed 기록에 guard를 두지 않은 이유를 주석으로 남겼다.
+    - Dart 재화 키 집합과 카탈로그 `currencies` 행이 같은지 Mock·process 테스트에서 고정했다.
+- 내가 직접 한 것:
+  - 공유 fixture 전 case 대조: 새 Dart 검사기(strict DTO)와 계약 테스트의 JSON Schema 수준 helper를 Python으로 옮겨 `inventory_catalog_fb3_metadata.json`(19)·`resource_acquisition_v1.json`(requests 13·responses 12·strict 32)·`planning_protocol_v1.json` 획득처 case와 대조했다. 불일치 0.
+  - 공유 서비스 3파일 병합 모의: HEAD blob(loose object)·착수 사본·끝 사본으로 `git merge-file` 3-way를 모의했다. 충돌 0이고, 병합 결과에 스캐너 WIP 줄이 없다.
+  - 파일 형식: 바뀐 기존 줄 0, 새 줄 줄바꿈은 주변을 따른다. 끝 공백 없음, 끝 개행 하나, 괄호 짝 맞음.
+  - 빈 획득처 표 revision을 백엔드 `resource_acquisition_payload`와 같은 방법(정렬·압축 JSON의 sha256)으로 다시 계산했다: `d1d01c18…`.
+
+### 계약 SHA 대조
+
+착수 때 확인한 XB 03:16 표와 같다(착수 기록의 표). 연결 기준은 메인 작업 트리 파일이다. 커밋 전까지 XB는 backend/contracts를 고치지 않는다(XB 03:16).
+
+### 고친 파일
+
+- **`frontend/lib/services/app_service.dart`**(WIP 없음, LF)
+  - 카탈로그 행:
+    - `InventoryCatalogEntry`에 required nullable `school`·`family`·`tier`를 더해 정확히 10키다(null 값도 키는 있어야 한다). 기존 7키 검사는 그대로다.
+    - school·family는 유니코드 스칼라 문자열 또는 null이다. 빈 문자열·앞뒤 공백은 허용하고, 고립 surrogate는 거부한다. enum·길이 제한은 없다.
+    - tier는 정확한 int ≥ 1 또는 null이다(bool·1.0·문자열·0 거부).
+    - 읽기 전용 재화 키 `inventoryReadOnlyCurrencyKeys`(백엔드 guard 집합 사본)와 `isReadOnlyCurrency`를 더했다.
+  - 획득처 strict DTO:
+    - `ResourceAcquisitionQuery` exact1.
+    - `ResourceAcquisitionResult` exact3. revision은 64자 소문자 hex이고, method_id는 응답 안에서 유일하다.
+    - `ResourceAcquisitionMethod` exact6:
+      - method_id: 소문자 토큰 전체 일치, UTF-8 128바이트 이하.
+      - kind: enum `ResourceAcquisitionKind`.
+      - weekly_quantity: 정규 정수 문자열 그대로(1024자 이하), 또는 null.
+      - selector_resource_keys: null ≠ [], 순서 유지, 중복 금지.
+    - `ResourceAcquisitionSource` exact3: server는 KR, reviewed_at은 `isStrictCalendarDate`(정규식 + 연·월·일 왕복 + year 1..9999)다.
+    - 문자열은 백엔드 `_text`와 같다: 스칼라 유니코드, UTF-8 1..1024바이트.
+    - 토큰·수량·날짜·revision 검사는 모두 전체 문자열 일치다(끝 개행·공백 거부).
+    - 목록은 복사본이고 수정할 수 없다.
+  - 서비스: 선택적 `ResourceAcquisitionService`와 `AppService` 확장 `getResourceAcquisition`을 더했다(`PlanningDocumentService`·`AppServiceStudentCalculation` 패턴). 지원하지 않는 서비스는 빈 결과가 아니라 `UnsupportedError`를 던진다. 다른 AppService 대역은 소스 호환이다.
+  - `InventoryCatalogResult` exact3·정렬·revision·불변 행은 그대로다.
+- **`frontend/lib/services/planning_protocol_client.dart`**(스캐너 WIP 보존)
+  - `planning.inventory.acquisition.get` 오류 집합은 정확히 `invalid_payload`·`resource_not_found`·`resource_acquisition_failed`다. 이 메서드에 대해 `unknown_method`는 잘못된 오류로 보고 연결을 끊는다.
+  - 성공 응답은 strict DTO로 검사한다.
+  - 기존 id·method·pending·generation 처리와 다른 메서드 오류 집합은 그대로다. catalog 검사기는 DTO를 통해 exact10이 되었다. 검사기를 느슨하게 한 곳은 없다.
+- **`frontend/lib/services/process_app_service.dart`**(스캐너 WIP 보존): `ResourceAcquisitionService`를 구현했다.
+  - 질의를 DTO로 먼저 검사하고(형식이 틀리면 보내지 않는다) `planning.inventory.acquisition.get`을 보낸다.
+  - 응답 키가 질의의 정규 키와 같은지 본다(`historyCanonicalResourceKey`). 그래서 legacy `Item_Icon_SkillBook_Ultimate_Piece` 질의에 정규 `Item_Icon_SkillBook_Ultimate` 응답을 받는다. 다른 자원의 응답은 `FormatException`이다.
+  - repository.history.* API·캐시 의미는 그대로다.
+- **`frontend/lib/services/mock_app_service.dart`**(스캐너 WIP 보존)
+  - 카탈로그:
+    - 기존 3행에 백엔드 매핑과 같은 메타를 넣었다: 보고서 family `activity_report`·tier 1, 게헨나 노트 `Gehenna`·`tech_notes`·1, 네브라 `oopart:Nebra`·1.
+    - 끝에 credits(item_id null)와 bare `Item_Icon_SecretStone`(item_id = 키)을 더했다. profile `currencies`, 순서 0·1, `zero_fill_allowed=false`, 메타 null이다(백엔드 `_rows` 끝 두 행과 같다).
+  - 획득처: 표는 백엔드 packaged v1처럼 비어 있다.
+    - 알려진 키 → 정규 키 + `methods=[]` + `mockEmptyResourceAcquisitionRevision`(검증된 빈 표 hash).
+    - 모르는 키 → `resource_not_found`.
+    - `failNextResourceAcquisition` → `resource_acquisition_failed`.
+    - 잘못된 질의 → `FormatException`.
+    - 획득처 행·주간량은 지어내지 않았다.
+  - 재화 guard: `_saveMockCurrent`(수동 저장)에서 캐시 재생·revision 확인 뒤, history 시각·쓰기·캐시 앞에서 막는다.
+    - 비교 대상은 정규 키 projection의 재화 {키: 수량}이다. 없음·null·'0'이 모두 다르다.
+    - 바뀌면 `BackendRemoteException(invalid_payload, details.reason=currency_read_only)`이다.
+    - 스캐너 commit 경로(S-FB2b)와 unattributed 기록 경로는 손대지 않았다.
+- **`frontend/lib/ui/pages/inventory_page.dart`**(WIP 없음, CRLF): 재화 행은 읽기 전용이다.
+  - 입력 칸은 `readOnly`·비활성이고, `onChanged`가 없으며, 도움말 `스캔으로만 바뀝니다.`를 단다.
+  - 재화 키는 dirty가 되지 않는다.
+  - 재료 저장 때 기존 재화 항목은 dirty 여부와 상관없이 통째로 둔다. 없으면 만들지 않는다.
+  - null을 '0'으로 바꾸거나, 재화를 빼거나, catalog 메타를 snapshot에 복사하지 않는다.
+- 호출처 생성자(편집 전 다시 grep, XB 목록과 같음):
+  - `mock_app_service.dart` 3곳.
+  - `test/inventory_page_test.dart` 1곳.
+  - `test/statistics_projection_test.dart` 3곳.
+  - `test/scan_inventory_identity_review_test.dart` 2곳. 이 파일은 git 밖이다(발견 사항 1).
+- **`frontend/test/planning_protocol_contract_test.dart`**(3건 → 7건, 지운 테스트 없음)
+  - registry: 새 메서드·오류 code·`planning-inventory-acquisition-get-v1.schema.json`.
+  - 공유 fixture의 `valid`·`schema_valid`는 JSON Schema 판정이라, 획득처 판정은 schema 수준 helper로 한다(정수 1.0 허용, 문자 수 기준 길이, surrogate 허용, uniqueItems, pattern).
+  - strict DTO 판정은 따로 맞춘다: metadata exact10 19 case, 획득처 requests·responses·errors·strict_response_cases.
+  - parity 대표 행: 열 개 키가 다 있는 8행을 DTO로 읽고, 재화 두 행의 값을 확인한다.
+  - strict DTO 값: '0'·2^53+1·null·[]·KR·날짜, `toWire` 왕복.
+- **`frontend/test/planning_protocol_client_test.dart`**(21건 → 24건, process 단계에서 실행)
+  - 실제 catalog 응답 fixture를 10키로 바꾸고 메타 값을 확인한다.
+  - 실제 `PlanningProtocolClient`·`ProcessAppService`로 확인하는 것:
+    - 빈 표 성공, legacy 별칭, 다른 자원 응답 거부, 오류 3종, 역순 응답 상관, 이모지 label.
+    - strict_response_cases 32건과 날짜 경계(`0000-01-01`·한 자리 월·끝 개행·2023-02-29·시각 포함 거부, 2024-02-29 통과).
+    - 잘못된 오류 code는 연결을 끊는다.
+    - 보내기 전 질의 검사: 빈 값·고립 surrogate·1025바이트는 거부, 1024바이트는 통과.
+
+### 새 테스트
+
+- **`frontend/test/inventory_fb3_service_test.dart`(일반 15건)**
+  - 카탈로그 메타 경계, 스칼라 유니코드 판정.
+  - 획득처 strict 경계: 수량(null·'0'·큰 값·int·double·bool·선행 0·부호·소수·지수·공백·개행·1025자), selector(null·[]·순서·중복·빈·surrogate·바이트 초과), method_id 토큰, kind, label 바이트, 중복 method, 날짜 15종, revision·exact 키, 질의 9종.
+  - 지원하지 않는 서비스는 `UnsupportedError`.
+  - Mock: 카탈로그 행·메타·재화 두 행, 읽기 전용 키 집합 = currencies 행, 빈 표·revision, 조회가 저장소·시각을 건드리지 않음, legacy 별칭, 모르는 키·잘못된 질의·표 실패의 구별과 순서.
+  - Mock guard:
+    - 재화 수량·제거·null↔'0'·없는 재화 추가는 모두 `currency_read_only`로 거부된다. revision·저장 상태·history 시각이 그대로이고, 같은 key로 다시 보내도 같은 거부다(캐시에 남지 않음).
+    - 재화 항목을 그대로 둔 재료 저장은 통과한다.
+    - 캐시 재생·`idempotency_conflict`·`revision_conflict`가 guard보다 먼저다.
+- **`frontend/test/inventory_currency_readonly_test.dart`(위젯 2건)**
+  - 재화 행 `readOnly`·비활성·`onChanged` 없음·도움말, null은 빈 칸('0' 아님).
+  - 재료만 바꿔 저장하면 credits·엘리그마 항목이 원래 map 그대로 남는다.
+  - 재화가 없던 계정은 저장 뒤에도 재화 항목이 없다.
+- **`frontend/test/inventory_fb3_process_e2e_test.dart`(process 1건)**: 실제 Python 백엔드(메인 반영본)를 띄운다.
+  - 카탈로그 전 행 exact10 파싱, catalog revision = parity fixture 값(`ace36d60…`), 재화 두 행이 끝, Dart 재화 키 집합 = 실제 currencies 행.
+  - 획득처: 빈 표·revision, 별칭, 모르는 키, 잘못된 질의(`invalid_payload`).
+  - 새 계정의 수동 재화 저장은 `currency_read_only`로 거부되고 revision이 그대로다. 재료 저장은 revision +1이다.
+
+### 00:02 표 행별 검수표
+
+| 00:02 행 | 반영 | 확인 테스트 |
+|---|---|---|
+| InventoryCatalogEntry exact10·nullable 3키·스칼라·tier | `app_service.dart` | 계약 metadata 19 case, service 테스트, client 카탈로그, E2E |
+| InventoryCatalogResult exact3·정렬·revision·불변 | 그대로 | 기존 테스트 |
+| 선택적 서비스·확장·지원 안 하면 던짐 | `ResourceAcquisitionService`·`AppServiceResourceAcquisition` | service `UnsupportedError` |
+| 획득처 DTO exact1/3/6/KR3·토큰·수량·selector·날짜·UTF-8·revision | `app_service.dart` | 계약 fixture, service 경계, client 날짜 |
+| client 오류 집합·strict 성공 분기·기존 보존 | `planning_protocol_client.dart` | client 오류 3종·잘못된 code, 계약 errors |
+| Process wrapper·별칭·history 그대로 | `process_app_service.dart` | client 별칭·불일치, E2E 별칭 |
+| Mock 카탈로그 3곳·재화 두 행·빈 표·구별·guard·스캐너 경로 보존 | `mock_app_service.dart` | service Mock·guard |
+| 계약 테스트 registry·exact10·acquisition·schema/strict 분리 | `planning_protocol_contract_test.dart` | — |
+| client 테스트 10키 fixture·실제 client 경로 | `planning_protocol_client_test.dart` | — |
+| 호출처(mock 3·inventory_page_test·scan_inventory_identity_review_test·statistics_projection_test) | 모두 | 컴파일 |
+| 서비스·process·Mock 테스트(권위 있는 빈 표, 알려진/별칭/모르는/깨진, 수량, selector, 유니코드·날짜) | 새 테스트 3파일 | — |
+| Currency editor UI follow-up | `inventory_page.dart` | 위젯 2건 |
+| FD101 UI 어댑터 | 범위 밖(FE6-a, CF 03:20) | — |
+
+### golden 예측
+
+변화 0.
+- golden 장면(title·account-*·home·students-*·plan-*·scan-student-review)은 인벤토리·통계 화면과 스캔 미확인 슬롯 검토를 그리지 않는다. Mock 카탈로그(`listInventoryItems`)를 읽는 화면은 이 셋뿐이다(grep).
+- DTO에 필드가 더해졌지만 화면이 그리는 값은 바뀌지 않았다.
+
+### WIP 보존 확인
+
+착수 사본(pre)과 끝 사본(post)의 차이는 이번 slice 줄뿐이다. 지운 기존 줄은 없고, 바꾼 기존 줄도 없다.
+
+| 파일 | pre → post 차이 | 원래 줄바꿈 |
+|---|---|---|
+| `planning_protocol_client.dart` | 추가 3덩어리(오류 집합 6줄, 성공 분기 3줄, 검사 함수 9줄) | CRLF 유지(새 줄 CRLF), 기존 LF 줄 18개 그대로 |
+| `process_app_service.dart` | 추가 2덩어리(implements 1줄, wrapper 18줄) | CRLF 유지, 기존 LF 줄 그대로 |
+| `mock_app_service.dart` | 추가 9덩어리(빈 표 상수, implements, 실패 hook, 카탈로그 메타·재화 두 행, 획득처, guard 호출 5줄(주석 4 + 호출 1), guard 함수) | 주변 줄바꿈을 따름(guard 호출은 LF 구역이라 LF, 나머지 CRLF), 기존 줄 그대로 |
+
+- 세 파일 모두 HEAD blob(loose)을 풀어 `git merge-file`로 HEAD ← (pre → post)를 모의했다. 충돌 0이고, 결과에 스캐너 WIP 줄(`unresolved_slot_not_found`·`_assignedScannerSlots`·`scannerUnresolvedSlots`)이 들어가지 않는다.
+- 이번 slice 코드는 HEAD에 있는 import·심볼만 쓴다(`mapEquals`·`BackendRemoteException`·`historyCanonicalResourceKey`).
+- 사본 위치:
+  - 착수 사본: `debug/frontend_fb3dart/pre/<경로>`.
+  - 끝 사본: `debug/frontend_fb3dart/post/<경로>`.
+  - commit.json `post_dir: debug/frontend_fb3dart/post`, `status=false`, `whole=[almanac/workflows/frontend-redesign-status-lane-b.md]`.
+  - `scan_inventory_identity_review_test.dart`는 git 밖이라 commit.json에 넣지 않았다. post 사본은 두었다.
+
+### 미검증 항목
+
+- analyze·일반 테스트·process 테스트·golden·`codealmanac validate`·`git diff --check` 전부 미실행(사용자 PC gate 필요).
+- process E2E는 catalog revision이 parity fixture 값(`ace36d60…`, 631행)과 같다고 본다(XB 00:02 실측값). 같은 소스 gate에서 처음 확인된다.
+- process E2E의 "거부된 재화 저장은 revision을 올리지 않는다"는 새로 만든 계정 기준이다. 공통 legacy 이관이 앞설 수 있는 오래된 계정은 다루지 않는다(XB README대로 그쪽은 revision이 오를 수 있다).
+- Dart `jsonEncode`/`jsonDecode`의 고립 surrogate 왕복(FakeBackendProcess 경로)은 문자열 그대로 지나간다고 보았다(검토 에이전트 동의). 실제 stdio는 UTF-8이라 고립 surrogate가 오지 않는다.
+
+### 발견 사항
+
+1. `frontend/test/scan_inventory_identity_review_test.dart`가 git 밖(미추적)이다. 스캐너 WIP 파일로 보인다.
+   - 이 파일은 `InventoryCatalogEntry`를 만들므로 생성자 인자 3개(school·family·tier)만 더했다. 안 고치면 같은 소스 gate가 컴파일 실패한다.
+   - commit.json에는 넣지 않았다. 스캐너 WIP를 커밋할 때 이 작업 트리 내용(새 인자 포함)이 같이 들어가야 한다.
+2. 백엔드는 unattributed 쓰기도 재화 guard로 막는다. Mock의 unattributed 기록(`_observeMockCurrentWrite`, 옛 scanner commit 경로)은 00:02 목록("scanner-owned commit path 보존")대로 손대지 않았다. Mock 재화를 그 경로로 바꾸는 테스트가 생기면 백엔드와 다르게 통과한다.
+3. `inventoryReadOnlyCurrencyKeys`는 백엔드 `_READ_ONLY_CURRENCY_KEYS`의 손 사본이다. 세 번째 재화가 생기면 Dart도 고쳐야 한다. Mock·process 테스트가 "읽기 전용 키 = 카탈로그 currencies 행"을 고정하므로 어긋나면 gate가 알린다.
+4. 공유 fixture `resource_acquisition_v1.json`의 `table_cases`(42)는 백엔드 표 loader 판정이라 Dart가 소비하지 않는다(Dart는 표를 읽지 않는다).
+5. 인벤토리 화면의 기존 문구는 영어(`Owned`·`Save inventory` 등)이고, 이번에 더한 도움말만 습니다체다. 화면 재작성은 FE6이다.
+
+### 다음 행동과 사용자 실행 명령
+
+- fb3-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서 아래 명령을 한 줄씩 실행하고, 하나가 실패하면 거기서 멈추고 결과를 오케스트레이터에게 보낸다.
+  1. Lane A(FE5-c2)·Lane B 두 워커가 모두 멈춘 뒤 실행하고, 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보낸 뒤 기다린다. 이번이 FB-3 메인 반영본과 같은 소스 gate다. 예상: golden 변화 0, 일반 +17(service 15 + 위젯 2), 계약 +4, process +4(client 3 + E2E 1).
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  2. XB가 FB-3를 먼저 커밋한 뒤(순서는 오케스트레이터가 정한다):
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb3dart -DryRun`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb3dart`
+
+## fb3-dart gate ① RED 수정 기록 (2026-10-11, 코드 수정 완료·gate 미실행)
+
+gate ① `debug/frontend_gate/20261011_124823`(XB FB-3 메인 반영본과 같은 소스)에서 fb3-dart 몫은 3건이었다(오케스트레이터 13:15). golden 6장(plan-bottleneck·by-phase·overall·scenario-compare·flow-step4·-append)은 FE5-c2 예측이라 손대지 않았다.
+
+### 1. analyze info `use_null_aware_elements`
+
+- 위치: `inventory_fb3_service_test.dart:598`. `if (change(entry) case final value?) value`를 `?change(entry)`로 바꿨다.
+- 동작은 같다. null이면 원소를 넣지 않고, 아니면 그 map을 넣는다.
+
+### 2. 일반 테스트 `statistics_page_test.dart` "detail and data-owner actions navigate without mutation"
+
+원인(오케스트레이터 추정 확인 + 집계 버그):
+- 통계 projection `buildInventoryStatistics`(`lib/statistics/statistics_projection.dart`)는 카탈로그 행을 모두 아이템 보유 범위로 센다.
+- fb3-dart가 Mock 카탈로그에 credits(category `credits`)·`Item_Icon_SecretStone`(category `eligma`) 두 행을 더했다. 그래서 통계 Inventory 화면이 바뀌었다:
+  - catalog 3 → 5
+  - absent가 재화 수만큼 늘었다.
+  - Category coverage 행이 3 → 5(`credits`·`eligma`)
+- 늘어난 두 ListTile만큼 `statistics-open-inventory` 버튼이 아래로 갔다. `ensureVisible`이 더 내려간 뒤 위쪽 모드 선택(`Plan`)이 ListView 캐시 밖으로 나가 지어지지 않았다(`Bad state: No element`).
+- 길이만의 문제가 아니다. FB-3 계약에서 credits·엘리그마는 catalog-only 읽기 전용 재화다. 이 둘을 아이템 보유 범위에 넣으면 실제 백엔드 카탈로그(631행)에서도 catalog·absent·category 보유율이 재화 때문에 달라진다. 그래서 **화면 집계 버그로 판정**했다. 테스트 기대는 바꾸지 않고 구현을 고쳤다.
+
+수정(`statistics_projection.dart`만):
+- `buildInventoryStatistics`가 카탈로그의 재화 행(`isReadOnlyCurrency`)을 건너뛴다.
+- snapshot의 재화 항목(식별자 `item_id ?? key`가 `inventoryReadOnlyCurrencyKeys`)도 건너뛴다. 그래서 스캔으로 생긴 재화 항목이 `(Missing category)`로 새지 않는다.
+- 재화 필요량·부족은 원래대로 계획 통계가 다룬다. gross `credits` 스칼라와 백엔드 shortage 행은 손대지 않았다. 재화 필요·보유 비교는 정당한 계산이라 그대로 두었다.
+- 이제 Mock 통계 Inventory 화면은 fb3-dart 이전과 같다(3행, 같은 category 3개). 그래서 고정 drag(0, 600)를 그대로 두었다. 테스트 파일은 고치지 않았다.
+
+추가 테스트(`statistics_projection_test.dart`, 5건 → 6건):
+- `inventory projection keeps catalog-only currencies out of item coverage`.
+- 재료 2행 + 재화 2행 카탈로그에 재료 1·재화 2 snapshot을 넣는다.
+- catalog 2·snapshot 1·absent 1·missing 없음·category는 `notes` 하나·identities는 재료만임을 확인한다.
+- 테스트 안 재화 행이 `inventoryReadOnlyCurrencyKeys`와 같은지도 확인한다.
+
+### 3. process `scenario_process_e2e_test.dart` "real Dart to Python scenario lifecycle and comparison are isolated"
+
+원인:
+- 테스트 준비가 `saveRepositoryInventory`로 `{'key': 'credits', 'quantity': '0'}`을 수동 저장했다.
+- FB-3 guard(`repository_store._assert_currency_quantities_unchanged`, source manual)가 의도대로 거부했다(`invalid_payload`, `currency_read_only`). guard는 그대로 두었다.
+
+수정(테스트 준비만):
+- 재화 대신 활동 보고서 `Item_Icon_ExpItem_0~3`(key·item_id 같음)을 `'0'`으로 저장한다.
+- 비교 호출(`compareScenarios`)의 `inventory` 인자는 저장이 아닌 순수 계산 입력이다. 앱도 저장된 inventory(스캔으로 생긴 재화 포함)를 그대로 넘기므로 `credits '0'`을 그대로 두었다.
+
+기대가 그대로 성립하는 근거(백엔드 소스 정적 확인, 실행은 안 함). 기대 값은 바꾸지 않았다:
+- `calculation.credits > 0`: `planning_summary.calculation_summary`의 credits는 `projection.overall.cost.credits`다. 인벤토리와 무관한 레벨 1→8 비용이다.
+- `firstBottleneckPhaseNumber == 1`:
+  - `planning_calc.calculate_goal_cost`는 레벨 1→8에서 `level_exp > 0`이다. 그래서 `_exp_item_breakdown("Item_Icon_ExpItem_0", …)`이 T1~T4 중 하나 이상을 낸다.
+  - 카탈로그 별칭 `Item_Icon_ExpItem_0 T<n>` → `Item_Icon_ExpItem_<n-1>`이다.
+  - 네 키 모두 보유 0이 알려져 있다. 그래서 `calculate_document_projection`이 P1 첫 단계에서 shortage > 0인 병목을 만든다.
+  - credits는 이제 보유를 모르므로(None) 병목이 되지 않는다. 병목 phase는 그대로 1이다.
+- 격리: 시나리오 생성·복제 뒤 repository revision이 저장 직후 값과 같다. inventory 내용과 무관하다.
+
+### 앱 경로 점검(공개 repository 쓰기로 재화를 보내는 경로)
+
+frontend/lib 전체를 grep했다(`saveRepositoryInventory`·`repository.inventory.update`·`credits`·`SecretStone`·`history_context`·`commitScannerCandidate`).
+- 백엔드 guard는 `update_inventory`(`repository.inventory.update`)의 manual·unattributed 쓰기에만 걸린다. scan 출처는 통과한다.
+- v6 가져오기(`import_v6_profile`)와 계정 만들기(`create_profile`)는 그 경로를 타지 않는다.
+- 결과:
+  - `repository.inventory.update`를 보내는 곳은 `ProcessAppService.saveRepositoryInventory` 하나다. 이를 부르는 앱 코드는 `ui/pages/inventory_page.dart` 하나이고, fb3-dart에서 이미 고쳤다(재화 항목 통째 유지).
+  - 스캔 쓰기(`scan_page`·`student_page`·`inventory_page`의 `commitScannerCandidate`)는 scanner 출처라 guard 대상이 아니다.
+  - v6 가져오기(`repository.migration.import`)·타이틀 첫 실행·계정 만들기(`repository.profile.create`)는 inventory update를 보내지 않는다.
+  - `plan_scenario_list.dart`의 `inventory: repository.inventory.toWire()`는 비교 계산 입력이다. 쓰기가 아니다.
+  - 개발 도구(`developer_tools_main.dart`·`tool_backend_client.dart`)에도 inventory update가 없다.
+- 고칠 앱 경로는 더 없다. 다른 레인 파일 목록도 비었다.
+- process 테스트 grep: top-level `*process*` 18파일과 관련 서비스 테스트를 봤다.
+  - `saveRepositoryInventory`·`repository.inventory.update`로 재화를 수동 저장하는 것은 `scenario_process_e2e_test.dart` 하나였고, 위에서 고쳤다.
+  - `repository_process_e2e_test.dart`의 `credits`는 계산 결과 키다. 저장하지 않는다.
+  - `test/widgets`·`test/kit`·`test/geometry`·`test/goldens` 하위 폴더는 보지 않았다(process 테스트가 아니고 golden은 Lane A).
+
+### 검증
+
+- 정적 검토만 했다(Flutter·Dart·백엔드 실행 없음).
+- 바꾼 파일의 줄바꿈은 원래대로다:
+  - `statistics_projection.dart`·`statistics_projection_test.dart`: CRLF
+  - `scenario_process_e2e_test.dart`·`inventory_fb3_service_test.dart`: LF
+- `statistics_projection.dart`·`scenario_process_e2e_test.dart`의 작업 트리는 HEAD blob과 같았다(줄바꿈 정규화 기준, WIP 없음). 착수 사본도 두었다.
+- `?element`는 null-aware element 문법이다. lint가 이것을 권했으므로 pubspec SDK 하한에서 쓸 수 있다.
+
+### 사본·commit.json
+
+- 착수 사본을 새로 두었다:
+  - `debug/frontend_fb3dart/pre/frontend/lib/statistics/statistics_projection.dart`
+  - `debug/frontend_fb3dart/pre/frontend/test/scenario_process_e2e_test.dart`
+- 끝 사본을 갱신하거나 새로 두었다(`debug/frontend_fb3dart/post/frontend/...`):
+  - `lib/statistics/statistics_projection.dart`
+  - `test/scenario_process_e2e_test.dart`
+  - `test/statistics_projection_test.dart`
+  - `test/inventory_fb3_service_test.dart`
+- `debug/frontend_fb3dart/commit.json` `modified`에 두 파일을 더했다: `frontend/lib/statistics/statistics_projection.dart`, `frontend/test/scenario_process_e2e_test.dart`. message는 그대로다.
+
+### 발견 사항
+
+- 스캔 미확인 슬롯 검토(`scan_inventory_identity_review.dart`)는 전체 카탈로그에서 고른다. 그래서 재화 행도 후보에 나온다. 그 경로는 scanner 출처라 guard에 걸리지 않는다. 스캔 화면 동작은 이 slice 범위 밖이라 손대지 않았다.
+- fb3-dart 종료 기록의 "golden 예측 변화 0"은 그대로다. 통계 화면은 golden 장면이 아니다. 다만 그 기록에서 통계 화면 집계 영향을 놓쳤고, 이번에 고쳤다.
+
+### 다음 행동
+
+- "fb3-dart 종료 기록" 맨 끝 사용자 실행 명령을 1번(`fe_gate.ps1`)부터 다시 한다. Lane B는 여기서 멈춘다.
+- fb3-dart 몫 예상:
+  - analyze info 0
+  - 일반 테스트: `statistics_page_test` 녹색, `statistics_projection_test` +1
+  - process: `scenario_process_e2e_test` 녹색

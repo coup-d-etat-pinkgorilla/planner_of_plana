@@ -20,12 +20,18 @@ import 'tactical_service.dart';
 
 enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 
+/// 백엔드 packaged v1 빈 획득처 표(`{"resources":{},"version":1}`)의 revision. `resource_acquisition_payload`가 정렬·
+/// 압축한 JSON의 sha256이며 공유 fixture `resource_acquisition_v1.json`의 known-empty 응답 값과 같다.
+const mockEmptyResourceAcquisitionRevision =
+    'd1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6';
+
 class MockAppService
     implements
         AppService,
         PlanningStudentCalculationService,
         PlanningStudentBondCalculationService,
         PlanningDocumentService,
+        ResourceAcquisitionService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
         MockScenarioController,
@@ -182,6 +188,9 @@ class MockAppService
   bool failNextReconnect = false;
   bool failNextRestart = false;
   bool failNextProfileMutation = false;
+
+  /// 다음 획득처 조회를 `resource_acquisition_failed`(표를 읽지 못함)로 실패시킨다. 모르는 키(`resource_not_found`)와 구별된다.
+  bool failNextResourceAcquisition = false;
   Future<void>? _reconnectFlight;
   Future<void>? _restartFlight;
 
@@ -1063,6 +1072,9 @@ class MockAppService
             profileId: 'activity_reports',
             orderIndex: 0,
             zeroFillAllowed: true,
+            school: null,
+            family: 'activity_report',
+            tier: 1,
           ),
           InventoryCatalogEntry(
             resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
@@ -1072,6 +1084,9 @@ class MockAppService
             profileId: 'tech_notes',
             orderIndex: 0,
             zeroFillAllowed: true,
+            school: 'Gehenna',
+            family: 'tech_notes',
+            tier: 1,
           ),
           InventoryCatalogEntry(
             resourceKey: 'Item_Icon_Material_Nebra_0',
@@ -1081,9 +1096,68 @@ class MockAppService
             profileId: 'ooparts',
             orderIndex: 0,
             zeroFillAllowed: true,
+            school: null,
+            family: 'oopart:Nebra',
+            tier: 1,
+          ),
+          // FB-3 카탈로그 전용 재화(백엔드 `inventory_catalog._rows` 끝 두 행과 같은 키·순서). 보유량은 스캔만 바꾼다.
+          InventoryCatalogEntry(
+            resourceKey: 'credits',
+            itemId: null,
+            displayName: '크레딧',
+            category: 'credits',
+            profileId: 'currencies',
+            orderIndex: 0,
+            zeroFillAllowed: false,
+            school: null,
+            family: null,
+            tier: null,
+          ),
+          InventoryCatalogEntry(
+            resourceKey: 'Item_Icon_SecretStone',
+            itemId: 'Item_Icon_SecretStone',
+            displayName: '엘리그마',
+            category: 'eligma',
+            profileId: 'currencies',
+            orderIndex: 1,
+            zeroFillAllowed: false,
+            school: null,
+            family: null,
+            tier: null,
           ),
         ],
       );
+
+  /// FB-3 획득처. 기본 표는 백엔드 packaged v1과 같이 비어 있다(`resources={}`): 카탈로그에 있는 키는 정규 키 +
+  /// `methods=[]` + 빈 표 revision, 모르는 키는 `resource_not_found`, 표 실패는 `resource_acquisition_failed`.
+  /// Mock은 획득처 행·주간량을 지어내지 않는다.
+  @override
+  Future<ResourceAcquisitionResult> getResourceAcquisition(
+    String resourceKey,
+  ) async {
+    // 잘못된 질의는 Process와 같이 보내기 전 [FormatException]이다. 순서는 백엔드와 같다(질의 → 카탈로그 → 표).
+    final query = ResourceAcquisitionQuery(resourceKey);
+    final canonical = historyCanonicalResourceKey(query.resourceKey);
+    final catalog = await listInventoryItems();
+    if (!catalog.items.any((item) => item.resourceKey == canonical)) {
+      throw BackendRemoteException(
+        code: 'resource_not_found',
+        message: 'Resource is not present in the inventory catalog',
+      );
+    }
+    if (failNextResourceAcquisition) {
+      failNextResourceAcquisition = false;
+      throw BackendRemoteException(
+        code: 'resource_acquisition_failed',
+        message: 'Mock acquisition table is unavailable',
+      );
+    }
+    return ResourceAcquisitionResult.fromWire({
+      'resource_key': canonical,
+      'methods': const <Object>[],
+      'acquisition_revision': mockEmptyResourceAcquisitionRevision,
+    });
+  }
 
   @override
   Future<InventoryShortageResult> calculateShortages({
@@ -2477,6 +2551,11 @@ class MockAppService
     }
     if (current['revision'] != expectedRevision) throw StateError('revision_conflict');
     final before = RepositoryState.fromWire(current);
+    // FB-3(02:09): 수동 저장은 재화(credits·엘리그마)의 존재·수량을 바꿀 수 없다. 캐시 재생·revision 확인 뒤,
+    // history 시각·쓰기·캐시 앞에서 거부한다. 스캐너 commit 경로는 이 함수를 지나지 않는다. 백엔드는
+    // unattributed 쓰기도 막지만, Mock의 unattributed 기록(`_observeMockCurrentWrite`)은 스캐너 소유 commit
+    // 경로라 00:02 목록대로 손대지 않는다.
+    if (bucket == 'inventory') _rejectMockCurrencyChange(before, after);
     final history = _currentHistories[profileId] ?? RepositoryCurrentHistory.empty(legacy: before);
     final updated = history.appendManual(before, after, bucket, _historyClock());
     _manualMockCurrentWrite = true;
@@ -2489,6 +2568,32 @@ class MockAppService
     _syncMockPlanRevision(profileId, expectedRevision + 1);
     cache[idempotencyKey] = (fingerprint: fingerprint, response: Map.unmodifiable({'revision': expectedRevision + 1}));
     return expectedRevision + 1;
+  }
+
+  /// 백엔드 `_assert_currency_quantities_unchanged`: 정규 키 projection의 재화 {키: 수량}을 비교한다
+  /// (없음·null·'0'이 모두 다르다).
+  void _rejectMockCurrencyChange(RepositoryState before, RepositoryState after) {
+    Map<String, Object?> currencies(RepositoryState state) {
+      final result = <String, Object?>{};
+      for (final entry in state.inventory.entries) {
+        final key = historyCanonicalResourceKey(
+          (entry['item_id'] ?? entry['key']) as String,
+        );
+        if (inventoryReadOnlyCurrencyKeys.contains(key)) {
+          result[key] = entry['quantity'];
+        }
+      }
+      return result;
+    }
+
+    if (!mapEquals(currencies(before), currencies(after))) {
+      throw BackendRemoteException(
+        code: 'invalid_payload',
+        message:
+            'Currency quantities can only be changed by a validated internal scan.',
+        details: {'reason': 'currency_read_only'},
+      );
+    }
   }
 
   @override

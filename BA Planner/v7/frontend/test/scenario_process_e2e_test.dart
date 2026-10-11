@@ -90,10 +90,18 @@ void main() {
           profile.revision,
           'scenario-students',
         );
+        // FB-3: 재화(credits)는 수동 저장으로 만들 수 없다(currency_read_only). 1단계 레벨업에 반드시
+        // 필요한 활동 보고서(EXP item T1~T4 중 하나 이상)를 0으로 알려 첫 병목을 P1에 둔다.
         final repositoryRevision = await service.saveRepositoryInventory(
           profile.id,
-          RepositoryInventoryState.fromEntries(const [
-            {'key': 'credits', 'quantity': '0'},
+          RepositoryInventoryState.fromEntries([
+            for (final key in const [
+              'Item_Icon_ExpItem_0',
+              'Item_Icon_ExpItem_1',
+              'Item_Icon_ExpItem_2',
+              'Item_Icon_ExpItem_3',
+            ])
+              {'key': key, 'item_id': key, 'quantity': '0'},
           ]),
           studentsRevision,
           'scenario-inventory',

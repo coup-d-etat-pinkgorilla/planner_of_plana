@@ -302,6 +302,9 @@ class _CatalogScenarioService extends MockAppService {
         profileId: index.isEven ? 'items' : 'equipment',
         orderIndex: index,
         zeroFillAllowed: true,
+        school: null,
+        family: null,
+        tier: null,
       ),
     ),
   );

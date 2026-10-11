@@ -165,6 +165,9 @@ void main() {
           profileId: 'p',
           orderIndex: 1,
           zeroFillAllowed: true,
+          school: null,
+          family: null,
+          tier: null,
         ),
         const InventoryCatalogEntry(
           resourceKey: 'a',
@@ -174,6 +177,9 @@ void main() {
           profileId: 'p',
           orderIndex: 0,
           zeroFillAllowed: true,
+          school: null,
+          family: null,
+          tier: null,
         ),
         const InventoryCatalogEntry(
           resourceKey: 'absent',
@@ -183,6 +189,9 @@ void main() {
           profileId: 'p',
           orderIndex: 2,
           zeroFillAllowed: true,
+          school: null,
+          family: null,
+          tier: null,
         ),
       ];
       final projection = buildInventoryStatistics(
@@ -218,6 +227,74 @@ void main() {
         ),
         isTrue,
       );
+    },
+  );
+
+  test(
+    'inventory projection keeps catalog-only currencies out of item coverage',
+    () {
+      // FB-3: credits·엘리그마 행과 재화 snapshot 항목은 아이템 보유 범위 집계에 들어가지 않는다.
+      InventoryCatalogEntry row(
+        String key,
+        String? itemId,
+        String category,
+        String profileId,
+        int order,
+      ) => InventoryCatalogEntry(
+        resourceKey: key,
+        itemId: itemId,
+        displayName: key,
+        category: category,
+        profileId: profileId,
+        orderIndex: order,
+        zeroFillAllowed: profileId != 'currencies',
+        school: null,
+        family: null,
+        tier: null,
+      );
+      final catalog = [
+        row('a', 'a', 'notes', 'p', 0),
+        row('absent', 'absent', 'notes', 'p', 1),
+        row('credits', null, 'credits', 'currencies', 0),
+        row(
+          'Item_Icon_SecretStone',
+          'Item_Icon_SecretStone',
+          'eligma',
+          'currencies',
+          1,
+        ),
+      ];
+      expect(
+        catalog
+            .where((item) => item.isReadOnlyCurrency)
+            .map((item) => item.resourceKey)
+            .toSet(),
+        inventoryReadOnlyCurrencyKeys,
+      );
+      final projection = buildInventoryStatistics(
+        catalog,
+        state(
+          inventory: [
+            {'key': 'a', 'item_id': 'a', 'quantity': '0'},
+            {'key': 'credits', 'item_id': null, 'quantity': '1000'},
+            {
+              'key': 'Item_Icon_SecretStone',
+              'item_id': 'Item_Icon_SecretStone',
+              'quantity': null,
+            },
+          ],
+        ).inventory,
+      );
+      expect(projection.catalogCount, 2);
+      expect(projection.snapshotCount, 1);
+      expect(projection.knownCount, 1);
+      expect(projection.unknownCount, 0);
+      expect(projection.absentCount, 1);
+      expect(projection.zeroCount, 1);
+      expect(projection.positiveCount, 0);
+      expect(projection.missingCatalogIds, isEmpty);
+      expect(projection.categories.map((item) => item.category), ['notes']);
+      expect(projection.categories.single.identities, ['a', 'absent']);
     },
   );
 

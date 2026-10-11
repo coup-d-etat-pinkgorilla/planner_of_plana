@@ -23,6 +23,7 @@ class ProcessAppService
         PlanningStudentCalculationService,
         PlanningStudentBondCalculationService,
         PlanningDocumentService,
+        ResourceAcquisitionService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
         RepositoryService,
@@ -149,6 +150,24 @@ class ProcessAppService
   Future<InventoryCatalogResult> listInventoryItems() async {
     final payload = await _client.send('planning.inventory.catalog', {});
     return InventoryCatalogResult.fromWire(payload);
+  }
+
+  /// FB-3 획득처. legacy 키(`Item_Icon_SkillBook_Ultimate_Piece`) 질의는 정규 키(`..._Ultimate`) 응답을 받는다.
+  /// 응답 키는 질의의 정규 키와 같아야 한다(별칭 원문끼리 비교하지 않는다).
+  @override
+  Future<ResourceAcquisitionResult> getResourceAcquisition(
+    String resourceKey,
+  ) async {
+    final query = ResourceAcquisitionQuery(resourceKey);
+    final result = ResourceAcquisitionResult.fromWire(
+      await _client.send('planning.inventory.acquisition.get', query.toWire()),
+    );
+    if (result.resourceKey != historyCanonicalResourceKey(query.resourceKey)) {
+      throw const FormatException(
+        'Resource acquisition response is for another resource',
+      );
+    }
+    return result;
   }
 
   @override

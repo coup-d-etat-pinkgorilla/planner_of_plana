@@ -248,12 +248,19 @@ InventoryStatistics buildInventoryStatistics(
   List<InventoryCatalogEntry> catalog,
   RepositoryInventoryState snapshot,
 ) {
+  // FB-3: credits·엘리그마는 catalog-only 읽기 전용 재화다. 아이템 보유 범위(catalog·absent·
+  // category·missing) 집계에 넣지 않는다. 재화 필요량·부족은 계획 통계(gross credits·shortage 행)가 다룬다.
   final catalogById = <String, InventoryCatalogEntry>{};
-  for (final item in catalog)
+  for (final item in catalog) {
+    if (item.isReadOnlyCurrency) continue;
     catalogById.putIfAbsent(item.itemId ?? item.resourceKey, () => item);
+  }
   final snapshotById = <String, Map<String, dynamic>>{};
-  for (final item in snapshot.entries)
-    snapshotById[item['item_id'] as String? ?? item['key'] as String] = item;
+  for (final item in snapshot.entries) {
+    final id = item['item_id'] as String? ?? item['key'] as String;
+    if (inventoryReadOnlyCurrencyKeys.contains(id)) continue;
+    snapshotById[id] = item;
+  }
   final groups = <String, Set<String>>{};
   for (final entry in catalogById.entries)
     groups.putIfAbsent(entry.value.category, () => {}).add(entry.key);

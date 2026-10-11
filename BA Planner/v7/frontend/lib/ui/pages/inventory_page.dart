@@ -173,7 +173,8 @@ class _InventoryPageState extends State<InventoryPage> {
     final canonical = RegExp(r'^(0|[1-9][0-9]*)$');
     for (final item in _catalog) {
       final quantity = _editors[item.resourceKey]?.text.trim() ?? '';
-      if (!_dirtyKeys.contains(item.resourceKey)) {
+      // FB-3: 재화(credits·엘리그마)는 수동 저장 대상이 아니다. 기존 항목을 통째로 그대로 두고, 없으면 만들지 않는다.
+      if (item.isReadOnlyCurrency || !_dirtyKeys.contains(item.resourceKey)) {
         final existing = existingByKey[item.resourceKey];
         if (existing != null) entries.add(existing);
         continue;
@@ -621,7 +622,12 @@ class _InventoryPageState extends State<InventoryPage> {
                     shortage: shortages[item.resourceKey],
                     showShortage: _showShortages,
                     enabled: _repositoryState != null && !_saving,
-                    onChanged: () => _dirtyKeys.add(item.resourceKey),
+                    readOnly: item.isReadOnlyCurrency,
+                    onChanged: () {
+                      if (!item.isReadOnlyCurrency) {
+                        _dirtyKeys.add(item.resourceKey);
+                      }
+                    },
                   ),
                 ),
             if (_shortages?.warnings.isNotEmpty == true) ...[
@@ -645,6 +651,7 @@ class _InventoryRow extends StatelessWidget {
     required this.shortage,
     required this.showShortage,
     required this.enabled,
+    required this.readOnly,
     required this.onChanged,
   });
   final InventoryCatalogEntry item;
@@ -652,6 +659,9 @@ class _InventoryRow extends StatelessWidget {
   final InventoryShortageRow? shortage;
   final bool showShortage;
   final bool enabled;
+
+  /// FB-3 재화 행: 보유량은 스캔으로만 바뀌므로 입력하지 않는다.
+  final bool readOnly;
   final VoidCallback onChanged;
   @override
   Widget build(BuildContext context) => Card(
@@ -697,12 +707,14 @@ class _InventoryRow extends StatelessWidget {
             child: TextField(
               key: ValueKey('inventory-quantity-${item.resourceKey}'),
               controller: controller,
-              enabled: enabled,
+              enabled: enabled && !readOnly,
+              readOnly: readOnly,
               keyboardType: TextInputType.number,
-              onChanged: (_) => onChanged(),
-              decoration: const InputDecoration(
+              onChanged: readOnly ? null : (_) => onChanged(),
+              decoration: InputDecoration(
                 labelText: 'Owned',
                 hintText: 'Unknown',
+                helperText: readOnly ? '스캔으로만 바뀝니다.' : null,
               ),
             ),
           ),
