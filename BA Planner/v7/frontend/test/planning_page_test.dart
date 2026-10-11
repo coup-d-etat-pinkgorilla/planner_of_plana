@@ -202,10 +202,13 @@ class _RepositoryPlanLoadService extends MockAppService {
   }
 }
 
-/// 섹션 2의 계획 단계 타일(`plan-step-<phase>-<student>-<step>`).
-Finder _planStepTiles() => find.byWidgetPredicate((widget) {
+/// FE5-c2 Detail 홈 S2의 단계 행(`plan-home-stage-<stage id>`, 상태 · 칩 하위 키 제외).
+Finder _homeStageRows() => find.byWidgetPredicate((widget) {
   final key = widget.key;
-  return key is ValueKey<String> && key.value.startsWith('plan-step-');
+  return key is ValueKey<String> &&
+      key.value.startsWith('plan-home-stage-') &&
+      !key.value.endsWith('-state') &&
+      !key.value.endsWith('-delta');
 });
 
 void main() {
@@ -1040,7 +1043,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: PlanningPage(service: service, initialPresets: presets),
+          // FE5-c2: 이 파일은 옛 계획 홈(섹션 1~6)을 시험한다. 첫 화면은 Detail이므로 옛 홈을 연다(FE5-f에서 재작성).
+          body: PlanningPage(
+            service: service,
+            initialPresets: presets,
+            legacyHome: true,
+          ),
         ),
       ),
     );
@@ -3097,7 +3105,11 @@ void main() {
             builder: (context, setState) {
               setHostState = setState;
               return Scaffold(
-                body: PlanningPage(service: service, active: active),
+                body: PlanningPage(
+                  service: service,
+                  active: active,
+                  legacyHome: true,
+                ),
               );
             },
           ),
@@ -3476,7 +3488,11 @@ void main() {
             builder: (context, setState) {
               setHostState = setState;
               return Scaffold(
-                body: PlanningPage(service: service, active: active),
+                body: PlanningPage(
+                  service: service,
+                  active: active,
+                  legacyHome: true,
+                ),
               );
             },
           ),
@@ -3801,7 +3817,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: PlanningPage(service: service, loadRepositoryPlan: true),
+            body: PlanningPage(
+              service: service,
+              loadRepositoryPlan: true,
+              legacyHome: true,
+            ),
           ),
         ),
       );
@@ -3847,7 +3867,8 @@ void main() {
   );
 
   testWidgets(
-    'plan home "step order" button opens the saved active plan in flow step 3 (FE4-f2)',
+    // FE5-c2: Detail 홈 S1 "페이즈 편집"(FD-070)이 FE4-f2 아이콘 버튼과 같은 동작이라 하나로 합쳤다(같은 키).
+    'plan home "phase edit" opens the saved active plan in flow step 3 (FE4-f2 · FE5-c2)',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -4381,10 +4402,10 @@ void main() {
       expect(service.planRevisions, [5]);
       expect(service.stateRevisions, [5]);
       expect(
-        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        find.byKey(const ValueKey('plan-home-stage-v6-ayane-1')),
         findsOneWidget,
       );
-      expect(_planStepTiles(), findsOneWidget);
+      expect(_homeStageRows(), findsOneWidget);
       expect(
         find.byKey(const ValueKey('plan-calculation-unavailable')),
         findsNothing,
@@ -4401,7 +4422,8 @@ void main() {
       // goals 호환 보기에는 아야네가 있지만 문서가 비었으므로 되살리지 않는다(더미 계획도 그리지 않는다).
       final state = await service.loadRepositoryState(_legacyPlanProfileId);
       expect(state.goals.map((goal) => goal.studentId), ['ayane']);
-      expect(_planStepTiles(), findsNothing);
+      expect(_homeStageRows(), findsNothing);
+      expect(find.byKey(const ValueKey('plan-home-empty')), findsWidgets);
       expect(
         find.byKey(const ValueKey('plan-calculation-unavailable')),
         findsNothing,
@@ -4422,7 +4444,7 @@ void main() {
       // 자세한 계산을 다시 부르지 않는다(불렀다면 계산 오류가 보인다).
       expect(find.textContaining('계산 오류'), findsNothing);
       expect(
-        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        find.byKey(const ValueKey('plan-home-stage-v6-ayane-1')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -4437,11 +4459,11 @@ void main() {
       expect(service.stateRevisions, [5, 5]);
       // 낡은 문서는 버리고 같은 revision의 문서를 보인다.
       expect(
-        find.byKey(const ValueKey('plan-step-stale-phase-hina-1')),
+        find.byKey(const ValueKey('plan-home-stage-stale-hina-1')),
         findsNothing,
       );
       expect(
-        find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+        find.byKey(const ValueKey('plan-home-stage-v6-ayane-1')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -4457,7 +4479,7 @@ void main() {
       expect(service.planRevisions, hasLength(repositoryPlanSnapshotAttempts));
       expect(find.textContaining('revision이 맞지 않습니다'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('plan-step-stale-phase-hina-1')),
+        find.byKey(const ValueKey('plan-home-stage-stale-hina-1')),
         findsNothing,
       );
       expect(tester.takeException(), isNull);

@@ -1578,7 +1578,8 @@ void main() {
     );
     await _pumpUntilFound(
       tester,
-      find.byKey(const ValueKey('plan-step-v6-imported-plan-ayane-1')),
+      // FE5-c2: 계획 탭 첫 화면은 Detail 홈이다(S2 단계 행 `plan-home-stage-<stage id>`).
+      find.byKey(const ValueKey('plan-home-stage-v6-ayane-1')),
     );
     expect(find.byKey(const ValueKey('planning-page')), findsOneWidget);
     expect((await service.listProfiles()).single.selected, isTrue);

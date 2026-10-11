@@ -8,7 +8,10 @@
 //   목표 요약 · 활성 대비 칩(FD-039)). 고른 병목 카드의 단계 행은 분홍 테두리다.
 // - S3: 맨 위 한 줄 = seg 병목/페이즈별/전체 + 칩 3개, 요약 행(가장 심한 병목), "활성 계획 대비" + KPI 4칸(필요 크레딧 ·
 //   부족 재화 · 첫 병목 · 끝까지 가는 학생, FD-034 (a)), 본문 패널 = 병목 카드(214px, 같은 단계 재화 묶음 · 지연 단계).
-//   페이즈별 · 전체 탭 내용은 FE5-d다. 이번에는 seg 자리만 두고 꺼 둔다. 칩 3개도 자리 · 상태 표시만이다.
+//   페이즈별 · 전체 탭: [PlanDetailWorkspace.onResourceTab]을 넘기면 seg가 켜지고 그 탭 본문은
+//   [PlanDetailWorkspace.tabBody](활성 계획 홈은 기존 계획 홈의 페이즈별 · 전체 위젯, FE5-c2)가 채운다. 넘기지 않으면
+//   (시나리오 보기, FE5-c1) seg 자리만 두고 꺼 둔다. 칩 3개는 [PlanDetailWorkspace.toolbarChips]로 바꿀 수 있다
+//   (기본은 자리 · 상태 표시만). 시안대로 다시 그리는 것은 FE5-d다.
 // 좌표는 시안(기준 viewport, 섹션 위 y=209.2)의 값이고, 섹션 rect는 Studio 문서([planDetailStudioDocument])를 따른다.
 import 'dart:math' as math;
 
@@ -192,12 +195,55 @@ class PlanDetailMenuFrame {
   );
 }
 
+/// S1 메뉴 섹션 한 장(표면 + [builder] 내용). [PlanDetailWorkspace]가 쓰고, 활성 계획 홈에서 연 A↔B 비교 화면도
+/// 같은 자리에 메뉴만 둘 때 쓴다(FE5-c2).
+class PlanDetailMenuLayer extends StatelessWidget {
+  const PlanDetailMenuLayer({
+    super.key,
+    required this.keyPrefix,
+    required this.size,
+    required this.builder,
+  });
+
+  final String keyPrefix;
+
+  /// 콘텐츠 캔버스 크기.
+  final Size size;
+  final Widget Function(PlanDetailMenuFrame frame) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final points = planDetailSectionPolygon(size, planDetailMenuSectionId);
+    final frame = PlanDetailMenuFrame(
+      top: points.first.dy,
+      topRight: points[1],
+      bottomRight: points[2],
+    );
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              key: ValueKey('$keyPrefix-menu-surface'),
+              painter: const _DetailSectionPainter(planDetailMenuSectionId),
+            ),
+          ),
+        ),
+        Positioned.fill(child: builder(frame)),
+      ],
+    );
+  }
+}
+
 /// 계획 Detail 3섹션. [animation]은 계획 화면의 목록 모션이다.
 ///
 /// FE5-c2가 쓸 매개변수: [keyPrefix](키 앞부분), [menuBuilder](S1 내용), [showComparison](false면 S2 활성 대비 칩 ·
 /// "활성 계획과 다른 단계" · S3 "활성 계획 대비" 줄 · KPI 줄을 그리지 않고 본문 패널이 요약 행 아래
 /// ([PlanDetailMetrics.bodyTopWithoutComparison])부터 시작한다), [selectedCard] · [onSelectCard](카드 ↔ 단계 행 강조),
-/// [shortageKpi](부족 재화 KPI 칸 팝오버, 비교가 있을 때만).
+/// [shortageKpi](부족 재화 KPI 칸 팝오버, 비교가 있을 때만). FE5-c2부터: [resourceTab] · [onResourceTab](S3 seg 세 탭),
+/// [tabBody] · [tabSummary](페이즈별 · 전체 탭의 본문 · 요약 행), [toolbarChips](칩 3개 자리), [resourcePlaceholder]
+/// (재화를 그릴 수 없을 때 S3 안내, 예: 계산 중 · 계산할 수 없음).
 class PlanDetailWorkspace extends StatelessWidget {
   const PlanDetailWorkspace({
     super.key,
@@ -211,6 +257,12 @@ class PlanDetailWorkspace extends StatelessWidget {
     this.onSelectCard,
     this.shortageKpi,
     this.placeholder,
+    this.resourceTab = PlanDetailResourceTab.bottleneck,
+    this.onResourceTab,
+    this.tabBody,
+    this.tabSummary,
+    this.toolbarChips,
+    this.resourcePlaceholder,
   });
 
   final String keyPrefix;
@@ -229,6 +281,29 @@ class PlanDetailWorkspace extends StatelessWidget {
   /// 부족 재화 KPI 칸을 감싼다(팝오버).
   final Widget Function(Widget tile)? shortageKpi;
   final Widget? placeholder;
+
+  /// S3 seg의 지금 탭.
+  final PlanDetailResourceTab resourceTab;
+
+  /// seg를 바꾼다. null이면 병목만 켜지고 페이즈별 · 전체는 꺼진다(FE5-c1).
+  final ValueChanged<PlanDetailResourceTab>? onResourceTab;
+
+  /// 페이즈별 · 전체 탭 본문. [bodyPath]는 S3 본문 패널 자리(콘텐츠 캔버스 좌표)다.
+  final Widget Function(PlanDetailResourceTab tab, Path bodyPath)? tabBody;
+
+  /// 페이즈별 · 전체 탭의 요약 행 내용.
+  final Widget Function(PlanDetailResourceTab tab)? tabSummary;
+
+  /// S3 맨 위 칩 자리. null이면 표시만 하는 칩 3개다.
+  final List<Widget>? toolbarChips;
+
+  /// 재화를 그릴 수 없을 때(계산 중 · 계산 오류 · 계산할 수 없음) S3 본문 안내. 있으면 요약 행 · 본문 대신 보인다.
+  final Widget? resourcePlaceholder;
+
+  bool get _otherTab =>
+      resourceTab != PlanDetailResourceTab.bottleneck &&
+      onResourceTab != null &&
+      tabBody != null;
 
   bool get _comparing => showComparison && (data?.hasComparison ?? false);
 
@@ -278,28 +353,11 @@ class PlanDetailWorkspace extends StatelessWidget {
     },
   );
 
-  Widget _menu(Size size) {
-    final points = planDetailSectionPolygon(size, planDetailMenuSectionId);
-    final frame = PlanDetailMenuFrame(
-      top: points.first.dy,
-      topRight: points[1],
-      bottomRight: points[2],
-    );
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              key: ValueKey('$keyPrefix-menu-surface'),
-              painter: const _DetailSectionPainter(planDetailMenuSectionId),
-            ),
-          ),
-        ),
-        Positioned.fill(child: menuBuilder(frame)),
-      ],
-    );
-  }
+  Widget _menu(Size size) => PlanDetailMenuLayer(
+    keyPrefix: keyPrefix,
+    size: size,
+    builder: menuBuilder,
+  );
 
   // --- S2 페이즈 --------------------------------------------------------------
 
@@ -447,9 +505,15 @@ class PlanDetailWorkspace extends StatelessWidget {
             name: studentName(stage.studentId),
             highlighted: stage.stageId == selectedStage,
             showDelta: _comparing,
-            onTap: number == null || onSelectCard == null
+            onTap: onSelectCard == null || number == null
                 ? null
-                : () => onSelectCard!(number - 1),
+                : () {
+                    // 카드 목록이 걸러졌을 수 있다(활성 계획 홈의 재화 유형 필터). 번호로 찾는다.
+                    final index = data.cards.indexWhere(
+                      (card) => card.number == number,
+                    );
+                    if (index >= 0) onSelectCard!(index);
+                  },
           ),
         );
       },
@@ -526,16 +590,7 @@ class PlanDetailWorkspace extends StatelessWidget {
             PlanDetailMetrics.summaryTop,
             PlanDetailMetrics.summaryHeight,
           ),
-          child: _SummaryRow(
-            key: ValueKey('$keyPrefix-summary'),
-            keyPrefix: '$keyPrefix-summary',
-            data: data,
-            studentName: studentName,
-            showDelta: comparing,
-            onTap: data == null || data.cards.isEmpty || onSelectCard == null
-                ? null
-                : () => onSelectCard!(0),
-          ),
+          child: _summary(data, comparing),
         ),
         if (comparing && data != null) ...[
           Positioned.fromRect(
@@ -562,16 +617,117 @@ class PlanDetailWorkspace extends StatelessWidget {
             ),
           ),
         ],
-        Positioned.fromRect(
-          rect: bodyRect,
-          child: CustomPaint(
-            key: ValueKey('$keyPrefix-body-panel'),
-            painter: const _DetailPanelPainter(),
-            child: ClipPath(
-              clipper: const _ParallelogramClipper(),
-              child: data == null
-                  ? Center(child: placeholder ?? const SizedBox.shrink())
-                  : _cards(data),
+        if (resourcePlaceholder == null && _otherTab)
+          Positioned.fill(
+            child: KeyedSubtree(
+              key: ValueKey('$keyPrefix-tab-body-${resourceTab.name}'),
+              child: tabBody!(
+                resourceTab,
+                _parallelogramPath(bodyRect.size).shift(bodyRect.topLeft),
+              ),
+            ),
+          )
+        else
+          Positioned.fromRect(
+            rect: bodyRect,
+            child: CustomPaint(
+              key: ValueKey('$keyPrefix-body-panel'),
+              painter: const _DetailPanelPainter(),
+              child: ClipPath(
+                clipper: const _ParallelogramClipper(),
+                child: switch ((resourcePlaceholder, data)) {
+                  (final Widget notice, _) => Center(child: notice),
+                  (null, null) => Center(
+                    child: placeholder ?? const SizedBox.shrink(),
+                  ),
+                  (null, final PlanDetailData value) => _cards(value),
+                },
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// S3 요약 행: 병목 탭은 "가장 심한 병목", 페이즈별 · 전체 탭은 [tabSummary], 재화를 그릴 수 없으면 빈 행.
+  Widget _summary(PlanDetailData? data, bool comparing) {
+    final tabSummary = this.tabSummary;
+    if (resourcePlaceholder == null && _otherTab && tabSummary != null) {
+      return DiagonalRow(
+        key: ValueKey('$keyPrefix-summary-${resourceTab.name}'),
+        variant: DiagonalRowVariant.row,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cut = diagonalCutDepth(constraints.maxHeight);
+            return Padding(
+              padding: EdgeInsets.fromLTRB(cut / 2 + 18, 6, cut / 2 + 14, 6),
+              child: tabSummary(resourceTab),
+            );
+          },
+        ),
+      );
+    }
+    return _SummaryRow(
+      key: ValueKey('$keyPrefix-summary'),
+      keyPrefix: '$keyPrefix-summary',
+      data: resourcePlaceholder == null ? data : null,
+      studentName: studentName,
+      showDelta: comparing,
+      onTap:
+          resourcePlaceholder != null ||
+              data == null ||
+              data.cards.isEmpty ||
+              onSelectCard == null
+          ? null
+          : () => onSelectCard!(0),
+    );
+  }
+
+  Widget _toolbar() {
+    final onResourceTab = this.onResourceTab;
+    final chips = toolbarChips;
+    return Row(
+      key: ValueKey('$keyPrefix-toolbar'),
+      children: [
+        if (onResourceTab != null)
+          SkewSegmented<PlanDetailResourceTab>(
+            key: ValueKey('$keyPrefix-tab'),
+            segments: const [
+              SkewSegment(
+                value: PlanDetailResourceTab.bottleneck,
+                label: '병목',
+                leading: Icon(Icons.warning_amber_rounded, size: 15),
+              ),
+              SkewSegment(
+                value: PlanDetailResourceTab.byPhase,
+                label: '페이즈별',
+                leading: Icon(Icons.layers_outlined, size: 15),
+              ),
+              SkewSegment(
+                value: PlanDetailResourceTab.overall,
+                label: '전체',
+                leading: Icon(Icons.inventory_2_outlined, size: 15),
+              ),
+            ],
+            selected: resourceTab,
+            onChanged: onResourceTab,
+            height: 36,
+            fontSize: AppType.bodySize,
+            horizontalPadding: 14,
+          )
+        else
+          ..._lockedTabs(),
+        // 칩은 남는 폭의 오른쪽 끝에 둔다. 좁은 창에서는 넘치지 않게 줄인다(넓은 창에서는 크기 그대로).
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            heightFactor: 1,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: chips ?? _displayChips,
+              ),
             ),
           ),
         ),
@@ -579,69 +735,70 @@ class PlanDetailWorkspace extends StatelessWidget {
     );
   }
 
-  Widget _toolbar() => Row(
-    key: ValueKey('$keyPrefix-toolbar'),
-    children: [
-      SkewSegmented<PlanDetailResourceTab>(
-        key: ValueKey('$keyPrefix-tab'),
+  /// 시나리오 보기(FE5-c1): 병목만 켜고 페이즈별 · 전체는 꺼 둔다.
+  List<Widget> _lockedTabs() => [
+    SkewSegmented<PlanDetailResourceTab>(
+      key: ValueKey('$keyPrefix-tab'),
+      segments: const [
+        SkewSegment(
+          value: PlanDetailResourceTab.bottleneck,
+          label: '병목',
+          leading: Icon(Icons.warning_amber_rounded, size: 15),
+        ),
+      ],
+      selected: PlanDetailResourceTab.bottleneck,
+      // 병목 하나뿐이라 고를 것이 없다. 꺼진 모양이 되지 않게 빈 콜백을 둔다.
+      onChanged: (_) {},
+      height: 36,
+      fontSize: AppType.bodySize,
+      horizontalPadding: 14,
+    ),
+    const SizedBox(width: 6),
+    Tooltip(
+      message: '페이즈별 · 전체 보기는 아직 열 수 없습니다.',
+      child: SkewSegmented<PlanDetailResourceTab>(
+        key: ValueKey('$keyPrefix-tab-later'),
         segments: const [
           SkewSegment(
-            value: PlanDetailResourceTab.bottleneck,
-            label: '병목',
-            leading: Icon(Icons.warning_amber_rounded, size: 15),
+            value: PlanDetailResourceTab.byPhase,
+            label: '페이즈별',
+            leading: Icon(Icons.layers_outlined, size: 15),
+          ),
+          SkewSegment(
+            value: PlanDetailResourceTab.overall,
+            label: '전체',
+            leading: Icon(Icons.inventory_2_outlined, size: 15),
           ),
         ],
-        selected: PlanDetailResourceTab.bottleneck,
-        // 병목 하나뿐이라 고를 것이 없다. 꺼진 모양이 되지 않게 빈 콜백을 둔다.
-        onChanged: (_) {},
+        selected: null,
+        onChanged: null,
         height: 36,
         fontSize: AppType.bodySize,
         horizontalPadding: 14,
       ),
-      const SizedBox(width: 6),
-      Tooltip(
-        message: '페이즈별 · 전체 보기는 아직 열 수 없습니다.',
-        child: SkewSegmented<PlanDetailResourceTab>(
-          key: ValueKey('$keyPrefix-tab-later'),
-          segments: const [
-            SkewSegment(
-              value: PlanDetailResourceTab.byPhase,
-              label: '페이즈별',
-              leading: Icon(Icons.layers_outlined, size: 15),
-            ),
-            SkewSegment(
-              value: PlanDetailResourceTab.overall,
-              label: '전체',
-              leading: Icon(Icons.inventory_2_outlined, size: 15),
-            ),
-          ],
-          selected: null,
-          onChanged: null,
-          height: 36,
-          fontSize: AppType.bodySize,
-          horizontalPadding: 14,
-        ),
-      ),
-      const Spacer(),
-      const BaChip(
-        label: '재화 유형 · 전체',
-        tone: AppTones.gray,
-        leading: Icon(Icons.filter_list_rounded, size: 13),
-      ),
-      const SizedBox(width: 8),
-      const BaChip(
-        label: '충족 재화 숨기기',
-        tone: AppTones.gray,
-        leading: Icon(Icons.visibility_off_outlined, size: 13),
-      ),
-      const SizedBox(width: 8),
-      const BaChip(
-        label: '부족량 많은 순',
-        tone: AppTones.gray,
-        leading: Icon(Icons.sort_rounded, size: 13),
-      ),
-    ],
-  );
+    ),
+  ];
+
+  /// 표시만 하는 칩 3개(시나리오 보기).
+  static const _displayChips = <Widget>[
+    BaChip(
+      label: '재화 유형 · 전체',
+      tone: AppTones.gray,
+      leading: Icon(Icons.filter_list_rounded, size: 13),
+    ),
+    SizedBox(width: 8),
+    BaChip(
+      label: '충족 재화 숨기기',
+      tone: AppTones.gray,
+      leading: Icon(Icons.visibility_off_outlined, size: 13),
+    ),
+    SizedBox(width: 8),
+    BaChip(
+      label: '부족량 많은 순',
+      tone: AppTones.gray,
+      leading: Icon(Icons.sort_rounded, size: 13),
+    ),
+  ];
 
   Widget _kpis(PlanDetailKpis kpis) {
     String count(int? value) => value == null ? '—' : '$value종';
@@ -1385,10 +1542,14 @@ class PlanDetailInfoRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            Text(
-              label,
-              maxLines: 1,
-              style: _muted.copyWith(fontSize: AppType.popoverBodySize),
+            // 좁은 창(1280×720)에서는 메뉴 아래쪽이 좁아지므로 라벨도 줄인다(FE5-c2). 넓은 창에서는 그대로다.
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _muted.copyWith(fontSize: AppType.popoverBodySize),
+              ),
             ),
             const SizedBox(width: 10),
             Flexible(
@@ -1622,4 +1783,184 @@ class PlanScenarioDetailMenu extends StatelessWidget {
 
   static Widget _withTooltip(String? message, Widget child) =>
       message == null ? child : Tooltip(message: message, child: child);
+}
+
+/// S1 버튼 하나(키 · 모양 · 아이콘 · 글자 · 동작 · 꺼졌을 때 툴팁).
+typedef PlanDetailRailAction = ({
+  String key,
+  RailButtonVariant variant,
+  IconData icon,
+  String label,
+  VoidCallback? onPressed,
+  String? tooltip,
+});
+
+/// S1 메뉴 내용(FE5-c2 활성 계획 홈 · A↔B 비교 화면). 시나리오 목록(FE5-a) · 시나리오 보기(FE5-c1) S1과 같은 자리 ·
+/// 모양이다: "계획" 22 · 소제목 72 · 분홍 현재 버튼 96(58px) · 버튼 166 · 228 · 280 …(44px) · 정보 소제목 · 정보 줄(36px,
+/// 40 간격). 정보 소제목은 마지막 버튼 아래 26px이다.
+class PlanDetailRailMenu extends StatelessWidget {
+  const PlanDetailRailMenu({
+    super.key,
+    required this.frame,
+    required this.keyPrefix,
+    required this.caption,
+    required this.currentTitle,
+    required this.currentSubtitle,
+    required this.actions,
+    this.currentSemanticLabel,
+    this.onCurrent,
+    this.infoCaption,
+    this.info = const [],
+  });
+
+  final PlanDetailMenuFrame frame;
+  final String keyPrefix;
+
+  /// 소제목(시안 "보는 중 · 시나리오").
+  final String caption;
+  final String currentTitle;
+  final String currentSubtitle;
+  final String? currentSemanticLabel;
+  final VoidCallback? onCurrent;
+
+  /// 위에서부터 [PlanDetailMetrics.menuActionTops] 자리에 놓는다(최대 5개).
+  final List<PlanDetailRailAction> actions;
+  final String? infoCaption;
+
+  /// 정보 줄(라벨, 값).
+  final List<(String, String)> info;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = frame.top;
+    final shown = actions.take(PlanDetailMetrics.menuActionTops.length);
+    final infoCaptionTop = actions.isEmpty
+        ? PlanDetailMetrics.menuActionTops.first
+        : PlanDetailMetrics.menuActionTops[shown.length - 1] +
+              PlanDetailMetrics.menuActionHeight +
+              26;
+    final infoCaption = this.infoCaption;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: 20,
+          top: top + PlanDetailMetrics.menuTitleTop,
+          width: math.max(0.0, frame.width(top) - 6),
+          height: 32,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '계획',
+              maxLines: 1,
+              style: kitDisplayStyle(AppType.headlineSmallSize),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 20,
+          top: top + PlanDetailMetrics.menuCaptionTop,
+          height: 18,
+          width: math.max(0.0, frame.width(top) - 6),
+          child: Text(caption, maxLines: 1, style: _captionStyle),
+        ),
+        Positioned.fromRect(
+          rect: frame.row(
+            PlanDetailMetrics.menuCurrentTop,
+            PlanDetailMetrics.menuCurrentHeight,
+          ),
+          child: RailButton(
+            key: ValueKey('$keyPrefix-current'),
+            variant: RailButtonVariant.selectedPink,
+            height: PlanDetailMetrics.menuCurrentHeight,
+            semanticLabel: currentSemanticLabel,
+            onPressed: onCurrent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  currentTitle,
+                  key: ValueKey('$keyPrefix-current-title'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: AppType.bodyLargeSize,
+                    fontWeight: AppType.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  currentSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: AppType.captionSize,
+                    fontWeight: AppType.medium,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        for (final (index, action) in shown.indexed)
+          Positioned.fromRect(
+            rect: frame.row(
+              PlanDetailMetrics.menuActionTops[index],
+              PlanDetailMetrics.menuActionHeight,
+            ),
+            child: PlanScenarioDetailMenu._withTooltip(
+              action.onPressed == null ? action.tooltip : null,
+              RailButton(
+                key: ValueKey(action.key),
+                variant: action.variant,
+                onPressed: action.onPressed,
+                child: Row(
+                  children: [
+                    Icon(action.icon),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        action.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: action.variant == RailButtonVariant.primary
+                              ? AppType.bold
+                              : AppType.semiBold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (infoCaption != null)
+          Positioned(
+            left: 20,
+            top: top + infoCaptionTop,
+            height: 18,
+            width: math.max(0.0, frame.width(top) - 6),
+            child: Text(infoCaption, maxLines: 1, style: _captionStyle),
+          ),
+        for (final (index, (label, value)) in info.indexed)
+          Positioned.fromRect(
+            rect: frame.row(
+              infoCaptionTop +
+                  (PlanDetailMetrics.menuInfoTop -
+                      PlanDetailMetrics.menuInfoCaptionTop) +
+                  PlanDetailMetrics.menuInfoPitch * index,
+              PlanDetailMetrics.menuInfoHeight,
+            ),
+            child: PlanDetailInfoRow(
+              key: ValueKey('$keyPrefix-info-$index'),
+              label: label,
+              value: value,
+            ),
+          ),
+      ],
+    );
+  }
 }

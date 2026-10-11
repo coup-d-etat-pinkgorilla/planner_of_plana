@@ -23,7 +23,8 @@ Future<MockAppService> _pumpPlanningPage(
   await tester.pumpWidget(
     MaterialApp(
       theme: BAPlannerTheme.dark(),
-      home: Scaffold(body: PlanningPage(service: service)),
+      // FE5-c2: 프리셋 관리를 옛 계획 홈의 진입 버튼으로 연다(새 홈은 시나리오 목록 S1에서 연다, FE5-f에서 재작성).
+      home: Scaffold(body: PlanningPage(service: service, legacyHome: true)),
     ),
   );
   await tester.pumpAndSettle();

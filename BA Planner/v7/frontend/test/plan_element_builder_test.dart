@@ -807,7 +807,11 @@ void main() {
       MaterialApp(
         theme: BAPlannerTheme.dark(),
         home: Scaffold(
-          body: PlanningPage(service: service, initialSeed: _seed()),
+          body: PlanningPage(
+            service: service,
+            initialSeed: _seed(),
+            legacyHome: true,
+          ),
         ),
       ),
     );
@@ -1822,6 +1826,7 @@ void main() {
             body: PlanningPage(
               service: service,
               initialSeed: _seed(),
+              legacyHome: true,
               initialPresets: [_threeStageTestPreset()],
             ),
           ),
@@ -1934,6 +1939,7 @@ void main() {
             body: PlanningPage(
               service: service,
               initialSeed: _seed(),
+              legacyHome: true,
               initialPresets: [_threeStageTestPreset()],
             ),
           ),
@@ -1999,6 +2005,7 @@ void main() {
           body: PlanningPage(
             service: service,
             initialSeed: _seed(),
+            legacyHome: true,
             initialPresets: [_threeStageTestPreset()],
           ),
         ),

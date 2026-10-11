@@ -701,6 +701,71 @@ class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
   }
 }
 
+/// 계획 홈 장면 mock(FE5-c2): 학생 장면 + 시나리오 목록 장면의 활성 계획
+/// ([GoldenScenarioListMockAppService.listActivePlanDocument])을 저장한다. 문서 계산 대역(시나리오 목록 장면과 같다)에
+/// 홈 페이즈별 탭이 쓰는 `phase_results`를 더한다(비교 대역과 같은 [_goldenPhaseResults]에, 백엔드처럼 그 페이즈 안에서
+/// 재화를 쓰는 단계 `affected_stage_ids`를 채운다). 계획 만들기 장면이 쓰는 [goldenCalculationBand] 자체는 바꾸지 않는다.
+class GoldenActivePlanHomeMockAppService
+    extends GoldenScenarioListMockAppService {
+  GoldenActivePlanHomeMockAppService() : super();
+
+  /// 학생 장면을 저장하고 활성 계획을 이 장면의 문서로 바꾼다.
+  Future<void> seedActivePlanHomeScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    await seedStudentScene();
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: GoldenScenarioListMockAppService.listActivePlanDocument(),
+      expectedRevision: (await loadRepositoryState(profile.id)).revision,
+      idempotencyKey: 'golden-plan-home-active-plan',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final base = goldenCalculationBand(
+      currentStudents: currentStudents,
+      document: document,
+    );
+    final usedBy = <String, Map<String, List<String>>>{};
+    for (final raw in base['stage_results'] as List<dynamic>) {
+      final result = raw as Map;
+      final phaseId = result['phase_id'] as String;
+      for (final resource in result['resources'] as List<dynamic>) {
+        usedBy
+            .putIfAbsent(phaseId, () => {})
+            .putIfAbsent((resource as Map)['resource_key'] as String, () => [])
+            .add(result['stage_id'] as String);
+      }
+    }
+    return {
+      ...base,
+      'phase_results': [
+        for (final phase in _goldenPhaseResults(
+          base,
+          PlanningDocument.fromWire(document),
+        ))
+          {
+            ...phase,
+            'resources': [
+              for (final raw in phase['resources'] as List<dynamic>)
+                {
+                  ...(raw as Map<String, dynamic>),
+                  'affected_stage_ids':
+                      usedBy[phase['phase_id']]?[raw['resource_key']] ??
+                      const <String>[],
+                },
+            ],
+          },
+      ],
+    };
+  }
+}
+
 /// 성장 계산기 장면 전용 mock(FE3-f2a·f2b). 학생 장면 fixture에 계산 결과(크레딧·9범주 내역·성장 재화 행)를
 /// 더한다.
 ///

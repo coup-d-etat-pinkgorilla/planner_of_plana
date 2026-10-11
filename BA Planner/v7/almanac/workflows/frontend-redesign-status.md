@@ -5461,3 +5461,180 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_025111\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-c2 착수 기록 (2026-10-11 03:40, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `84f645c391f54cc312ce12f21d85ed34789f325b`(scanner-consolidation HEAD).
+- 범위: 활성 계획 홈 = 비교 없는 Detail 3섹션(FD-082 (a)) · S1 시나리오 목록 · 계획 만들기 · 페이즈 편집(FD-070) + 정보 줄 · S3 seg 페이즈별 · 전체에 옛 홈 위젯 · 병목 지연 단계를 병목 뒤 단계만 세기 · `PlanFlowSaveComparison.increases`에서 크레딧 줄 빼기 · FE4-g 발견 재확인.
+- 막힘 요약의 이 slice 열림 FD 0건 확인. 워커 재량 FD는 권장안대로 처리하고 종료 기록에 ID를 적는다.
+- 고칠 기존 파일(사본: `debug/frontend_fe5c2/pre/<경로>`):
+  - `frontend/lib/ui/widgets/plan_scenario_detail.dart`
+  - `frontend/lib/ui/widgets/plan_section_layout.dart`
+  - `frontend/lib/ui/pages/planning_page.dart`
+  - `frontend/lib/ui/models/plan_flow_save.dart`
+  - `frontend/test/planning_page_test.dart`, `frontend/test/plan_element_builder_test.dart`, `frontend/test/plan_preset_manager_test.dart`, `frontend/test/plan_scenario_list_test.dart`, `frontend/test/plan_flow_save_test.dart`, `frontend/test/title_page_test.dart`
+  - `frontend/test/goldens/fe1g_baseline_golden_test.dart`, `frontend/test/goldens/golden_harness.dart`
+- 새 파일(예정): `frontend/test/plan_home_detail_test.dart`.
+- 이 환경에는 flutter가 없다(정적 검토만 가능). `frontend/lib/services/**` · `inventory_page.dart`는 고치지 않는다(Lane B).
+
+## FE5-c2 종료 기록 (2026-10-11 04:25, Lane A)
+
+- 상태: 구현 끝, **정적 검토만 했다**. 이 환경에는 flutter · dart가 없다. analyze · 테스트 · golden은 한 번도 돌리지 않았다. 통과를 주장하지 않는다.
+- 시작 SHA `84f645c3`. 사본 12개는 `debug/frontend_fe5c2/pre/frontend/`에 있다(장치 크기 12개 모두 원본과 같음).
+- commit.json: `debug/frontend_fe5c2/commit.json`(slice=fe5c2, status=true, modified 12 · added 1, whole = 기준 이미지 6장, 하나씩).
+
+### 실행 명령 · 결과
+
+- `flutter analyze` · `flutter test`: 실행하지 못했다(SDK 없음).
+- 정적 검토 에이전트 1회(바뀐 파일 전부 · 쓰는 API 시그니처 대조 · 테스트 기대값 추적 · test/ 전체에서 옛 홈 키 grep). 컴파일 오류 · analyzer info는 0건이었다. 지적 7건은 모두 고쳤다.
+  1. golden `plan-scenario-detail-bottleneck`: 화면 밖에 남은 Detail 홈에도 "병목 1 · 여기서 막힘"이 있어 `findsOneWidget`이 2개를 찾는다. finder를 `plan-scenario-detail-view` 안으로 좁혔다(테스트만 바뀌고 그림은 그대로).
+  2. `title_page_test` 1280×720: 새 홈 S1 아래쪽 정보 줄이 좁아 라벨("필요 크레딧")이 넘친다. `PlanDetailInfoRow` 라벨을 `Flexible` + 말줄임으로 바꿨다. 넓은 창에서는 그대로이고, c1 보기 S1의 같은 넘침도 함께 막힌다.
+  3. 손넘김 대체 경로(흐름 문맥이 없을 때 요소 편집기 · 페이즈 편집기)에서 새 홈이 그 아래에 함께 보였다. 홈 조건에 `!_showPhaseEditor && !_showElementBuilder`를 더했다(옛 홈과 같은 조건).
+  4. S3 툴바가 1248px 폭에서 겨우 맞았다(정렬 라벨이 길어지면 넘침). 칩 묶음을 `Expanded` + 오른쪽 `Align` + `FittedBox(scaleDown)`에 넣었다. 넓은 창에서는 크기와 자리가 그대로다.
+  5. 비교 화면 "활성 계획으로"에서 비교 S1 메뉴가 모션 없이 사라졌다. 새 홈 모드에서는 element-1도 함께 내린다.
+  6. `loadRepositoryPlan=false`에서 `_reloadRepositoryPlan`이 홈 계산 결과를 지워 "계산 중"에 머물렀다. 지우지 않는다(`_loadRepositoryPlan`이 새 문서와 함께 비운다).
+  7. `_detailHome`의 쓰지 않는 인자를 뺐고, `plan_flow_save.dart` 중첩 `if` · `_lockedTabs`를 `dart format` 모양으로 들여 썼다.
+- 장치 반영: 바뀐 파일 12개 · 새 파일 1개를 `expectedMtimeMs`로 쓰고 다시 받아 `cmp`로 13개 모두 같음을 확인했다. `plan_section_layout.dart`는 CRLF 그대로다(8769줄 모두 CRLF).
+
+### 한 일
+
+1. 첫 화면: `PlanSectionLayout._detailHome`이 `PlanDetailWorkspace(showComparison: false)`(keyPrefix `plan-home`, 모션 element-2)를 그린다. 데이터는 `PlanDetailData.fromProjection(활성 문서, 문서 계산 projection)`이다. KPI · delta 칩 · "활성 계획과 다른 단계"는 없다.
+   - 안내 상태는 S3 `resourcePlaceholder`에 보인다: 계산 오류(`plan-calculation-error`) · 읽는 중 · 안 읽음 · 단계 없음 · 계산 불가(`plan-calculation-unavailable`, 기존 문구) · 계산 중.
+   - 문서가 있으면 S2 단계 행은 그대로 보인다. 문서를 못 읽었으면 S2에 "활성 계획을 읽지 못했습니다."를 보인다.
+   - `legacyHome`(기본 false, 앱 셸은 넘기지 않음)은 옛 5섹션 홈을 그대로 그린다. 옛 홈 테스트와 옛 화면 golden(페이즈 편집기 · 학생 추가 · 요소 편집기)만 쓴다.
+2. S1: 새 `PlanDetailMenuLayer` + `PlanDetailRailMenu`로 그린다. FE5-a 목록 S1 · c1 보기 S1과 같은 자리 · 같은 버튼 top이다.
+   - "보는 중 · 활성 계획" + 계획 이름(누르면 다시 읽기).
+   - 액션: 시나리오 목록 · 계획 만들기(분홍) · 페이즈 편집(흐름 3단계, FD-070).
+   - 정보 "이 계획": 학생 · 페이즈 · 단계 · 필요 크레딧 · 부족 재화.
+   - **합침**: FE4-f2 아이콘 버튼("단계 순서")과 "페이즈 편집"은 같은 동작(활성 계획을 흐름 3단계로 연다)이다. 하나로 합쳤고 키 `plan-flow-edit-active-launch`는 그대로다.
+   - 새 홈에는 옛 섹션 1이 없다. 그래서 A↔B 비교 화면은 같은 S1 자리에 자기 메뉴("목록으로" · "활성 계획으로", `plan-comparison-menu`)를 두고, 비교 본문은 S1(400) 오른쪽부터 쓴다.
+3. S3 seg: `PlanDetailWorkspace`에 `resourceTab` · `onResourceTab` · `tabBody` · `tabSummary` · `toolbarChips` · `resourcePlaceholder`를 더했다.
+   - 홈은 페이즈별 · 전체를 켠다. 본문은 옛 홈 `PlanConsumptionSection`(S3 평행사변형 path 안)이고, 요약 행은 `PlanPhaseResourceSummary` · `PlanOverallResourceSummary`(`PlanResourceSummaryProjection.of`)다. 옛 위젯이 S3에 그대로 들어가 기능 손실이 없어 멈추지 않았다.
+   - 툴바 칩 3개(재화 유형 · 충족 재화 숨기기 · 정렬)는 홈에서 동작한다(옛 홈 필터 상태를 함께 쓴다).
+4. 병목 지연 단계: `_calculateDocument`가 `PlanDetailStageStates.fromProjection(projection)?.delayedBy(item)`으로 병목 단계 뒤 단계만 센다(FD-035). 옛 홈(legacyHome)에도 같이 적용된다.
+5. FE4-g 재확인: 두 건 모두 그대로 있다(아래 "발견 사항"). 홈 교체와 무관한 흐름 handoff 경로라 c2 범위 밖으로 두었다.
+6. `PlanFlowSaveComparison.increases`: `category` 또는 `resource_key`가 `credits`인 줄을 뺀다. `plan_flow_save_test` 새 그룹으로 잠갔다(크레딧 줄 + 일반 줄 → 일반 줄만, 크레딧 KPI 값은 그대로).
+
+### 처리한 FD
+
+- FD-082 (a): 활성 계획 홈 = 비교 없는 Detail 3섹션.
+- FD-070: S1 "페이즈 편집" = 흐름 3단계.
+- FD-035: 단계 상태 · 지연 단계는 병목 단계 뒤만.
+- FD-038: 크레딧은 필요량 차이 KPI로만 보이고, 늘어나는 재화 목록에서는 뺀다.
+- FD-031 (a): 전체 탭 요약 행 충족률은 c1 projection(`planFlowFulfillment`) 그대로다.
+
+### 판단(워커 재량, 기록)
+
+- **legacyHome 다리**: 옛 홈을 시험하는 테스트 약 30건(FE5-f 재작성 대상)을 지금 고쳐 쓰지 않으려고 둔 플래그다. 앱에서는 늘 새 홈이다.
+- **c1 시나리오 보기의 페이즈별 · 전체는 켜지 않았다**: 보기 모드에는 비교 projection만 있다. 옛 `PlanConsumptionSection`에 넣으려면 시나리오 projection용 변환을 따로 만들어야 하므로, FE5-d에서 시안대로 다시 그릴 때 함께 연다. 그래서 c1 golden 변화는 없다.
+- **칩 적용 범위**: 재화 유형 · 충족 재화 숨기기는 병목 카드의 재화 줄과 페이즈별 · 전체에 적용한다. 정렬은 페이즈별 · 전체에만 적용하고, 병목 카드에는 적용하지 않는다(병목 번호 = 막히는 순서를 지킨다).
+- **페이즈별 탭에서 재화를 눌러도 S2를 강조하지 않는다**: 옛 홈의 섹션 2 강조는 옛 단계 타일에 묶여 있다. FE5-d 몫으로 둔다.
+- **`title_page_test` 한 줄 수정**: 계정 가져오기 뒤 계획 탭 첫 화면이 새 홈이라 단계 키가 `plan-step-v6-imported-plan-ayane-1` → `plan-home-stage-v6-ayane-1`로 바뀐다. `title_page.dart`는 고치지 않았다.
+- `app_shell.dart`는 고치지 않았다.
+
+### golden 예측(장면별)
+
+바뀜 6장(commit.json `whole`):
+
+- `plan-bottleneck`: 옛 5섹션 홈(GoldenMockAppService · 더미 병목) → Detail 홈. 장면 mock도 `GoldenActivePlanHomeMockAppService`(학생 장면 + 시나리오 목록 장면의 활성 계획 저장, 계산 대역)로 바뀐다.
+  - S1 정보: 5명 · 3개 · 8개 · 112M · 6종.
+  - S2: P1~P3 단계 8개. 아야네 1 · 2단계는 "여기서 막힘", 나머지는 "앞 단계 대기"다. 페이즈 머리: P1 부족 1종 · P2 2종 · P3 충분.
+  - S3 카드 2장. 카드 1은 네브라 디스크(최상급) 14 부족(진입 76 · 필요 90) + 크레딧 충분, 지연 히나 1 · 케이 1 · 노아 1 · 호시노 1이다. 카드 2는 파이스토스 30 · 볼프세크 8, 지연 히나 2 · 아야네 3이다.
+  - 요약: "오파츠 · 네브라 디스크 (최상급) · 14 부족 / P1 아야네 1단계에서 막힙니다 · 이 병목으로 지연되는 단계 4개".
+- `plan-by-phase`: 같은 홈의 S3 페이즈별 탭. 본문은 옛 페이즈별 소비 목록이고, 요약은 "보유량 : 76 / 필요량 : 450" · "P1에서 5명 중 0명만 완료 가능"이다.
+- `plan-overall`: 같은 홈의 S3 전체 탭(옛 전체 소비 목록 + 전체 요약 행).
+- `plan-scenario-compare`: 옛 섹션 1 → 비교 S1 메뉴(목록으로 · 활성 계획으로). 비교 본문 왼쪽 경계가 S1 오른쪽으로 옮겨 간다. 여는 길은 목록 "나란히 비교"(A = 활성, B = 같은 시나리오)다.
+- `plan-flow-step4` · `plan-flow-step4-append`: C "가장 크게 늘어나는 재화"에서 크레딧 줄(대역에서 증가량이 가장 큼)이 빠지고 다음 재화가 올라온다. 크레딧은 위 비교 KPI에 그대로 있다.
+
+그대로(이유):
+
+- `plan-phase-editor` · `plan-student-selector` · `plan-element-builder`: `legacyHome`으로 옛 홈에서 연다. 지연 단계 변경은 실제 계산 병목에만 닿는다. 이 장면 mock(MockAppService 계산)은 병목이 빈 목록이라 옛 홈은 더미 병목을 그린다.
+- `plan-preset-manager`: 여는 길만 목록 S1 "프리셋 관리"로 바뀐다. 프리셋 관리가 열리면 홈 · 목록을 그리지 않으므로 화면은 같다.
+- `plan-flow-step1` · `-many` · `-filter` · `step2` · `-saved` · `-more` · `step3` · `-deferred` · `-many`: 흐름이 열리면 홈을 그리지 않는다. "계획 만들기"는 새 홈 S1에 같은 키로 있다.
+- `plan-scenario-list` · `-expanded` · `-shortage`: 목록이 열리면 홈 3섹션은 모션 0(화면 밖)이다. 목록 S1 자리 계산(옛 element-1 bounds)은 바꾸지 않았다.
+- `plan-scenario-detail-bottleneck`: 홈은 위와 같이 화면 밖이다. 이 장면의 Detail 위젯에서 바뀐 것은 툴바 칩 묶음과 정보 줄 라벨뿐이고, 둘 다 넓은 창에서 크기 · 자리가 같다. finder만 보기 모드 안으로 좁혔다.
+- 계획 밖 장면(`title` · `account-*` · `home` · `students-*` · `scan-student-review` · `account-new`): 계획 탭이 offstage라 그리지 않는다.
+- 새 장면 제안: 없다(홈 3장면이 새 홈을 덮는다).
+
+FB-3 영향 가능(같은 gate):
+
+- 새 홈 3장면은 학생 장면 fixture와 계산 대역의 재화 이름 · 카테고리 · 아이콘(`planningResourceIconAsset`) · 학생 이름(카탈로그)을 그린다. FB-3가 카탈로그 meta나 mock 재화 행을 바꾸면 S2 단계 행 이름, S3 카드 · 페이즈별 · 전체 줄의 이름 · 아이콘 · 순서, S1 "부족 재화 n종"이 함께 바뀔 수 있다.
+- `plan-flow-step4` 두 장의 늘어나는 재화 줄도 같은 이유로 바뀔 수 있다.
+- RED가 위 6장 밖(예: `plan-scenario-list*`)으로 번지면 FB-3 쪽 변화인지 먼저 본다.
+
+### 테스트 변경(의도된 변경)
+
+- `planning_page_test.dart`:
+  - `pumpPage`와 `PlanningPage` 직접 생성 3곳에 `legacyHome: true`를 넣었다(옛 홈 시험, FE5-f에서 재작성).
+  - FE4-f2 "단계 순서" 테스트 → "페이즈 편집"(같은 키, 새 홈에서 연다).
+  - FE4-h 그룹: `plan-step-…` → `plan-home-stage-<stage id>`(`v6-ayane-1` · `stale-hina-1`), `_planStepTiles` → `_homeStageRows`, 빈 계획은 `plan-home-empty`.
+- `plan_element_builder_test.dart`(4곳) · `plan_preset_manager_test.dart`: `legacyHome: true`.
+- `plan_scenario_list_test.dart`: 홈 모션 키 element-1~5 → `home-menu` · `home-phase` · `home-resource`. 비교 화면은 `comparison-menu` = 1 · `home-menu` = 0이다.
+- `title_page_test.dart`: 위 판단의 키 한 줄.
+- `plan_flow_save_test.dart`: 새 그룹 "가장 크게 늘어나는 재화(FE5-c2)".
+- 새 `plan_home_detail_test.dart`(5건): 위젯 2건(seg → tabBody · tabSummary, resourcePlaceholder), 화면 3건(비교 없는 홈 · S1 · 정보 줄 · 옛 진입 키 없음, 페이즈별 · 전체 탭, 목록 열고 닫기 · 페이즈 편집 → 흐름 3단계).
+- goldens: 위 예측대로 `_openActivePlanHome` · `_tapHomeTab` · `GoldenActivePlanHomeMockAppService`를 더했다.
+- 영향 grep: test/ 전체에서 `PlanningPage(` · `PlanSectionLayout(` · `plan-step-` · `plan-element-N-motion` · 옛 진입 키를 찾았다. 남은 사용처는 모두 `legacyHome: true`다. plan_flow* · plan_scenario_detail · plan_scenario_preview 테스트는 새 홈에도 있는 키만 쓴다.
+
+### 남긴 옛 코드(FE5-f에서 정리)
+
+- `PlanSectionLayout`의 옛 홈 섹션 1~6(`legacyHome`에서만 그림)과 섹션 1 버튼(페이즈 편집기 · 학생 추가 · 프리셋 관리 · 비교 · 목록).
+- 옛 A↔B 후보 고르기(`plan-compare-candidate-*`).
+- `PlanPhaseEditor` · `PlanStudentSelector` · `PlanElementBuilder` 옛 홈 진입.
+- `PlanResourceHeader` · `PlanBottleneckDiagonalList` · 더미 데이터(`dummyPlanBottleneckDetails` · `dummyPlanPhaseConsumptions` · `dummyPlanOverallConsumption` · `dummyPlanPhases`).
+- `PlanningPage` · `PlanSectionLayout.legacyHome` 플래그 자체와 옛 홈 테스트(planning_page_test 대부분 · plan_element_builder_test · plan_preset_manager_test).
+- `_PlanWorkspaceSnapshot`은 이번에 고친 파일에 없다(lib · test grep 0건). 다른 이름이면 그대로 두었다.
+
+### 미검증 항목
+
+- analyze · 테스트 · golden 실행 전부.
+- 1280×720 최소 창에서 새 홈 S1 아래쪽 정보 줄이 S1 사다리꼴 밖으로 나가는지(넘침 예외는 막았지만 그림은 못 봄).
+- `FittedBox`로 줄어든 툴바에서 재화 유형 · 정렬 팝업이 열리는 위치.
+- ProcessAppService 실제 계산의 `phase_results` · `affected_stage_ids` 모양과 홈 페이즈별 탭.
+- golden 예측 수치(손 계산).
+
+### 검수표
+
+| 프롬프트 항목 | 상태 |
+|---|---|
+| 1 첫 화면 Detail · 비교 없음 · 안내 상태 | 했다 |
+| 2 S1 3버튼 + 정보 줄 · 같은 자리 · 아이콘 버튼 | 했다(페이즈 편집 = FE4-f2 버튼, 합침) |
+| 3 seg 페이즈별 · 전체 · 옛 위젯 · c1 판단 | 했다(c1은 켜지 않음, 기능 손실 없음) |
+| 4 지연 단계 병목 뒤만 | 했다 |
+| 5 FE4-g 재확인 | 두 건 그대로, 범위 밖 → 다음 slice 제안 |
+| 6 increases 크레딧 제외 · 테스트 | 했다 |
+| services/** · inventory_page · backend · contracts · scan/tactical/title_page · account_* · app_shell 안 고침 | 지켰다 |
+| PlanPhaseEditor 등 옛 코드 안 지움 · 옛 테스트 전면 재작성 안 함 | 지켰다(목록 위) |
+| golden 장면별 예측 · 새 장면 없음 · FB-3 영향 | 적었다 |
+| 정적 검토만 · 직접 커밋 안 함 · ~습니다체 | 지켰다 |
+
+### 발견 사항
+
+- FE4-g 1: 계산기 handoff 초안에 그 학생의 "나중에" 칸 단계가 있으면 새 단계가 체인 끝(나중에 단계 뒤)에 붙는다(`PlanFlowController.receiveHandoff`). 3단계에서 칸에 넣으려면 나중에 칸에 두거나 앞 단계를 옮겨야 한다.
+- FE4-g 2: `PlanFlowContext.activePlan`은 문서만 있고 authoring이 없어, 활성 계획의 "나중에" 단계가 바닥 snapshot에 들어가지 않는다. 고치려면 흐름 문맥에 활성 authoring을 실어야 해서 서비스 모델 확인이 필요하다.
+- 두 건 모두 흐름 handoff 경로라 계획 홈 교체와 무관하다. 별도 흐름 정리 slice(예: FE4-g2)나 FE5-f 앞 소단위로 묶기를 제안한다.
+
+### 다음 행동
+
+- 오케스트레이터: gate 결과를 검토한다. 기대는 다음과 같다.
+  - analyze · UI 테스트 녹색.
+  - golden RED는 위 6장이고, 그 밖의 변화는 FB-3 영향 후보로 먼저 본다.
+  - 컴파일 · lint 지적이나 예측 밖 장면 변화가 이 slice 몫이면 돌려받아 고친다.
+- 사용자 실행 순서:
+
+```powershell
+cd "C:\Users\brigh\planner_of_plana\BA Planner\v7"
+# ① 두 워커가 모두 멈춘 뒤 gate만 실행 → 결과를 오케스트레이터에게 보내고 기다린다
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ② 오케스트레이터 승인 뒤 기준 이미지 갱신 → 다시 gate
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
+# ③ 커밋(순서는 오케스트레이터가 정한다)
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5c2 -DryRun
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe5c2
+```
+
+### fe5c2 commit record (2026-10-11 14:32, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261011_135529\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

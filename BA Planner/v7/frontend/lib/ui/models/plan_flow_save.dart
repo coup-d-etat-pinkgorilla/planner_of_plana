@@ -639,30 +639,34 @@ class PlanFlowSaveComparison {
           studentsB += 1;
       }
     }
+    // 크레딧은 크레딧 KPI에서 필요량 차이로 보이므로(FD-038) 재화 증가 목록에서 뺀다(FE5-c2, FE5-b 발견).
     final increases = <PlanFlowSaveIncrease>[
       for (final row in resources)
-        if (row['required_delta_b_minus_a'] case final int delta when delta > 0)
-          PlanFlowSaveIncrease(
-            resourceKey:
-                row['resource_key']?.toString() ??
-                row['item_id']?.toString() ??
-                '',
-            name:
-                row['display_name']?.toString() ??
-                row['item_id']?.toString() ??
-                '알 수 없는 재화',
-            itemId: row['item_id']?.toString(),
-            category: row['category']?.toString() ?? 'unresolved',
-            delta: delta,
-            requiredB: row['required_b'] is int ? row['required_b'] as int : 0,
-            owned: row['owned'] is int ? row['owned'] as int : null,
-            shortageA: row['shortage_a'] is int
-                ? row['shortage_a'] as int
-                : null,
-            shortageB: row['shortage_b'] is int
-                ? row['shortage_b'] as int
-                : null,
-          ),
+        if (row['category']?.toString() != 'credits' &&
+            row['resource_key']?.toString() != 'credits')
+          if (row['required_delta_b_minus_a'] case final int delta
+              when delta > 0)
+            PlanFlowSaveIncrease(
+              resourceKey:
+                  row['resource_key']?.toString() ??
+                  row['item_id']?.toString() ??
+                  '',
+              name:
+                  row['display_name']?.toString() ??
+                  row['item_id']?.toString() ??
+                  '알 수 없는 재화',
+              itemId: row['item_id']?.toString(),
+              category: row['category']?.toString() ?? 'unresolved',
+              delta: delta,
+              requiredB: row['required_b'] is int ? row['required_b'] as int : 0,
+              owned: row['owned'] is int ? row['owned'] as int : null,
+              shortageA: row['shortage_a'] is int
+                  ? row['shortage_a'] as int
+                  : null,
+              shortageB: row['shortage_b'] is int
+                  ? row['shortage_b'] as int
+                  : null,
+            ),
     ]..sort((a, b) => b.delta.compareTo(a.delta));
     return PlanFlowSaveComparison(
       fulfillmentA: planFlowFulfillment(resources, 'a'),

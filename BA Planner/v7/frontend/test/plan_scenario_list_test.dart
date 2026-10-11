@@ -136,7 +136,8 @@ Future<void> _pumpPlanning(
 double _rowTop(WidgetTester tester, String id) =>
     tester.getTopLeft(find.byKey(ValueKey('plan-scenario-row-$id'))).dy;
 
-/// 계획 홈 섹션 모션 값(1 = 들어옴, 0 = 내려감).
+/// 계획 홈(FE5-c2 Detail 3섹션 menu · phase · resource) 모션 값(1 = 들어옴, 0 = 내려감). A↔B 비교 화면의 S1은
+/// `comparison-menu`다.
 double _homeSectionValue(WidgetTester tester, String id) => tester
     .widget<PlanSectionMotion>(find.byKey(ValueKey('plan-$id-motion')))
     .animation
@@ -516,8 +517,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(PlanScenarioListSection), findsNothing);
       expect(find.byType(PlanScenarioComparisonSection), findsOneWidget);
-      // 비교 화면은 계획 홈 섹션 1을 둔다(목록에서 내렸던 섹션 1이 다시 들어온다).
-      expect(_homeSectionValue(tester, 'element-1'), 1);
+      // FE5-c2: 비교 화면은 Detail 홈 자리에 자기 S1(목록으로 · 활성 계획으로)을 둔다. 홈은 내려가 있다.
+      expect(_homeSectionValue(tester, 'comparison-menu'), 1);
+      expect(_homeSectionValue(tester, 'home-menu'), 0);
       expect(tester.takeException(), isNull);
     });
 
@@ -537,17 +539,12 @@ void main() {
       expect(find.byKey(const ValueKey('plan-flow-rail')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
       await tester.pumpAndSettle();
-      expect(_homeSectionValue(tester, 'element-1'), 0);
+      expect(_homeSectionValue(tester, 'home-menu'), 0);
       await tester.tap(find.byKey(const ValueKey('plan-scenario-menu-back')));
       await tester.pumpAndSettle();
       expect(find.byType(PlanScenarioListSection), findsNothing);
-      for (final id in const [
-        'element-1',
-        'element-2',
-        'element-3',
-        'element-4',
-        'element-5',
-      ]) {
+      // FE5-c2: 계획 홈은 Detail 3섹션이다(옛 섹션 1~5 대신).
+      for (final id in const ['home-menu', 'home-phase', 'home-resource']) {
         expect(_homeSectionValue(tester, id), 1, reason: id);
       }
       expect(tester.takeException(), isNull);

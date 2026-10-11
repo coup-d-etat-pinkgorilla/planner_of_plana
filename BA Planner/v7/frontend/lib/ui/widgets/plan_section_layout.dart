@@ -7,8 +7,11 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/ba_chip.dart';
+import '../kit/buttons.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/kit_pressable.dart';
 import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_save.dart'
@@ -19,9 +22,11 @@ import '../models/plan_flow_save.dart'
         planFlowFulfillment,
         planFlowIncorporateScenario,
         planFlowSaveErrorCode;
+import '../models/plan_scenario_detail.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../models/repository_plan_snapshot.dart';
+import '../studio/plan_scenario_detail_studio_layout.dart';
 import '../studio/plan_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
@@ -34,7 +39,9 @@ import 'plan_flow_save_step.dart' show planFlowSavePercent;
 import 'plan_flow_workspace.dart';
 import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
+import 'plan_scenario_detail.dart';
 import 'plan_scenario_list.dart';
+import 'plan_scenario_preview.dart' show planScenarioPreviewAmount;
 import 'plan_student_selector.dart';
 import 'plan_student_step_tile.dart';
 import 'section_surface.dart';
@@ -1285,6 +1292,15 @@ double planPhaseRowWidth({
   );
 }
 
+/// 꼭짓점들을 감싸는 상자.
+Rect _pointsBounds(List<Offset> points) {
+  var rect = Rect.fromPoints(points.first, points.first);
+  for (final point in points.skip(1)) {
+    rect = rect.expandToInclude(Rect.fromPoints(point, point));
+  }
+  return rect;
+}
+
 class PlanSectionLayout extends StatefulWidget {
   const PlanSectionLayout({
     super.key,
@@ -1293,6 +1309,7 @@ class PlanSectionLayout extends StatefulWidget {
     this.initialSeed,
     this.initialPresets = const [],
     this.loadRepositoryPlan = false,
+    this.legacyHome = false,
   });
 
   final AppService? service;
@@ -1300,6 +1317,11 @@ class PlanSectionLayout extends StatefulWidget {
   final PlanningStudentSeed? initialSeed;
   final List<PlanElementPreset> initialPresets;
   final bool loadRepositoryPlan;
+
+  /// 옛 계획 홈(섹션 1~6: 진입 버튼 묶음 · 읽기 전용 페이즈 목록 · 재화 탭)을 첫 화면으로 그린다. FE5-c2부터 첫 화면은
+  /// Detail 3섹션([PlanDetailWorkspace], FD-082 (a))이고, 이 값은 옛 홈에서만 들어가는 화면(옛 페이즈 편집기 · 학생 추가 ·
+  /// 요소 편집기)의 테스트 · golden이 FE5-f에서 정리될 때까지 쓰는 다리다. 앱은 쓰지 않는다.
+  final bool legacyHome;
 
   @override
   State<PlanSectionLayout> createState() => _PlanSectionLayoutState();
@@ -1366,6 +1388,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 화면 상태에서 다시 만든다([_rebuildDocumentFromPhases]).
   PlanningDocument? _document;
   String? _calculationError;
+
+  /// 활성 계획 문서 계산 응답 그대로(FE5-c2 Detail 홈 = [PlanDetailData.fromProjection]). 계산 전 · 다시 읽는 중이면 null.
+  Map<String, dynamic>? _homeProjection;
+
+  /// Detail 홈에서 고른 병목 카드(0부터). 처음에는 병목 1이다.
+  int? _homeSelectedCard = 0;
 
   /// `plan.get`의 `calculation`이 null이었다(계산할 수 없음). 문서 내용은 그대로 보인다.
   bool _calculationUnavailable = false;
@@ -1537,6 +1565,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         );
         _calculationError = null;
         _calculationUnavailable = plan != null && plan.calculation == null;
+        _homeProjection = null;
+        _homeSelectedCard = 0;
       });
       // 계산할 수 없는 문서는 자세한 계산도 부르지 않는다. 문서 내용(섹션 2)은 그대로 보인다.
       if (_calculationUnavailable) return;
@@ -1651,6 +1681,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           for (final step in phase.steps)
             if (step.stageId != null) step.stageId!: (phase, step),
       };
+      // FE5-c2: 지연 단계는 FD-035 · 시나리오 보기와 같이 병목 단계 뒤의 affected 단계만이다(`affected_stage_ids`는 그
+      // 재화를 쓰는 모든 단계라 병목 단계 자신과 앞 단계도 들어 있다).
+      final stageStates = PlanDetailStageStates.fromProjection(projection);
       final nextBottlenecks = <PlanBottleneckDetailPreview>[];
       for (final raw
           in projection['bottlenecks'] as List<dynamic>? ?? const []) {
@@ -1694,7 +1727,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
               ),
             ],
             delayedStages: [
-              for (final id in affectedIds)
+              for (final id
+                  in stageStates?.delayedBy(item) ?? const <String>[])
                 if (stepById[id] case final affected?)
                   PlanDelayedStagePreview(
                     phaseId: affected.$1.id,
@@ -1710,6 +1744,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _phaseConsumptions = List.unmodifiable(nextPhaseConsumptions);
         _overallConsumption = nextOverall;
         _bottleneckDetails = List.unmodifiable(nextBottlenecks);
+        _homeProjection = projection;
         _calculationError = null;
         _calculationUnavailable = false;
       });
@@ -2095,9 +2130,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       return;
     }
     final closingList = _showScenarioList;
+    // 새 홈(FE5-c2)의 비교 화면 S1 메뉴는 element-1 모션을 쓰므로 함께 내린다.
+    final closingComparisonMenu = !widget.legacyHome && _showScenarioComparison;
     setState(() => _switchingScenarioWorkspace = true);
     try {
-      await _scenarioListController.reverse(from: 1);
+      await Future.wait([
+        _scenarioListController.reverse(from: 1),
+        if (closingComparisonMenu) _controllers['element-1']!.reverse(),
+      ]);
       if (!mounted) return;
       setState(() {
         _showScenarioList = false;
@@ -2301,6 +2341,349 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     } finally {
       if (mounted) setState(() => _switchingScenarioWorkspace = false);
     }
+  }
+
+  /// Detail 홈에서 연 A↔B 비교 화면의 "시나리오 목록"(FE5-c2): 비교를 내리고 시나리오 목록을 다시 연다.
+  Future<void> _backToListFromComparison() async {
+    if (!_showScenarioComparison || _switchingScenarioWorkspace) return;
+    setState(() => _switchingScenarioWorkspace = true);
+    try {
+      _scenarioListController.reverse(from: _scenarioListController.value);
+      _controllers['element-1']!.reverse(
+        from: _controllers['element-1']!.value,
+      );
+      await Future<void>.delayed(_motionDuration);
+      if (!mounted || _flow != null || _handoffPending) return;
+      setState(() {
+        _showScenarioComparison = false;
+        _comparisonInitialIds = const [];
+        _showScenarioList = true;
+        _viewingScenarioId = null;
+      });
+      _scenarioListController.forward(from: 0);
+    } finally {
+      if (mounted) setState(() => _switchingScenarioWorkspace = false);
+    }
+  }
+
+  // --- FE5-c2 Detail 홈 ---------------------------------------------------------
+
+  /// 첫 화면: 활성 계획을 시나리오 보기와 같은 Detail 3섹션으로 그린다(FD-082 (a)). 비교 KPI · delta 칩 · "활성 계획과
+  /// 다른 단계"는 없다(`showComparison: false`). 병목 탭은 Detail 카드, 페이즈별 · 전체 탭은 옛 홈의 페이즈별 · 전체
+  /// 위젯([PlanConsumptionSection])과 요약 행을 그대로 S3에 넣는다(FE5-d가 시안대로 다시 그린다).
+  Widget _detailHome() {
+    final document = _document;
+    final projection = _homeProjection;
+    final calculationError = _calculationError;
+    final busy =
+        _showScenarioList ||
+        _showScenarioComparison ||
+        _switchingScenarioWorkspace ||
+        _flow != null ||
+        _handoffPending;
+    // 조건을 삼항에 바로 둔다(따로 담은 bool로는 document의 null이 풀리지 않는다).
+    final data = document != null && document.stages.isNotEmpty
+        ? _filterHomeData(
+            PlanDetailData.fromProjection(
+              document: document,
+              projection: projection ?? const <String, dynamic>{},
+              format: planScenarioPreviewAmount,
+            ),
+          )
+        : null;
+    final Widget? resourceNotice;
+    if (calculationError != null) {
+      resourceNotice = Text(
+        '계산 오류\n$calculationError',
+        key: const ValueKey('plan-calculation-error'),
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: AppColors.danger),
+      );
+    } else if (document == null) {
+      resourceNotice = _homeNotice(
+        widget.loadRepositoryPlan
+            ? '활성 계획을 읽는 중입니다.'
+            : '저장된 활성 계획을 읽지 않았습니다.',
+        widget.loadRepositoryPlan ? 'plan-home-loading' : 'plan-home-not-loaded',
+      );
+    } else if (document.stages.isEmpty) {
+      resourceNotice = _homeNotice(
+        '활성 계획이 비어 있습니다. 계획 만들기로 시작할 수 있습니다.',
+        'plan-home-empty',
+      );
+    } else if (_calculationUnavailable) {
+      resourceNotice = _homeNotice(
+        planCalculationUnavailableMessage,
+        'plan-calculation-unavailable',
+      );
+    } else if (projection == null) {
+      resourceNotice = _homeNotice(
+        '필요 재화를 계산하는 중입니다.',
+        'plan-home-calculating',
+      );
+    } else {
+      resourceNotice = null;
+    }
+    final Widget phaseNotice = calculationError != null && document == null
+        ? _homeNotice('활성 계획을 읽지 못했습니다.', 'plan-home-load-error')
+        : (resourceNotice ?? const SizedBox.shrink());
+    final summary = PlanResourceSummaryProjection.of(
+      bottlenecks: _bottleneckDetails,
+      phases: _phaseConsumptions,
+      overall: _overallConsumption,
+      planPhases: _planPhases,
+    );
+    List<PlanConsumptionGroupPreview> filtered(
+      List<PlanConsumptionGroupPreview> groups,
+    ) => filterPlanConsumptionGroups(
+      groups,
+      categories: _selectedResourceCategories,
+      hideSatisfied: _hideSatisfiedResources,
+      sort: _resourceSort,
+    );
+    String count(int? value, String unit) =>
+        value == null ? '—' : '$value$unit';
+    final credits = data?.kpis.credits.b;
+    return PlanDetailWorkspace(
+      key: const ValueKey('plan-home-view'),
+      keyPrefix: 'plan-home',
+      animation: _controllers['element-2']!,
+      data: data,
+      studentName: _catalogName,
+      showComparison: false,
+      selectedCard: _homeSelectedCard,
+      onSelectCard: busy
+          ? null
+          : (index) => setState(() => _homeSelectedCard = index),
+      placeholder: phaseNotice,
+      resourcePlaceholder: resourceNotice,
+      resourceTab: PlanDetailResourceTab.values[_selectedResourceView.index],
+      onResourceTab: (tab) =>
+          _selectResourceView(PlanResourceView.values[tab.index]),
+      tabBody: (tab, bodyPath) => PlanConsumptionSection(
+        containerPath: bodyPath,
+        groups: tab == PlanDetailResourceTab.byPhase
+            ? filtered(_phaseConsumptions)
+            : filtered([_overallConsumption]),
+        keyPrefix: tab == PlanDetailResourceTab.byPhase
+            ? 'plan-phase-consumption'
+            : 'plan-overall-consumption',
+        selectedResourceKey: _selectedSection3ResourceKey,
+        onToggleResource: _toggleSection3Resource,
+      ),
+      tabSummary: (tab) => tab == PlanDetailResourceTab.byPhase
+          ? PlanPhaseResourceSummary(
+              projection: summary.phase,
+              highlighted: false,
+              onTap: null,
+            )
+          : PlanOverallResourceSummary(
+              projection: summary.overall,
+              highlighted: false,
+              onTap: null,
+            ),
+      toolbarChips: _homeToolbarChips(enabled: !busy),
+      menuBuilder: (frame) => PlanDetailRailMenu(
+        key: const ValueKey('plan-home-menu'),
+        frame: frame,
+        keyPrefix: 'plan-home',
+        caption: '보는 중 · 활성 계획',
+        currentTitle: document?.name ?? '활성 계획',
+        currentSubtitle: '지금 쓰는 계획',
+        currentSemanticLabel: '활성 계획 다시 읽기',
+        onCurrent: busy || !widget.loadRepositoryPlan
+            ? null
+            : _reloadRepositoryPlan,
+        actions: [
+          (
+            key: 'plan-scenario-list-launch',
+            variant: RailButtonVariant.ghost,
+            icon: Icons.view_list_rounded,
+            label: '시나리오 목록',
+            onPressed:
+                busy || widget.service is! PlanningScenarioRepositoryService
+                ? null
+                : _openScenarioList,
+            tooltip: '시나리오 저장소를 쓸 수 없습니다.',
+          ),
+          (
+            key: 'plan-scenario-create-launch',
+            variant: RailButtonVariant.primary,
+            icon: Icons.add_rounded,
+            label: '계획 만들기',
+            onPressed:
+                busy || widget.service is! PlanningScenarioRepositoryService
+                ? null
+                : _openScenarioCreation,
+            tooltip: '시나리오 저장소를 쓸 수 없습니다.',
+          ),
+          // FD-070: 페이즈 편집 = 저장된 활성 계획을 계획 만들기 3단계로 연다. FE4-f2의 "흐름으로 열기" 아이콘
+          // 버튼(활성 계획 단계 순서 바꾸기)과 같은 동작이라 이 버튼 하나로 합쳤다(같은 키).
+          (
+            key: 'plan-flow-edit-active-launch',
+            variant: RailButtonVariant.base,
+            icon: Icons.edit_outlined,
+            label: '페이즈 편집',
+            onPressed: busy || widget.service is! RepositoryPlanService
+                ? null
+                : _openActivePlanFlow,
+            tooltip: '활성 계획 저장소를 쓸 수 없습니다.',
+          ),
+        ],
+        infoCaption: '이 계획',
+        info: [
+          ('학생', count(data?.studentCount, '명')),
+          ('페이즈', count(data?.phaseCount, '개')),
+          ('단계', count(data?.stageCount, '개')),
+          (
+            '필요 크레딧',
+            credits == null ? '—' : planScenarioPreviewAmount(credits),
+          ),
+          ('부족 재화', count(data?.kpis.shortageKinds.b, '종')),
+        ],
+      ),
+    );
+  }
+
+  /// 홈 안내 문구(S2 · S3 가운데).
+  Widget _homeNotice(String message, String key) => Text(
+    message,
+    key: ValueKey(key),
+    textAlign: TextAlign.center,
+    style: const TextStyle(color: AppColors.textSecondary),
+  );
+
+  /// 학생 이름(목록 카탈로그가 없으면 id).
+  String _catalogName(String studentId) {
+    for (final phase in _planPhases) {
+      for (final step in phase.steps) {
+        if (step.studentId == studentId) return step.displayName;
+      }
+    }
+    return studentId;
+  }
+
+  /// 홈 병목 카드에 재화 유형 필터 · 충족 재화 숨기기를 건다(정렬은 병목 번호 = 문서 순서를 지키려고 걸지 않는다).
+  PlanDetailData _filterHomeData(PlanDetailData data) {
+    final allCategories =
+        _selectedResourceCategories.length ==
+        PlanResourceCategory.values.length;
+    if (allCategories && !_hideSatisfiedResources) return data;
+    bool selected(PlanDetailCardResource resource) =>
+        allCategories ||
+        _selectedResourceCategories.contains(
+          planResourceCategory(
+            id: resource.resourceKey,
+            iconAsset:
+                planningResourceIconAsset(
+                  category: resource.category,
+                  itemId: resource.itemId,
+                ) ??
+                resource.category,
+          ),
+        );
+    final cards = [
+      for (final card in data.cards)
+        if (card.resources.any(
+          (resource) => resource.shortage > 0 && selected(resource),
+        ))
+          PlanDetailBottleneckCard(
+            number: card.number,
+            phase: card.phase,
+            stageId: card.stageId,
+            studentId: card.studentId,
+            stageName: card.stageName,
+            targets: card.targets,
+            resources: [
+              for (final resource in card.resources)
+                if (selected(resource) &&
+                    (!_hideSatisfiedResources || resource.shortage > 0))
+                  resource,
+            ],
+            hiddenShortages: card.hiddenShortages,
+            delayed: card.delayed,
+            delta: card.delta,
+          ),
+    ];
+    return PlanDetailData(
+      phases: data.phases,
+      cards: cards,
+      kpis: data.kpis,
+      studentCount: data.studentCount,
+      stageCount: data.stageCount,
+    );
+  }
+
+  /// 홈 S3 칩 3개(옛 홈 섹션 4 · 6의 재화 유형 필터 · 충족 재화 숨기기 · 정렬과 같은 상태).
+  List<Widget> _homeToolbarChips({required bool enabled}) {
+    final allCategories =
+        _selectedResourceCategories.length ==
+        PlanResourceCategory.values.length;
+    return [
+      // 값: −1 = 전체, 그 밖 = [PlanResourceCategory.index](null 값은 메뉴가 취소로 본다).
+      PopupMenuButton<int>(
+        key: const ValueKey('plan-home-filter-category'),
+        enabled: enabled,
+        tooltip: '재화 유형',
+        onSelected: (value) => value < 0
+            ? _toggleAllResourceCategories()
+            : _toggleResourceCategory(PlanResourceCategory.values[value]),
+        itemBuilder: (context) => [
+          CheckedPopupMenuItem<int>(
+            value: -1,
+            checked: allCategories,
+            child: const Text('전체'),
+          ),
+          for (final category in PlanResourceCategory.values)
+            CheckedPopupMenuItem<int>(
+              value: category.index,
+              checked: _selectedResourceCategories.contains(category),
+              child: Text(category.label),
+            ),
+        ],
+        child: BaChip(
+          label: allCategories
+              ? '재화 유형 · 전체'
+              : '재화 유형 · ${_selectedResourceCategories.length}종',
+          tone: allCategories ? AppTones.gray : AppTones.pink,
+          leading: const Icon(Icons.filter_list_rounded, size: 13),
+        ),
+      ),
+      const SizedBox(width: 8),
+      KitPressable(
+        key: const ValueKey('plan-home-hide-satisfied'),
+        onPressed: enabled ? _toggleHideSatisfiedResources : null,
+        toggled: _hideSatisfiedResources,
+        semanticLabel: '충족 재화 숨기기',
+        builder: (context, state) => BaChip(
+          label: '충족 재화 숨기기',
+          tone: _hideSatisfiedResources ? AppTones.pink : AppTones.gray,
+          leading: const Icon(Icons.visibility_off_outlined, size: 13),
+        ),
+      ),
+      const SizedBox(width: 8),
+      PopupMenuButton<PlanResourceSort>(
+        key: const ValueKey('plan-home-sort'),
+        enabled: enabled,
+        tooltip: '정렬',
+        onSelected: _selectResourceSort,
+        itemBuilder: (context) => [
+          for (final sort in PlanResourceSort.values)
+            CheckedPopupMenuItem<PlanResourceSort>(
+              value: sort,
+              checked: sort == _resourceSort,
+              child: Text(sort.menuLabel),
+            ),
+        ],
+        child: BaChip(
+          label: _resourceSort.menuLabel,
+          tone: _resourceSort == PlanResourceSort.defaultOrder
+              ? AppTones.gray
+              : AppTones.pink,
+          leading: const Icon(Icons.sort_rounded, size: 13),
+        ),
+      ),
+    ];
   }
 
   /// [_flowContext]를 읽다 실패하면 null(목록 S1 "새 시나리오"가 예외를 버튼 밖으로 내보내지 않게 한다).
@@ -3392,7 +3775,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            if (!_showPhaseEditor &&
+            if (!widget.legacyHome &&
+                !_showPhaseEditor &&
+                !_showElementBuilder &&
+                !_showPresetManager &&
+                _flow == null)
+              Positioned.fill(child: _detailHome()),
+            if (widget.legacyHome &&
+                !_showPhaseEditor &&
                 !_showElementBuilder &&
                 !_showPresetManager &&
                 _flow == null)
@@ -3463,13 +3853,64 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                     repositoryState: _repositoryState!,
                     activePlan: _document!,
                     initialSelectedIds: _comparisonInitialIds,
-                    section1Bounds: planSectionPath(
-                      size,
-                      'element-1',
-                    ).getBounds(),
+                    // FE5-c2: Detail 홈에서는 옛 섹션 1이 없다. 비교 화면은 S1 메뉴(400) 오른쪽부터 쓴다.
+                    section1Bounds: widget.legacyHome
+                        ? planSectionPath(size, 'element-1').getBounds()
+                        : _pointsBounds(
+                            planDetailSectionPolygon(
+                              size,
+                              planDetailMenuSectionId,
+                            ),
+                          ),
                     active: widget.active && !_switchingScenarioWorkspace,
                     onEdit: _editScenarioFromComparison,
                     onIncorporate: _incorporateScenario,
+                  ),
+                ),
+              ),
+            // FE5-c2: Detail 홈에서 연 A↔B 비교 화면의 S1(목록으로 · 활성 계획으로). 옛 홈은 섹션 1을 그대로 둔다.
+            if (!widget.legacyHome &&
+                _showScenarioComparison &&
+                _flow == null)
+              Positioned.fill(
+                child: PlanSectionMotion(
+                  key: const ValueKey('plan-comparison-menu-motion'),
+                  animation: _controllers['element-1']!,
+                  introDegrees: planDetailMenuMotion.intro,
+                  outroDegrees: planDetailMenuMotion.outro,
+                  child: PlanDetailMenuLayer(
+                    key: const ValueKey('plan-comparison-menu'),
+                    keyPrefix: 'plan-comparison',
+                    size: size,
+                    builder: (frame) => PlanDetailRailMenu(
+                      frame: frame,
+                      keyPrefix: 'plan-comparison',
+                      caption: '보는 중 · 비교',
+                      currentTitle: '나란히 비교',
+                      currentSubtitle: '활성 계획은 바뀌지 않습니다',
+                      actions: [
+                        (
+                          key: 'plan-comparison-back-to-list',
+                          variant: RailButtonVariant.ghost,
+                          icon: Icons.arrow_back_rounded,
+                          label: '시나리오 목록',
+                          onPressed: _switchingScenarioWorkspace
+                              ? null
+                              : _backToListFromComparison,
+                          tooltip: null,
+                        ),
+                        (
+                          key: 'plan-comparison-close',
+                          variant: RailButtonVariant.ghost,
+                          icon: Icons.home_outlined,
+                          label: '활성 계획으로',
+                          onPressed: _switchingScenarioWorkspace
+                              ? null
+                              : _closeScenarioList,
+                          tooltip: null,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -80,6 +80,7 @@ Future<void> _openPlanning(
   AppService service, {
   List<PlanElementPreset> presets = const [],
   bool loadRepositoryPlan = false,
+  bool legacyHome = false,
 }) async {
   await tester.pumpWidget(
     goldenMaterialHost(
@@ -87,6 +88,7 @@ Future<void> _openPlanning(
         service: service,
         initialPresets: presets,
         loadRepositoryPlan: loadRepositoryPlan,
+        legacyHome: legacyHome,
       ),
     ),
   );
@@ -234,6 +236,30 @@ Future<Map<String, String>> _openScenarioListScene(
     );
   }
   return ids;
+}
+
+/// 계획 홈 장면(FE5-c2): 활성 계획을 저장하고 읽어 Detail 홈을 연다(계산 대역 + 페이즈별 결과).
+Future<void> _openActivePlanHome(WidgetTester tester) async {
+  final service = GoldenActivePlanHomeMockAppService();
+  addTearDown(service.dispose);
+  await service.seedActivePlanHomeScene();
+  await _openPlanning(tester, service, loadRepositoryPlan: true);
+  await pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey('plan-home-card-1')),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Detail 홈 S3 seg에서 [label] 탭을 누른다.
+Future<void> _tapHomeTab(WidgetTester tester, String label) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(const ValueKey('plan-home-tab')),
+      matching: find.text(label),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -497,39 +523,53 @@ void main() {
     await expectGoldenScene(tester, 'students-calculator-bond-popover');
   }, variant: goldenPlatform);
 
-  // --- 계획 메인 -------------------------------------------------------------
+  // --- 계획 메인(FE5-c2: 첫 화면 = 활성 계획 Detail 3섹션) ----------------------------
+  // 시나리오 목록 장면의 활성 계획(P1 아야네 · 히나 · 케이 · 노아 · 호시노, P2 아야네 · 히나, P3 아야네)을 저장해 읽는다.
+  // 계산 대역 기준 병목은 P1 아야네 1단계(네브라 최상급 −14)와 P2 아야네 2단계(파이스토스 −30 · 볼프세크 −8) 두 카드다.
   testWidgets('plan-bottleneck', (tester) async {
     setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(tester, service);
+    await _openActivePlanHome(tester);
     expect(
-      find.byKey(const ValueKey('plan-section-3-1-bottleneck')),
+      find.byKey(const ValueKey('plan-home-card-2')),
       findsOneWidget,
+    );
+    expect(find.text('병목 1 · 여기서 막힘'), findsOneWidget);
+    expect(find.text('병목 2 · 여기서 막힘'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('plan-home-kpis')),
+      findsNothing,
     );
     await expectGoldenScene(tester, 'plan-bottleneck');
   }, variant: goldenPlatform);
 
   testWidgets('plan-by-phase', (tester) async {
     setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(tester, service);
-    await _tapKey(tester, 'plan-resource-tab-byPhase');
+    await _openActivePlanHome(tester);
+    await _tapHomeTab(tester, '페이즈별');
+    expect(
+      find.byKey(const ValueKey('plan-home-tab-body-byPhase')),
+      findsOneWidget,
+    );
     await expectGoldenScene(tester, 'plan-by-phase');
   }, variant: goldenPlatform);
 
   testWidgets('plan-overall', (tester) async {
     setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(tester, service);
-    await _tapKey(tester, 'plan-resource-tab-overall');
+    await _openActivePlanHome(tester);
+    await _tapHomeTab(tester, '전체');
+    expect(
+      find.byKey(const ValueKey('plan-home-tab-body-overall')),
+      findsOneWidget,
+    );
     await expectGoldenScene(tester, 'plan-overall');
   }, variant: goldenPlatform);
 
   // --- 계획 하위 화면 ---------------------------------------------------------
+  // FE5-c2: 옛 페이즈 편집기 · 학생 추가 · 요소 편집기는 옛 계획 홈(`legacyHome`)에서만 들어간다. FE5-f에서 정리한다.
   testWidgets('plan-phase-editor', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();
-    await _openPlanning(tester, service);
+    await _openPlanning(tester, service, legacyHome: true);
     await _tapKey(tester, 'plan-phase-editor-launch');
     expect(find.byKey(const ValueKey('plan-phase-editor')), findsOneWidget);
     await expectGoldenScene(tester, 'plan-phase-editor');
@@ -538,7 +578,7 @@ void main() {
   testWidgets('plan-student-selector', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();
-    await _openPlanning(tester, service);
+    await _openPlanning(tester, service, legacyHome: true);
     await _tapKey(tester, 'plan-student-selector-launch');
     expect(
       find.byKey(const ValueKey('plan-range-condition-section')),
@@ -550,7 +590,12 @@ void main() {
   testWidgets('plan-element-builder', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();
-    await _openPlanning(tester, service, presets: [goldenTestPreset()]);
+    await _openPlanning(
+      tester,
+      service,
+      presets: [goldenTestPreset()],
+      legacyHome: true,
+    );
     await _selectFirstPlanStudent(tester);
     await _tapKey(tester, 'plan-starter-preset-balanced-growth');
     expect(
@@ -564,7 +609,9 @@ void main() {
     setGoldenViewport(tester);
     final service = await _service();
     await _openPlanning(tester, service, presets: [goldenTestPreset()]);
-    await _tapKey(tester, 'plan-preset-manager-launch');
+    // FE5-c2: 프리셋 관리는 시나리오 목록 S1 "프리셋 관리"에서 연다(새 계획 홈에는 옛 진입 버튼이 없다).
+    await _tapKey(tester, 'plan-scenario-list-launch');
+    await _tapKey(tester, 'plan-scenario-menu-presets');
     await expectGoldenScene(tester, 'plan-preset-manager');
   }, variant: goldenPlatform);
 
@@ -1021,8 +1068,15 @@ void main() {
       find.byKey(const ValueKey('plan-scenario-detail-card-2')),
       findsOneWidget,
     );
-    expect(find.text('병목 1 · 여기서 막힘'), findsOneWidget);
-    expect(find.text('병목 2 · 여기서 막힘'), findsOneWidget);
+    // FE5-c2: 같은 활성 계획을 쓰는 Detail 홈이 화면 밖에 남아 있으므로 보기 모드 안에서만 찾는다.
+    final detailView = find.byKey(const ValueKey('plan-scenario-detail-view'));
+    for (final label in const ['병목 1 · 여기서 막힘', '병목 2 · 여기서 막힘']) {
+      expect(
+        find.descendant(of: detailView, matching: find.text(label)),
+        findsOneWidget,
+        reason: label,
+      );
+    }
     expect(find.text('활성 계획과 다른 단계 3'), findsOneWidget);
     expect(
       find.descendant(
@@ -1038,13 +1092,15 @@ void main() {
     setGoldenViewport(tester);
     final service = await _service();
     final scenarioId = await _openPlanningWithScenario(tester, service);
-    await _tapKey(tester, 'plan-scenario-compare-launch');
-    await tester.tap(
-      find.byKey(const ValueKey('plan-compare-candidate-active-plan')),
+    // FE5-c2: A↔B 비교는 시나리오 목록 "나란히 비교"(활성 계획 + 담은 시나리오 하나)로 연다. 비교 화면 S1은 목록으로 ·
+    // 활성 계획으로 메뉴다.
+    await _tapKey(tester, 'plan-scenario-list-launch');
+    await _tapKey(tester, 'plan-scenario-compare-$scenarioId');
+    await _tapKey(tester, 'plan-scenario-compare-run');
+    expect(
+      find.byKey(const ValueKey('plan-comparison-menu')),
+      findsOneWidget,
     );
-    await tester.tap(find.byKey(ValueKey('plan-compare-candidate-$scenarioId')));
-    await tester.pump();
-    await _tapKey(tester, 'plan-scenario-compare-confirm');
     await expectGoldenScene(tester, 'plan-scenario-compare');
   }, variant: goldenPlatform);
 

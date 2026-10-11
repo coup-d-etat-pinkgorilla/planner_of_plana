@@ -444,6 +444,50 @@ void main() {
     });
   });
 
+  group('가장 크게 늘어나는 재화(FE5-c2)', () {
+    test('크레딧 줄은 재화 증가 목록에 넣지 않는다(크레딧 KPI에서 필요량 차이로 보인다, FD-038)', () {
+      final comparison = PlanFlowSaveComparison.fromResult(
+        const PlanningScenarioComparisonResult(
+          projectionA: {},
+          projectionB: {},
+          comparison: {
+            'credits_a': 1000000,
+            'credits_b': 9000000,
+            'resources': [
+              {
+                'resource_key': 'credits',
+                'item_id': null,
+                'display_name': '크레딧',
+                'category': 'credits',
+                'owned': 5000000,
+                'required_a': 1000000,
+                'required_b': 9000000,
+                'required_delta_b_minus_a': 8000000,
+                'shortage_a': 0,
+                'shortage_b': 4000000,
+              },
+              {
+                'resource_key': 'note',
+                'item_id': 'note',
+                'display_name': '노트',
+                'category': 'tech_notes',
+                'owned': 10,
+                'required_a': 10,
+                'required_b': 40,
+                'required_delta_b_minus_a': 30,
+                'shortage_a': 0,
+                'shortage_b': 30,
+              },
+            ],
+          },
+        ),
+      );
+      expect(comparison.increases.map((item) => item.resourceKey), ['note']);
+      // 크레딧은 KPI 쪽 값으로 남는다.
+      expect(comparison.creditsB, 9000000);
+    });
+  });
+
   group('저장 3지선다', () {
     test('시나리오로 저장: 패널 이름으로 createScenario, 문서는 v2 초안 그대로다', () async {
       final service = _RecordingService();
