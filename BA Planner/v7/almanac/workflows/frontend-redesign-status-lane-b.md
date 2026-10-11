@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE6-a 코드 작성 완료, gate 대기(2026-10-11).** 시작 커밋 `dfd1d620`. 아래 "FE6-a 착수 기록"·"FE6-a 종료 기록"(맨 끝 사용자 실행 명령). 그 전: fb3-dart `739f3bfe`(오케스트레이터 확인, 워크플로 XB 연결 표), T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE6-b gate ① RED 수정 완료, gate 재실행 대기(2026-10-11).** 시작 커밋 `1fbc4ddd`. 아래 "FE6-b 착수 기록"·"FE6-b 종료 기록"(FD-095 권장안)·"FE6-b gate ① RED 수정 기록"(맨 끝 사용자 실행 명령). 그 전: FE6-a `2f88e65f`(시작 `dfd1d620`), fb3-dart `739f3bfe`(오케스트레이터 확인, 워크플로 XB 연결 표), T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -1288,3 +1288,281 @@ artboard `Inventory.dc.html` → 앱:
   3. 커밋:
      - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6a -DryRun`
      - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6a`
+
+## FE6-b 착수 기록 (2026-10-11)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: 인벤토리 전체 아이템 보기와 FE6-a 후속 2건. 워커 프롬프트 `debug/frontend_redesign_handoff/fe6b-worker-prompt-20261011.md`.
+  1. 전체 아이템(시안 Inventory-All): 그룹 헤더 + 74×74 타일, 그룹마다 사선 이동, 충족 막대(부족 분홍·충분 파랑·과잉 노랑 FD-040·계획 밖 없음·보유 모름 빗금), 그룹 "부족 n" 칩 → 상위 5 플라이아웃(키트 `AnchoredFlyout`·`ShortageBreakdownRow`). 상세 rect는 FE6-a와 같다.
+  2. FD-095 재검토: 전체 아이템 그룹을 category·FB-3 family로 그려 보고 권장안을 종료 기록에 적는다.
+  3. 후속 A: Studio 문서를 `lib/ui/inventory/inventory_studio_layout.dart` → `lib/ui/studio/inventory_studio_layout.dart`로 옮긴다(옛 경로는 삭제, commit.json `deleted`).
+  4. 후속 B: 인벤토리 읽기·계산을 탭을 처음 열 때로 미룬다. `app_shell.dart`는 탭 활성 신호 한 줄만 넘긴다.
+- 범위 밖: `lib/services/**`, 계획·학생 화면과 `lib/ui/widgets/plan_*`(Lane A), 키트, golden harness·기존 golden 테스트 파일, `backend/**`·`contracts/**`, `scan_page.dart`, `statistics/**`.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `1fbc4ddd540124d70cb095267229018152286801`(XB M1 exact18, parent `f1ca4713`. Dart 변경 0).
+- 막힘: 대장 막힘 요약에서 FE6-b를 막는 열림 FD 없음. FD-095는 이번 slice에서 재검토한다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6b/pre/<v7 기준 경로>`):
+  - `frontend/lib/ui/pages/inventory_page.dart`
+  - `frontend/lib/ui/app_shell.dart`(최소 diff)
+  - `frontend/lib/ui/inventory/inventory_controller.dart`
+  - `frontend/lib/ui/inventory/inventory_view_model.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/inventory/inventory_studio_layout.dart`(이동 → 삭제)
+  - `frontend/test/inventory_page_test.dart`
+  - `frontend/test/inventory_currency_readonly_test.dart`
+  - `frontend/test/inventory_controller_test.dart`
+  - `frontend/test/inventory_view_model_test.dart`
+  - `frontend/test/inventory_fe6a_fixture.dart`
+- 새 파일(예정): `frontend/lib/ui/studio/inventory_studio_layout.dart`, `frontend/test/inventory_shell_lazy_test.dart`, `frontend/test/goldens/fe6b_inventory_all_golden_test.dart`(harness 공개 함수만)와 기준 이미지 `inventory-all.png`.
+- WIP: 고칠 파일 11개 모두 미커밋 변경 없음(작업 트리 = index blob, 줄바꿈 정규화 기준). `inventory_page.dart`·`inventory_page_test.dart`는 CRLF, 나머지는 LF다. `inventory_workspace.dart`는 FE6-a 때 줄 5개가 CRLF로 섞여 있었다(종료 기록 발견 사항).
+
+## FE6-b 종료 기록 (2026-10-11, 코드 작성 완료·gate 미실행)
+
+시안 Inventory-All(전체 아이템, 기술 노트(최상급) 선택, 플라이아웃 1개 열림)의 타일 보기와 FE6-a 후속 2건을 끝냈다.
+
+Flutter·Dart가 이 환경에 없어 analyze·테스트·golden은 돌리지 않았다. 정적 검토만 했고, 통과를 주장하지 않는다.
+
+### 실행 명령·결과
+
+- `flutter analyze`·`flutter test`·golden: 실행하지 않았다(SDK 없음).
+- 정적 검토: 별도 검토 에이전트가 바뀐 파일을 pre 사본·키트·서비스·harness와 대조해 읽었다.
+  - 확인한 것: 쓴 API의 시그니처, import, record 타입, const, lint, 줄바꿈.
+  - 새·바뀐 테스트의 기대값은 fixture에서 손으로 계산해 확인했다.
+  - 컴파일·analyze 지적은 없었다.
+- 검토 지적 4건을 고쳤다:
+  1. 고른 타일의 분홍 테두리·빛이 타일 줄 clip에 위쪽이 잘렸다. 타일 줄은 이제 자르지 않는다(`_Fit(clip: false)`). 배치는 같다.
+  2. 그룹 머리가 30px 줄 가운데에 놓여 시안보다 4px 낮았다. 머리 띠를 줄 위에 칩 높이(24)로 붙였다. 24 + 타일까지 6 = 시안 22 + 8과 같은 30이다.
+  3. 모르는 category는 id를 이름으로 쓰므로 길면 머리 줄이 넘칠 수 있었다. 이름은 `FittedBox(scaleDown)`로 줄여 맞춘다.
+  4. 거르기 칩의 의미 라벨이 정렬 칩 것("… 순 정렬")이었다. 거르기 칩은 켜고 끄는 단추(`toggled`)로 알린다. "종류순"은 누르는 칩이 아니라 지금 정렬을 보이는 표시로 바꿨다(전체 보기 정렬은 시안에 종류순 하나다).
+- 기기 쓰기: 바이트 대조는 아래 "사본·commit.json"에 적었다.
+
+### 고친 파일
+
+- **`frontend/lib/ui/studio/inventory_studio_layout.dart`(새 경로, 후속 A)**
+  - `lib/ui/inventory/inventory_studio_layout.dart`를 옮겼다. 바뀐 것은 import 2줄(`../widgets/section_studio_document.dart`·`section_template.dart` 기준 상대 경로)뿐이다. A/B/C/D 좌표와 id는 그대로다.
+  - 전체 아이템 좌표 `InventoryAllMetrics`를 이 파일에 더했다: 타일 74, 간격 10(pitch 84), 그룹 머리 22 + 8, 그룹 사이 18, 타일 왼쪽 14, 머리 왼쪽 28.
+  - 옛 파일은 지운다(commit.json `deleted`). 이 환경의 기기 연결로는 파일을 지울 수 없어 PC 작업 트리에 아직 남아 있다. 아래 사용자 실행 명령 ⓪에서 지운다.
+- **`frontend/lib/ui/inventory/inventory_view_model.dart`**
+  - `InventoryTileTone`(none · unknown · shortage · enough · excess)과 `inventoryTileTone`:
+    - 계획에 안 쓰면 none
+    - 보유 모름이면 unknown
+    - 부족이면 shortage
+    - FD-040 과잉(보유 ≥ 필요 × 1.5)이면 excess
+    - 나머지는 enough
+  - `inventoryTileGroupId`·`inventoryTileGroupLabel`: 장비 category가 아니면 category 그대로다. 장비는 FB-3 family로 나눈다:
+    - `equipment_exp` → 강화석
+    - `equipment:<Key>`, tier 없음 → 만능 설계도
+    - `equipment:<Key>`, tier 있음 → 장비
+    - `weapon_exp:<part>` → 무기 부품
+    - 나머지 → 장비 기타
+  - `InventoryTileGroup`(부족 수, 부족량 순 목록)과 `InventoryBoard.tileGroups(mode, category, plannedOnly, hideZero)`:
+    - 그룹 순서는 FD-095 종류 순서, 장비 안은 위 family 순서다.
+    - 그룹 안은 카탈로그 순서다.
+    - "보유 0 숨기기"는 보유를 모르는 품목을 남긴다.
+- **`frontend/lib/ui/inventory/inventory_controller.dart`**
+  - `plannedOnly`·`hideZero` 토글과 `tileGroups`를 더했다.
+  - `showCategoryShortages`는 그 종류의 "부족한 것" 보기로 간다.
+  - 전체 보기의 `visible`은 타일 순서다. FE6-a 로직(계획을 상태보다 먼저 읽기, 편집 닫기, 재화 규칙, 후보 승인)은 손대지 않았다.
+- **`frontend/lib/ui/inventory/inventory_workspace.dart`**
+  - C 섹션: 사이드바 "전체"면 제목 "전체 아이템" + InfoPopover "타일 읽는 법"(분홍·파랑·노랑·빗금 설명) + 칩(종류순 표시, 계획에 쓰는 것만, 보유 0 숨기기)을 보인다. 내용은 타일이다.
+  - 타일은 공용 `DiagonalScrollViewport`(translate)의 행으로 쌓는다. 머리 줄 30, 타일 줄 84, 그룹 마지막 줄 92이고, 한 줄 타일 수는 가장 좁은 행 자리 폭으로 정한다.
+    - translate 사선이라 그룹이 내려갈수록 왼쪽으로 밀린다. fixture 장면에서 그룹 하나가 약 21px이다.
+  - `InventoryItemTile`은 키트 `ItemTile` 74×74다. 막대(tone·fraction):
+    - 부족: 분홍 + 충족률
+    - 충분·과잉: 파랑·노랑 가득
+    - 계획 밖: 없음
+    - 보유 모름: 빗금(분홍 + fraction 없음), 수량은 `—`
+  - 의미 라벨은 "<이름> 보유 …"다.
+  - `_TileGroupHeader`는 SubHeader + "n종"이다. 부족이 있으면 "부족 n" 칩에 키트 `AnchoredFlyout`(hover·누름·포커스로 열림)을 단다.
+    - 플라이아웃 내용: `FlyoutHeader('부족한 <종류> n종', note: '부족량 순 · 상위 5')`, `ShortageBreakdownRow` 최대 5개, `FlyoutFooter`("… 외 n종" + "모두 보기 →")
+    - "모두 보기"는 그 종류의 부족한 것 보기로 간다.
+  - 오른쪽 상세는 FE6-a와 같다. 타일을 고르면 같은 상세가 뜬다.
+  - FE6-a 때 이 파일에 섞였던 CRLF 줄 5개를 LF로 맞췄다(발견 사항 1).
+- **`frontend/lib/ui/pages/inventory_page.dart`(후속 B)**
+  - `active`(기본 true)를 더했다. 첫 로드는 `active`가 처음 true가 될 때 한 번 시작한다(`initState`/`didUpdateWidget` → `_start`, microtask).
+  - 시작 전에는 연결 변화에도 읽지 않는다.
+- **`frontend/lib/ui/app_shell.dart`(후속 B, +1줄)** — 아래 "app_shell diff".
+- **테스트**:
+  - `inventory_fe6a_fixture.dart`:
+    - 장비 강화석 `Equipment_Icon_Exp_3`을 더했다(family `equipment_exp`, 보유 항목 없음 = 모름).
+    - 헤어핀에 family `equipment:Hairpin`·tier 7을 주었다.
+    - `inventory` 장면 숫자(아이템 모드)는 그대로다.
+  - `inventory_view_model_test.dart`에 4개를 더했다:
+    - 그룹 순서·이름·부족 수, 장비 family
+    - 거르기
+    - 타일 색 5종
+    - family 그룹 id
+  - `inventory_page_test.dart`에 전체 보기 위젯 테스트 1개를 더했다:
+    - 그룹 순서와 사선(아래로 갈수록 dy 증가·dx 감소)
+    - 타일 tone·fraction·수량
+    - 타일 선택 → 상세
+    - 플라이아웃 문구와 "모두 보기"
+    - 거르기 칩, 장비 모드 family 그룹, 보유 0 숨기기
+  - 첫 테스트와 재화 읽기 전용 테스트(`inventory_currency_readonly_test.dart`)는 전체 보기의 행 키를 타일 키로 바꿨다.
+  - `inventory_controller_test.dart`는 장비 모드 기대값에 Exp_3과 그룹 id를 더했다.
+  - 새 `inventory_shell_lazy_test.dart` 1개: 셸 시작 때 인벤토리 카탈로그·부족·문서 계산 호출이 0이고, 탭을 열면 각 1, 다른 탭에 갔다 오면 그대로 1이다.
+    - 다른 탭도 같은 서비스 메서드를 부르므로 `InventoryController.load`·`_calculate`가 부른 것만 호출 스택으로 센다.
+  - 새 `goldens/fe6b_inventory_all_golden_test.dart` 1장(`inventory-all`). harness 공개 함수만 쓴다.
+
+### app_shell diff
+
+```diff
+@@ InventoryPage(
+                                   onCandidateCommitted: _clearInventoryCandidate,
++                                  active: _section == AppSection.inventory,
+```
+
+- 크기: +1줄, -0줄.
+- 이유: 셸은 모든 탭을 오프스테이지로 짓는다. 인벤토리 페이지가 보이는지 알 길이 없어 탭 활성 신호를 넘겼다.
+- 다른 탭과 셸 상태·전환에는 손대지 않았다. `InventoryPage`를 직접 만드는 테스트는 기본 `active = true`라 전처럼 바로 읽는다.
+
+### 처리한 FD
+
+- **FD-040**: 과잉 노랑은 활성 계획이 쓰는 재화 중 보유 ≥ 필요 × 1.5다. FE6-a의 `excess` 판정을 타일 tone으로 그대로 쓴다.
+- **FD-095(재검토)**: 아래 권장안. 이번 slice에서는 바꾸지 않았다.
+- **FD-030·FD-031**: FE6-a 그대로다(부족한 것 보기·충족률).
+- **FD-094**: 기본 진입은 FE6-a 그대로 부족 진단이다. 전체 보기는 사이드바 "전체"로 연다.
+
+### FD-095 권장안 — profile 기준 유지
+
+권장: "아이템·장비" seg는 지금처럼 profile 기준(장비 = category `equipment`)으로 둔다. 장비 모드 안의 그룹을 FB-3 family로 나눠 보이는 것(이번 slice)으로 시안의 "장비 설계도" 요구를 채운다.
+
+근거:
+1. 카탈로그에서 장비 설계도(Useall, tier 없음)·장비(T1~T10)·강화석(`equipment_exp`)·무기 부품(`weapon_exp:*`)은 모두 profile·category `equipment`다. 시안대로 장비 설계도를 "아이템" 모드로 옮기면 강화석·장비·무기 부품만 남는다.
+   - 같은 category 안에서 family로 모드를 가르는 규칙이 새로 생긴다.
+   - 사이드바 종류 버튼의 category 1:1(FD-095 본문)이 깨진다.
+2. 스캔 profile(아이템 / 장비)도 같은 경계다. 스캔 후보 승인·"마지막 스캔"이 profile 단위라, 화면 모드와 스캔 단위가 같아야 "이 모드를 다시 스캔" 안내가 맞다.
+3. 전체 아이템에서 family로 그려 보니 장비 모드가 강화석 · 만능 설계도 · 장비 · 무기 부품으로 자연스럽게 나뉜다. 시안의 "장비 설계도 20 · 부족 1" 줄은 장비 모드의 "만능 설계도"·"장비" 그룹 머리 "부족 n"으로 같은 정보를 준다.
+
+판단: 위 근거로 바꾸는 쪽이 명확하지 않으므로 그대로 두었다. 오케스트레이터가 시안 쪽(설계도를 아이템 모드로)을 고르면 `InventoryBoard`의 모드 거르기와 `inventoryTileGroupId`만 바꾸면 된다. 컨트롤러·화면 구조는 그대로 쓴다. 결정을 요청한다.
+
+### golden 예측
+
+- **새 장면 `inventory-all`**: 기준 이미지가 없어 RED다(사용자가 `-UpdateGoldens`로 만든다).
+  - 내용: 아이템 모드 전체 보기. 엘레프·오파츠·활동 보고서·기술 노트·BD 그룹이 사선으로 내려간다. 기술 노트(최상급)가 골라져 오른쪽 상세에 있다. 기술 노트 그룹 플라이아웃("부족한 기술 노트 1종")이 열려 있다.
+  - 게임 그림이 없는 아이콘은 키트 규칙대로 빈 상자다.
+- **`inventory`(FE6-a)**: 변화 0으로 예측한다.
+  - fixture에 더한 Exp_3·헤어핀 family는 장비 모드에만 보이고, 아이템 모드의 KPI·목록·사이드바 수는 그대로다.
+  - 지연 로드는 탭을 연 뒤 같은 상태로 끝난다(장면은 탭을 누르고 행을 기다린다).
+  - "부족한 것" 제목·칩은 바꾸지 않았다(`_SortChip` 그대로).
+- **다른 장면**: 변화 0. app_shell 변경은 인벤토리 페이지에 `active`만 넘긴다.
+  - Mock `loadRepositoryPlan`의 목표 → 문서 이전(revision 증가)은 셸 시작 때 인벤토리가 아니라 홈·통계가 부른다. 인벤토리를 열지 않는 장면의 최종 상태는 같다.
+
+### 검수표
+
+| 항목 | 시안·규칙 | 구현 | 확인 |
+|---|---|---|---|
+| 전체 보기 진입 | 사이드바 "전체" | `inventory-view-all` → 타일 | 위젯 테스트 |
+| 그룹 머리 + 타일 74×74 | Inventory-All | `ItemTile` 74, pitch 84 | 위젯 테스트(크기는 golden) |
+| 그룹마다 사선 이동 | 약 21px | translate 뷰포트, 그룹 dy↑ dx↓ | 위젯 테스트 |
+| 막대 색 | 분홍·파랑·노랑·없음·빗금 | `inventoryTileTone` → `CoverageTone` | 화면 모델·위젯 테스트 |
+| 과잉 | FD-040 ≥ 1.5배 | FE6-a `excess` | 화면 모델 테스트 |
+| "부족 n" 플라이아웃 | 상위 5, 부족량 순 | `AnchoredFlyout` + `ShortageBreakdownRow` | 위젯 테스트·golden |
+| "모두 보기" | 그 종류 부족 목록 | `showCategoryShortages` | 위젯 테스트 |
+| 타일 → 상세 | FE6-a 상세 rect | 같은 D 섹션 | 위젯 테스트·golden |
+| 거르기 | 계획에 쓰는 것만·보유 0 숨기기 | 모름은 남김 | 화면 모델·위젯 테스트 |
+| 장비 family 그룹 | FD-095 재검토 | 강화석·만능 설계도·장비·무기 부품 | 화면 모델·위젯 테스트 |
+| Studio 문서 위치 | `ui/studio/*_studio_layout.dart` | 이동, 옛 경로 삭제 | 정적 확인(옛 경로 import 0) |
+| 지연 계산 | 셸 시작 0, 탭 열면 1 | `active` + app_shell 1줄 | `inventory_shell_lazy_test` |
+| 재화 읽기 전용(fb3-dart) | 재화 dirty 금지 등 | 손대지 않음 | 기존 테스트(타일 키로만 변경) |
+| 앱 문구 | ~습니다체 | 빈 상태 "조건에 맞는 품목이 없습니다." 등 | 정적 확인 |
+
+### 미검증 항목
+
+- analyze(info 포함)·일반 테스트·golden을 돌리지 않았다. 아래 수는 정적 예상이다.
+  - 일반 테스트: +6(화면 모델 4, 인벤토리 위젯 1, 셸 지연 1)
+  - golden: 새 장면 1(`inventory-all`)
+- 그룹 사선 이동 21px, 타일 줄 수(뷰포트 폭에 따른 한 줄 타일 수), 고른 타일 빛이 이웃 줄에 겹치는 모양은 golden에서 본다.
+- `inventory_shell_lazy_test`는 호출 스택 프레임 이름(`InventoryController.load`·`InventoryController._calculate`)에 기댄다. Dart VM 스택 형식이 다르면 셈이 0이 된다. 그때는 테스트를 서비스 래퍼 셈으로 바꾸면 되고, 화면 동작과는 무관하다.
+- 실제 백엔드 카탈로그의 family 값(`equipment_exp`·`equipment:<Key>`·`weapon_exp:<part>`)은 FB-3 계약과 fixture로만 확인했다.
+
+### 발견 사항
+
+1. FE6-a에서 쓴 패치 도구가 한 줄 치환 때 CRLF 형태로 맞춰 LF 파일인 `inventory_workspace.dart`에 CRLF 줄 5개를 넣었다.
+   - autocrlf로 git blob은 LF라 커밋 내용은 문제없다.
+   - 작업 트리만 섞여 있던 것을 이번에 LF로 맞췄다. 도구는 파일의 주 줄바꿈으로 바꾸도록 고쳤다.
+2. `fe_commit.ps1`에는 `deleted`를 다루는 코드가 없다. commit.json의 `"deleted": ["frontend/lib/ui/inventory/inventory_studio_layout.dart"]`는 오케스트레이터가 처리해야 한다.
+   - 작업 트리의 옛 파일은 이 환경에서 지울 수 없어 사용자 명령 ⓪에 두었다.
+   - 옛 파일을 import하는 곳은 lib·test·tool에 없다. 지우기 전에도 빌드는 깨지지 않지만 `inventoryStudioDocument`가 두 벌 있다.
+3. 전체 보기 정렬은 시안에 종류순 하나다. "종류순"은 누르는 칩이 아니라 표시로 두었다. 다른 정렬이 필요하면 FD로 정한다.
+4. 키트 요청은 없다. 그룹 머리는 키트 `SubHeader` + `BaChip`, 플라이아웃은 `AnchoredFlyout`(기본 오른쪽) + `ShortageBreakdownRow`로 충분했다. 통째 프리셋 `ShortageBreakdownFlyout`은 부족량·단계별 seg가 있는 Flow-4 모양이다. 시안 전체 보기(seg 없음, 상위 5 + "모두 보기")와 달라 조각 위젯을 썼다.
+5. 시작 커밋이 프롬프트의 `f1ca4713`이 아니라 그 뒤 XB M1 커밋 `1fbc4ddd`(Dart 변경 0)다. 고친 파일 11개는 그 index와 같았다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe6b/pre/<경로>`. 고친 기존 파일 10개와 옮긴 옛 Studio 문서를 착수 때 두었다.
+- 끝 사본: `debug/frontend_fe6b/post/<경로>`. 고친 기존 파일 10개와 새 코드·테스트 파일 3개다.
+- `debug/frontend_fe6b/commit.json`:
+  - slice `fe6b`, `status=false`, `post_dir`
+  - modified 10개
+  - added: 새 파일 3개 + `frontend/test/goldens/baseline/inventory-all.png`(사용자가 `-UpdateGoldens`로 만든다)
+  - `deleted = [frontend/lib/ui/inventory/inventory_studio_layout.dart]`(fe_commit 미지원 → 오케스트레이터 처리)
+  - `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`. 바뀌는 기존 기준 이미지는 없다고 예측했다.
+- PC에 쓴 작업 트리 파일 13개·status·commit.json과 test 쪽 사본은 다시 읽어 바이트로 대조했다. `debug/frontend_fe6b/{pre,post}/frontend/lib/ui/…` 사본은 폴더가 너무 깊어 기기 연결이 다시 읽지 못한다. 그쪽은 쓰기 성공만 확인했다(내용은 작업 트리 파일과 같은 원본에서 썼다).
+
+### 다음 행동과 사용자 실행 명령
+
+- FE6-b 코드는 끝났다. Lane B는 여기서 멈춘다. FD-095 권장안(profile 기준 유지)에 대한 오케스트레이터 결정을 기다린다.
+- PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서 아래 명령을 한 줄씩 실행한다. 하나가 실패하면 거기서 멈추고 결과를 오케스트레이터에게 보낸다. 순서는 오케스트레이터가 정한다.
+  0. 옮긴 Studio 문서의 옛 파일을 작업 트리에서 지운다(gate가 커밋될 상태로 돌게). 사본은 `debug/frontend_fe6b/pre/`에 있다.
+     - `Remove-Item frontend\lib\ui\inventory\inventory_studio_layout.dart`
+  1. Lane A(FE5-e)·Lane B 두 워커가 모두 멈춘 뒤 실행한다. 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보내고 기다린다.
+     - 예상: 기존 golden 변화 0, 새 장면 `inventory-all`만 기준 없음 RED, 일반 테스트 +6.
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  2. 오케스트레이터가 `failures/`를 검토하고 승인한 뒤:
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1 -UpdateGoldens`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  3. 커밋. 옛 경로 삭제는 fe_commit이 다루지 않으므로 오케스트레이터가 함께 처리한다:
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b -DryRun`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b`
+
+## FE6-b gate ① RED 수정 기록 (2026-10-11)
+
+수정 요청 `debug/frontend_redesign_handoff/fe6b-fix-message-20261011.md`(gate `20261011_184427` → 재실행 `20261011_190337`)를 처리했다. Flutter·Dart가 이 환경에 없어 다시 돌리지 않았다(정적 검토만 했다).
+
+### 오케스트레이터 수정 두 줄(유지)
+
+- `inventory_workspace.dart`의 "종류순" 표시: `const Semantics(` → `Semantics(` + `key: const ValueKey('inventory-all-sort-kind')`. `BaChip`이 const가 아니어서 `const_with_non_const`였다. 내 종료 기록의 정적 검토가 놓쳤다.
+- 타일 의미 라벨: `${owned == null ? '모름' : owned}` → `${owned ?? '모름'}`.
+- 이번 수정은 PC의 이 파일(두 줄이 들어간 상태)에서 시작했고, 두 줄은 그대로다.
+
+### 원인
+
+- 부족 보기의 위험도 목록과 전체 보기의 타일은 둘 다 `_riskContent`가 같은 자리에 돌려주는 키트 `DiagonalScrollViewport`다. 둘 다 key가 없고 타입이 같아, 보기를 바꾸면 Flutter가 같은 State를 다시 쓴다. 그래서 State가 가진 자체 `ScrollController`도 같다.
+- 키트 안쪽 `SingleChildScrollView`의 key는 `'<keyPrefix>-scroll'`인데, keyPrefix가 `inventory-risk-diagonal` → `inventory-tiles-diagonal`로 바뀐다. 그래서 스크롤 뷰만 새로 만들어진다.
+  - 새 Scrollable이 같은 컨트롤러에 붙는다. 옛 Scrollable의 position은 프레임 끝(finalizeTree)에야 떨어진다.
+  - 그 사이 키트의 `AnimatedBuilder`(169행)가 `controller.offset`을 읽어 `_positions.length == 1` assertion이 났다.
+- 그 행 subtree를 짓지 못해 그룹 머리·타일이 없었다. 위젯 테스트 267행(`inventory-group-student_eleph`)과 golden(`inventory-tile-Item_Icon_SkillBook_Gehenna_3`)이 못 찾은 것은 그 결과다.
+- 오케스트레이터 진단 (b)(viewport가 다시 마운트되며 옛 position이 프레임 끝까지 남음)와 같은 유형이다. (a)(컨트롤러를 같이 넘김)는 아니다. 인벤토리는 컨트롤러를 넘기지 않는다.
+- 필터 칩·플라이아웃·종류 바꾸기는 keyPrefix를 바꾸지 않아 스크롤 뷰가 다시 만들어지지 않는다. 다시 만들어지는 것은 보기 전환(사이드바 "전체"↔"부족한 것", "모두 보기")뿐이다.
+
+### 수정
+
+- `inventory_workspace.dart`만 바꿨다. 두 viewport에 서로 다른 key를 주었다: 타일 `inventory-tiles-viewport`, 위험도 목록 `inventory-risk-viewport`.
+  - 보기를 바꾸면 State가 통째로 바뀌어 각자 자기 `ScrollController`를 갖는다. 옛 컨트롤러는 옛 State와 함께 정리된다.
+  - 같은 보기 안의 칩·플라이아웃·모드 전환은 key가 그대로라 다시 마운트되지 않는다.
+- 키트는 고치지 않았다. 키트 요청은 필요 없다고 판단했다(같은 State를 다른 스크롤 뷰에 재사용하지 않으면 position은 하나다).
+- 화면 그림은 바뀌지 않는다(key만 더함). `inventory` 장면 변화 0 예측은 그대로다.
+
+### 추가 테스트
+
+- `inventory_page_test.dart`에 "view switches, filter chips and the flyout raise no exception" 1개를 더했다. 기존 테스트 기대는 바꾸지 않았다.
+- 2바퀴 동안 아래를 연달아 하고, 끝에 `tester.takeException()`이 null인지 본다:
+  1. 전체 보기로 간다(리오 타일 있음).
+  2. 엘레프 "부족 2" 플라이아웃을 열고(`부족한 엘레프 2종` 보임), 제목을 눌러 바깥 누르기로 닫는다(사라짐).
+  3. 계획에 쓰는 것만·보유 0 숨기기를 켰다 끈다(리오 타일 있음).
+  4. 부족한 것 보기로 돌아간다(리오 행 있음).
+- 수정 전 코드에서는 1단계 첫 전환에서 같은 assertion이 난다.
+
+### 사본·commit.json
+
+- 끝 사본 갱신: `debug/frontend_fe6b/post/frontend/lib/ui/inventory/inventory_workspace.dart`(오케스트레이터 두 줄 + viewport key 2개), `debug/frontend_fe6b/post/frontend/test/inventory_page_test.dart`.
+- commit.json 목록은 바뀌지 않는다. 바뀐 두 파일은 이미 modified에 있다.
+
+### 다음 행동
+
+- Lane B는 여기서 멈춘다. 예상: 일반 테스트 +1(이번 추가), FE6-b 몫 실패 0. golden은 `inventory-all`만 기준 없음 RED(승인 뒤 `-UpdateGoldens`), `inventory` 변화 0.
+- 사용자 실행 명령은 FE6-b 종료 기록과 같다:
+  0. 옛 Studio 문서가 아직 작업 트리에 있다(gate `20261011_190337`도 이 파일이 있는 채로 돌았다). gate 전에 지운다: `Remove-Item frontend\lib\ui\inventory\inventory_studio_layout.dart`
+  1. `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1` → 결과를 오케스트레이터에게 보내고 기다린다.
+  2. 승인 뒤 `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1 -UpdateGoldens` → `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  3. `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b -DryRun` → `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b`(옛 경로 삭제는 오케스트레이터가 함께 처리)

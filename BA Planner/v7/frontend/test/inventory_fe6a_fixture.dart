@@ -3,7 +3,8 @@
 // `MockAppService` 기본값은 바꾸지 않는다(서비스 파일은 이 slice 범위 밖). 테스트와 golden이 이 대역을 쓴다.
 // - 계정 `000000000000000000000001`(Mock 기본 Main, 선택됨), 학생 6명, 저장된 목표 6개(목표 v1 → Mock 활성 문서
 //   한 페이즈 `v6-imported-plan`, 단계 `v6-<학생>-1`, 단계 이름 = notes).
-// - 카탈로그: 엘레프 2 · 기술 노트 2 · BD 1 · 오파츠 1 · 활동 보고서 3 · 장비 1 + 재화 2(credits · 엘리그마).
+// - 카탈로그: 엘레프 2 · 기술 노트 2 · BD 1 · 오파츠 1 · 활동 보고서 3 · 장비 2(강화석 · 헤어핀) + 재화 2(credits ·
+//   엘리그마).
 // - 부족 계산(`calculateShortages`)과 활성 문서 계산(`calculatePlanningDocument`)은 같은 표 [inventoryFixturePlan]에서
 //   만든다. 위험도(FD-030 (b)): 리오 엘레프 1/450·1명 → 99.78(표시 100), 오파츠 3/40·2명 → 95.4999(95), 기술 노트
 //   12/60·4명 → 91.07(91), 토키 엘레프 53/330·1명 → 83.94(84), BD 20/28·3명 → 55.05(55). 활동 보고서(상급)는 보유를
@@ -63,7 +64,10 @@ InventoryCatalogEntry _entry(
 
 /// 카탈로그(백엔드 순서: 장비 → 활동 보고서 → 노트·BD → 오파츠 → 엘레프 → 재화).
 final inventoryFixtureCatalog = <InventoryCatalogEntry>[
-  _entry('Equipment_Icon_Hairpin_Tier7', '다목적 헤어핀', 'equipment', 'equipment', 0),
+  // FE6-b: 장비 profile 안의 FB-3 family 묶음(강화석 · 장비)을 보이도록 강화석 한 줄(저장 항목 없음 = 모름, 계획
+  // 무관)을 두고 헤어핀에 family · tier를 단다. `inventory` 장면(아이템 모드)의 숫자는 바뀌지 않는다.
+  _entry('Equipment_Icon_Exp_3', '최상급 강화석', 'equipment', 'equipment', 0, family: 'equipment_exp', tier: 4),
+  _entry('Equipment_Icon_Hairpin_Tier7', '다목적 헤어핀', 'equipment', 'equipment', 1, family: 'equipment:Hairpin', tier: 7),
   _entry('Item_Icon_ExpItem_0', '초급 활동 보고서', 'activity_report', 'activity_reports', 0, family: 'activity_report', tier: 1),
   _entry('Item_Icon_ExpItem_1', '일반 활동 보고서', 'activity_report', 'activity_reports', 1, family: 'activity_report', tier: 2),
   _entry('Item_Icon_ExpItem_2', '상급 활동 보고서', 'activity_report', 'activity_reports', 2, family: 'activity_report', tier: 3),

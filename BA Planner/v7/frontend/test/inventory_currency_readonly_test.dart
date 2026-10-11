@@ -44,14 +44,14 @@ Future<void> _tap(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
-/// 전체 보기에서 [key] 재료를 고르고 수량을 [value]로 저장한다.
+/// 전체 보기(FE6-b부터 타일)에서 [key] 재료를 고르고 수량을 [value]로 저장한다.
 Future<void> _saveMaterial(
   WidgetTester tester,
   String key,
   String value,
 ) async {
   await _tap(tester, 'inventory-view-all');
-  await _tap(tester, 'inventory-row-$key');
+  await _tap(tester, 'inventory-tile-$key');
   await _tap(tester, 'inventory-action-edit');
   await tester.enterText(find.byKey(ValueKey('inventory-quantity-$key')), value);
   await _tap(tester, 'inventory-edit-save');
@@ -80,7 +80,7 @@ void main() {
 
       // 재화는 위험도 목록에 없고 주요 재화 카드로만 고른다.
       await _tap(tester, 'inventory-view-all');
-      expect(find.byKey(const ValueKey('inventory-row-credits')), findsNothing);
+      expect(find.byKey(const ValueKey('inventory-tile-credits')), findsNothing);
       for (final key in const ['credits', 'Item_Icon_SecretStone']) {
         await _tap(tester, 'inventory-currency-$key');
         expect(

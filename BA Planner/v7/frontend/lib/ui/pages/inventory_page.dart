@@ -1,6 +1,8 @@
 // 인벤토리 탭(FE6-a, 시안 Inventory "부족한 것" 보기). 로드·편집·저장·부족 계산·후보 승인은
 // [InventoryController](`ui/inventory/inventory_controller.dart`)가, 4섹션 화면은 [InventoryWorkspace]가 맡는다.
 // 후보 승인 패널(`_CandidatePanel`)은 스캔 탭 아이템 검토(FE8-g5)로 옮길 때까지 그대로 두고 위험도 목록 위 띠에 둔다.
+// FE6-b: 셸은 모든 탭을 오프스테이지로 짓는다. 인벤토리는 [InventoryPage.active]가 처음 true가 될 때(탭을 처음 열 때)
+// 읽기·계산을 시작한다. 그 전에는 백엔드를 부르지 않는다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -22,6 +24,7 @@ class InventoryPage extends StatefulWidget {
     this.candidateContext,
     this.onCandidateCommitted,
     this.controller,
+    this.active = true,
   });
   final AppService service;
   final VoidCallback onOpenPlan;
@@ -31,6 +34,9 @@ class InventoryPage extends StatefulWidget {
 
   /// 없으면 화면이 직접 만든다(테스트·golden이 상태를 미리 정할 때 넘긴다). 넘긴 컨트롤러는 부른 쪽이 정리한다.
   final InventoryController? controller;
+
+  /// 탭이 보이는가(셸이 넘긴다). 처음 true가 될 때 첫 로드를 시작한다. 셸 밖(테스트·golden)은 기본 true다.
+  final bool active;
 
   @override
   State<InventoryPage> createState() => _InventoryPageState();
@@ -43,11 +49,26 @@ class _InventoryPageState extends State<InventoryPage> {
       widget.controller ??
       (_ownController ??= InventoryController(widget.service));
 
+  /// 첫 로드를 시작했는가.
+  bool _started = false;
+
   @override
   void initState() {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
-    // 첫 로드는 build 밖에서 시작한다(넘겨받은 컨트롤러에 이미 듣는 위젯이 있어도 build 중 알림이 생기지 않게).
+    if (widget.active) _start();
+  }
+
+  @override
+  void didUpdateWidget(InventoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active) _start();
+  }
+
+  /// 첫 로드는 build 밖에서 시작한다(넘겨받은 컨트롤러에 이미 듣는 위젯이 있어도 build 중 알림이 생기지 않게).
+  void _start() {
+    if (_started) return;
+    _started = true;
     Future<void>.microtask(() {
       if (mounted) _controller.load();
     });
@@ -61,6 +82,7 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   void _connectionChanged() {
+    if (!_started) return;
     final controller = _controller;
     final connected =
         widget.service.state.value.connection == BackendConnection.connected;

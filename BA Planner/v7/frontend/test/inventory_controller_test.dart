@@ -364,7 +364,15 @@ void main() {
       controller.toggleCategory('tech_notes');
       expect(controller.category, isNull);
       controller.setMode(InventoryListMode.equipment);
-      expect(controller.visible.single.key, 'Equipment_Icon_Hairpin_Tier7');
+      // 전체 보기의 장비 모드는 FB-3 family 묶음 순서다(강화석 → 장비).
+      expect(controller.visible.map((view) => view.key), [
+        'Equipment_Icon_Exp_3',
+        'Equipment_Icon_Hairpin_Tier7',
+      ]);
+      expect(controller.tileGroups.map((group) => group.id), [
+        'equipment:stone',
+        'equipment:gear',
+      ]);
       // 재화 카드는 목록 밖이어도 고른 채로 남는다.
       controller.select('credits');
       controller.setMode(InventoryListMode.items);

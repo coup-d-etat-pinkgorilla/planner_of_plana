@@ -249,6 +249,124 @@ void main() {
     });
   });
 
+  group('FE6-b tile groups', () {
+    test('kind groups follow FD-095 order and equipment splits by family', () {
+      final board = _fixtureBoard();
+      final items = board.tileGroups(
+        mode: InventoryListMode.items,
+        category: null,
+      );
+      expect(items.map((group) => group.id), [
+        'student_eleph',
+        'oopart',
+        'activity_report',
+        'tech_notes',
+        'tactical_bd',
+      ]);
+      expect(items.map((group) => group.label), [
+        '엘레프',
+        '오파츠',
+        '활동 보고서',
+        '기술 노트',
+        'BD',
+      ]);
+      expect(items.map((group) => group.shortageCount), [2, 1, 0, 1, 1]);
+      expect(items.first.shortages.map((view) => view.key), [
+        'Item_Icon_SecretStone_rio_armed',
+        'Item_Icon_SecretStone_toki_armed',
+      ]);
+      final equipment = board.tileGroups(
+        mode: InventoryListMode.equipment,
+        category: null,
+      );
+      expect(equipment.map((group) => (group.id, group.label)), [
+        ('equipment:stone', '강화석'),
+        ('equipment:gear', '장비'),
+      ]);
+    });
+
+    test('planned-only and hide-zero filters keep unknown quantities', () {
+      final board = _fixtureBoard();
+      List<String> keys({bool plannedOnly = false, bool hideZero = false}) => [
+        for (final group in board.tileGroups(
+          mode: InventoryListMode.items,
+          category: 'activity_report',
+          plannedOnly: plannedOnly,
+          hideZero: hideZero,
+        ))
+          for (final view in group.items) view.key,
+      ];
+      expect(keys(), [
+        'Item_Icon_ExpItem_0',
+        'Item_Icon_ExpItem_1',
+        'Item_Icon_ExpItem_2',
+      ]);
+      expect(keys(plannedOnly: true), [
+        'Item_Icon_ExpItem_1',
+        'Item_Icon_ExpItem_2',
+      ]);
+      final equipment = board.tileGroups(
+        mode: InventoryListMode.equipment,
+        category: null,
+        hideZero: true,
+      );
+      // 헤어핀 보유 0은 빠지고, 저장 항목이 없는(모름) 강화석은 남는다.
+      expect(
+        [for (final group in equipment) ...group.items.map((view) => view.key)],
+        ['Equipment_Icon_Exp_3'],
+      );
+    });
+
+    test('tile tones: none, unknown, shortage, enough, excess (FD-040)', () {
+      final board = _fixtureBoard();
+      InventoryTileTone tone(String key) => inventoryTileTone(board[key]!);
+      expect(tone('Item_Icon_ExpItem_0'), InventoryTileTone.none);
+      expect(tone('Item_Icon_ExpItem_2'), InventoryTileTone.unknown);
+      expect(tone('Item_Icon_SecretStone_rio_armed'), InventoryTileTone.shortage);
+      expect(tone('Item_Icon_ExpItem_1'), InventoryTileTone.excess);
+      final enough = InventoryBoard.build(
+        catalog: inventoryFixtureCatalog,
+        inventory: RepositoryInventoryState.fromEntries(const [
+          {'key': 'Item_Icon_ExpItem_1', 'quantity': '150'},
+        ]),
+        shortages: InventoryShortageResult([
+          _row('Item_Icon_ExpItem_1', 120, 150, const ['aru']),
+        ], const []),
+      );
+      // 150 < 120 × 1.5 = 180: 충분(과잉 아님).
+      expect(
+        inventoryTileTone(enough['Item_Icon_ExpItem_1']!),
+        InventoryTileTone.enough,
+      );
+    });
+
+    test('group ids by FB-3 family', () {
+      InventoryCatalogEntry equipment(String? family, int? tier) =>
+          InventoryCatalogEntry(
+            resourceKey: 'x',
+            itemId: 'x',
+            displayName: 'x',
+            category: 'equipment',
+            profileId: 'equipment',
+            orderIndex: 0,
+            zeroFillAllowed: true,
+            school: null,
+            family: family,
+            tier: tier,
+          );
+      expect(inventoryTileGroupId(equipment('equipment_exp', 1)), 'equipment:stone');
+      expect(inventoryTileGroupId(equipment('equipment:Hat', null)), 'equipment:blueprint');
+      expect(inventoryTileGroupId(equipment('equipment:Hat', 3)), 'equipment:gear');
+      expect(inventoryTileGroupId(equipment('weapon_exp:A', 2)), 'equipment:weapon');
+      expect(inventoryTileGroupId(equipment(null, null)), 'equipment:other');
+      expect(inventoryTileGroupLabel('equipment:blueprint'), '만능 설계도');
+      expect(inventoryTileGroupLabel('equipment:weapon'), '무기 부품');
+      expect(inventoryTileGroupId(inventoryFixtureCatalog.firstWhere(
+        (item) => item.category == 'tech_notes',
+      )), 'tech_notes');
+    });
+  });
+
   test('FD-101 stage uses follow document order and student steps', () {
     PlanningDocumentStage stage(String phase, String student) =>
         PlanningDocumentStage(

@@ -386,6 +386,7 @@ class _AppShellState extends State<AppShell>
                                   candidateContext: _inventoryCandidate,
                                   onCandidateCommitted:
                                       _clearInventoryCandidate,
+                                  active: _section == AppSection.inventory,
                                 ),
                                 TacticalPage(
                                   key: ValueKey('tactical-$_profileGeneration'),

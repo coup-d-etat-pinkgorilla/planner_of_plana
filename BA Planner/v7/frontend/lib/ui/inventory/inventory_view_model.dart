@@ -9,6 +9,9 @@
 //   profile(`equipment`)로 나눈다. 재화(credits·엘리그마)는 종류 버튼·위험도 목록에 넣지 않고 "주요 재화" 카드로
 //   보인다(FB-3 catalog-only 읽기 전용 재화).
 // - 사용 학생(FD-101): 활성 계획 문서 계산(`planning.document.calculate`)의 `stage_results[].resources`.
+// - 전체 아이템 타일(FE6-b): category별 그룹(FD-095 순서). `equipment` category는 FB-3 family로 다시 나눈다
+//   (강화석 `equipment_exp` · 만능 설계도 `equipment:*` 티어 없음 · 장비 `equipment:*` T1~T10 · 무기 부품
+//   `weapon_exp:*`). 타일 막대: 계획에 안 쓰면 없음, 보유 모름이면 빗금, 부족 · 충분 · 과잉(FD-040).
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -398,6 +401,43 @@ class InventoryBoard {
     ];
   }
 
+  /// 전체 아이템 타일 그룹(FE6-b). [plannedOnly]면 계획에 쓰는 것만, [hideZero]면 보유 0을 뺀다(모름은 남긴다).
+  List<InventoryTileGroup> tileGroups({
+    required InventoryListMode mode,
+    required String? category,
+    bool plannedOnly = false,
+    bool hideZero = false,
+  }) {
+    final groups = <String, List<InventoryItemView>>{};
+    for (final view in _inMode(mode)) {
+      if (category != null && view.item.category != category) continue;
+      if (plannedOnly && !view.planned) continue;
+      if (hideZero && view.owned == 0) continue;
+      groups.putIfAbsent(inventoryTileGroupId(view.item), () => []).add(view);
+    }
+    int rank(String id) {
+      final owner = id.startsWith('equipment:') ? 'equipment' : id;
+      final index = inventoryCategoryOrder.indexOf(owner);
+      final base = (index < 0 ? inventoryCategoryOrder.length : index) * 10;
+      return id.startsWith('equipment:')
+          ? base + _equipmentGroupOrder.indexOf(id)
+          : base;
+    }
+
+    final ids = groups.keys.toList()
+      ..sort((a, b) {
+        final order = rank(a).compareTo(rank(b));
+        return order != 0 ? order : a.compareTo(b);
+      });
+    return [
+      for (final id in ids)
+        InventoryTileGroup(
+          id: id,
+          items: groups[id]!..sort((a, b) => a.order.compareTo(b.order)),
+        ),
+    ];
+  }
+
   /// 주요 재화 카드(카탈로그 순서의 재화 품목).
   List<InventoryItemView> get currencies =>
       items.where((view) => view.isCurrency).toList(growable: false);
@@ -548,6 +588,90 @@ Map<String, List<InventoryStageUse>> inventoryStageUses(
     for (final entry in result.entries)
       entry.key: List<InventoryStageUse>.unmodifiable(entry.value),
   };
+}
+
+/// 타일 아래 막대 상태(시안 Inventory-All "타일 읽는 법").
+enum InventoryTileTone {
+  /// 계획에 안 쓰는 재화(막대 없음).
+  none,
+
+  /// 계획이 쓰는데 보유를 모른다(빗금).
+  unknown,
+
+  /// 부족(분홍).
+  shortage,
+
+  /// 충분(파랑).
+  enough,
+
+  /// 과잉(노랑, FD-040).
+  excess,
+}
+
+/// [view]의 타일 막대 상태.
+InventoryTileTone inventoryTileTone(InventoryItemView view) {
+  if (!view.planned) return InventoryTileTone.none;
+  if (view.owned == null) return InventoryTileTone.unknown;
+  if (view.knownShortage) return InventoryTileTone.shortage;
+  if (view.excess) return InventoryTileTone.excess;
+  return InventoryTileTone.enough;
+}
+
+/// `equipment` category 안의 family 묶음 순서(카탈로그 순서와 같다: 강화석 → 만능 설계도 → 장비 → 무기 부품).
+const _equipmentGroupOrder = [
+  'equipment:stone',
+  'equipment:blueprint',
+  'equipment:gear',
+  'equipment:weapon',
+  'equipment:other',
+];
+
+/// 타일 그룹 id. `equipment` category는 FB-3 family로 나눈다. 나머지는 category 그대로다.
+String inventoryTileGroupId(InventoryCatalogEntry item) {
+  if (item.category != 'equipment') return item.category;
+  final family = item.family ?? '';
+  if (family == 'equipment_exp') return 'equipment:stone';
+  if (family.startsWith('equipment:')) {
+    return item.tier == null ? 'equipment:blueprint' : 'equipment:gear';
+  }
+  if (family.startsWith('weapon_exp:')) return 'equipment:weapon';
+  return 'equipment:other';
+}
+
+/// 타일 그룹 머리 이름.
+String inventoryTileGroupLabel(String id) => switch (id) {
+  'equipment:stone' => '강화석',
+  'equipment:blueprint' => '만능 설계도',
+  'equipment:gear' => '장비',
+  'equipment:weapon' => '무기 부품',
+  'equipment:other' => '장비 기타',
+  _ => inventoryCategoryLabel(id),
+};
+
+/// 전체 아이템 타일 그룹 하나.
+@immutable
+class InventoryTileGroup {
+  InventoryTileGroup({
+    required this.id,
+    required List<InventoryItemView> items,
+  }) : items = List.unmodifiable(items);
+
+  final String id;
+
+  /// 카탈로그 순서.
+  final List<InventoryItemView> items;
+
+  String get label => inventoryTileGroupLabel(id);
+
+  /// 보유를 알고 모자라는 품목 수("부족 n").
+  int get shortageCount => items.where((view) => view.knownShortage).length;
+
+  /// 부족량이 큰 순서(같으면 카탈로그 순서)의 부족 품목. 플라이아웃은 앞 5개를 보인다.
+  List<InventoryItemView> get shortages =>
+      items.where((view) => view.knownShortage).toList()..sort((a, b) {
+        final amount = b.shortageAmount!.compareTo(a.shortageAmount!);
+        return amount != 0 ? amount : a.order.compareTo(b.order);
+      });
 }
 
 /// 획득처 조회 상태.

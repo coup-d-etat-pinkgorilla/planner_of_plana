@@ -79,6 +79,8 @@ class InventoryController extends ChangeNotifier {
   InventoryView _view = InventoryView.shortage;
   String? _category;
   InventorySort _sort = InventorySort.risk;
+  bool _plannedOnly = false;
+  bool _hideZero = false;
   String? _selectedKey;
   String? _editingKey;
 
@@ -127,6 +129,12 @@ class InventoryController extends ChangeNotifier {
   InventoryView get view => _view;
   String? get category => _category;
   InventorySort get sort => _sort;
+
+  /// 전체 아이템 칩 "계획에 쓰는 것만".
+  bool get plannedOnly => _plannedOnly;
+
+  /// 전체 아이템 칩 "보유 0 숨기기".
+  bool get hideZero => _hideZero;
   String? get selectedKey => _selectedKey;
   String? get editingKey => _editingKey;
   Set<String> get dirtyKeys => Set.unmodifiable(_dirtyKeys);
@@ -140,12 +148,22 @@ class InventoryController extends ChangeNotifier {
   ScannerService? get _scanner =>
       service is ScannerService ? service as ScannerService : null;
 
-  /// 지금 목록(정렬됨).
-  List<InventoryItemView> get visible => _board.visible(
+  /// 지금 목록. 부족한 것 보기는 위험도 행(정렬됨), 전체 보기는 타일 그룹을 이은 순서다.
+  List<InventoryItemView> get visible => _view == InventoryView.all
+      ? [for (final group in tileGroups) ...group.items]
+      : _board.visible(
+          mode: _mode,
+          view: _view,
+          category: _category,
+          sort: _sort,
+        );
+
+  /// 전체 아이템 타일 그룹(FE6-b).
+  List<InventoryTileGroup> get tileGroups => _board.tileGroups(
     mode: _mode,
-    view: _view,
     category: _category,
-    sort: _sort,
+    plannedOnly: _plannedOnly,
+    hideZero: _hideZero,
   );
 
   /// 상세가 보이는 품목.
@@ -387,6 +405,28 @@ class InventoryController extends ChangeNotifier {
   /// 종류 버튼. 고른 종류를 다시 누르면 종류 거르기를 푼다.
   void toggleCategory(String category) {
     _category = _category == category ? null : category;
+    _ensureSelection();
+    _notify();
+  }
+
+  /// 전체 아이템 "계획에 쓰는 것만" 칩.
+  void togglePlannedOnly() {
+    _plannedOnly = !_plannedOnly;
+    _ensureSelection();
+    _notify();
+  }
+
+  /// 전체 아이템 "보유 0 숨기기" 칩.
+  void toggleHideZero() {
+    _hideZero = !_hideZero;
+    _ensureSelection();
+    _notify();
+  }
+
+  /// 플라이아웃 "모두 보기": 그 종류의 부족한 것 보기로 간다.
+  void showCategoryShortages(String category) {
+    _view = InventoryView.shortage;
+    _category = category;
     _ensureSelection();
     _notify();
   }

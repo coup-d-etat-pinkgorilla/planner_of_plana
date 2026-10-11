@@ -9,7 +9,7 @@
 //   후보 승인 패널(FE8-g5 전까지)과 알림 줄은 목록 위 띠에 둔다.
 // - D 상세(오른쪽 사다리꼴): 머리(아이콘 · 이름 · FB-3 메타) · kv(보유 · 필요 · 부족 · 충족률) · 수량 직접 고치기 칸 ·
 //   사용 학생(FD-101) · 보충 방법(FB-3 획득처) · 최근 변화(FE6-f 전 빈 상태) · 액션 3개(FD-125).
-// 섹션 rect는 Studio 문서(`inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
+// 섹션 rect는 Studio 문서(`ui/studio/inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
 // 작은 창에서는 각 내용 묶음이 시안 최소 크기 아래로 줄지 않고 자기 상자(사선을 따라 계산한 rect)로 잘린다(전체
 // 화면을 줄이지 않는다).
 import 'dart:math' as math;
@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/anchored_flyout.dart';
 import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
@@ -28,16 +29,17 @@ import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/scroll_viewport_fog.dart';
+import '../kit/shortage_flyout.dart';
 import '../kit/skew_bar.dart';
 import '../kit/skew_controls.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
+import '../studio/inventory_studio_layout.dart';
 import '../widgets/growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
 import 'inventory_controller.dart';
-import 'inventory_studio_layout.dart';
 import 'inventory_view_model.dart';
 
 /// 시안 값(섹션 위 기준, A·B는 y=209.2, C·D는 y=365.2).
@@ -189,10 +191,18 @@ class _SectionQuad {
 
 /// 내용 묶음을 시안 최소 크기 아래로 줄이지 않고, 넘치는 부분은 자른다(작은 창·테스트 viewport).
 class _Fit extends StatelessWidget {
-  const _Fit({required this.minWidth, this.minHeight = 0, required this.child});
+  const _Fit({
+    required this.minWidth,
+    this.minHeight = 0,
+    this.clip = true,
+    required this.child,
+  });
 
   final double minWidth;
   final double minHeight;
+
+  /// false면 넘친 부분(그림자·빛)을 자르지 않는다. 배치는 같다.
+  final bool clip;
   final Widget child;
 
   @override
@@ -206,16 +216,15 @@ class _Fit extends StatelessWidget {
         minHeight,
         constraints.maxHeight.isFinite ? constraints.maxHeight : minHeight,
       );
-      return ClipRect(
-        child: OverflowBox(
-          alignment: Alignment.topLeft,
-          minWidth: width,
-          maxWidth: width,
-          minHeight: height,
-          maxHeight: height,
-          child: child,
-        ),
+      final box = OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: width,
+        maxWidth: width,
+        minHeight: height,
+        maxHeight: height,
+        child: child,
       );
+      return clip ? ClipRect(child: box) : box;
     },
   );
 }
@@ -610,7 +619,9 @@ class InventoryWorkspace extends StatelessWidget {
         child: _Fit(
           minWidth: 520,
           minHeight: InventoryMetrics.titleHeight,
-          child: _riskTitle(),
+          child: controller.view == InventoryView.all
+              ? _allTitle()
+              : _riskTitle(),
         ),
       ),
       Positioned(
@@ -669,7 +680,7 @@ class InventoryWorkspace extends StatelessWidget {
         rect: listRect,
         child: ClipPath(
           clipper: const _ParallelogramClipper(),
-          child: _riskContent(),
+          child: _riskContent(listRect.size),
         ),
       ),
     );
@@ -711,7 +722,170 @@ class InventoryWorkspace extends StatelessWidget {
     ],
   );
 
-  Widget _riskContent() {
+  /// 전체 아이템 제목 줄(시안 Inventory-All): 제목 + (i) "타일 읽는 법" + 칩(종류순 · 계획에 쓰는 것만 · 보유 0 숨기기).
+  Widget _allTitle() => Row(
+    children: [
+      const TitleBar(width: 7, height: 22),
+      const SizedBox(width: 10),
+      Flexible(
+        child: Text(
+          '전체 아이템',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: kitDisplayStyle(AppType.panelTitleSize),
+        ),
+      ),
+      const SizedBox(width: 8),
+      InfoPopover(
+        label: '타일 읽는 법',
+        title: '타일 읽는 법',
+        children: [
+          InfoPopoverText([
+            const TextSpan(text: '숫자는 보유량입니다. 아래 막대는 계획 필요량 대비 충족률이고, '),
+            InfoPopoverText.em('분홍'),
+            const TextSpan(text: '은 부족, '),
+            InfoPopoverText.em('파랑'),
+            const TextSpan(text: '은 충분, '),
+            InfoPopoverText.em('노랑'),
+            const TextSpan(
+              text: '은 필요보다 많이 남는 과잉입니다. 막대가 없으면 계획에 안 쓰는 재화이고, 빗금은 보유를 모르는 재화입니다.',
+            ),
+          ]),
+        ],
+      ),
+      const Spacer(),
+      const SizedBox(width: 6),
+      // 전체 보기 정렬은 종류순 하나다(다른 정렬은 시안에 없다). 누르는 칩이 아니라 지금 정렬을 알리는 표시다.
+      Semantics(
+        key: const ValueKey('inventory-all-sort-kind'),
+        label: '종류순 정렬',
+        child: ExcludeSemantics(
+          child: BaChip(label: '종류순', tone: AppTones.pink),
+        ),
+      ),
+      const SizedBox(width: 6),
+      _FilterChip(
+        key: const ValueKey('inventory-all-planned-only'),
+        label: '계획에 쓰는 것만',
+        on: controller.plannedOnly,
+        onPressed: controller.togglePlannedOnly,
+      ),
+      const SizedBox(width: 6),
+      _FilterChip(
+        key: const ValueKey('inventory-all-hide-zero'),
+        label: '보유 0 숨기기',
+        on: controller.hideZero,
+        onPressed: controller.toggleHideZero,
+      ),
+    ],
+  );
+
+  /// 전체 아이템 타일(FE6-b). 그룹 머리 줄과 타일 줄을 공용 사선 뷰포트(translate)의 행으로 쌓는다. 한 줄 타일 수는
+  /// 행 자리 폭으로 정한다.
+  Widget _tileContent(Size viewport) {
+    final groups = controller.tileGroups;
+    if (groups.isEmpty) {
+      return const _Notice('조건에 맞는 품목이 없습니다.');
+    }
+    const lastRowHeight =
+        InventoryAllMetrics.tileSize + InventoryAllMetrics.groupGap;
+    const rowHeight =
+        InventoryAllMetrics.tileSize + InventoryAllMetrics.tileRowGap;
+    const headerHeight =
+        InventoryAllMetrics.groupHeaderHeight +
+        InventoryAllMetrics.groupHeaderGap;
+    // 행 높이가 클수록 자리 폭이 조금 좁다. 가장 높은 줄(그룹 마지막 줄) 기준으로 센다.
+    final slot = diagonalScrollRowSlot(
+      mode: DiagonalScrollMode.translate,
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+      rowTop: 0,
+      rowHeight: lastRowHeight,
+      scrollOffset: 0,
+      horizontalInset: InventoryMetrics.rowInset,
+      scrollbarReserve: InventoryMetrics.rowScrollbarReserve,
+    );
+    final perRow = math.max(
+      1,
+      ((slot.width -
+                  InventoryAllMetrics.tileLeft +
+                  InventoryAllMetrics.tileRowGap) /
+              InventoryAllMetrics.tilePitch)
+          .floor(),
+    );
+    final rows = <({double height, InventoryTileGroup? header, List<InventoryItemView> tiles})>[];
+    for (final group in groups) {
+      rows.add((height: headerHeight, header: group, tiles: const []));
+      for (var start = 0; start < group.items.length; start += perRow) {
+        final end = math.min(group.items.length, start + perRow);
+        rows.add((
+          height: end == group.items.length ? lastRowHeight : rowHeight,
+          header: null,
+          tiles: group.items.sublist(start, end),
+        ));
+      }
+    }
+    final selected = controller.selectedKey;
+    // 위험도 목록과 같은 자리에 놓이므로 key로 갈라 State(와 그 ScrollController)를 따로 둔다. 같은 State를 쓰면
+    // 보기 전환 프레임에 새 스크롤 뷰가 옛 것이 떨어지기 전에 같은 컨트롤러에 붙는다(gate ① RED).
+    return DiagonalScrollViewport(
+      key: const ValueKey('inventory-tiles-viewport'),
+      keyPrefix: 'inventory-tiles-diagonal',
+      itemCount: rows.length,
+      itemHeight: (index) => rows[index].height,
+      itemGap: 0,
+      verticalInset: 6,
+      horizontalInset: InventoryMetrics.rowInset,
+      scrollbarReserve: InventoryMetrics.rowScrollbarReserve,
+      fog: const ScrollFogSpec.panel(color: inventoryPanelFill),
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        final header = row.header;
+        if (header != null) {
+          return _Fit(
+            minWidth: 280,
+            minHeight: InventoryAllMetrics.groupHeaderHeight,
+            child: _TileGroupHeader(
+              key: ValueKey('inventory-group-${header.id}'),
+              group: header,
+              onShowAll: () =>
+                  controller.showCategoryShortages(header.items.first.item.category),
+            ),
+          );
+        }
+        // 고른 타일의 테두리·빛이 줄 밖(위·아래 간격)으로 번지므로 타일 줄은 자르지 않는다.
+        return _Fit(
+          minWidth:
+              InventoryAllMetrics.tileLeft +
+              perRow * InventoryAllMetrics.tilePitch,
+          minHeight: InventoryAllMetrics.tileSize,
+          clip: false,
+          child: Padding(
+            padding: const EdgeInsets.only(left: InventoryAllMetrics.tileLeft),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final view in row.tiles)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      right: InventoryAllMetrics.tileRowGap,
+                    ),
+                    child: InventoryItemTile(
+                      key: ValueKey('inventory-tile-${view.key}'),
+                      view: view,
+                      selected: view.key == selected,
+                      onTap: () => controller.select(view.key),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _riskContent(Size viewport) {
     if (controller.disconnected) {
       return const _Notice('백엔드에 연결되지 않았습니다. 다시 연결하면 인벤토리와 부족 재화를 읽습니다.');
     }
@@ -764,11 +938,12 @@ class InventoryWorkspace extends StatelessWidget {
               : '이 종류에는 부족한 재화가 없습니다.',
         );
       }
-    } else if (visible.isEmpty) {
-      return const _Notice('이 종류에는 품목이 없습니다.');
+    } else {
+      return _tileContent(viewport);
     }
     final selected = controller.selectedKey;
     return DiagonalScrollViewport(
+      key: const ValueKey('inventory-risk-viewport'),
       keyPrefix: 'inventory-risk-diagonal',
       itemCount: visible.length,
       itemHeight: (_) => InventoryMetrics.rowHeight,
@@ -1358,6 +1533,29 @@ class _SortChip extends StatelessWidget {
   );
 }
 
+/// 전체 보기 거르기 칩(켜짐 분홍 / 꺼짐 회색). 의미 트리에는 켜고 끄는 단추로 알린다.
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    super.key,
+    required this.label,
+    required this.on,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool on;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => KitPressable(
+    onPressed: onPressed,
+    semanticLabel: label,
+    toggled: on,
+    builder: (context, state) =>
+        BaChip(label: label, tone: on ? AppTones.pink : AppTones.gray),
+  );
+}
+
 /// KPI 값 하나.
 @immutable
 class _KpiValue {
@@ -1440,6 +1638,142 @@ Widget _itemIcon(InventoryItemView view, Size size) {
     label: icon == null ? name.substring(0, math.min(4, name.length)) : null,
     semanticLabel: name,
   );
+}
+
+/// 전체 아이템 타일(키트 [ItemTile] 74×74). 막대: 계획에 안 쓰면 없음, 보유 모름이면 빗금, 부족 분홍 · 충분 파랑 ·
+/// 과잉 노랑(FD-040). 숫자는 보유량(모르면 `—`)이다.
+class InventoryItemTile extends StatelessWidget {
+  const InventoryItemTile({
+    super.key,
+    required this.view,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final InventoryItemView view;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// 키트 막대 색과 채움 비율. 막대가 없으면 null.
+  static ({CoverageTone tone, double? fraction})? bar(InventoryItemView view) =>
+      switch (inventoryTileTone(view)) {
+        InventoryTileTone.none => null,
+        InventoryTileTone.unknown => (tone: CoverageTone.shortage, fraction: null),
+        InventoryTileTone.shortage => (
+          tone: CoverageTone.shortage,
+          fraction: view.fulfillment,
+        ),
+        InventoryTileTone.enough => (tone: CoverageTone.enough, fraction: 1.0),
+        InventoryTileTone.excess => (tone: CoverageTone.excess, fraction: 1.0),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final owned = view.owned;
+    final icon = planningResourceIconAsset(
+      category: view.item.category,
+      itemId: view.item.itemId,
+    );
+    final name = view.item.displayName;
+    final bar = InventoryItemTile.bar(view);
+    return KitPressable(
+      onPressed: onTap,
+      selected: selected,
+      semanticLabel: '$name 보유 ${owned ?? '모름'}',
+      builder: (context, state) => ItemTile(
+        quantity: owned == null ? '—' : inventoryAmount(owned),
+        iconAsset: icon,
+        label: icon == null ? name.substring(0, math.min(4, name.length)) : null,
+        tone: bar?.tone,
+        fraction: bar?.fraction,
+        selected: selected,
+      ),
+    );
+  }
+}
+
+/// 타일 그룹 머리(`.ihdr` 이름 + "n종" + "부족 n" 칩). 칩에 마우스를 올리거나 누르면 부족량 순 상위 5 플라이아웃이 열린다.
+class _TileGroupHeader extends StatelessWidget {
+  const _TileGroupHeader({
+    super.key,
+    required this.group,
+    required this.onShowAll,
+  });
+
+  final InventoryTileGroup group;
+  final VoidCallback onShowAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final shortages = group.shortages;
+    final label = group.label;
+    // 머리 띠는 칩 높이로 줄 위에 붙인다(띠 24 + 타일까지 6 = 시안 22 + 8과 같은 30).
+    return Padding(
+      padding: const EdgeInsets.only(left: InventoryAllMetrics.headerLeft),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          height: AppControlHeights.chip,
+          child: Row(
+            children: [
+              // 모르는 category는 id를 그대로 이름으로 쓰므로 길면 줄여 맞춘다.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: SubHeader(label, fontSize: AppType.microSize),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('${group.items.length}종', maxLines: 1, style: _muted),
+              if (shortages.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                AnchoredFlyout(
+                  key: ValueKey('inventory-group-flyout-${group.id}'),
+                  semanticLabel: '부족한 $label 보기',
+                  panelLabel: '부족한 $label',
+                  children: [
+                    FlyoutHeader(
+                      '부족한 $label ${shortages.length}종',
+                      note: '부족량 순 · 상위 5',
+                    ),
+                    for (final view in shortages.take(5))
+                      ShortageBreakdownRow(
+                        item: ShortageItem(
+                          name: view.item.displayName,
+                          shortage: view.shortageAmount!,
+                          owned: view.owned,
+                          needed: view.requiredAmount,
+                          iconAsset: planningResourceIconAsset(
+                            category: view.item.category,
+                            itemId: view.item.itemId,
+                          ),
+                        ),
+                      ),
+                    FlyoutFooter(
+                      text: shortages.length > 5
+                          ? '… 외 ${shortages.length - 5}종'
+                          : null,
+                      trailing: KitPressable(
+                        onPressed: onShowAll,
+                        semanticLabel: '부족한 $label 모두 보기',
+                        builder: (context, state) =>
+                            const FlyoutLink('모두 보기 →'),
+                      ),
+                    ),
+                  ],
+                  child: BaChip(
+                    label: '부족 ${shortages.length}',
+                    tone: AppTones.pink,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// 위험도 행(시안 `button.srow` 1010×58).
