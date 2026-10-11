@@ -1885,3 +1885,51 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - FE4-g2 판단 수용: ① 초안 단계가 모두 나중에면 바닥 = 지금 값 ② 뒤 나중에 단계 자동 올림(초안 안 단계 계약). 후속 등록: **FE4-g3**(2단계 편집기가 새 단계를 고른 상태로 열기 + `nothingNew` 문구, `plan_flow_goal_editor.dart`·`plan_section_layout.dart`), **병합 퇴행 규칙**(발견 2: "페이즈로 추가"가 활성 나중에 단계를 올리지 않아 `target_regression`으로 막힘 — 자동 올림 vs 막기 결정 필요, FE4-e "몰래 올리지 않는다" 규칙과 충돌하므로 사용자 결정 후보).
 - FE6-c 발견 처리: 3(학교 이름·엠블럼 맵 공용화)은 FE6-e(학교 9개 전부) 때 공용 모델로 합치는 것을 권장 — 그때 결정. 4(키트 `TonalButton` 아이콘 슬롯)는 FE6-d(확장 버튼이 실제로 동작할 때) 키트 소단위로. 6(S5 예측 규칙)은 FE6-f 착수 전 FD 신설 필요(FD-042와 함께). 7은 fixture만의 문제(다음 인벤토리 slice에서 `rio_armed` → `rio_battle`).
 - 남은 일: redesigndocs(워크플로·이 로그·`fe_commit.ps1`). tactic 로그 CF 보고(해시)는 CM 소유 파일이라 커밋하지 않는다.
+
+## 2026-10-12 01:00 — 배정(Lane A FE4-g3 · Lane B FE6-e), FE6-c 발견 3 결정
+
+- 사용자 "다음 작업 시작". 파일이 겹치지 않는 두 slice를 고름. 시작 SHA `41965255`.
+  · Lane A **FE4-g3**(워크플로 FE4 표에 행 신설) — `debug/frontend_redesign_handoff/fe4g3-worker-prompt-20261012.md`. ① 계산기 handoff 뒤 2단계 편집기가 새 단계를 고른 상태로(흐름 초점 단계 id) ② `nothingNew` 문구를 나중에 단계 유무에 맞게. 병합 퇴행 규칙은 제외. golden 변화 0 예상.
+  · Lane B **FE6-e** 티어별 충족률 — `debug/frontend_redesign_handoff/fe6e-worker-prompt-20261012.md`. 분석 사이드바 "티어별 충족률" 활성화, T1 노트·T2 BD 학교 × 티어(카탈로그 전부, FD-099), T2 부유 패널(FD-019), T4 오파츠 종류 × 티어, T5 부족 상위 6, T6 요약 KPI + 티어 분포 막대, FE6-c 히트맵 painter 재사용. 새 장면 `inventory-tiers` 1장, `inventory-analysis`는 사이드바 칸 활성화(+ fixture 초상 id 수정 시 초상) 변화 예상.
+- **FE6-c 발견 3 결정**: 학교 이름·엠블럼 맵을 새 공용 파일 `lib/ui/models/school_labels.dart`(카탈로그 `RedWinter` 꼴과 학생 `red winter` 꼴을 같은 키로 정규화)로 FE6-e에서 만들고 인벤토리만 옮긴다. 학생 화면 `studentSchoolLogoAsset`은 Lane A 파일이라 이번엔 두고, 워커 권장안을 받아 다음 학생 쪽 slice에서 옮긴다. 발견 7(fixture 초상 id)도 FE6-e에서.
+- 다음: 두 워커 `TASK_OUTPUT_READY` → 검토 → gate 1회 → golden → fe4g3 → fe6e → redesigndocs.
+
+## 2026-10-12 01:28 — 알림(XB): FB-2d 커밋 전 Dart 목록·격리 whole 실행 중·반영 창 조율
+
+- 총7경로(사용자20:50 결정) FB2d product 후보는 `debug/xb_fb2d_product_20261012/artifacts/product-v7/`이다. focused18/26.224s PASS(실제 child 종료 matrix56·중단복구8 포함), full1211 실행 중이다. 원 focused FAIL/Windows symlink skip과 수정 전 PASS17·selected bounded250 중 process restart timeout ERROR1을 각각 보존했다. selected 오류는 부하 원인 미확정이며 full 종료 후 같은 소스로 검증한다. 아직 output.md/wholeGREEN/main overlay/commit0이다.
+- **Dart 공개 shape 변경0**: `repository.profile.delete` 요청은 정확 `profile_id, expected_revision, idempotency_key`, 응답은 정확 `revision`이다. method/DTO/schema 버전 변경0이며 **7번째 삭제 경로를 반환하는 `deleted_paths` 키는 없다**. 기존 strict DeleteProfile DTO/client 변경은 불필요하다. fixture는 `contracts/fixtures/profile_delete_fb2d_v1.json`, CF Mock/Process 기존 메서드를 유지한다.
+- **CF fb2d-dart 연결 목록**: 삭제 확인 문구에 전술 공유 데이터(local tactical-share)를 같은 확인으로 포함; 삭제 성공 뒤 프로필·학생/아이템 이력·전술 v1/v2·시나리오·프리셋·로컬 공유 캐시를 함께 비우고 다른 프로필 캐시를 보존; 응답 손실 재시도는 같은 key와 **원 expected_revision**을 유지한다. 재시작 뒤 같은 요청은 원 `revision`을 반환, 같은 key에서 revision 변경은 `idempotency_conflict`, 삭제된 ID에 다른 key는 `profile_not_found`다. 동일 옛 create key로 삭제된 stable ID를 재생성하지 않는다(`idempotency_conflict`); 새 create key는 새 ID를 만들 수 있다. Dart Mock에도 이 의미를 맞추고 process E2E에서 실제 삭제/재시도/7번째 파일을 확인해 달라.
+- root guard→v1→v2→share 고정 lock, prepared before 복원/committed after 완료·재시도 tombstone, 정상 read/writer 진입 복구를 구현했다. 기존 WIP는 working 사본에 보존하고 selected HEAD10은 commit-only다(관련 없는 AST144 유지). native power-loss/real user profile delete·실제 Windows symlink fixture는 NOT_VERIFIED다.
+- **메인 반영 창 요청**: FE4-g3·FE6-e gate와 커밋이 끝난 뒤 이 로그에 반영 가능 회신을 남겨 달라. wholeGREEN 및 exact SHA 최종 보고 뒤 working10 반영→CF fb2d-dart→같은-source CF gate→XB exact10→CF commit 순서다. 회신 전 main backend/contracts/frontend/tool 변경0, frontend/lib/test 편집·stage·push0을 유지한다. 지금 실행 중인 full을 GREEN이라고 간주하지 않는다.
+- FB10a 왕복은 완료(CF e53fee9e·m2 d2a53fed, gate220445)다. 전체FB10 형식고정은 FD145 fallback crop 수명·FD146 영속 needs_review/승인 scope·FD096 통화 scan이 남아 별도 후속이며 FE8 전체 계약 고정 선언은 하지 않는다. 기존 `contracts/scan-commit-history-context-v1.schema.json`/applied·excluded scope는 그대로다.
+
+| path | working bytes/SHA256 | selected bytes/SHA256 |
+|---|---|---|
+| `backend/core/repository_transaction.py` | 9887/`a335c2b0a131c9315c79a3bd783c4c2b04790c1bf767b7b18e462717d89b7029` | 9887/`a335c2b0a131c9315c79a3bd783c4c2b04790c1bf767b7b18e462717d89b7029` |
+| `backend/core/repository_store.py` | 44276/`713ed632aad18be615aecba794ca342fba9f97d4af2ec0b5a22583f455694739` | 44276/`2fd99bd6cb054bc67c3cd9a4a2b3bc9ab005077283a6391f8516ebc123b6f9fe` |
+| `backend/core/tactical_store.py` | 16556/`023b97b11520d2f5135412e801c31ed6f31f18b30169354092ff8db4190f95d9` | 16556/`023b97b11520d2f5135412e801c31ed6f31f18b30169354092ff8db4190f95d9` |
+| `backend/core/tactical_v2.py` | 56905/`c71c881c3c76ac2df960a23c14d025dc235bed789b1b1b9cbe90c12cdba89472` | 56905/`c71c881c3c76ac2df960a23c14d025dc235bed789b1b1b9cbe90c12cdba89472` |
+| `backend/core/tactical_share_v1.py` | 30760/`0fae3f63e8c85460d9f231c1ad87bfc9a02b5d075ae161ba03f58ae313d641b4` | 30760/`0fae3f63e8c85460d9f231c1ad87bfc9a02b5d075ae161ba03f58ae313d641b4` |
+| `backend/core/profile_delete_transaction.py` | 14060/`28446c606e36c95666142a86d264c6ee4ec64d462c25be261af9d9ec55835393` | 14060/`28446c606e36c95666142a86d264c6ee4ec64d462c25be261af9d9ec55835393` |
+| `backend/core/repository_participant_lock.py` | 3272/`9fbaee530f207985d7090be6770509dad16ad7856b29d4e20bc1a1cce000ab1f` | 3272/`9fbaee530f207985d7090be6770509dad16ad7856b29d4e20bc1a1cce000ab1f` |
+| `backend/tests/test_profile_delete_fb2d.py` | 20271/`ebaff54e1c865dde22b7a94519a967bb9c054b229910ad96523bdbfa4f3c8815` | 20271/`ebaff54e1c865dde22b7a94519a967bb9c054b229910ad96523bdbfa4f3c8815` |
+| `contracts/README.md` | 85600/`165623772939a19f06209bac6735bae564aacccb6be5a9c7424164b64584c1a0` | 85600/`165623772939a19f06209bac6735bae564aacccb6be5a9c7424164b64584c1a0` |
+| `contracts/fixtures/profile_delete_fb2d_v1.json` | 952/`704a0cad6180fcf07ef62f7ffdeab6ec20ff47d19b42f87f62c61018bdfa989c` | 952/`704a0cad6180fcf07ef62f7ffdeab6ec20ff47d19b42f87f62c61018bdfa989c` |
+
+## 2026-10-12 01:38 — 알림(XB): FB2d 첫 whole 준비 실패 보존·304 fixture 복원·메인 보류 유지
+
+- 첫 canonical whole1211/832.969s는 **FAIL(실패8·오류12·skip6)**이다. source10/메인4094/external4 보존이며 소스 오류로 단정하지 않는다. 원인: bounded 입력 준비에서 기존 debug 테스트 입력304개를 누락했고, recorded frame/golden/hash·navigation/truth fixture가 없어 오류·skip이 났다. 이 준비 오류는 XB 책임이며 원 full log/receipt/사본을 불변 보존한다.
+- 이전1192 PASS의 실제 입력 map에 있는304 fixture를 bytes/SHA 확인 후 별도 `artifacts/product-v7-v2`와 selected 사본에 복원했다. source10 bytes/SHA는01:28 목록 그대로다. fixture/data/테스트/timeout/expected/golden 기준 수정0, 추가제외0, 새holdout/외부store 쓰기0이다. 원 full의 skip6을 수용 기준으로 삼지 않는다.
+- 단독 selected bounded250 재검증→별도 M2 isolated 실제 bundle build→v2 canonical full1211 순서로 실행한다. 메인 source 반영/커밋0 유지. wholeGREEN 전 FB2d overlay 후보를 ready로 받지 말아 달라. 사전Dart shape0·7번째 path는 응답키 없음·CF 확인 문구 연결 기준은01:28 그대로다.
+
+## 2026-10-12 02:00 — FE4-g3·FE6-e 검토·gate·커밋, XB FB-2d 반영 허가, 배정(Lane A FE6-d · Lane B fb2d-dart)
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. output.md의 파일 29개 SHA·크기 전부 일치, 범위 밖 수정 0.
+- gate ① `20261012_013553`: analyze 0, 테스트 328 + 632 + 492 + 55, process 57 PASS. golden RED 2 = 예측대로 `inventory-analysis`(isolatedDiff: 티어 버튼 흐림 → 활성, 플라이아웃 "중급" 두 곳 → "일반") + `inventory-tiers`(기준 없음) → 승인. `-UpdateGoldens` + 재비교 gate ② `20261012_014658` **GREEN**(golden 44). 새 `inventory-tiers` 검토: T1 노트·T2 BD(가운데 부유)·T4 오파츠 13행·T5 부족 상위 6·T6 요약 KPI + 분포 막대, 넘침 없음 → 승인. 사용자 캔버스 대조 몫: T6 분포 막대가 기울어 보이지 않음, T2 아랫변 −2.6px.
+- 커밋: **fe4g3 `0a0de57d`**(5파일) → **fe6e `fe920b81`**(20파일, CF가 `optional_added` = `inventory-tiers.png`).
+- 판단 수용: FE4-g3 ① 모두 나중에 = "지금 값" 문구 ② 초점 단계는 초안 단계 id에 있을 때만. FE6-e 정한 규칙 1~6, §5.6 결론. **FD-098 라벨 "일반"은 사용자 결정(FE6-e 세션)** — 대장 FD-098 행에 기록.
+- 발견 처리: FE4-g3 발견 1(바닥 = 지금 값인데 "마지막 단계" 문구)은 결과에 바닥 종류를 싣는 작은 후속(FE4-g3 후속, 급하지 않음). FE6-e 발견 1(부유 섹션 ±1px)은 Studio 부유 섹션 spec 소단위(Lane A 키트·Studio), 3(fe6a fixture `rio_armed`)은 다음에 `inventory`·`inventory-all` 기준을 바꾸는 slice에서 함께, 4(실제 카탈로그 오파츠 20행 → 23행 이상 잘림)는 그때 스크롤 후속, 5(헤더 부제)는 `app_section` 소단위로 모아 둔다. 학생 화면 학교 맵 이전은 다음 학생 쪽 Lane A slice.
+- XB 01:28(FB-2d 반영 창 요청) 회신: backend 로그에 **메인 반영 가능**. 순서 = XB whole GREEN·exact SHA → working10 반영 → 반영 완료 기록 → CF fb2d-dart → 같은 소스 CF gate → XB 커밋 → CF 커밋.
+- 배정(시작 SHA `fe920b81` 이후):
+  · Lane A **FE6-d** 오파츠 확장 — `debug/frontend_redesign_handoff/fe6d-worker-prompt-20261012.md`. 키트 morph가 필요해 Lane A(키트 소유)가 인벤토리 파일을 이 slice 동안 맡는다. 키트에 실수 rect morph + 섹션별 퇴장, `plan_phase_editor.dart`는 손대지 않음(FE5-f에서 제거 → FE5-f는 FE6-d 뒤). 확장 시퀀스·선택 오파츠 상세·점 선택(FD-103). 새 장면 `inventory-analysis-opa`.
+  · Lane B **fb2d-dart** — `debug/frontend_redesign_handoff/fb2ddart-worker-prompt-20261012.md`. 시작 조건 = backend 로그의 XB "FB-2d 메인 반영 완료". 그 전엔 읽기·착수 기록만 하고 BLOCKED로 멈춤.
