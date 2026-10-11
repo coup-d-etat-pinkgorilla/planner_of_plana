@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb10a-dart 코드 작성 완료, gate 대기(2026-10-11).** 시작 커밋 `feb4dc2b`. 아래 "fb10a-dart 착수 기록"·"fb10a-dart 종료 기록"(맨 끝 사용자 실행 명령). 그 전: FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE6-c 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `9d959d15`. 아래 "FE6-c 착수 기록"·"FE6-c 종료 기록". 그 전: fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -1794,3 +1794,162 @@ Flutter·Dart·Python이 이 환경에 없어 analyze·테스트·process E2E·g
   2. XB가 FB-10a exact10을 먼저 커밋한 뒤:
      - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb10adart -DryRun`
      - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb10adart`
+
+## FE6-c 착수 기록 (2026-10-11)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: 인벤토리 분석 모드(시안 `Inventory-Analysis.dc.html`). 워커 프롬프트(CF, 로컬 Claude Code).
+  1. 사이드바 분석 모드: 최상단 "목록 | 분석" seg, "비교 기준"(계획 요구량 / 이론상 전체 요구량 비활성 FD-097), "이 화면에 보이는 분석" 버튼 4개, "따로 여는 화면"(티어별 충족률 비활성 FE6-e, 넘치는 재화 정리 숨김 FD-097).
+  2. S1 학교별 BD·기술 노트 충족률(FD-031·FD-032·FD-099·FD-100·FD-101), "계획 n명" 플라이아웃.
+  3. S2 오파츠 보유율 × 수요 산점도(CustomPainter, 키트 `StatChartFrame`), "확장"은 FE6-d 전까지 비활성.
+  4. S4 종류 × 티어 충족률 히트맵 + 부족 상위 3행(FD-033).
+  5. S5 최근 변화: 틀·seg·빈 상태만(데이터 FE6-f).
+- 범위 밖: 확장 애니메이션(FE6-d), 티어별 충족률 화면(FE6-e), 최근 변화 데이터(FE6-f), `lib/services/**`, 키트, golden harness·기존 golden 테스트, `app_shell.dart`, `statistics/**`, Lane A 파일(`plan_flow_draft.dart`·`plan_section_layout.dart`·`widgets/plan_*`), 백엔드·계약, `scan_page.dart`.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `9d959d15416b6251e8aaa1d682ea3550d48af524`.
+- 막힘: 대장 막힘 요약의 FE6-c 행은 FD-031(확정 2026-10-06)뿐이다. 막는 열림 FD 없음. FD-032·FD-097·FD-098·FD-099·FD-100·FD-101은 워커 재량(권장안대로).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6c/pre/<v7 기준 경로>`):
+  - `frontend/lib/ui/pages/inventory_page.dart`
+  - `frontend/lib/ui/inventory/inventory_controller.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/studio/inventory_studio_layout.dart`
+- 새 파일(예정): `frontend/lib/ui/inventory/inventory_analysis.dart`(집계 순수 함수), `frontend/lib/ui/inventory/inventory_analysis_sections.dart`(분석 섹션 위젯, workspace의 part), `frontend/lib/ui/inventory/inventory_analysis_charts.dart`(산점도·히트맵 painter), 테스트(`test/inventory_analysis_test.dart`, `test/inventory_analysis_page_test.dart`, 검수 fixture `test/inventory_fe6c_fixture.dart`), golden 1장 `test/goldens/fe6c_inventory_analysis_golden_test.dart`(`inventory-analysis`, 실행하지 않음).
+- WIP: 고칠 기존 파일 4개 모두 `git status --short`가 비어 있다(미커밋 변경 없음). `inventory_page.dart`는 CRLF, 나머지는 LF다.
+
+## FE6-c 종료 기록 (2026-10-12, 코드 작성 완료·CF gate 미실행)
+
+시안 Inventory-Analysis(분석 모드 기본, 밀레니엄 플라이아웃 열림)의 분석 모드를 끝냈다. 확장 애니메이션(FE6-d)·티어별 충족률 화면(FE6-e)·최근 변화 데이터(FE6-f)는 범위 밖이다.
+
+### 실행 명령·결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차) | 이슈 1(warning `unused_element_parameter`, `_AnalysisGlyphPainter.color`) → 고침 |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| `flutter test test/inventory_analysis_test.dart` | 16 통과 · 0 실패 |
+| `flutter test test/inventory_analysis_page_test.dart` | 8 통과 · 0 실패 |
+| `flutter test test/inventory_controller_test.dart` | 13 통과 · 0 실패 |
+| `flutter test test/inventory_currency_readonly_test.dart` | 2 통과 · 0 실패 |
+| `flutter test test/inventory_page_test.dart` | 9 통과 · 0 실패 |
+| `flutter test test/inventory_shell_lazy_test.dart` | 1 통과 · 0 실패 |
+| `flutter test test/inventory_view_model_test.dart` | 13 통과 · 0 실패 |
+| `git diff --check -- frontend/lib/ui frontend/test <status>` | 0(경고는 autocrlf 안내뿐) |
+
+- 걸리는 기존 테스트는 `InventoryPage`·`inventory_workspace`·`InventoryController`·`inventory_studio_layout`·`inventory_view_model`·`top-tab-inventory`·`inventory-page`를 grep해서 찾았다(위 5개 기존 파일 전부 실행). 기존 테스트 기대는 바꾸지 않았다.
+- 빌드 잠금(`build/`·`.dart_tool/`) 충돌은 없었다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+### 고친 파일
+
+- **`frontend/lib/ui/studio/inventory_studio_layout.dart`**: 분석 Studio 문서 `inventoryAnalysisStudioDocument`(A 사이드바는 목록과 같은 element + S1·S2·S4·S5), id 상수, `inventoryAnalysisSection`, 섹션 안 좌표 `InventoryAnalysisMetrics`를 더했다. 목록 문서·`InventoryMetrics`·`InventoryAllMetrics`는 그대로다.
+- **`frontend/lib/ui/inventory/inventory_controller.dart`**: "목록 · 분석" 상태(`screenMode`), 분석 강조(`analysisFocus`), S2 티어 토글, S4 종류·표시, S5 기간과 집계 메모(`schoolRows`·`oopartAnalysis`·`heatmap`, 보드·사용 단계가 바뀔 때만 다시 센다). FE6-a·b 로직(로드 순서·재화 읽기 전용·편집·후보 승인)은 손대지 않았다.
+- **`frontend/lib/ui/inventory/inventory_workspace.dart`**: 최상단 seg를 살렸다(두 칸 `inventory-mode-list`·`inventory-mode-analysis` 키 유지, 간격 6). 분석 모드면 사이드바 아래쪽이 분석 메뉴가 되고 B·C·D 대신 분석 네 섹션을 그린다. 표면 painter는 모드별 섹션을 칠한다. 분석 위젯은 같은 라이브러리의 `part`(`inventory_analysis_sections.dart`)라 `_SectionQuad`·`_Fit`·`_railButton` 등을 그대로 쓴다.
+- **`frontend/lib/ui/pages/inventory_page.dart`**(CRLF 유지): 스캔 후보가 새로 오면 build 밖(microtask)에서 목록 보기로 돌린다(후보 승인 띠가 목록 C 섹션에 있으므로).
+- 새 파일:
+  - `frontend/lib/ui/inventory/inventory_analysis.dart`: 집계 순수 함수(충족률·학교 행·학생별 부족·오파츠 점·히트맵·부족 상위, 라벨 맵, 모드 enum).
+  - `frontend/lib/ui/inventory/inventory_analysis_charts.dart`: 산점도 `InventoryOopartScatterPainter`(키트 `StatChartPainter`), 히트맵 `InventoryTierHeatmapPainter`(키트 `paintHatch`).
+  - `frontend/lib/ui/inventory/inventory_analysis_sections.dart`: 분석 사이드바 메뉴와 S1·S2·S4·S5 위젯.
+  - 테스트 `frontend/test/inventory_analysis_test.dart`(16), `frontend/test/inventory_analysis_page_test.dart`(8), 검수 fixture `frontend/test/inventory_fe6c_fixture.dart`(테스트 파일 아님), golden `frontend/test/goldens/fe6c_inventory_analysis_golden_test.dart`(1장, 실행 안 함).
+- 고치지 않음: `lib/services/**`, 키트, golden harness·기존 golden 테스트, `app_shell.dart`, `statistics/**`, Lane A 파일, 백엔드·계약, `scan_page.dart`, FE6-a fixture(`inventory`·`inventory-all` 장면이 쓰므로 분석 fixture를 따로 만들었다).
+
+### 섹션 배치(기준 viewport 2560×1392, Studio 문서)
+
+시안 x가 grid에 맞지 않아 rect만으로는 ±1px를 못 맞춘다(FE6-a C 섹션과 같은 문제). 그래서 같은 path 생성 함수의 `faceStart`·`faceSpan`·`height`(모두 96 grid 정수)까지 골라 꼭짓점을 맞췄다(전수 탐색, scratch 스크립트).
+
+| 섹션 | rect(grid) · spec | 꼭짓점(위 왼·위 오·아래 오·아래 왼) | 시안 대비 최대 |
+|---|---|---|---|
+| A 사이드바 | (0,2,26,94) 왼쪽 사다리꼴 | 목록과 같음 | 0 |
+| S1 학교별 | (20,2,44,47) 위 평행사변형, face 15+69, 깊이 96 | (716.7,209.2)·(1560,209.2)·(1455.7,800.6)·(612.4,800.6) | −0.8 · +0.6px |
+| S2 오파츠 | (52,2,44,51) 오른쪽 사다리꼴, face 0+85, 깊이 88 | (1584.6,209.2)·(2560,209.2)·(2560,777.4)·(1484.4,777.4) | +0.6px |
+| S4 종류 × 티어 | (47,47,49,49) 오른쪽 사다리꼴, face 4+92, 깊이 87 | (1480.0,801.1)·(2560,801.1)·(2560,1392)·(1375.8,1392) | +0.4px |
+| S5 최근 변화 | (14,45,44,51) 아래 평행사변형, face 11+69, 깊이 85 | (608.0,823.8)·(1451.3,823.8)·(1351.1,1392)·(507.8,1392) | −1.0px(왼쪽 두 꼭짓점 −1.03) |
+
+섹션 안 요소(섹션 위·사선 왼쪽 변 기준, 시안 값): 제목 줄 위 20·높이 40·왼쪽 22(S4 24·S5 23.9), 규칙선 위 65·왼쪽 21.8 · 학교 행 위 78·52·피치 70·왼쪽 23.9 · 티어 토글 위 78·왼쪽 30 · 산점도 svg 1012×420 위 120(아래 왼쪽이 변에서 28.9) · 히트맵 .plain 위 78·322(그리드 바닥 왼쪽 87.8, 윗변 오른쪽 여백 36.4) · 부족 상위 캡션 404·행 434/46/50·왼쪽 24.1 · 사이드바 분석 메뉴 78·102·142·172·198(44/52)·422·448(58).
+
+### 처리한 FD
+
+- **FD-031(확정)·FD-032(워커 재량, 권장안)**: 학교 BD · 노트, 히트맵 칸 모두 범위 안 계획 재화의 min(보유, 필요)/필요 단순 평균. 보유 모름은 평균에서 빼고 "n종 모름"(S1 부족 글자 뒤 `· n종 모름`, S2 범례 `보유 모름 n종 제외`, 히트맵 빗금 + `—`).
+- **FD-033(확정)**: 서로 다른 재화 수량을 더하지 않는다. 학생별 부족은 같은 재화 안의 단계만 더한다. **히트맵 "보유량 · 부족량" 모드에서 한 칸이 여러 재화를 묶으면** 수량 대신 `n종`을 쓰고 색은 그 칸 충족률 평균이다(지금 카탈로그는 family+티어 · 학교+티어가 재화 하나라 실제로는 생기지 않는다. 단위 테스트로 고정).
+- **FD-097(워커 재량)**: "이론상 전체 요구량" seg 칸은 비활성(의미 라벨 "준비 중"), "과잉 재화 / 넘치는 재화 정리" 버튼은 그리지 않는다.
+- **FD-098(워커 재량)**: 노트·BD 티어 라벨 1 초급 · 2 중급 · 3 상급 · 4 최상급(히트맵 열 머리·부족 글자·플라이아웃), 오파츠·설계도는 `T<n>`.
+- **FD-099(워커 재량)**: S1 학교·S2 오파츠·S4 행은 활성 계획이 쓰는(필요 > 0) 재화가 있는 것만. 히트맵 열은 카탈로그의 그 종류 최고 티어까지(설계도 10, 나머지 4), 계획에 안 쓰는 칸은 옅은 바탕만.
+- **FD-100(워커 재량)**: 환산 없이 티어별 그대로, "계획 필요 환산량 기준" 칩 숨김.
+- **FD-101(워커 재량)**: 학생별 필요량은 활성 문서 계산 `stage_results[].resources`(FE6-a의 `inventoryStageUses` 경로 재사용). 문서 계산이 없으면 부족 계산 `affected_student_ids`로 학생만 세고 몫은 `—`.
+
+이번에 정한 규칙(시안·대장에 근거 없음, 워커 결정):
+1. 학교 행 순서: BD · 노트 충족률 중 낮은 값이 낮은 순(막히는 학교가 위). 모르면 뒤, 같으면 계획 학생 많은 순 → 카탈로그 순서. 시안 순서(밀레니엄 91/76이 맨 위)는 견본 값이라 어떤 규칙과도 맞지 않는다.
+2. S1 "부족 티어": 모자라는 재화 중 가장 높은 티어 → 충족률 낮은 것 → BD 먼저. 둘 이상이면 `외 n`.
+3. 플라이아웃 학생 줄: 종류마다 그 학생이 모자라는 가장 높은 티어 하나(`상급 BD 12`), 없으면 `—`. 순서는 모자람 있음 → 가장 높은 티어 → 그 부족량 → 이름. 5명 + `… 외 n명` + "계획에서 보기 →"(계획 탭).
+4. 오파츠 산점도: y = 사용 학생 수(0명 362 → 최대 18, 가운데 190 = 최대의 절반), x = 보유율(그 높이의 80° 사선을 따라 민다). "핵심 병목" = 보유율 50% 미만 + 학생 수가 최대의 절반 초과(왼쪽 위 4분면) → 반지름 9 + 분홍 테두리, 이름 분홍 굵게. 시안의 티어별 9px y 어긋남은 견본 표현이라 넣지 않았다. 점 위에 마우스를 올리면(누르기도 같다) `<이름> T<n> · 보유율 x% · 학생 n명` 말풍선.
+5. 부족 상위: 그 종류의 부족량 큰 순 → 사용 학생 많은 순 → 카탈로그 순서, 3행. 행은 정보 행(누르는 동작 없음, 시안 `.row`).
+6. 히트맵 행이 많아 322 안에 안 들어가면 칸 높이를 26에서 최소 16까지 줄인다. 그보다 많으면 섹션 상자에서 잘린다.
+
+### §3.6 모호점별 결론
+
+1. **seg 공존**(dc_outline 확인): 분석 시안의 "목록 | 분석"은 목록 시안의 같은 자리(사이드바 위 +22)다. 분석 시안에는 "아이템 | 장비"가 없고 그 다음 자리(+78)가 "비교 기준" 캡션이다. 결론: 최상단 "목록 | 분석"은 두 모드 공통, "아이템 | 장비"는 목록 모드에서만 그 아래(FD-095 본문과 같다).
+2. **과잉 재화 화면**: 시안 artboard가 없다 → 버튼 숨김(FD-097).
+3. **"이 화면에 보이는 분석" 버튼 4개**: 최소 동작 = 그 섹션 외곽선을 분홍 2px로 강조하고 버튼을 선택(분홍) 상태로 둔다. 다시 누르면 푼다. "장비 설계도"는 S4 종류를 설계도로 돌린다. 네 섹션이 기준 viewport에 다 보이므로 스크롤·이동은 없다. 시안 버튼 끝 아이콘은 체크 표시(`M5 12.5l4.5 4.5L19 7.5`)라 "이 화면에 있음" 뜻으로 그렸다.
+4. **학교 6 vs 9**: FD-099 — 분석은 활성 계획이 쓰는 학교만(티어별 화면은 FE6-e에서 카탈로그 전부).
+5. **오파츠 8 vs 13**: FD-099 — 분석은 활성 계획이 쓰는 오파츠만.
+
+### golden 변화 예상
+
+- **`inventory`·`inventory-all`(바뀜, 사이드바 한 칸)**: 최상단 "분석" seg 칸이 FE6-a·b의 비활성(불투명도 .45)에서 활성 · 선택 안 됨(불투명도 1)으로 바뀐다. 위치·크기·"목록" 칸·나머지 화면은 같다(두 칸 배치·간격 6·키 그대로). 이유: 분석 모드가 생겨 그 칸을 눌러야 한다. 시안 Inventory·Inventory-All의 "분석" 칸도 흐리지 않은 `.seg`다. → 두 기준 이미지를 commit.json `whole`에 파일 단위로 넣었다(CF가 `failures/`를 보고 승인).
+- **다른 장면**: 변화 0. 인벤토리 탭이 보이지 않고, 오프스테이지 첫 로드 시점(FE6-b `active`)도 그대로다.
+- **새 장면 `inventory-analysis`**(`fe6c_inventory_analysis_golden_test.dart`, 기준 이미지 없음 → RED, CF가 만든다). 기대 모습:
+  - 왼쪽 사이드바: "목록 | 분석"(분석 핑크), "비교 기준" + "계획 요구량"(선택)·"이론상 전체 요구량"(흐림), 설명 한 줄, "이 화면에 보이는 분석" 버튼 4개(끝 체크), "따로 여는 화면" 티어별 충족률(흐림, 오른쪽 화살표). 과잉 재화 버튼 없음.
+  - S1(위 가운데 평행사변형): 학교 6행이 사선을 따라 내려간다. 순서 백귀야행(30%/22%) · 산해경(40/35) · 게헨나(81/41) · 트리니티(68/54) · 밀레니엄(91/76) · 아비도스(95/88). 엠블럼은 학교 로고 그림. 밀레니엄 "계획 5명" 플라이아웃이 아래로 열려 유우카(상급 BD 9 · 중급 노트 20) · 노아(— · 중급 노트 4) · 리오(무장) · 토키(무장) · 히마리(무장)(— · —)와 "계획에서 보기 →". 초상은 리오·토키·히마리(무장)는 `*_battle` 그림이 있다.
+  - S2(오른쪽 위): 제목 + "왼쪽 위 = 핵심 병목" 칩 + "확장"(흐림), T1~T4 토글(모두 켜짐) + 범례, 평행사변형 플롯에 8종 × 4티어 점과 선, 네브라 디스크 T3·T4 등 왼쪽 위 점에 분홍 고리, 이름 라벨.
+  - S4(오른쪽 아래): "종류 × 티어 충족률" + seg(설계도 선택) + 칩(충족률 핑크), 9부위 × T1~T10 기울인 히트맵(T1~T4 빈 칸, T5~T10 파랑 농담 + %, 목걸이 T9 빗금 `—`), 범례, 부족 상위 3행(시계 T8 −36 · 7명 / 가방 T10 −22 · 2명 / 헤어핀 T10 −12 · 1명 + 초상 줄).
+  - S5(아래 가운데): "최근 변화" + 1주·2주·4주 seg, 가운데 "변화 기록이 아직 없습니다." + 보조 글자.
+
+### 검수표
+
+artboard `Inventory-Analysis.dc.html` → 앱:
+- 여는 방법: 인벤토리 탭 → 사이드바 맨 위 "분석". Mock 기본 실행은 계획이 없어 S1에 "저장된 계획이 없습니다…" 안내만 보인다. 시안 숫자 장면은 fixture로만 열린다(golden `inventory-analysis` 장면, `test/inventory_analysis_page_test.dart`).
+- 확인 포인트:
+  1. 다섯 섹션(A·S1·S2·S4·S5)이 시안 자리에 들어오는가(S1·S5 평행사변형, S2·S4 오른쪽 사다리꼴, 사이 간격).
+  2. 사이드바: 목록 ↔ 분석 전환, 분석에서 아이템·장비·종류·주요 재화가 사라지고 비교 기준·버튼 4개·티어별 충족률(흐림)이 보이는가. 과잉 재화 버튼 없음.
+  3. 버튼 4개: 누르면 해당 섹션에 분홍 외곽선, 다시 누르면 사라짐. "장비 설계도"는 S4를 설계도로.
+  4. S1: 학교 행 · 엠블럼 · BD 파랑/노트 분홍 막대 + % · 부족 티어 글자 · "계획 n명" 칩 hover/누름 → 학생별 부족 필요량 플라이아웃, "계획에서 보기 →"로 계획 탭.
+  5. S2: 점 색 = 티어, 같은 오파츠 선, 4분면 점선, 병목 고리, 티어 토글로 점이 빠지고 돌아오는가, 점 hover 말풍선, "확장" 흐림.
+  6. S4: 종류 seg 4개 전환, 충족률/보유량/부족량 칩, 칸이 80°로 기울고 글자는 똑바른가, 빗금 칸, 범례, 부족 상위 3행.
+  7. S5: 1주/2주/4주 seg와 빈 상태 글자.
+  8. 작은 창(1280×720)에서 예외 없이 잘리는가.
+
+### 미검증 항목
+
+- golden(새 장면 `inventory-analysis`, 바뀌는 `inventory`·`inventory-all`): 미실행(CF가 `fe_gate.ps1`·`failures/` 검토·`-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(다른 테스트·process E2E·`codealmanac validate`): 미실행.
+- 섹션 path bounds는 계산으로만 맞췄다(위 표). 섹션 안 요소 ±2px는 시안 좌표를 상대값으로 옮긴 계산이고 화면에서 재지 않았다. 특히 S1 막대 폭(BD 126 · 노트 129)은 시안 flex 축소를 손으로 계산한 값, 히트맵 세로 위치는 시안 가운데 정렬(322 안 287 + 범례 22)을 계산한 값이다.
+- 엠블럼 그림(`School_Icon_*.png`)이 실제로 시안 엠블럼과 같은 모양인지, 흰색으로 칠해야 하는지 보지 않았다(지금은 원본 색 그대로 불투명도 .92).
+- 실제 백엔드 카탈로그(school `Millennium` 등, family `oopart:<Key>`·`equipment:<Key>`)와는 FB-3 계약·`backend/core/inventory_catalog.py` 읽기로만 맞췄다.
+
+### WIP 보존 확인
+
+- 고친 기존 파일 4개는 착수 때 WIP가 없었다(`git status --short` 빈 줄). 그래서 post 사본·`post_dir`는 두지 않았다.
+- 작업 트리의 다른 미커밋 변경(서비스 3개 `mock_app_service.dart`·`planning_protocol_client.dart`·`process_app_service.dart`, Lane A `plan_flow_draft.dart`·`plan_flow_handoff_test.dart`, 스캐너 파일들, `fe_commit.ps1`, 추적 안 된 asset 폴더)은 읽지도 고치지도 않았다.
+- git 쓰기는 하지 않았다.
+
+### 발견 사항
+
+1. 시안 S1 숫자는 견본 값이라 서로 맞지 않는다(아비도스 BD 95%·노트 88%인데 "부족 —"). 구현은 규칙대로 "부족 상급 BD 외 1" 류를 보인다.
+2. 시안 산점도는 같은 오파츠의 티어 점을 y 9px씩 어긋나게 그렸고, 병목 고리는 T4 두 점에만 있다. 구현은 실제 학생 수(같으면 같은 높이)와 위 4분면 규칙을 쓴다. 점이 겹칠 수 있다.
+3. 학교 표시 이름 · 엠블럼 맵을 인벤토리 쪽에 따로 두었다(`inventorySchoolLabel`·`inventorySchoolEmblemAsset`). 학생 화면 `studentSchoolLogoAsset`(student_section_layout.dart)은 학생 catalog 값(`red winter`·`wild hunt` 공백)을 받고, 카탈로그 school 값은 `RedWinter`·`Wildhunt`다. 공용 모델로 합칠지 CF 판단이 필요하다. `InventoryCatalogEntry` 주석("표시 라벨·enum은 프론트가 정하지 않는다")과는 값 검증이 아니라 표시라 충돌하지 않는다고 보았다.
+4. 키트 `TonalButton.icon`은 `IconData`만 받는다. 시안 "확장" svg 대신 Material `Icons.open_in_full`을 썼다. 시안 아이콘을 쓰려면 키트 요청(위젯 아이콘 슬롯)이다.
+5. FE6-a·b에서 "분석" seg를 비활성으로 그린 것은 시안과 다른 임시 상태였다. 이번에 활성으로 바꿔 `inventory`·`inventory-all` 기준 이미지가 한 칸 바뀐다(위 golden 예상).
+6. S5 "주간 순증감 상위" 캡션 · 증감 막대 · "이 추세라면" 예측 행은 FE6-f 몫이라 그리지 않았다. 예측 규칙은 대장에 없다(FE6-f 착수 전 FD 필요).
+7. 학생 초상 id: 시안의 리오(무장) 등은 asset이 `rio_battle`·`toki_battle`·`himari_battle`이다(FE6-a fixture의 `rio_armed`는 그림이 없다). 검수 fixture만의 문제다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe6c/pre/<경로>`(고친 기존 파일 4개). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe6c/commit.json`: slice `fe6c`, `status=false`, modified 4, added 7(golden 기준 이미지 `inventory-analysis.png`는 CF가 넣는다), `whole = [이 문서, frontend/test/goldens/baseline/inventory.png, frontend/test/goldens/baseline/inventory-all.png]`(바뀌는 기존 기준 이미지 파일 단위). message 근거: Inventory-Analysis artboard, E §3, FD-031·032·033·097·098·099·100·101.
+- 인계: `debug/frontend_fe6c/output.md`.
+
+### 다음 행동
+
+- FE6-c 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 +24(집계 16 + 위젯 8), golden은 새 장면 `inventory-analysis` 기준 없음 RED + `inventory`·`inventory-all` 사이드바 "분석" 칸만 RED, 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens`·재비교·`fe_commit.ps1 -Slice fe6c`.
+- 발견 사항 3·4(학교 맵 공용화, 키트 아이콘 슬롯)는 CF 결정을 기다린다.

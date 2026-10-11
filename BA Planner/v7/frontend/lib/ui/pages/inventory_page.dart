@@ -9,6 +9,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../inventory/inventory_analysis.dart' show InventoryScreenMode;
 import '../inventory/inventory_controller.dart';
 import '../inventory/inventory_workspace.dart';
 import '../widgets/diagonal_section.dart';
@@ -63,6 +64,13 @@ class _InventoryPageState extends State<InventoryPage> {
   void didUpdateWidget(InventoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.active) _start();
+    // FE6-c: 스캔 후보가 새로 오면 후보 승인 띠가 있는 목록 보기로 돌린다(build 밖에서 알린다).
+    if (widget.candidateContext != null &&
+        widget.candidateContext != oldWidget.candidateContext) {
+      Future<void>.microtask(() {
+        if (mounted) _controller.setScreenMode(InventoryScreenMode.list);
+      });
+    }
   }
 
   /// 첫 로드는 build 밖에서 시작한다(넘겨받은 컨트롤러에 이미 듣는 위젯이 있어도 build 중 알림이 생기지 않게).

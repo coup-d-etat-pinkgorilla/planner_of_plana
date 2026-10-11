@@ -1,6 +1,6 @@
 // 인벤토리 4섹션 화면(FE6-a, 시안 Inventory "부족한 것" 보기, E 보고서 §1).
 //
-// - A 사이드바(왼쪽 사다리꼴): "목록 · 분석" seg(분석은 FE6-c까지 꺼 둠) → "아이템 · 장비" seg → 보기("부족한 것 n종"
+// - A 사이드바(왼쪽 사다리꼴): "목록 · 분석" seg → (목록) "아이템 · 장비" seg → 보기("부족한 것 n종"
 //   기본 FD-094 / "전체 n종") → 종류 버튼(category 1:1 FD-095, 사선을 따라 폭이 줄고 "부족 n" 칩) → 주요 재화 카드
 //   (크레딧 · 엘리그마, 누르면 상세).
 // - B KPI 띠: 보유 품목 · 부족 재화 · 과잉 재화(FD-040) · 계획 충족률(FD-031 (a)) · 최근 감소 · 마지막 스캔. 증감 ·
@@ -9,6 +9,8 @@
 //   후보 승인 패널(FE8-g5 전까지)과 알림 줄은 목록 위 띠에 둔다.
 // - D 상세(오른쪽 사다리꼴): 머리(아이콘 · 이름 · FB-3 메타) · kv(보유 · 필요 · 부족 · 충족률) · 수량 직접 고치기 칸 ·
 //   사용 학생(FD-101) · 보충 방법(FB-3 획득처) · 최근 변화(FE6-f 전 빈 상태) · 액션 3개(FD-125).
+// - 분석 모드(FE6-c, 시안 Inventory-Analysis): A 사이드바 아래쪽이 분석 메뉴로 바뀌고 B·C·D 대신 S1 학교별 · S2 오파츠 ·
+//   S4 종류 × 티어 · S5 최근 변화 네 섹션을 그린다(`inventory_analysis_sections.dart`).
 // 섹션 rect는 Studio 문서(`ui/studio/inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
 // 작은 창에서는 각 내용 묶음이 시안 최소 크기 아래로 줄지 않고 자기 상자(사선을 따라 계산한 rect)로 잘린다(전체
 // 화면을 줄이지 않는다).
@@ -31,7 +33,9 @@ import '../kit/kit_pressable.dart';
 import '../kit/scroll_viewport_fog.dart';
 import '../kit/shortage_flyout.dart';
 import '../kit/skew_bar.dart';
+import '../kit/portrait_strip.dart';
 import '../kit/skew_controls.dart';
+import '../kit/stat_chart.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/inventory_studio_layout.dart';
@@ -39,8 +43,12 @@ import '../widgets/growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
+import 'inventory_analysis.dart';
+import 'inventory_analysis_charts.dart';
 import 'inventory_controller.dart';
 import 'inventory_view_model.dart';
+
+part 'inventory_analysis_sections.dart';
 
 /// 시안 값(섹션 위 기준, A·B는 y=209.2, C·D는 y=365.2).
 abstract final class InventoryMetrics {
@@ -157,8 +165,10 @@ Color inventoryRiskColor(double? score) =>
 class _SectionQuad {
   const _SectionQuad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
 
-  factory _SectionQuad.of(Size size, String id) {
-    final section = inventorySection(id);
+  factory _SectionQuad.of(Size size, String id, {bool analysis = false}) {
+    final section = analysis
+        ? inventoryAnalysisSection(id)
+        : inventorySection(id);
     final rect = sectionCanvasElementRect(size, section);
     final points = [
       for (final point in buildAttachedSectionPolygon(rect.size, section.spec))
@@ -251,23 +261,38 @@ class InventoryWorkspace extends StatelessWidget {
         constraints.maxWidth.isFinite ? constraints.maxWidth : 1280,
         constraints.maxHeight.isFinite ? constraints.maxHeight : 720,
       );
+      final analysis = controller.screenMode == InventoryScreenMode.analysis;
       return SizedBox.fromSize(
         key: const ValueKey('inventory-page'),
         size: size,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            const Positioned.fill(
+            Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
-                  key: ValueKey('inventory-surfaces'),
-                  painter: _InventorySurfacesPainter(),
+                  key: ValueKey(
+                    analysis
+                        ? 'inventory-analysis-surfaces'
+                        : 'inventory-surfaces',
+                  ),
+                  painter: _InventorySurfacesPainter(analysis: analysis),
                 ),
               ),
             ),
-            Positioned.fill(child: _detail(context, size)),
-            Positioned.fill(child: _risk(context, size)),
-            Positioned.fill(child: _kpis(size)),
+            if (analysis)
+              Positioned.fill(
+                child: _InventoryAnalysisSections(
+                  controller: controller,
+                  onOpenPlan: onOpenPlan,
+                  size: size,
+                ),
+              )
+            else ...[
+              Positioned.fill(child: _detail(context, size)),
+              Positioned.fill(child: _risk(context, size)),
+              Positioned.fill(child: _kpis(size)),
+            ],
             Positioned.fill(child: _sidebar(size)),
           ],
         ),
@@ -305,28 +330,29 @@ class InventoryWorkspace extends StatelessWidget {
         child: _Fit(
           minWidth: 220,
           minHeight: AppControlHeights.segmented,
+          // 두 칸을 따로 둔다(목록 · 분석 키를 FE6-a 그대로 유지, 배치는 한 seg의 간격 6과 같다).
           child: Row(
             children: [
-              SkewSegmented<String>(
-                key: const ValueKey('inventory-mode-list'),
-                segments: const [SkewSegment(value: 'list', label: '목록')],
-                selected: 'list',
-                onChanged: (_) {},
-              ),
-              const SizedBox(width: 6),
-              Semantics(
-                label: '분석은 준비 중입니다',
-                child: const SkewSegmented<String>(
-                  key: ValueKey('inventory-mode-analysis'),
-                  segments: [SkewSegment(value: 'analysis', label: '분석')],
-                  selected: null,
-                  onChanged: null,
+              for (final screen in InventoryScreenMode.values) ...[
+                if (screen != InventoryScreenMode.values.first)
+                  const SizedBox(width: 6),
+                SkewSegmented<InventoryScreenMode>(
+                  key: ValueKey('inventory-mode-${screen.name}'),
+                  segments: [SkewSegment(value: screen, label: screen.label)],
+                  selected: controller.screenMode == screen ? screen : null,
+                  onChanged: controller.setScreenMode,
                 ),
-              ),
+              ],
             ],
           ),
         ),
       ),
+    ];
+    if (controller.screenMode == InventoryScreenMode.analysis) {
+      children.addAll(_analysisSidebar(top, width, row));
+      return Stack(clipBehavior: Clip.none, children: children);
+    }
+    children.addAll([
       Positioned(
         left: InventoryMetrics.sidebarTextLeft,
         top: top + InventoryMetrics.kindSegTop,
@@ -404,7 +430,7 @@ class InventoryWorkspace extends StatelessWidget {
         ),
       ),
       _sideCaption(top + InventoryMetrics.categoryCaptionTop, width, '종류'),
-    ];
+    ]);
     var y = InventoryMetrics.categoryButtonTop;
     for (final category in categories) {
       children.add(
@@ -1381,12 +1407,29 @@ String inventoryAcquisitionDetail(ResourceAcquisitionMethod method) {
   return parts.join(' · ');
 }
 
-/// 네 섹션 표면을 한 번에 그린다(그림자 → 표면 순서는 섹션마다).
+/// 섹션 표면을 한 번에 그린다(그림자 → 표면 순서는 섹션마다). 목록은 네 섹션, 분석(FE6-c)은 다섯 섹션이다.
 class _InventorySurfacesPainter extends CustomPainter {
-  const _InventorySurfacesPainter();
+  const _InventorySurfacesPainter({this.analysis = false});
+
+  final bool analysis;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (analysis) {
+      for (final id in const [
+        inventoryAnalysisTiersSectionId,
+        inventoryAnalysisChangesSectionId,
+        inventoryAnalysisOopartsSectionId,
+        inventoryAnalysisSchoolsSectionId,
+        inventorySidebarSectionId,
+      ]) {
+        paintSectionSurface(
+          canvas,
+          buildSectionCanvasElementPath(size, inventoryAnalysisSection(id)),
+        );
+      }
+      return;
+    }
     for (final id in const [
       inventoryDetailSectionId,
       inventoryRiskSectionId,
@@ -1404,7 +1447,8 @@ class _InventorySurfacesPainter extends CustomPainter {
   bool? hitTest(Offset position) => false;
 
   @override
-  bool shouldRepaint(_InventorySurfacesPainter oldDelegate) => false;
+  bool shouldRepaint(_InventorySurfacesPainter oldDelegate) =>
+      oldDelegate.analysis != analysis;
 }
 
 /// C 안쪽 스크롤 패널(시안 rgba(26,44,59,.9) + 1px rgba(56,81,107,.72)).

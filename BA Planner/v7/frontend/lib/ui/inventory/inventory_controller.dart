@@ -5,6 +5,9 @@
 // revision) → 학생 이름(`listStudents`, 실패해도 계속) → 저장된 목표가 있으면 부족 계산(`calculateShortages`)과 활성
 // 문서 계산(`calculatePlanningDocument`, FD-101 사용 학생). 늦게 온 응답은 세대 번호로 버린다.
 //
+// 분석 모드(FE6-c): "목록 · 분석" seg, 분석 사이드바 강조, S2 티어 토글, S4 종류·표시, S5 기간을 들고, 집계
+// (`inventory_analysis.dart`)는 보드·사용 단계가 바뀔 때만 다시 센다.
+//
 // 재화 읽기 전용(fb3-dart, FB-3 `currency_read_only`):
 // - 재화 키(credits·엘리그마)는 draft·dirty가 되지 않는다([setDraft]·[beginEdit]가 거절한다).
 // - 저장 wire는 재화 항목을 저장된 map 그대로(이름·메타 포함) 두고, 없는 재화는 만들지 않으며 null을 '0'으로 바꾸지
@@ -18,6 +21,7 @@ import '../../services/app_service.dart';
 import '../../services/planning_protocol_client.dart' show BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import 'inventory_analysis.dart';
 import 'inventory_view_model.dart';
 
 /// 스캔 탭이 인벤토리로 넘긴 후보(FE8-g5 전까지 인벤토리에서 승인한다).
@@ -75,6 +79,20 @@ class InventoryController extends ChangeNotifier {
   InventoryMessageTone _messageTone = InventoryMessageTone.info;
   String? _lastSaveErrorReason;
 
+  InventoryScreenMode _screenMode = InventoryScreenMode.list;
+  InventoryAnalysisFocus? _analysisFocus;
+  InventoryHeatmapKind _heatmapKind = InventoryHeatmapKind.blueprint;
+  InventoryHeatmapValue _heatmapValue = InventoryHeatmapValue.fulfillment;
+  final Set<int> _oopartTiers = {1, 2, 3, 4};
+  InventoryChangeWindow _changeWindow = InventoryChangeWindow.week1;
+
+  // 분석 집계 메모(보드·사용 단계가 바뀌면 다시 센다).
+  InventoryBoard? _analysisBoard;
+  Map<String, List<InventoryStageUse>>? _analysisUses;
+  List<InventorySchoolRow>? _schoolRows;
+  InventoryOopartAnalysis? _oopartAnalysis;
+  final Map<InventoryHeatmapKind, InventoryHeatmap> _heatmaps = {};
+
   InventoryListMode _mode = InventoryListMode.items;
   InventoryView _view = InventoryView.shortage;
   String? _category;
@@ -124,6 +142,55 @@ class InventoryController extends ChangeNotifier {
 
   /// 저장된 목표가 있는가(부족 계산을 부를 수 있는가).
   bool get hasPlan => _state?.goals.isNotEmpty ?? false;
+
+  /// 사이드바 최상단 "목록 · 분석"(FE6-c).
+  InventoryScreenMode get screenMode => _screenMode;
+
+  /// 분석 사이드바에서 고른(강조할) 섹션. 없으면 null.
+  InventoryAnalysisFocus? get analysisFocus => _analysisFocus;
+  InventoryHeatmapKind get heatmapKind => _heatmapKind;
+  InventoryHeatmapValue get heatmapValue => _heatmapValue;
+
+  /// S2 산점도에 보이는 오파츠 티어.
+  Set<int> get oopartTiers => Set.unmodifiable(_oopartTiers);
+  InventoryChangeWindow get changeWindow => _changeWindow;
+
+  void _syncAnalysis() {
+    if (identical(_analysisBoard, _board) && identical(_analysisUses, _uses)) {
+      return;
+    }
+    _analysisBoard = _board;
+    _analysisUses = _uses;
+    _schoolRows = null;
+    _oopartAnalysis = null;
+    _heatmaps.clear();
+  }
+
+  /// S1 학교 행(FD-099 활성 계획이 쓰는 학교만).
+  List<InventorySchoolRow> get schoolRows {
+    _syncAnalysis();
+    return _schoolRows ??= inventorySchoolRows(
+      _board,
+      _uses,
+      studentName: studentName,
+    );
+  }
+
+  /// S2 오파츠 산점도 값.
+  InventoryOopartAnalysis get oopartAnalysis {
+    _syncAnalysis();
+    return _oopartAnalysis ??= inventoryOopartAnalysis(_board, _uses);
+  }
+
+  /// S4 지금 종류의 히트맵.
+  InventoryHeatmap get heatmap {
+    _syncAnalysis();
+    return _heatmaps[_heatmapKind] ??= inventoryHeatmap(
+      _board,
+      _uses,
+      _heatmapKind,
+    );
+  }
 
   InventoryListMode get mode => _mode;
   InventoryView get view => _view;
@@ -386,6 +453,47 @@ class InventoryController extends ChangeNotifier {
   bool _current(int generation) => !_disposed && generation == _generation;
 
   // --- 보기 -----------------------------------------------------------------
+
+  /// "목록 · 분석". 목록 보기 상태(모드 · 종류 · 선택)는 그대로 둔다.
+  void setScreenMode(InventoryScreenMode mode) {
+    if (_screenMode == mode) return;
+    _screenMode = mode;
+    _notify();
+  }
+
+  /// "이 화면에 보이는 분석" 버튼: 그 섹션을 강조한다. 같은 버튼을 다시 누르면 강조를 푼다. 장비 설계도는 S4를
+  /// 설계도 보기로 돌린다.
+  void toggleAnalysisFocus(InventoryAnalysisFocus focus) {
+    _analysisFocus = _analysisFocus == focus ? null : focus;
+    if (_analysisFocus == InventoryAnalysisFocus.blueprints) {
+      _heatmapKind = InventoryHeatmapKind.blueprint;
+    }
+    _notify();
+  }
+
+  void setHeatmapKind(InventoryHeatmapKind kind) {
+    if (_heatmapKind == kind) return;
+    _heatmapKind = kind;
+    _notify();
+  }
+
+  void setHeatmapValue(InventoryHeatmapValue value) {
+    if (_heatmapValue == value) return;
+    _heatmapValue = value;
+    _notify();
+  }
+
+  /// S2 티어 토글. 켜진 티어를 끄고, 꺼진 티어를 켠다.
+  void toggleOopartTier(int tier) {
+    if (!_oopartTiers.remove(tier)) _oopartTiers.add(tier);
+    _notify();
+  }
+
+  void setChangeWindow(InventoryChangeWindow window) {
+    if (_changeWindow == window) return;
+    _changeWindow = window;
+    _notify();
+  }
 
   void setMode(InventoryListMode mode) {
     if (_mode == mode) return;
