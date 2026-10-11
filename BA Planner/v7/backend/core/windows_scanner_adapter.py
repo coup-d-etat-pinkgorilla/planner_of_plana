@@ -13,14 +13,35 @@ from PIL import Image, ImageStat
 from core.scanner_matchers import image_similarity
 from core.scanner_session import ScannerError
 from core.user_input_guard import UserInputGuard
+from core.scanner_pause_control import controlled_call
 from core.scanner_target_metadata import target_metadata, window_identity
 
 
 def _guarded(method):
     """D21: one scanner input is one guarded step (wait for user idleness; user input during it is input_busy)."""
     def wrapper(self, target, *args):
-        with self._guard.step(target.get("_scanner_cancel")):
-            return method(self, target, *args)
+        def perform():
+            control = None if target.get('_scanner_cleanup', False) else target.get('_scanner_control')
+            options = {'pause_on_input': True, 'input_detected': control.input_detected} if control is not None else {}
+            completed = False
+            try:
+                with self._guard.step(target.get("_scanner_cancel"), **options):
+                    result = method(self, target, *args)
+                    completed = True
+                return result
+            except ScannerError as exc:
+                if control is not None and completed and exc.code == 'input_busy' and exc.details.get('performed'):
+                    control.pause('input_detected')
+                    return result
+                raise
+        return controlled_call(target, perform)
+    wrapper.__name__, wrapper.__doc__ = method.__name__, method.__doc__
+    return wrapper
+
+
+def _controlled(method):
+    def wrapper(self, target, *args, **kwargs):
+        return controlled_call(target, lambda: method(self, target, *args, **kwargs))
     wrapper.__name__, wrapper.__doc__ = method.__name__, method.__doc__
     return wrapper
 
@@ -289,6 +310,7 @@ class WindowsCaptureInputAdapter:
                 raise ScannerError("cancelled", "capture cancelled")
         raise ScannerError("capture_failed", "capture methods exhausted")
 
+    @_controlled
     def capture(self, target, *, cancel=None, timeout=2.0):
         cancel = cancel if cancel is not None else target.get("_scanner_cancel", Event())
         self._cancel(target, cancel)
@@ -317,6 +339,7 @@ class WindowsCaptureInputAdapter:
             self.last_capture_trace = exc.details.get("trace", [])
             raise
 
+    @_controlled
     def wait_stable(self, target, cancel: Event, timeout: float = 2.0):
         if not math.isfinite(timeout) or timeout <= 0:
             raise ScannerError("capture_timeout", "invalid stable capture deadline")

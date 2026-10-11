@@ -11,6 +11,8 @@ METHODS = frozenset({
     "scanner.recognition.status",
     "scanner.session.start",
     "scanner.session.cancel",
+    "scanner.session.pause",
+    "scanner.session.resume",
     "scanner.session.snapshot",
     "scanner.candidate.get",
     "scanner.candidate.review",
@@ -62,10 +64,10 @@ class ScannerProtocolV1:
                 self._text(inventory_scan_profile, "inventory_scan_profile")
                 if inventory_scan_profile is not None else None,
             )
-        if method in {"scanner.session.cancel", "scanner.session.snapshot"}:
+        if method in {"scanner.session.cancel", "scanner.session.snapshot", "scanner.session.pause", "scanner.session.resume"}:
             self._exact(payload, {"session_id", "generation"})
             args = (self._text(payload["session_id"], "session_id"), self._integer(payload["generation"], "generation", minimum=1))
-            return self.service.cancel(*args) if method.endswith("cancel") else self.service.snapshot(*args)
+            return getattr(self.service, method.rsplit('.', 1)[1])(*args)
         if method == "scanner.candidate.get":
             self._exact(payload, {"session_id", "generation", "candidate_id"})
             candidate = self.service.candidate(

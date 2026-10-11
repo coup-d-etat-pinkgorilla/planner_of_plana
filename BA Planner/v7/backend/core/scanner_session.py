@@ -16,6 +16,7 @@ from core.repository_inventory import rebase_inventory_snapshot
 from core.current_history import HistoryError, canonical_students
 from core.scan_commit_history_context import ScanCommitHistoryContext
 from core.scan_context import ScanContext
+from core.scanner_pause_control import ScannerPauseControl
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError, canonical_json
 
 
@@ -122,6 +123,7 @@ class _Session:
     events: list[dict[str, Any]] = field(default_factory=list)
     candidates: dict[str, SessionCandidate] = field(default_factory=dict)
     future: Future[None] | None = None
+    control: ScannerPauseControl | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,6 +232,10 @@ class ScannerSessionService:
                 student_scan_mode if scan_kind == "student" else "single",
             )
             self._active = session
+            session.control = ScannerPauseControl(
+                self._lock, session.cancel,
+                lambda kind, payload: self._emit_unchecked(session, kind, payload),
+            )
             self._sessions[session.session_id] = session
             # The session is registered before the worker can publish its first event.
             session.future = self._executor.submit(self._run, session)
@@ -247,7 +253,23 @@ class ScannerSessionService:
         with self._lock:
             already_terminal = session.terminal is not None
             session.cancel.set()
+            session.control.wake()
             return {"accepted": not already_terminal, "terminal": session.terminal}
+
+    def pause(self, session_id: str, generation: int) -> dict[str, Any]:
+        return self._session(session_id, generation).control.pause()
+
+    def resume(self, session_id: str, generation: int) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        if session.control.wire()['control_state'] != 'paused':
+            return session.control.wire()
+        diagnose = getattr(self._target_provider, 'diagnose', None)
+        if callable(diagnose):
+            ready = diagnose(session.target).get('status') == 'ready'
+        else:
+            ready = any(t.get('target_id') == session.target['target_id'] and t.get('status') == 'ready'
+                        for t in self.targets())
+        return session.control.resume(ready)
 
     def snapshot(self, session_id: str, generation: int) -> dict[str, Any]:
         session = self._session(session_id, generation)
@@ -258,6 +280,8 @@ class ScannerSessionService:
                 "scan_kind": session.scan_kind,
                 "last_sequence": session.sequence,
                 "terminal": session.terminal,
+                "control_state": session.control.state,
+                "reason": session.control.reason,
                 "events": deepcopy(session.events),
                 "candidates": [item.to_wire() for item in session.candidates.values()],
             }
@@ -564,6 +588,7 @@ class ScannerSessionService:
             active = self._active
             if active is not None:
                 active.cancel.set()
+                active.control.wake()
         if self._owns_executor:
             self._executor.shutdown(wait=True, cancel_futures=True)
         if self._resource_close_hook is not None:
@@ -664,6 +689,7 @@ class ScannerSessionService:
 
             context = ScanContext.of(session.target).replace(
                 cancel=session.cancel, session_id=session.session_id, generation=session.generation,
+                control=session.control,
             )
             result = self._matchers[session.scan_kind](context, session.cancel, progress)
             batch = result if isinstance(result, ScanBatchResult) else ScanBatchResult(result)
@@ -678,11 +704,12 @@ class ScannerSessionService:
                 else {}
             )
             for raw in candidates:
-                candidate = self._make_candidate(session, raw, batch_relationship_ranks)
-                with self._lock:
-                    session.candidates[candidate.candidate_id] = candidate
-                transferred += 1
-                self._emit(session, "candidate", {"candidate": candidate.to_wire()})
+                with session.control.operation():
+                    candidate = self._make_candidate(session, raw, batch_relationship_ranks)
+                    with self._lock:
+                        session.candidates[candidate.candidate_id] = candidate
+                    transferred += 1
+                    self._emit(session, "candidate", {"candidate": candidate.to_wire()})
             outcome = "cancelled" if session.cancel.is_set() else batch.outcome
             self._terminal(
                 session, outcome,
@@ -765,6 +792,10 @@ class ScannerSessionService:
         return self._student_validator(payload, profile_id, relationship_ranks)
 
     def _emit(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
+        with session.control.operation():
+            self._emit_unchecked(session, event_kind, data)
+
+    def _emit_unchecked(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
         with self._lock:
             if session.terminal is not None:
                 return
@@ -789,11 +820,13 @@ class ScannerSessionService:
         self, session: _Session, outcome: str, *, code: str | None = None,
         message: str | None = None,
     ) -> None:
+        session.control.checkpoint()
         with self._lock:
             if session.terminal is not None:
                 return
             session.sequence += 1
             session.terminal = outcome
+            session.control.finish(outcome)
             payload: dict[str, Any] = {
                 "session_id": session.session_id,
                 "generation": session.generation,

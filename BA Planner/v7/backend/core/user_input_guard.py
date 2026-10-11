@@ -48,11 +48,14 @@ class UserInputGuard:
         self._ready = Event()
         self._thread: Thread | None = None
         self._thread_id = 0
+        self._pause_signal: Event | None = None
 
     def _note(self) -> None:
         with self._lock:
             self.count += 1
             self.last_input = monotonic()
+            if self._pause_signal is not None:
+                self._pause_signal.set()
 
     def start(self) -> bool:
         if sys.platform != "win32":
@@ -132,10 +135,22 @@ class UserInputGuard:
             if cancel is None:
                 Event().wait(.05)
 
-    def step(self, cancel: Event | None = None) -> "_Step":
+    def step(self, cancel: Event | None = None, *, pause_on_input: bool = False,
+             input_detected: Event | None = None) -> "_Step":
+        self._pause_signal = input_detected if pause_on_input else None
         self.start()
-        self.wait_idle(cancel)
-        return _Step(self)
+        if pause_on_input and self.available and self._pause_input_pending(input_detected):
+            self.busy += 1
+            raise ScannerError("input_busy", "user input detected; explicit resume required",
+                               details={"performed": False})
+        if not pause_on_input:
+            self.wait_idle(cancel)
+        return _Step(self, pause_on_input, input_detected)
+
+    def _pause_input_pending(self, signal: Event | None) -> bool:
+        # An explicit start/resume consumes input already noted by that control.
+        # A recent timestamp alone would immediately re-pause on the button click.
+        return signal.is_set() if signal is not None else monotonic() - self.last_input < rt.value('input.guard.idle_s')
 
     def stop(self) -> None:
         if self._thread is not None and self._thread_id:
@@ -145,16 +160,25 @@ class UserInputGuard:
         self._thread_id = 0
         self.available = False
         self._ready.clear()
+        self._pause_signal = None
 
 
 class _Step:
     """Context for one scanner input: user input during it makes the step ``input_busy`` (performed)."""
 
-    def __init__(self, guard: UserInputGuard) -> None:
+    def __init__(self, guard: UserInputGuard, pause_on_input: bool = False,
+                 input_detected: Event | None = None) -> None:
         self.guard = guard
+        self.pause_on_input = pause_on_input
+        self.input_detected = input_detected
 
     def __enter__(self) -> "_Step":
-        self.before = self.guard.count
+        with self.guard._lock:
+            self.before = self.guard.count
+            if self.pause_on_input and self.guard.available and self.guard._pause_input_pending(self.input_detected):
+                self.guard.busy += 1
+                raise ScannerError('input_busy', 'user input detected before scanner step',
+                                   details={'performed': False})
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:

@@ -1175,3 +1175,21 @@ metadata.source.view, asset_map.list, asset_map.check. M1 local structure/existe
 checks never imply physical bundle/texture validation (M4). Existing report-only
 diff is missing/null when no report exists; no store tool subprocess is invoked.
 Unattributed current field provenance stays null; field regeneration/removal is M3.
+
+## FB-10a cooperative pause and resume
+
+`scanner.session.pause` and `scanner.session.resume` use exact session_id/generation.
+Replies contain accepted/control_state/reason/terminal. States are running,
+pause_requested, paused, terminal. Reasons are user, input_detected, target_minimized,
+or null when running/terminal. Pause acknowledgement is asynchronous: wait for the
+sequenced paused event before treating native capture/input as stopped. A bounded
+in-flight port operation may finish first. Duplicates do not emit transitions.
+Resume only accepts an acknowledged pause after checking the original target;
+non-ready targets remain paused/target_minimized. There is no automatic resume.
+Cancellation wakes paused workers; already collected candidates retain legacy behavior.
+Snapshot adds control_state/reason and continues to recover event sequence gaps.
+Events paused require a non-null reason; resumed requires reason=null.
+Fixture: contracts/fixtures/scanner_pause_fb10a_v1.json. Existing history attribution
+continues to use contracts/scan-commit-history-context-v1.schema.json unchanged.
+
+Explicit start/resume consumes already detected command input; later user input still pauses.

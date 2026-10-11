@@ -1,0 +1,651 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "scanner.session.pause-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.pause",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.pause-zero",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.pause",
+        "payload": {
+          "session_id": "s1",
+          "generation": 0
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.pause-boolean",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.pause",
+        "payload": {
+          "session_id": "s1",
+          "generation": true
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.pause-string",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.pause",
+        "payload": {
+          "session_id": "s1",
+          "generation": "1"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.pause-extra",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.pause",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "extra": true
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.pause-error",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "error": {
+            "code": "stale_generation",
+            "message": "fixture"
+          }
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.resume",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-zero",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.resume",
+        "payload": {
+          "session_id": "s1",
+          "generation": 0
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-boolean",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.resume",
+        "payload": {
+          "session_id": "s1",
+          "generation": true
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-string",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.resume",
+        "payload": {
+          "session_id": "s1",
+          "generation": "1"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-extra",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "method": "scanner.session.resume",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "extra": true
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "scanner.session.resume-error",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.resume",
+        "payload": {
+          "error": {
+            "code": "stale_generation",
+            "message": "fixture"
+          }
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-running-None-None",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "running",
+          "reason": null,
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-running-None-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "running",
+          "reason": "automatic",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-pause_requested-user-None",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "pause_requested",
+          "reason": "user",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-pause_requested-user-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "pause_requested",
+          "reason": "automatic",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-paused-input_detected-None",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "paused",
+          "reason": "input_detected",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-paused-input_detected-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "paused",
+          "reason": "automatic",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-paused-target_minimized-None",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "paused",
+          "reason": "target_minimized",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-paused-target_minimized-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "paused",
+          "reason": "automatic",
+          "terminal": null
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-terminal-None-completed",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "completed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-terminal-None-completed",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": "automatic",
+          "terminal": "completed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "terminal-accepted-completed",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": true,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "completed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-terminal-None-cancelled",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "cancelled"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-terminal-None-cancelled",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": "automatic",
+          "terminal": "cancelled"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "terminal-accepted-cancelled",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": true,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "cancelled"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "response-terminal-None-failed",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "failed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "bad-reason-terminal-None-failed",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": false,
+          "control_state": "terminal",
+          "reason": "automatic",
+          "terminal": "failed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "terminal-accepted-failed",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "method": "scanner.session.pause",
+        "payload": {
+          "accepted": true,
+          "control_state": "terminal",
+          "reason": null,
+          "terminal": "failed"
+        },
+        "id": "fb10a"
+      }
+    },
+    {
+      "name": "event-paused-user",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": "user"
+        }
+      }
+    },
+    {
+      "name": "event-missing-paused-user",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused"
+        }
+      }
+    },
+    {
+      "name": "event-wrong-paused-user",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": null
+        }
+      }
+    },
+    {
+      "name": "event-paused-input_detected",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": "input_detected"
+        }
+      }
+    },
+    {
+      "name": "event-missing-paused-input_detected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused"
+        }
+      }
+    },
+    {
+      "name": "event-wrong-paused-input_detected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": null
+        }
+      }
+    },
+    {
+      "name": "event-paused-target_minimized",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": "target_minimized"
+        }
+      }
+    },
+    {
+      "name": "event-missing-paused-target_minimized",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused"
+        }
+      }
+    },
+    {
+      "name": "event-wrong-paused-target_minimized",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "paused",
+          "reason": null
+        }
+      }
+    },
+    {
+      "name": "event-resumed-None",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "resumed",
+          "reason": null
+        }
+      }
+    },
+    {
+      "name": "event-missing-resumed-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "resumed"
+        }
+      }
+    },
+    {
+      "name": "event-wrong-resumed-None",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "scanner.session.event",
+        "payload": {
+          "session_id": "s1",
+          "generation": 1,
+          "sequence": 2,
+          "scan_kind": "student",
+          "event_kind": "resumed",
+          "reason": "user"
+        }
+      }
+    }
+  ]
+}
