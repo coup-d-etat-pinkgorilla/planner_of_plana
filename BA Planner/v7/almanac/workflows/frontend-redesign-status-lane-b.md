@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb3-dart gate ① RED 수정 완료, 같은 소스 gate 재실행 대기(2026-10-11).** 시작 커밋 `84f645c3`. 아래 "fb3-dart 착수 기록"·"fb3-dart 종료 기록"·"fb3-dart gate ① RED 수정 기록"(맨 끝 다음 행동). T-FB1b는 커밋 `5c78c83c`, FE8-b `8268abb3`로 끝났다(오케스트레이터 로그 2026-10-11 03:20). 그 전: S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE6-a 코드 작성 완료, gate 대기(2026-10-11).** 시작 커밋 `dfd1d620`. 아래 "FE6-a 착수 기록"·"FE6-a 종료 기록"(맨 끝 사용자 실행 명령). 그 전: fb3-dart `739f3bfe`(오케스트레이터 확인, 워크플로 XB 연결 표), T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -1055,3 +1055,236 @@ frontend/lib 전체를 grep했다(`saveRepositoryInventory`·`repository.invento
   - analyze info 0
   - 일반 테스트: `statistics_page_test` 녹색, `statistics_projection_test` +1
   - process: `scenario_process_e2e_test` 녹색
+
+## FE6-a 착수 기록 (2026-10-11)
+
+- 범위: 인벤토리 로직 추출 + 부족 위험 화면(시안 `Inventory.dc.html`, "부족한 것" 보기·엘레프 선택). 워크플로 FE6 표 FE6-a 행과 워커 프롬프트 `debug/frontend_redesign_handoff/fe6a-worker-prompt-20261011.md`.
+  1. `_InventoryPageState`의 로드·편집·저장·부족 계산을 컨트롤러로 옮긴다. fb3-dart의 재화 읽기 전용 규칙(재화 키 dirty 금지, 재화 항목 통째 유지, `currency_read_only` 오류 처리)을 그대로 지키고 컨트롤러 테스트로 고정한다.
+  2. 4섹션 A/B/C/D(C·D 사선 맞물림), 사이드바(최상단 "목록·분석" seg — 분석은 FE6-c까지 꺼 둠, "아이템·장비" seg, 종류 버튼 category 1:1 FD-095, 기본 진입 부족 진단 FD-094).
+  3. 위험도 행(FD-030 (b)), 막대 폭 = 점수, 행 선택 ↔ 상세.
+  4. 상세: kv·사용 학생(FD-101)·보충 방법(FB-3 획득처, 빈 표가 정상)·액션 3개(FD-125). 이력은 빈 상태(FE6-f).
+  5. 후보 승인 `_CandidatePanel`은 FE8-g5 전까지 그대로 둔다(위치만 새 배치).
+- 범위 밖: 전체 아이템 타일(FE6-b), 분석(FE6-c~e), 이력·KPI 증감·스파크라인(FE6-f), `lib/services/**`, 키트, golden harness·기존 golden 테스트, `app_shell.dart`, `statistics/**`, 백엔드·계약.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `dfd1d620a8cde99486177f1f571c0848efa33676`.
+- 막힘: 대장 막힘 요약의 FE6-a 행(FD-030·FD-031)은 둘 다 확정(2026-10-06)이다. 막는 열림 FD 없음.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6a/pre/<v7 기준 경로>`):
+  - `frontend/lib/ui/pages/inventory_page.dart`
+  - `frontend/test/inventory_page_test.dart`
+  - `frontend/test/inventory_currency_readonly_test.dart`
+- 새 파일(예정): `frontend/lib/ui/inventory/**`(컨트롤러·화면 모델·Studio 배치·4섹션 위젯), 그 테스트, `frontend/test/goldens/fe6a_inventory_golden_test.dart`(harness 공개 함수만)와 기준 이미지 `inventory.png`.
+- WIP: 세 파일 모두 미커밋 변경 없음(작업 트리 = index blob, 줄바꿈 정규화 기준). `inventory_page.dart`·`inventory_page_test.dart`는 CRLF, `inventory_currency_readonly_test.dart`는 LF다.
+
+## FE6-a 종료 기록 (2026-10-11, 코드 작성 완료·gate 미실행)
+
+시안 `Inventory.dc.html`("부족한 것" 보기, 엘레프 선택)의 4섹션 화면과 로직 추출을 끝냈다. Flutter·Dart가 이 환경에 없어 analyze·테스트·golden은 돌리지 않았다(정적 검토만 했다).
+
+### 고친 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/inventory/inventory_controller.dart`(새) | 옛 `_InventoryPageState`의 로드·편집·저장·부족 계산·후보 승인. `InventoryCandidateContext`도 여기로 옮겼다(`inventory_page.dart`가 그대로 export하므로 `app_shell.dart`는 그대로다) |
+| `frontend/lib/ui/inventory/inventory_view_model.dart`(새) | 위젯 없는 계산: 위험도(FD-030 (b)), 충족률(FD-031 (a)), 과잉(FD-040), 종류(FD-095), 정렬, KPI, 사용 단계(FD-101), 획득처 상태 |
+| `frontend/lib/ui/inventory/inventory_studio_layout.dart`(새) | 4섹션 Studio 문서(typed projection) |
+| `frontend/lib/ui/inventory/inventory_workspace.dart`(새) | 4섹션 위젯(사이드바·KPI 띠·위험도 목록·상세) |
+| `frontend/lib/ui/pages/inventory_page.dart` | 컨트롤러 + 4섹션으로 다시 썼다. 생성자 인자는 그대로이고 선택 인자 `controller`만 더했다. `_CandidatePanel`은 그대로 두고 위험도 목록 위 띠에 둔다 |
+
+로드 순서:
+1. 카탈로그
+2. 선택된 계정(`listProfiles`의 selected). 페이지 안 계정 고르기 패널(`RepositoryProfilePanel`)은 시안에 없어 뺐다.
+3. 활성 계획(`loadRepositoryPlan`)
+4. 저장된 상태(`loadRepositoryState`)
+5. 학생 이름
+6. 목표가 있으면 부족 계산(`calculateShortages`)과 활성 문서 계산(`calculatePlanningDocument`)
+
+활성 계획을 상태보다 먼저 읽는 이유: 목표 v1만 있던 계정은 그 읽기에서 문서로 옮겨지며 revision이 오를 수 있다(Mock도 같다). 저장 기준 revision은 그 뒤에 읽은 값이어야 한다. 옛 화면의 "Analyze saved plan" 버튼은 없앴고, 로드할 때 계산한다.
+
+### 재화 읽기 전용 규칙(fb3-dart) 유지
+
+모두 컨트롤러 테스트로 고정했다.
+- 재화 키(credits·엘리그마)는 거절된다: `setDraft`·`beginEdit`·`canEdit`가 false, dirty·draft가 생기지 않는다. `saveQuantity('credits', …)`는 쓰기 없이 안내만 한다.
+- 저장 wire(`inventoryWire`)는 옛 `_inventoryWire`와 같은 규칙이다.
+  - 재화와 고치지 않은 품목은 저장된 map을 통째로 둔다(이름 포함).
+  - 없는 재화는 만들지 않고, null을 '0'으로 바꾸지 않는다.
+  - 카탈로그 밖 항목은 그대로 두고, 빈 칸은 항목을 빼서 모름으로 둔다.
+- `invalid_payload` + `details.reason=currency_read_only` 거부는 draft·dirty·편집 칸을 그대로 둔다. `lastSaveErrorReason=currency_read_only`와 안내("재화(크레딧·엘리그마)는 스캔으로만 바뀌어 저장하지 않았습니다. 고친 수량은 그대로 남아 있습니다.")를 보인다. 다른 저장 실패도 draft를 지키고 오류 코드를 남긴다.
+- 화면: 재화는 위험도 목록·종류 버튼에 없고 사이드바 "주요 재화" 카드로만 고른다. 고르면 "수량 직접 고치기"가 꺼지고 "재화 수량은 스캔으로만 바뀝니다."가 보인다.
+
+### 화면(4섹션, 시안 좌표·Studio 문서)
+
+섹션 rect(96 grid, 기준 viewport 2560×1392):
+
+| 섹션 | grid | 모양 | 시안 대비 |
+|---|---|---|---|
+| A 사이드바 | (0,2,26,94) | 왼쪽 사다리꼴 | 같다 |
+| B KPI 띠 | (26,2,70,11) | 오른쪽 사다리꼴 | +0.3·+0.4px |
+| C 위험도 | (19,14,39,82) | 아래 평행사변형, 아랫변 506.7→1546.7, 윗변 688.6→1728.6 | x −2.1·−12.3px, 위 −5px |
+| D 상세 | (59,14,37,82) | 오른쪽 사다리꼴, 왼쪽 변 1573.3→1755.2 | −9.6·−8.8px |
+
+C·D 사이는 다른 화면처럼 한 칸(26.7px)이다. 시안 x가 grid에 맞지 않아서다.
+
+**A 사이드바**
+- 맨 위 "목록 · 분석" seg. 분석은 꺼 두었다(FE6-c).
+- "아이템 · 장비" seg.
+- 보기: "부족한 것 n종"(+ "모름 n") / "전체 n종". 기본은 부족한 것이다(FD-094).
+- 종류 버튼: 폭이 사선을 따라 8px씩 줄고, "부족 n" 칩과 개수를 단다. 고른 종류를 다시 누르면 거르기가 풀린다.
+- 주요 재화 카드 2개: 보유 / 필요 / −부족 + 막대.
+
+**B KPI 띠**
+- 보유 품목, 부족 재화, 과잉 재화(FD-040, 보유 ≥ 필요×1.5), 계획 충족률(FD-031 (a), "n종 모름" 병기).
+- 최근 감소·마지막 스캔·증감은 이력 연동(FE6-f) 전이라 `—`다.
+
+**C 부족 위험도 순위**
+- 제목 + (i)(시안 문구) + 정렬 칩(위험도·충족률·부족량).
+- 위험도 행(1010×58 기준):
+  - 왼쪽: 아이콘 54×44, 이름, "보유 1 / 필요 450 · 사용 학생 1명".
+  - 막대: 폭 = 점수(50 이상 핑크, 미만 노랑). 보유를 모르면 빗금이다(FD-033).
+  - 오른쪽: 점수, 78px 빈 칸.
+- 공용 `DiagonalScrollViewport`(translate) · 포그 · 사선 스크롤바를 쓴다.
+- 행을 누르면 D가 바뀐다. 처음에는 가장 위험한 행을 고른다.
+- 안내 상태: 연결 끊김, 카탈로그 오류(다시 읽기), 계정 없음, 계획 없음("계획 열기"), 부족 계산 오류, 빈 목록.
+
+**D 상세**
+- 머리: 아이콘 111×90, 이름, 메타 줄. 메타는 종류 · FB-3 school · `T<tier>`이고, 재화는 "스캔으로만 바뀌는 재화"다.
+- kv: 보유 · 필요 · 부족 · 충족률.
+- "수량 직접 고치기" 칸: `inventory-quantity-<key>`, 저장 · 취소, "빈 칸은 모름으로 저장합니다.". 다른 품목을 고르면 저장하지 않은 draft를 버린다.
+- 사용하는 학생 · 막히는 단계 n(FD-101): 활성 문서 계산 `stage_results[].resources`의 학생 · 페이즈 · 그 학생의 k단계 · (단계 이름) · −들어설 때 부족. 최대 4줄 + "외 n단계".
+  - 문서 계산을 못 읽으면 부족 계산의 `affected_student_ids`와 사유를 보인다.
+  - 계획에 안 쓰는 재화는 "계획에 쓰지 않는 재화입니다."다.
+- 보충 방법(FB-3 `getResourceAcquisition`, 품목마다 한 번 읽고 기억):
+  - 빈 표: "아직 정리된 획득처가 없습니다."(지금 packaged 표에서는 이것이 정상)
+  - 지원 안 함: "이 연결은 획득처 조회를 지원하지 않습니다."
+  - `resource_not_found`: "획득처 표에 없는 재화입니다."
+  - 실패: "획득처를 불러오지 못했습니다." + 다시 읽기
+  - 표에 줄이 있으면 이름 · 종류 · 주 n개 · 선택 n종을 보인다.
+- 최근 변화: 빈 상태("아직 변화 기록이 없습니다.", FE6-f).
+- 액션: 계획에서 보기(pri, 계획 탭), 수량 직접 고치기, 인벤토리 스캔(FD-125: 스캔 팝업이 아직 없어 스캔 탭으로).
+
+작은 창: 각 내용 묶음은 시안 최소 크기 아래로 줄이지 않고, 사선을 따라 계산한 자기 상자로 자른다. 화면 전체를 `FittedBox`로 줄이지 않는다. 알림 문구 묶음만 `scaleDown`이다.
+
+### 처리한 FD
+
+- FD-030 (b) 확정: `100 × 부족비율^(1/(1+ln n))`, n = 사용 학생 수(최소 1). 보유를 모르면 점수도 모름(`—`)이다.
+- FD-031 (a) 확정: 계획이 쓰는 재화마다 min(보유, 필요)/필요의 평균이다. 크레딧 포함, 보유를 모르는 재화는 빼고 "n종 모름"을 병기한다.
+- FD-094 확정: 기본 진입 = 부족 진단.
+- FD-040 워커 재량(권장안): 과잉 = 보유 ≥ 필요×1.5. 계획에 안 쓰는 재화는 세지 않는다.
+- FD-095 워커 재량:
+  - 종류 버튼 = category 1:1, 시안 라벨이다. `student_eleph` 엘레프, `oopart` 오파츠, `activity_report` 활동 보고서, `tech_notes` 기술 노트, `tactical_bd` BD, `equipment` 장비 설계도.
+  - 시안에 없는 `present` 선물·`workbook` 교본은 끝에 둔다. 모르는 category는 이름순으로 그 뒤에 둔다. "선택권·상자"는 category가 없어 숨긴다.
+  - "아이템·장비" seg는 카탈로그 profile로 나눈다(`equipment` = 장비). 아래 발견 사항 1을 보라.
+  - 재화 category(`credits`·`eligma`)는 버튼 대신 주요 재화 카드다.
+- FD-101 워커 재량: 활성 문서 계산의 `stage_results[].resources`를 쓴다.
+- FD-125 워커 재량: 인벤토리 스캔 = 스캔 탭 이동이다(팝업 FE8-f3 전).
+- FD-120: 후보 승인 `_CandidatePanel`은 FE8-g5까지 그대로 두었다(글자·동작 같음, 위치만 위험도 목록 위 띠). 높이는 200이다. Ahem 글꼴의 `Wrap` 줄바꿈에서도 버튼이 띠 안에 들도록 정했다(검토 에이전트 계산).
+- FD-146 (a) 확정(영속 "확인 필요"): 지금 저장소 inventory entry에 `needs_review` 같은 영속 필드가 없다(`lib/**`·`backend/core`에 없음, FB-10 범위). 그래서 그리지 않았다. 필드가 생기면 행·상세에 표시를 더한다.
+- FD-033: 모름 ≠ 0. 보유 모름은 `—`·빗금이고, 서로 다른 재화 수량은 더하지 않는다.
+
+### 위험도 계산 검증 예
+
+| 재화 | 보유 / 필요 · 사용 학생 | 식 값 | 표시 |
+|---|---|---|---|
+| 시안 엘레프 | 1 / 450 · 1명 | 부족비율 449/450 = 0.99778, n=1이라 지수 1 → 99.78 | 100 |
+| 오파츠 | 3 / 40 · 2명 | 0.925^(1/(1+ln 2)) → 95.4999 | 95 |
+| 기술 노트 | 12 / 60 · 4명 | 0.8^(1/(1+ln 4)) = 0.8^0.419 → 91.07 | 91 |
+| 토키 엘레프 | 53 / 330 · 1명 | → 83.94 | 84 |
+| BD | 20 / 28 · 3명 | → 55.05 | 55 |
+| 같은 BD, 1명이면 | 20 / 28 · 1명 | → 28.57 | — |
+| 보유 모름 | — | null | `—` |
+
+- 같은 부족비율에서 학생이 많을수록 점수가 오른다(BD 28.57 → 55.05).
+- 대장의 "98"은 근사 표현이다. 이 시안 행은 식으로 99.78이고 정수 표시는 100이다. 시안의 다른 행 숫자(88·76·71·62·40)도 식 결과가 아닌 견본 값이다(예: 0/55·2명은 식으로 100).
+
+### 테스트
+
+새 테스트:
+- `inventory_view_model_test.dart`(9건): 위험도 식·예외, 부족 보기 정렬·재화 제외·개수, 다른 정렬, 종류 순서·라벨·부족 수, KPI, 계산 없음, 카탈로그 밖 행, FD-101 사용 단계.
+- `inventory_controller_test.dart`(13건):
+  - 재화 dirty·편집 금지, 재료 저장 때 재화·카탈로그 밖 항목 통째 유지, 없는 재화 미생성·빈 칸 = 모름, 잘못된 수량 거부.
+  - `currency_read_only` 거부 때 draft 유지, 다른 실패도 draft 유지.
+  - fixture 로드(부족·사용 단계·기본 선택), 활성 계획 뒤 revision으로 저장, 보기 상태, 목표 없음, 끊김·카탈로그 실패.
+  - 획득처 빈 표·실패·다시 읽기·표에 없음, 지원 안 함.
+- 검수 fixture `test/inventory_fe6a_fixture.dart`(테스트 파일 아님): 시안 예시 값의 Mock 하위 클래스. `MockAppService` 기본값은 바꾸지 않았다.
+
+다시 쓴 테스트(기대를 바꾼 이유: 화면을 시안대로 재작성했다):
+- `inventory_page_test.dart`:
+  - 순수 wire 테스트는 그대로다.
+  - 옛 "loads, filters, saves zero, and exposes plan and scan callbacks"는 "shortage view without a plan, all view edit-save, plan and scan actions"로 바꿨다.
+    - 시안에 없는 Material 검색·드롭다운·"Save inventory"·"Analyze saved plan"·"Open Planning"·"Open Scan"을 없앴다.
+    - 저장은 상세 칸에서 하고, 부족 계산은 로드 때 한다. 계획·스캔 이동은 상세 액션과 "계획 열기"로 옮겼다. 앱 문구는 습니다체다.
+  - 후보 hold/approve·stale 두 건은 동작 기대가 같다. 바뀐 것은 안내 문구(한국어, 예 `comparison was kept` → `비교는 그대로 남아 있습니다`)와 기준 viewport 면적뿐이다(후보 띠가 목록 섹션 안이라).
+  - viewport 테스트는 2560×1392를 더하고 "전체" 보기에서 긴 이름을 찾는다(기본 진입이 부족 진단이라).
+  - 끊김·카탈로그 오류 테스트는 한국어 문구로 바꿨다.
+  - 새 fixture 장면 테스트: 위험도 순서·점수, KPI, 기본 선택 상세, 사용 단계, 빈 획득처, 행 선택·메타, 정렬 칩, 종류 거르기, 장비 모드.
+- `inventory_currency_readonly_test.dart`: 저장 결과 기대(재화 map 통째, 없는 재화 미생성, null 유지)는 그대로다. 화면 기대만 바꿨다. 옛 수량 TextField의 readOnly·enabled·helper("스캔으로만 바뀝니다.")는 이제 주요 재화 카드 선택 → 고치기 버튼 꺼짐 + 안내 "재화 수량은 스캔으로만 바뀝니다." + 수량 칸 없음이다.
+- 지운 테스트 없음(위 대체 외).
+
+golden:
+- 새 장면 `inventory`(`test/goldens/fe6a_inventory_golden_test.dart`). 앱 셸 → 인벤토리 탭, fixture 서비스, harness 공개 함수만 쓴다(`loadGoldenFonts`·`setGoldenViewport`·`goldenBoundary`·`pumpUntilFound`·`expectGoldenScene`·`goldenPlatform`).
+- 기준 이미지 `frontend/test/goldens/baseline/inventory.png`는 아직 없다. 그래서 첫 비교에서 이 장면만 RED가 예상된다.
+
+### golden 예측
+
+- 기존 장면 변화 0이다. 인벤토리 탭은 기존 장면 어디에서도 보이지 않는다. 셸 장면(home·students-*·title 등)에서 오프스테이지로 지어지지만 그리지 않는다.
+- 새 동작: 셸이 뜨면 인벤토리가 카탈로그·계정·활성 계획·상태·학생 이름을 읽는다. 목표가 있으면 부족·문서 계산도 한다. 모두 Mock의 순수 조회이고 상태를 바꾸지 않는다.
+  - 예외: 생성자로 `repositoryStates`를 받은 Mock 계정은 첫 `loadRepositoryPlan`에서 목표 이관 revision이 오른다. 계획 탭이 이미 같은 읽기를 하므로 결과는 같다.
+- 새 장면 `inventory`만 기준 이미지가 없어 RED(추가).
+
+### 검수표
+
+artboard `Inventory.dc.html` → 앱:
+- Mock 기본 실행: 인벤토리 탭은 "저장된 계획이 없습니다" 안내다(Mock 기본 계정에 목표가 없음). 시안 숫자 장면은 fixture로만 열린다. golden `inventory` 장면이나 `test/inventory_page_test.dart`의 fixture 테스트를 보라.
+- 확인 포인트:
+  1. 4섹션 A/B/C/D가 들어오고 C·D가 사선으로 맞물리는가(사이 한 칸).
+  2. 사이드바:
+     - 목록·분석 seg에서 분석이 꺼져 있는가.
+     - 아이템·장비 seg, 부족한 것 n종(파랑 선택) / 전체 n종.
+     - 종류 버튼이 아래로 갈수록 8px씩 좁아지고 "부족 n" 칩이 붙는가.
+     - 주요 재화 카드 두 장.
+  3. KPI 띠 6칸: 부족 재화 핑크, 이력 값 `—`.
+  4. 위험도 행: 아이콘 · 이름 · 보유/필요/사용 학생 · 막대(폭 = 점수, 핑크/노랑) · 점수. 첫 행 선택 테두리.
+  5. 행을 누르면 상세(kv · 사용 학생 · 보충 방법 빈 상태 · 최근 변화 빈 상태 · 액션 3개)가 바뀌는가.
+  6. 재화 카드 → 고치기 꺼짐 + 안내.
+  7. 작은 창(1280×720)에서 예외 없이 잘리는가.
+
+### 미검증 항목
+
+- analyze·일반 테스트·process·golden·`codealmanac validate`·`git diff --check` 전부 미실행(사용자 PC gate 필요).
+- 섹션 path bounds(±1px)·섹션 안 요소(±2px)는 계산으로만 맞췄다. 시안 사이드바·목록 좌표를 섹션 위 기준 상대값으로 옮겼고(`InventoryMetrics`), 화면에서 재지 않았다.
+- 섹션 진입·퇴장 모션은 넣지 않았다. 계획 탭의 `PlanSectionMotion`은 Lane A 파일이라 쓰지 않았고, 탭 전환은 셸 모션 그대로다.
+- 독립 검토 에이전트가 정적으로 본 결과를 반영했다: 후보 띠 높이, 불필요 import, null-aware element, 다른 품목을 고르면 draft 버리기, 계정 실패 때 이전 계산 비우기, 첫 로드 microtask, 작은 창 KPI 높이.
+
+### 발견 사항
+
+1. FD-095 "아이템·장비" seg의 뜻이 시안과 엇갈린다.
+   - 시안은 "아이템" 모드에 "장비 설계도 20 · 부족 1"과 헤어핀 행을 보인다.
+   - 카탈로그의 장비 설계도·장비·무기 부품은 모두 profile·category `equipment`라, 시안대로면 "장비" 모드에 남는 것이 없다.
+   - 이번에는 profile로 나눴다(장비 = `equipment`). 오케스트레이터 결정이 필요하다.
+2. Mock 기본 실행으로 시안 숫자 장면을 볼 수 없다. `lib/services/**`는 이 slice 범위 밖이라 검수 fixture를 테스트 쪽(`test/inventory_fe6a_fixture.dart`)에 두었다. 앱 mock 모드 개발 패널에 이 fixture를 여는 시나리오가 필요하면 서비스 쪽 요청이다.
+3. FD-146 영속 "확인 필요" 필드가 계약에 아직 없다(위 처리한 FD).
+4. "마지막 스캔"은 FB-2 summary(`last_scan_at`, fb2b-dart)로 지금도 그릴 수 있다. KPI 증감·스파크라인과 함께 FE6-f에서 하는 것으로 두었다.
+5. 새 화면 Studio 문서는 워크플로 불변식의 `ui/studio/*_studio_layout.dart` 대신 `lib/ui/inventory/inventory_studio_layout.dart`에 두었다. 워커 프롬프트의 고칠 곳(`lib/ui/inventory/**`)을 지켰다. 옮길지는 오케스트레이터가 정한다.
+6. 인벤토리 탭이 셸 시작 때 오프스테이지에서 계산을 부른다. 목표가 있는 실제 백엔드에서는 부족 계산 + 문서 계산이 1회씩 더 든다. 탭을 처음 열 때로 미루려면 `app_shell.dart`가 탭 활성 신호를 넘겨야 한다(Lane A·공용 파일).
+7. 시안 `.pt` 54×44(위험도 행)·37×30(재화 카드)·38×30(학생)은 키트 크기 변형에 없다. `ItemIconTile`의 임의 크기로 그렸다.
+8. 학생 초상은 `ItemIconTile`(아이템 배경 + 초상 92%)로 그렸다. 키트 `PortraitStrip`(98%)과 미세하게 다르다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe6a/pre/<경로>`(고친 기존 파일 3개, 착수 때 둠).
+- 끝 사본: `debug/frontend_fe6a/post/<경로>`(고친 기존 파일 3개 + 새 코드·테스트 파일 8개).
+- `debug/frontend_fe6a/commit.json`:
+  - slice `fe6a`, `status=false`, `post_dir`
+  - modified 3개
+  - added: 새 파일 8개 + `frontend/test/goldens/baseline/inventory.png`(사용자가 `-UpdateGoldens`로 만든다)
+  - `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`
+
+### 다음 행동과 사용자 실행 명령
+
+- FE6-a 코드는 끝났다. Lane B는 여기서 멈춘다.
+- PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서 아래 명령을 한 줄씩 실행한다. 하나가 실패하면 거기서 멈추고 결과를 오케스트레이터에게 보낸다. 순서는 오케스트레이터가 정한다.
+  1. Lane A(FE5-d)·Lane B 두 워커가 모두 멈춘 뒤 실행하고, 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보낸 뒤 기다린다. 예상: 기존 golden 변화 0, 새 장면 `inventory`만 기준 없음 RED, 일반 테스트 +22(화면 모델 9 + 컨트롤러 13) + 다시 쓴 인벤토리 위젯 테스트.
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  2. 오케스트레이터가 `failures/`를 검토하고 승인한 뒤:
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1 -UpdateGoldens`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  3. 커밋:
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6a -DryRun`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6a`

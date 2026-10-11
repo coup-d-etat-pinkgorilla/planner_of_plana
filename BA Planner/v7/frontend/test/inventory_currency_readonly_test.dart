@@ -1,9 +1,11 @@
-// fb3-dart: 인벤토리 화면의 재화 행(credits·엘리그마)은 읽기 전용이다(CF 로그 10-11 00:02
+// fb3-dart → FE6-a: 인벤토리 화면의 재화(credits·엘리그마)는 읽기 전용이다(CF 로그 10-11 00:02
 // "Currency editor UI follow-up", 02:09 `currency_read_only`).
-// 재화 키는 dirty가 되지 않고, 재료 저장 때 기존 재화 항목을 통째로 둔다. 없는 재화를 만들지 않고 null을 '0'으로
-// 바꾸지 않으며, catalog 메타를 snapshot에 복사하지 않는다.
+// FE6-a에서 수량 칸은 상세의 "수량 직접 고치기"로 옮겼다. 재화는 주요 재화 카드로 고르고, 고치기 버튼이 꺼지며
+// "스캔으로만 바뀝니다" 안내가 보인다. 재료 저장 때 기존 재화 항목은 통째로 남고, 없는 재화를 만들지 않으며 null을
+// '0'으로 바꾸지 않고, catalog 메타를 snapshot에 복사하지 않는다.
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/pages/inventory_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,21 +30,38 @@ MockAppService _service(List<Map<String, dynamic>> entries) => MockAppService(
   },
 );
 
-/// 행 전체가 한 화면에 들어오게 한다(목록은 화면 밖 행을 만들지 않는다).
-Future<void> _tallSurface(WidgetTester tester) async {
-  await tester.binding.setSurfaceSize(const Size(1440, 3200));
+/// 기준 viewport(2560×1392) 논리 크기.
+Future<void> _standardSurface(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(2560, 1392));
   addTearDown(() => tester.binding.setSurfaceSize(null));
 }
 
-TextField _field(WidgetTester tester, String key) => tester.widget<TextField>(
-  find.byKey(ValueKey('inventory-quantity-$key')),
-);
+TonalButton _button(WidgetTester tester, String key) =>
+    tester.widget<TonalButton>(find.byKey(ValueKey(key)));
+
+Future<void> _tap(WidgetTester tester, String key) async {
+  await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pumpAndSettle();
+}
+
+/// 전체 보기에서 [key] 재료를 고르고 수량을 [value]로 저장한다.
+Future<void> _saveMaterial(
+  WidgetTester tester,
+  String key,
+  String value,
+) async {
+  await _tap(tester, 'inventory-view-all');
+  await _tap(tester, 'inventory-row-$key');
+  await _tap(tester, 'inventory-action-edit');
+  await tester.enterText(find.byKey(ValueKey('inventory-quantity-$key')), value);
+  await _tap(tester, 'inventory-edit-save');
+}
 
 void main() {
   testWidgets(
-    'currency rows are read-only and material saves keep whole currency entries',
+    'currency cards are read-only and material saves keep whole currency entries',
     (tester) async {
-      await _tallSurface(tester);
+      await _standardSurface(tester);
       final service = _service([
         {'key': 'credits', 'item_id': null, 'quantity': '1000', 'name': '크레딧'},
         {
@@ -59,27 +78,49 @@ void main() {
       await tester.pumpWidget(_subject(service));
       await tester.pumpAndSettle();
 
+      // 재화는 위험도 목록에 없고 주요 재화 카드로만 고른다.
+      await _tap(tester, 'inventory-view-all');
+      expect(find.byKey(const ValueKey('inventory-row-credits')), findsNothing);
       for (final key in const ['credits', 'Item_Icon_SecretStone']) {
-        final field = _field(tester, key);
-        expect(field.readOnly, isTrue, reason: key);
-        expect(field.enabled, isFalse, reason: key);
-        expect(field.onChanged, isNull, reason: key);
-        expect(field.decoration?.helperText, '스캔으로만 바뀝니다.');
+        await _tap(tester, 'inventory-currency-$key');
+        expect(
+          find.byKey(const ValueKey('inventory-currency-note')),
+          findsOneWidget,
+          reason: key,
+        );
+        expect(find.text('재화 수량은 스캔으로만 바뀝니다.'), findsOneWidget);
+        expect(
+          _button(tester, 'inventory-action-edit').onPressed,
+          isNull,
+          reason: key,
+        );
+        expect(
+          find.byKey(ValueKey('inventory-quantity-$key')),
+          findsNothing,
+          reason: key,
+        );
       }
-      expect(_field(tester, 'credits').controller!.text, '1000');
-      // null(모름)은 빈 칸으로 보이고 '0'으로 채우지 않는다.
-      expect(_field(tester, 'Item_Icon_SecretStone').controller!.text, '');
-      final material = _field(tester, 'Item_Icon_ExpItem_0');
-      expect(material.readOnly, isFalse);
-      expect(material.enabled, isTrue);
-      expect(material.decoration?.helperText, isNull);
-
-      await tester.enterText(
-        find.byKey(const ValueKey('inventory-quantity-Item_Icon_ExpItem_0')),
-        '5',
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('inventory-currency-owned-credits')),
+            )
+            .data,
+        '1,000',
       );
-      await tester.tap(find.text('Save inventory'));
-      await tester.pumpAndSettle();
+      // null(모름)은 `—`로 보이고 '0'으로 채우지 않는다.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(
+                const ValueKey('inventory-currency-owned-Item_Icon_SecretStone'),
+              ),
+            )
+            .data,
+        '—',
+      );
+
+      await _saveMaterial(tester, 'Item_Icon_ExpItem_0', '5');
 
       final state = await service.loadRepositoryState(_profileId);
       Map<String, dynamic> entry(String key) =>
@@ -98,7 +139,8 @@ void main() {
         'item_id': 'Item_Icon_SecretStone',
         'quantity': null,
       });
-      expect(find.textContaining('Save failed'), findsNothing);
+      expect(find.textContaining('저장하지 못했습니다'), findsNothing);
+      expect(find.textContaining('저장했습니다'), findsOneWidget);
       await service.dispose();
     },
   );
@@ -106,7 +148,7 @@ void main() {
   testWidgets('absent currencies are not created by a material save', (
     tester,
   ) async {
-    await _tallSurface(tester);
+    await _standardSurface(tester);
     final service = _service([
       {
         'key': 'Item_Icon_ExpItem_0',
@@ -116,15 +158,16 @@ void main() {
     ]);
     await tester.pumpWidget(_subject(service));
     await tester.pumpAndSettle();
-    expect(_field(tester, 'credits').controller!.text, '');
-    expect(_field(tester, 'credits').readOnly, isTrue);
-
-    await tester.enterText(
-      find.byKey(const ValueKey('inventory-quantity-Item_Icon_ExpItem_0')),
-      '0',
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('inventory-currency-owned-credits')),
+          )
+          .data,
+      '—',
     );
-    await tester.tap(find.text('Save inventory'));
-    await tester.pumpAndSettle();
+
+    await _saveMaterial(tester, 'Item_Icon_ExpItem_0', '0');
 
     final state = await service.loadRepositoryState(_profileId);
     expect(state.inventory.entries, hasLength(1));
@@ -136,7 +179,7 @@ void main() {
       ),
       isEmpty,
     );
-    expect(find.textContaining('Save failed'), findsNothing);
+    expect(find.textContaining('저장하지 못했습니다'), findsNothing);
     await service.dispose();
   });
 }
