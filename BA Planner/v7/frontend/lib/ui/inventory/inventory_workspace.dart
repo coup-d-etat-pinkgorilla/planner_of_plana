@@ -11,11 +11,16 @@
 //   사용 학생(FD-101) · 보충 방법(FB-3 획득처) · 최근 변화(FE6-f 전 빈 상태) · 액션 3개(FD-125).
 // - 분석 모드(FE6-c, 시안 Inventory-Analysis): A 사이드바 아래쪽이 분석 메뉴로 바뀌고 B·C·D 대신 S1 학교별 · S2 오파츠 ·
 //   S4 종류 × 티어 · S5 최근 변화 네 섹션을 그린다(`inventory_analysis_sections.dart`).
+// - 티어별 충족률(FE6-e, 시안 Inventory-Tiers): 분석 모드 안에서 사이드바는 그대로 두고 네 섹션 대신 T1 기술 노트 · T2 BD
+//   (부유 패널) · T4 오파츠 · T5 부족 상위 · T6 요약을 그린다(`inventory_tiers_sections.dart`). 분석 ↔ 티어 교체는 섹션
+//   모션 규칙(부착면별 intro/outro, frontend-section-direction-and-user-flows.md §1.4)을 따른다: 나가는 섹션이 outro
+//   방향으로 빠진 뒤 들어오는 섹션이 intro 방향으로 들어온다(각 360ms). 목록 ↔ 분석은 FE6-c 그대로 바로 바뀐다.
 // 섹션 rect는 Studio 문서(`ui/studio/inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
 // 작은 창에서는 각 내용 묶음이 시안 최소 크기 아래로 줄지 않고 자기 상자(사선을 따라 계산한 rect)로 잘린다(전체
 // 화면을 줄이지 않는다).
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -38,7 +43,10 @@ import '../kit/skew_controls.dart';
 import '../kit/stat_chart.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
+import '../models/school_labels.dart';
 import '../studio/inventory_studio_layout.dart';
+import '../studio/section_template.dart' show SectionCanvasElement;
+import '../widgets/animated_section_stack.dart' show sectionMotionOffset;
 import '../widgets/growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
 import '../widgets/section_surface.dart';
@@ -46,9 +54,11 @@ import '../widgets/section_template_surface.dart';
 import 'inventory_analysis.dart';
 import 'inventory_analysis_charts.dart';
 import 'inventory_controller.dart';
+import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
 
 part 'inventory_analysis_sections.dart';
+part 'inventory_tiers_sections.dart';
 
 /// 시안 값(섹션 위 기준, A·B는 y=209.2, C·D는 y=365.2).
 abstract final class InventoryMetrics {
@@ -165,8 +175,15 @@ Color inventoryRiskColor(double? score) =>
 class _SectionQuad {
   const _SectionQuad(this.topLeft, this.topRight, this.bottomRight, this.bottomLeft);
 
-  factory _SectionQuad.of(Size size, String id, {bool analysis = false}) {
-    final section = analysis
+  factory _SectionQuad.of(
+    Size size,
+    String id, {
+    bool analysis = false,
+    bool tiers = false,
+  }) {
+    final section = tiers
+        ? inventoryTiersSection(id)
+        : analysis
         ? inventoryAnalysisSection(id)
         : inventorySection(id);
     final rect = sectionCanvasElementRect(size, section);
@@ -268,27 +285,26 @@ class InventoryWorkspace extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey(
-                    analysis
-                        ? 'inventory-analysis-surfaces'
-                        : 'inventory-surfaces',
-                  ),
-                  painter: _InventorySurfacesPainter(analysis: analysis),
-                ),
-              ),
-            ),
             if (analysis)
               Positioned.fill(
-                child: _InventoryAnalysisSections(
+                child: _InventoryAnalysisStage(
                   controller: controller,
                   onOpenPlan: onOpenPlan,
                   size: size,
+                  tiers: controller.tiersOpen,
                 ),
               )
             else ...[
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    key: const ValueKey('inventory-surfaces'),
+                    painter: _InventorySurfacesPainter(
+                      _InventoryScreen.list.surfaces,
+                    ),
+                  ),
+                ),
+              ),
               Positioned.fill(child: _detail(context, size)),
               Positioned.fill(child: _risk(context, size)),
               Positioned.fill(child: _kpis(size)),
@@ -1407,39 +1423,76 @@ String inventoryAcquisitionDetail(ResourceAcquisitionMethod method) {
   return parts.join(' · ');
 }
 
-/// 섹션 표면을 한 번에 그린다(그림자 → 표면 순서는 섹션마다). 목록은 네 섹션, 분석(FE6-c)은 다섯 섹션이다.
-class _InventorySurfacesPainter extends CustomPainter {
-  const _InventorySurfacesPainter({this.analysis = false});
+/// 인벤토리 화면 셋(목록 · 분석 · 티어별 충족률)과 그 섹션.
+enum _InventoryScreen {
+  list,
+  analysis,
+  tiers;
 
-  final bool analysis;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (analysis) {
+  /// 표면을 그리는 순서(그림자 → 표면은 섹션마다, 사이드바가 마지막). 목록은 네 섹션, 분석(FE6-c)은 다섯, 티어(FE6-e)는
+  /// 여섯 섹션이다.
+  List<SectionCanvasElement> get surfaces => switch (this) {
+    list => [
+      for (final id in const [
+        inventoryDetailSectionId,
+        inventoryRiskSectionId,
+        inventoryKpiSectionId,
+        inventorySidebarSectionId,
+      ])
+        inventorySection(id),
+    ],
+    analysis => [
       for (final id in const [
         inventoryAnalysisTiersSectionId,
         inventoryAnalysisChangesSectionId,
         inventoryAnalysisOopartsSectionId,
         inventoryAnalysisSchoolsSectionId,
         inventorySidebarSectionId,
-      ]) {
-        paintSectionSurface(
-          canvas,
-          buildSectionCanvasElementPath(size, inventoryAnalysisSection(id)),
-        );
-      }
-      return;
-    }
-    for (final id in const [
-      inventoryDetailSectionId,
-      inventoryRiskSectionId,
-      inventoryKpiSectionId,
-      inventorySidebarSectionId,
-    ]) {
-      paintSectionSurface(
-        canvas,
-        buildSectionCanvasElementPath(size, inventorySection(id)),
-      );
+      ])
+        inventoryAnalysisSection(id),
+    ],
+    tiers => [
+      for (final id in const [
+        inventoryTiersSummarySectionId,
+        inventoryTiersTopSectionId,
+        inventoryTiersOopartsSectionId,
+        inventoryTiersBdSectionId,
+        inventoryTiersNotesSectionId,
+        inventorySidebarSectionId,
+      ])
+        inventoryTiersSection(id),
+    ],
+  };
+
+  /// 사이드바를 뺀, 교체되는 섹션(그리는 순서).
+  List<SectionCanvasElement> get swapped => [
+    for (final element in surfaces)
+      if (element.id != inventorySidebarSectionId) element,
+  ];
+}
+
+/// 섹션 교체 모션 방향(§1.4 부착면 표: 오른쪽 180/0 · 아래 80/260 · 위 260/80). T2 BD 부유 패널은 FD-019대로 아래 기준
+/// 80/260이다.
+({double intro, double outro}) _inventorySectionMotion(String id) =>
+    switch (id) {
+      inventoryAnalysisSchoolsSectionId ||
+      inventoryTiersNotesSectionId => (intro: 260, outro: 80),
+      inventoryAnalysisChangesSectionId ||
+      inventoryTiersSummarySectionId ||
+      inventoryTiersBdSectionId => (intro: 80, outro: 260),
+      _ => (intro: 180, outro: 0),
+    };
+
+/// 섹션 표면을 한 번에 그린다(그림자 → 표면 순서는 섹션마다, [sections] 순서).
+class _InventorySurfacesPainter extends CustomPainter {
+  const _InventorySurfacesPainter(this.sections);
+
+  final List<SectionCanvasElement> sections;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final section in sections) {
+      paintSectionSurface(canvas, buildSectionCanvasElementPath(size, section));
     }
   }
 
@@ -1447,8 +1500,181 @@ class _InventorySurfacesPainter extends CustomPainter {
   bool? hitTest(Offset position) => false;
 
   @override
-  bool shouldRepaint(_InventorySurfacesPainter oldDelegate) =>
-      oldDelegate.analysis != analysis;
+  bool shouldRepaint(_InventorySurfacesPainter oldDelegate) {
+    if (oldDelegate.sections.length != sections.length) return true;
+    for (var index = 0; index < sections.length; index++) {
+      if (oldDelegate.sections[index].id != sections[index].id) return true;
+    }
+    return false;
+  }
+}
+
+/// 분석 모드 본문(사이드바 표면 포함). 분석 ↔ 티어별 충족률을 섹션 모션으로 바꾼다: 앞 360ms는 나가는 섹션이 outro로,
+/// 뒤 360ms는 들어오는 섹션이 intro로 움직인다. 움직이지 않을 때는 한 painter가 표면을 모두 그리고 그 위에 섹션 내용을
+/// 둔다(FE6-c와 같은 그림 순서).
+class _InventoryAnalysisStage extends StatefulWidget {
+  const _InventoryAnalysisStage({
+    required this.controller,
+    required this.onOpenPlan,
+    required this.size,
+    required this.tiers,
+  });
+
+  final InventoryController controller;
+  final VoidCallback onOpenPlan;
+  final Size size;
+
+  /// 티어별 충족률 화면이 목표다.
+  final bool tiers;
+
+  @override
+  State<_InventoryAnalysisStage> createState() =>
+      _InventoryAnalysisStageState();
+}
+
+class _InventoryAnalysisStageState extends State<_InventoryAnalysisStage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _motion = AnimationController(
+    vsync: this,
+    duration: AppMotion.section * 2,
+  )..addStatusListener(_motionStatus);
+
+  /// 다 들어와 있는 화면(움직이지 않을 때 그린다). `late` 초기화는 처음 읽을 때 일어나므로 initState에서 정한다.
+  late bool _shown;
+  late bool _from;
+  late bool _to;
+
+  @override
+  void initState() {
+    super.initState();
+    _shown = widget.tiers;
+    _from = widget.tiers;
+    _to = widget.tiers;
+  }
+
+  void _motionStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      setState(() => _shown = _to);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_InventoryAnalysisStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tiers == _to) return;
+    _from = _motion.isAnimating ? _to : _shown;
+    _to = widget.tiers;
+    _motion.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _motion.dispose();
+    super.dispose();
+  }
+
+  _InventoryAnalysisSections get _analysis => _InventoryAnalysisSections(
+    key: const ValueKey('inventory-analysis-sections'),
+    controller: widget.controller,
+    onOpenPlan: widget.onOpenPlan,
+    size: widget.size,
+  );
+
+  _InventoryTiersSections get _tiers => _InventoryTiersSections(
+    key: const ValueKey('inventory-tiers-sections'),
+    controller: widget.controller,
+    size: widget.size,
+    common: _analysis,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_motion.isAnimating) {
+      final shown = _shown;
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: ValueKey(
+                  shown
+                      ? 'inventory-tiers-surfaces'
+                      : 'inventory-analysis-surfaces',
+                ),
+                painter: _InventorySurfacesPainter(
+                  shown
+                      ? _InventoryScreen.tiers.surfaces
+                      : _InventoryScreen.analysis.surfaces,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(child: shown ? _tiers : _analysis),
+        ],
+      );
+    }
+    return AnimatedBuilder(
+      animation: _motion,
+      builder: (context, _) {
+        final value = _motion.value;
+        final leaving = value < 0.5;
+        final tiers = leaving ? _from : _to;
+        final progress = AppMotion.sectionCurve.transform(
+          ((leaving ? value : value - 0.5) * 2).clamp(0.0, 1.0).toDouble(),
+        );
+        final screen = tiers
+            ? _InventoryScreen.tiers
+            : _InventoryScreen.analysis;
+        Offset offsetFor(String id) {
+          final motion = _inventorySectionMotion(id);
+          return leaving
+              ? sectionMotionOffset(widget.size, motion.outro) * progress
+              : sectionMotionOffset(widget.size, motion.intro) *
+                    -(1 - progress);
+        }
+
+        return IgnorePointer(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (final section in screen.swapped)
+                Positioned.fill(
+                  key: ValueKey('inventory-motion-${section.id}'),
+                  child: Transform.translate(
+                    offset: offsetFor(section.id),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _InventorySurfacesPainter([section]),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: tiers
+                              ? _tiers.content(section.id)
+                              : _analysis.content(section.id),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              // 사이드바 표면은 움직이지 않고 지나가는 섹션 위에 둔다(사이드바 내용은 workspace가 그 위에 그린다).
+              Positioned.fill(
+                child: CustomPaint(
+                  key: const ValueKey('inventory-motion-surfaces'),
+                  painter: _InventorySurfacesPainter([
+                    inventoryAnalysisSection(inventorySidebarSectionId),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// C 안쪽 스크롤 패널(시안 rgba(26,44,59,.9) + 1px rgba(56,81,107,.72)).

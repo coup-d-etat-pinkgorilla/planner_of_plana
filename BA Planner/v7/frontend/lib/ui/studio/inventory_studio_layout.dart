@@ -256,3 +256,176 @@ abstract final class InventoryAnalysisMetrics {
   // S5 최근 변화 캡션(위 78).
   static const changeCaptionTop = 78.0;
 }
+
+/// 인벤토리 티어별 충족률 5-Section(FE6-e, 시안 Inventory-Tiers, E 보고서 §5.1). 분석 모드 사이드바의 "따로 여는
+/// 화면 → 티어별 충족률"이 여는 같은 페이지 안 섹션 교체다(사이드바는 분석 모드와 같은 element).
+///
+/// FE6-c처럼 시안 path 꼭짓점(둥근 모서리를 지운 직선 교점)에 맞춰 rect · face 구간 · 깊이를 96 grid 정수로 골랐다(전수
+/// 탐색). 꼭짓점(위 왼 · 위 오 · 아래 오 · 아래 왼)과 시안 대비:
+/// - T1 기술 노트 `inventory-tiers-notes`: 위 면에 붙은 평행사변형. (717.2,209.2)·(1560.0,209.2)·(1483.2,645.0)·
+///   (640.4,645.0). 시안 (717.3,209.2)·(1560.0,209.2)·(1483.2,645.2)·(640.5,645.2) 대비 최대 −0.2px.
+/// - T2 전술 교육 BD `inventory-tiers-bd`: 어느 경계에도 닿지 않는 부유 평행사변형(FD-019 예외, intro 80° · outro 260°).
+///   (635.9,669.2)·(1478.6,669.2)·(1402.2,1102.6)·(559.4,1102.6). 시안 (636.1,669.2)·(1478.8,669.2)·(1402.0,1105.2)·
+///   (559.3,1105.2) 대비 아랫변 −2.6px, 나머지 ±0.2px. 위 · 아랫변 y가 모두 grid 줄(12.58px) 사이에 있어서 위 · 아래 면
+///   평행사변형으로는 한쪽을 grid 줄에 둘 수밖에 없다(위를 맞추면 아래 −2.6, 아래를 맞추면 위 −5.5 이상). 위를 맞췄다.
+/// - T4 오파츠 `inventory-tiers-ooparts`: 오른쪽 면에 붙은 사다리꼴(왼쪽 변 사선). 왼쪽 위 1584.2, 왼쪽 아래 1480.0,
+///   y 209.2→800.1. 시안(1583.9·1479.8, 209.2→800.0) 대비 최대 +0.3px.
+/// - T5 부족 상위 `inventory-tiers-top`: 오른쪽 면에 붙은 사다리꼴. 왼쪽 위 1475.7, 왼쪽 아래 1375.6, y 824.2→1392.
+///   시안(1475.5·1375.4, 824.0→1392) 대비 최대 +0.2px.
+/// - T6 요약 `inventory-tiers-summary`: 아래 면에 붙은 평행사변형. (555.3,1129.1)·(1398.0,1129.1)·(1351.7,1392)·
+///   (508.9,1392). 시안 (555.1,1129.2)·(1397.8,1129.2)·(1351.5,1392)·(508.8,1392) 대비 최대 +0.2px.
+final SectionStudioDocument inventoryTiersStudioDocument = SectionStudioDocument(
+  headerRows: 12,
+  viewport: 'standard',
+  showGrid: false,
+  showSafeArea: true,
+  selectedElementId: inventoryTiersNotesSectionId,
+  placementGap: 0,
+  elements: const [
+    SectionCanvasElement(
+      id: inventorySidebarSectionId,
+      label: '사이드바',
+      rect: SectionGridRect(0, 2, 26, 94),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.left,
+        faceSpan: 96,
+        height: 96,
+      ),
+    ),
+    SectionCanvasElement(
+      id: inventoryTiersNotesSectionId,
+      label: '기술 노트 · 학교 × 티어',
+      rect: SectionGridRect(3, 2, 74, 35),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.parallelogram,
+        face: SectionAttachmentFace.top,
+        faceStart: 31,
+        faceSpan: 41,
+        height: 95,
+      ),
+    ),
+    SectionCanvasElement(
+      id: inventoryTiersBdSectionId,
+      label: '전술 교육 BD · 학교 × 티어',
+      rect: SectionGridRect(15, 35, 41, 38),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.parallelogram,
+        face: SectionAttachmentFace.bottom,
+        faceStart: 14,
+        faceSpan: 74,
+        height: 87,
+      ),
+    ),
+    SectionCanvasElement(
+      id: inventoryTiersOopartsSectionId,
+      label: '오파츠 · 종류 × 티어',
+      rect: SectionGridRect(48, 2, 48, 49),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.right,
+        faceSpan: 92,
+        height: 81,
+      ),
+    ),
+    SectionCanvasElement(
+      id: inventoryTiersTopSectionId,
+      label: '티어 품목 · 부족 상위',
+      rect: SectionGridRect(44, 39, 52, 57),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.right,
+        faceStart: 20,
+        faceSpan: 76,
+        height: 82,
+      ),
+    ),
+    SectionCanvasElement(
+      id: inventoryTiersSummarySectionId,
+      label: '티어 충족 요약',
+      rect: SectionGridRect(16, 62, 37, 34),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.parallelogram,
+        face: SectionAttachmentFace.bottom,
+        faceStart: 8,
+        faceSpan: 82,
+        height: 59,
+      ),
+    ),
+  ],
+);
+
+/// T1 기술 노트 · 학교 × 티어 충족률.
+const inventoryTiersNotesSectionId = 'inventory-tiers-notes';
+
+/// T2 전술 교육 BD · 학교 × 티어 충족률(부유 패널).
+const inventoryTiersBdSectionId = 'inventory-tiers-bd';
+
+/// T4 오파츠 · 종류 × 티어 충족률.
+const inventoryTiersOopartsSectionId = 'inventory-tiers-ooparts';
+
+/// T5 티어 품목 · 부족 상위.
+const inventoryTiersTopSectionId = 'inventory-tiers-top';
+
+/// T6 티어 충족 요약.
+const inventoryTiersSummarySectionId = 'inventory-tiers-summary';
+
+SectionCanvasElement inventoryTiersSection(String id) => inventoryTiersStudioDocument
+    .elements
+    .firstWhere((element) => element.id == id);
+
+/// 티어 화면 섹션 안 좌표(시안 값, 섹션 위 기준). 가로 값은 섹션 왼쪽 변(사선)에서 잰다. 제목 줄 · 규칙선은 분석
+/// 모드와 같다([InventoryAnalysisMetrics.titleTop] 등).
+abstract final class InventoryTiersMetrics {
+  // T1 · T2 히트맵: `.plain` 위 78 · 높이 330. 그리드 바닥 왼쪽이 왼쪽 변에서 88.5, 기울인 그리드 윗변 오른쪽 여백 92.7.
+  // 열: 학교 96 · 티어 1fr × 4 · 가장 부족 128, 간격 3.
+  static const schoolHeatmapTop = 78.0;
+  static const schoolHeatmapHeight = 330.0;
+  static const schoolHeatmapLeft = 88.5;
+  static const schoolHeatmapRight = 92.7;
+  static const schoolLabelWidth = 96.0;
+
+  // T4 히트맵: `.plain` 위 78 · 높이 450. 그리드 바닥 왼쪽이 왼쪽 변에서 109.3, 윗변 오른쪽 여백 36.0. 열: 오파츠 150 ·
+  // 티어 1fr × 4 · 가장 부족 128.
+  static const oopartHeatmapTop = 78.0;
+  static const oopartHeatmapHeight = 450.0;
+  static const oopartHeatmapLeft = 109.3;
+  static const oopartHeatmapRight = 36.0;
+  static const oopartLabelWidth = 150.0;
+
+  /// "가장 부족" 열 폭.
+  static const weakestWidth = 128.0;
+
+  /// 히트맵 아래 범례 줄(위 간격 8 + 글자 14).
+  static const legendHeight = 22.0;
+
+  // 행 머리 · 가장 부족 칸 안: 그림 28×24(엠블럼) · 30×24(아이템), 간격 7, 행 머리 오른쪽 · 가장 부족 왼쪽 안쪽 6.
+  static const emblemWidth = 28.0;
+  static const itemIconWidth = 30.0;
+  static const cellIconHeight = 24.0;
+  static const cellIconGap = 7.0;
+  static const cellPadding = 6.0;
+
+  // T5: 제목 왼쪽 24 · 안쪽 19.1, 캡션 위 82 · 높이 24, 행 위 112 · 높이 46 · 피치 50, 행 아래 왼쪽이 왼쪽 변에서 24.1.
+  static const topTitleLeft = 24.0;
+  static const topTitleInner = 19.1;
+  static const topCaptionTop = 82.0;
+  static const topRowsTop = 112.0;
+  static const topRowHeight = 46.0;
+  static const topRowPitch = 50.0;
+  static const topRowLeft = 24.1;
+  static const topRowRight = 22.0;
+
+  // T6: KPI 상자 위 78 · 높이 80 · 안쪽 24.1, 분포 상자 위 166 · 높이 56 · 안쪽 19.9. 두 상자 모두 아래 왼쪽이 왼쪽
+  // 변에서 24.1, 위 오른쪽 여백 24.
+  static const kpiTop = 78.0;
+  static const kpiHeight = 80.0;
+  static const kpiInner = 24.1;
+  static const kpiGap = 40.0;
+  static const kpiMinWidth = 120.0;
+  static const distributionTop = 166.0;
+  static const distributionHeight = 56.0;
+  static const distributionInner = 19.9;
+  static const boxLeft = 24.1;
+  static const boxRight = 24.0;
+}

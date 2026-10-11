@@ -1953,3 +1953,189 @@ artboard `Inventory-Analysis.dc.html` → 앱:
 - FE6-c 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 +24(집계 16 + 위젯 8), golden은 새 장면 `inventory-analysis` 기준 없음 RED + `inventory`·`inventory-all` 사이드바 "분석" 칸만 RED, 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens`·재비교·`fe_commit.ps1 -Slice fe6c`.
 - 발견 사항 3·4(학교 맵 공용화, 키트 아이콘 슬롯)는 CF 결정을 기다린다.
+
+## FE6-e 착수 기록 (2026-10-12)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: 인벤토리 "티어별 충족률" 화면(시안 `Inventory-Tiers.dc.html`). 워커 프롬프트 `debug/frontend_redesign_handoff/fe6e-worker-prompt-20261012.md`(CF 01:00 배정).
+  1. 분석 사이드바 "따로 여는 화면 → 티어별 충족률"을 켜고, 누르면 같은 페이지 안에서 분석 네 섹션 대신 T1·T2·T4·T5·T6을 그린다(다시 누름 · 분석 버튼 4개 · "목록"이면 돌아감, 기존 섹션 모션 규칙).
+  2. T1 기술 노트 · T2 전술 교육 BD 학교 × 티어(카탈로그 전부 FD-099, "가장 부족" 열, 칩 충족률/보유량/부족량), T2는 부유 패널(FD-019).
+  3. T4 오파츠 종류 × 티어, T5 티어 품목 부족 상위 6, T6 요약 KPI + 티어 분포 누적 막대.
+  4. 학교 이름 · 엠블럼 공용 맵 `lib/ui/models/school_labels.dart`(FE6-c 발견 3, CF 결정), 인벤토리만 옮김.
+  5. FE6-c 발견 7(검수 fixture 초상 id).
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `4196525575b8a249fd4dc7811305617c2ce62d82`.
+- 막힘: 대장 막힘 요약의 FE6-e 행은 FD-031(확정 2026-10-06)뿐. 막는 열림 FD 없음. FD-019·FD-033은 확정, FD-032·FD-098·FD-099·FD-101은 워커 재량(권장안대로).
+- 착수 중 사용자 결정(2026-10-12, 이 세션의 질문): 노트·BD 티어 2 라벨은 앱 전체 "일반"(FE6-c "중급" 대체). `inventory-analysis` 기준 이미지의 플라이아웃 두 줄이 함께 바뀐다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6e/pre/<v7 기준 경로>`, 사본과 작업 트리 cmp 일치 확인):
+  - `frontend/lib/ui/inventory/inventory_analysis.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis_charts.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis_sections.dart`
+  - `frontend/lib/ui/inventory/inventory_controller.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/studio/inventory_studio_layout.dart`
+  - `frontend/test/inventory_analysis_page_test.dart`
+  - `frontend/test/inventory_analysis_test.dart`
+  - `frontend/test/inventory_fe6c_fixture.dart`
+- 새 파일(예정): `frontend/lib/ui/models/school_labels.dart`, `frontend/lib/ui/inventory/inventory_tiers.dart`(집계 순수 함수), `frontend/lib/ui/inventory/inventory_tiers_sections.dart`(workspace의 part), 테스트 `frontend/test/school_labels_test.dart`·`frontend/test/inventory_tiers_test.dart`·`frontend/test/inventory_tiers_page_test.dart`, 검수 fixture `frontend/test/inventory_fe6e_fixture.dart`, golden 1장 `frontend/test/goldens/fe6e_inventory_tiers_golden_test.dart`(`inventory-tiers`, 실행하지 않음).
+- WIP: 고칠 기존 파일 9개 모두 `git status --short <경로>`가 비어 있다(미커밋 변경 없음). 모두 LF(`git ls-files --eol`: i/lf w/lf).
+
+## FE6-e 종료 기록 (2026-10-12, 코드 작성 완료·CF gate 미실행)
+
+시안 Inventory-Tiers(분석 사이드바 "티어별 충족률" 선택, 칩 모두 충족률)의 티어별 충족률 화면을 끝냈다. 화면 헤더 부제("보유 재화와 장비 · 티어별 충족률")는 `app_section.dart`·`app_shell.dart` 몫이라 범위 밖이다(발견 사항 5).
+
+### 실행 명령·결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차) | 이슈 6(`listEquals` 미정의 · `SectionCanvasElement` import 경로) → 고침 |
+| `flutter analyze`(최종, test 포함) | **No issues found**(info 포함 0) |
+| `flutter test test/inventory_tiers_page_test.dart`(1차) | 1 통과 · 6 실패: 단계 위젯 `late` 필드가 처음 읽을 때(didUpdateWidget) 새 값으로 초기화돼 티어 화면이 열리지 않음 → `initState`에서 정하도록 고침 |
+| 같은 파일(2차) | 6 통과 · 1 실패: 작은 창에서 T6 분포 줄 넘침 38px → 분포 상자 `_Fit` 최소 폭 560 → 640 |
+| `flutter test test/inventory_tiers_page_test.dart`(최종) | 7 통과 · 0 실패 |
+| `flutter test test/inventory_tiers_test.dart` | 9 통과 · 0 실패 |
+| `flutter test test/school_labels_test.dart` | 3 통과 · 0 실패 |
+| `flutter test test/inventory_analysis_test.dart` | 16 통과 · 0 실패 |
+| `flutter test test/inventory_analysis_page_test.dart` | 8 통과 · 0 실패 |
+| `flutter test test/inventory_controller_test.dart` | 13 통과 · 0 실패 |
+| `flutter test test/inventory_currency_readonly_test.dart` | 2 통과 · 0 실패 |
+| `flutter test test/inventory_page_test.dart` | 9 통과 · 0 실패 |
+| `flutter test test/inventory_shell_lazy_test.dart` | 1 통과 · 0 실패 |
+| `flutter test test/inventory_view_model_test.dart` | 13 통과 · 0 실패 |
+| `flutter test test/student_studio_layout_test.dart`(학생 쪽 `studentSchoolLogoAsset` 회귀 확인, 파일은 고치지 않음) | 45 통과 · 0 실패 |
+| `git diff --check -- frontend/lib/ui frontend/test <status>` | 0(경고는 autocrlf 안내뿐), 새 파일 8개도 LF · 끝 개행 하나 |
+
+- 걸리는 기존 테스트는 `top-tab-inventory`·`InventoryWorkspace`·`inventory_analysis_charts`·`InventoryTierHeatmapPainter`·`school_labels`·`inventoryNoteTierLabel`·`InventoryPage`·`InventoryController`·`inventory_studio_layout`·`중급`을 grep해서 찾았다(위 inventory_* 7개 전부 실행).
+- 고친 기존 테스트 기대(사유 = 바뀐 동작): `inventory_analysis_page_test.dart` "티어별 충족률은 비활성" → 켜짐 · ghost, 플라이아웃 `중급 노트 20`·`중급 노트 4` → `일반 …`(사용자 결정), `inventory_analysis_test.dart` `tierLabel(2)` `중급` → `일반`(+ `inventoryNoteTierLabel(2)` 검사 추가). 지운 테스트 없음.
+- 일회성 렌더 확인: 실제 글꼴(harness `loadGoldenFonts`)로 티어 화면을 그려 scratchpad PNG로 한 번 보았다(임시 테스트 파일은 실행 뒤 지웠다, golden 비교 아님). 다섯 섹션 배치 · 히트맵 · 가장 부족 열 · T5 · T6가 시안 자리에 들어오고 넘침이 없었다.
+- 빌드 잠금(`build/`·`.dart_tool/`) 충돌은 없었다. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock`은 바뀌지 않았다.
+- 실행하지 않음: golden(`test/goldens/**`, 새 `fe6e_inventory_tiers_golden_test.dart` 포함), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+### 고친 파일
+
+- **`frontend/lib/ui/studio/inventory_studio_layout.dart`**: 티어 Studio 문서 `inventoryTiersStudioDocument`(사이드바는 분석과 같은 element + T1 · T2 · T4 · T5 · T6), id 상수 5개, `inventoryTiersSection`, 섹션 안 좌표 `InventoryTiersMetrics`. 기존 문서 · metrics는 그대로다.
+- **`frontend/lib/ui/inventory/inventory_controller.dart`**: `tiersOpen`(분석 모드 안, 목록으로 가면 닫힘), `toggleTiers`, 분석 버튼이 티어 화면에서는 "닫고 그 섹션 강조", 표마다 표시 칩 `tierValue`/`setTierValue`, 집계 메모 `tiersAnalysis`(보드 · 사용 단계가 바뀔 때만 다시 센다). FE6-a·b·c 로직(로드 · 재화 읽기 전용 · 편집 · 후보)은 그대로다.
+- **`frontend/lib/ui/inventory/inventory_workspace.dart`**: 분석 모드 본문을 `_InventoryAnalysisStage`(StatefulWidget)로 옮겼다. 멈춰 있을 때는 FE6-c와 같은 그림 순서(한 painter가 표면 전부 → 섹션 내용)이고, 분석 ↔ 티어를 바꿀 때만 섹션마다 표면 + 내용을 함께 옮긴다(앞 360ms 나가는 섹션 outro, 뒤 360ms 들어오는 섹션 intro, 사이드바 표면은 고정, 움직이는 동안 입력 무시). 표면 painter는 element 목록을 받게 일반화(`_InventoryScreen`), `_SectionQuad.of(..., tiers:)`. 목록 ↔ 분석은 FE6-c 그대로 바로 바뀐다.
+- **`frontend/lib/ui/inventory/inventory_analysis_sections.dart`**: 티어 버튼 켜기(선택 시 분홍, 의미 라벨 열기/닫기), 티어 화면에서 분석 버튼 4개는 ghost, `content(id)`(섹션 하나 내용), `_title`에 `innerRight`, `_SchoolEmblem` 크기 인자, `_TopShortageRow` 제목 덮어쓰기, `inventorySchoolEmblemAsset`은 공용 맵 위임.
+- **`frontend/lib/ui/inventory/inventory_analysis_charts.dart`**: `InventoryTierHeatmapPainter`를 일반화(`labelWidth`·`trailingWidth`·`trailingHeader`·`rowLabels`, 기본값은 FE6-c S4와 같아 S4 그림 변화 없음), `InventoryHeatmapGeometry.columnWidth`·`cellRect`·`uprightRect`(위젯 겹침 자리를 painter와 같은 식으로 센다).
+- **`frontend/lib/ui/inventory/inventory_analysis.dart`**: 티어 2 라벨 `일반`, `inventorySchoolLabel`은 공용 맵 위임.
+- **테스트 · fixture**: `inventory_analysis_page_test.dart`·`inventory_analysis_test.dart`(위 기대 변경), `inventory_fe6c_fixture.dart`(재화 표시 이름의 티어 2를 `일반`으로 — 화면에 보이지 않는 이름이라 기준 이미지 영향 없음).
+- 새 파일:
+  - `frontend/lib/ui/models/school_labels.dart`: `schoolKey`(소문자 · 공백 · `_` · `-` 제거), `schoolLabel`, `schoolEmblemName`, `schoolEmblemAsset`(학생 맵에 있던 `etc` → `ETC`/기타 포함).
+  - `frontend/lib/ui/inventory/inventory_tiers.dart`: 집계 순수 함수(`inventoryTierTable`·`inventoryTiersAnalysis`, 행 · 가장 부족 · 부족 상위 · 요약 · 분포).
+  - `frontend/lib/ui/inventory/inventory_tiers_sections.dart`: 티어 섹션 위젯(workspace의 part).
+  - 테스트 `school_labels_test.dart`(3), `inventory_tiers_test.dart`(9), `inventory_tiers_page_test.dart`(7), 검수 fixture `inventory_fe6e_fixture.dart`, golden `goldens/fe6e_inventory_tiers_golden_test.dart`(1장, 실행 안 함).
+- 고치지 않음: Lane A 파일(`plan_flow_*`·`plan_section_layout.dart`·`widgets/plan_*`), `student_section_layout.dart`, `lib/services/**`, 키트, golden harness · 기존 golden 테스트(fe6a · fe6b · fe6c 포함), `app_shell.dart`·`app_section.dart`, `statistics/**`, `inventory_page.dart`(바꿀 필요 없음: 새 후보가 오면 `setScreenMode(list)`가 티어 화면도 닫는다), 백엔드 · 계약, `scan_page.dart`, `inventory_fe6a_fixture.dart`.
+
+### 섹션 배치(기준 viewport 2560×1392, Studio 문서)
+
+FE6-c처럼 시안 path의 직선 교점에 맞춰 rect · faceStart · faceSpan · height(96 grid 정수)를 전수 탐색으로 골랐다.
+
+| 섹션 | rect(grid) · spec | 꼭짓점(위 왼 · 위 오 · 아래 오 · 아래 왼) | 시안 대비 최대 |
+|---|---|---|---|
+| A 사이드바 | 분석과 같은 element | — | 0 |
+| T1 기술 노트 | (3,2,74,35) 위 평행사변형, face 31+41, 깊이 95 | (717.2,209.2)·(1560.0,209.2)·(1483.2,645.0)·(640.4,645.0) | −0.2px |
+| T2 BD(부유) | (15,35,41,38) 아래 평행사변형, face 14+74, 깊이 87 | (635.9,669.2)·(1478.6,669.2)·(1402.2,1102.6)·(559.4,1102.6) | 아랫변 **−2.6px**, 나머지 ±0.2px |
+| T4 오파츠 | (48,2,48,49) 오른쪽 사다리꼴, face 0+92, 깊이 81 | (1584.2,209.2)·(2560,209.2)·(2560,800.1)·(1480.0,800.1) | +0.3px |
+| T5 부족 상위 | (44,39,52,57) 오른쪽 사다리꼴, face 20+76, 깊이 82 | (1475.7,824.2)·(2560,824.2)·(2560,1392)·(1375.6,1392) | +0.2px |
+| T6 요약 | (16,62,37,34) 아래 평행사변형, face 8+82, 깊이 59 | (555.3,1129.1)·(1398.0,1129.1)·(1351.7,1392)·(508.9,1392) | +0.2px |
+
+- T2는 위(669.2) · 아랫변(1105.2) y가 모두 grid 줄 사이라 위 · 아래 면 평행사변형으로는 한쪽이 grid 줄에 묶인다. 위를 맞추면 아래 −2.6px, 아래를 맞추면 위가 −5.5px 이상 어긋난다 → 위를 맞췄다(±1px 불변식 예외, 발견 사항 1). 단위 테스트가 이 허용치(아래 두 꼭짓점 y 2.7)로 고정한다.
+- 섹션 안 요소(섹션 위 · 사선 왼쪽 변 기준, 시안 값): 제목 줄 위 20 · 높이 40 · 왼쪽 22(T4 · T5 24) · 안쪽 17.1/17.1(T4 · T5 19.1/14), 규칙선 위 65 · T1/T2 히트맵 `.plain` 위 78 · 330(그리드 바닥 왼쪽 88.5, 윗변 오른쪽 여백 92.7, 열 96 · 1fr×4 · 128, 간격 3) · T4 히트맵 위 78 · 450(109.3, 36.0, 열 150 · 1fr×4 · 128) · 행 머리 그림 28×24(엠블럼) · 30×24(오파츠) + 간격 7 · T5 캡션 위 82 · 행 위 112 · 46 · 피치 50 · 왼쪽 24.1 · T6 KPI 상자 위 78 · 80 · 안쪽 24.1 · 간격 40 · 최소 120, 분포 상자 위 166 · 56 · 안쪽 19.9.
+- 히트맵 세로 위치는 FE6-c와 같이 상자 안 가운데(그리드 + 범례 22)로 계산했다. 행이 많으면 칸 높이를 26 → 16까지 줄이고 행 머리 · 가장 부족 그림도 같은 비율로 줄인다. 실제 백엔드 카탈로그(학교 11 · 오파츠 20)는 T1 · T2 22.3px, T4 17.5px 칸이 된다(시안 fixture 9 · 13행은 26 그대로).
+
+### 처리한 FD
+
+- **FD-019(확정)**: T2는 어느 경계에도 닿지 않는 부유 패널 그대로, 모션은 아래 기준 intro 80° · outro 260°.
+- **FD-031(확정)·FD-032(워커 재량, 권장안)**: 칸 = 그 칸 계획 재화의 min(보유, 필요)/필요 평균(카탈로그는 칸마다 재화 하나), T6 종류별 충족률 = 그 표 계획 재화 전체의 단순 평균. 보유 모름은 평균에서 빼고 칸 빗금 + `—`, KPI 값 옆 `n종 모름`.
+- **FD-033(확정)**: 보유량 · 부족량 칩에서 한 칸이 여러 재화면 `n종`(FE6-c 칸 규칙 재사용, 단위 테스트). 티어 분포는 품목 수다.
+- **FD-098(워커 재량 → 사용자 결정)**: 노트 · BD 티어 1 초급 · 2 **일반** · 3 상급 · 4 최상급(앱 전체, FE6-c `중급` 대체), 오파츠 `T<n>`. 근거: 시안 Inventory-Tiers 열 머리 · 분포 범례가 "일반", 게임 명칭, 카탈로그 활동 보고서 이름(`초급/일반/상급/최상급 활동 보고서`). FD-098 권장안은 "초급~최상급"만 적고 2를 정하지 않았고 FE6-c `중급`은 시안 근거가 없는 추정이었다. 이 세션 질문에 사용자가 "앱 전체 일반"을 골랐다.
+- **FD-099(워커 재량)**: Tiers = 카탈로그 전부(계획에 안 쓰는 학교 · 오파츠도 행, 칸은 옅은 바탕만, 가장 부족은 빈 글자).
+- **FD-101(워커 재량)**: T5 학생 = 활성 문서 계산 `stage_results[].resources`(FE6-a·c 경로), 없으면 부족 계산 `affected_student_ids`.
+
+이번에 정한 규칙(시안 · 대장에 근거 없음, 워커 결정):
+1. "가장 부족" 칸: 보유를 알고 모자라는 칸 중 충족률 가장 낮은 것 → 높은 티어 → 부족량 큰 것 → 카탈로그 순서. 시안 31행(T1 9 · T2 9 · T4 13) 모두 "충족률 가장 낮은 칸"과 맞는다(예 네브라 T3 26% < T4 28% → `T3 −37`). 모자라는 칸이 없으면 계획 행은 `—`, 계획 밖 행은 빈 글자.
+2. T5 범위: 세 표(노트 · BD · 오파츠)의 계획 재화만(설계도 · 비의서 제외), 정렬은 FE6-c 부족 상위(부족량 → 학생 수 → 카탈로그 순서), 6행, 글자 `<종류> · <행 이름> <티어>`.
+3. T6 색: 세 충족률 중 가장 낮은 값과 최상급 부족 품목(1종 이상)이 분홍(시안 61% · 14종 분홍, 68 · 77 흰색과 맞다).
+4. 티어 분포 칸 색은 오파츠 티어 색(T1 #b8c4cf · T2 #71c7f4 · T3 #ffc66d · T4 #c89cf5, 시안 범례와 같다), 0인 티어는 막대 칸이 없다, 부족 품목이 없으면 빈 바탕.
+5. 분석 버튼 4개: 티어 화면에서는 고르지 않은 모양이고, 누르면 분석으로 돌아가며 그 섹션을 강조한다(토글이 아니라 켬). "목록"을 누르면 티어 화면도 닫혀, 다시 "분석"이면 분석 첫 화면이다.
+6. 계획이 없거나 계산을 못 하면 다섯 섹션 모두 분석과 같은 안내(`저장된 계획이 없습니다…`)를 보인다(카탈로그 행만 있는 빈 표 대신).
+
+### §5.6 모호점별 결론
+
+1. **T2 부유**: FD-019 예외 그대로(어느 경계에도 안 닿음, intro 80° · outro 260°). Studio 문서상 face는 bottom(모양은 같음). 아랫변 −2.6px는 위 표.
+2. **티어 표기**: 노트 · BD 초급 · 일반 · 상급 · 최상급, 오파츠 T1~T4(위 FD-098). 카탈로그 tier 정수 그대로, 라벨은 family별 맵.
+3. **학교 9 vs 6**: FD-099 — 티어 화면은 카탈로그 전부(실제 카탈로그 11곳: 하이랜더 · 와일드헌트 포함), 분석 S1은 계획이 쓰는 곳만. fixture는 시안처럼 9곳 카탈로그다.
+4. **하위 화면 vs 별도 라우트**: 같은 페이지 안 섹션 교체(분석 모드의 하위 상태 `tiersOpen`, 사이드바 유지). 섹션 교체는 §1.4 부착면 모션.
+
+### 학생 화면 학교 맵 이전 권장안
+
+- `student_section_layout.dart`의 `studentSchoolLogoAsset(String? school)`은 `schoolEmblemAsset(school)`과 결과가 같다(학생 값 `red winter`·`wild hunt`·`etc`를 `schoolKey`가 같은 키로 만든다. `school_labels_test.dart`가 학생 꼴 · 카탈로그 꼴 동치를 고정). 그래서 다음 학생 쪽 slice(Lane A)에서 몸체를 `=> schoolEmblemAsset(school);` 한 줄로 바꾸고 import 하나를 더하면 된다. 이름을 남기면 `student_studio_layout_test.dart`(475~482행)를 고칠 필요가 없고, 학생 golden 변화는 0일 것이다(같은 asset 경로).
+- 공용 맵의 한 가지 차이: 학생 맵은 `trim()`만 하고 공백을 남긴 키(`red winter`)였고, 공용 키는 공백 · `_` · `-`를 지운다. 학생 카탈로그에 공백 차이로만 다른 두 학교 값은 없으므로 결과는 같다.
+
+### golden 변화 예상
+
+- **`inventory`·`inventory-all`(변화 0)**: 목록 모드 표면 painter가 element 목록을 받게 바뀌었지만 같은 네 섹션을 같은 순서로 칠한다. 사이드바 "목록 | 분석" seg 그대로. fe6a fixture는 고치지 않았다(아래 발견 사항 3).
+- **`inventory-analysis`(바뀜, 두 곳)**:
+  1. 사이드바 "따로 여는 화면 → 티어별 충족률" 버튼이 비활성(흐림)에서 활성 · ghost(불투명)로. 위치 · 크기 · 글자 · 화살표 그대로.
+  2. 밀레니엄 플라이아웃 학생 줄 두 개: 유우카 `중급 노트 20` → `일반 노트 20`, 노아 `중급 노트 4` → `일반 노트 4`(사용자 결정, 글자 폭이 같은 두 글자라 줄 배치는 같다).
+  - 초상: 변화 없음. FE6-c fixture는 이미 `rio_battle`·`toki_battle`·`himari_battle`을 쓴다(발견 사항 3).
+  - 그 밖(S1 행 · S2 · S4 · S5 · 섹션 표면): 변화 0. 분석 본문이 `_InventoryAnalysisStage` 안으로 옮겨졌지만 멈춰 있을 때 그림 순서(표면 painter → S4 · S5 · S2 · S1 내용 → 사이드바)는 같고 Transform을 끼우지 않는다. S4 히트맵 painter 기본값은 FE6-c와 같은 계산이다.
+  - → 기준 이미지 `frontend/test/goldens/baseline/inventory-analysis.png`를 commit.json `whole`에 파일 단위로 넣었다(CF가 `failures/`를 보고 승인).
+- **다른 장면**: 변화 0(인벤토리 탭이 보이지 않고 오프스테이지 첫 로드 시점도 그대로).
+- **새 장면 `inventory-tiers`**(`fe6e_inventory_tiers_golden_test.dart`, 기준 이미지 없음 → RED, CF가 만든다). 기대 모습(일회성 렌더로 확인한 배치):
+  - 왼쪽 사이드바: 분석과 같고 "티어별 충족률" 버튼이 분홍 선택, 분석 버튼 4개 ghost, 과잉 재화 버튼 없음.
+  - T1(위 가운데 평행사변형): "기술 노트 · 학교 × 티어 충족률" + 칩(충족률 분홍 · 보유량 · 부족량), 9학교 × 초급 · 일반 · 상급 · 최상급 기울인 히트맵(시안 % 그대로, 예 백귀야행 95 · 89 · 52 · 10), 행 머리 엠블럼 + 학교 이름, "가장 부족" 열 `최상급 −19` · `−24` · `−21` · `−30` · `−30` · `−18` · `−16` · `−20` · `−21`, 범례.
+  - T2(가운데 부유 평행사변형): "전술 교육 BD · 학교 × 티어 충족률", 시안 % 그대로, 가장 부족 `최상급 −21`(백귀야행 · 붉은겨울 · 밀레니엄) · `상급 −31`(트리니티) · `최상급 −12`·`−14`·`−12` · `상급 −23`(산해경) · `최상급 −18`(발키리, 시안 −17).
+  - T4(오른쪽 위): 오파츠 13종 × T1~T4, 행 머리 그림 + 이름, 가장 부족 `T3 −37`(네브라) · `T4 −23`·`−23`·`−18`·`−21`·`−27`(로혼치, 칸 7%)·`−23`·`−18`·`−23` · `T4 −21` · `T3 −23`·`−23` · `T4 −21`.
+  - T5(오른쪽 아래): "티어 품목 · 부족 상위" + "계획 필요량 기준" 칩, "부족 상위" 캡션, 6행(네브라 T3 −37 · 3명 / BD 트리니티 상급 −31 · 2명 / 노트 게헨나 최상급 −30 · 6명 + `…+1` / 노트 아비도스 최상급 −30 · 3명 / 오파츠 로혼치 사본 T4 −27 · 2명 / 노트 붉은겨울 최상급 −24 · 1명), 행은 사선을 따라 왼쪽으로.
+  - T6(아래 가운데): "티어 충족 요약" + 칩, KPI 기술 노트 66% · BD 75% · 오파츠 64%(분홍) · 최상급 부족 품목 31종(분홍), "부족 품목 100종 · 티어 분포" 초급 7 · 일반 31 · 상급 31 · 최상급 31과 기울인 누적 막대.
+  - 게임 그림이 테스트 asset에 없는 아이콘 · 초상은 FE6-c 장면처럼 빈 상자다.
+
+### 검수표
+
+artboard `Inventory-Tiers.dc.html` → 앱:
+- 여는 방법: 인벤토리 탭 → 사이드바 맨 위 "분석" → "따로 여는 화면 → 티어별 충족률". Mock 기본 실행은 계획이 없어 다섯 섹션에 "저장된 계획이 없습니다…" 안내만 보인다. 시안 숫자 장면은 fixture로만 열린다(golden `inventory-tiers` 장면, `test/inventory_tiers_page_test.dart`).
+- 확인 포인트:
+  1. 다섯 섹션이 시안 자리인가(T1 위 평행사변형, T2 가운데 부유 · 아랫변 2.6px 위, T4 · T5 오른쪽 사다리꼴, T6 아래 평행사변형, 섹션 사이 간격).
+  2. 사이드바: 티어 버튼 분홍, 다시 누르면 분석, 분석 버튼 하나를 누르면 분석으로 돌아가며 그 섹션 분홍 외곽선, "목록"이면 목록. 바뀔 때 나가는 섹션이 붙은 면 쪽으로 빠지고 들어오는 섹션이 들어오는가(T2는 아래에서).
+  3. T1 · T2 · T4: 칸이 80°로 기울고 글자는 똑바른가, 행 머리 엠블럼 · 오파츠 그림과 이름 정렬, "가장 부족" 그림 + 분홍 글자, 칩 셋이 표마다 따로 바뀌는가(보유량 · 부족량은 수량), 범례.
+  4. T5: 6행 글자 · `−n · 학생 n명` 분홍 · 초상 줄과 `…+1`.
+  5. T6: KPI 4개와 분홍 강조, 분포 범례 칸 기울기 · 누적 막대 비율.
+  6. 작은 창(1280×720)에서 예외 없이 잘리는가. 실제 계정(학교 11 · 오파츠 20)에서 칸이 줄어 들어가는가.
+
+### 미검증 항목
+
+- golden(새 장면 `inventory-tiers`, 바뀌는 `inventory-analysis`, 변화 0 예상 `inventory`·`inventory-all`): 미실행(CF가 `fe_gate.ps1`·`failures/` 검토·`-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(다른 테스트 · process E2E · `codealmanac validate`): 미실행.
+- 섹션 안 요소 ±2px는 시안 좌표를 상대값으로 옮긴 계산이고 화면에서 재지 않았다(렌더 한 번은 배치 넘침 여부만 보았다). 특히 히트맵 세로 가운데 정렬(범례 22 가정)과 T1 · T2 칩 오른쪽 안쪽 17.1.
+- 학교 엠블럼 · 오파츠 그림이 시안 그림과 같은 모양인지(테스트 환경에는 게임 그림이 없다).
+- 실제 백엔드 카탈로그(11학교 · 20오파츠)에서의 화면은 단위 계산(칸 22.3 · 17.5px)으로만 보았다.
+
+### WIP 보존 확인
+
+- 고친 기존 파일 9개는 착수 때 WIP가 없었다(`git status --short` 빈 줄). 그래서 post 사본 · `post_dir`는 두지 않았다.
+- 작업 트리의 다른 미커밋 변경(Lane A `plan_flow_draft.dart`·`plan_flow_goal_editor.dart`·`plan_section_layout.dart`·`plan_flow_handoff_test.dart`, 스캐너 파일들, 추적 안 된 `scan_inventory_identity_review*`)은 읽지도 고치지도 않았다.
+- git 쓰기는 하지 않았다.
+
+### 발견 사항
+
+1. **T2 ±1px 예외**: 시안 T2의 위 · 아랫변 y가 모두 grid 줄 사이라 현재 path 생성 함수(위 · 아래 면 평행사변형)로는 ±1px가 안 된다(최선 −2.6px). 불변식을 지키려면 Studio에 부유 섹션 전용 spec(위 · 아래 y를 grid 밖 값으로)이 필요하다 — 키트 · Studio 몫, 지금은 status 기록만.
+2. **시안 견본 값 불일치**: T5 부족 상위(37 · 31 · 30 · 30 · 27 · 24)가 T1 · T2 · T4의 "가장 부족"(백귀야행 −27, 보이니치 −30, 토템 폴 · 고대 전지 −37, BD 산해경 −31 등)과 맞지 않고, T6 KPI(68 · 77 · 61%) · 분포(25종 0/2/9/14)도 히트맵 %와 맞지 않는다. fixture는 히트맵 %와 T5 6행을 지키고, T5와 충돌하는 "가장 부족" 칸의 부족량을 23 이하로 줄이거나 %와 정수로 함께 안 되는 칸을 가장 가까운 값으로 바꿨다(시안과 다른 칸 13개: 노트 2 · BD 5 · 오파츠 6, 로혼치 T4는 −27을 지키려고 8 → 7%). T6는 계산값(66 · 75 · 64% · 31종 · 100종 7/31/31/31)이다. fixture 머리 주석에 칸 목록.
+3. **FE6-c 발견 7(초상 id)**: `inventory_fe6c_fixture.dart`는 이미 `rio_battle`·`toki_battle`·`himari_battle`을 쓴다(FE6-c 종료 기록의 "FE6-a fixture의 `rio_armed`"가 원래 지적). 그림 없는 `rio_armed`·`toki_armed`는 `inventory_fe6a_fixture.dart`에만 있는데, 고치면 `inventory`·`inventory-all` 기준 이미지가 바뀌고(이번 조건 "변화 0" 위반) `goldens/fe6a_inventory_golden_test.dart:34`의 키(`inventory-row-Item_Icon_SecretStone_rio_armed`, 이번에 고치지 말 것)와 `inventory_controller_test.dart`·`inventory_page_test.dart`·`inventory_analysis_page_test.dart`의 키도 같이 바뀌어야 한다. 그래서 고치지 않았다. FE6-e fixture는 실제 asset id만 쓴다. 고치려면 fe6a golden 테스트 파일을 고칠 수 있는 slice(Lane A 또는 CF)에서 두 장면 갱신과 함께.
+4. **실제 카탈로그 행 수**: 백엔드 카탈로그는 학교 11 · 오파츠 20이라 T4 칸이 17.5px까지 줄고 그림도 그만큼 작다. 더 늘면(오파츠 23종 이상) 최소 16px에서 상자에 잘린다. 그때는 공용 스크롤바 · 포그(기울인 grid 행 스크롤)를 붙이는 후속이 필요하다.
+5. **헤더 부제**: 시안 헤더 부제는 "보유 재화와 장비 · 티어별 충족률"(분석은 "· 분석")인데, 부제는 `app_section.dart`·`app_shell.dart` 몫이라 이번 범위 밖이다. FE6-c도 분석 부제를 바꾸지 않았다.
+6. **시안 "과잉 재화 / 넘치는 재화 정리" 버튼**: 티어 시안에도 있지만 FD-097대로 숨겼다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe6e/pre/<경로>`(고친 기존 파일 9개). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe6e/commit.json`: slice `fe6e`, `status=false`, modified 9, added 8(새 기준 이미지 `inventory-tiers.png`는 CF가 넣는다), `whole = [이 문서, frontend/test/goldens/baseline/inventory-analysis.png]`. message 근거: Inventory-Tiers artboard, E §5, FD-019·031·032·033·098·099·101.
+- 인계: `debug/frontend_fe6e/output.md`.
+
+### 다음 행동
+
+- FE6-e 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 +19(집계 9 + 위젯 7 + 학교 맵 3), golden은 새 장면 `inventory-tiers` 기준 없음 RED + `inventory-analysis` 두 곳(티어 버튼 · 플라이아웃 두 줄)만 RED, `inventory`·`inventory-all` 포함 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe6e`.
+- 발견 사항 1(부유 섹션 spec) · 3(fe6a fixture 초상 id) · 4(티어 표 스크롤)는 CF 판단을 기다린다. 학생 화면 학교 맵 이전은 위 권장안대로 다음 학생 쪽 slice에서.

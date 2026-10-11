@@ -8,6 +8,10 @@
 // 분석 모드(FE6-c): "목록 · 분석" seg, 분석 사이드바 강조, S2 티어 토글, S4 종류·표시, S5 기간을 들고, 집계
 // (`inventory_analysis.dart`)는 보드·사용 단계가 바뀔 때만 다시 센다.
 //
+// 티어별 충족률(FE6-e): 분석 모드 안의 "따로 여는 화면"이다([tiersOpen]). 사이드바 버튼을 다시 누르거나, 분석 버튼
+// 4개 중 하나(그 섹션을 강조한 채 분석으로) · "목록"을 누르면 닫힌다. T1 · T2 · T4 표시 칩은 표마다 따로 든다. 집계
+// (`inventory_tiers.dart`)도 같은 메모 규칙이다.
+//
 // 재화 읽기 전용(fb3-dart, FB-3 `currency_read_only`):
 // - 재화 키(credits·엘리그마)는 draft·dirty가 되지 않는다([setDraft]·[beginEdit]가 거절한다).
 // - 저장 wire는 재화 항목을 저장된 map 그대로(이름·메타 포함) 두고, 없는 재화는 만들지 않으며 null을 '0'으로 바꾸지
@@ -22,6 +26,7 @@ import '../../services/planning_protocol_client.dart' show BackendRemoteExceptio
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import 'inventory_analysis.dart';
+import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
 
 /// 스캔 탭이 인벤토리로 넘긴 후보(FE8-g5 전까지 인벤토리에서 승인한다).
@@ -85,6 +90,8 @@ class InventoryController extends ChangeNotifier {
   InventoryHeatmapValue _heatmapValue = InventoryHeatmapValue.fulfillment;
   final Set<int> _oopartTiers = {1, 2, 3, 4};
   InventoryChangeWindow _changeWindow = InventoryChangeWindow.week1;
+  bool _tiersOpen = false;
+  final Map<InventoryHeatmapKind, InventoryHeatmapValue> _tierValues = {};
 
   // 분석 집계 메모(보드·사용 단계가 바뀌면 다시 센다).
   InventoryBoard? _analysisBoard;
@@ -92,6 +99,7 @@ class InventoryController extends ChangeNotifier {
   List<InventorySchoolRow>? _schoolRows;
   InventoryOopartAnalysis? _oopartAnalysis;
   final Map<InventoryHeatmapKind, InventoryHeatmap> _heatmaps = {};
+  InventoryTiersAnalysis? _tiersAnalysis;
 
   InventoryListMode _mode = InventoryListMode.items;
   InventoryView _view = InventoryView.shortage;
@@ -155,6 +163,13 @@ class InventoryController extends ChangeNotifier {
   Set<int> get oopartTiers => Set.unmodifiable(_oopartTiers);
   InventoryChangeWindow get changeWindow => _changeWindow;
 
+  /// 티어별 충족률 화면이 열려 있다(분석 모드 안, FE6-e).
+  bool get tiersOpen => _screenMode == InventoryScreenMode.analysis && _tiersOpen;
+
+  /// 티어 화면 표([kind] = 기술 노트 · BD · 오파츠)의 표시 칩.
+  InventoryHeatmapValue tierValue(InventoryHeatmapKind kind) =>
+      _tierValues[kind] ?? InventoryHeatmapValue.fulfillment;
+
   void _syncAnalysis() {
     if (identical(_analysisBoard, _board) && identical(_analysisUses, _uses)) {
       return;
@@ -164,6 +179,7 @@ class InventoryController extends ChangeNotifier {
     _schoolRows = null;
     _oopartAnalysis = null;
     _heatmaps.clear();
+    _tiersAnalysis = null;
   }
 
   /// S1 학교 행(FD-099 활성 계획이 쓰는 학교만).
@@ -180,6 +196,12 @@ class InventoryController extends ChangeNotifier {
   InventoryOopartAnalysis get oopartAnalysis {
     _syncAnalysis();
     return _oopartAnalysis ??= inventoryOopartAnalysis(_board, _uses);
+  }
+
+  /// 티어별 충족률 화면 값(FD-099 Tiers: 카탈로그 전부).
+  InventoryTiersAnalysis get tiersAnalysis {
+    _syncAnalysis();
+    return _tiersAnalysis ??= inventoryTiersAnalysis(_board, _uses);
   }
 
   /// S4 지금 종류의 히트맵.
@@ -454,20 +476,40 @@ class InventoryController extends ChangeNotifier {
 
   // --- 보기 -----------------------------------------------------------------
 
-  /// "목록 · 분석". 목록 보기 상태(모드 · 종류 · 선택)는 그대로 둔다.
+  /// "목록 · 분석". 목록 보기 상태(모드 · 종류 · 선택)는 그대로 둔다. 목록으로 가면 티어 화면은 닫힌다.
   void setScreenMode(InventoryScreenMode mode) {
     if (_screenMode == mode) return;
     _screenMode = mode;
+    if (mode == InventoryScreenMode.list) _tiersOpen = false;
     _notify();
   }
 
   /// "이 화면에 보이는 분석" 버튼: 그 섹션을 강조한다. 같은 버튼을 다시 누르면 강조를 푼다. 장비 설계도는 S4를
-  /// 설계도 보기로 돌린다.
+  /// 설계도 보기로 돌린다. 티어 화면에서 누르면 분석으로 돌아가며 그 섹션을 강조한다(다시 눌러 푸는 것은 분석에서).
   void toggleAnalysisFocus(InventoryAnalysisFocus focus) {
-    _analysisFocus = _analysisFocus == focus ? null : focus;
+    if (_tiersOpen) {
+      _tiersOpen = false;
+      _analysisFocus = focus;
+    } else {
+      _analysisFocus = _analysisFocus == focus ? null : focus;
+    }
     if (_analysisFocus == InventoryAnalysisFocus.blueprints) {
       _heatmapKind = InventoryHeatmapKind.blueprint;
     }
+    _notify();
+  }
+
+  /// 사이드바 "따로 여는 화면 → 티어별 충족률": 분석 모드에서 티어 화면을 열고, 열려 있으면 닫는다.
+  void toggleTiers() {
+    if (_screenMode != InventoryScreenMode.analysis) return;
+    _tiersOpen = !_tiersOpen;
+    _notify();
+  }
+
+  /// 티어 화면 표 하나의 표시 칩.
+  void setTierValue(InventoryHeatmapKind kind, InventoryHeatmapValue value) {
+    if (tierValue(kind) == value) return;
+    _tierValues[kind] = value;
     _notify();
   }
 

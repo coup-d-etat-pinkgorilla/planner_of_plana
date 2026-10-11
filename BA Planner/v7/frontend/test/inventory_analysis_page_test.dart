@@ -113,11 +113,12 @@ void main() {
     expect(theory.onChanged, isNull);
     expect(find.text('과잉 재화'), findsNothing);
     expect(find.text('넘치는 재화 정리'), findsNothing);
-    // 티어별 충족률은 FE6-e 전까지 비활성.
+    // 티어별 충족률(FE6-e): 켜져 있고 고르지 않은 모양이다(여는 동작은 inventory_tiers_page_test.dart).
     final tiers = tester.widget<RailButton>(
       find.byKey(const ValueKey('inventory-analysis-open-tiers')),
     );
-    expect(tiers.onPressed, isNull);
+    expect(tiers.onPressed, isNotNull);
+    expect(tiers.variant, RailButtonVariant.ghost);
     expect(find.text('기술 노트 · BD · 오파츠'), findsOneWidget);
     for (final focus in InventoryAnalysisFocus.values) {
       expect(find.text(focus.label), findsOneWidget);
@@ -198,7 +199,7 @@ void main() {
 
     await _tap(tester, 'inventory-school-flyout-Millennium');
     expect(find.text('밀레니엄 · 계획 학생 5명'), findsOneWidget);
-    // 부족 큰 순(유우카 BD 상급 9 · 노트 중급 20 → 노아 노트 4 → 나머지 이름순).
+    // 부족 큰 순(유우카 BD 상급 9 · 노트 일반 20 → 노아 노트 4 → 나머지 이름순).
     final rows = [
       for (final id in const ['yuuka', 'noa', 'rio_battle', 'toki_battle', 'himari_battle'])
         find.byKey(ValueKey('inventory-school-Millennium-student-$id')),
@@ -213,9 +214,9 @@ void main() {
       );
     }
     expect(find.descendant(of: rows[0], matching: find.text('상급 BD 9')), findsOneWidget);
-    expect(find.descendant(of: rows[0], matching: find.text('중급 노트 20')), findsOneWidget);
+    expect(find.descendant(of: rows[0], matching: find.text('일반 노트 20')), findsOneWidget);
     expect(find.descendant(of: rows[1], matching: find.text('—')), findsOneWidget);
-    expect(find.descendant(of: rows[1], matching: find.text('중급 노트 4')), findsOneWidget);
+    expect(find.descendant(of: rows[1], matching: find.text('일반 노트 4')), findsOneWidget);
     await tester.tap(find.text('계획에서 보기 →'));
     await tester.pumpAndSettle();
     expect(openedPlan, 1);

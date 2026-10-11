@@ -2,7 +2,9 @@
 //
 // - A 사이드바 분석 메뉴: "비교 기준"(계획 요구량 / 이론상 전체 요구량은 비활성, FD-097) · 설명 · "이 화면에 보이는 분석"
 //   버튼 4개(누르면 그 섹션 외곽을 분홍으로 강조하고 버튼이 선택 상태가 된다. 다시 누르면 푼다. "장비 설계도"는 S4를
-//   설계도 보기로 돌린다) · "따로 여는 화면"(티어별 충족률은 FE6-e 전까지 비활성, 넘치는 재화 정리는 숨김 FD-097).
+//   설계도 보기로 돌린다) · "따로 여는 화면"(티어별 충족률 FE6-e: 누르면 선택(분홍) 상태로 티어 화면을 열고 다시 누르면
+//   닫는다. 열려 있는 동안 분석 버튼 4개는 고르지 않은 모양이고, 누르면 분석으로 돌아간다. 넘치는 재화 정리는 숨김
+//   FD-097).
 // - S1 학교별 BD · 기술 노트 충족률: 학교 행(엠블럼 · 이름 · BD 막대 + % · 노트 막대 + % · 부족 티어 · "계획 n명" 칩 →
 //   학생별 부족 필요량 플라이아웃). "계획 필요 환산량 기준" 칩은 숨김(FD-100).
 // - S2 오파츠 · 보유율 × 수요: 티어 토글 + 산점도(`inventory_analysis_charts.dart`). "확장"은 FE6-d 전까지 비활성.
@@ -25,6 +27,7 @@ extension _InventoryAnalysisSidebar on InventoryWorkspace {
     Rect Function(double, double) row,
   ) {
     final enabled = controller.loaded && !controller.loading;
+    final tiersOpen = controller.tiersOpen;
     const segHeight = InventoryAnalysisMetrics.compareSegHeight;
     final segTop = top + InventoryAnalysisMetrics.compareSegTop;
     final noteTop = top + InventoryAnalysisMetrics.compareNoteTop;
@@ -95,7 +98,7 @@ extension _InventoryAnalysisSidebar on InventoryWorkspace {
           ),
           child: _railButton(
             key: 'inventory-analysis-focus-${focus.name}',
-            variant: controller.analysisFocus == focus
+            variant: !tiersOpen && controller.analysisFocus == focus
                 ? RailButtonVariant.selectedPink
                 : RailButtonVariant.ghost,
             height: InventoryAnalysisMetrics.focusButtonHeight,
@@ -116,54 +119,53 @@ extension _InventoryAnalysisSidebar on InventoryWorkspace {
         width,
         '따로 여는 화면',
       ),
-      // 티어별 충족률 화면은 FE6-e에서 연다. "넘치는 재화 정리"는 FD-097로 숨긴다.
+      // 티어별 충족률 화면(FE6-e). "넘치는 재화 정리"는 FD-097로 숨긴다.
       Positioned.fromRect(
         rect: row(
           InventoryAnalysisMetrics.screenButtonTop,
           InventoryAnalysisMetrics.screenButtonHeight,
         ),
-        child: Semantics(
-          label: '티어별 충족률 화면은 준비 중입니다',
-          child: _Fit(
-            minWidth: 240,
-            minHeight: InventoryAnalysisMetrics.screenButtonHeight,
-            child: RailButton(
-              key: const ValueKey('inventory-analysis-open-tiers'),
-              variant: RailButtonVariant.ghost,
-              height: InventoryAnalysisMetrics.screenButtonHeight,
-              semanticLabel: '티어별 충족률',
-              onPressed: null,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '티어별 충족률',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _body.copyWith(
-                            fontSize: AppType.titleSmallSize,
-                            fontWeight: AppType.bold,
-                          ),
+        child: _Fit(
+          minWidth: 240,
+          minHeight: InventoryAnalysisMetrics.screenButtonHeight,
+          child: RailButton(
+            key: const ValueKey('inventory-analysis-open-tiers'),
+            variant: tiersOpen
+                ? RailButtonVariant.selectedPink
+                : RailButtonVariant.ghost,
+            height: InventoryAnalysisMetrics.screenButtonHeight,
+            semanticLabel: tiersOpen ? '티어별 충족률 닫기' : '티어별 충족률 열기',
+            onPressed: enabled ? controller.toggleTiers : null,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '티어별 충족률',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _body.copyWith(
+                          fontSize: AppType.titleSmallSize,
+                          fontWeight: AppType.bold,
                         ),
-                        const Text(
-                          '기술 노트 · BD · 오파츠',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _muted,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Text(
+                        '기술 노트 · BD · 오파츠',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _muted,
+                      ),
+                    ],
                   ),
-                  const CustomPaint(
-                    size: Size.square(16),
-                    painter: _AnalysisGlyphPainter(_AnalysisGlyph.arrow),
-                  ),
-                ],
-              ),
+                ),
+                const CustomPaint(
+                  size: Size.square(16),
+                  painter: _AnalysisGlyphPainter(_AnalysisGlyph.arrow),
+                ),
+              ],
             ),
           ),
         ),
@@ -225,6 +227,7 @@ class _AnalysisGlyphPainter extends CustomPainter {
 /// 분석 모드 네 섹션(S1 · S2 · S4 · S5)과 강조 외곽선.
 class _InventoryAnalysisSections extends StatelessWidget {
   const _InventoryAnalysisSections({
+    super.key,
     required this.controller,
     required this.onOpenPlan,
     required this.size,
@@ -252,6 +255,14 @@ class _InventoryAnalysisSections extends StatelessWidget {
 
   bool get _waiting => !controller.loaded || controller.loading;
 
+  /// 섹션 [id] 하나의 내용(섹션 교체 모션이 섹션마다 따로 움직일 때 쓴다).
+  Widget content(String id) => switch (id) {
+    inventoryAnalysisSchoolsSectionId => _schools(),
+    inventoryAnalysisOopartsSectionId => _ooparts(),
+    inventoryAnalysisTiersSectionId => _tiers(),
+    _ => _changes(),
+  };
+
   @override
   Widget build(BuildContext context) {
     final focus = controller.analysisFocus;
@@ -278,12 +289,14 @@ class _InventoryAnalysisSections extends StatelessWidget {
 
   // --- 공통 -------------------------------------------------------------------
 
-  /// 섹션 제목 줄(위 20, 높이 40). [left]는 줄 아래 왼쪽이 왼쪽 변에서 떨어진 거리, [inner]는 줄 안 왼쪽 여백이다.
+  /// 섹션 제목 줄(위 20, 높이 40). [left]는 줄 아래 왼쪽이 왼쪽 변에서 떨어진 거리, [inner] · [innerRight]는 줄 안
+  /// 왼쪽 · 오른쪽 여백이다.
   Widget _title(
     _SectionQuad quad,
     String title, {
     double left = InventoryAnalysisMetrics.titleLeft,
     double inner = 17.1,
+    double innerRight = 14,
     double minWidth = 520,
     List<Widget> trailing = const [],
   }) {
@@ -302,7 +315,7 @@ class _InventoryAnalysisSections extends StatelessWidget {
         minWidth: minWidth,
         minHeight: height,
         child: Padding(
-          padding: EdgeInsets.only(left: inner, right: 14),
+          padding: EdgeInsets.only(left: inner, right: innerRight),
           child: Row(
             children: [
               const TitleBar(width: 7, height: 22),
@@ -845,33 +858,19 @@ class _AnalysisHighlightPainter extends CustomPainter {
       oldDelegate.sectionId != sectionId;
 }
 
-/// 학교 엠블럼 asset(`School_Icon_<NAME>.png`). 카탈로그 school 값과 맞는 그림이 없으면 null.
-String? inventorySchoolEmblemAsset(String school) {
-  final name = switch (school.replaceAll(' ', '').toLowerCase()) {
-    'abydos' => 'ABYDOS',
-    'arius' => 'Arius',
-    'gehenna' => 'GEHENNA',
-    'highlander' => 'HIGHLANDER',
-    'hyakkiyako' => 'HYAKKIYAKO',
-    'millennium' => 'MILLENNIUM',
-    'redwinter' => 'REDWINTER',
-    'sakugawa' => 'SAKUGAWA',
-    'shanhaijing' => 'SHANHAIJING',
-    'srt' => 'SRT',
-    'tokiwadai' => 'Tokiwadai',
-    'trinity' => 'TRINITY',
-    'valkyrie' => 'VALKYRIE',
-    'wildhunt' => 'WILDHUNT',
-    _ => null,
-  };
-  return name == null ? null : GameAssets.schoolLogo(name);
-}
+/// 학교 엠블럼 asset(`School_Icon_<NAME>.png`, 공용 맵 `school_labels.dart`). 맞는 그림이 없으면 null.
+String? inventorySchoolEmblemAsset(String school) => schoolEmblemAsset(school);
 
-/// 학교 엠블럼 30×26(불투명도 .92, contain). 그림이 없거나 읽지 못하면 이름 앞 두 글자를 쓴다(FE3-f2a 대체 표시).
+/// 학교 엠블럼(S1 30×26 · 티어 화면 28×24, 불투명도 .92, contain). 그림이 없거나 읽지 못하면 이름 앞 두 글자를
+/// 쓴다(FE3-f2a 대체 표시).
 class _SchoolEmblem extends StatelessWidget {
-  const _SchoolEmblem({required this.school});
+  const _SchoolEmblem({
+    required this.school,
+    this.size = const Size(30, 26),
+  });
 
   final String school;
+  final Size size;
 
   @override
   Widget build(BuildContext context) {
@@ -886,8 +885,8 @@ class _SchoolEmblem extends StatelessWidget {
     );
     final asset = inventorySchoolEmblemAsset(school);
     return SizedBox(
-      width: 30,
-      height: 26,
+      width: size.width,
+      height: size.height,
       child: asset == null
           ? fallback
           : Opacity(
@@ -1328,9 +1327,12 @@ class _HeatmapLegend extends StatelessWidget {
 
 /// 부족 상위 한 줄(시안 `.row` 1119×46: `.pt` 47×38 · 이름 · `−36 · 학생 7명` · 초상 줄 246).
 class _TopShortageRow extends StatelessWidget {
-  const _TopShortageRow({super.key, required this.shortage});
+  const _TopShortageRow({super.key, required this.shortage, this.title});
 
   final InventoryTopShortage shortage;
+
+  /// 품목 글자. 없으면 재화 표시 이름이다(티어 화면 T5는 `오파츠 · 네브라 디스크 T3` 꼴).
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -1344,7 +1346,7 @@ class _TopShortageRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              view.item.displayName,
+              title ?? view.item.displayName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: _body.copyWith(fontSize: AppType.bodySize),

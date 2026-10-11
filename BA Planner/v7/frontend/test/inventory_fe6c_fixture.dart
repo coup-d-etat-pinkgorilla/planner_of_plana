@@ -66,7 +66,7 @@ const _schoolNames = <String, String>{
   'RedWinter': '붉은겨울',
 };
 
-const _noteTiers = ['초급', '중급', '상급', '최상급'];
+const _noteTiers = ['초급', '일반', '상급', '최상급'];
 
 /// 오파츠 (icon key, 이름, 사용 학생, T1~T4 보유율 %).
 const inventoryAnalysisFixtureOoparts = <(String, String, List<String>, List<int>)>[

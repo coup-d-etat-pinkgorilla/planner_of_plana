@@ -226,6 +226,7 @@ void main() {
       expect(inventorySchoolLabel('RedWinter'), '붉은겨울');
       expect(inventorySchoolLabel('Unknown School'), 'Unknown School');
       expect(inventoryNoteTierLabel(1), '초급');
+      expect(inventoryNoteTierLabel(2), '일반');
       expect(inventoryNoteTierLabel(4), '최상급');
       expect(inventoryNoteTierLabel(7), 'T7');
     });
@@ -325,7 +326,8 @@ void main() {
       expect(cell.text(InventoryHeatmapValue.owned, (a) => '$a'), '2종');
       expect(cell.text(InventoryHeatmapValue.shortage, (a) => '$a'), '2종');
       expect(heatmap.rows.single.label, 'M');
-      expect(heatmap.tierLabel(2), '중급');
+      // FE6-e 사용자 결정: 티어 2는 "일반"(시안 Inventory-Tiers · 게임 명칭).
+      expect(heatmap.tierLabel(2), '일반');
     });
 
     test('종류별 행 id: 노트 · BD는 학교, 오파츠는 family, 다른 category는 제외', () {

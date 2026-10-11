@@ -9,6 +9,8 @@
 // - S4 히트맵 [InventoryTierHeatmapPainter]: 시안 `.hm.sk` CSS grid(라벨 열 56 + 티어 열 1fr, 간격 3, 칸 높이 26 r4)를
 //   아래 왼쪽 기준 skewX(−10°)로 기울이고 글자는 세운다. 칸 색 rgba(113,199,244, .065 + .835 × 충족률), 글자는
 //   65% 이상 #0c2233 · 20% 미만 #9eb0c2 · 나머지 #f4f8fb. 보유 모름은 빗금 + `—`, 계획에 안 쓰는 칸은 옅은 바탕만이다.
+//   FE6-e 티어 화면(시안 Inventory-Tiers T1 · T2 · T4)도 같은 painter다: 라벨 열 폭(96 · 150)과 끝 "가장 부족" 열(128)을
+//   받고, 그림이 들어가는 행 머리 · 가장 부족 칸 내용은 위젯이 [InventoryHeatmapGeometry.cellRect] 자리에 얹는다.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -263,6 +265,44 @@ abstract final class InventoryHeatmapGeometry {
 
   static double gridHeight(int rows, double rowHeight) =>
       rows * rowHeight + math.max(0, rows - 1) * gap;
+
+  /// 티어 열 하나의 폭: 기울이기 전 grid 폭 [gridWidth]에서 라벨 열 · 끝 열([trailingWidth], 0이면 없음) · 간격을 뺀 몫.
+  static double columnWidth(
+    double gridWidth,
+    int columns, {
+    double labelWidth = InventoryHeatmapGeometry.labelWidth,
+    double trailingWidth = 0,
+  }) {
+    final trailing = trailingWidth > 0 ? trailingWidth + gap : 0.0;
+    return math.max(
+      0.0,
+      (gridWidth - labelWidth - trailing - gap * columns) / columns,
+    );
+  }
+
+  /// 기울이기 전 칸 자리(행 [row]은 머리 줄 0부터, [column]은 −1 = 라벨 열 · 0부터 티어 열 · [columns] = 끝 열).
+  static Rect cellRect(
+    int row,
+    int column, {
+    required int columns,
+    required double columnWidth,
+    required double rowHeight,
+    double labelWidth = InventoryHeatmapGeometry.labelWidth,
+    double trailingWidth = 0,
+  }) {
+    final top = row * (rowHeight + gap);
+    if (column < 0) return Rect.fromLTWH(0, top, labelWidth, rowHeight);
+    return Rect.fromLTWH(
+      labelWidth + gap + column * (columnWidth + gap),
+      top,
+      column >= columns ? trailingWidth : columnWidth,
+      rowHeight,
+    );
+  }
+
+  /// 기울인 grid(높이 [height])에서 칸 [rect]의 세운 내용이 놓이는 자리(칸 가운데 높이만큼 오른쪽으로 민다).
+  static Rect uprightRect(Rect rect, double height) =>
+      rect.shift(Offset(skew * (height - rect.center.dy), 0));
 }
 
 /// 칸 글자 색(시안 규칙).
@@ -272,14 +312,18 @@ Color inventoryHeatmapTextColor(double fulfillment) {
   return AppColors.text;
 }
 
-/// S4 종류 × 티어 히트맵. 캔버스는 기울인 grid 전체(폭 = 기울이기 전 grid 폭 + `높이 × tan10°`)이고, 아래 왼쪽이
-/// 원점이다.
+/// 종류 × 티어 히트맵(S4 · FE6-e T1 · T2 · T4). 캔버스는 기울인 grid 전체(폭 = 기울이기 전 grid 폭 + `높이 × tan10°`)이고,
+/// 아래 왼쪽이 원점이다.
 class InventoryTierHeatmapPainter extends CustomPainter {
   const InventoryTierHeatmapPainter({
     required this.heatmap,
     required this.value,
     required this.amount,
     required this.rowHeight,
+    this.labelWidth = InventoryHeatmapGeometry.labelWidth,
+    this.trailingWidth = 0,
+    this.trailingHeader,
+    this.rowLabels = true,
   });
 
   final InventoryHeatmap heatmap;
@@ -287,19 +331,31 @@ class InventoryTierHeatmapPainter extends CustomPainter {
   final String Function(int) amount;
   final double rowHeight;
 
+  /// 라벨 열 폭(S4 56, 티어 화면 96 · 150).
+  final double labelWidth;
+
+  /// 끝 열 폭(티어 화면 "가장 부족" 128). 0이면 끝 열이 없다.
+  final double trailingWidth;
+
+  /// 끝 열 머리 글자(`가장 부족`).
+  final String? trailingHeader;
+
+  /// 행 라벨 글자를 painter가 쓴다. 티어 화면은 그림이 들어가 위젯이 쓴다(false).
+  final bool rowLabels;
+
   @override
   void paint(Canvas canvas, Size size) {
-    const gap = InventoryHeatmapGeometry.gap;
-    const labelWidth = InventoryHeatmapGeometry.labelWidth;
     final columns = heatmap.tiers;
     final rows = heatmap.rows.length + 1;
     final height = InventoryHeatmapGeometry.gridHeight(rows, rowHeight);
     final skew = InventoryHeatmapGeometry.skew;
     // 캔버스 폭 = 기울이기 전 grid 폭 + 윗변이 넘치는 폭.
     final gridWidth = size.width - skew * height;
-    final columnWidth = math.max(
-      0.0,
-      (gridWidth - labelWidth - gap * columns) / columns,
+    final columnWidth = InventoryHeatmapGeometry.columnWidth(
+      gridWidth,
+      columns,
+      labelWidth: labelWidth,
+      trailingWidth: trailingWidth,
     );
     Offset shift(double y) => Offset(skew * (height - y), 0);
     final fontSize = math.min(AppType.captionSize, rowHeight * 0.45);
@@ -349,23 +405,28 @@ class InventoryTierHeatmapPainter extends CustomPainter {
       painter.dispose();
     }
 
-    Rect rectAt(int row, int column) {
-      final top = row * (rowHeight + gap);
-      if (column < 0) return Rect.fromLTWH(0, top, labelWidth, rowHeight);
-      return Rect.fromLTWH(
-        labelWidth + gap + column * (columnWidth + gap),
-        top,
-        columnWidth,
-        rowHeight,
-      );
-    }
+    Rect rectAt(int row, int column) => InventoryHeatmapGeometry.cellRect(
+      row,
+      column,
+      columns: columns,
+      columnWidth: columnWidth,
+      rowHeight: rowHeight,
+      labelWidth: labelWidth,
+      trailingWidth: trailingWidth,
+    );
 
     for (var tier = 1; tier <= columns; tier++) {
       label(rectAt(0, tier - 1), heatmap.tierLabel(tier), AppColors.textMuted);
     }
+    final trailingHeader = this.trailingHeader;
+    if (trailingWidth > 0 && trailingHeader != null) {
+      label(rectAt(0, columns), trailingHeader, AppColors.textMuted);
+    }
     for (var index = 0; index < heatmap.rows.length; index++) {
       final row = heatmap.rows[index];
-      label(rectAt(index + 1, -1), row.label, AppColors.textMuted);
+      if (rowLabels) {
+        label(rectAt(index + 1, -1), row.label, AppColors.textMuted);
+      }
       for (final item in row.cells) {
         final rect = rectAt(index + 1, item.tier - 1);
         if (!item.planned) {
@@ -393,5 +454,9 @@ class InventoryTierHeatmapPainter extends CustomPainter {
   bool shouldRepaint(InventoryTierHeatmapPainter oldDelegate) =>
       oldDelegate.heatmap != heatmap ||
       oldDelegate.value != value ||
-      oldDelegate.rowHeight != rowHeight;
+      oldDelegate.rowHeight != rowHeight ||
+      oldDelegate.labelWidth != labelWidth ||
+      oldDelegate.trailingWidth != trailingWidth ||
+      oldDelegate.trailingHeader != trailingHeader ||
+      oldDelegate.rowLabels != rowLabels;
 }

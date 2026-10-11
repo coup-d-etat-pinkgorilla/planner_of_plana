@@ -13,6 +13,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import '../models/school_labels.dart';
 import 'inventory_view_model.dart';
 
 /// 사이드바 최상단 "목록 · 분석" seg.
@@ -137,34 +138,18 @@ int? inventoryStudentShortage(String studentId, List<InventoryStageUse> uses) {
   return any ? total : 0;
 }
 
-/// 노트·BD 티어 라벨(FD-098: 1 초급 · 2 중급 · 3 상급 · 4 최상급). 다른 family는 `T<n>`.
+/// 노트·BD 티어 라벨(FD-098: 1 초급 · 2 일반 · 3 상급 · 4 최상급, 시안 Inventory-Tiers · 게임 명칭. FE6-e에서 FE6-c의
+/// "중급"을 사용자 결정으로 바꿨다). 다른 family는 `T<n>`.
 String inventoryNoteTierLabel(int tier) => switch (tier) {
   1 => '초급',
-  2 => '중급',
+  2 => '일반',
   3 => '상급',
   4 => '최상급',
   _ => 'T$tier',
 };
 
-/// 카탈로그 school 값(`Millennium` 등, FB-3) → 화면 이름. 모르는 값은 그대로다.
-String inventorySchoolLabel(String school) =>
-    switch (school.replaceAll(' ', '').toLowerCase()) {
-      'hyakkiyako' => '백귀야행',
-      'redwinter' => '붉은겨울',
-      'trinity' => '트리니티',
-      'gehenna' => '게헨나',
-      'abydos' => '아비도스',
-      'millennium' => '밀레니엄',
-      'arius' => '아리우스',
-      'shanhaijing' => '산해경',
-      'valkyrie' => '발키리',
-      'highlander' => '하이랜더',
-      'wildhunt' => '와일드헌트',
-      'srt' => 'SRT',
-      'tokiwadai' => '토키와다이',
-      'sakugawa' => '사쿠가와',
-      _ => school,
-    };
+/// 카탈로그 school 값(`Millennium` 등, FB-3) → 화면 이름(공용 맵 `school_labels.dart`). 모르는 값은 그대로다.
+String inventorySchoolLabel(String school) => schoolLabel(school);
 
 /// 학생 한 명의 종류별 부족(가장 높은 티어 하나).
 @immutable
