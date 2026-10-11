@@ -234,6 +234,13 @@ try {
     Copy-Item -LiteralPath $bundleSource -Destination $stageDirectory -Recurse
     Copy-BackendRuntime (Join-Path $stageDirectory "backend")
 
+    # The separately built developer tools live under release/ but are not part
+    # of the main runtime. Retain that bundle when publishing a new main build.
+    $developerToolsBundle = Join-Path $bundleDestination "developer_tools"
+    if (Test-Path -LiteralPath $developerToolsBundle -PathType Container) {
+        Copy-Item -LiteralPath $developerToolsBundle -Destination $stageDirectory -Recurse
+    }
+
     if (Test-Path -LiteralPath $bundleDestination) {
         Get-ChildItem -LiteralPath $bundleDestination -File -Filter "*.ba-section-studio.json" |
             ForEach-Object {
