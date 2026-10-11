@@ -183,3 +183,11 @@ Qt/Tk 코드를 반입하지 않고 v7 Flutter/Python 경계로 마이그레이�
 v6는 안정판과 회귀 기준으로 남습니다. v7은 `../v6`를 런타임에서 import하지
 않으며, 새 기능의 기준 구현은 v7입니다. 필요한 v6 버그 수정은 명시적으로
 선별해 역이식합니다.
+
+### Inventory FB3 contracts
+
+Catalog rows expose exactly ten fields, adding required nullable school/family/tier to the previous seven. Reviewed mappings preserve old resource identities, relative ordering, aliases and quantity semantics. School/family accept valid Unicode strings or null without trimming/enums/maxima; tier is an exact positive integer or null. Catalog revision includes these fields.
+
+Scanner support stays at seven reviewed profiles (six on the item page). Catalog-only currencies are appended credits then Item_Icon_SecretStone, with item_id null and Item_Icon_SecretStone respectively, zero_fill_allowed=false and three null metadata fields. Manual/unattributed inventory writes preserve canonical currency quantities including presence/null/zero; violations return invalid_payload with reason currency_read_only after existing replay-cache checks. Initialized-profile rejection does not record history/sample clock/write. Common legacy plan migration/recovery still precedes that guard and can have its existing effects.
+
+planning.inventory.acquisition.get accepts only resource_key and returns resource_key/methods/acquisition_revision. Packaged v1 resources={} is intentionally authoritative: known resources have methods=[], unknown resources return resource_not_found; malformed queries return invalid_payload and unavailable/corrupt metadata returns resource_acquisition_failed. A method has exactly method_id/kind/label/weekly_quantity/selector_resource_keys/source, with reviewed KR source and a real calendar date. Weekly quantity is a canonical integer string or null; null selectors differ from []. TEST_ONLY fixtures supply no KR facts. Acquisition revision hashes its validated full table independently of inventory catalog/current/plan revisions. The query does not write repository/history/clock. Catalog does not embed acquisition data. FD101 continues consuming existing backend stage_results[].resources and stage IDs; this slice introduces no synthetic demand or acquisition facts.

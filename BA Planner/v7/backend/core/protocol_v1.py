@@ -21,7 +21,11 @@ from core.planning import (
     StudentGoal,
 )
 from core.planning_calc import CREDIT_CATEGORIES, calculate_plan_totals
-from core.inventory_catalog import CATALOG_REVISION, catalog_payload
+from core.inventory_catalog import CATALOG_REVISION, catalog_payload, canonical_resource_key
+from core.resource_acquisition import (
+    AcquisitionQueryError, validate_acquisition_query, resolve_acquisition_resource_key,
+    load_packaged_resource_acquisition, resource_acquisition_payload,
+)
 from core.plan_shortages import derive_plan_shortages
 from core.planning_document import (
     PlanningDocumentError,
@@ -40,13 +44,14 @@ METHOD_STUDENT_CALCULATE = "planning.student.calculate"
 METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
 METHOD_INVENTORY_CATALOG = "planning.inventory.catalog"
+METHOD_INVENTORY_ACQUISITION = "planning.inventory.acquisition.get"
 METHOD_PLAN_SHORTAGES = "planning.plan.shortages"
 METHOD_DOCUMENT_CALCULATE = "planning.document.calculate"
 METHOD_SCENARIO_COMPARE = "planning.scenario.compare"
 KNOWN_METHODS = frozenset(
     {
         METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE,
-        METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_PLAN_SHORTAGES,
+        METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_INVENTORY_ACQUISITION, METHOD_PLAN_SHORTAGES,
         METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE, METHOD_STUDENT_CALCULATE,
     }
 )
@@ -233,6 +238,7 @@ class PlanningProtocolV1:
         ),
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
         inventory_catalog: Callable[[], list[dict[str, object]]] = catalog_payload,
+        resource_acquisition: Callable[[frozenset[str]], dict] = load_packaged_resource_acquisition,
         shortage_deriver: Callable[
             [dict[str, object], GrowthPlan, list[dict[str, Any]]], dict[str, object]
         ] = derive_plan_shortages,
@@ -244,6 +250,7 @@ class PlanningProtocolV1:
         self._student_forms = student_forms
         self._calculator = calculator
         self._inventory_catalog = inventory_catalog
+        self._resource_acquisition = resource_acquisition
         self._shortage_deriver = shortage_deriver
         self._diagnostic = diagnostic or (lambda _message: None)
 
@@ -270,6 +277,8 @@ class PlanningProtocolV1:
                 return self._plan_calculate(request)
             if request["method"] == METHOD_INVENTORY_CATALOG:
                 return self._inventory_catalog_get(request)
+            if request["method"] == METHOD_INVENTORY_ACQUISITION:
+                return self._inventory_acquisition_get(request)
             if request["method"] == METHOD_DOCUMENT_CALCULATE:
                 return self._document_calculate(request)
             if request["method"] == METHOD_SCENARIO_COMPARE:
@@ -390,6 +399,23 @@ class PlanningProtocolV1:
                 "catalog_revision": CATALOG_REVISION,
             },
         )
+
+    def _inventory_acquisition_get(self, request: dict[str, Any]) -> dict[str, Any]:
+        try:
+            raw_key = validate_acquisition_query(request["payload"])
+        except AcquisitionQueryError as error:
+            return error_response(request, error.code, str(error))
+        try:
+            known = frozenset(row["resource_key"] for row in self._inventory_catalog())
+            key = resolve_acquisition_resource_key(raw_key, known, canonical_resource_key)
+            table = self._resource_acquisition(known)
+            payload = resource_acquisition_payload(key, table)
+        except AcquisitionQueryError as error:
+            return error_response(request, error.code, str(error))
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "resource_acquisition_failed", "Resource acquisition metadata lookup failed")
+        return _success(request, payload)
 
     def _plan_shortages(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]

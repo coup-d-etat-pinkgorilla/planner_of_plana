@@ -1,0 +1,2368 @@
+{
+  "test_only": true,
+  "current_KR_acquisition_fact": false,
+  "responses": [
+    {
+      "name": "known-empty-Item_Icon_ExpItem_0",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "known-empty-credits",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "known-empty-Item_Icon_SecretStone",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SecretStone",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "known-empty-Item_Icon_SkillBook_Ultimate",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SkillBook_Ultimate",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-explicit-zero",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "0",
+              "selector_resource_keys": [],
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "ea161f0ead557550ebee91156fabd23baf1ff952bd0335c10bab8f6faa5ef507"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-large-exact",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "9007199254740993",
+              "selector_resource_keys": [
+                "Item_Icon_Favor_0"
+              ],
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "2e88893eec773404b028f0dbb8189eb32b20e8587e03a5374ccaf854b41644db"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-positive",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "12",
+              "selector_resource_keys": null,
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "827e63c37dc86d8791aff44f4367f0eedab913dd8a94d77fbe57820fd15adfa9"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-weekly-selector-unknown",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": null,
+              "selector_resource_keys": null,
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+        }
+      },
+      "schema_valid": true,
+      "strict_dto_valid": true
+    },
+    {
+      "name": "missing-response-resource_key",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": false,
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-response-methods",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      },
+      "schema_valid": false,
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-response-acquisition_revision",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": []
+        }
+      },
+      "schema_valid": false,
+      "strict_dto_valid": false
+    },
+    {
+      "name": "extra-response-weekly",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6",
+          "weekly": null
+        }
+      },
+      "schema_valid": false,
+      "strict_dto_valid": false
+    }
+  ],
+  "requests": [
+    {
+      "name": "request-known",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0"
+        }
+      },
+      "schema_valid": true,
+      "strict_query_valid": true
+    },
+    {
+      "name": "request-legacy-alias",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SkillBook_Ultimate_Piece"
+        }
+      },
+      "schema_valid": true,
+      "strict_query_valid": true
+    },
+    {
+      "name": "invalid-query-0",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": null
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-1",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": []
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-2",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {}
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-3",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": null
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-4",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": 0
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-5",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": ""
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-6",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "profile_id": "currencies"
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-7",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "server": "KR"
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-8",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "\ud800"
+        }
+      },
+      "schema_valid": true,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-9",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "schema_valid": false,
+      "strict_query_valid": false
+    },
+    {
+      "name": "invalid-query-10",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00"
+        }
+      },
+      "schema_valid": true,
+      "strict_query_valid": false
+    }
+  ],
+  "errors": [
+    {
+      "name": "error-invalid_payload",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      },
+      "schema_valid": true
+    },
+    {
+      "name": "error-resource_not_found",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "resource_not_found",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      },
+      "schema_valid": true
+    },
+    {
+      "name": "error-resource_acquisition_failed",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "resource_acquisition_failed",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      },
+      "schema_valid": true
+    },
+    {
+      "name": "invalid-error-unknown_method",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "unknown_method",
+            "message": "TEST_ONLY"
+          }
+        }
+      },
+      "schema_valid": false
+    },
+    {
+      "name": "invalid-error-inventory_catalog_failed",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "inventory_catalog_failed",
+            "message": "TEST_ONLY"
+          }
+        }
+      },
+      "schema_valid": false
+    },
+    {
+      "name": "invalid-error-corrupt_data",
+      "test_only": true,
+      "wire": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "corrupt_data",
+            "message": "TEST_ONLY"
+          }
+        }
+      },
+      "schema_valid": false
+    }
+  ],
+  "table_cases": [
+    {
+      "name": "root-extra",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        },
+        "server": "KR"
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bool-version",
+      "test_only": true,
+      "table": {
+        "version": true,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "wrong-version",
+      "test_only": true,
+      "table": {
+        "version": 2,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "resources-array",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": []
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "unknown-target",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          },
+          "unknown": {
+            "methods": []
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "legacy-alias-in-table",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          },
+          "Item_Icon_SkillBook_Ultimate_Piece": {
+            "methods": []
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "resource-extra",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ],
+            "label": "extra"
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "methods-null",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": null
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "duplicate-method-id",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              },
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "missing-method-kind",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-method-label",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-method-method_id",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-method-selector_resource_keys",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-method-source",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-method-weekly_quantity",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "method-extra",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                },
+                "weekly": null
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "unknown-kind",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "unchecked",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "method-id-uppercase",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "Synthetic",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "label-surrogate",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "\udfff",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "bad-quantity-0",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": 0,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-True",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": true,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-1.0",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": 1.0,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-''",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'00'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "00",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'01'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "01",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'-1'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "-1",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'-0'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "-0",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'1.0'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "1.0",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'1e3'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "1e3",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'1.2'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "1.2",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "bad-quantity-'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "selector-false",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": false,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "selector-unknown-key",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": [
+                  "unknown"
+                ],
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "selector-duplicate",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": [
+                  "Item_Icon_Favor_0",
+                  "Item_Icon_Favor_0"
+                ],
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "selector-alias",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": [
+                  "Item_Icon_SkillBook_Ultimate_Piece"
+                ],
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "source-null",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": null
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "source-JP",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "JP",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "source-empty-reference",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "source-date-normalization",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-02-30"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "source-date-time",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10T00:00:00Z"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "source-extra-status",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10",
+                  "review_status": "unverified"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "TEST_ONLY-valid-table",
+      "test_only": true,
+      "table": {
+        "version": 1,
+        "resources": {
+          "Item_Icon_ExpItem_0": {
+            "methods": [
+              {
+                "method_id": "test-only-shop",
+                "kind": "shop",
+                "label": "TEST_ONLY synthetic method; no actual KR fact",
+                "weekly_quantity": null,
+                "selector_resource_keys": null,
+                "source": {
+                  "server": "KR",
+                  "reference": "TEST_ONLY fixture, no observed acquisition source",
+                  "reviewed_at": "2026-10-10"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "pure_loader_valid": true,
+      "schema_valid": true
+    }
+  ],
+  "note": "Schema cannot enforce UTF8 byte/scalar validity, dynamic catalog membership or method_id uniqueness; loader/new Dart checks are separate.",
+  "strict_response_cases": [
+    {
+      "name": "TEST_ONLY-valid-null",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-valid-large-exact",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "9007199254740993",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-valid-zero-and-known-empty-selector",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "0",
+            "selector_resource_keys": [],
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-valid-emoji-label",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY \ud83d\ude00",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": true
+    },
+    {
+      "name": "TEST_ONLY-selector-catalog-membership-is-backend-domain",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": [
+              "unknown-but-structural-key"
+            ],
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": true
+    },
+    {
+      "name": "missing-response-resource_key",
+      "payload": {
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-response-methods",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-response-acquisition_revision",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ]
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-method_id",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-kind",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-label",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-weekly_quantity",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-selector_resource_keys",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "missing-method-source",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-int",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": 0,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-bool",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": true,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-double",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": 1.0,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-decimal-point",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "1.0",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-exponent",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "1e3",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-leading-zero",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "01",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "invalid-weekly-negative",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": "-1",
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "methods-null",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": null,
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "method-extra-weekly-alias",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            },
+            "weekly": null
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "isolated-surrogate-label",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "\ud800",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "UTF8-label-over-byte-limit",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "duplicate-method-id",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          },
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "selector-duplicate",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": [
+              "a",
+              "a"
+            ],
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "selector-false",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": false,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "source-JP",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "JP",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "source-invalid-calendar",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-02-30"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "source-extra-review-status",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10",
+              "review_status": "unverified"
+            }
+          }
+        ],
+        "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+      },
+      "strict_dto_valid": false
+    },
+    {
+      "name": "revision-uppercase",
+      "payload": {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "methods": [
+          {
+            "method_id": "test-only-shop",
+            "kind": "shop",
+            "label": "TEST_ONLY synthetic method; no actual KR fact",
+            "weekly_quantity": null,
+            "selector_resource_keys": null,
+            "source": {
+              "server": "KR",
+              "reference": "TEST_ONLY fixture, no observed acquisition source",
+              "reviewed_at": "2026-10-10"
+            }
+          }
+        ],
+        "acquisition_revision": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "strict_dto_valid": false
+    }
+  ],
+  "execution": "NOT_VERIFIED: fixture flags are inherited policy oracles, not this candidate run."
+}

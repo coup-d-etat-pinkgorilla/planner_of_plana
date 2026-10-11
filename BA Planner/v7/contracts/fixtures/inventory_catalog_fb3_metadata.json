@@ -1,0 +1,330 @@
+{
+  "version": 1,
+  "scope": "Shared FB3 schema/strict scalar oracles. Current candidate execution NOT_VERIFIED.",
+  "case_count": 19,
+  "cases": [
+    {
+      "name": "known-supply",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": 1
+      },
+      "strict_dto_valid": true,
+      "schema_valid": true
+    },
+    {
+      "name": "allnull",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": null,
+        "family": null,
+        "tier": null
+      },
+      "strict_dto_valid": true,
+      "schema_valid": true
+    },
+    {
+      "name": "future-valid-unicode",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Future school \ud83e\uddea",
+        "family": "  future:raw  ",
+        "tier": 11
+      },
+      "strict_dto_valid": true,
+      "schema_valid": true
+    },
+    {
+      "name": "empty-nullable-strings-type-policy",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "",
+        "family": "",
+        "tier": 1
+      },
+      "strict_dto_valid": true,
+      "schema_valid": true
+    },
+    {
+      "name": "missing-school",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "family": "tech_notes",
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-family",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "missing-tier",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes"
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "unknown-extra",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": 1,
+        "future_metadata": null
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "old7-wire",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "tier-bool",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": true
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "tier-zero",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": 0
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "tier-negative",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": -1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "tier-float-whole",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": 1.0
+      },
+      "strict_dto_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "tier-float-fraction",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": 1.5
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "tier-string",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "tech_notes",
+        "tier": "1"
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "school-number",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": 1,
+        "family": "tech_notes",
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "school-isolated-surrogate",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "\ud800",
+        "family": "tech_notes",
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": true
+    },
+    {
+      "name": "family-number",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": 1,
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": false
+    },
+    {
+      "name": "family-isolated-surrogate",
+      "row": {
+        "resource_key": "Item_Icon_SkillBook_Gehenna_0",
+        "item_id": "Item_Icon_SkillBook_Gehenna_0",
+        "display_name": "Gehenna Note T1",
+        "category": "tech_notes",
+        "profile_id": "tech_notes",
+        "order_index": 12,
+        "zero_fill_allowed": true,
+        "school": "Gehenna",
+        "family": "\ud800",
+        "tier": 1
+      },
+      "strict_dto_valid": false,
+      "schema_valid": true
+    }
+  ],
+  "notes": [
+    "Whole float1.0 may satisfy JSON Schema integer; actual DTO must reject double/float",
+    "JSON Schema string admits surrogate escapes; new metadata runtime checks reject isolated surrogates only",
+    "school/family nullable String type has no added enum/minLength; mapper emits null for unknown"
+  ]
+}

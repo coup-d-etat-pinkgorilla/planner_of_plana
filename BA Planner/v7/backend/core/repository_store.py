@@ -37,6 +37,21 @@ STORE_VERSION = 1
 DEFAULT_PROFILE_AVATAR = "hasumi"
 
 
+_READ_ONLY_CURRENCY_KEYS = frozenset({"credits", "Item_Icon_SecretStone"})
+
+
+def _assert_currency_quantities_unchanged(before: dict, after: dict, *, source: str) -> None:
+    """Compare validated canonical projections; source is selected by the server writer."""
+    if source == "scan":
+        return
+    old = {row["resource_key"]: row["quantity"] for row in before["inventory"]
+           if row["resource_key"] in _READ_ONLY_CURRENCY_KEYS}
+    new = {row["resource_key"]: row["quantity"] for row in after["inventory"]
+           if row["resource_key"] in _READ_ONLY_CURRENCY_KEYS}
+    if old != new:
+        raise HistoryError("currency_read_only", "Currency quantities can only be changed by a validated internal scan.")
+
+
 
 
 class RepositoryError(RuntimeError):
@@ -578,6 +593,8 @@ class JsonRepository:
             try:
                 before = projection(profile["students"], profile["inventory"])
                 after = projection(canonical if bucket == "students" else profile["students"], canonical if bucket == "inventory" else profile["inventory"])
+                if bucket == "inventory":
+                    _assert_currency_quantities_unchanged(before, after, source=source)
                 scope = {"student_ids": sorted({item['student_id'] for item in before['students'] + after['students']}) if bucket == "students" else [],
                          "resource_keys": sorted({item['resource_key'] for item in before['inventory'] + after['inventory']}) if bucket == "inventory" else []}
                 if history_context is not None:

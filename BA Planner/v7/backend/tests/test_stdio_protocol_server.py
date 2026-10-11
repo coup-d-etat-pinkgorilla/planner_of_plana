@@ -121,6 +121,7 @@ class PlanningProtocolV1Tests(unittest.TestCase):
                 "resource_key": "item", "item_id": "item", "display_name": "Item",
                 "category": "material", "profile_id": "materials", "order_index": 0,
                 "zero_fill_allowed": True,
+                "school": None, "family": None, "tier": None,
             }],
             shortage_deriver=lambda _records, _plan, _entries: {"rows": [], "warnings": []},
         )

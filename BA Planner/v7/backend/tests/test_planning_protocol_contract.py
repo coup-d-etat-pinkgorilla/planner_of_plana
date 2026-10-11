@@ -25,6 +25,7 @@ METHOD_SCHEMAS = {
     "planning.plan.validate": "planning-plan-validate-v1.schema.json",
     "planning.plan.calculate": "planning-plan-calculate-v1.schema.json",
     "planning.inventory.catalog": "planning-inventory-catalog-v1.schema.json",
+    "planning.inventory.acquisition.get": "planning-inventory-acquisition-get-v1.schema.json",
     "planning.plan.shortages": "planning-plan-shortages-v1.schema.json",
     "planning.document.calculate": "planning-document-calculate-v1.schema.json",
     "planning.scenario.compare": "planning-scenario-compare-v1.schema.json",

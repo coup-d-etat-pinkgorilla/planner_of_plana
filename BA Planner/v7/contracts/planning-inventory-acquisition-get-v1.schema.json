@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-inventory-acquisition-get-v1.schema.json",
+  "title": "planning.inventory.acquisition.get request/success/error v1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/response"
+    },
+    {
+      "$ref": "protocol-error-v1.schema.json#/$defs/inventoryAcquisition"
+    }
+  ],
+  "$defs": {
+    "request": {
+      "allOf": [
+        {
+          "$ref": "protocol-envelope-v1.schema.json"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "request"
+            },
+            "method": {
+              "const": "planning.inventory.acquisition.get"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resource_key"
+              ],
+              "properties": {
+                "resource_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "allOf": [
+        {
+          "$ref": "protocol-envelope-v1.schema.json"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "response"
+            },
+            "method": {
+              "const": "planning.inventory.acquisition.get"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "resource_key",
+                "methods",
+                "acquisition_revision"
+              ],
+              "properties": {
+                "resource_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "methods": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/method"
+                  }
+                },
+                "acquisition_revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method_id",
+        "kind",
+        "label",
+        "weekly_quantity",
+        "selector_resource_keys",
+        "source"
+      ],
+      "properties": {
+        "method_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "kind": {
+          "enum": [
+            "stage",
+            "shop",
+            "conversion",
+            "selector",
+            "other"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "weekly_quantity": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024,
+          "pattern": "^(0|[1-9][0-9]*)$"
+        },
+        "selector_resource_keys": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "uniqueItems": true
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "server",
+            "reference",
+            "reviewed_at"
+          ],
+          "properties": {
+            "server": {
+              "const": "KR"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "reviewed_at": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

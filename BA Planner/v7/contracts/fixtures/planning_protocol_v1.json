@@ -4,252 +4,1852 @@
     {
       "name": "student metadata request",
       "valid": true,
-      "message": { "protocol": 1, "id": "student-1", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } }
+      "message": {
+        "protocol": 1,
+        "id": "student-1",
+        "type": "request",
+        "method": "planning.student.get",
+        "payload": {
+          "student_id": "ayane"
+        }
+      }
     },
     {
       "name": "student metadata response",
       "valid": true,
-      "message": { "protocol": 1, "id": "student-1", "type": "response", "method": "planning.student.get", "payload": { "student": { "student_id": "ayane", "display_name": "아야네", "template_name": "ayane.png", "group": "아야네", "variant": null, "school": "Abydos" } } }
+      "message": {
+        "protocol": 1,
+        "id": "student-1",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "student": {
+            "student_id": "ayane",
+            "display_name": "\uc544\uc57c\ub124",
+            "template_name": "ayane.png",
+            "group": "\uc544\uc57c\ub124",
+            "variant": null,
+            "school": "Abydos"
+          }
+        }
+      }
     },
     {
       "name": "missing student is a successful null lookup",
       "valid": true,
-      "message": { "protocol": 1, "id": "student-2", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+      "message": {
+        "protocol": 1,
+        "id": "student-2",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "student": null
+        }
+      }
     },
     {
       "name": "student catalog request",
       "valid": true,
-      "message": { "protocol": 1, "id": "catalog-1", "type": "request", "method": "planning.student.catalog", "payload": {} }
+      "message": {
+        "protocol": 1,
+        "id": "catalog-1",
+        "type": "request",
+        "method": "planning.student.catalog",
+        "payload": {}
+      }
     },
     {
       "name": "student catalog response",
       "valid": true,
-      "message": { "protocol": 1, "id": "catalog-1", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": true, "search_tags": ["aru"], "kr_search_tags": [] }], "sort": "display_name_then_id" } }
+      "message": {
+        "protocol": 1,
+        "id": "catalog-1",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": true,
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog response lists forms for a multi-form student",
       "valid": true,
-      "message": { "protocol": 1, "id": "catalog-2", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "hoshino_battle", "display_name": "호시노(무장)", "template_name": "hoshino_battle.png", "group": "호시노", "variant": "무장", "school": "Abydos", "rarity": "3", "attack_type": "Mystic", "defense_type": "Heavy", "combat_class": "striker", "role": "tanker", "position": "front", "equipment_slot_1": "Hat", "equipment_slot_2": "Bag", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": false, "search_tags": ["bhoshino"], "kr_search_tags": [], "forms": [{ "form_id": "hoshino_battle", "label": "1", "template_name": "hoshino_battle.png" }, { "form_id": "hoshino_battle#2", "label": "2", "template_name": null }] }], "sort": "display_name_then_id" } }
+      "message": {
+        "protocol": 1,
+        "id": "catalog-2",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "hoshino_battle",
+              "display_name": "\ud638\uc2dc\ub178(\ubb34\uc7a5)",
+              "template_name": "hoshino_battle.png",
+              "group": "\ud638\uc2dc\ub178",
+              "variant": "\ubb34\uc7a5",
+              "school": "Abydos",
+              "rarity": "3",
+              "attack_type": "Mystic",
+              "defense_type": "Heavy",
+              "combat_class": "striker",
+              "role": "tanker",
+              "position": "front",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Bag",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": false,
+              "search_tags": [
+                "bhoshino"
+              ],
+              "kr_search_tags": [],
+              "forms": [
+                {
+                  "form_id": "hoshino_battle",
+                  "label": "1",
+                  "template_name": "hoshino_battle.png"
+                },
+                {
+                  "form_id": "hoshino_battle#2",
+                  "label": "2",
+                  "template_name": null
+                }
+              ]
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects a single-form list",
       "valid": false,
-      "message": { "protocol": 1, "id": "catalog-3", "type": "response", "method": "planning.student.catalog", "payload": { "students": [{ "student_id": "hoshino_battle", "display_name": "호시노(무장)", "template_name": "hoshino_battle.png", "group": "호시노", "variant": "무장", "school": "Abydos", "rarity": "3", "attack_type": "Mystic", "defense_type": "Heavy", "combat_class": "striker", "role": "tanker", "position": "front", "equipment_slot_1": "Hat", "equipment_slot_2": "Bag", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": false, "search_tags": ["bhoshino"], "kr_search_tags": [], "forms": [{ "form_id": "hoshino_battle", "label": "1", "template_name": "hoshino_battle.png" }] }], "sort": "display_name_then_id" } }
+      "message": {
+        "protocol": 1,
+        "id": "catalog-3",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "hoshino_battle",
+              "display_name": "\ud638\uc2dc\ub178(\ubb34\uc7a5)",
+              "template_name": "hoshino_battle.png",
+              "group": "\ud638\uc2dc\ub178",
+              "variant": "\ubb34\uc7a5",
+              "school": "Abydos",
+              "rarity": "3",
+              "attack_type": "Mystic",
+              "defense_type": "Heavy",
+              "combat_class": "striker",
+              "role": "tanker",
+              "position": "front",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Bag",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": false,
+              "search_tags": [
+                "bhoshino"
+              ],
+              "kr_search_tags": [],
+              "forms": [
+                {
+                  "form_id": "hoshino_battle",
+                  "label": "1",
+                  "template_name": "hoshino_battle.png"
+                }
+              ]
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog KR unavailable response",
       "valid": true,
-      "message": {"protocol": 1, "id": "catalog-fb13-0", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "ayane", "display_name": "Ayane", "template_name": "ayane.png", "group": "ayane", "variant": null, "school": "Abydos", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": false, "search_tags": ["ayane"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-0",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "ayane",
+              "display_name": "Ayane",
+              "template_name": "ayane.png",
+              "group": "ayane",
+              "variant": null,
+              "school": "Abydos",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": false,
+              "search_tags": [
+                "ayane"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects favorite availability yes",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-1", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": "yes", "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-1",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": "yes",
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects favorite availability no",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-2", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": "no", "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-2",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": "no",
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects favorite availability null",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-3", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": null, "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-3",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": null,
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects favorite availability 0",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-4", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": 0, "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-4",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": 0,
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects favorite availability 1",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-5", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "has_favorite_item": 1, "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-5",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "has_favorite_item": 1,
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog requires favorite availability",
       "valid": false,
-      "message": {"protocol": 1, "id": "catalog-fb13-6", "type": "response", "method": "planning.student.catalog", "payload": {"students": [{"student_id": "aru", "display_name": "Aru", "template_name": "aru.png", "group": "aru", "variant": null, "school": "Gehenna", "rarity": "3", "attack_type": "Explosive", "defense_type": "Light", "combat_class": "Striker", "role": "Dealer", "position": "Back", "equipment_slot_1": "Hat", "equipment_slot_2": "Hairpin", "equipment_slot_3": "Watch", "jp_only": false, "search_tags": ["aru"], "kr_search_tags": []}], "sort": "display_name_then_id"}}
+      "message": {
+        "protocol": 1,
+        "id": "catalog-fb13-6",
+        "type": "response",
+        "method": "planning.student.catalog",
+        "payload": {
+          "students": [
+            {
+              "student_id": "aru",
+              "display_name": "Aru",
+              "template_name": "aru.png",
+              "group": "aru",
+              "variant": null,
+              "school": "Gehenna",
+              "rarity": "3",
+              "attack_type": "Explosive",
+              "defense_type": "Light",
+              "combat_class": "Striker",
+              "role": "Dealer",
+              "position": "Back",
+              "equipment_slot_1": "Hat",
+              "equipment_slot_2": "Hairpin",
+              "equipment_slot_3": "Watch",
+              "jp_only": false,
+              "search_tags": [
+                "aru"
+              ],
+              "kr_search_tags": []
+            }
+          ],
+          "sort": "display_name_then_id"
+        }
+      }
     },
     {
       "name": "student catalog rejects paging",
       "valid": false,
-      "message": { "protocol": 1, "id": "catalog-bad", "type": "request", "method": "planning.student.catalog", "payload": { "page": 1 } }
+      "message": {
+        "protocol": 1,
+        "id": "catalog-bad",
+        "type": "request",
+        "method": "planning.student.catalog",
+        "payload": {
+          "page": 1
+        }
+      }
     },
     {
       "name": "normal plan validation request",
       "valid": true,
-      "message": { "protocol": 1, "id": "plan-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "target_ex_skill": 2, "notes": "first goal" }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "plan-1",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "favorite": true,
+                "target_level": 10,
+                "target_ex_skill": 2,
+                "notes": "first goal"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "normal canonical plan response",
       "valid": true,
-      "message": { "protocol": 1, "id": "plan-1", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "target_ex_skill": 2, "notes": "first goal" }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "plan-1",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "valid": true,
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "favorite": true,
+                "target_level": 10,
+                "target_ex_skill": 2,
+                "notes": "first goal"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "unknown planning fields are accepted",
       "valid": true,
-      "message": { "protocol": 1, "id": "plan-future", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "future_plan_field": "ignored", "goals": [{ "student_id": "ayane", "target_level": null, "future_goal_field": 7 }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "plan-future",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "future_plan_field": "ignored",
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": null,
+                "future_goal_field": 7
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "unknown planning fields do not require a prefix",
       "valid": true,
-      "message": { "protocol": 1, "id": "plan-extension", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "extension_data": { "source": "future" }, "goals": [{ "student_id": "ayane", "target_level": 10, "experimental_target": 12 }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "plan-extension",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "extension_data": {
+              "source": "future"
+            },
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10,
+                "experimental_target": 12
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "normal cost request",
       "valid": true,
-      "message": { "protocol": 1, "id": "calc-1", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 1, "student_star": 1, "weapon_state": "weapon_locked", "weapon_star": 0, "weapon_level": 0, "ex_skill": 1, "skill1": 1, "skill2": 1, "skill3": 1, "equip1": "T1", "equip2": "T1", "equip3": "T1", "equip4": null, "equip1_level": 1, "equip2_level": 1, "equip3_level": 1, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "calc-1",
+        "type": "request",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "current_students": [
+            {
+              "student_id": "ayane",
+              "level": 1,
+              "student_star": 1,
+              "weapon_state": "weapon_locked",
+              "weapon_star": 0,
+              "weapon_level": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 1,
+              "skill3": 1,
+              "equip1": "T1",
+              "equip2": "T1",
+              "equip3": "T1",
+              "equip4": null,
+              "equip1_level": 1,
+              "equip2_level": 1,
+              "equip3_level": 1,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          ],
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "normal cost response",
       "valid": true,
-      "message": { "protocol": 1, "id": "calc-1", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 3780, "level_exp": 540, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": { "Item_Icon_ExpItem_0 T2": 1, "Item_Icon_ExpItem_0 T1": 1 }, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+      "message": {
+        "protocol": 1,
+        "id": "calc-1",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "totals": {
+            "credits": 3780,
+            "level_exp": 540,
+            "equipment_exp": 0,
+            "weapon_exp": 0,
+            "star_materials": {},
+            "equipment_materials": {},
+            "level_exp_items": {
+              "Item_Icon_ExpItem_0 T2": 1,
+              "Item_Icon_ExpItem_0 T1": 1
+            },
+            "equipment_exp_items": {},
+            "weapon_exp_items": {},
+            "skill_books": {},
+            "ex_ooparts": {},
+            "skill_ooparts": {},
+            "favorite_item_materials": {},
+            "stat_materials": {},
+            "stat_levels": {},
+            "warnings": []
+          }
+        }
+      }
     },
     {
       "name": "empty target keeps current value",
       "valid": true,
-      "message": { "protocol": 1, "id": "calc-empty", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 10 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null, "target_ex_skill": null }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "calc-empty",
+        "type": "request",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "current_students": [
+            {
+              "student_id": "ayane",
+              "level": 10
+            }
+          ],
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": null,
+                "target_ex_skill": null
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "empty target has zero additional cost",
       "valid": true,
-      "message": { "protocol": 1, "id": "calc-empty", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 0, "level_exp": 0, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": {}, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+      "message": {
+        "protocol": 1,
+        "id": "calc-empty",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "totals": {
+            "credits": 0,
+            "level_exp": 0,
+            "equipment_exp": 0,
+            "weapon_exp": 0,
+            "star_materials": {},
+            "equipment_materials": {},
+            "level_exp_items": {},
+            "equipment_exp_items": {},
+            "weapon_exp_items": {},
+            "skill_books": {},
+            "ex_ooparts": {},
+            "skill_ooparts": {},
+            "favorite_item_materials": {},
+            "stat_materials": {},
+            "stat_levels": {},
+            "warnings": []
+          }
+        }
+      }
     },
     {
       "name": "inventory catalog request",
       "valid": true,
-      "message": { "protocol": 1, "id": "inventory-catalog", "type": "request", "method": "planning.inventory.catalog", "payload": {} }
+      "message": {
+        "protocol": 1,
+        "id": "inventory-catalog",
+        "type": "request",
+        "method": "planning.inventory.catalog",
+        "payload": {}
+      }
     },
     {
       "name": "inventory catalog response",
       "valid": true,
-      "message": { "protocol": 1, "id": "inventory-catalog", "type": "response", "method": "planning.inventory.catalog", "payload": { "items": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "profile_id": "activity_reports", "order_index": 0, "zero_fill_allowed": true }], "sort": "profile_order", "catalog_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } }
+      "message": {
+        "protocol": 1,
+        "id": "inventory-catalog",
+        "type": "response",
+        "method": "planning.inventory.catalog",
+        "payload": {
+          "items": [
+            {
+              "resource_key": "Item_Icon_ExpItem_0",
+              "item_id": "Item_Icon_ExpItem_0",
+              "display_name": "Basic activity report",
+              "category": "activity_report",
+              "profile_id": "activity_reports",
+              "order_index": 0,
+              "zero_fill_allowed": true,
+              "school": null,
+              "family": "activity_report",
+              "tier": 1
+            }
+          ],
+          "sort": "profile_order",
+          "catalog_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
     },
     {
       "name": "plan shortage request preserves explicit zero",
       "valid": true,
-      "message": { "protocol": 1, "id": "shortage", "type": "request", "method": "planning.plan.shortages", "payload": { "current_students": [{ "student_id": "ayane", "level": 1 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] }, "inventory": { "version": 1, "entries": [{ "key": "Item_Icon_ExpItem_0", "quantity": "0", "item_id": "Item_Icon_ExpItem_0" }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "shortage",
+        "type": "request",
+        "method": "planning.plan.shortages",
+        "payload": {
+          "current_students": [
+            {
+              "student_id": "ayane",
+              "level": 1
+            }
+          ],
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10
+              }
+            ]
+          },
+          "inventory": {
+            "version": 1,
+            "entries": [
+              {
+                "key": "Item_Icon_ExpItem_0",
+                "quantity": "0",
+                "item_id": "Item_Icon_ExpItem_0"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "plan shortage response separates unknown",
       "valid": true,
-      "message": { "protocol": 1, "id": "shortage", "type": "response", "method": "planning.plan.shortages", "payload": { "rows": [{ "resource_key": "Item_Icon_ExpItem_0", "item_id": "Item_Icon_ExpItem_0", "display_name": "Basic activity report", "category": "activity_report", "required": 1, "owned": 0, "shortage": 1, "affected_student_ids": ["ayane"], "resolved": true }, { "resource_key": "Item_Icon_ExpItem_1", "item_id": "Item_Icon_ExpItem_1", "display_name": "Normal activity report", "category": "activity_report", "required": 1, "owned": null, "shortage": null, "affected_student_ids": ["ayane"], "resolved": true }], "warnings": [] } }
+      "message": {
+        "protocol": 1,
+        "id": "shortage",
+        "type": "response",
+        "method": "planning.plan.shortages",
+        "payload": {
+          "rows": [
+            {
+              "resource_key": "Item_Icon_ExpItem_0",
+              "item_id": "Item_Icon_ExpItem_0",
+              "display_name": "Basic activity report",
+              "category": "activity_report",
+              "required": 1,
+              "owned": 0,
+              "shortage": 1,
+              "affected_student_ids": [
+                "ayane"
+              ],
+              "resolved": true
+            },
+            {
+              "resource_key": "Item_Icon_ExpItem_1",
+              "item_id": "Item_Icon_ExpItem_1",
+              "display_name": "Normal activity report",
+              "category": "activity_report",
+              "required": 1,
+              "owned": null,
+              "shortage": null,
+              "affected_student_ids": [
+                "ayane"
+              ],
+              "resolved": true
+            }
+          ],
+          "warnings": []
+        }
+      }
     },
     {
       "name": "plan shortage rejects negative quantity",
       "valid": false,
-      "message": { "protocol": 1, "id": "shortage-bad", "type": "request", "method": "planning.plan.shortages", "payload": { "current_students": [], "plan": { "version": 1, "goals": [] }, "inventory": { "version": 1, "entries": [{ "key": "x", "quantity": "-1" }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "shortage-bad",
+        "type": "request",
+        "method": "planning.plan.shortages",
+        "payload": {
+          "current_students": [],
+          "plan": {
+            "version": 1,
+            "goals": []
+          },
+          "inventory": {
+            "version": 1,
+            "entries": [
+              {
+                "key": "x",
+                "quantity": "-1"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "missing required plan version",
       "valid": false,
-      "message": { "protocol": 1, "id": "bad-1", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "goals": [] } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-1",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "goals": []
+          }
+        }
+      }
     },
     {
       "name": "wrong goal field type",
       "valid": false,
-      "message": { "protocol": 1, "id": "bad-2", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": "ninety" }] } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-2",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": "ninety"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "unknown method request",
       "valid": false,
-      "message": { "protocol": 1, "id": "unknown-1", "type": "request", "method": "planning.unknown", "payload": {} }
+      "message": {
+        "protocol": 1,
+        "id": "unknown-1",
+        "type": "request",
+        "method": "planning.unknown",
+        "payload": {}
+      }
     },
     {
       "name": "unknown method error",
       "valid": true,
-      "message": { "protocol": 1, "id": "unknown-1", "type": "response", "method": "planning.unknown", "payload": { "error": { "code": "unknown_method", "message": "Unknown method: planning.unknown", "details": { "method": "planning.unknown" } } } }
+      "message": {
+        "protocol": 1,
+        "id": "unknown-1",
+        "type": "response",
+        "method": "planning.unknown",
+        "payload": {
+          "error": {
+            "code": "unknown_method",
+            "message": "Unknown method: planning.unknown",
+            "details": {
+              "method": "planning.unknown"
+            }
+          }
+        }
+      }
     },
     {
       "name": "protocol version mismatch",
       "valid": false,
-      "message": { "protocol": 2, "id": "bad-version", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } }
+      "message": {
+        "protocol": 2,
+        "id": "bad-version",
+        "type": "request",
+        "method": "planning.student.get",
+        "payload": {
+          "student_id": "ayane"
+        }
+      }
     },
     {
       "name": "invalid payload error",
       "valid": true,
-      "message": { "protocol": 1, "id": "bad-2", "type": "response", "method": "planning.plan.validate", "payload": { "error": { "code": "invalid_payload", "message": "target_level must be an integer or null", "details": { "path": "payload.plan.goals[0].target_level" } } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-2",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "target_level must be an integer or null",
+            "details": {
+              "path": "payload.plan.goals[0].target_level"
+            }
+          }
+        }
+      }
     },
     {
       "name": "metadata lookup failure error",
       "valid": true,
-      "message": { "protocol": 1, "id": "student-3", "type": "response", "method": "planning.student.get", "payload": { "error": { "code": "metadata_lookup_failed", "message": "Student metadata could not be loaded" } } }
+      "message": {
+        "protocol": 1,
+        "id": "student-3",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "error": {
+            "code": "metadata_lookup_failed",
+            "message": "Student metadata could not be loaded"
+          }
+        }
+      }
     },
     {
       "name": "calculation failure error",
       "valid": true,
-      "message": { "protocol": 1, "id": "calc-2", "type": "response", "method": "planning.plan.calculate", "payload": { "error": { "code": "calculation_failed", "message": "Plan totals could not be calculated" } } }
+      "message": {
+        "protocol": 1,
+        "id": "calc-2",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "error": {
+            "code": "calculation_failed",
+            "message": "Plan totals could not be calculated"
+          }
+        }
+      }
     },
     {
       "name": "student method rejects calculation failure",
       "valid": false,
-      "message": { "protocol": 1, "id": "bad-error-1", "type": "response", "method": "planning.student.get", "payload": { "error": { "code": "calculation_failed", "message": "Wrong error for method" } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-error-1",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "error": {
+            "code": "calculation_failed",
+            "message": "Wrong error for method"
+          }
+        }
+      }
     },
     {
       "name": "known method rejects unknown method error",
       "valid": false,
-      "message": { "protocol": 1, "id": "bad-error-2", "type": "response", "method": "planning.plan.validate", "payload": { "error": { "code": "unknown_method", "message": "Wrong error for known method" } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-error-2",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "error": {
+            "code": "unknown_method",
+            "message": "Wrong error for known method"
+          }
+        }
+      }
     },
     {
       "name": "unknown method rejects invalid payload error",
       "valid": false,
-      "message": { "protocol": 1, "id": "bad-error-3", "type": "response", "method": "planning.future", "payload": { "error": { "code": "invalid_payload", "message": "Wrong error for unknown method" } } }
+      "message": {
+        "protocol": 1,
+        "id": "bad-error-3",
+        "type": "response",
+        "method": "planning.future",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "Wrong error for unknown method"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c request-known",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0"
+        }
+      }
+    },
+    {
+      "name": "FB3c request-legacy-alias",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SkillBook_Ultimate_Piece"
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-0",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": null
+      }
+    },
+    {
+      "name": "FB3c invalid-query-1",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": []
+      }
+    },
+    {
+      "name": "FB3c invalid-query-2",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {}
+      }
+    },
+    {
+      "name": "FB3c invalid-query-3",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": null
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-4",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": 0
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-5",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": ""
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-6",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "profile_id": "currencies"
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-7",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "server": "KR"
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-8",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "\ud800"
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-9",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-query-10",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "request",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00\uac00"
+        }
+      }
+    },
+    {
+      "name": "FB3c known-empty-Item_Icon_ExpItem_0",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c known-empty-credits",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "credits",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c known-empty-Item_Icon_SecretStone",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SecretStone",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c known-empty-Item_Icon_SkillBook_Ultimate",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_SkillBook_Ultimate",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c TEST_ONLY-explicit-zero",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "0",
+              "selector_resource_keys": [],
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "ea161f0ead557550ebee91156fabd23baf1ff952bd0335c10bab8f6faa5ef507"
+        }
+      }
+    },
+    {
+      "name": "FB3c TEST_ONLY-large-exact",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "9007199254740993",
+              "selector_resource_keys": [
+                "Item_Icon_Favor_0"
+              ],
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "2e88893eec773404b028f0dbb8189eb32b20e8587e03a5374ccaf854b41644db"
+        }
+      }
+    },
+    {
+      "name": "FB3c TEST_ONLY-positive",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": "12",
+              "selector_resource_keys": null,
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "827e63c37dc86d8791aff44f4367f0eedab913dd8a94d77fbe57820fd15adfa9"
+        }
+      }
+    },
+    {
+      "name": "FB3c TEST_ONLY-weekly-selector-unknown",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [
+            {
+              "method_id": "test-only-shop",
+              "kind": "shop",
+              "label": "TEST_ONLY synthetic method; no actual KR fact",
+              "weekly_quantity": null,
+              "selector_resource_keys": null,
+              "source": {
+                "server": "KR",
+                "reference": "TEST_ONLY fixture, no observed acquisition source",
+                "reviewed_at": "2026-10-10"
+              }
+            }
+          ],
+          "acquisition_revision": "e53e3f5bccfaf4448bf28aa99b1ac087d9ac80f0afee86847037ba36e9bbbc23"
+        }
+      }
+    },
+    {
+      "name": "FB3c missing-response-resource_key",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c missing-response-methods",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6"
+        }
+      }
+    },
+    {
+      "name": "FB3c missing-response-acquisition_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": []
+        }
+      }
+    },
+    {
+      "name": "FB3c extra-response-weekly",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "methods": [],
+          "acquisition_revision": "d1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6",
+          "weekly": null
+        }
+      }
+    },
+    {
+      "name": "FB3c error-invalid_payload",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c error-resource_not_found",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "resource_not_found",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c error-resource_acquisition_failed",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "resource_acquisition_failed",
+            "message": "TEST_ONLY error fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-error-unknown_method",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "unknown_method",
+            "message": "TEST_ONLY"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-error-inventory_catalog_failed",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "inventory_catalog_failed",
+            "message": "TEST_ONLY"
+          }
+        }
+      }
+    },
+    {
+      "name": "FB3c invalid-error-corrupt_data",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "TEST_ONLY-3c",
+        "type": "response",
+        "method": "planning.inventory.acquisition.get",
+        "payload": {
+          "error": {
+            "code": "corrupt_data",
+            "message": "TEST_ONLY"
+          }
+        }
+      }
     }
   ],
   "correlations": [
     {
       "name": "student request and response IDs match",
       "matches": true,
-      "request": { "protocol": 1, "id": "same-student", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } },
-      "response": { "protocol": 1, "id": "same-student", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+      "request": {
+        "protocol": 1,
+        "id": "same-student",
+        "type": "request",
+        "method": "planning.student.get",
+        "payload": {
+          "student_id": "ayane"
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "same-student",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "student": null
+        }
+      }
     },
     {
       "name": "calculation request and error IDs match",
       "matches": true,
-      "request": { "protocol": 1, "id": "same-calc", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [], "plan": { "version": 1, "goals": [] } } },
-      "response": { "protocol": 1, "id": "same-calc", "type": "response", "method": "planning.plan.calculate", "payload": { "error": { "code": "calculation_failed", "message": "Calculation failed" } } }
+      "request": {
+        "protocol": 1,
+        "id": "same-calc",
+        "type": "request",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "current_students": [],
+          "plan": {
+            "version": 1,
+            "goals": []
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "same-calc",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "error": {
+            "code": "calculation_failed",
+            "message": "Calculation failed"
+          }
+        }
+      }
     },
     {
       "name": "normal plan round-trip preserves known fields",
       "matches": true,
       "semantic": "canonical_plan",
-      "request": { "protocol": 1, "id": "round-trip", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "notes": "keep me" }] } } },
-      "response": { "protocol": 1, "id": "round-trip", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "favorite": true, "target_level": 10, "notes": "keep me" }] } } }
+      "request": {
+        "protocol": 1,
+        "id": "round-trip",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "favorite": true,
+                "target_level": 10,
+                "notes": "keep me"
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "round-trip",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "valid": true,
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "favorite": true,
+                "target_level": 10,
+                "notes": "keep me"
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "future fields are accepted then removed canonically",
       "matches": true,
       "semantic": "canonical_plan",
-      "request": { "protocol": 1, "id": "round-trip-future", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "future_plan_field": "ignored", "goals": [{ "student_id": "ayane", "target_level": null, "future_goal_field": 7 }] } } },
-      "response": { "protocol": 1, "id": "round-trip-future", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null }] } } }
+      "request": {
+        "protocol": 1,
+        "id": "round-trip-future",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "future_plan_field": "ignored",
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": null,
+                "future_goal_field": 7
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "round-trip-future",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "valid": true,
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": null
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "unprefixed unknown fields are removed canonically",
       "matches": true,
       "semantic": "canonical_plan",
-      "request": { "protocol": 1, "id": "round-trip-extension", "type": "request", "method": "planning.plan.validate", "payload": { "plan": { "version": 1, "extension_data": { "source": "future" }, "goals": [{ "student_id": "ayane", "target_level": 10, "experimental_target": 12 }] } } },
-      "response": { "protocol": 1, "id": "round-trip-extension", "type": "response", "method": "planning.plan.validate", "payload": { "valid": true, "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } }
+      "request": {
+        "protocol": 1,
+        "id": "round-trip-extension",
+        "type": "request",
+        "method": "planning.plan.validate",
+        "payload": {
+          "plan": {
+            "version": 1,
+            "extension_data": {
+              "source": "future"
+            },
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10,
+                "experimental_target": 12
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "round-trip-extension",
+        "type": "response",
+        "method": "planning.plan.validate",
+        "payload": {
+          "valid": true,
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10
+              }
+            ]
+          }
+        }
+      }
     },
     {
       "name": "normal calculation result matches request",
       "matches": true,
       "semantic": "calculation",
-      "request": { "protocol": 1, "id": "calc-semantic", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 1, "student_star": 1, "weapon_state": "weapon_locked", "weapon_star": 0, "weapon_level": 0, "ex_skill": 1, "skill1": 1, "skill2": 1, "skill3": 1, "equip1": "T1", "equip2": "T1", "equip3": "T1", "equip4": null, "equip1_level": 1, "equip2_level": 1, "equip3_level": 1, "stat_hp": 0, "stat_atk": 0, "stat_heal": 0 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": 10 }] } } },
-      "response": { "protocol": 1, "id": "calc-semantic", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 3780, "level_exp": 540, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": { "Item_Icon_ExpItem_0 T2": 1, "Item_Icon_ExpItem_0 T1": 1 }, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+      "request": {
+        "protocol": 1,
+        "id": "calc-semantic",
+        "type": "request",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "current_students": [
+            {
+              "student_id": "ayane",
+              "level": 1,
+              "student_star": 1,
+              "weapon_state": "weapon_locked",
+              "weapon_star": 0,
+              "weapon_level": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 1,
+              "skill3": 1,
+              "equip1": "T1",
+              "equip2": "T1",
+              "equip3": "T1",
+              "equip4": null,
+              "equip1_level": 1,
+              "equip2_level": 1,
+              "equip3_level": 1,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          ],
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": 10
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "calc-semantic",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "totals": {
+            "credits": 3780,
+            "level_exp": 540,
+            "equipment_exp": 0,
+            "weapon_exp": 0,
+            "star_materials": {},
+            "equipment_materials": {},
+            "level_exp_items": {
+              "Item_Icon_ExpItem_0 T2": 1,
+              "Item_Icon_ExpItem_0 T1": 1
+            },
+            "equipment_exp_items": {},
+            "weapon_exp_items": {},
+            "skill_books": {},
+            "ex_ooparts": {},
+            "skill_ooparts": {},
+            "favorite_item_materials": {},
+            "stat_materials": {},
+            "stat_levels": {},
+            "warnings": []
+          }
+        }
+      }
     },
     {
       "name": "empty targets produce zero additional cost",
       "matches": true,
       "semantic": "calculation",
-      "request": { "protocol": 1, "id": "calc-empty-semantic", "type": "request", "method": "planning.plan.calculate", "payload": { "current_students": [{ "student_id": "ayane", "level": 10 }], "plan": { "version": 1, "goals": [{ "student_id": "ayane", "target_level": null, "target_ex_skill": null }] } } },
-      "response": { "protocol": 1, "id": "calc-empty-semantic", "type": "response", "method": "planning.plan.calculate", "payload": { "totals": { "credits": 0, "level_exp": 0, "equipment_exp": 0, "weapon_exp": 0, "star_materials": {}, "equipment_materials": {}, "level_exp_items": {}, "equipment_exp_items": {}, "weapon_exp_items": {}, "skill_books": {}, "ex_ooparts": {}, "skill_ooparts": {}, "favorite_item_materials": {}, "stat_materials": {}, "stat_levels": {}, "warnings": [] } } }
+      "request": {
+        "protocol": 1,
+        "id": "calc-empty-semantic",
+        "type": "request",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "current_students": [
+            {
+              "student_id": "ayane",
+              "level": 10
+            }
+          ],
+          "plan": {
+            "version": 1,
+            "goals": [
+              {
+                "student_id": "ayane",
+                "target_level": null,
+                "target_ex_skill": null
+              }
+            ]
+          }
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "calc-empty-semantic",
+        "type": "response",
+        "method": "planning.plan.calculate",
+        "payload": {
+          "totals": {
+            "credits": 0,
+            "level_exp": 0,
+            "equipment_exp": 0,
+            "weapon_exp": 0,
+            "star_materials": {},
+            "equipment_materials": {},
+            "level_exp_items": {},
+            "equipment_exp_items": {},
+            "weapon_exp_items": {},
+            "skill_books": {},
+            "ex_ooparts": {},
+            "skill_ooparts": {},
+            "favorite_item_materials": {},
+            "stat_materials": {},
+            "stat_levels": {},
+            "warnings": []
+          }
+        }
+      }
     },
     {
       "name": "different IDs do not correlate",
       "matches": false,
-      "request": { "protocol": 1, "id": "request-id", "type": "request", "method": "planning.student.get", "payload": { "student_id": "ayane" } },
-      "response": { "protocol": 1, "id": "response-id", "type": "response", "method": "planning.student.get", "payload": { "student": null } }
+      "request": {
+        "protocol": 1,
+        "id": "request-id",
+        "type": "request",
+        "method": "planning.student.get",
+        "payload": {
+          "student_id": "ayane"
+        }
+      },
+      "response": {
+        "protocol": 1,
+        "id": "response-id",
+        "type": "response",
+        "method": "planning.student.get",
+        "payload": {
+          "student": null
+        }
+      }
     }
   ]
 }

@@ -54,8 +54,12 @@ class ScannerCommitHistoryIntegrationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.fixture = json.loads((ROOT / "contracts/fixtures/scanner_commit_history_sfb2b_v1.json").read_text(encoding="utf-8"))
 
-    def setup_case(self, case=None, *, port_class=LossPort, hook=None):
+    def setup_case(self, case=None, *, port_class=LossPort, hook=None, bind_current_catalog=True):
         case = deepcopy(case or self.fixture["cases"][0])
+        if case["kind"] == "inventory" and bind_current_catalog:
+            for role in ("candidate", "reviewed"):
+                if case[role] is not None:
+                    case[role]["catalog_revision"] = CATALOG_REVISION
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         repo = JsonRepository(Path(temporary.name), clock=lambda: AT)
@@ -87,6 +91,44 @@ class ScannerCommitHistoryIntegrationTests(unittest.TestCase):
         request = dict(session_id="session", generation=1, candidate_id="candidate", candidate_revision=revision,
                        profile_id=pid, expected_repository_revision=1, idempotency_key="scan")
         return repo, port, service, request, case
+
+    def test_original_stale_fixture_fresh_inventory_submit_is_rejected_without_writes(self):
+        import hashlib
+
+        fixture_path = ROOT / "contracts/fixtures/scanner_commit_history_sfb2b_v1.json"
+        fixture_bytes = fixture_path.read_bytes()
+        fixture_sha = hashlib.sha256(fixture_bytes).hexdigest()
+        original_fixture = deepcopy(self.fixture)
+        case = deepcopy(next(c for c in self.fixture["cases"] if c["id"] == "inventory_partial_first"))
+        original_case = deepcopy(case)
+        stale = case["candidate"]["catalog_revision"]
+        self.assertEqual(stale, self.fixture["catalog_revision"])
+        self.assertNotEqual(stale, CATALOG_REVISION)
+        repo, port, service, request, bound = self.setup_case(case, bind_current_catalog=False)
+        self.assertEqual(bound["initial"], original_case["initial"])
+        self.assertEqual(bound["candidate"]["catalog_revision"], stale)
+        self.assertEqual(bound["reviewed"]["catalog_revision"], stale)
+        path = repo._profile_path(request["profile_id"])
+        profile_before = path.read_bytes()
+        history_before = canonical_json(json.loads(profile_before)["current_history"]).encode("utf-8")
+        reads_before, calls_before = port.reads, deepcopy(port.calls)
+        cache_key = (request["session_id"], request["idempotency_key"])
+        self.assertNotIn(cache_key, service._current_commits)
+        with self.assertRaises(ScannerError) as caught:
+            service.commit(**request)
+        self.assertEqual(caught.exception.code, "catalog_revision_mismatch")
+        self.assertEqual(caught.exception.details, {"expected": CATALOG_REVISION, "received": stale})
+        profile_after = path.read_bytes()
+        self.assertEqual(profile_before, profile_after)
+        self.assertEqual(history_before, canonical_json(json.loads(profile_after)["current_history"]).encode("utf-8"))
+        self.assertEqual((port.reads, port.calls), (reads_before, calls_before))
+        self.assertNotIn(cache_key, service._current_commits)
+        self.assertEqual(case, original_case)
+        self.assertEqual(self.fixture, original_fixture)
+        self.assertEqual(fixture_path.read_bytes(), fixture_bytes)
+        self.assertEqual(hashlib.sha256(fixture_path.read_bytes()).hexdigest(), fixture_sha)
+        self.assertEqual(json.loads(fixture_path.read_text(encoding="utf-8"))["catalog_revision"], stale)
+
 
     def test_shared_first_nochange_partial_alias_and_raw_profile_cases(self):
         for case in self.fixture["cases"]:
@@ -227,7 +269,7 @@ class ScannerCommitHistoryIntegrationTests(unittest.TestCase):
         calls = []
         case = deepcopy(next(case for case in self.fixture["cases"] if case["id"] == "inventory_partial_first"))
         case["reviewed"] = None
-        repo, port, service, request, _ = self.setup_case(case, hook=lambda *args: calls.append(args))
+        repo, port, service, request, case = self.setup_case(case, hook=lambda *args: calls.append(args))
         item = service._sessions["session"].candidates["candidate"]
         item.answer_specimen = {"synthetic": {}}
         service.review("session", 1, "candidate", 1, case["candidate"], approve=True, reason="explicit approval")
@@ -676,7 +718,9 @@ class ScannerCommitHistoryRefinementMemoryTests(unittest.TestCase):
             with self.subTest(case=case['id']):
                 original = deepcopy(case['input'])
                 result = rebase_inventory_snapshot(case['input'])
-                self.assertEqual(result, case['expected'])
+                expected = deepcopy(case['expected'])
+                expected['catalog_revision'] = CATALOG_REVISION
+                self.assertEqual(result, expected)
                 self.assertEqual(case['input'], original)
                 self.assertEqual(result['catalog_revision'], CATALOG_REVISION)
         alias = fixture['helper_parity_cases'][0]['expected']['entries'][0]
