@@ -257,13 +257,14 @@ enum PlanFlowHandoffKind {
   /// 초안·활성 계획에 없던 학생: 그 학생 1단계를 계산기 목표로 채웠다.
   added,
 
-  /// 초안에 이미 그 학생 단계가 있다: 마지막 단계 뒤 새 단계로 넣었다.
+  /// 초안에 이미 그 학생 단계가 있다: "나중에" 칸이 아닌 마지막 단계 뒤(나중에 단계 앞) 새 단계로 넣었다(FE4-g2).
   appendedToDraft,
 
   /// 활성 계획에 그 학생이 있다: 활성 계획 마지막 단계 snapshot 뒤 새 단계로 넣었다.
   appendedAfterActive,
 
-  /// 계산기 목표가 이미 바닥 snapshot(초안·활성 계획 마지막 단계 또는 지금 값)에 들어 있어 단계를 만들지 않았다.
+  /// 계산기 목표가 이미 바닥 snapshot(초안의 새 단계 자리 바로 앞 단계 · 활성 계획 마지막 단계 또는 지금 값)에 들어
+  /// 있어 단계를 만들지 않았다.
   nothingNew,
 
   /// 넘긴 목표가 없거나 비었다(계산기에서 올린 목표가 없음, 학생만 더했다).
@@ -321,6 +322,47 @@ Map<String, int>? planFlowHandoffStageTargets({
   );
   return rises ? next : null;
 }
+
+/// 계산기에서 넘긴 새 단계가 들어갈 자리(FE4-g2): 그 학생 단계 순서 [stageIds]에서 "나중에" 칸([deferred])이 아닌
+/// 마지막 단계 바로 뒤다. 같은 학생 체인 규칙(배치 prefix + 나중에 suffix)을 깨지 않도록 나중에 단계들 앞에 들어간다.
+/// 칸에 있는 단계와 목표 편집 중 임시 미배치 단계는 모두 prefix(3단계에서 칸에 넣을 단계)로 본다. 단계가 없거나
+/// 모두 나중에면 0이다.
+int planFlowHandoffInsertIndex(List<String> stageIds, Set<String> deferred) {
+  for (var index = stageIds.length; index > 0; index--) {
+    if (!deferred.contains(stageIds[index - 1])) return index;
+  }
+  return 0;
+}
+
+/// 새 단계 [inserted] 뒤에 오는 같은 학생 단계 [later]를 누적 snapshot 계약대로 올린다(FE4-g2): 새 단계보다 낮은
+/// 키는 새 단계 값으로 올리고 성장 규칙으로 정규화한다(2단계 편집기에서 앞 단계를 올리면 뒤 단계가 따라 오르는 것과
+/// 같은 규칙). 새 단계 이상인 값은 그대로 둔다.
+List<PlanElementStageDraft> planFlowRaiseLaterStages(
+  List<PlanElementStageDraft> later,
+  Map<String, int> inserted, {
+  required bool hasFavoriteItem,
+}) => [
+  for (final stage in later)
+    () {
+      final raised = <String>{
+        for (final key in planningDocumentTargetKeys)
+          if ((stage.targets[key] ?? inserted[key]!) < inserted[key]!) key,
+      };
+      if (raised.isEmpty) return stage;
+      return stage.copyWith(
+        targets: normalizePlanningGrowthTargets(
+          {
+            for (final key in planningDocumentTargetKeys)
+              key: raised.contains(key)
+                  ? inserted[key]!
+                  : stage.targets[key] ?? inserted[key]!,
+          },
+          changedKeys: raised,
+          hasFavoriteItem: hasFavoriteItem,
+        ),
+      );
+    }(),
+];
 
 /// 초안의 학생 단계 하나(같은 학생의 [step]번째 누적 목표).
 @immutable
@@ -1799,40 +1841,60 @@ class PlanFlowController extends ChangeNotifier {
 
   /// 성장 계산기 "이 목표로 계획에 추가"가 넘긴 학생 [handoff]를 초안에 넣고 2단계에서 그 학생을 연다.
   ///
-  /// 바닥 snapshot은 초안에 그 학생 단계가 있으면 그 마지막 단계, 없고 활성 계획([PlanFlowContext.activePlan])에
-  /// 있으면 활성 계획 마지막 단계, 둘 다 없으면 지금 값이다. 활성 계획을 고치는 흐름([PlanFlowPurpose.editActivePlan])은
-  /// 초안이 곧 활성 계획이라 초안만 본다. 새 단계는 [planFlowHandoffStageTargets]로 만들어 그 학생 단계 끝에 붙이고
-  /// v2 변환·칸 배치 정리는 2단계 편집과 같은 [setStudentStages]가 한다(단계가 늘면 그 학생 단계는 다시 배치한다).
-  /// 학생의 지금 값은 초안·계정의 확정값이다([handoff]의 currentValues는 쓰지 않는다: 계산기 "직접 입력"은 휘발값).
+  /// 새 단계는 그 학생의 "나중에" 칸이 아닌 마지막 단계 바로 뒤, 나중에 단계들 앞에 들어간다
+  /// ([planFlowHandoffInsertIndex], FE4-g2: 같은 학생 체인 = 배치 prefix + 나중에 suffix). 바닥 snapshot은 그 자리 바로
+  /// 앞 단계다(나중에 단계는 바닥이 되지 않는다). 초안에 그 학생 단계가 없고 활성 계획([PlanFlowContext.activePlan])에
+  /// 있으면 활성 계획 마지막 단계(문서 페이즈에 배치된 단계만이라 활성 나중에 단계는 들어가지 않는다), 그 밖에는 지금
+  /// 값이다. 활성 계획을 고치는 흐름([PlanFlowPurpose.editActivePlan])은 초안이 곧 활성 계획이라 초안만 본다. 새 단계는
+  /// [planFlowHandoffStageTargets]로 만들고, 뒤 나중에 단계는 [planFlowRaiseLaterStages]로 새 단계 아래로 내려가지
+  /// 않게 올린다. 기본 이름(`n단계`)은 2단계 편집기처럼 번호를 다시 매긴다. v2 변환·칸 배치 정리는 2단계 편집과 같은
+  /// [setStudentStages]가 한다(단계가 늘면 그 학생의 칸 배치는 풀려 3단계에서 다시 배치하고, 나중에 단계는 나중에
+  /// 칸에 남는다). 학생의 지금 값은 초안·계정의 확정값이다([handoff]의 currentValues는 쓰지 않는다: 계산기 "직접
+  /// 입력"은 휘발값).
   PlanFlowHandoffResult receiveHandoff(PlanningStudentSeed handoff) {
     final studentId = handoff.studentId;
     if (_disposed) return (kind: PlanFlowHandoffKind.ignored, step: null);
     final seed = _draft.seedOf(studentId) ?? context.seedFor(studentId);
     final editor = _draft.editorStagesFor(studentId);
+    final insertAt = planFlowHandoffInsertIndex([
+      for (final stage in editor) stage.id,
+    ], _draft.deferredStageIds.toSet());
     final activeLast =
         editor.isEmpty && purpose != PlanFlowPurpose.editActivePlan
         ? planFlowActiveLastTargets(context.activePlan, studentId, seed)
         : null;
-    final floor = editor.isNotEmpty
-        ? editor.last.targets
+    final floor = insertAt > 0
+        ? editor[insertAt - 1].targets
         : activeLast ?? planElementCurrentTargets(seed);
+    final hasFavoriteItem = planStudentHasFavoriteItemMetadata(seed.metadata);
     final raised = handoff.targets;
     final next = raised == null || raised.isEmpty
         ? null
         : planFlowHandoffStageTargets(
             floor: floor,
             raised: raised,
-            hasFavoriteItem: planStudentHasFavoriteItemMetadata(seed.metadata),
+            hasFavoriteItem: hasFavoriteItem,
           );
     final PlanFlowHandoffResult result;
     if (next != null) {
-      setStudentStages(studentId, [
-        ...editor,
+      final stages = [
+        ...editor.take(insertAt),
         PlanElementStageDraft(
           id: _newHandoffStageId(studentId),
-          name: '${editor.length + 1}단계',
+          name: '${insertAt + 1}단계',
           targets: next,
         ),
+        ...planFlowRaiseLaterStages(
+          editor.sublist(insertAt),
+          next,
+          hasFavoriteItem: hasFavoriteItem,
+        ),
+      ];
+      setStudentStages(studentId, [
+        for (final (index, stage) in stages.indexed)
+          _defaultStageName.hasMatch(stage.name)
+              ? stage.copyWith(name: '${index + 1}단계')
+              : stage,
       ]);
       result = (
         kind: editor.isNotEmpty
@@ -1840,7 +1902,7 @@ class PlanFlowController extends ChangeNotifier {
             : activeLast != null
             ? PlanFlowHandoffKind.appendedAfterActive
             : PlanFlowHandoffKind.added,
-        step: editor.length + 1,
+        step: insertAt + 1,
       );
     } else {
       if (_draft.seedOf(studentId) == null) {
@@ -1864,6 +1926,9 @@ class PlanFlowController extends ChangeNotifier {
     notifyListeners();
     return result;
   }
+
+  /// 단계 기본 이름(`n단계`). 2단계 편집기와 같이 넣은 자리에 맞춰 번호를 다시 매긴다.
+  static final _defaultStageName = RegExp(r'^\d+단계$');
 
   String _newHandoffStageId(String studentId) {
     final used = {

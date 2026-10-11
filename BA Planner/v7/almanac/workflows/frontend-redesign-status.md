@@ -6107,3 +6107,94 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
      - mock: `cd frontend` → `flutter run -d windows -t lib/developer_tools_main.dart --dart-entrypoint-args=--tool=metadata-manager --dart-entrypoint-args=--mock`.
      - 옛 이름: `... --dart-entrypoint-args=--tool=student-metadata`(같은 창 ① 탭).
      - 기대: ①에서 학생을 고르면 패널이 필드마다 "확인되지 않음"을 보인다. ②는 저장소 연결 상태 · lock 고정 버전 · 등록된 버전을 보이고, 비교는 저장소에 보고서가 없으면 "보고서 없음"이다. ③은 "실물 검증 아님(M4 필요)"과 asset-map 행을 보인다. ④⑤는 자리 문구다.
+
+## FE4-g2 흐름 handoff 정리 (구현 끝, gate 전)
+
+### FE4-g2 착수 기록 (2026-10-11, Lane A, 로컬 Claude Code)
+
+- 착수 때 진행 중: FE4-g2. 시작 SHA `9d959d15416b6251e8aaa1d682ea3550d48af524`(브랜치 scanner-consolidation).
+- 범위: ① 계산기 handoff 새 단계를 그 학생의 "나중에" 칸 단계 앞(나중에가 아닌 마지막 단계 바로 뒤)에 넣고 바닥 snapshot을 그 앞 단계로 ② 활성 계획 "나중에" 단계와 바닥 snapshot(서비스 조사 먼저) ③ 회귀 테스트. 화면 디자인 변경 없음.
+- 막힘: 대장 "slice별 막힘 요약"에 FE4-g2 행 없음, FE4-g 행 "—"(열림 0건). 멈출 사유 없음.
+- 고칠 기존 파일(사본 `debug/frontend_fe4g2/pre/frontend/...`): `frontend/lib/ui/models/plan_flow_draft.dart`, `frontend/test/plan_flow_handoff_test.dart`. `plan_section_layout.dart`의 PlanFlowContext 생성부는 2번 결론에 따라 필요할 때만(그때 사본 추가).
+- 기존 미커밋 변경(WIP): `git status --short` 결과 두 파일 모두 없음(이 status 문서도 없음).
+
+### FE4-g2 종료 기록 (2026-10-11 23:55, Lane A, 커밋 전)
+
+상태: 구현 끝(1번 구현, 2번은 코드 변경 없이 결론), gate 미실행(CF 몫). 시작 SHA `9d959d15416b6251e8aaa1d682ea3550d48af524`. `debug/frontend_fe4g2/commit.json`(slice=fe4g2, status=true). 직접 커밋하지 않았다(git 쓰기 없음).
+
+#### 실행한 명령·결과
+
+- `frontend`에서 `flutter analyze`: **No issues found**(0건, info 포함).
+- `flutter test test/plan_flow_handoff_test.dart`: 첫 실행 17 통과 · 1 실패(새 테스트 (b)의 활성 문서 fixture에 v2 `goal_metadata`가 없어 `PlanningAuthoring.fromWire`가 거절 — 테스트 fixture 문제, `_activePlan(wireValid: true)` 추가) → 재실행 **18 통과 · 0 실패**.
+- 바뀐 동작에 걸리는 기존 테스트(grep `receiveHandoff`·`PlanFlowContext`·`PlanFlowHandoffKind`·`planFlowMergedPlanDocument`·`deferredStageIds`·`calculator-add-to-plan`, golden 제외)를 파일마다 따로 실행(통과/실패): `growth_calculator_view_test` 24/0 · `planning_page_test` 61/0 · `plan_flow_authoring_test` 18/0 · `plan_flow_goal_step_test` 23/0 · `plan_flow_order_step_test` 19/0 · `plan_flow_presets_test` 13/0 · `plan_flow_save_test` 15/0 · `plan_flow_student_step_test` 8/0 · `plan_flow_test` 15/0 · `student_page_test` 9/0. 잠금 실패 없음.
+- `dart format`은 gate 대상이 아니고 두 파일 모두 원래부터 형식 차이가 있어 파일 전체 재형식을 하지 않았다(diff 최소).
+
+#### 1. "나중에" 칸 뒤에 붙는 문제 — 구현
+
+- **실제 동작 확인(충돌 없음, 멈추지 않음)**: `setStudentStages`는 단계 id 목록이 바뀌면 그 학생 단계를 **칸(phases)에서만** 빼고(`_withoutStages(previous)`), 명시 "나중에"는 지운 단계만 뺀다(`_withoutDeferred(dropped)`). 그래서 "단계가 늘면 칸 배치가 풀린다"는 기존 규칙 뒤에도 나중에 단계는 나중에 칸에 남는다. 체인 = [풀린 앞 단계들 + 새 단계(임시 미배치)] + [나중에 단계들]이고, 3단계에서 앞쪽을 칸에 넣으면 "배치 prefix + 나중에 suffix"가 그대로 성립한다. 두 규칙은 충돌하지 않는다. 고치기 전 동작(새 단계가 나중에 단계 뒤)은 3단계에서 새 단계를 칸에 넣으면 선행 단계보다 앞 칸이라 막혔다.
+- **넣을 자리**: 새 순수 함수 `planFlowHandoffInsertIndex(stageIds, deferred)` = 그 학생 단계 중 나중에가 아닌 마지막 단계 바로 뒤(나중에 단계들 앞). 지시의 "배치된 마지막 단계"는 "나중에 칸이 아닌 마지막 단계"로 읽었다: 칸에 있는 단계와 목표 편집 중 임시 미배치 단계는 모두 3단계에서 칸에 넣을 prefix이고, handoff 직후에는 어차피 모두 임시 미배치가 된다. 정상 초안에서는 두 정의가 같다.
+- **바닥 snapshot = 그 자리 바로 앞 단계**. 근거: 단계는 누적 절대 목표 snapshot이고 새 단계는 체인에서 바로 앞 단계 뒤에 오므로 그 앞 단계를 복제해야 한다(plan-element-builder-lessons "새 단계는 선택 단계 바로 뒤에 그 snapshot을 복제"). 나중에 단계는 체인에서 새 단계 **뒤**라 바닥으로 쓰면 ① 사용자가 "나중에"로 미룬 목표가 지금 배치할 새 단계로 당겨지고 ② 새 단계가 나중에 단계 이상이 되어 나중에 단계가 증가 없는 단계로 바뀌며 ③ 나중에 단계에만 있는 값을 계산기로 다시 올리면 "이미 들어 있음"으로 버려진다(테스트 "나중에 단계가 바닥이 되지 않는다"가 이 경우를 고정).
+- **뒤 나중에 단계 올리기**: 새 순수 함수 `planFlowRaiseLaterStages` — 새 단계보다 낮은 키만 새 단계 값으로 올리고 `normalizePlanningGrowthTargets(changedKeys)`로 정규화한다. 단계 계약 "이전 단계 값을 이후 단계보다 높이면 이후 단계의 같은 필드를 자동으로 올린다"와 2단계 편집기 `setTarget`의 뒤 단계 전파와 같은 규칙이다. 낮추지는 않는다. 이걸 하지 않으면 체인이 퇴행해 authoring `target_regression`이 난다.
+- 이름: 새 단계 `n단계`(넣은 자리 번호), 기본 이름(`n단계` 꼴)은 2단계 편집기 `_renumberDefaultNames`처럼 다시 매긴다(나중에 `2단계` → `3단계`). 직접 바꾼 이름은 그대로. 결과 `step` = 넣은 자리 번호, `kind`는 기존 규칙 그대로(초안에 그 학생 단계가 있으면 `appendedToDraft`).
+- 초안 단계가 **모두 나중에**면 자리 0(새 1단계), 바닥 = 지금 값. 초안에 그 학생 단계가 있으면 초안 체인만 본다는 FE4-g 규칙을 유지해 활성 계획 snapshot을 쓰지 않는다(아래 "판단" 1).
+- 활성 계획을 고치는 흐름(`editActivePlan`)은 초안이 활성 계획(나중에 포함)이라 같은 규칙이 그대로 적용된다.
+
+#### 2. 활성 계획 "나중에" 단계와 바닥 — 조사 결과, 코드 변경 없음
+
+- 서비스 조사(grep): 활성 authoring은 **기존 응답으로 이미 읽을 수 있다** — `plan.get` → `RepositoryPlanState.authoring`(`lib/services/repository_plan_service.dart`, FB-8a; 저장된 authoring이 없으면 `PlanningAuthoring.defaultForDocument`). 계획 화면은 이미 `_repositoryPlan`(RepositoryPlanState)을 들고 있고 4단계 병합도 `_snapshot?.plan?.authoring`을 쓴다. 시나리오 쪽은 `scenario_service.dart`의 authoring(FB-8b). backend·contracts 변경 필요 없음.
+- 결론: **문서의 단계 순서만으로 충분하다.** 근거: 활성 문서(`PlanningDocument`)의 phases에는 **배치된 단계만** 있고 나중에 단계는 authoring `deferred_stages`에만 있다. authoring 검증(`PlanningAuthoring.fromWire`)이 같은 학생 체인 = 문서 phase 순회 순서(배치) + deferred 순서를 강제하므로, 문서에서 그 학생의 마지막 단계(`planFlowActiveLastTargets`)는 곧 "활성 계획의 배치된 마지막 단계(나중에 단계 제외)"다. 1번과 같은 규칙(나중에 단계는 바닥이 아니다)이 이미 성립한다. 또 "활성 계획에 페이즈로 추가" 병합(`planFlowMergedPlanDocument`)은 체인을 활성 배치 → 초안 배치(새 단계) → 활성 나중에 → 초안 나중에로 만들어, 새 단계가 활성 나중에 단계 **앞**에 온다(1번과 같은 위치). 그래서 `PlanFlowContext`에 authoring을 싣지 않았고 `plan_section_layout.dart`는 고치지 않았다(사본도 없음).
+- FE4-g "발견 사항" 2의 "활성 나중에 단계가 바닥 snapshot에 들어가지 않는다"는 CF 규칙상 **의도된 동작**으로 정리된다. 남는 문제는 병합 쪽이다(아래 발견 사항 2).
+
+#### 판단(확인 부탁)
+
+1. 초안 단계가 모두 나중에인 학생: 바닥 = 지금 값(활성 계획 snapshot 아님). 초안에 그 학생이 있으면 초안 체인만 본다는 FE4-g 규칙의 연장이다. 반대로 하려면 `receiveHandoff`의 `activeLast` 조건을 `insertAt == 0`으로 바꾸면 된다.
+2. 뒤 나중에 단계 자동 올림(`planFlowRaiseLaterStages`)은 초안 안의 단계 계약으로 보고 했다. FE4-e 병합의 "낮은 값을 몰래 올리지 않고 막는다"는 활성·초안 사이 규칙이라 다르게 본 것이다.
+
+#### 처리한 FD
+
+- '워커 재량' FD 새로 처리한 것 없음. FD-171 (a)(FE4-g에서 처리)의 동작은 바꾸지 않았다. 막힘 요약에 FE4-g2 행 없음(FE4-g "—").
+
+#### 테스트
+
+- `plan_flow_handoff_test.dart` 새 그룹 `"나중에" 칸 단계 앞에 넣기(FE4-g2)` 6건: 순수 `planFlowHandoffInsertIndex`(빈 목록 · 나중에 없음 · 끝 하나 · 끝 둘 · 모두 나중에) · 순수 `planFlowRaiseLaterStages`(낮은 키만 오름 · 높은 값 유지 · 바뀌지 않은 단계는 같은 객체 · 전용무기 올리면 ★5 정규화) · (a) 초안 배치 1단계(레벨 50) + 나중에 2단계(레벨 80)에 레벨 60·스킬 10 → [1단계, 새 2단계, 나중에 3단계], 바닥 50, 나중에 단계 스킬 10으로 오름, 나중에 칸 유지, 칸 배치 풀림, 3단계에서 둘 다 칸에 넣어 `orderReady` · (a') 레벨 75(나중에 80보다 낮음)도 새 단계로 들어감 · 모두 나중에인 초안은 새 1단계(활성 계획 70을 쓰지 않음) · (b) 활성 문서(배치 레벨 70) + 활성 authoring(나중에 레벨 90, `fromWire` 검증) → 바닥 70으로 레벨 85 새 단계(`appendedAfterActive`), 칸에 넣고 병합하면 `stage_order_by_student` = [활성 1단계, 새 단계, 활성 나중에], 병합 막힘 없음.
+- (c) 기존 handoff 테스트 12건 그대로 통과(기대값 수정 없음). `_activePlan`에 선택 인자 `wireValid`만 더했다(기본 false라 기존 테스트 입력은 그대로).
+- 지운 테스트 없음.
+
+#### golden 변화 예상
+
+- 전 장면 **변화 0** 예상. 근거: 바뀐 코드는 `PlanFlowController.receiveHandoff`와 새 순수 함수 둘뿐이고, golden harness에는 계산기 handoff(`receiveHandoff`·목표 실은 시드)를 지나는 장면이 없다(`test/goldens/*.dart` grep). `PlanFlowContext` 생성부는 고치지 않았으므로 `plan-flow-step1`~`step4`·`step4-append`·`step3-deferred`·`step3-many`·`plan-flow-goal-*`·`plan-flow-order-*`·`plan-flow-save-*` 모두 그대로. 새 장면 없음.
+
+#### 미검증
+
+- golden 비교·전체 `fe_gate.ps1`: 미실행(CF 몫).
+- ProcessAppService(실제 Python)에서 계산기 → 2단계 → 3단계 → 4단계 "페이즈로 추가" 저장 왕복: 미실행.
+- 화면 확인(2단계 편집기가 어느 단계 카드를 고른 상태로 여는지, SnackBar 문구): 미실행 — 아래 발견 사항 1·3.
+
+#### 검수표
+
+| 확인 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 초안 나중에 단계 앞에 넣기 | mock 모드 → 계획 탭 "시나리오 생성" → 학생 하나에 2단계에서 단계 2개 → 3단계에서 1단계를 1순위, 2단계를 "나중에" 칸 → 학생 탭 같은 학생 계산기에서 목표를 올리고 "이 목표로 계획에 추가" | 2단계: 그 학생 카드가 1단계 · 새 2단계(계산기 값, 1단계 값을 이어 받음) · 3단계(원래 나중에 단계, 새 단계보다 낮던 값은 새 단계 값으로 오름). 안내 "만들던 초안에 이어 … 2단계로 …" |
+| 3단계 배치 | 위에서 "다음" → 3단계 | 원래 나중에 단계는 "나중에" 칸에 그대로, 1·2단계는 칸 밖(다시 배치). 1·2단계를 1순위(또는 1·2순위)에 넣을 수 있고 규칙 위반 표시 없음, "다음" 켜짐 |
+| 나중에 값만 다시 올리기 | 나중에 단계에만 있는 값(예: 레벨)을 계산기에서 같은 값으로 넘기기 | "이미 들어 있음"이 아니라 새 단계가 생김 |
+| 활성 계획 나중에 단계 | 활성 계획에서 학생 단계 하나를 나중에 칸에 둔 상태(단계 순서 바꾸기)로 저장 → 계산기에서 그 학생을 배치 단계보다 높고 나중에 단계 이하 값으로 넘기기 | 1단계 카드 값 = 활성 배치 마지막 단계 + 올린 값(나중에 단계 값이 아님). 4단계 "활성 계획에 페이즈로 추가" 가능 |
+
+#### WIP 보존 확인
+
+- 고친 두 파일·이 status 문서는 착수 때 WIP 없음(`git status --short`). 다른 미커밋 변경(스캐너·서비스·문서)은 건드리지 않았다. 줄 끝은 원본과 같은 LF(편집 중 한 번 CRLF로 바뀐 것을 되돌려 확인: 두 파일·status 모두 CR 0개). post 사본 불필요(WIP 없음).
+
+#### 발견 사항
+
+1. **2단계 편집기 선택 단계**: 넘긴 학생에게 나중에 단계가 있으면 새 단계가 마지막이 아니어서, 처음 여는 편집기는 마지막 단계(나중에 단계)를 고른다(`PlanFlowGoalEditor.selectedStageIdOf`의 기본값 = 마지막). 새 단계를 고르려면 흐름이 초점 단계 id(예: `goalFocusStageId`)를 내고 `plan_flow_goal_editor.dart` `_flowChanged`의 초점 처리에서 `_selectedStages[focus]`를 그 id로 두는 작은 변경이 필요하다. 이번 slice 수정 파일 범위 밖이라 하지 않았다.
+2. **"페이즈로 추가" 병합의 활성 나중에 단계 퇴행**(FE4-e/f1 기존 동작): `planFlowMergedPlanDocument`는 활성 나중에 단계를 그대로 두므로, 초안 배치 단계(계산기 새 단계 포함)가 활성 나중에 단계보다 높은 값이나 활성 나중에 단계가 null로 둔 키를 정하면 authoring 검증이 `target_regression`으로 거절해 그 위치가 막힌다(예: 활성 배치 레벨 70 · 나중에 레벨 90, 계산기에서 레벨 95나 스킬을 올림). 같은 학생에게 활성 나중에 단계가 있으면 흔히 걸린다. 해법 후보: 병합에서 활성 나중에 단계를 1번과 같은 규칙으로 올리기(`planFlowRaiseLaterStages`와 같은 뜻) vs 지금처럼 막고 안내만. 병합 규칙("낮은 값을 몰래 올리지 않는다")을 바꾸는 결정이라 CF 판단 몫.
+3. **SnackBar 문구**: `nothingNew` 안내 "… 학생의 마지막 단계에 들어 있어 …"는 나중에 단계가 있을 때 실제 비교 단계(나중에 앞 마지막 단계)와 어긋난다. 문구는 `plan_section_layout.dart` `_notifyHandoff`라 이번 범위 밖. 후보: "… 나중에 칸 앞 마지막 단계에 …".
+4. **활성 계획에 나중에 단계만 있는 학생**: 문서에 그 학생 단계가 없어 `activeLast` = null → 바닥 = 지금 값, `kind = added`(안내 없음), PLAN 배지·계산기 "현재 계획에 있음"도 문서 기준이라 없음(FE4-h · FD-172). 병합에서는 새 단계가 활성 나중에 단계 앞에 오므로 2번의 퇴행 거절이 걸릴 수 있다.
+
+#### 다음 행동
+
+- CF: 레인 워커가 모두 멈춘 뒤 gate(golden 변화 0 예상), `fe_commit.ps1 -Slice fe4g2`. 판단 1·2와 발견 사항 1·2 결정 — 1·3은 작은 후속 slice(편집기·문구), 2는 병합 규칙 결정.
+
+### fe4g2 commit record (2026-10-12 00:38, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_002617\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
