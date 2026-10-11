@@ -1,0 +1,409 @@
+{
+  "fixture_type": "TEST_ONLY_CONTRACT_DRAFT",
+  "requests": [
+    {
+      "method": "store.status",
+      "request": {
+        "version": 1,
+        "method": "store.status",
+        "params": {}
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    },
+    {
+      "method": "store.versions",
+      "request": {
+        "version": 1,
+        "method": "store.versions",
+        "params": {}
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    },
+    {
+      "method": "store.diff",
+      "request": {
+        "version": 1,
+        "method": "store.diff",
+        "params": {
+          "from": {
+            "server": "jp",
+            "version_id": "jp-test-a"
+          },
+          "to": {
+            "server": "jp",
+            "version_id": "jp-test-b"
+          }
+        }
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    },
+    {
+      "method": "metadata.source.view",
+      "request": {
+        "version": 1,
+        "method": "metadata.source.view",
+        "params": {
+          "student_id": "test_student"
+        }
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    },
+    {
+      "method": "asset_map.list",
+      "request": {
+        "version": 1,
+        "method": "asset_map.list",
+        "params": {}
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    },
+    {
+      "method": "asset_map.check",
+      "request": {
+        "version": 1,
+        "method": "asset_map.check",
+        "params": {
+          "scope": "all"
+        }
+      },
+      "status": "DRAFT_NOT_EXECUTED"
+    }
+  ],
+  "envelope_error": {
+    "version": 1,
+    "ok": false,
+    "error": {
+      "type": "ClientDataStoreError",
+      "message": "store_hash_mismatch: TEST_ONLY"
+    }
+  },
+  "diff_state_oracles": [
+    {
+      "version": 1,
+      "ok": true,
+      "result": {
+        "state": "disconnected",
+        "from": {
+          "server": "jp",
+          "version_id": "jp-test-a"
+        },
+        "to": {
+          "server": "jp",
+          "version_id": "jp-test-b"
+        },
+        "report": null,
+        "coverage": "existing-report-only; intersection kinds; no stable-ID or L3 inference",
+        "verification": "not_verified"
+      }
+    },
+    {
+      "version": 1,
+      "ok": true,
+      "result": {
+        "state": "missing",
+        "from": {
+          "server": "jp",
+          "version_id": "jp-test-a"
+        },
+        "to": {
+          "server": "jp",
+          "version_id": "jp-test-b"
+        },
+        "report": null,
+        "coverage": "existing-report-only; intersection kinds; no stable-ID or L3 inference",
+        "verification": "not_verified"
+      }
+    },
+    {
+      "version": 1,
+      "ok": true,
+      "result": {
+        "state": "available",
+        "from": {
+          "server": "jp",
+          "version_id": "jp-test-a"
+        },
+        "to": {
+          "server": "jp",
+          "version_id": "jp-test-b"
+        },
+        "report": {
+          "schema": "ba-client-data.changelog.v1",
+          "server": "jp",
+          "a": "jp-test-a",
+          "b": "jp-test-b",
+          "generated_utc": "2026-01-01T00:00:00+00:00",
+          "level1_files": {
+            "GameAssembly.dll": "same"
+          },
+          "level2_extracts": {
+            "exceldb-json": {
+              "CharacterExcel.json": {
+                "status": "changed",
+                "rows_a": 1,
+                "rows_b": 2,
+                "rows_added": 2,
+                "rows_removed": 1
+              }
+            }
+          },
+          "level3_behavior": "NOT_COMPUTED: TEST_ONLY; row-set difference is not stable-ID behavioral evidence"
+        },
+        "coverage": "existing-report-only; intersection kinds; no stable-ID or L3 inference",
+        "verification": "report_identity_only"
+      }
+    }
+  ],
+  "unknown_existing_provenance": {
+    "field": "metadata.school",
+    "value": null,
+    "value_state": "unknown",
+    "source_state": "unknown",
+    "provenance": null,
+    "comparisons": []
+  },
+  "responses": [
+    {
+      "method": "store.status",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "state": "connected",
+          "store_root": "TEST_ONLY_TEMP_STORE",
+          "pins": {
+            "jp": {
+              "version_id": "jp-test-a",
+              "client_version": "TEST_ONLY",
+              "bundle_revision": null,
+              "files": {
+                "GameAssembly.dll": "e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed"
+              }
+            }
+          },
+          "extracts": [
+            {
+              "server": "jp",
+              "version_id": "jp-test-a",
+              "kind": "exceldb-json",
+              "path": "extracts/jp/jp-test-a/exceldb-json",
+              "provenance_sha256": "1e41b8db0d163fbd2156f5837dad7185cf8b658a57e248af039682da3f683d22",
+              "files": {
+                "CharacterExcel.json": "6f70b2e6d66600f02bef7234488a8eb64d915111b4c4e1bd26a3bb8f46e9dd5e"
+              }
+            }
+          ],
+          "verification": "not_verified",
+          "missing_kinds": [
+            "addressables-catalog"
+          ]
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    },
+    {
+      "method": "store.versions",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "state": "connected",
+          "versions": [
+            {
+              "server": "jp",
+              "version_id": "jp-test-a",
+              "pinned": true,
+              "client_version": "TEST_ONLY",
+              "bundle_revision": null,
+              "manifest_sha256": "cabe7d59579e89b7ec404a9a0c18e8aca6ceb944808c53034dfc88443a1e62e6",
+              "verification": "manifest_only"
+            },
+            {
+              "server": "jp",
+              "version_id": "jp-test-b",
+              "pinned": false,
+              "client_version": "TEST_ONLY",
+              "bundle_revision": null,
+              "manifest_sha256": "23829c84e2faf78268270a1de8faf668538ec68dc5481cef7df1eaf03e47107e",
+              "verification": "manifest_only"
+            }
+          ]
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    },
+    {
+      "method": "store.diff",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "state": "available",
+          "from": {
+            "server": "jp",
+            "version_id": "jp-test-a"
+          },
+          "to": {
+            "server": "jp",
+            "version_id": "jp-test-b"
+          },
+          "report": {
+            "schema": "ba-client-data.changelog.v1",
+            "server": "jp",
+            "a": "jp-test-a",
+            "b": "jp-test-b",
+            "generated_utc": "2026-01-01T00:00:00+00:00",
+            "level1_files": {
+              "GameAssembly.dll": "same"
+            },
+            "level2_extracts": {
+              "exceldb-json": {
+                "CharacterExcel.json": {
+                  "status": "changed",
+                  "rows_a": 1,
+                  "rows_b": 2,
+                  "rows_added": 2,
+                  "rows_removed": 1
+                }
+              }
+            },
+            "level3_behavior": "NOT_COMPUTED: TEST_ONLY; row-set difference is not stable-ID behavioral evidence"
+          },
+          "coverage": "existing-report-only; intersection kinds; no stable-ID or L3 inference",
+          "verification": "report_identity_only"
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    },
+    {
+      "method": "metadata.source.view",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "student_id": "test_student",
+          "fields": [
+            {
+              "field": "metadata.school",
+              "value": null,
+              "value_state": "unknown",
+              "source_state": "unknown",
+              "provenance": null,
+              "comparisons": []
+            }
+          ],
+          "comparison_state": "not_verified",
+          "unavailable_groups": [
+            "statistics_association",
+            "store_field_comparison"
+          ],
+          "note": "TEST_ONLY current-field example; no generated provenance"
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    },
+    {
+      "method": "asset_map.list",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "map_version": 1,
+          "inventory_status": "M0-draft",
+          "assets": [
+            {
+              "plannerPath": "frontend/assets/TEST_ONLY.txt",
+              "role": "ui",
+              "addressKey": null,
+              "bundle": null,
+              "textureName": null,
+              "source": "manual",
+              "clientKind": "steam",
+              "note": "TEST_ONLY; physical/source unverified"
+            }
+          ],
+          "verification": "M0_mapping_draft; physical_not_verified"
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    },
+    {
+      "method": "asset_map.check",
+      "message": {
+        "version": 1,
+        "ok": true,
+        "result": {
+          "scope": "all",
+          "rows": [
+            {
+              "plannerPath": "frontend/assets/TEST_ONLY.txt",
+              "role": "ui",
+              "structure_state": "valid",
+              "local_file_state": "missing",
+              "mapping_state": "manual",
+              "physical_state": "not_verified"
+            }
+          ],
+          "physical_validation": "M4_required",
+          "source_verification": "local_structure_only"
+        }
+      },
+      "status": "STATIC_EXPECTED_NOT_EXECUTED"
+    }
+  ],
+  "negative_requests": [
+    {
+      "request": {
+        "version": 1,
+        "method": "store.status",
+        "params": null
+      },
+      "expected": "ValueError invalid_params"
+    },
+    {
+      "request": {
+        "version": 1,
+        "method": "store.diff",
+        "params": {
+          "from": {
+            "server": "jp",
+            "version_id": "jp-test-a"
+          },
+          "to": {
+            "server": "steam",
+            "version_id": "steam-test-b"
+          }
+        }
+      },
+      "expected": "ClientDataStoreError store_mixed_version"
+    },
+    {
+      "request": {
+        "version": 1,
+        "method": "store.diff",
+        "params": {
+          "from": {
+            "server": "jp",
+            "version_id": "jp-test-a"
+          },
+          "to": {
+            "server": "jp",
+            "version_id": "../escape"
+          }
+        }
+      },
+      "expected": "ClientDataStoreError store_invalid_path"
+    },
+    {
+      "request": {
+        "version": 1,
+        "method": "metadata.source.view",
+        "params": {
+          "student_id": "../escape"
+        }
+      },
+      "expected": "ValueError invalid_params"
+    }
+  ],
+  "meaning": "Examples are manually modeled from synthetic source JSON; no candidate method/test was executed."
+}

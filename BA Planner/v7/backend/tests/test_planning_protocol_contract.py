@@ -81,6 +81,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "animation-spectrum-v1.schema.json",
             "asset-map-v1.schema.json",
             "metadata-provenance-v1.schema.json",
+            "developer-tools-metadata-manager-v1.schema.json",
             "planning-student-bond-v1.schema.json",
             "planning-authoring-v1.schema.json",
             *METHOD_SCHEMAS.values(),

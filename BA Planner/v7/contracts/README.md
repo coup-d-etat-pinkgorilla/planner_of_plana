@@ -1166,3 +1166,12 @@ The fixture separates validated full in-memory current-history inputs from
 independent metadata policy oracles; the latter are not persisted profiles.
 Full in-memory fixture cases and metadata policy oracles remain distinct.
 Actual store/RPC/stdio integration and matching Dart gates are verified separately.
+
+## M1 developer tools metadata manager (basic read-only infrastructure)
+
+Developer tools retain the short-lived `{version:1,method,params}` JSON envelope.
+Six read-only dotted methods: store.status, store.versions, store.diff,
+metadata.source.view, asset_map.list, asset_map.check. M1 local structure/existence
+checks never imply physical bundle/texture validation (M4). Existing report-only
+diff is missing/null when no report exists; no store tool subprocess is invoked.
+Unattributed current field provenance stays null; field regeneration/removal is M3.

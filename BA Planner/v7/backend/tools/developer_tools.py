@@ -1186,7 +1186,44 @@ def inspector_inspect(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _metadata_manager_m1():
+    # Lazy import keeps preexisting methods independent of the store/lock.
+    from tools import metadata_manager_m1
+    return metadata_manager_m1
+
+
+def store_status(params):
+    return _metadata_manager_m1().store_status(params, V7_DIR / "ba-data.lock")
+
+
+def store_versions(params):
+    return _metadata_manager_m1().store_versions(params, V7_DIR / "ba-data.lock")
+
+
+def store_diff(params):
+    return _metadata_manager_m1().store_diff(params, V7_DIR / "ba-data.lock")
+
+
+def metadata_source_view(params):
+    return _metadata_manager_m1().metadata_source_view(params, metadata_get, metadata_forms_get)
+
+
+def asset_map_list(params):
+    return _metadata_manager_m1().asset_map_list(params, BACKEND_DIR / "data/asset_map/v1/asset-map.json")
+
+
+def asset_map_check(params):
+    return _metadata_manager_m1().asset_map_check(params, BACKEND_DIR / "data/asset_map/v1/asset-map.json", V7_DIR)
+
+
 METHODS = {
+    'store.status': store_status,
+    'store.versions': store_versions,
+    'store.diff': store_diff,
+    'metadata.source.view': metadata_source_view,
+    'asset_map.list': asset_map_list,
+    'asset_map.check': asset_map_check,
+
     "metadata.list": metadata_list,
     "metadata.get": metadata_get,
     "metadata.save": metadata_save,
@@ -1217,6 +1254,8 @@ def dispatch(request: dict[str, Any]) -> dict[str, Any]:
     handler = METHODS.get(method)
     if handler is None:
         raise ValueError(f"unknown method: {method}")
+    if method in {'asset_map.list', 'store.status', 'metadata.source.view', 'store.versions', 'store.diff', 'asset_map.check'}:
+        _metadata_manager_m1().validate_envelope(request)
     params = request.get("params") or {}
     if not isinstance(params, dict):
         raise ValueError("params must be an object")
