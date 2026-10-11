@@ -42,6 +42,8 @@ void main() {
         'scan_kind': 'student',
         'last_sequence': 2,
         'terminal': 'completed',
+        'control_state': 'terminal',
+        'reason': null,
         'events': [
           {
             'protocol': 1,

@@ -30,6 +30,10 @@ class ScanCompanionState {
     required this.student,
     required this.cancelling,
     required this.onCancel,
+    this.pausedLabel,
+    this.pauseRequested = false,
+    this.onPause,
+    this.onResume,
   });
 
   final String targetTitle;
@@ -43,6 +47,16 @@ class ScanCompanionState {
   final ScanDockStudentFeedback? student;
   final bool cancelling;
   final VoidCallback? onCancel;
+
+  /// FB-10a: 일시정지 중일 때 사유 문구. null이면 진행 중이다.
+  final String? pausedLabel;
+
+  /// 일시정지 요청을 보냈고 아직 멈추지 않았다(안전 지점을 기다리는 중).
+  final bool pauseRequested;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
+
+  bool get paused => pausedLabel != null;
 }
 
 class ScanCompanionDock extends StatelessWidget {
@@ -113,6 +127,22 @@ class _ScanDockProgressSection extends StatelessWidget {
                   ),
                 ),
               ),
+              // FB-10a(FD-142): 일시정지 ↔ 이어서. Esc는 화면 쪽에서 중지로 받는다.
+              if (state.paused)
+                IconButton.filledTonal(
+                  key: const ValueKey('scan-dock-resume'),
+                  tooltip: '이어서',
+                  onPressed: state.onResume,
+                  icon: const Icon(Icons.play_arrow_rounded),
+                )
+              else
+                IconButton.filledTonal(
+                  key: const ValueKey('scan-dock-pause'),
+                  tooltip: state.pauseRequested ? '멈추는 중' : '일시정지',
+                  onPressed: state.pauseRequested ? null : state.onPause,
+                  icon: const Icon(Icons.pause_rounded),
+                ),
+              const SizedBox(width: 6),
               IconButton.filledTonal(
                 key: const ValueKey('scan-dock-cancel'),
                 tooltip: '스캔 취소',
@@ -127,6 +157,14 @@ class _ScanDockProgressSection extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textMuted),
           ),
+          if (state.pausedLabel case final label?) ...[
+            const SizedBox(height: 6),
+            Text(
+              label,
+              key: const ValueKey('scan-dock-paused'),
+              style: const TextStyle(color: AppColors.warning, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,

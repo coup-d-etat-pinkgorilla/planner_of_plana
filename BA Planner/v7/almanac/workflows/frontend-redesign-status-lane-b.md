@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE6-b gate ① RED 수정 완료, gate 재실행 대기(2026-10-11).** 시작 커밋 `1fbc4ddd`. 아래 "FE6-b 착수 기록"·"FE6-b 종료 기록"(FD-095 권장안)·"FE6-b gate ① RED 수정 기록"(맨 끝 사용자 실행 명령). 그 전: FE6-a `2f88e65f`(시작 `dfd1d620`), fb3-dart `739f3bfe`(오케스트레이터 확인, 워크플로 XB 연결 표), T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**fb10a-dart 코드 작성 완료, gate 대기(2026-10-11).** 시작 커밋 `feb4dc2b`. 아래 "fb10a-dart 착수 기록"·"fb10a-dart 종료 기록"(맨 끝 사용자 실행 명령). 그 전: FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -1566,3 +1566,231 @@ Flutter·Dart가 이 환경에 없어 analyze·테스트·golden은 돌리지 �
   1. `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1` → 결과를 오케스트레이터에게 보내고 기다린다.
   2. 승인 뒤 `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1 -UpdateGoldens` → `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
   3. `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b -DryRun` → `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fe6b`(옛 경로 삭제는 오케스트레이터가 함께 처리)
+
+## fb10a-dart 착수 기록 (2026-10-11)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: FB-10a(스캔 일시정지·이어서)의 Dart 연결과 지금 스캔 화면의 최소 연결. 워커 프롬프트 `debug/frontend_redesign_handoff/fb10adart-worker-prompt-20261011.md`, 목록은 CF 로그 2026-10-11 18:15.
+  1. DTO·서비스:
+     - `ScannerEventKind`에 paused·resumed를 더한다.
+     - 새 `ScannerSessionControl`(accepted·control_state·reason·terminal)과 control state·pause reason enum을 만든다.
+     - `ScannerSessionSnapshot`에 control_state·reason을 더한다.
+     - `pauseScannerSession`·`resumeScannerSession`을 ScannerService·client·Process·Mock에 연결한다.
+     - 검사기는 strict로 둔다.
+  2. 새 이벤트 종류로 깨지는 exhaustive 분기를 채운다.
+  3. 지금 스캔 화면(`scan_page.dart`)과 dock을 최소로 연결한다: 일시정지 → paused 사유 표시 → 이어서, Esc = 중지(기존 cancel). 새 디자인은 하지 않는다.
+- 범위 밖:
+  - crop·inventory entry 승인·재화 스캔
+  - "FB-10 형식 고정" 선언
+  - FE8-f2·g2·g3(본격 일시정지 화면)
+  - `backend/**`·`contracts/**`·`frontend/tool/**`
+  - developer_tools(Lane A M2)
+  - 계획·학생·인벤토리 화면
+  - golden harness·기존 golden 테스트
+- 시작 조건: backend 로그 끝에 XB "FB-10a 메인 반영 완료"(2026-10-11 20:55, 12경로 SHA 표)가 있다. 충족했다.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `feb4dc2b67e331892d856bc3d110260b00164183`.
+- XB 반영 SHA 대조(메인 작업 트리 SHA256 = XB 20:55 표):
+  - `contracts/scanner-protocol-v1.schema.json` `320c7c707c614d71c8d2847d4d2c8b8c1d0ca5785c40ac856cd3fff4948bcbd4`: 일치
+  - `contracts/fixtures/scanner_pause_fb10a_v1.json` `e94a59399438793a0e24b7d4180b47b3cfaac9e2f63e6a6acafa0a5c93b67b12`: 일치. 41 cases.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb10adart/pre/<v7 기준 경로>`)과 WIP(작업 트리 ≠ index blob):
+  - `frontend/lib/services/scanner_service.dart`: WIP 있음(unresolved slot·identity DTO, `confirmedFields`). LF.
+  - `frontend/lib/services/planning_protocol_client.dart`: WIP 있음(identity 오류 코드 5개, unresolved_slots·assign_identity 응답 검사). CRLF 주(LF 줄 섞임).
+  - `frontend/lib/services/process_app_service.dart`: WIP 있음(`confirmedFields`, unresolved·assign 위임). CRLF 주.
+  - `frontend/lib/services/mock_app_service.dart`: WIP 있음(identity·unresolved Mock). CRLF 주.
+  - `frontend/lib/ui/pages/scan_page.dart`: WIP 있음(unresolved slot 검토, dock 학생 피드백 단순화 등). LF.
+  - `frontend/lib/ui/widgets/scan_companion_dock.dart`: WIP 있음. CRLF.
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. 스캔 탭 활성 신호 1줄만 넣는다(Esc가 다른 탭에서 스캔을 끊지 않게).
+  - `frontend/test/scanner_protocol_client_test.dart`: WIP 있음. snapshot 예시에 새 필수 키 2개만 더한다.
+- WIP hunk 위치는 HEAD blob과 맞대어 확인하고, 고치는 줄이 겹치거나 맞닿지 않게 둔다(fe_commit은 `git merge-file`로 slice 변경만 올린다).
+  - service 4개와 `scan_page.dart`의 HEAD blob은 작은 pack에서 꺼내 맞댔다.
+  - `scan_companion_dock.dart`·`scanner_protocol_client_test.dart`의 HEAD blob은 4 GB pack 안에 있어 꺼내지 못했다(종료 기록에 적는다).
+- 새 파일(예정): `test/scanner_pause_fb10a_test.dart`(fixture·DTO·client·Mock), `test/scanner_pause_process_e2e_test.dart`(실제 백엔드 pause → paused → resume), `test/scan_page_pause_fb10a_test.dart`(화면·dock 위젯).
+- WIP는 지우거나 정리하지 않는다.
+
+## fb10a-dart 종료 기록 (2026-10-11, 코드 작성 완료·gate 미실행)
+
+FB-10a(스캔 일시정지·이어서)의 Dart 연결과 지금 스캔 화면의 최소 연결을 끝냈다.
+
+Flutter·Dart·Python이 이 환경에 없어 analyze·테스트·process E2E·golden은 돌리지 않았다. 정적 검토만 했고, 통과를 주장하지 않는다.
+
+### 실행 명령·결과
+
+- `flutter analyze`·`flutter test`·process E2E·golden: 실행하지 않았다(SDK 없음).
+- 정적 검토: 별도 검토 에이전트가 바뀐 파일을 pre 사본·HEAD blob·계약(schema·fixture 41 cases)·Python `ScannerPauseControl`과 대조해 읽었다.
+  - 확인한 것: API 시그니처, Dart 3 패턴, lint, fixture 41개의 Dart 경로별 결과, 위젯 테스트 단계별 기대값, merge 안전성.
+  - 컴파일 오류는 없었다.
+- 검토 지적 4건을 고쳤다:
+  1. process E2E 테스트의 불필요한 `dart:async` import(analyze info)를 지웠다.
+  2. 이어서 응답 처리를 바꿨다. 받아들여진 응답으로 상태를 진행으로 돌리지 않고, 응답보다 먼저 오는 `resumed` 이벤트만 따른다. 그 사이 새 `paused`(입력 감지)가 오면 응답이 그것을 덮었기 때문이다.
+  3. 거절된 이어서(대상 창 미준비 → paused 유지·사유 target_minimized·이벤트 없음)의 화면 경로가 테스트로 덮이지 않았다. 위젯 테스트 1개를 더했다.
+  4. Mock resume의 취소 처리 순서를 Python과 같게 맞췄다(미준비 사유 갱신이 취소 확인보다 먼저).
+
+### 고친 파일
+
+- **`lib/services/scanner_service.dart`**
+  - `ScannerEventKind`에 paused·resumed를 더했다.
+  - `ScannerControlState`(running·pause_requested·paused·terminal)와 `ScannerPauseReason`(user·input_detected·target_minimized) enum을 만들었다.
+  - `ScannerSessionControl`:
+    - 네 키를 정확히 받고, 모르는 키·빠진 키는 FormatException이다.
+    - running·terminal이면 reason null, 그 밖에는 사유가 필수다.
+    - terminal 값은 terminal 상태에서만 있다. terminal이면 accepted=false다.
+  - `ScannerSessionSnapshot`에 `controlState`·`reason`을 더했다.
+    - wire에서는 control_state·reason·terminal 키가 필수이고 짝 규칙을 지킨다.
+    - 생성자 인자는 선택이다. 기본값은 terminal 유무로 정해, 기존 호출부·테스트가 바뀌지 않는다.
+  - `ScannerEvent.fromPayload`: paused는 사유를 필수로 받고, resumed는 `reason: null` 키를 필수로 받는다.
+  - `ScannerEvent.pauseReason` getter를 더했다.
+  - `ScannerService.pauseScannerSession`·`resumeScannerSession`을 더했다. client는 exact `session_id`·`generation`을 보낸다.
+  - 이벤트 커서는 그대로다. paused·resumed도 sequence를 따르고, 세션을 끝내지 않는다.
+- **`lib/services/planning_protocol_client.dart`**
+  - 이벤트 검사:
+    - paused: 기본 키 + `reason` 정확히, 사유 셋 중 하나
+    - resumed: 기본 키 + `reason: null` 정확히
+  - `scanner.session.pause`·`resume` 응답은 `_validScannerSessionControl`(schema `sessionControl` allOf)로 검사한다.
+  - `scanner.session.snapshot` 응답은 control 짝 규칙을 더 검사한다.
+  - 오류 코드는 기존 scanner 목록 그대로다(`stale_generation` 등).
+- **`lib/services/process_app_service.dart`**: pause·resume을 `ScannerProtocolClient`에 위임한다.
+- **`lib/services/mock_app_service.dart`**(Python `ScannerPauseControl` 규칙):
+  - pause는 진행 중이고 취소 요청이 없을 때만 받는다. 받으면 `pauseRequested`가 된다.
+  - 진행 단계(10·20·30ms)는 안전 지점 `_mockScannerStep`을 지난다. 요청 뒤 처음 닿은 안전 지점에서 `paused`를 한 번 내고, 남은 단계는 미룬다.
+  - resume은 paused에서만 받는다.
+    - 대상이 준비되지 않았으면 거절하고 사유를 `targetMinimized`로 바꾼다. 이벤트는 없다.
+    - 받으면 `resumed`를 응답보다 먼저 내고 미룬 단계를 잇는다.
+  - 자동 이어서는 없다. 취소는 기존 cancel이고, 멈춘 세션을 취소하면 남은 단계는 하지 않는다.
+  - snapshot에 제어 상태를 싣는다.
+  - 테스트·개발용 `debugRequestScannerPause(sessionId, reason)`는 입력 감지·최소화 같은 자동 일시정지를 흉내 낸다.
+  - 일시정지를 쓰지 않는 기존 흐름의 순서·시각은 그대로다.
+- **`lib/ui/pages/scan_page.dart`**(FD-142 최소 연결, 기존 Material 버튼 그대로):
+  - 진행 중 "일시정지"(`scan-pause`)를 둔다. 요청을 받아들인 뒤에는 "멈추는 중…"(비활성)이 된다.
+  - `paused` 이벤트를 받으면 "이어서"(`scan-resume`)와 사유 문구(`scan-paused-reason`)를 보인다. 사유 문구:
+    - user: "일시정지했습니다."
+    - input_detected: "마우스·키보드 입력이 감지되어 일시정지했습니다."
+    - target_minimized: "게임 창이 최소화되어 일시정지했습니다. 창을 다시 연 뒤 이어서를 누르십시오."
+    - 공통 꼬리: "읽은 칸은 남아 있습니다. 이어서를 누르면 계속하고, Esc를 누르면 중지합니다."
+  - Esc = 중지(기존 `_cancel`): 키트 `KitOverlayEscape`로 등록한다. 스캔 탭이 보이고(`active`) 세션이 진행 중(일시정지 포함)일 때만 등록하고, 뒤에 열린 팝오버가 Esc를 먼저 받는다.
+  - 상태 규칙:
+    - `paused` 이벤트가 pause 응답보다 먼저 와도 상태를 되돌리지 않는다.
+    - 거절된 이어서는 사유만 바꾼다.
+    - snapshot 복구 때는 snapshot 제어 상태가 권위값이다.
+  - companion state에 pause·resume·사유를 싣는다.
+- **`lib/ui/widgets/scan_companion_dock.dart`**: `ScanCompanionState`에 선택 필드(`pausedLabel`·`pauseRequested`·`onPause`·`onResume`)를 더했다.
+  - dock 머리에 일시정지 ↔ 이어서 아이콘(`scan-dock-pause`·`scan-dock-resume`)을 취소 옆에 두고, 사유 문구(`scan-dock-paused`)를 보인다.
+  - 기존 생성자 호출은 그대로 컴파일된다. dock 재작성은 FE8-g3 몫이다.
+- **`lib/ui/app_shell.dart`(+1줄)**: `ScanPage(... active: _section == AppSection.scan,)`.
+  - 이유: 셸은 모든 탭을 오프스테이지로 짓는다. 이 신호가 없으면 다른 탭에서 누른 Esc가 진행 중 스캔을 끊는다.
+  - 학생 전체 스캔의 dock이 덮을 때도 section은 scan이라 Esc가 동작한다.
+- **`test/scanner_protocol_client_test.dart`(+2줄)**: snapshot 예시에 새 필수 키(`control_state: terminal`, `reason: null`)만 더했다. 기대값은 그대로다.
+
+### 새 테스트
+
+- **`test/scanner_pause_fb10a_test.dart`**(펼치면 39개):
+  - fixture 구성: 41 = 유효 15 / 무효 26. 요청 2/8, 제어 응답 7/10, 오류 응답 2, 이벤트 4/8.
+  - 요청: client가 유효 요청 payload를 정확히 보낸다.
+  - 제어 응답 17개: protocol client를 거쳐 유효는 DTO 값이 일치하고, 무효는 `BackendProtocolException`이다.
+  - 오류 응답: `stale_generation`이 그대로 온다.
+  - `ScannerSessionControl.fromWire`: fixture와 추가 무효 7개를 확인한다.
+  - 이벤트 12개: transport를 거쳐 유효는 sequence 2로 받는다. 무효는 프로토콜 오류 + 연결 끊김이고, `fromPayload`도 거부한다.
+  - snapshot: 필수 키·짝 규칙과 무효 8개를 확인한다.
+  - 커서: paused·resumed는 sequence를 따르고 세션을 끝내지 않는다.
+  - Mock 3개:
+    - 순서: phase → paused → resumed → progress → candidate → terminal, sequence 연속
+    - 자동 이어서 없음, 끝난 뒤 pause는 terminal
+    - 입력 감지 일시정지 → 취소 시 cancelled(resumed·candidate 없음)
+    - 모르는 세션은 거부
+- **`test/scanner_pause_process_e2e_test.dart`**(process 1개): 실제 Python 백엔드(JSONL)로 한 번 돈다.
+  - 대상은 고정 1개, matcher는 취소까지 20ms progress를 내는 fixture다. XB Python 실제 JSONL 테스트와 같은 구성이다.
+  - 흐름: pause(응답 pause_requested) → paused(user) → snapshot paused → resume(accepted, running) → resumed → cancel → terminal cancelled.
+  - sequence 연속, paused·resumed 각 1번을 확인한다. 게임 창은 쓰지 않는다.
+- **`test/scan_page_pause_fb10a_test.dart`**(8개):
+  - 일시정지 → "멈추는 중…" → paused 사유 → 자동 이어서 없음 → 이어서 → completed
+  - 입력 감지 사유
+  - 거절된 이어서(최소화 사유, paused 유지)
+  - Esc로 멈춘 스캔 중지(Cancelling… → cancelled, Esc 등록 해제)
+  - 숨은 탭에서 Esc 무시
+  - 학생 전체 스캔 companion의 onPause·onResume
+  - dock 2개(일시정지 버튼·멈추는 중 비활성, 사유·이어서)
+
+### 18:15 목록 검수표
+
+| 18:15 목록 행 | 구현 | 확인 |
+|---|---|---|
+| `scanner.session.pause/resume` 요청: exact session_id/generation | client가 두 키만 보냄 | fixture 요청 테스트 |
+| 응답: exact accepted·control_state(running·pause_requested·paused·terminal)·reason(user·input_detected·target_minimized|null)·terminal(completed·cancelled·failed|null) | `ScannerSessionControl` + protocol 검사(키 정확히, 짝, terminal ⇒ accepted false) | fixture 제어 응답 17 + 추가 무효 7 |
+| pause_requested는 수락, paused 이벤트가 실제 멈춤 | 화면은 "멈추는 중…" → paused 이벤트에서만 멈춤 표시. Mock도 안전 지점에서 paused | Mock·위젯·E2E |
+| 자동 resume 없음 | Mock·화면 모두 사용자 이어서만 | Mock·위젯 테스트(80ms 대기) |
+| 취소는 기존 cancel | Esc·Cancel·dock 취소 모두 `cancelScannerSession` | 위젯(Esc)·Mock·E2E |
+| `ScannerEventKind` paused/resumed | enum + 이벤트 검사(paused 사유 필수, resumed null) | fixture 이벤트 12 |
+| control/pause reason enum | `ScannerControlState`·`ScannerPauseReason`(wireName) | DTO 테스트 |
+| `ScannerSessionSnapshot` control_state/reason | 필드 + wire 필수·짝 검사, 생성자 기본값 | snapshot 테스트·E2E |
+| ScannerService·ProtocolClient pause/resume | interface + client | client 테스트 |
+| ProcessAppService·MockAppService 위임·같은 응답/이벤트/sequence/snapshot | Process 위임, Mock parity | Mock·E2E |
+| 스캔 controller/dock exhaustive 분기 | `_applyEvent`(유일한 exhaustive switch)에 paused·resumed | 정적 확인(grep: 다른 exhaustive switch 없음) |
+| paused 표시·이어서·Esc 취소(FD-142) | scan_page 버튼·사유·Esc, dock 아이콘·사유 | 위젯 테스트 |
+| CF-HANDOFF: 거절된 resume은 paused·target_minimized, 이벤트 없음 | 응답으로만 사유 갱신 | 위젯(거절)·fixture |
+| CF-HANDOFF: snapshot 제어 상태가 권위값 | `_recoverSnapshot`이 snapshot 값을 씀 | 정적 확인 |
+
+### 계약 SHA 대조
+
+착수 때와 같다. 메인 작업 트리 SHA256 = XB 20:55 표.
+
+- `contracts/scanner-protocol-v1.schema.json`: `320c7c707c614d71c8d2847d4d2c8b8c1d0ca5785c40ac856cd3fff4948bcbd4`
+- `contracts/fixtures/scanner_pause_fb10a_v1.json`: `e94a59399438793a0e24b7d4180b47b3cfaac9e2f63e6a6acafa0a5c93b67b12`
+
+`contracts/scan-commit-history-context-v1.schema.json`은 바뀌지 않았다(XB 인계). "FB-10 형식 고정" 선언은 아직 아니다.
+
+### golden 예측
+
+- 기존 장면 변화 0.
+  - 스캔 장면은 `scan-student-review` 하나다. 그 장면은 `ScanStudentReviewWorkspace`만 그리고, 이 위젯은 고치지 않았다(스캐너 세션 소유).
+  - 지금 스캔 화면(`ScanPage`)과 dock을 그리는 golden 장면은 없다.
+  - app_shell 1줄은 화면을 바꾸지 않는다.
+- 새 장면은 만들지 않았다.
+
+### 미검증 항목
+
+- analyze(info 포함)·일반 테스트(예상 +47)·process E2E(예상 +1)·golden을 돌리지 않았다.
+- 실제 게임 일시정지는 사용자 실기로 확인해야 한다(게임 창 최소화·입력 감지·이어서·Esc 중지).
+- process E2E는 Python `.venv`(없으면 `py -3.11`)와 `backend` 폴더를 기존 scanner E2E와 같은 방식으로 찾는다. 임시 폴더에 쓴 스크립트를 `backend`에서 실행한다.
+- Mock 단위 테스트 3개는 실제 타이머(10ms)를 쓴다. pause 호출이 첫 단계보다 늦으면 순서 기대가 깨질 수 있다. 같은 마이크로태스크 흐름이라 실제로는 안전하다고 보았다.
+
+### WIP 보존 확인
+
+- 고친 기존 파일 8개 중 7개에 다른 세션의 미커밋 변경이 있다. 지우거나 정리하지 않았다.
+- 쓰기 직전 PC 파일이 착수 사본과 같은지 바이트로 다시 확인했다.
+- merge 안전성(fe_commit `git merge-file`): HEAD blob을 꺼낼 수 있었던 5개는 slice hunk와 WIP hunk 사이에 바뀌지 않은 줄이 4줄 이상 있다.
+  - `scan_page.dart`: 4·5줄
+  - `planning_protocol_client.dart`: 5줄
+  - `scanner_service.dart`: 12줄
+  - `mock_app_service.dart`: 24줄
+  - `process_app_service.dart`: 17줄
+- `scan_companion_dock.dart`·`scanner_protocol_client_test.dart`의 HEAD blob은 4 GB pack 안에 있어 이 환경에서 꺼내지 못했다.
+  - 바꾼 곳: dock은 생성자 끝·필드 끝·머리 Row 취소 버튼 앞·대상 제목 뒤, 테스트는 snapshot 예시 2줄이다.
+  - `fe_commit -DryRun`이 충돌을 알리면 그 파일만 오케스트레이터가 맞춘다.
+- 줄바꿈: 바꾼 줄은 각 파일의 주 줄바꿈을 따른다(CRLF 주 파일은 CRLF, LF 파일은 LF). 새 테스트 3개는 LF다.
+
+### 발견 사항
+
+1. 지금 스캔 화면에는 진행 중 사유 문구(입력 감지 등)만 보이고 머리글 진행 칩은 없다. FD-148(머리글 진행·일시정지 wn)은 FE8-f2 몫이다.
+2. 학생 전체 스캔 중 dock이 앱을 덮을 때 Esc는 section이 scan이라 동작한다. 앱 창에 포커스가 없으면(게임 창을 누른 뒤) Esc는 앱에 닿지 않는다. dock의 일시정지·취소 버튼이 그 경우의 수단이다.
+3. 실제 백엔드는 진행 중 입력이 감지되면 `paused(input_detected)`를 스스로 낸다. 화면은 이 이벤트로 멈춤을 표시한다. 응답 없이 오는 자동 멈춤이라 "멈추는 중…" 단계가 없다.
+4. 이 slice는 공유 서비스 파일 4개와 scan_page를 스캐너 WIP 위에서 고쳤다. 워크플로 불변식("scan_page·dock은 동결 창에서만")에 대해서는 이번 워커 프롬프트가 범위를 명시했다. 추출한 로직 파일은 없다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fb10adart/pre/<경로>`. 고친 기존 파일 8개를 착수 때 두었다.
+- 끝 사본: `debug/frontend_fb10adart/post/<경로>`. 고친 기존 파일 8개와 새 테스트 3개다.
+- `debug/frontend_fb10adart/commit.json`:
+  - slice `fb10adart`, `status=false`, `post_dir`
+  - modified 8개, added 3개
+  - `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`. 바뀌는 기준 이미지는 없다.
+  - message의 근거: XB source10(backend 로그 20:55, `source10-final.json`), CF 로그 18:15.
+
+### 다음 행동과 사용자 실행 명령
+
+- fb10a-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- PowerShell, `C:\Users\brigh\planner_of_plana\BA Planner\v7`에서 아래 명령을 한 줄씩 실행한다. 하나가 실패하면 거기서 멈추고 결과를 오케스트레이터에게 보낸다. 순서는 오케스트레이터가 정한다.
+  1. Lane A(M2)·Lane B 두 워커가 모두 멈춘 뒤 실행한다. 같은 소스 gate이고, 결과(`debug/frontend_gate/` 요약)를 오케스트레이터에게 보낸 뒤 기다린다.
+     - 예상: analyze 0, 일반 테스트 +47, process +1, golden 변화 0(M2 몫 제외).
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_gate.ps1`
+  2. XB가 FB-10a exact10을 먼저 커밋한 뒤:
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb10adart -DryRun`
+     - `powershell -ExecutionPolicy Bypass -File frontend\tool\fe_commit.ps1 -Slice fb10adart`

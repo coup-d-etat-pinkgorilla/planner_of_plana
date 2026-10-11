@@ -334,6 +334,7 @@ class MockAppService
       studentScanMode: studentScanMode,
     );
     _scannerHistory[session.id] = [];
+    _scannerSessionTargets[session.id] = targetId;
     _scannerSessionRaw[session.id] = (
       scanKind: kind.wireName,
       inventoryScanProfile: kind == ScannerKind.inventory
@@ -341,43 +342,53 @@ class MockAppService
           : null,
     );
     _emitScannerEvent(session, ScannerEventKind.phase, {'phase': 'capturing'});
+    // 각 단계는 FB-10a 안전 지점([_mockScannerStep])을 지난다. 일시정지 요청이 있으면 그 단계 대신 멈춘다.
     _scannerTimers.add(
-      Timer(const Duration(milliseconds: 10), () {
-        if (_scannerTerminals.containsKey(session.id)) return;
-        _emitScannerEvent(session, ScannerEventKind.progress, {
-          'current': 1,
-          'total': kind == ScannerKind.student ? null : 2,
-          'message_key': 'scanner.${kind.name}.recognizing',
-        });
-      }),
+      Timer(
+        const Duration(milliseconds: 10),
+        () => _mockScannerStep(session, () {
+          if (_scannerTerminals.containsKey(session.id)) return;
+          _emitScannerEvent(session, ScannerEventKind.progress, {
+            'current': 1,
+            'total': kind == ScannerKind.student ? null : 2,
+            'message_key': 'scanner.${kind.name}.recognizing',
+          });
+        }),
+      ),
     );
     _scannerTimers.add(
-      Timer(const Duration(milliseconds: 20), () {
-        if (_scannerTerminals.containsKey(session.id)) return;
-        if (scannerScenario == MockScannerScenario.failed) {
-          _emitTerminal(
-            session,
-            'failed',
-            error: const {
-              'code': 'mock_failure',
-              'message': 'Mock scan failed',
-            },
-          );
-          return;
-        }
-        final candidate = _mockCandidate(session);
-        _scannerCandidates['${session.id}:${candidate.id}'] = candidate;
-        _emitScannerEvent(session, ScannerEventKind.candidate, {
-          'candidate': _candidateWire(candidate),
-        });
-      }),
+      Timer(
+        const Duration(milliseconds: 20),
+        () => _mockScannerStep(session, () {
+          if (_scannerTerminals.containsKey(session.id)) return;
+          if (scannerScenario == MockScannerScenario.failed) {
+            _emitTerminal(
+              session,
+              'failed',
+              error: const {
+                'code': 'mock_failure',
+                'message': 'Mock scan failed',
+              },
+            );
+            return;
+          }
+          final candidate = _mockCandidate(session);
+          _scannerCandidates['${session.id}:${candidate.id}'] = candidate;
+          _emitScannerEvent(session, ScannerEventKind.candidate, {
+            'candidate': _candidateWire(candidate),
+          });
+        }),
+      ),
     );
     _scannerTimers.add(
-      Timer(const Duration(milliseconds: 30), () {
-        if (!_scannerTerminals.containsKey(session.id)) {
-          _emitTerminal(session, 'completed');
-        }
-      }),
+      Timer(
+        const Duration(milliseconds: 30),
+        () => _mockScannerStep(session, () {
+          if (!_scannerTerminals.containsKey(session.id)) {
+            _emitTerminal(session, 'completed');
+          }
+        }),
+      ),
     );
     return session;
   }
@@ -388,6 +399,7 @@ class MockAppService
   ) async {
     final terminal = _scannerTerminals[session.id];
     if (terminal != null) return {'accepted': false, 'terminal': terminal};
+    _scannerCancelRequested.add(session.id);
     _scannerTimers.add(
       Timer(
         const Duration(milliseconds: 10),
@@ -397,15 +409,65 @@ class MockAppService
     return {'accepted': true, 'terminal': null};
   }
 
+  /// FB-10a(Python `ScannerPauseControl`와 같은 규칙): 진행 중이고 취소 요청이 없을 때만 받아들여
+  /// `pauseRequested`가 된다. 다음 안전 지점에서 `paused` 이벤트를 낸다.
+  @override
+  Future<ScannerSessionControl> pauseScannerSession(
+    ScannerSession session,
+  ) async {
+    _requireMockScannerSession(session);
+    return _requestMockScannerPause(session.id, ScannerPauseReason.user);
+  }
+
+  /// FB-10a: `paused`일 때만 받는다. 대상 창이 준비되지 않았으면 거절하고 사유를 `targetMinimized`로 바꾼다
+  /// (이벤트 없음). 받아들이면 `resumed`를 응답보다 먼저 내고 미룬 단계를 다시 잇는다.
+  @override
+  Future<ScannerSessionControl> resumeScannerSession(
+    ScannerSession session,
+  ) async {
+    _requireMockScannerSession(session);
+    final id = session.id;
+    if (_scannerTerminals.containsKey(id) ||
+        _scannerControlStates[id] != ScannerControlState.paused) {
+      return _mockScannerControl(id);
+    }
+    final targetId = _scannerSessionTargets[id];
+    final ready = _scannerTargets.any(
+      (item) => item.id == targetId && item.status == ScannerTargetStatus.ready,
+    );
+    if (!ready) {
+      _scannerPauseReasons[id] = ScannerPauseReason.targetMinimized;
+      return _mockScannerControl(id);
+    }
+    if (_scannerCancelRequested.contains(id)) return _mockScannerControl(id);
+    _scannerControlStates[id] = ScannerControlState.running;
+    _scannerPauseReasons.remove(id);
+    _emitScannerEvent(session, ScannerEventKind.resumed, {'reason': null});
+    final deferred = _scannerDeferredSteps.remove(id) ?? const <void Function()>[];
+    for (var index = 0; index < deferred.length; index += 1) {
+      final step = deferred[index];
+      _scannerTimers.add(
+        Timer(
+          Duration(milliseconds: 10 * (index + 1)),
+          () => _mockScannerStep(session, step),
+        ),
+      );
+    }
+    return _mockScannerControl(id, accepted: true);
+  }
+
   @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
     final events = _scannerHistory[session.id] ?? const <ScannerEvent>[];
+    final control = _mockScannerControl(session.id);
     return ScannerSessionSnapshot(
       sessionId: session.id,
       generation: session.generation,
       kind: session.kind,
       lastSequence: events.isEmpty ? 0 : events.last.sequence,
       terminal: _scannerTerminals[session.id],
+      controlState: control.controlState,
+      reason: control.reason,
       events: events,
       candidates: _scannerCandidates.entries
           .where((entry) => entry.key.startsWith('${session.id}:'))
@@ -970,6 +1032,90 @@ class MockAppService
     }
     _emitScannerEvent(session, ScannerEventKind.terminal, payload);
     _scannerTerminals[session.id] = outcome;
+    _scannerControlStates.remove(session.id);
+    _scannerPauseReasons.remove(session.id);
+    _scannerDeferredSteps.remove(session.id);
+  }
+
+  // ---- FB-10a Mock pause/resume (Python ScannerPauseControl parity) ----
+  // 진행 단계 사이(안전 지점)에서만 멈춘다. 자동으로 이어 가지 않는다. 취소는 기존 cancel 그대로다.
+  final Map<String, ScannerControlState> _scannerControlStates = {};
+  final Map<String, ScannerPauseReason> _scannerPauseReasons = {};
+  final Map<String, List<void Function()>> _scannerDeferredSteps = {};
+  final Map<String, String> _scannerSessionTargets = {};
+  final Set<String> _scannerCancelRequested = {};
+
+  void _requireMockScannerSession(ScannerSession session) {
+    if (!_scannerHistory.containsKey(session.id)) {
+      throw StateError('session_not_found');
+    }
+  }
+
+  ScannerSessionControl _mockScannerControl(
+    String sessionId, {
+    bool accepted = false,
+  }) {
+    final terminal = _scannerTerminals[sessionId];
+    if (terminal != null) {
+      return ScannerSessionControl(
+        accepted: false,
+        controlState: ScannerControlState.terminal,
+        terminal: terminal,
+      );
+    }
+    final state =
+        _scannerControlStates[sessionId] ?? ScannerControlState.running;
+    return ScannerSessionControl(
+      accepted: accepted,
+      controlState: state,
+      reason: state == ScannerControlState.running
+          ? null
+          : _scannerPauseReasons[sessionId],
+    );
+  }
+
+  ScannerSessionControl _requestMockScannerPause(
+    String sessionId,
+    ScannerPauseReason reason,
+  ) {
+    final accepted =
+        !_scannerTerminals.containsKey(sessionId) &&
+        !_scannerCancelRequested.contains(sessionId) &&
+        (_scannerControlStates[sessionId] ?? ScannerControlState.running) ==
+            ScannerControlState.running;
+    if (accepted) {
+      _scannerControlStates[sessionId] = ScannerControlState.pauseRequested;
+      _scannerPauseReasons[sessionId] = reason;
+    }
+    return _mockScannerControl(sessionId, accepted: accepted);
+  }
+
+  /// 입력 감지·창 최소화 같은 자동 일시정지를 흉내 낸다(테스트·개발용). 다음 안전 지점에서 [reason]으로 멈춘다.
+  @visibleForTesting
+  ScannerSessionControl debugRequestScannerPause(
+    String sessionId,
+    ScannerPauseReason reason,
+  ) => _requestMockScannerPause(sessionId, reason);
+
+  /// 안전 지점. 진행 중이면 [step]을 바로 하고, 일시정지 요청·일시정지 중이면 미룬다. 요청 뒤 처음 닿은 안전
+  /// 지점에서 `paused`를 한 번 낸다.
+  void _mockScannerStep(ScannerSession session, void Function() step) {
+    final id = session.id;
+    final state = _scannerControlStates[id] ?? ScannerControlState.running;
+    if (state == ScannerControlState.running ||
+        _scannerTerminals.containsKey(id)) {
+      step();
+      return;
+    }
+    // 멈춘(또는 멈추려던) 세션을 취소했으면 남은 단계는 하지 않고 paused도 내지 않는다. 끝은 cancel이 낸다.
+    if (_scannerCancelRequested.contains(id)) return;
+    _scannerDeferredSteps.putIfAbsent(id, () => []).add(step);
+    if (state == ScannerControlState.pauseRequested) {
+      _scannerControlStates[id] = ScannerControlState.paused;
+      _emitScannerEvent(session, ScannerEventKind.paused, {
+        'reason': _scannerPauseReasons[id]!.wireName,
+      });
+    }
   }
 
   @override

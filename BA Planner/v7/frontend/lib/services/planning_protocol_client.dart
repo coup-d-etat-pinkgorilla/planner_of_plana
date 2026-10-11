@@ -669,6 +669,8 @@ class PlanningProtocolClient {
           'candidate',
           'diagnostic',
           'terminal',
+          'paused',
+          'resumed',
         }.contains(value['event_kind']);
     if (!baseValid) return false;
     return switch (value['event_kind']) {
@@ -725,6 +727,19 @@ class PlanningProtocolClient {
             }.contains(value['outcome']) &&
             (!value.containsKey('error') ||
                 _validScannerTerminalError(value['error'])),
+      // FB-10a: 기본 키 + `reason` 정확히. paused는 사유 셋 중 하나, resumed는 null.
+      'paused' =>
+        value.length == baseKeys.length + 1 &&
+            value.containsKey('reason') &&
+            const {
+              'user',
+              'input_detected',
+              'target_minimized',
+            }.contains(value['reason']),
+      'resumed' =>
+        value.length == baseKeys.length + 1 &&
+            value.containsKey('reason') &&
+            value['reason'] == null,
       _ => false,
     };
   }
@@ -736,6 +751,46 @@ class PlanningProtocolClient {
         value['code'] is String &&
         (value['code'] as String).isNotEmpty &&
         value['message'] is String;
+  }
+
+  /// FB-10a `sessionControl`(pause·resume 응답): 네 키 정확히, 끝난 세션은 accepted=false.
+  bool _validScannerSessionControl(Map<String, dynamic> payload) =>
+      payload.length == 4 &&
+      payload.containsKey('accepted') &&
+      payload['accepted'] is bool &&
+      _validScannerControlFields(payload) &&
+      !(payload['control_state'] == 'terminal' && payload['accepted'] == true);
+
+  /// FB-10a control_state·reason·terminal의 짝(schema `allOf`). 세 키가 모두 있어야 한다. running·terminal이면
+  /// reason이 null이고 그 밖에는 사유 셋 중 하나, terminal 값은 terminal 상태에서만 있다.
+  bool _validScannerControlFields(Map<String, dynamic> value) {
+    if (!value.containsKey('control_state') ||
+        !value.containsKey('reason') ||
+        !value.containsKey('terminal')) {
+      return false;
+    }
+    final state = value['control_state'];
+    final reason = value['reason'];
+    final terminal = value['terminal'];
+    if (!const {
+      'running',
+      'pause_requested',
+      'paused',
+      'terminal',
+    }.contains(state)) {
+      return false;
+    }
+    final reasonValid = state == 'running' || state == 'terminal'
+        ? reason == null
+        : const {
+            'user',
+            'input_detected',
+            'target_minimized',
+          }.contains(reason);
+    final terminalValid = state == 'terminal'
+        ? const {'completed', 'cancelled', 'failed'}.contains(terminal)
+        : terminal == null;
+    return reasonValid && terminalValid;
   }
 
   /// FB-4 optional target metadata. 키가 없거나 null이면 "모름"으로 통과하고, 값이 있으면
@@ -787,11 +842,14 @@ class PlanningProtocolClient {
               'tactical_lobby',
             }.contains(payload['scan_kind']),
       'scanner.session.cancel' => payload['accepted'] is bool,
+      'scanner.session.pause' ||
+      'scanner.session.resume' => _validScannerSessionControl(payload),
       'scanner.session.snapshot' =>
         payload['session_id'] is String &&
             payload['generation'] is int &&
             payload['events'] is List &&
-            payload['candidates'] is List,
+            payload['candidates'] is List &&
+            _validScannerControlFields(payload),
       'scanner.candidate.get' ||
       'scanner.candidate.review' ||
       'scanner.candidate.revalidate' => _validScannerCandidate(

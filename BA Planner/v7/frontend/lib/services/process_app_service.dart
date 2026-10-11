@@ -1093,6 +1093,14 @@ class ProcessAppService
       _scanner.cancelScannerSession(session);
 
   @override
+  Future<ScannerSessionControl> pauseScannerSession(ScannerSession session) =>
+      _scanner.pauseScannerSession(session);
+
+  @override
+  Future<ScannerSessionControl> resumeScannerSession(ScannerSession session) =>
+      _scanner.resumeScannerSession(session);
+
+  @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) =>
       _scanner.scannerSnapshot(session);
 

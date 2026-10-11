@@ -47,6 +47,12 @@ enum ScannerEventKind {
   candidate,
   diagnostic,
   terminal,
+
+  /// FB-10a: 안전 지점에서 실제로 멈췄다(`reason` = user·input_detected·target_minimized).
+  paused,
+
+  /// FB-10a: 이어서가 받아들여져 다시 진행한다(`reason` = null).
+  resumed,
 }
 
 enum ScannerEventDecision {
@@ -55,6 +61,115 @@ enum ScannerEventDecision {
   duplicateOrOutOfOrder,
   snapshotRequired,
   afterTerminal,
+}
+
+/// FB-10a 세션 제어 상태(`scanner.session.pause`·`resume` 응답과 snapshot의 `control_state`).
+///
+/// [pauseRequested]는 요청을 받아들였다는 뜻일 뿐이다. 실제 멈춤은 sequence가 붙은 `paused` 이벤트다.
+enum ScannerControlState {
+  running('running'),
+  pauseRequested('pause_requested'),
+  paused('paused'),
+  terminal('terminal');
+
+  const ScannerControlState(this.wireName);
+  final String wireName;
+
+  static ScannerControlState fromWire(Object? value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () =>
+        throw FormatException('Unknown scanner control state: $value'),
+  );
+}
+
+/// FB-10a 일시정지 사유. 어떤 사유든 자동으로 이어 가지 않는다(사용자가 이어서를 눌러야 한다).
+enum ScannerPauseReason {
+  user('user'),
+  inputDetected('input_detected'),
+  targetMinimized('target_minimized');
+
+  const ScannerPauseReason(this.wireName);
+  final String wireName;
+
+  static ScannerPauseReason fromWire(Object? value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () => throw FormatException('Unknown scanner pause reason: $value'),
+  );
+}
+
+const _scannerTerminalOutcomes = {'completed', 'cancelled', 'failed'};
+
+/// control_state·reason·terminal의 짝(schema `allOf`)을 확인한다. running·terminal이면 reason이 null이고,
+/// 그 밖에는 사유가 있다. terminal 값은 terminal 상태에서만 있다.
+void _checkScannerControlFields(
+  ScannerControlState state,
+  ScannerPauseReason? reason,
+  Object? terminal,
+) {
+  final reasonOk =
+      state == ScannerControlState.running ||
+          state == ScannerControlState.terminal
+      ? reason == null
+      : reason != null;
+  final terminalOk = state == ScannerControlState.terminal
+      ? _scannerTerminalOutcomes.contains(terminal)
+      : terminal == null;
+  if (!reasonOk || !terminalOk) {
+    throw FormatException(
+      'Invalid scanner control fields: ${state.wireName} / ${reason?.wireName} / $terminal',
+    );
+  }
+}
+
+/// `scanner.session.pause`·`scanner.session.resume` 응답(FB-10a). 네 키를 정확히 받고 모르는 키는 거부한다.
+///
+/// - pause가 받아들여지면 [controlState]는 `pauseRequested`다. 멈춤은 뒤따르는 `paused` 이벤트로 안다.
+/// - resume이 대상 창 미준비로 거절되면 `paused`에 남고 [reason]이 `targetMinimized`로 바뀐다(이벤트 없음).
+/// - 끝난 세션은 `terminal`이고 [accepted]는 항상 false다.
+class ScannerSessionControl {
+  const ScannerSessionControl({
+    required this.accepted,
+    required this.controlState,
+    this.reason,
+    this.terminal,
+  });
+
+  final bool accepted;
+  final ScannerControlState controlState;
+  final ScannerPauseReason? reason;
+
+  /// `completed`·`cancelled`·`failed`. 끝나지 않았으면 null.
+  final String? terminal;
+
+  static const wireKeys = {'accepted', 'control_state', 'reason', 'terminal'};
+
+  factory ScannerSessionControl.fromWire(Map<String, dynamic> wire) {
+    if (wire.length != wireKeys.length || !wire.keys.toSet().containsAll(wireKeys)) {
+      throw FormatException(
+        'Invalid scanner session control keys: ${wire.keys.toList()..sort()}',
+      );
+    }
+    final accepted = wire['accepted'];
+    if (accepted is! bool) {
+      throw const FormatException('Scanner session control accepted must be bool');
+    }
+    final state = ScannerControlState.fromWire(wire['control_state']);
+    final rawReason = wire['reason'];
+    final reason = rawReason == null
+        ? null
+        : ScannerPauseReason.fromWire(rawReason);
+    final terminal = wire['terminal'];
+    _checkScannerControlFields(state, reason, terminal);
+    if (state == ScannerControlState.terminal && accepted) {
+      throw const FormatException('A terminal scanner session never accepts');
+    }
+    return ScannerSessionControl(
+      accepted: accepted,
+      controlState: state,
+      reason: reason,
+      terminal: terminal as String?,
+    );
+  }
 }
 
 /// `scanner.target.list` 행의 `game` 판별값(FB-4, `blue_archive` 또는 null).
@@ -294,14 +409,33 @@ class ScannerEvent {
   }
 
   factory ScannerEvent.fromPayload(Map<String, dynamic> wire) {
+    final eventKind = ScannerEventKind.values.byName(
+      wire['event_kind'] as String,
+    );
+    // FB-10a: paused는 사유가 꼭 있고, resumed는 `reason: null`을 꼭 싣는다.
+    if (eventKind == ScannerEventKind.paused) {
+      ScannerPauseReason.fromWire(wire['reason']);
+    } else if (eventKind == ScannerEventKind.resumed &&
+        (!wire.containsKey('reason') || wire['reason'] != null)) {
+      throw const FormatException('Scanner resumed event needs reason: null');
+    }
     return ScannerEvent(
       sessionId: wire['session_id'] as String,
       generation: wire['generation'] as int,
       sequence: wire['sequence'] as int,
       kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
-      eventKind: ScannerEventKind.values.byName(wire['event_kind'] as String),
+      eventKind: eventKind,
       payload: wire,
     );
+  }
+
+  /// `paused` 이벤트의 사유(FB-10a). 다른 종류이거나 사유를 읽지 못하면 null.
+  ScannerPauseReason? get pauseReason {
+    if (eventKind != ScannerEventKind.paused) return null;
+    for (final reason in ScannerPauseReason.values) {
+      if (reason.wireName == payload['reason']) return reason;
+    }
+    return null;
   }
 }
 
@@ -314,8 +448,15 @@ class ScannerSessionSnapshot {
     required this.terminal,
     required List<ScannerEvent> events,
     required List<ScannerCandidate> candidates,
+    ScannerControlState? controlState,
+    this.reason,
   }) : events = List.unmodifiable(events),
-       candidates = List.unmodifiable(candidates);
+       candidates = List.unmodifiable(candidates),
+       controlState =
+           controlState ??
+           (terminal == null
+               ? ScannerControlState.running
+               : ScannerControlState.terminal);
 
   final String sessionId;
   final int generation;
@@ -325,10 +466,28 @@ class ScannerSessionSnapshot {
   final List<ScannerEvent> events;
   final List<ScannerCandidate> candidates;
 
+  /// FB-10a 제어 상태. 이벤트 틈을 메우거나 거절된 이어서의 사유가 바뀌었을 때 이 값이 권위값이다.
+  final ScannerControlState controlState;
+
+  /// 일시정지 사유(FB-10a). running·terminal이면 null.
+  final ScannerPauseReason? reason;
+
   factory ScannerSessionSnapshot.fromWire(Map<String, dynamic> wire) {
     final events = wire['events'];
     final candidates = wire['candidates'];
     final terminal = wire['terminal'];
+    // FB-10a: control_state·reason·terminal은 필수 키다(값 null 허용 여부는 짝 규칙이 정한다).
+    if (!wire.containsKey('control_state') ||
+        !wire.containsKey('reason') ||
+        !wire.containsKey('terminal')) {
+      throw const FormatException('Scanner snapshot needs control fields');
+    }
+    final controlState = ScannerControlState.fromWire(wire['control_state']);
+    final rawReason = wire['reason'];
+    final reason = rawReason == null
+        ? null
+        : ScannerPauseReason.fromWire(rawReason);
+    _checkScannerControlFields(controlState, reason, terminal);
     if (wire['session_id'] is! String ||
         wire['generation'] is! int ||
         wire['scan_kind'] is! String ||
@@ -384,6 +543,8 @@ class ScannerSessionSnapshot {
       terminal: terminal as String?,
       events: parsedEvents,
       candidates: parsedCandidates,
+      controlState: controlState,
+      reason: reason,
     );
   }
 }
@@ -436,6 +597,13 @@ abstract interface class ScannerService {
     InventoryScanProfile? inventoryScanProfile,
   });
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session);
+
+  /// FB-10a 일시정지 요청. `pauseRequested` 응답은 수락일 뿐이고, 실제 멈춤은 `paused` 이벤트다.
+  Future<ScannerSessionControl> pauseScannerSession(ScannerSession session);
+
+  /// FB-10a 이어서. 받아들여지면 `resumed` 이벤트가 따른다. 대상 창이 준비되지 않으면 거절되어 `paused`에
+  /// 남는다(사유 `targetMinimized`). 중지는 [cancelScannerSession]이다.
+  Future<ScannerSessionControl> resumeScannerSession(ScannerSession session);
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session);
   Future<ScannerCandidate> getScannerCandidate(
     ScannerSession session,
@@ -567,6 +735,24 @@ class ScannerProtocolClient implements ScannerService {
         'session_id': session.id,
         'generation': session.generation,
       });
+  @override
+  Future<ScannerSessionControl> pauseScannerSession(
+    ScannerSession session,
+  ) async => ScannerSessionControl.fromWire(
+    await _client.send('scanner.session.pause', {
+      'session_id': session.id,
+      'generation': session.generation,
+    }),
+  );
+  @override
+  Future<ScannerSessionControl> resumeScannerSession(
+    ScannerSession session,
+  ) async => ScannerSessionControl.fromWire(
+    await _client.send('scanner.session.resume', {
+      'session_id': session.id,
+      'generation': session.generation,
+    }),
+  );
   @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
     final snapshot = ScannerSessionSnapshot.fromWire(

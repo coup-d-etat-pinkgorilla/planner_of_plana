@@ -8,6 +8,7 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../../services/student_scan_diagnostic.dart';
 import '../../services/window_dock_service.dart';
+import '../kit/kit_overlay.dart' show KitOverlayEscape;
 import '../scan/scan_repository_sync.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryLoadErrorText, repositoryProfileWithRevision;
@@ -29,6 +30,7 @@ class ScanPage extends StatefulWidget {
     this.studentScanDiagnosticFileService =
         const NativeStudentScanDiagnosticFileService(),
     this.now = DateTime.now,
+    this.active = true,
   });
 
   final AppService service;
@@ -39,6 +41,9 @@ class ScanPage extends StatefulWidget {
   final WindowDockService windowDockService;
   final StudentScanDiagnosticFileService studentScanDiagnosticFileService;
   final DateTime Function() now;
+
+  /// 스캔 탭이 보이는가. 보일 때만 Esc가 진행 중(일시정지 포함) 스캔을 중지한다(FD-142, fb10a-dart).
+  final bool active;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -93,6 +98,13 @@ class _ScanPageState extends State<ScanPage> {
   bool _companionActive = false;
   bool _exportingStudentDiagnostic = false;
 
+  /// FB-10a 세션 제어(진행 단계 안의 하위 상태). pause 응답의 `pauseRequested`는 수락일 뿐이고,
+  /// `paused` 이벤트를 받아야 멈춘 것으로 본다.
+  ScannerControlState _control = ScannerControlState.running;
+  ScannerPauseReason? _pauseReason;
+  bool _controlBusy = false;
+  bool _escapeRegistered = false;
+
   bool get _connected =>
       widget.service.state.value.connection == BackendConnection.connected;
   bool get _recognitionReady => _readiness?['ready'] == true;
@@ -137,6 +149,7 @@ class _ScanPageState extends State<ScanPage> {
 
   @override
   void dispose() {
+    KitOverlayEscape.remove(this);
     if (_companionActive) unawaited(widget.windowDockService.restore());
     widget.service.state.removeListener(_connectionChanged);
     unawaited(_subscription?.cancel());
@@ -306,6 +319,8 @@ class _ScanPageState extends State<ScanPage> {
       _sessionError = null;
       _pendingStartEvents.clear();
       _resetProjection();
+      _control = ScannerControlState.running;
+      _pauseReason = null;
     });
     // 세션의 첫 적용 base revision: 시작 직전 state를 다시 읽어 권위값을 맞춘다. 읽지 못하면 이미 받은 값을
     // 그대로 쓰고 알린다(적용은 revision_conflict 재조회로 다시 맞춘다).
@@ -389,6 +404,110 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  /// FB-10a 일시정지 요청. 응답이 `pauseRequested`면 "멈추는 중"으로 두고, 실제 멈춤은 `paused` 이벤트로 바꾼다.
+  /// `paused` 이벤트가 응답보다 먼저 와도 상태를 되돌리지 않는다.
+  Future<void> _pause() async {
+    final scanner = _scanner;
+    final session = _session;
+    if (scanner == null ||
+        session == null ||
+        _stage != _SessionStage.running ||
+        _control != ScannerControlState.running ||
+        _controlBusy) {
+      return;
+    }
+    setState(() {
+      _controlBusy = true;
+      _sessionError = null;
+    });
+    _publishCompanion();
+    try {
+      final control = await scanner.pauseScannerSession(session);
+      if (!mounted || !identical(_session, session)) return;
+      setState(() {
+        if (_stage != _SessionStage.running ||
+            _control != ScannerControlState.running) {
+          return;
+        }
+        if (control.controlState == ScannerControlState.pauseRequested ||
+            control.controlState == ScannerControlState.paused) {
+          _control = control.controlState;
+          _pauseReason = control.reason;
+        }
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _sessionError = '일시정지 요청이 실패했습니다: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _controlBusy = false);
+        _publishCompanion();
+      }
+    }
+  }
+
+  /// FB-10a 이어서. 받아들여지면 `resumed` 이벤트와 함께 진행으로 돌아간다. 대상 창이 준비되지 않아 거절되면
+  /// 일시정지에 남고 사유만 바꾼다(이벤트 없이 응답으로만 온다).
+  Future<void> _resume() async {
+    final scanner = _scanner;
+    final session = _session;
+    if (scanner == null ||
+        session == null ||
+        _stage != _SessionStage.running ||
+        _control != ScannerControlState.paused ||
+        _controlBusy) {
+      return;
+    }
+    setState(() {
+      _controlBusy = true;
+      _sessionError = null;
+    });
+    _publishCompanion();
+    try {
+      final control = await scanner.resumeScannerSession(session);
+      if (!mounted || !identical(_session, session)) return;
+      setState(() {
+        // 받아들여졌으면 백엔드가 `resumed` 이벤트를 응답보다 먼저 낸다. 진행으로의 전환은 그 이벤트만 따른다
+        // (그 사이 새 `paused`가 왔다면 응답으로 덮지 않는다).
+        if (_stage != _SessionStage.running || control.accepted) return;
+        if (control.controlState == ScannerControlState.paused &&
+            _control == ScannerControlState.paused) {
+          _pauseReason = control.reason;
+        }
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _sessionError = '이어서 요청이 실패했습니다: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _controlBusy = false);
+        _publishCompanion();
+      }
+    }
+  }
+
+  /// Esc 처리 등록을 단계에 맞춘다. 탭이 보이고 세션이 진행 중(일시정지 포함)일 때만 Esc = 중지(기존 cancel)다.
+  /// 단계는 여러 곳에서 바뀌므로 build마다 맞춘다. 이미 등록돼 있으면 다시 넣지 않는다(뒤에 열린 팝오버의 Esc가 먼저).
+  void _syncEscape() {
+    final wanted =
+        widget.active && _stage == _SessionStage.running && _session != null;
+    if (wanted == _escapeRegistered) return;
+    _escapeRegistered = wanted;
+    if (wanted) {
+      KitOverlayEscape.push(this, context, _cancelByEscape);
+    } else {
+      KitOverlayEscape.remove(this);
+    }
+  }
+
+  /// [KitOverlayEscape]는 부른 항목을 스스로 지운다.
+  void _cancelByEscape() {
+    _escapeRegistered = false;
+    unawaited(_cancel());
+  }
+
   Future<void> _recoverSnapshot() async {
     final scanner = _scanner;
     final session = _session;
@@ -413,6 +532,11 @@ class _ScanPageState extends State<ScanPage> {
           _outcome = snapshot.terminal;
           _stage = _SessionStage.terminal;
         }
+        // FB-10a: 이벤트 틈·거절된 이어서의 사유 변경은 snapshot의 제어 상태가 권위값이다.
+        _control = snapshot.controlState == ScannerControlState.terminal
+            ? ScannerControlState.running
+            : snapshot.controlState;
+        _pauseReason = snapshot.reason;
         if (_stage == _SessionStage.terminal) _recordRecent();
       });
     } catch (error) {
@@ -525,6 +649,22 @@ class _ScanPageState extends State<ScanPage> {
         onCancel: _stage == _SessionStage.running
             ? () => unawaited(_cancel())
             : null,
+        pausedLabel: _pausedLabel,
+        pauseRequested:
+            _stage == _SessionStage.running &&
+            _control == ScannerControlState.pauseRequested,
+        onPause:
+            _stage == _SessionStage.running &&
+                _control == ScannerControlState.running &&
+                !_controlBusy
+            ? () => unawaited(_pause())
+            : null,
+        onResume:
+            _stage == _SessionStage.running &&
+                _control == ScannerControlState.paused &&
+                !_controlBusy
+            ? () => unawaited(_resume())
+            : null,
       ),
     );
   }
@@ -613,6 +753,14 @@ class _ScanPageState extends State<ScanPage> {
             ScannerCandidate.fromWire(Map<String, dynamic>.from(raw)),
           );
         }
+        break;
+      case ScannerEventKind.paused:
+        _control = ScannerControlState.paused;
+        _pauseReason = event.pauseReason;
+        break;
+      case ScannerEventKind.resumed:
+        _control = ScannerControlState.running;
+        _pauseReason = null;
         break;
       case ScannerEventKind.terminal:
         _outcome = event.payload['outcome'] as String?;
@@ -1027,8 +1175,24 @@ class _ScanPageState extends State<ScanPage> {
     };
   }
 
+  /// 일시정지 중일 때 보일 문구(FD-142). 진행 중이 아니면 null.
+  String? get _pausedLabel {
+    if (_stage != _SessionStage.running ||
+        _control != ScannerControlState.paused) {
+      return null;
+    }
+    final reason = switch (_pauseReason) {
+      ScannerPauseReason.inputDetected => '마우스·키보드 입력이 감지되어 일시정지했습니다.',
+      ScannerPauseReason.targetMinimized =>
+        '게임 창이 최소화되어 일시정지했습니다. 창을 다시 연 뒤 이어서를 누르십시오.',
+      ScannerPauseReason.user || null => '일시정지했습니다.',
+    };
+    return '$reason 읽은 칸은 남아 있습니다. 이어서를 누르면 계속하고, Esc를 누르면 중지합니다.';
+  }
+
   @override
   Widget build(BuildContext context) {
+    _syncEscape();
     final scannerMissing = _scanner == null;
     final repositoryMissing = _repository == null;
     final readinessMissing = (_readiness?['missing'] as List?)?.length ?? 0;
@@ -1294,6 +1458,35 @@ class _ScanPageState extends State<ScanPage> {
                   _stage == _SessionStage.cancelling ? 'Cancelling…' : 'Cancel',
                 ),
               ),
+              // FB-10a(FD-142): 진행 중에는 일시정지, 멈춘 뒤에는 이어서. 끝나면 둘 다 숨긴다.
+              if (_stage == _SessionStage.running &&
+                  _control == ScannerControlState.paused)
+                FilledButton.icon(
+                  key: const ValueKey('scan-resume'),
+                  onPressed: _controlBusy ? null : _resume,
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('이어서'),
+                )
+              else if (_stage == _SessionStage.running)
+                FilledButton.tonalIcon(
+                  key: const ValueKey('scan-pause'),
+                  onPressed:
+                      _controlBusy || _control != ScannerControlState.running
+                      ? null
+                      : _pause,
+                  icon: const Icon(Icons.pause),
+                  label: Text(
+                    _control == ScannerControlState.pauseRequested
+                        ? '멈추는 중…'
+                        : '일시정지',
+                  ),
+                ),
+              if (_pausedLabel case final label?)
+                Text(
+                  label,
+                  key: const ValueKey('scan-paused-reason'),
+                  style: const TextStyle(color: AppColors.warning),
+                ),
               OutlinedButton.icon(
                 key: const ValueKey('scan-retry'),
                 onPressed: _stage == _SessionStage.terminal && _canStart

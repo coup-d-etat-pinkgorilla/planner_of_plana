@@ -412,6 +412,7 @@ class _AppShellState extends State<AppShell>
                                     if (!mounted) return;
                                     _scanCompanion.value = companion;
                                   },
+                                  active: _section == AppSection.scan,
                                 ),
                                 SettingsPage(
                                   service: widget.service,
