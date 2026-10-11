@@ -14,6 +14,8 @@ import uuid
 
 from core.repository_dto import canonical_json
 from core.repository_store import JsonRepository, RepositoryError
+from core.repository_transaction import locked
+from core.repository_participant_lock import acquire_participant, release_participant
 from core.tactical_stats_v2 import deck_signature
 
 
@@ -176,6 +178,7 @@ class TacticalShareV1Store:
             "source_counts": dict(sorted(Counter(item["source_type"] for item in records).items())),
         }
 
+    @locked(RepositoryError)
     def _read(self, profile_id: str) -> dict[str, Any]:
         self.repository.get_state(profile_id)
         path = self._path(profile_id)
@@ -220,12 +223,7 @@ class TacticalShareV1Store:
             raise RepositoryError("invalid_payload", "expected_revision must be non-negative")
         key = _text(idempotency_key, "idempotency_key")
         fingerprint = hashlib.sha256(canonical_json(operation).encode("utf-8")).hexdigest()
-        self.root.mkdir(parents=True, exist_ok=True)
-        lock = self.root / ".tactical-share-v1.lock"
-        try:
-            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise RepositoryError("repository_busy", "another tactical share writer holds the lock", retryable=True) from error
+        descriptor = acquire_participant(self.root, ".tactical-share-v1.lock", RepositoryError)
         try:
             value = self._read(profile_id)
             cached = value["idempotency"].get(key)
@@ -244,8 +242,7 @@ class TacticalShareV1Store:
             self._write(profile_id, value)
             return deepcopy(response)
         finally:
-            os.close(descriptor)
-            lock.unlink(missing_ok=True)
+            release_participant(descriptor)
 
     def state(self, profile_id: str) -> dict[str, Any]:
         value = self._read(profile_id)

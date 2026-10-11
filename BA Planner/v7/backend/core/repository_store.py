@@ -283,6 +283,9 @@ class JsonRepository:
         try:
             catalog = self._catalog()
             profile_id = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:24]
+            from core.profile_delete_transaction import read_tombstones
+            if profile_id in read_tombstones(self.root, RepositoryError)["profiles"]:
+                raise RepositoryError("idempotency_conflict", "profile creation key refers to a deleted profile")
             existing = next((item for item in catalog["profiles"] if item["profile_id"] == profile_id), None)
             if existing is not None:
                 if existing["display_name"] != display_name.strip():
@@ -383,46 +386,11 @@ class JsonRepository:
                     item["avatar_student_id"] = avatar
         return self._catalog_mutation(profile_id, expected_revision, idempotency_key, f"update:{name}:{avatar}", mutate)
 
-    def delete_profile(self, profile_id: str, expected_revision: int, _idempotency_key: str) -> dict[str, Any]:
+    def delete_profile(self, profile_id: str, expected_revision: int, idempotency_key: str) -> dict[str, Any]:
+        from core.profile_delete_transaction import delete_profile_locked
         descriptor = self._lock()
         try:
-            catalog, profile = self._catalog(allow_missing=False), self._profile(profile_id)
-            if profile["revision"] != expected_revision:
-                raise RepositoryError("revision_conflict", "expected revision is stale", details={"current_revision": profile["revision"]})
-            catalog_before = self.catalog_path.read_bytes()
-            profile_path = self._profile_path(profile_id)
-            profile_before = profile_path.read_bytes()
-            tactical_path = self.root / "tactical" / f"{profile_id}.json"
-            tactical_before = tactical_path.read_bytes() if tactical_path.exists() else None
-            scenario_path = self.root / "scenarios" / f"{profile_id}.json"
-            scenario_before = scenario_path.read_bytes() if scenario_path.exists() else None
-            presets_path = self.root / "presets" / f"{profile_id}.json"
-            presets_before = presets_path.read_bytes() if presets_path.exists() else None
-            catalog["profiles"] = [item for item in catalog["profiles"] if item["profile_id"] != profile_id]
-            if catalog["selected_profile_id"] == profile_id:
-                catalog["selected_profile_id"] = catalog["profiles"][0]["profile_id"] if catalog["profiles"] else None
-            try:
-                self._atomic_write(self.catalog_path, catalog)
-                profile_path.unlink()
-                if tactical_before is not None:
-                    tactical_path.unlink()
-                if scenario_before is not None:
-                    scenario_path.unlink()
-                if presets_before is not None:
-                    presets_path.unlink()
-            except Exception as error:
-                self._restore(self.catalog_path, catalog_before)
-                self._restore(profile_path, profile_before)
-                if tactical_before is not None:
-                    self._restore(tactical_path, tactical_before)
-                if scenario_before is not None:
-                    self._restore(scenario_path, scenario_before)
-                if presets_before is not None:
-                    self._restore(presets_path, presets_before)
-                if isinstance(error, RepositoryError):
-                    raise
-                raise RepositoryError("persistence_failed", "profile deletion failed", retryable=True) from error
-            return {"revision": expected_revision + 1}
+            return delete_profile_locked(self, profile_id, expected_revision, idempotency_key, RepositoryError)
         finally:
             self._unlock(descriptor)
 

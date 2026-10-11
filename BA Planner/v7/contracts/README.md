@@ -1193,3 +1193,32 @@ Fixture: contracts/fixtures/scanner_pause_fb10a_v1.json. Existing history attrib
 continues to use contracts/scan-commit-history-context-v1.schema.json unchanged.
 
 Explicit start/resume consumes already detected command input; later user input still pauses.
+
+## FB-2d durable seven-path profile deletion
+
+`repository.profile.delete` keeps its exact request
+`{profile_id, expected_revision, idempotency_key}` and exact response `{revision}`.
+No `deleted_paths` field is added. CF's confirmation text includes local tactical
+sharing under the existing consent; absent optional files are skipped.
+
+The transaction updates catalog selection and removes profile JSON (including
+inline history), tactical v1/v2, scenarios, presets and tactical-share v1 under
+root guard -> v1 -> v2 -> local-share markers, released in reverse. Its durable
+before/after journal includes these seven targets plus the infrastructure retry
+tombstone image. Prepared records restore exact before bytes/presence, committed
+records complete deletion. Normal repository/tactical/scenario/preset reads and
+writers recover first under the root guard. Known owned crash markers are reclaimed
+only under the OS guard; unknown/manual markers remain `repository_busy`.
+
+Deletion tombstones live in `.profile-delete.tombstones.json` outside the deleted
+profile. Same key and original revision replay the original response even after
+restart. Changed revision for that key is `idempotency_conflict`; a different key
+for a deleted profile is `profile_not_found`. A previously used create key cannot
+recreate that deleted stable ID (`idempotency_conflict`). Tombstones contain only
+ID, retry key/fingerprint and response revision, no deleted account contents.
+
+All journal targets/images and catalog/tombstone transitions are validated before
+recovery writes; corrupt journals are retained for diagnosis, interrupted recovery
+retains the journal and is repeatable. Process-crash restart is tested using temporary
+profiles. Windows directory-entry durability under power loss and real user-profile
+deletion are separate acceptance boundaries. Fixture: `fixtures/profile_delete_fb2d_v1.json`.

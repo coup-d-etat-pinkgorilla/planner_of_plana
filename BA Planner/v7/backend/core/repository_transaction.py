@@ -156,6 +156,10 @@ def acquire(root: Path, error_type: type[RuntimeError]) -> Lease:
         _write_bytes(marker, canonical_json(_MARKER).encode("utf-8"))
         marker_owned = True
         recover_locked(root, error_type)
+        from core.repository_participant_lock import discard_stale_participants_locked
+        discard_stale_participants_locked(root)
+        from core.profile_delete_transaction import recover_profile_delete_locked
+        recover_profile_delete_locked(root, error_type)
         return lease
     except Exception as error:
         cleanup_error = None

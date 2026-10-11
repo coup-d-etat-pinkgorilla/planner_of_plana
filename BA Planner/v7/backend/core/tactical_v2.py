@@ -14,6 +14,8 @@ import uuid
 from core import student_meta
 from core.repository_dto import canonical_json
 from core.repository_store import JsonRepository, RepositoryError
+from core.repository_transaction import locked
+from core.repository_participant_lock import ParticipantLease, acquire_participant, release_participant
 
 
 METHODS = frozenset({
@@ -427,6 +429,7 @@ class TacticalV2Store:
             "idempotency": {},
         }
 
+    @locked(RepositoryError)
     def _read(self, profile_id: str) -> dict[str, Any]:
         self.repository.get_state(profile_id)
         path = self._path(profile_id)
@@ -467,12 +470,8 @@ class TacticalV2Store:
         self.repository.get_state(profile_id)
         return self.importer.preview(Path(_text(source_path, "source_path", required=True)), batch_id)
 
-    def _lock(self) -> int:
-        self.root.mkdir(parents=True, exist_ok=True)
-        try:
-            return os.open(self.root / ".tactical-v2.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise RepositoryError("repository_busy", "another tactical v2 writer holds the lock", retryable=True) from error
+    def _lock(self) -> ParticipantLease:
+        return acquire_participant(self.root, ".tactical-v2.lock", RepositoryError)
 
     def _write(self, path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -514,8 +513,7 @@ class TacticalV2Store:
             self._write(self._path(profile_id), value)
             return deepcopy(response)
         finally:
-            os.close(descriptor)
-            (self.root / ".tactical-v2.lock").unlink(missing_ok=True)
+            release_participant(descriptor)
 
     @staticmethod
     def _timestamp(value: object, label: str) -> str:
@@ -953,8 +951,7 @@ class TacticalV2Store:
             self._write(self._path(profile_id), value)
             return response
         finally:
-            os.close(descriptor)
-            (self.root / ".tactical-v2.lock").unlink(missing_ok=True)
+            release_participant(descriptor)
 
 
 class TacticalProtocolV2:
