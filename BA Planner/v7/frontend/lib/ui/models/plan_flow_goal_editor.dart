@@ -74,6 +74,8 @@ class PlanFlowGoalEditor extends ChangeNotifier {
   }) : _presets = List.unmodifiable(presets) {
     _studentId = flow.goalSeed?.studentId;
     _seenFocusSerial = flow.goalFocusSerial;
+    // 편집기는 2단계를 처음 그릴 때 만든다. 그보다 먼저 받은 초점 단계(계산기에서 넘겨 흐름을 연 경우)도 고른다.
+    _selectFocusStage(flow.goalFocusStudentId, flow.goalFocusStageId);
     flow.addListener(_flowChanged);
   }
 
@@ -580,8 +582,10 @@ class PlanFlowGoalEditor extends ChangeNotifier {
     if (_syncing || _disposed) return;
     var changed = false;
     // 계산기에서 넘긴 학생(FE4-g)을 2단계에서 바로 보여 준다. 편집기가 이미 있어도 그 학생 탭으로 바꾼다.
+    var focusRequested = false;
     if (flow.goalFocusSerial != _seenFocusSerial) {
       _seenFocusSerial = flow.goalFocusSerial;
+      focusRequested = true;
       final focus = flow.goalFocusStudentId;
       if (focus != null && focus != _studentId) {
         _studentId = focus;
@@ -590,25 +594,38 @@ class PlanFlowGoalEditor extends ChangeNotifier {
       }
     }
     final draft = flow.draft;
-    if (identical(draft, _seenDraft)) {
-      if (changed) notifyListeners();
-      return;
+    if (!identical(draft, _seenDraft)) {
+      _seenDraft = draft;
+      final ids = draft.studentIds.toSet();
+      for (final studentId in _stages.keys.toList()) {
+        final stale =
+            !ids.contains(studentId) ||
+            !listEquals(_draftIds(studentId), _syncedIds[studentId]);
+        if (!stale) continue;
+        _stages.remove(studentId);
+        _modes.remove(studentId);
+        _selectedStages.remove(studentId);
+        _seeds.remove(studentId);
+        _syncedIds.remove(studentId);
+        changed = true;
+      }
     }
-    _seenDraft = draft;
-    final ids = draft.studentIds.toSet();
-    for (final studentId in _stages.keys.toList()) {
-      final stale =
-          !ids.contains(studentId) ||
-          !listEquals(_draftIds(studentId), _syncedIds[studentId]);
-      if (!stale) continue;
-      _stages.remove(studentId);
-      _modes.remove(studentId);
-      _selectedStages.remove(studentId);
-      _seeds.remove(studentId);
-      _syncedIds.remove(studentId);
+    // 넘겨 만든 새 단계를 고른다(FE4-g3). 초안이 바뀐 학생의 고른 단계를 위에서 지운 뒤라야 남는다.
+    if (focusRequested &&
+        _selectFocusStage(flow.goalFocusStudentId, flow.goalFocusStageId)) {
       changed = true;
     }
     if (changed) notifyListeners();
+  }
+
+  /// 흐름의 초점 단계 [stageId]가 [studentId]의 초안 단계에 있으면 그 단계를 고른다(FE4-g3). 없거나 초안에 없는
+  /// id면 고른 단계를 바꾸지 않는다(기본은 마지막 단계). 바꿨으면 true.
+  bool _selectFocusStage(String? studentId, String? stageId) {
+    if (studentId == null || stageId == null) return false;
+    if (!_draftIds(studentId).contains(stageId)) return false;
+    if (_selectedStages[studentId] == stageId) return false;
+    _selectedStages[studentId] = stageId;
+    return true;
   }
 
   @override

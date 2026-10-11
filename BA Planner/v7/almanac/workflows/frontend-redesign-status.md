@@ -6198,3 +6198,102 @@ powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_commit.ps1 -Slice fe
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_002617\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-g3 handoff 후속 (구현 끝, gate 전)
+
+### FE4-g3 착수 기록 (2026-10-12 01:01, Lane A, 로컬 Claude Code)
+
+- 상태: **진행 중**. 시작 SHA `4196525575b8a249fd4dc7811305617c2ce62d82`(브랜치 scanner-consolidation).
+- 범위: ① 계산기 handoff 뒤 2단계 편집기가 새 단계(나중에 단계 앞)를 고른 상태로 열기(흐름 초점 단계 id, 이미 열린 편집기·새로 여는 편집기) ② `_notifyHandoff`의 `nothingNew` 문구를 나중에 단계 유무에 맞게 ③ 테스트. 화면 디자인 변경 없음. "페이즈로 추가" 병합 퇴행(FE4-g2 발견 2)은 제외.
+- 막힘: 대장 "slice별 막힘 요약"에 FE4-g3 행 없음, FE4-g 행 "—"(열림 0건). 멈출 사유 없음.
+- 고칠 기존 파일(사본 `debug/frontend_fe4g3/pre/<경로>`): `frontend/lib/ui/models/plan_flow_draft.dart`, `frontend/lib/ui/models/plan_flow_goal_editor.dart`, `frontend/lib/ui/widgets/plan_section_layout.dart`(`_notifyHandoff` 문구만), `frontend/test/plan_flow_handoff_test.dart`, 이 status 문서. `plan_flow_goal_step.dart`·`plan_flow_goal_step_test.dart`는 필요할 때만(사본은 미리 둠).
+- 기존 미커밋 변경(WIP): `git status --short` 결과 위 파일 모두 없음. 줄 끝: `plan_section_layout.dart`만 CRLF, 나머지 LF — 그대로 유지.
+
+### FE4-g3 종료 기록 (2026-10-12 01:10, Lane A, 커밋 전)
+
+상태: 구현 끝, gate 미실행(CF 몫). 시작 SHA `4196525575b8a249fd4dc7811305617c2ce62d82`. `debug/frontend_fe4g3/commit.json`(slice=fe4g3, status=true). 직접 커밋하지 않았다(git 쓰기 없음).
+
+#### 실행한 명령·결과
+
+- `frontend`에서 `flutter analyze`: **No issues found**(0건, info 포함).
+- `flutter test test/plan_flow_handoff_test.dart`: 첫 실행 21 통과 · 2 실패(새 위젯 테스트 (a)(b) 끝에 이 파일 흐름의 1시간 계산 디바운스 Timer가 남아 `!timersPending` — 기대값은 모두 통과. 테스트 끝에서 Timer를 흘리는 `flushCalculation` 추가) → 재실행 **23 통과 · 0 실패**(기존 18 + 새 5).
+- 바뀐 동작에 걸리는 기존 테스트(grep `receiveHandoff`·`PlanFlowGoalEditor`·`goalFocus`·`selectedStageIdOf`·`PlanFlowHandoff`·`nothingNew`·`calculator-add-to-plan`·`PlanFlowWorkspace`·`PlanningPage(`, golden 제외 + 지시 목록)를 파일마다 따로 실행(통과/실패): `plan_flow_goal_step_test` 23/0 · `plan_flow_test` 15/0 · `planning_page_test` 61/0 · `student_page_test` 9/0 · `growth_calculator_view_test` 24/0 · `plan_flow_presets_test` 13/0 · `plan_flow_authoring_test` 18/0 · `plan_flow_order_step_test` 19/0 · `plan_flow_save_test` 15/0 · `plan_flow_student_step_test` 8/0 · `plan_element_builder_test` 51/0 · `plan_home_detail_test` 5/0 · `plan_preset_manager_test` 5/0 · `plan_scenario_compare_test` 7/0 · `plan_scenario_detail_test` 12/0 · `plan_scenario_list_test` 10/0 · `plan_scenario_preview_test` 9/0. 잠금(build/·.dart_tool/) 실패 없음.
+- `git diff --check`(수정 4파일 + 이 문서): 통과. 줄 끝 유지 확인: `plan_section_layout.dart` CRLF(8504줄 · CR 8504), 나머지 LF(CR 0).
+
+#### 1. 2단계 편집기가 넘어온 새 단계를 고른 상태로 열기 — 구현
+
+- 흐름: `PlanFlowController.goalFocusStageId`(새 getter). `receiveHandoff`가 새 단계를 만들면 그 단계 id, 만들지 않으면(`nothingNew`·`noTargets`) null로 두고, 지금처럼 `goalFocusStudentId`·`goalFocusSerial`을 함께 바꾼다.
+- 편집기(`PlanFlowGoalEditor`): 새 private `_selectFocusStage(studentId, stageId)` — 초점 단계 id가 그 학생의 **초안 단계 id**에 있을 때만 `_selectedStages[학생] = id`. id가 없거나(null) 그 학생 단계 목록에 없으면 고른 단계를 건드리지 않는다(기본 = 마지막 단계, 사용자가 고른 단계는 그대로).
+  · 이미 열린 편집기: `_flowChanged`에서 serial이 바뀐 요청마다 적용. **순서 주의**: `receiveHandoff`는 `setStudentStages`(알림 1회 — 편집기는 이때 그 학생 작업 단계와 고른 단계를 stale로 지운다) 뒤에 serial을 올리고 다시 알린다. 그래서 초점 단계 적용을 stale 정리 **뒤**로 옮겼다(예전 "초안이 그대로면 바로 return" 분기를 `if (!identical(...)) { 정리 }`로 바꾼 동작 보존 리팩터, 정리 내용은 그대로).
+  · 새로 여는 편집기: 계획 만들기 화면은 편집기를 2단계를 처음 그릴 때 만든다(`plan_flow_workspace.dart` `_goalEditor`, 흐름마다 하나). 계산기로 흐름을 새로 열면 `receiveHandoff`가 편집기보다 먼저 돌므로, 생성자에서 흐름의 지금 초점 단계를 한 번 적용한다(`_seenFocusSerial`은 지금처럼 현재 serial). 흐름이 handoff를 받은 적이 없으면 초점 단계가 null이라 기본 선택 그대로.
+- 다른 초점 요청 경로: grep `_goalFocusSerial`·`_goalFocusStudentId`·`goalFocus` — 쓰는 곳은 `receiveHandoff` 한 곳뿐(`plan_flow_draft.dart`), 읽는 곳은 `plan_flow_goal_editor.dart`(+ 테스트). 계산기 handoff 외 경로 없음 → 바뀌는 다른 동작 없음.
+- `plan_flow_goal_step.dart`는 고치지 않았다: 카드 목록이 이미 `selectedStageIdOf`로 고른 카드를 굵은 테두리로 그리고 `_revealSelected`로 보이게 스크롤한다.
+
+#### 2. nothingNew 안내 문구 — 구현
+
+- 새 순수 함수 `planFlowHandoffNothingNewMessage(name, stageIds, deferred)`(`plan_flow_draft.dart`, `planFlowHandoffInsertIndex` 재사용). `_notifyHandoff`는 nothingNew 한 갈래만 이 함수를 부른다(그 학생 `editorStagesFor` id · 초안 `deferredStageIds`; nothingNew면 `receiveHandoff`가 초안 단계를 바꾸지 않으므로 넘기기 직전 상태와 같다). 다른 갈래 문구는 그대로.
+- 문구 전후:
+  · 전(모든 경우): `계산기 목표가 이미 {이름} 학생의 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.`
+  · 후 — 그 학생에게 나중에 단계가 **없음**(초안 단계 없음 · 활성 계획 바닥 · 지금 값 바닥 포함): 전과 **같음**.
+  · 후 — 나중에 단계가 **있고** 그 앞 단계가 있음(바닥 = 나중에 칸 앞 마지막 단계): `계산기 목표가 이미 {이름} 학생의 나중에 칸 앞 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.`
+  · 후 — 단계가 **모두 나중에**(FE4-g2 판단 1: 바닥 = 지금 값): `계산기 목표가 이미 {이름} 학생의 지금 값에 들어 있어 새 단계를 만들지 않았습니다.` (지시에 없던 셋째 갈래 — 아래 판단 1)
+- "나중에 칸"은 3단계 화면 문구(`plan_flow_order_step.dart` '나중에 칸')와 맞췄다. ~습니다체 한 줄.
+
+#### 판단(확인 부탁)
+
+1. 단계가 모두 나중에인 학생의 nothingNew는 "나중에 칸 앞 마지막 단계"가 없어 실제 비교 대상(지금 값)을 말하게 했다. 둘째 문구로 합치려면 함수의 마지막 삼항을 지우면 된다.
+2. 초점 단계는 "초안 단계 id에 있을 때만" 고른다(편집기 작업 단계 중 아직 초안에 없는 것은 대상 아님). handoff가 만든 단계는 항상 초안 단계라 실제 차이는 없다.
+
+#### 처리한 FD
+
+- '워커 재량' FD 새로 처리한 것 없음. FD-171 (a) 동작은 바꾸지 않았다. 막힘 요약에 FE4-g3 행 없음(FE4-g "—", 열림 0건).
+
+#### 테스트
+
+- `plan_flow_handoff_test.dart` 새 그룹 `편집기 초점 단계 · 이미 들어 있음 문구(FE4-g3)` 5건(배치 1단계 레벨 50 + 나중에 2단계 레벨 80 초안):
+  · (a) 위젯: 넘긴 뒤 만든 편집기(계획 만들기 화면처럼) + `PlanFlowGoalBody`·`Aside` → 단계 [1단계, 새 단계, 나중에], 고른 단계 = 새 단계(`aru-calc-1`, 예전 기본값은 나중에 단계). 화면의 "단계 추가"가 새 단계 바로 뒤 · 나중에 단계 앞에 들어가 화면 동작으로도 선택을 확인.
+  · (b) 위젯: 이미 열린 편집기(아야네 탭 보는 중, 아루는 1단계를 골라 둠)에 넘기면 아루 탭 + 새 단계로 바뀜 → 다시 넘기면 다음 새 단계(`aru-calc-2`, 3번째 · 나중에 앞)로 바뀜 → 이미 들어 있는 값을 넘기면(nothingNew, 초점 단계 null) 사용자가 고른 단계 유지.
+  · 초점 단계가 없으면(nothingNew) 새로 여는 편집기는 마지막 단계(지금 동작).
+  · 문구 단위: 나중에 없음 · 단계 없음 · 나중에 앞 단계 있음 · 모두 나중에.
+  · (c) 흐름 상태로: 나중에 있는 초안 / 없는 초안에 레벨 50(바닥과 같음)을 넘겨 nothingNew → 각각 "나중에 칸 앞 마지막 단계" / 기존 문구.
+- (d) 기존 handoff 18건·goal step 23건 기대값 수정 없이 통과. 지운 테스트 없음. SnackBar 자체(`_notifyHandoff` → `ScaffoldMessenger`) 위젯 경로는 기존 `growth_calculator_view_test`의 noTargets 문구 테스트가 덮고, nothingNew 갈래는 같은 함수 호출이라 순수 함수 + 흐름 상태 테스트로 대신했다(계산기 테스트 파일은 범위 밖이라 고치지 않음).
+
+#### golden 변화 예상
+
+- 전 장면 **변화 0** 예상. 근거: golden harness·테스트(`test/goldens/*.dart`)에 `receiveHandoff`·`goalFocus`·`initialSeed`·handoff 시드가 없다(grep). 초점 단계는 handoff에서만 생기므로 golden 흐름의 `goalFocusStageId`는 늘 null → 생성자·`_flowChanged`의 새 분기가 아무것도 고르지 않는다.
+  · 2단계(편집기를 처음 여는 경로, 기본 선택 = 마지막 단계): `plan-flow-step2` · `plan-flow-step2-more` · `plan-flow-step2-saved` — 변화 0.
+  · 그 밖의 계획 만들기 장면 `plan-flow-step1`·`-step1-filter`·`-step1-many`·`-step3`·`-step3-deferred`·`-step3-many`·`-step4`·`-step4-append` — 편집기 선택과 무관, 변화 0.
+  · 계산기 `students-calculator`·`-bond-popover` — "계획에 추가"를 누르지 않음, `_notifyHandoff` 미경유, 변화 0. 새 장면 없음.
+
+#### 미검증
+
+- golden 비교·전체 `fe_gate.ps1`: 미실행(CF 몫).
+- 실제 앱(mock·ProcessAppService)에서 계산기 → 2단계 선택 카드·SnackBar 눈 확인: 미실행(아래 검수표).
+
+#### 검수표
+
+| 확인 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 새로 여는 편집기의 선택 단계 | mock 모드 → 계획 탭 "시나리오 생성" → 학생 하나에 2단계에서 단계 2개 → 3단계에서 1단계를 1순위, 2단계를 "나중에" 칸 → 계획 만들기를 둔 채 학생 탭 같은 학생 계산기에서 목표를 올리고 "이 목표로 계획에 추가" | 2단계가 그 학생 탭으로 열리고 **새 2단계 카드가 굵은 테두리(고름)**, 3단계(원래 나중에) 카드는 고르지 않음. "단계 추가"를 누르면 새 단계 바로 뒤(나중에 단계 앞)에 들어감 |
+| 이미 열린 편집기 | 위 상태에서 2단계에 머문 채(다른 학생 탭을 봐도 됨) 계산기로 가서 같은 학생 목표를 더 올리고 다시 "이 목표로 계획에 추가" | 그 학생 탭으로 바뀌고 방금 만든 새 단계(3단계, 나중에 단계 앞)가 골라져 있음 |
+| nothingNew 문구(나중에 있음) | 위 상태에서 계산기 목표를 새 단계 값 이하로 두고 넘기기 | SnackBar "계산기 목표가 이미 {이름} 학생의 나중에 칸 앞 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다." · 고른 카드는 그대로 |
+| nothingNew 문구(나중에 없음) | 나중에 칸 단계가 없는 학생으로 같은 값 넘기기 | 예전 문구 "… 마지막 단계에 들어 있어 …" 그대로 |
+| 기본 선택 회귀 | 계산기 없이 계획 만들기 2단계를 열기 | 지금처럼 마지막 단계가 골라짐 |
+
+#### WIP 보존 확인
+
+- 고친 4파일·이 status 문서는 착수 때 WIP 없음(`git status --short`). 다른 미커밋 변경(스캐너·서비스·문서 등)은 건드리지 않았다. post 사본 불필요(WIP 없음). `plan_flow_goal_step.dart`·`plan_flow_goal_step_test.dart`는 고치지 않아 미리 둔 사본(goal_step_test)을 지웠다. status 문서 사본은 commit.json `status=true` 관례(fe4g2와 같음)라 두지 않았다.
+
+#### 발견 사항
+
+1. (이 slice 범위 밖, 적기만) `_notifyHandoff`의 nothingNew 기존 문구 "마지막 단계"는 초안·활성 계획에 그 학생 단계가 없을 때(바닥 = 지금 값)도 같은 말을 한다. 지시대로 나중에 단계가 없으면 문구를 바꾸지 않았다. 고치려면 결과에 바닥 종류를 싣는 쪽이 정확하다.
+2. FE4-g2 발견 2(병합 퇴행 규칙)는 그대로 열려 있다(손대지 않음).
+
+#### 다음 행동
+
+- CF: 레인 워커가 모두 멈춘 뒤 gate(golden 변화 0 예상), `fe_commit.ps1 -Slice fe4g3`. 판단 1·2 확인.
+
+### fe4g3 commit record (2026-10-12 01:56, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_014658\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

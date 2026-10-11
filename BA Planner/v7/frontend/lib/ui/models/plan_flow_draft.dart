@@ -334,6 +334,23 @@ int planFlowHandoffInsertIndex(List<String> stageIds, Set<String> deferred) {
   return 0;
 }
 
+/// 계산기 목표가 바닥 snapshot에 이미 들어 있어 새 단계를 만들지 않았을 때([PlanFlowHandoffKind.nothingNew]) 안내
+/// 문구(FE4-g3). 비교한 바닥을 사실대로 말한다: 그 학생 단계 [stageIds]에 "나중에" 칸 단계([deferred])가 없으면
+/// 마지막 단계(FE4-g 문구 그대로 — 초안에 단계가 없으면 활성 계획 마지막 단계나 지금 값도 이 문구다), 있으면 나중에 칸
+/// 앞 마지막 단계([planFlowHandoffInsertIndex]), 단계가 모두 나중에면 지금 값이다.
+String planFlowHandoffNothingNewMessage(
+  String name,
+  List<String> stageIds,
+  Set<String> deferred,
+) {
+  if (!stageIds.any(deferred.contains)) {
+    return '계산기 목표가 이미 $name 학생의 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.';
+  }
+  return planFlowHandoffInsertIndex(stageIds, deferred) > 0
+      ? '계산기 목표가 이미 $name 학생의 나중에 칸 앞 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.'
+      : '계산기 목표가 이미 $name 학생의 지금 값에 들어 있어 새 단계를 만들지 않았습니다.';
+}
+
 /// 새 단계 [inserted] 뒤에 오는 같은 학생 단계 [later]를 누적 snapshot 계약대로 올린다(FE4-g2): 새 단계보다 낮은
 /// 키는 새 단계 값으로 올리고 성장 규칙으로 정규화한다(2단계 편집기에서 앞 단계를 올리면 뒤 단계가 따라 오르는 것과
 /// 같은 규칙). 새 단계 이상인 값은 그대로 둔다.
@@ -1833,13 +1850,20 @@ class PlanFlowController extends ChangeNotifier {
   // --- 계산기에서 넘기기(FE4-g, FD-171 (a)) -------------------------------------
 
   String? _goalFocusStudentId;
+  String? _goalFocusStageId;
   int _goalFocusSerial = 0;
 
   /// 2단계 목표 편집기가 앞으로 보여 줄 학생. [goalFocusSerial]이 바뀔 때마다 편집기가 그 학생 탭을 고른다.
   String? get goalFocusStudentId => _goalFocusStudentId;
+
+  /// [goalFocusStudentId]와 함께 편집기가 고를 단계(FE4-g3: 계산기에서 넘겨 새로 만든 단계). 넘긴 학생에게 "나중에"
+  /// 단계가 있으면 새 단계가 마지막이 아니라서 편집기 기본 선택(마지막 단계)으로는 고를 수 없다. 새 단계를 만들지
+  /// 않은 요청(이미 들어 있음·목표 없음)은 null이고, 그때 편집기는 고른 단계를 바꾸지 않는다.
+  String? get goalFocusStageId => _goalFocusStageId;
   int get goalFocusSerial => _goalFocusSerial;
 
-  /// 성장 계산기 "이 목표로 계획에 추가"가 넘긴 학생 [handoff]를 초안에 넣고 2단계에서 그 학생을 연다.
+  /// 성장 계산기 "이 목표로 계획에 추가"가 넘긴 학생 [handoff]를 초안에 넣고 2단계에서 그 학생을 연다. 새 단계를
+  /// 만들었으면 편집기가 그 단계를 고르게 한다([goalFocusStageId], FE4-g3).
   ///
   /// 새 단계는 그 학생의 "나중에" 칸이 아닌 마지막 단계 바로 뒤, 나중에 단계들 앞에 들어간다
   /// ([planFlowHandoffInsertIndex], FE4-g2: 같은 학생 체인 = 배치 prefix + 나중에 suffix). 바닥 snapshot은 그 자리 바로
@@ -1876,11 +1900,14 @@ class PlanFlowController extends ChangeNotifier {
             hasFavoriteItem: hasFavoriteItem,
           );
     final PlanFlowHandoffResult result;
+    String? focusStageId;
     if (next != null) {
+      final newStageId = _newHandoffStageId(studentId);
+      focusStageId = newStageId;
       final stages = [
         ...editor.take(insertAt),
         PlanElementStageDraft(
-          id: _newHandoffStageId(studentId),
+          id: newStageId,
           name: '${insertAt + 1}단계',
           targets: next,
         ),
@@ -1921,6 +1948,7 @@ class PlanFlowController extends ChangeNotifier {
     );
     if (index >= 0) _goalIndex = index;
     _goalFocusStudentId = studentId;
+    _goalFocusStageId = focusStageId;
     _goalFocusSerial += 1;
     _step = PlanFlowStep.goals;
     notifyListeners();

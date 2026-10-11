@@ -1908,8 +1908,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         '만들던 초안에 이어 $name ${result.step}단계로 계산기 목표를 넣었습니다.',
       PlanFlowHandoffKind.appendedAfterActive =>
         '$name 학생은 활성 계획에 있어 활성 계획 마지막 단계에 이어지는 단계로 계산기 목표를 넣었습니다.',
-      PlanFlowHandoffKind.nothingNew =>
-        '계산기 목표가 이미 $name 학생의 마지막 단계에 들어 있어 새 단계를 만들지 않았습니다.',
+      // FE4-g3: 비교한 단계(나중에 칸 앞 마지막 단계 등)를 사실대로 말한다. 이 경우 초안은 바뀌지 않았다.
+      PlanFlowHandoffKind.nothingNew => planFlowHandoffNothingNewMessage(
+        name,
+        [for (final stage in flow.editorStagesFor(studentId)) stage.id],
+        flow.draft.deferredStageIds.toSet(),
+      ),
       PlanFlowHandoffKind.noTargets =>
         '계산기에서 올린 목표가 없어 $name 학생을 목표 없이 더했습니다.',
     };
