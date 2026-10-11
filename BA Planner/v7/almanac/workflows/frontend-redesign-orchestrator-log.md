@@ -1406,3 +1406,104 @@ Common migration/recovery may precede a guard rejection and increment revision. 
   · `account-new`: 스크림 + 평행사변형 모달, "계정 추가" (i), 이름 입력 분홍 포커스·placeholder, 취소·만들기(빈 이름이라 흐림)·X. Title-Accounts-New 구성과 맞다. 승인.
 - 커밋 순서(한 줄씩, 실패 시 멈춤): fe5c1 → tfb1b → fe8b → redesigndocs. 이 항목과 워크플로 완료 표시는 redesigndocs에 들어가고, 해시는 다음 문서 커밋에 적는다.
 - XB 02:23 수신: FB-3 source26 전체 Python 1107 OK. 세 slice 커밋 확인 뒤 backend 로그에 "메인 반영 시작"을 회신한다.
+
+## 2026-10-11 03:20 — 커밋 4건, FB-3 메인 반영 허가, 다음 배정(fb3-dart·FE5-c2)
+
+- 커밋: fe5c1 `017075d5`(21파일), tfb1b `5c78c83c`(2파일), fe8b `8268abb3`(14파일), redesigndocs `84f645c3`. 사용자가 한 줄씩 실행했고 충돌 없음.
+- XB에 "메인 반영 시작" 회신(backend 로그 03:20). XB가 반영 완료와 경로·SHA를 적은 뒤 fb3-dart 워커가 연결한다. tactic 로그에 T-FB1b 처리 보고.
+- **배정**:
+  · Lane B **fb3-dart** — `debug/frontend_redesign_handoff/fb3dart-worker-prompt-20261011.md`. XB 00:02 정확 목록 그대로: catalog exact10(school·family·tier required nullable), 선택적 `ResourceAcquisitionService`(query exact1·result exact3·method exact6·source exact3, 날짜 strict), client 새 메서드·오류 집합, Process wrapper, Mock(catalog 행·credits/SecretStone·빈 획득처 표·`currency_read_only` guard), 호출처·계약 테스트, 그리고 인벤토리 화면 재화 행 읽기 전용(02:09 guard와 짝). Lane B에 둔 이유: Lane A는 계획 탭을 이어 가고, 공유 서비스 파일은 한 레인만 만진다.
+  · Lane A **FE5-c2** — `fe5c2-worker-prompt-20261011.md`. 활성 계획 홈을 `PlanDetailWorkspace(showComparison:false)`로. **결정**: 페이즈별·전체 탭은 c2에서 기존 위젯(현 홈의 페이즈별·전체 내용)을 S3 본문에 넣어 켠다 — 홈 첫 화면이 Detail로 바뀌는 순간 지금 되는 기능이 사라지면 안 되기 때문이다. FE5-d는 그 탭을 시안대로 다시 그린다. 시나리오 보기(c1)도 같은 탭을 켤지는 워커 판단(켜면 golden 예측). 옛 PlanPhaseEditor·_PlanWorkspaceSnapshot 삭제와 planning_page_test 전면 재작성은 FE5-f.
+  · FE5-b 발견(4단계 "가장 크게 늘어나는 재화"에 크레딧 줄)은 c2에서 처리: 크레딧은 크레딧 KPI에서 보이므로 재화 증가 목록에서 뺀다(FD-038 크레딧 = 필요량 차이 별도).
+- 다음 gate는 FB-3 메인 반영 + fb3-dart + FE5-c2 같은 소스. GREEN 뒤 XB 커밋 → fb3dart → fe5c2 → redesigndocs.
+
+## XB 보고 — 2026-10-11 03:16: FB-3 source26 메인 반영 완료·backend/contracts 고정
+
+- **반영 완료**: CF03:20의 명시적 메인 반영 시작과 사용자 지시에 따라, `debug/xb_fb3_final_candidate_fixture_prep_20261011/artifacts/final-source26.json` working판26(M16/A10)을 HEAD `84f645c391f54cc312ce12f21d85ed34789f325b` 위 메인에 실제 반영했다. 아래 표는 반영 직후 메인 작업 트리의 actual bytes/SHA256이다. 26개 모두 승인된 working pin과 exact 일치. selectedHEAD판·미추적 MMD·frontend는 복사하지 않았다.
+- **보존·검증**: 원 기준2259 중 선택 경로 밖 변경0, 기존 인식 WIP와 README 기존 prefix 보존. 원1107/1095.61s 전체 Python GREEN 후보 bytes 그대로이며 새 테스트 실행0. exact overlay 확인은 `debug/xb_fb3_main_overlay_20261011/artifacts/overlay-receipt.json`, 동결 source watch2269는 `artifacts/backend-contracts-freeze-manifest.json`이다. indexempty, 이번 XB 커밋/push0; 아직 FB-3 왕복 완료가 아니다.
+- **고정·다음 순서**: 지금부터 CF 커밋 전까지 XB는 backend/contracts에 추가 변경하지 않는다. CF fb3-dart와 FE5-c2 연결→두 워커 멈춤→같은 source CF fe_gate full GREEN 회신→XB FB-3 선택 커밋→CF fb3dart(→FE5-c2) 순서다. 변경 필요 시 먼저 backend 로그에 통지한다. FD101 UI 어댑터는 CF03:20대로 FE6-a 후속이다.
+- **Dart 인계**: CF00:02 exact목록·00:11 날짜 경계·02:09 currency_read_only 및01:27 source26 pins 그대로다. 이번에 DTO/계약 추가 변경0. CF는 아래 메인 작업 트리 SHA를 기준으로 연결할 수 있다.
+
+| Main working path | Bytes | SHA256 |
+|---|---:|---|
+| `README.md` | 12751 | `d1aa8c0ae133e9e86973840b6718b77f2753a9de1923bffe1363a12947248d12` |
+| `backend/core/inventory_catalog.py` | 12231 | `c060dcd29faa84efd6ae5353afe3003bae69afc1017ace700b0e05908d9e5bb0` |
+| `backend/core/protocol_v1.py` | 25550 | `9d900e8a9a245d74bed77e5ae784826d02e05d8e727b8b96ac8b094ec6d5e709` |
+| `backend/core/repository_store.py` | 46210 | `0c8caef05a23b9009bf791ab5a6860b3f5d79171c64c48d5dfefb52c8d48ff62` |
+| `backend/core/resource_acquisition.py` | 6951 | `053413a477427076882a5ecfc0cabec8549d6d18e406e7ad8cda74809de14963` |
+| `backend/data/metadata/v1/resource_acquisition.json` | 38 | `a3dbbc61ef330dce13dad4b0080ca9a065ed84056c9c2574992e3cc5d237ec24` |
+| `backend/data/metadata/v1/resource_acquisition.schema.json` | 2684 | `ddf0ac0941e47bef80036543387794aed1a9fac7f12bbcc1d35cd0e00a132e91` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_equipment_1280.json` | 2996 | `8ee004d32f3ad3e6b01ded2ab7b64fb132b25cbeeb79511062740c0730c7725f` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_item_tech_notes_1280.json` | 3795 | `57fa36611576765bde43745709075da5457299be67dc5ac59b02e6eea30c4ec7` |
+| `backend/tests/fixtures/scanner_consolidation/golden/inventory_item_tech_notes_detail_locked_1280.json` | 48124 | `a3643ec167e8f93bfea273c352d90b5dd1006b310254e76103b62facf7c3cb5b` |
+| `backend/tests/test_inventory_currencies_fb3b.py` | 12552 | `f12b4788dc60802cd6266d60f8bb756fc15ed575ea771a71cf14f58d2de60cea` |
+| `backend/tests/test_inventory_metadata_fb3a.py` | 7853 | `d020c4924c269df850b5d695190cb0ed8b02a05783c856c22dc217287d14b66d` |
+| `backend/tests/test_inventory_scan_support_fb3s.py` | 5791 | `be9f4fb5127e6ec1bdc44988de419bbdbd3fffeff3457bff61318e06f3d1fc84` |
+| `backend/tests/test_planning_protocol_contract.py` | 7533 | `daf1a27b6a61843c685ff0eda090b2a731ae3f1a355b001db6f0a0225d4137b8` |
+| `backend/tests/test_resource_acquisition_fb3c.py` | 11183 | `4315832185a1870fcb7348f46821ae8663fffe483fd3d23cfb14dde0dbb94802` |
+| `backend/tests/test_scanner_commit_history_sfb2b.py` | 42516 | `0c388fcc942ede5fb8616aa0399ee4f6be5a51c716f36969f80ffd6fa90e7dd1` |
+| `backend/tests/test_scenario_store.py` | 8818 | `54c5d22470da3d9ac450fad5601c17018b44913c749db60f90828b0de004b75b` |
+| `backend/tests/test_stdio_protocol_server.py` | 7970 | `67c19a8384ddc46171d431640b3a821f72770d5151bd7ea8b2e2779a5fa1ee5a` |
+| `contracts/fixtures/inventory_catalog_fb3_metadata.json` | 9708 | `a25af4aed55947a946665c122ede19562dfa0594841ad34fa508ae655fb40808` |
+| `contracts/fixtures/inventory_catalog_v6_parity.json` | 3814 | `2d6fa950c4a1f395219cf5360fcbea95711afbb1328428bf7c11bab774c05c40` |
+| `contracts/fixtures/planning_protocol_v1.json` | 52498 | `64e36b1b4012680a820278bde395af98a53725a20d6d8aba3afe0c374703d183` |
+| `contracts/fixtures/resource_acquisition_v1.json` | 77302 | `22eb6845d7c597189c32cf696e38a4608dbd755f5c96e87c2b04edca5f8b7a9d` |
+| `contracts/planning-inventory-acquisition-get-v1.schema.json` | 4117 | `40bb6db9b8c2b9ca71430a0f82ad626393e3a43484f96fef463d382b0573cac1` |
+| `contracts/planning-inventory-catalog-v1.schema.json` | 3481 | `f54f5f9f2a42e37d7184462b22c68ada06f0f24d679157d968e404f1035ae6bd` |
+| `contracts/planning-protocol-v1.schema.json` | 1151 | `bbe811baf4c2e22264075fc37b46760ea5052ec125b66d2a3286c0cb34350071` |
+| `contracts/protocol-error-v1.schema.json` | 9717 | `8890bc1fcbce8c2e763312c2600634221976b9fcbeeb8c88cf1ca88a16021842` |
+
+### 사용자에게 전할 3줄
+
+아이템 기능26개 파일을 메인에 반영했고 파일 지문을 모두 기록했습니다.
+기존 작업을 보존했으며 새 커밋은 만들지 않았습니다.
+프론트 연결·검증·커밋까지 백엔드와 계약 파일을 고정합니다.
+
+## XB 보고 — 2026-10-11 03:18: FB-3 반영 후 검사·동결 인계 완료
+
+- 앞 메인 반영 완료26경로/SHA 표가 CF 연결 기준이다. 반영 뒤 Almanac45 및 전체v7 git diff --check PASS, source26/동결watch2269 추가변경0, indexempty·새commit/push0 확인.
+- 근거 `debug/xb_fb3_main_overlay_20261011/output.md`7736B/SHA `3000e790f0b9cc01ea8f56a29adaecde6da4b8d7145a605eed285d97931bb4e7`, 실제33 artifacts/1514257B 전수 bytes/SHA 수신 PASS. 기존 격리 전체1107 PASS와 함께 인계했다. 준비/검증 원 packages는 그대로 동결이다.
+- CF fb3-dart·FE5-c2 연결과 같은-source full gate를 기다린다. CF 커밋 전까지 XB backend/contracts 추가변경0 유지, gate GREEN→XB FB3 선택commit→CF fb3dart 순서 그대로다. FB3 왕복완료 선언 아님.
+
+## 2026-10-11 13:15 — gate ① `20261011_124823`(FB-3 같은 소스) RED 검토: FE5-c2 승인, fb3-dart 반려 3건
+
+- 소스: HEAD `84f645c3` + XB FB-3 source26 메인 반영(XB 03:16·03:18 "반영 완료·backend/contracts 고정") + FE5-c2 + fb3-dart.
+- 결과: analyze info 1, 테스트 287 + 683 + 364(−1), process 55(−1), golden −6, almanac·diff-check 녹색.
+- **FE5-c2 승인(golden 6장)**: 종료 기록 예측과 장면·내용 일치. plan-bottleneck(Detail 홈: S1 활성 계획 · 시나리오 목록 · 계획 만들기 · 페이즈 편집 + "이 계획" 5줄, S2 P1~P3 단계 8, 아야네 1단계 "병목 1 · 여기서 막힘", S3 카드 2장·지연 단계 4개), plan-by-phase(페이즈별 탭 켬, 옛 소비 목록이 S3 안에), plan-overall(전체 탭), plan-scenario-compare(옛 섹션 1 → 비교 S1 메뉴, 본문 위치는 옛 화면과 비슷 — 4열 비교 FE5-e에서 다시), plan-flow-step4·-append(늘어나는 재화에서 크레딧 줄 빠짐, 크레딧 KPI 유지). `legacyHome` 다리(옛 홈 테스트 약 30건용, 앱은 늘 새 홈)와 c1 보기 모드 페이즈별·전체 미개방 판단도 승인 — FE5-d·FE5-f에서 정리. FE4-g 발견 2건은 FE4-g2(흐름 handoff 소단위)로 워크플로에 올린다.
+- **fb3-dart 반려**: ① analyze info `test/inventory_fb3_service_test.dart:598` use_null_aware_elements ② `statistics_page_test` 'Plan' 머리 못 찾음 — Mock 카탈로그 credits·SecretStone 행 추가로 통계 화면 길이·집계가 바뀐 것으로 추정, 통계 projection이 catalog-only 재화를 아이템으로 세는지 확인 요청 ③ `scenario_process_e2e_test`가 `credits` '0'을 수동 저장 → FB-3 guard가 의도대로 `currency_read_only` 거부. guard는 그대로, 테스트 준비를 바꾸고 **앱 안의 다른 재화 수동 저장 경로(v6 가져오기 등)를 grep해 점검**하도록 했다. 수정 요청 `debug/frontend_redesign_handoff/fb3dart-fix-message-20261011.md`.
+- XB에는 RED가 CF 쪽 원인이고 FB-3 guard는 의도대로 동작했다고 알린다(backend 로그 13:15). backend/contracts 고정 유지 요청.
+
+## 2026-10-11 13:40 — gate ① 재실행 `20261011_132201`: 테스트 전부 녹색, golden 6장(FE5-c2) 그대로 → ②
+
+- analyze 0, 테스트 287 + 683 + 366, process 56, almanac 45, diff 0. golden RED 6장은 13:15에 승인한 FE5-c2 장면과 픽셀 수까지 같다(plan-bottleneck 85.84% · by-phase 78.05% · overall 64.81% · flow-step4 0.52% · -append 0.37% · scenario-compare 20.18%).
+- fb3-dart 수정 검토(status-lane-b "fb3-dart gate ① RED 수정 기록") 승인:
+  · 통계: `buildInventoryStatistics`가 catalog-only 재화 행·재화 snapshot 항목을 아이템 보유 범위에서 뺀다 — 실제 631행 카탈로그에서도 보유율이 재화 때문에 틀어지는 화면 버그로 판정하고 구현을 고친 판단이 맞다. 테스트 기대 불변, 새 projection 테스트 1.
+  · `scenario_process_e2e_test`: 준비만 재화 → 활동 보고서 키로. 기대(credits > 0, 첫 병목 P1, 격리) 불변, 근거는 백엔드 소스 정적 확인.
+  · 앱 경로 점검: 공개 `repository.inventory.update`를 보내는 앱 코드는 인벤토리 화면 하나(이미 재화 통째 유지). v6 가져오기·계정 만들기·스캔 commit은 guard 대상 아님. 다른 레인 파일 목록 0.
+  · commit.json에 `statistics_projection.dart`·`scenario_process_e2e_test.dart` 등 반영 확인.
+- 다음: 사용자 ② `-UpdateGoldens` + compare → GREEN이면 XB에 FB-3 커밋 요청(backend 로그) → XB 커밋 해시 확인 → fb3dart → fe5c2 → redesigndocs(한 줄씩).
+
+## 2026-10-11 14:15 — gate ② GREEN(FB-3 같은 소스), XB FB-3 커밋 요청
+
+- `20261011_135529` compare GREEN: analyze 0, 테스트 287 + 683 + 366, process 56, golden 37(FE5-c2 6장 갱신, 13:15 승인 장면 그대로), almanac 45, diff 0.
+- XB에 FB-3 먼저 커밋 요청(backend 로그 14:15). XB 해시 확인 뒤 커밋 순서: fb3dart → fe5c2 → redesigndocs(한 줄씩). 워크플로 fb3-dart·FE5-c2 완료 표시는 이번 redesigndocs에 들어가고 해시는 다음 문서 커밋에 적는다.
+- 다음 배정 후보(커밋 뒤): Lane A FE5-d(페이즈별·전체 탭 시안대로, c1 보기 모드도 함께 개방) 또는 FE4-g2, Lane B FE8-c(편집기·초상 통합, FB-2 커밋으로 "마지막 스캔" 메타 줄 표시 가능) 또는 FE6-a(인벤토리, FB-3 메타 사용). XB 다음 FB 요청서는 커밋 확인 뒤 정한다.
+
+## XB 보고 — 2026-10-11 14:24: FB-3 source26 선택 커밋 완료·CF14:15 회신 처리
+
+- **완료·해시**: FB-3를 `abbd3bfa5e9e9c800fadbb7158666b18d9e1c036` (`abbd3bfa`, parent `84f645c391f54cc312ce12f21d85ed34789f325b`, branch `scanner-consolidation`)로 커밋했다. selectedHEAD26의 정확26경로(M16/A10)·raw bytes/SHA와 실제 commit blobs 전부 일치. 카탈로그 metadata3·읽기전용 재화2·획득처 조회 계약/백엔드/회귀 fixture만 포함했다. 실제 경로·commit SHA256 목록은 `debug/xb_fb3_commit_20261011/artifacts/commit-receipt.json`, 실제 Git diff는 `artifacts/committed-source26.patch`다. frontend·인식 WIP·미추적 MMD·로그/P0 변경은 커밋에서 제외했으며 **push0**이다.
+- **기존 WIP 보존**: 메인 working26은03:16 게시한 working pins 그대로이고 동결watch2269 변경0. 다른 레인 tracked WIP95도 actual bytes/SHA 변화0. README·`backend/core/inventory_catalog.py`·`backend/core/repository_store.py`는 검토된 selectedHEAD판을 인덱스에만 사용하여 기존 glyph/C6/lazy/인식 WIP를 커밋에서 제외하고 작업 트리에서 그대로 보존했다. 커밋 뒤 indexempty 확인. EOF1B 정리·S-FB2b+FB-2b paired history 왕복 COMPLETE 기록은 유지한다.
+- **검증**: 원 exact working26 표준 전체 Python1107/1095.61s/OK(실패·오류·skip0) PASS 및 selectedHEAD23 bounded157 PASS·HEAD26 정적 경계 PASS를 사용했다. CF 같은-source `20261011_135529` compare GREEN: analyze0, 일반1336(287+683+366), process56, golden37, Almanac45, diff0. 이번 선택 stage/commit 전 Almanac45와 전체v7·cached diff 공백 검사 PASS, commit26 raw blobs/parent/source동결/WIP 보존 PASS. 새 runtime0이며 whole clean HEAD full 검증을 주장하지 않는다.
+- **근거**: 이번 `debug/xb_fb3_commit_20261011/output.md` 및 실제 artifacts. 원 full 근거 `debug/xb_fb3_final_full_v2_gate_20261011/output.md`, 메인 반영 `debug/xb_fb3_main_overlay_20261011/output.md`, 선택 경계 `debug/xb_fb3_head26_commit_boundary_review_20261011/output.md`는 immutable 그대로다. 원 CF gate summary·11파일도 actual bytes/SHA를 복사해 확인했다. 확인 도구의 첫 diff-log 처리 오류2건은 원 안내 로그와 함께 보존하고, 실제 종료 코드·stdout/stderr 분리 확인으로 해소했다(제품/계약 변경0).
+- **진행 중·다음 순서**: XB backend 커밋 완료, 차단없음. 사용자가 CF `fb3dart → fe5c2 → redesigndocs`를 같은 gate로 커밋하는 단계다. 기존00:02/00:11·03:16 Dart/계약 인계 이후 추가 변경목록0. **CF 커밋 전까지 XB backend/contracts 추가변경0 유지**. CF fb3dart 커밋 해시 수신 전 FB-3 왕복 COMPLETE·P0-P6 전체완료로 표시하지 않는다. 새 FB 요청은 CF 후속 회신을 따른다.
+
+### 사용자에게 전할 3줄
+
+아이템 기능26개 파일만 커밋했고 번호는 `abbd3bfa`입니다.
+기존 인식 작업을 보존했으며 푸시하지 않았습니다.
+프론트 커밋이 끝날 때까지 백엔드 파일을 고정합니다.
+
+## XB 보고 — 2026-10-11 14:26: FB-3 커밋 해시·최종 근거 수신 완료
+
+- **커밋 해시** `abbd3bfa5e9e9c800fadbb7158666b18d9e1c036` (exact source26 M16/A10). 최종 근거 `debug/xb_fb3_commit_20261011/output.md`16882B/SHA256 `8f4c88c0459019f9f84b1501755d5af6eed092944aa3522fc52e971a0ac8025e`; 실제69 artifacts/1411554B 전수 확인, 별도 manifest17926B/SHA256 `7de87b5b02e945468a25da633f2cef8dbb28cf7fbf88b5b2a102c39c31c62a42`까지 read-back 일치. 해당 task/output/artifacts는 이제 동결이다.
+- 원 전체Python1107 PASS·같은-source CF gate20261011_135529 GREEN과 새 Almanac45/공백 검사 PASS 근거 유지. 기록 뒤 재확인도 working26/동결watch2269/기존tracked WIP95 변경0, indexempty, push0. CFfb3dart→fe5c2→redesigndocs 후속이며 CF커밋 전 XB backend/contracts 추가변경0 유지; FB-3 왕복/P0-P6 전체완료 선언 없음.
