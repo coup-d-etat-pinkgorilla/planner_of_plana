@@ -2045,3 +2045,47 @@ Common migration/recovery may precede a guard rejection and increment revision. 
   · Lane A **FE5-f** 옛 계획 화면 정리 — `debug/frontend_redesign_handoff/fe5f-worker-prompt-20261012.md`. 정리 목록 먼저, 크면 f1/f2 분할. 계정 없음 대체 경로는 다른 탭과 같은 빈 상태(공통 방식이 없으면 멈추고 권장안). 남는 golden 변화 0, 옛 장면은 정의만 지우고 기준 PNG 삭제는 CF가 사용자 승인 후 별도 커밋. FD-086은 그대로.
   · Lane B **fb10b-dart** — `debug/frontend_redesign_handoff/fb10bdart-worker-prompt-20261012.md`. XB 9경로 SHA 대조 후 착수. 새 review.get strict DTO·Mock·Process, 직접 고치기 scope, 인벤토리 행·상세 "확인 필요" 표시, Mock 스캐너 commit 의미, process E2E.
 - 다음: 두 워커 `TASK_OUTPUT_READY` → 검토 → 같은 소스 gate 1회(XB FB-10b 포함) → golden → XB FB-10b 커밋 → CF fb10bdart·fe5f 커밋 → redesigndocs. FE5-f에 파일 삭제가 있으면 사용자에게 삭제 커밋 승인을 받는다.
+
+## 2026-10-12 21:35 — FE5-f1·fb10b-dart 검토, 같은 소스 gate GREEN, fe5f1 커밋, XB 커밋 대기
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. FE5-f는 워커가 f1/f2로 분할(f1 = `legacyHome` 다리·옛 홈 섹션 1~6·옛 학생 추가 진입·옛 홈 테스트·옛 장면 정의 3개; f2 = 계정 없음 빈 상태·요소 편집기 대체 경로·`plan_phase_editor.dart` 삭제·`plan_student_selector.dart` 정리). output.md SHA 전부 일치(fe5f1 10행·fb10bdart 11행), 두 slice 파일 겹침 0, 범위 밖 변경 0, XB 09:10 9경로 9/9 일치.
+- gate `20261012_211921` **GREEN 한 번에**: analyze 0, 테스트 346 + 492 + 622 + 77(직전 대비 −29 옛 홈 테스트 +19 fb10b), process 59(+1), golden 42(옛 장면 3 정의 삭제, 남는 장면 변화 0 — 예측대로).
+- 커밋: **fe5f1 `e2e8e416`**(9파일, +592 −7863). fb10bdart는 DryRun 통과, XB exact9 해시 뒤 커밋(backend 로그 21:35 요청).
+- 사용자 결정 요청(4건): ① 옛 기준 PNG 3장(`plan-phase-editor`·`plan-student-selector`·`plan-element-builder`) 삭제 커밋 ② 계획 탭 계정 없음 빈 상태 = 워커 권장안(인벤토리 방식 가운데 문구 "선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다.", 계산기에서 넘어온 학생은 SnackBar "계정을 먼저 골라야 계획에 추가할 수 있습니다.") — f2에서 구현 ③ 수량 없이 "확인 필요"만 있는 아이템을 "모름 그대로 확인"으로 지우는 길(백엔드 규칙 변경) 필요 여부 ④ (CF 판단) 타일 10px warn 점은 시안·키트에 없는 표시 — 최소 표시로 수용, 사용자 실기에서 보기.
+- 그 밖 발견(후속 목록): FE5-f1 발견 1(시나리오 목록 1280×720 넘침 3곳, FE5-a 몫 소단위), 3(계산 응답 `overall` 형식 검사 빠짐 — Detail 모델 쪽 검사 추가 소단위), 4(`planStudioDocument`·키트 테스트만 쓰는 옛 이름). fb10b-dart 발견 4(`DateTime.now().microsecondsSinceEpoch` idempotency key 패턴 — 다른 화면 점검 소단위), 7(`planning_protocol_client_test` 실제 Python 테스트 병렬 시간 초과 가능 — fe_gate process 분리 대상 검토, CF 도구).
+
+## 2026-10-12 21:45 — 사용자 결정 3건(모두 권장안)
+
+- ① **옛 기준 PNG 3장 삭제 승인**(`plan-phase-editor`·`plan-student-selector`·`plan-element-builder`). CF 도구는 git 쓰기 막기(`permissions.deny`: `git rm`·`git commit`)에 걸리므로 막기를 우회하지 않고 사용자가 직접 삭제 커밋을 실행한다(명령은 사용자에게 전달). 커밋 뒤 해시를 이 로그에 적는다.
+- ② **계획 탭 계정 없음 빈 상태 = 워커 권장안**: 인벤토리 방식 가운데 문구 "선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다."(키 `plan-home-no-profile`, Detail 홈 기존 안내 자리), 계산기에서 넘어온 학생은 SnackBar "계정을 먼저 골라야 계획에 추가할 수 있습니다.", S1 버튼은 지금처럼 꺼짐, `loadRepositoryPlan` 계정 없음 분기("읽는 중"에 머묾)도 이 빈 상태로. FE5-f2에서 구현.
+- ③ **수량 없이 "확인 필요"만 있는 아이템은 수량을 넣어야(또는 스캔이 적용해야) 해제** — 백엔드 규칙(`applied ⊆ identities`) 그대로, "모름 그대로 확인" 경로는 만들지 않는다. backend 로그 21:45 회신.
+
+## XB 보고 — 2026-10-12 21:57: FB-10b exact9 커밋 완료·CF fb10bdart 커밋 가능
+
+- **FB-10b exact9 커밋 완료: `404c47de803e33be4cf2580eed253f1576af4b6c`**, parent `b4fc1b6d7f2b0ea392daea538a5c214fdd4cdd25`. CF21:35 같은-source20261012_211921 full GREEN(일반346+492+622+77/process59[부분commit→재시작표시→동값Bscope해제→replay/타인보존/다른scope오류]/golden42/Almanac45/diff0)을 수신했다. 인계된selected exact9 index-only commit 실제경로/blob 전수PASS·indexempty·push0. **CF fb10bdart를 지금 커밋해도 된다**.
+- working4102와기존WIP/CFsource를보존했고main source재작성0, repository_store import순서WIP는커밋에서제외했다. source evidence `debug/xb_fb10b_product_20261012/output.md`(2331235B/SHA1618d6bbe4ffc0817c5a1bdc69e52fd196919553da5b022537bf622d938ddf77), canonical1226/941.644s·focus15·selected271/61.366s PASS, freshAlmanac/working·cached diff PASS. 이번receipt/patch는 debug/xb_fb10b_exact_commit_20261012/artifacts/에있다.
+- **CF21:45 사용자결정 수신·규칙유지**: 수량없는flag만있는key는실제수량입력/scan적용으로만해제하며 applied⊆identities 그대로다. 모름그대로확인경로/규칙변경0. **FB2d 왕복완료 수신**: XB64301ab7→CF3f42cee3, gate074656; 소유상태에도완료를기록한다. FB10b CF짝커밋은아직미수신/PENDING이며그전backend/contracts/frontend/tool 추가변경0.
+- CF알림2건후속: 삭제후기존scanner 성공receipt의원요청재시도 의미·데이터잔존을격리에서확인하고판단을회신한다. 공용 inventory process fixture는backend/tests의test-only진입점으로준비해실제game/window없이같은Repository/Scanner/Application/stdio클래스를재사용한다. production진입점/새공개fixture메서드/잔고fake값0, frontend직접변경0·source변경은격리만이다. 별도검증/인계후CF가채택한다.
+
+## 2026-10-12 22:18 — 회신(XB): CF scanner 성공receipt 유지·공용inventory E2E 진입점 격리 검증
+
+- **CF09:30 판단: 완료된scanner 성공receipt는유지한다**. Python `_commit_current`와Mock(line876)은성공뒤frozen/current 전체bucket을비우고 원요청signature+최소성공응답만남긴다. 같은세션·key·원요청재시도는과거성공응답을돌려줘도프로필이현재존재한다는뜻이아니다. liveRoot에서scan성공→프로필삭제→원요청replay가파일변경/계정복원0임을actual검증했다. 새key요청은profile_not_found로거부된다. 프론트는과거receipt로현재계정/수량을다시만들지말고삭제캐시정리와현재catalog/state를기준으로한다. Mock도이기존최소receipt의미를유지하면된다. production코드/공개shape/삭제7경로규칙변경0. 불완료pendingreceipt나전체scanner후보가메모리에서강제삭제됐다는주장은하지않는다.
+- **CF21:35 ① 판단:공용test-only 진입점을둔다**. `backend/tests/inventory_e2e_backend.py`·`backend/tests/fixtures/inventory_process_fb10b_v1.json` 및unit/process회귀1파일을 `debug/xb_inventory_process_fixture_20261012/artifacts/working-v7`에격리준비했다. CF기존inline A7/B99/C70/D5와target명/message key를그대로사용하고실제Repository/Scanner/Application/stdio를조립한다. production `core/backend_process.py`나새공개fixture method를추가하지않는다. runtime release복사는core/data/assets만선택하므로tests경로는대상밖이다.
+- **집중4/0.92s PASS**: actual자식프로세스3번의부분scan/review/commit→restart flags B,C,D→동값Bscope해제/C,D보존→다른scopeconflict·없는D scope거부→restart原ack replay,타인프로필보존; 완료receipt삭제후재시도; Temp의ba_planner_빈/ownedroot만허용·기본/외부/비어있지않은미소유root거부·marker version bool거부; tools/planning/migration API 차단. native game/capture/실제사용자profile0. 일반user환경에서검증했고OS/ACL/권한설정변경0이다.
+- **아직메인/채택전**: canonical full1230이실행중이며GREEN/수신완료로꾸미지않는다. CF fb10bdart짝commit전 main4102/backend/contracts/tool 동결유지, source3 mainoverlay/stage/commit/push0. fullGREEN/output실제SHA뒤인계한다. CF frontend수정은하지않는다.
+- 채택시CF test의inline `-c`코드를 `-m tests.inventory_e2e_backend`로바꾸면된다. `cwd=backend`, 명시적 BA_PLANNER_STORAGE_ROOT=Directory.systemTemp.createTemp('ba_planner_...')가필수다(현재CF prefix호환). 출력은같은JSONL/async events; AppService/DTO shape변경0. package반영시점과새같은sourcegate는CF짝커밋후조율한다.
+
+## XB 보고 — 2026-10-12 22:36: FB10b exact9 커밋·CF 알림판단·공용E2E fixture 격리 GREEN
+
+- **FB10b backend 완료**: `404c47de803e33be4cf2580eed253f1576af4b6c` exact9 index-only, parent `b4fc1b6d7f2b0ea392daea538a5c214fdd4cdd25`, working4102/기존WIP/CFsource 보존·indexempty·push0. actual CF same-source211921 full GREEN(일반346+492+622+77/process59/golden42/Almanac45/diff0), fixedsourcecanonical1226·focus15·selected271 PASS 및freshAlmanac/working·cached diff PASS. evidence debug/xb_fb10b_product_20261012/output.md, actual commit package debug/xb_fb10b_exact_commit_20261012/output.md3497B/SHAcf92ce07ec51842a2d5ec49da0f94d48f5bfd13ee2b43054d012829725785e90(actual17). 해시를CF에전달했고CFfb10bdart짝커밋은아직미수신이다. CF21:45 수량없는flag해제규칙 유지/applied⊆identities 변경0. FB2d64301ab7→CF3f42cee3/gate074656 왕복완료를기록했다.
+- **CF09:30 성공receipt 판단 완료**: Python/Mock은완료후전체frozenbucket을비우고signature+최소성공응답만유지한다. 원세션/key/요청의삭제후retry는역사적성공이며현재프로필존재로해석하지않는다. actualscan→delete→원retry가파일변경/복원0이고새key는profile_not_found인것을검증했다. Mock유지의미/프론트삭제캐시정리·catalog현재상태기준을회신했다. production코드/공개shape/삭제7경로변경0; pendingreceipt/모든scanner후보메모리삭제완료주장0이다.
+- **CF21:35 공용entry 준비 완료(격리)**: backend/tests/inventory_e2e_backend.py, test_inventory_process_fixture_e2e.py, fixtures/inventory_process_fb10b_v1.json exact3. CF기존inline A7/B99/C70/D5 fixture와같은실제Repository/Scanner/Application/stdio클래스/JSONL을사용한다. Temp ba_planner_빈/ownedroot 및strictmarker만허용,기본/외부/미소유root·tools/planning/migration거부. runtime release는core/data/assets만복사하여tests는제외된다. 새production진입점/공개fake스캔메서드/게임·capture·userprofile0. source3 경로/SHA는패키지source3.json이다.
+- **새검증**: finalfocused4/0.920s·canonical full1230/1280.253s PASS(실패/오류/skip0·추가제외0), 입력5157/missing·unexpected0·main4102/readOnlyexternal4 보존. actualprocess3회restart/부분review/flag B,C,D→동값Bscope해제·C,D유지/다른scopeconflict/없는Dscope거부/原ack replay·타인보존 및receiptdelete회귀다. source package `debug/xb_inventory_process_fixture_20261012/output.md` 1011424B/SHA43ef6a53a665da7dc7174731287ceaf58d6d2a7e9690ec147307bc7edf3ecd54이며 actualmanifest를전수읽고마지막에봉인했다. source3 mainoverlay/stage/commit/push0·frontend편집0이다.
+- **CF 채택 인계**: 현재fb10bdart짝커밋/완료회신전 mainbackend/contracts/frontend/tool4102 추가변경0 유지. 다음 source3반영창과CFadoption/gate를조율한다. frontend/test/inventory_review_fb10b_process_e2e_test.dart의inline -c를 -m tests.inventory_e2e_backend로교체(명시적Temp BA_PLANNER_STORAGE_ROOT/현재CFprefix호환), DTO변경0; MASTER_REQUIRED.md에정확조건이있다. 이실행을Flutter/native검증으로계산하지않는다.
+- **잔여/차단**: CFfb10bdart→완료회신, 공용testentry채택은CF협업후속. M2nativebundle은기존symlink권한거부exit1·binary/publish0이며재시도/설정·ACL변경0, 정상user환경용명령은기존봉인package에있다. FB10c crop수명/진단image제외·FB10d 실제통화인식/공개captureparity, M1 actualfield-source association/M3pairedversion/strictDTO/M4, O3별도독립평가와전체P0-P6·스캐너·T3/T4완료는별도다. 공용store/ba-data.lock/data-extracted/realprofile 쓰기0. 마지막Almanac/whitespace/index/보존결과는이세션receipt/rawlogs에기록한다.
+
+## 2026-10-12 23:05 — FB-10b 왕복 완료(fb10bdart 커밋), 옛 PNG 삭제 커밋 확인
+
+- 사용자가 옛 기준 PNG 3장 삭제 커밋을 직접 실행: **`b4fc1b6d`**(작업 트리에서도 3장 없음). XB FB-10b exact9 **`404c47de`**(parent `b4fc1b6d`, backend 로그 21:57) 확인 → CF **fb10bdart `b49ce994`**(10파일, DryRun·실행 충돌 0, gate `20261012_211921`). `mock_app_service.dart` 작업 트리 = post 사본(스캐너 WIP 보존). **FB-10b 왕복 완료.**
+- XB 22:18·22:36 판단 수신: ① 계정 삭제 뒤 스캐너 성공 receipt 유지(역사적 성공 응답일 뿐 프로필 존재 뜻 아님, 새 key는 `profile_not_found`) — CF Mock도 같은 의미라 변경 없음. ② 공용 test-only 인벤토리 E2E 진입점(`backend/tests/inventory_e2e_backend.py` + fixture)을 XB가 격리 준비 중 — XB 메인 반영 뒤 CF가 `inventory_review_fb10b_process_e2e_test.dart`의 inline `-c`를 `-m tests.inventory_e2e_backend`로 바꾸는 소단위로 받는다(같은 소스 gate 필요).
+- 레인 A·B 비어 있음. 다음 배정은 사용자 요청 때.
