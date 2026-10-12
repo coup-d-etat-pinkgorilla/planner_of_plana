@@ -1933,3 +1933,115 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - 배정(시작 SHA `fe920b81` 이후):
   · Lane A **FE6-d** 오파츠 확장 — `debug/frontend_redesign_handoff/fe6d-worker-prompt-20261012.md`. 키트 morph가 필요해 Lane A(키트 소유)가 인벤토리 파일을 이 slice 동안 맡는다. 키트에 실수 rect morph + 섹션별 퇴장, `plan_phase_editor.dart`는 손대지 않음(FE5-f에서 제거 → FE5-f는 FE6-d 뒤). 확장 시퀀스·선택 오파츠 상세·점 선택(FD-103). 새 장면 `inventory-analysis-opa`.
   · Lane B **fb2d-dart** — `debug/frontend_redesign_handoff/fb2ddart-worker-prompt-20261012.md`. 시작 조건 = backend 로그의 XB "FB-2d 메인 반영 완료". 그 전엔 읽기·착수 기록만 하고 BLOCKED로 멈춤.
+
+## 2026-10-12 01:59 — 회신(XB): CF02:00 반영 허가 수신·FB2d final whole 실행 중
+
+- CF FE4-g3 `0a0de57d`·FE6-e `fe920b81`·문서 `861eea56` 및 같은-source gate014658 GREEN/반영 허가를 수신했다. 이 CF gate는 아직 FB2d 새source10의 gate가 아니다. 전체 Python GREEN 뒤 working10 반영→"FB-2d 메인 반영 완료" 경로/SHA 보고를 곧바로 진행한다. Lane A FE6-d와 Lane B fb2d-dart 같은-source gate 뒤 exact10 커밋 순서를 유지한다.
+- **selected HEAD bounded250/75.766s PASS**다. 원250의 process timeout ERROR1 세 번과 original repository14/11.818s PASS·cold-start 진단을 보존했다. harness가 test 경로를 자식 PYTHONPATH에도 추가했던 것을 표준discover처럼 부모 sys.path에만 넣도록 고쳤다. source/test/timeout/exclusion 변경0이며 새250 전부 같은 소스·로컬 origin으로 실행됐다. 표준 whole가드에는 그 추가환경이 없다.
+- 누락304 입력을 SHA/bytes 복원한 **accepted working copy는 artifacts/product-v7-v2**다. source10 SHA는01:28 목록과 같고 canonical whole1211이 실행 중이다. 첫 whole FAIL(8/12/skip6)/failed helper와 사본은 보존, 새GREEN 수신 전 메인 overlay0이다.
+- **M2 별도 native bundle 실제 시도는 Windows symlink 권한 검사에서 BLOCKED**: 의존성 해결 뒤 exit1, binary/publish0. OS 설정·권한/ACL·대체symlink·거절후재시도0. `debug/xb_m2_bundle_20261012/output.md` 237744B/SHA fa9de6b86c75fdda2de56f7b2ccd19fcdeb7791d856228716164379dcba29de9에 실제1649 artifacts와 정상Windows실행환경용 명령/독립receipt 준비를 담았다. 현재이workspace의 release/developer_tools는 부재다. binary/UI/M2 전체완료로 기록하지 않는다.
+- FB10 후속 readonly audit `debug/xb_fb10_remaining_20261012/output.md` 1666B/SHA34bf783f64727eb0b1c6a7ce4bb39099aa68b814eec596391f569aab4c499fc4: FD146 영속needs_review→FD145 fallback crop 수명/진단image제외→FD096 실제통화인식. fullFB10 고정 선언0이며 두 공개 계약/기존scan-history scope는 그대로다.
+
+## 2026-10-12 02:15 — 보고(XB): FB2d 격리 whole GREEN·최종 source10 고정·CF 허가에 따라 반영 시작
+
+- accepted `debug/xb_fb2d_product_20261012/artifacts/product-v7-v2` canonical **1211/1146.299s PASS**(exit0, 실패/오류/skip0, 추가제외0), focused18/26.224s·selected HEAD bounded250/75.766s PASS. whole입력5150·missing/unexpected0·main4094/external4 보존이다. 원 missing304 입력 wholeFAIL과 선택gate harness실패들은 보존했다. almanac45/diff exit0도 확인했다.
+- 최종 output.md **3849611B/SHA `3a8ce6869b7c8f9c19f06c1cfa27aca9e1fc2c138ffdcb1b9a5bd9c5ad5e44f7`**, actual20684 artifacts 전수확인 후 마지막에 작성했다. source10의 working·selected bytes/SHA는01:28 표/source10-final.json과 모두 같다. 순서/같은consent/7경로/응답revision-only와 CF-HANDOFF.md 기준도 그대로다. first product-v7(입력누락wholeFAIL) 대신 검증된 product-v7-v2를 working overlay에 사용한다.
+- CF02:00의 "메인 반영 가능"과 FE4-g3·FE6-e 완료를 수신했으므로, **지금 working10 정확경로 반영을 시작**한다. 사전Dart 목록01:28/01:59는 shape0이며 deleted_paths0이다. 실제 반영 완료·경로/SHA를 별도 기록하고 backend/contracts/frontend/tool은 CF 짝커밋 전 추가변경0으로 동결한다. 아직 이 항목은 반영완료/새CFgate/commit 선언이 아니다.
+
+## XB 보고 — 2026-10-12 02:17: **FB-2d 메인 반영 완료**·CF fb2d-dart 시작 가능
+
+- **FB-2d 메인 반영 완료**. CF02:00의 FE4-g3·FE6-e 커밋 완료/반영 허가에 따라, 검증된 `debug/xb_fb2d_product_20261012/artifacts/product-v7-v2`의 **working10 정확경로**만 반영했다. first product-v7(입력누락wholeFAIL)이나 commit-only selected10을 working overlay에 사용하지 않았다. 아래 actual main bytes/SHA는01:28/source10-final.json/whole-v2의 source10과 일치한다.
+- **검증**: focused18/26.224s·selectedHEAD bounded250/75.766s·canonical whole1211/1146.299s PASS(실패/오류/skip0·추가제외0), whole입력5150/missing·unexpected0·readonlyexternal4 보존. actual child crash matrix56·중단복구8 및32 optional presence를 포함한다. before4094→after4098(신규4), 비선택 파일/WIP 모두 보존·indexempty·XB stage/codecommit/push0이다. 이 반영은 동일bytes 복사이므로whole 반복0. 준비/검증도구의 원FAIL과skip은 별도 불변보존한다.
+- **Dart 기준**: 요청 exact profile_id/expected_revision/idempotency_key→응답 exact revision, 공개shape/버전 변경0·deleted_paths0. CF는01:28 목록대로 확인 문구에 local tactical-share 포함·삭제된프로필 캐시만 정리·samekey+원revision 재시도·Mock/actual process E2E를 연결하면 된다. source10에 `contracts/fixtures/profile_delete_fb2d_v1.json`이 포함됐다. legacy목표/이력·타인프로필을 새fake값으로 대체하지 않는다.
+- **동결 시작: CF 짝커밋 전 backend/contracts/frontend/tool 추가변경0**. 지금 CF Lane B fb2d-dart가 시작해도 된다. CF Lane A FE6-d + Lane B 정지→이 **같은 source10** CF full gate GREEN→XB commit-only selected exact10→CF fb2ddart commit 순서다. gate014658은 반영전이고 새source gate로 재사용하지 않는다. working과선택Git투영의 차이는기존 repository_store import순서WIP이며 main WIP는보존한다. selectedSHA/AST144·bounded근거는고정소스패키지에 있다.
+- 근거 source output.md **3849611B/SHA `3a8ce6869b7c8f9c19f06c1cfa27aca9e1fc2c138ffdcb1b9a5bd9c5ad5e44f7`**(actual20684), overlay receipts/원본6·absence4·protected maps는 `debug/xb_fb2d_main_overlay_20261012/artifacts/`이다. main headbefore/after는 `861eea5629550fa343fe8d6af32af1b17dd3254c`/`861eea5629550fa343fe8d6af32af1b17dd3254c`이며 frontend/lib/test XB 편집0, observed other-lane changes0이다. CF/Dart same-source gate·commit, real user delete·powerloss·nativeWindows symlink fixture·whole selectedHEAD는 PENDING/NOT_VERIFIED다.
+- **M2 native bundle**:1회 실제build가 Windows symlink 권한에서exit1로중단, binary/publish0·OS설정/ACL/권한/대체경로/거절후재시도0. `debug/xb_m2_bundle_20261012/output.md`237744B/SHA `fa9de6b86c75fdda2de56f7b2ccd19fcdeb7791d856228716164379dcba29de9` actual1649, 정상Windows build환경용 user runner와비파괴publish 명령을준비했다. 현재local旧bundle은부재. M2 binary/UI/phase완료0이다.
+- **별도 후속**: FB10a e53fee9e와M2 d2a53fed 왕복수신 완료. 전체FB10은FD146 영속needs_review→FD145 fallback crop수명/진단image제외→FD096 실제통화인식이남아고정선언0; readonlyaudit output1666B/SHA34bf783f64727eb0b1c6a7ce4bb39099aa68b814eec596391f569aab4c499fc4에후속scope/gates를썼다. M3 canonical-field provenance는계약버전+strictDartDTO paired변경이며현재null/comparisons=[]를유지한다. M1 actual출처association·M3/M4·O3승격·P0-P6/스캐너 전체완료0. 공용store/ba-data.lock/data-extracted/realprofile 쓰기0이다.
+
+| main path | bytes | SHA256 |
+|---|---:|---|
+| `backend/core/repository_transaction.py` | 9887 | `a335c2b0a131c9315c79a3bd783c4c2b04790c1bf767b7b18e462717d89b7029` |
+| `backend/core/repository_store.py` | 44276 | `713ed632aad18be615aecba794ca342fba9f97d4af2ec0b5a22583f455694739` |
+| `backend/core/tactical_store.py` | 16556 | `023b97b11520d2f5135412e801c31ed6f31f18b30169354092ff8db4190f95d9` |
+| `backend/core/tactical_v2.py` | 56905 | `c71c881c3c76ac2df960a23c14d025dc235bed789b1b1b9cbe90c12cdba89472` |
+| `backend/core/tactical_share_v1.py` | 30760 | `0fae3f63e8c85460d9f231c1ad87bfc9a02b5d075ae161ba03f58ae313d641b4` |
+| `backend/core/profile_delete_transaction.py` | 14060 | `28446c606e36c95666142a86d264c6ee4ec64d462c25be261af9d9ec55835393` |
+| `backend/core/repository_participant_lock.py` | 3272 | `9fbaee530f207985d7090be6770509dad16ad7856b29d4e20bc1a1cce000ab1f` |
+| `backend/tests/test_profile_delete_fb2d.py` | 20271 | `ebaff54e1c865dde22b7a94519a967bb9c054b229910ad96523bdbfa4f3c8815` |
+| `contracts/README.md` | 85600 | `165623772939a19f06209bac6735bae564aacccb6be5a9c7424164b64584c1a0` |
+| `contracts/fixtures/profile_delete_fb2d_v1.json` | 952 | `704a0cad6180fcf07ef62f7ffdeab6ec20ff47d19b42f87f62c61018bdfa989c` |
+
+## XB 보고 — 2026-10-12 02:31: FB-2d 반영·커밋 사본 준비 완료, 새 CF gate 대기
+
+- **완료**: CF02:00 허가로 FB-2d working10을02:15 메인 반영하고02:17 정확 경로/SHA를 XB·CF·CM에 동일 보고했다. 승인7경로(local tactical-share 포함), 같은 consent·tombstone, optional absent skip, 요청 exact3키→응답 revision-only/공개shape·버전0이다. `debug/xb_fb2d_product_20261012/output.md` 3849611B/SHA3a8ce6869b7c8f9c19f06c1cfa27aca9e1fc2c138ffdcb1b9a5bd9c5ad5e44f7(actual20684)을 불변 보존한다.
+- **검증/범위**: focused18/26.224s·selected HEAD bounded250/75.766s·canonical whole1211/1146.299s PASS(실패/오류/skip0·추가제외0). crash matrix56·중단복구8·optional presence32, 별개 실제 검증이다. working source4098와 기존 WIP를 유지하고 commit-only exact10을 `debug/xb_fb2d_main_overlay_20261012/artifacts/selected-for-git`에 준비했다. repository_store 기존 import순서WIP 제외/JSON newline-only 정규화, AST144 보존·selected bounded 근거는 source package다. HEAD `861eea5629550fa343fe8d6af32af1b17dd3254c`, indexempty·XB stage/codecommit/push0, frontend/lib/test XB 편집0이다.
+- **다음**: CF fb2d-dart + FE6-d 정지→새 같은-source CF full GREEN→XB exact10 index-only commit→CF fb2ddart commit. CF014658은 반영전이며 새 gate로 재사용하지 않는다. **backend/contracts/frontend/tool 동결은 CF 짝커밋 전까지 유지**한다. 아직 같은-source CF gate/두 짝커밋 PENDING, real-user delete/powerloss/nativeWindows symlink fixture/whole selectedHEAD는 NOT_VERIFIED다. 원 입력누락 fullFAIL·준비/진단 실패는 그대로 보존했다.
+- **M2**: 별도 native build1은 plugin symlink 권한에서exit1, binary/publish0·설정/ACL/권한 변경·우회·거절뒤재시도0이다. `debug/xb_m2_bundle_20261012/output.md`237744B/SHAfa9de6b86c75fdda2de56f7b2ccd19fcdeb7791d856228716164379dcba29de9(actual1649), 정상Windows환경용 명령은 artifacts/MASTER_REQUIRED.md에 준비했다. 현재 release/developer_tools 부재이며 binary/UI/M2 전체완료를 선언하지 않는다.
+- **CF 질문 — 다음 FB10b의 미확정 경계**: FD146 영속 확인필요 표시는 확정이나, 수동 편집·가져오기가 이전 표시를 해제하는 규칙은 현재 문서에 없다. 직접 저장·import가 실제로 적용한 resource key만 해제하고, 나머지 key는 유지하는 것으로 연결해도 되는가? XB 권장안은 이 규칙이며 scan 승인/applied key는 해제·identified excluded key는 이전수량+확인필요 유지, unresolved slot에는 key를 만들지 않는 것이다. 수동/import에 fake scan timestamp를 붙이지 않는다. 이 답 전 FB10b product 코드는 착수하지 않고 현재 계약/메인 동결을 지킨다. 전체FB10 고정선언0; audit `debug/xb_fb10_remaining_20261012/output.md`1666B/SHA34bf783f64727eb0b1c6a7ce4bb39099aa68b814eec596391f569aab4c499fc4은 불변이다.
+- **상태/잔여**: P0-P6·scanner·post-consolidation·metadata 상태와 developer-tools architecture를 actual overlay/paired대기/M2 권한경계로 갱신했다. FB10c crop수명·진단image제외, FB10d 실제통화인식, M1 actual field-source association/M3 pairedversion·strictDTO/M4, O3 승격은 별도 미완료다. 공용store/ba-data.lock/data-extracted/real profiles 쓰기0, P0-P6/T3/T4/스캐너 전체완료 선언0이다.
+- **인계 마무리**: 공용 Almanac validate·working diff check 및4098/selected10/output pins/emptyindex 재확인 결과는 `debug/xb_fb2d_main_overlay_20261012/artifacts/session-receipt.json`·raw logs에 저장한다. receipt 확인 뒤 output.md를 실제 artifacts bytes/SHA 전수표와 함께 마지막에 작성하여 overlay 작업을 봉인한다. 이후 CF gate/commit은 새task로 남기며 이 봉인패키지는 바꾸지 않는다.
+
+## 2026-10-12 08:00 — FE6-d·fb2d-dart 검토, 같은 소스 gate GREEN, fe6d 커밋, XB 커밋 대기
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. output.md 파일 SHA 전부 일치(fe6d 27행·fb2ddart 7행), commit.json 목록이 실제 변경 전부를 덮고 범위 밖 변경 0. XB 02:17 메인 반영 10경로 bytes/SHA 10/10 일치(같은 소스 확인).
+- gate ① `20261012_073635`: analyze 0, 테스트 334 + 516 + 622 + 75, process 58(fb2d 삭제 E2E +1) PASS, golden RED 2 = 예측대로(`inventory-analysis`: 확장 버튼 활성만 / `inventory-analysis-opa` 신규). 승인 → `-UpdateGoldens` + 재비교 gate ② `20261012_074656` **GREEN**(golden 45).
+- 새 `inventory-analysis-opa` 검토: 확장 S2가 화면을 채우고 점 → 아이콘(없으면 두 글자), 오른쪽 상세(티어별 보유/필요·사용 학생·병목 순위·"계획에서 쓰는 단계 보기") → 승인. 사용자 캔버스 대조 몫: 아우룸 코인 점의 티어 태그가 플롯 오른쪽 위에서 잘림, 확장 S2 왼쪽 사선 −12px(Studio grid 한계 — FE6-e 발견 1과 같은 "grid 밖 꼭짓점 spec" 소단위로 묶음).
+- 커밋: **fe6d `9dded9dc`**(19파일, CF가 `optional_added` = `inventory-analysis-opa.png`). fb2ddart는 DryRun 통과(충돌 0), **XB exact10 커밋 해시 수신 뒤** 커밋. backend 로그 08:00에 XB 커밋 요청.
+- 발견 처리(후속 목록): FE6-d "계획에서 쓰는 단계 보기" 재화·단계 포커스 인계(계획 탭 쪽 slice), 헤더 부제(`app_section` 소단위). fb2d-dart ① Mock 스캐너 commit receipt가 계정 삭제 뒤에도 남음(스캐너 소유, XB에 알림 후보) ② Mock은 처음부터 없던 ID 읽기에 빈 state(기존) ④ 삭제가 AppShell 안에서 생기면 페이지 캐시 세대 증가 필요 — 지금 삭제 진입점은 타이틀 계정 관리뿐이라 보류.
+- XB 02:31 FB10b 규칙 질문은 사용자 결정으로 올림.
+
+## 2026-10-12 08:10 — 사용자 확인·결정
+
+- 사용자가 08:00 보고 1(FE6-d 커밋·검토)·2(fb2d-dart는 XB 커밋 뒤)를 확인했다.
+- **XB FB-10b 질문 → 사용자 결정: XB 권장안**(적용한 key만 해제, scan applied 해제·identified excluded 유지, unresolved slot key 없음, 가짜 스캔 시각 없음). 대장 FD-146 행에 기록, backend 로그 08:10 회신.
+- 대기: XB FB-2d exact10 커밋 해시 → CF fb2ddart 커밋 → 동결 해제 회신 → redesigndocs.
+
+## XB 보고 — 2026-10-12 08:09: FB-2d exact10 커밋 완료·CF fb2ddart 커밋 가능
+
+- **FB-2d exact10 커밋 완료: `64301ab7941d570286b6c9257dadc63a08e5c9a5`**, parent `9dded9dc93c0454af441b484c5cb06d48fffa012`. CF08:00 같은-source full gate20261012_074656 GREEN(일반334+516+622+75/process58[실제7경로삭제+타인보존+restart replay]/golden45/Almanac45/diff0)을 수신했다. index-only selected10 실제경로/blob 전수검증·indexempty·push0이다. CF fb2ddart를 지금 커밋해도 된다.
+- **보존**: backend/contracts/frontend/tool working4098·기존 인식WIP·CFfrontend 소스를 그대로 보존했고 main source 재작성0이다. repository_store import순서WIP는 인계된selected projection으로 커밋에서 제외했다. fixture JSON은Gitnewline정규화만 적용했다. exact10은02:17 표와 동일경로, receipt/patch는 `debug/xb_fb2d_exact_commit_20261012/artifacts/`다.
+- 근거: 불변 `debug/xb_fb2d_product_20261012/output.md`(3849611B/SHA3a8ce6869b7c8f9c19f06c1cfa27aca9e1fc2c138ffdcb1b9a5bd9c5ad5e44f7), whole1211/1146.299s·focused18·selected250 PASS, unrelatedHEAD AST144 보존. fresh Almanac/working·cached diff PASS. 네이티브powerloss·real-user 삭제·native symlink fixture·whole selectedHEAD는 NOT_VERIFIED다.
+- CF08:10 **FB10b 사용자 결정 수신**: 수동/import 실제적용key만 확인필요 해제·나머지유지, scan applied해제/identifiedexcluded이전값+표시/unresolvedkey0·fake scan timestamp0. 다음 FB10b를 격리 구현하고 actual 방법/DTO/fixture 목록을 CF에 사전게시한다. FB2d CF 짝커밋은 아직미수신이며 paired완료로 선언하지 않는다. 사용자의 동결해제 지시는 수신했고 CF 작업트리를 건드리지 않도록 후속source는 격리에서 진행한다.
+
+## 2026-10-12 08:11 — 알림(XB): FB10b 사용자 결정 수신·격리 구현 시작·Dart 연결 목록 사전 통지
+
+- CF08:10 FD146 사용자결정을 수신했다. source는 debug/xb_fb10b_product_20261012/artifacts/working-v7, 메인backend/contracts/frontend/tool 변경0·push0으로 구현/검증한다. FB2d64301ab7 짝커밋과 겹치지 않는다.
+- **새메서드** repository.inventory.review.get 요청 exact profile_id, 응답 exact version=1/profile_id/revision/needs_review_keys(정렬된 unique canonical keys; 없는key=false). 별도 DTO/strict request·response·Mock·Process·protocol client·인벤토리행 표시 연결이 필요하다. state.get/InventorySnapshot/history/scanner commit 응답키 추가0.
+- **기존 manual inventory update 요청** optional applied_resource_keys를 추가한다. 보내면 실제 적용key만 표시해제하며 수량변경key가 scope밖이면 invalid_payload(scan_scope_mismatch)로 거부한다. 기존scope없는 full-snapshot 클라이언트는 실제수량이 바뀐key만 해제해 무관한표시를 지우지 않는다. 동값을 직접확정할 때도 해제하려면 실제dirtykey를명시한다. 같은key+다른scope는idempotency_conflict이며 원revision/key/scope재시도를사용한다.
+- scan 내부 flatcontext applied는해제/identifiedexcluded는유지·표시추가(이전수량보존), unresolvedkey0·빈승인scope는기존대로commit없음. private profile inventory_review version1은 profile파일/같은journal에 들어가므로 FB2d기존삭제범위안이다. 새파일별도ownedpath0. v6import는현재새프로필에만적용되어표시빈상태이며 fake scan timestamp0.
+- shared fixture는 contracts/fixtures/inventory_review_fb10b_v1.json, 새 schema repository-inventory-review-v1.schema.json 및 root repository protocol optional scope branch를 준비한다. CF는 fb10b-dart 준비/메인반영 창을 회신해 달라. wholeGREEN/source경로·SHA 보고전에는 메인에 올리지 않는다. 전체FB10/FE8-g2~g5 형식고정선언0이다.
+
+## 2026-10-12 09:08 — 알림(XB): 사용자 동결해제 지시에 따른 FB10b verified working9 반영 시작
+
+- 사용자 최신 지시(동결 해제 후 남은작업 완료/계속)에 따라 격리 full/selected GREEN과 정확SHA를 확인한 FB10b working9만 반영한다. 다른WIP/CFfrontend 보존, frontend/lib/test/tool 편집0·index/commit/push0. 새CF 같은-sourcegate 전에는 커밋하지 않는다. FB2d64301ab7 hash는이미전달했으며 CF짝커밋미수신상태를완료로꾸미지않는다.
+- Dart 사전목록08:11 및 CF-CONNECTION.md 그대로: 새 repository.inventory.review.get/version1 sparse needs_review_keys, optional manual applied_resource_keys. 기존 state/quantity/history/scanner success shapes0. 실제반영완료/경로·SHA는곧별도로기록한다.
+
+## XB 보고 — 2026-10-12 09:10: **FB-10b 메인 반영 완료**·CF fb10b-dart 연결 및 같은-source gate 요청
+
+- **FB-10b 메인 반영 완료**. 사용자 동결해제/남은작업완료 지시에 따라 full GREEN/source9 검증 뒤 working9 정확경로만09:08 메인 반영했다. before4098→after4102(신규4), 비선택/WIP 보존·frontend/lib/test/tool XB편집0·indexempty·새FB10b stage/commit/push0. 앞서 FB2d exact10은64301ab7941d570286b6c9257dadc63a08e5c9a5이며 CF짝커밋 회신은 아직 미수신이다. 아래SHA는 실제메인과고정후보 모두같다.
+- **제품 의미**: CF08:10 사용자결정대로 scan applied 표시해제/identifiedexcluded 이전수량+표시/unresolvedkey0, 수동 explicit dirty/ack key만 해제·fake scan timestamp0. private inventory_review v1은 profile과같은revision/journal/idempotency이며 FB2d삭제안에포함된다. 식별됐으나이전수량이없으면 flag만저장하고수량을만들지않는다. 빈승인scope는기존대로commit없음. legacy full-snapshot scope미지정 호출은실제수량변경key만해제해다른표시를보존한다. 현재v6import는새profile만만들며표시초기빈상태, inplaceimport는없다.
+- **검증**: focused15/1.571s·canonical full1226/941.644s PASS(실패/오류/skip0·추가제외0, 입력5154/missing·unexpected0·외부readonly4/main4098 보존), standard selected271/61.366s PASS·공유AST42미변경. 실제child journal4단계 중단/반복복구/committed replay, 실제scanner 부분commit·수량/flag/revision원자성 및profile삭제와타인보존을검증했다. 원focused3FAIL+1ERROR·selected271 기존10초timeout1·새sandbox WinError5(4FAIL/307ERROR)를불변보존했다. 같은테스트가canonical full에서는원10초로PASS; 승인된primary master 정상실행에서표준selected271PASS, 소스/테스트/timeout/OS·ACL변경/제외0이다. whole selectedHEAD/realuserprofiles/nativeUI/powerloss는 NOT_VERIFIED다.
+- **CF 요청/사전목록 확정**:08:11 DART-HANDOFF 및 CF-CONNECTION 그대로 새 `repository.inventory.review.get`(request exact profile_id→response exact version1/profile_id/revision/needs_review_keys), 별도 strict DTO/Mock/Process/protocol validators·인벤토리row/detail 표시; `repository.inventory.update` 요청 optional applied_resource_keys(배열, null금지/중복alias거부·4096상한) 및samevalue ack/범위밖수량변경거부/원revision·key·scope재시도를연결해달라. 기존 state.get/InventorySnapshot/history/scan-commit-history-context-v1/scanner-success shapes0. fixture `contracts/fixtures/inventory_review_fb10b_v1.json`, 기존partial scanner fixture를함께사용한다. 새같은source CF fullgate→XB selected exact9 commit→CF fb10b-dart 순서다. 이전074656 GREEN은FB2d용이며FB10b용으로재사용하지않는다. CFgate/짝commit 전 backend/contracts/frontend/tool 추가변경0으로보존한다.
+- **인계**: source output `debug/xb_fb10b_product_20261012/output.md`2331235B/SHA1618d6bbe4ffc0817c5a1bdc69e52fd196919553da5b022537bf622d938ddf77(actual10676). source9/working-v7/selected-v7·rawlogs/receipts/실패원본/CF-CONNECTION은불변이다. actual overlay·원본5/absence4/protected maps는 `debug/xb_fb10b_main_overlay_20261012/artifacts/`이다. scope해제순서위조·quantityfake값0, frontend파일직접변경0·push0.
+- **남은 경계**: FB10c fallback crop수명·진단 images_included=false/FD145, FB10d 실제credit/eligma recognition/공개capture parity, M1 field-source association/M3 pairedversion/strictDartDTO/M4, O3별도독립평가 및M2 nativebundle은별도다. M2 1차native build는symlink권한에서exit1로중단했으며재시도/설정변경/publish0, 사용자정상Windows환경명령은 `debug/xb_m2_bundle_20261012/artifacts/MASTER_REQUIRED.md`에있다. 전체FB10형식고정·P0-P6/스캐너/M3/SchaleDB제거/T3/T4/O3승격완료선언0. 공용store/ba-data.lock/data-extracted/realprofile 쓰기0이다.
+
+| main path | bytes | SHA256 |
+|---|---:|---|
+| `backend/core/inventory_review.py` | 3830 | `083774af8e3d8e2f6a2198b89290f71e99236d7299152fa52ad6894350e0b13c` |
+| `backend/core/repository_store.py` | 46178 | `68585c7a80279db73313104e14651a9b8be376c38e117bac4218be53e74de35d` |
+| `backend/core/repository_protocol_v1.py` | 9503 | `7bc878950130bf09f312fadfc0c0cfecf75f62b9df39d9a9d792c3921c5cc983` |
+| `backend/tests/test_inventory_review_fb10b.py` | 13627 | `70b142a094523597a88d565b8543c0bef1811aef57dc1d0b77c48f47db775f5f` |
+| `backend/tests/test_planning_protocol_contract.py` | 7642 | `8813620456c0b62fb38a932303b24d11b104a5e46e23f019f97c22b70647a039` |
+| `contracts/README.md` | 87563 | `0b6aec87ccf176ed018843f8c13140bcc9341b9bdfd639c202d4e4a7597c69ee` |
+| `contracts/repository-protocol-v1.schema.json` | 24165 | `df42bf7b832eacd06f9988e8fc4585f4ee98f2070a89d9ac78684bc91186689b` |
+| `contracts/repository-inventory-review-v1.schema.json` | 1305 | `e85366990ae6060e39588f58cbfe1de9f6f48e248706edad76eee2ad74722579` |
+| `contracts/fixtures/inventory_review_fb10b_v1.json` | 2339 | `58d1021e1ac36cd84f41a72ca29d183a205c3dfbd75848df73d503d40a6a547b` |
+
+## 2026-10-12 09:30 — FB-2d 왕복 완료(fb2ddart 커밋), 배정(Lane A FE5-f · Lane B fb10b-dart)
+
+- 사용자 "XB쪽 작업 완료". backend 로그 08:09 XB FB-2d exact10 **`64301ab7`**(parent `9dded9dc`) 확인 → CF **fb2ddart `3f42cee3`**(6파일, DryRun·실행 충돌 0, gate `20261012_074656`). `mock_app_service.dart` 작업 트리 = post 사본(스캐너 WIP 보존 확인). FB-2d 왕복 완료.
+- XB는 사용자 동결 해제 지시로 FB-10b 9경로를 09:08 메인에 반영했다(09:10 보고, 공개 shape: 새 `repository.inventory.review.get`, `inventory.update` optional `applied_resource_keys`). fb2ddart 커밋은 gate가 덮은 프론트 파일 그대로라 영향 없음.
+- 배정(시작 SHA `3f42cee3` 이후):
+  · Lane A **FE5-f** 옛 계획 화면 정리 — `debug/frontend_redesign_handoff/fe5f-worker-prompt-20261012.md`. 정리 목록 먼저, 크면 f1/f2 분할. 계정 없음 대체 경로는 다른 탭과 같은 빈 상태(공통 방식이 없으면 멈추고 권장안). 남는 golden 변화 0, 옛 장면은 정의만 지우고 기준 PNG 삭제는 CF가 사용자 승인 후 별도 커밋. FD-086은 그대로.
+  · Lane B **fb10b-dart** — `debug/frontend_redesign_handoff/fb10bdart-worker-prompt-20261012.md`. XB 9경로 SHA 대조 후 착수. 새 review.get strict DTO·Mock·Process, 직접 고치기 scope, 인벤토리 행·상세 "확인 필요" 표시, Mock 스캐너 commit 의미, process E2E.
+- 다음: 두 워커 `TASK_OUTPUT_READY` → 검토 → 같은 소스 gate 1회(XB FB-10b 포함) → golden → XB FB-10b 커밋 → CF fb10bdart·fe5f 커밋 → redesigndocs. FE5-f에 파일 삭제가 있으면 사용자에게 삭제 커밋 승인을 받는다.
