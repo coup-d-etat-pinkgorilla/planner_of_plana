@@ -23,16 +23,18 @@ Future<MockAppService> _pumpPlanningPage(
   await tester.pumpWidget(
     MaterialApp(
       theme: BAPlannerTheme.dark(),
-      // FE5-c2: 프리셋 관리를 옛 계획 홈의 진입 버튼으로 연다(새 홈은 시나리오 목록 S1에서 연다, FE5-f에서 재작성).
-      home: Scaffold(body: PlanningPage(service: service, legacyHome: true)),
+      home: Scaffold(body: PlanningPage(service: service)),
     ),
   );
   await tester.pumpAndSettle();
   return service;
 }
 
+/// 프리셋 관리는 시나리오 목록 S1 "프리셋 관리"에서 연다(FE5-a, Detail 홈 S1에는 진입 버튼이 없다).
 Future<void> _openManager(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('plan-preset-manager-launch')));
+  await tester.tap(find.byKey(const ValueKey('plan-scenario-list-launch')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('plan-scenario-menu-presets')));
   await tester.pumpAndSettle();
   expect(find.byType(PlanPresetManager), findsOneWidget);
 }
@@ -190,10 +192,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(PlanPresetManager), findsNothing);
-    expect(
-      find.byKey(const ValueKey('plan-preset-manager-launch')),
-      findsOneWidget,
-    );
+    // 프리셋 관리를 닫으면 Detail 홈으로 돌아간다.
+    expect(find.byKey(const ValueKey('plan-home-view')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -231,8 +231,12 @@ void main() {
   testWidgets('preset manager remains usable at the narrow viewport', (
     tester,
   ) async {
-    await _pumpPlanningPage(tester, size: const Size(1280, 720));
+    // FE5-f1: 여는 길(시나리오 목록)이 1280×720에서 넘치는 문제는 FE5-a 몫이라(status FE5-f 발견 사항), 기준 창에서 연
+    // 뒤 좁은 창으로 줄여 프리셋 관리 화면만 본다.
+    await _pumpPlanningPage(tester);
     await _openManager(tester);
+    await tester.binding.setSurfaceSize(const Size(1280, 720));
+    await tester.pumpAndSettle();
 
     expect(
       find.byKey(const ValueKey('plan-preset-manager-back')),

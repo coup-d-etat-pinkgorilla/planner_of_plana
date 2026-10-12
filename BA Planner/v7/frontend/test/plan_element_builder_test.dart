@@ -810,7 +810,6 @@ void main() {
           body: PlanningPage(
             service: service,
             initialSeed: _seed(),
-            legacyHome: true,
           ),
         ),
       ),
@@ -1826,7 +1825,6 @@ void main() {
             body: PlanningPage(
               service: service,
               initialSeed: _seed(),
-              legacyHome: true,
               initialPresets: [_threeStageTestPreset()],
             ),
           ),
@@ -1926,7 +1924,7 @@ void main() {
   });
 
   testWidgets(
-    'builder deletes only the selected unassigned stage and return preserves the rest',
+    'builder deletes only the selected unassigned stage and the phase editor keeps the rest',
     (tester) async {
       final service = _legacyBuilderService();
       addTearDown(service.dispose);
@@ -1939,7 +1937,6 @@ void main() {
             body: PlanningPage(
               service: service,
               initialSeed: _seed(),
-              legacyHome: true,
               initialPresets: [_threeStageTestPreset()],
             ),
           ),
@@ -1971,15 +1968,12 @@ void main() {
         findsOne,
       );
 
+      // FE5-f1: 옛 계획 홈의 "페이즈 만들기" 버튼은 없다. 요소 편집기의 페이즈 편집기 진입으로 남은 단계를 본다.
       await tester.tap(
-        find.byKey(const ValueKey('plan-starter-return-to-plan')),
+        find.byKey(const ValueKey('plan-starter-open-phase-editor')),
       );
       await tester.pumpAndSettle();
       expect(find.byType(PlanElementBuilder), findsNothing);
-      expect(find.byKey(const ValueKey('plan-phase-editor-launch')), findsOne);
-
-      await tester.tap(find.byKey(const ValueKey('plan-phase-editor-launch')));
-      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('plan-phase-editor-source-hoshino-stage-2')),
         findsNothing,
@@ -2005,7 +1999,6 @@ void main() {
           body: PlanningPage(
             service: service,
             initialSeed: _seed(),
-            legacyHome: true,
             initialPresets: [_threeStageTestPreset()],
           ),
         ),
@@ -2034,7 +2027,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('plan-phase-editor')), findsNothing);
     expect(find.byType(PlanElementBuilder), findsNothing);
-    expect(find.byKey(const ValueKey('plan-phase-scroll')), findsOne);
+    // FE5-f1: 계획 메인 = Detail 홈(옛 홈 페이즈 목록은 지웠다).
+    expect(find.byKey(const ValueKey('plan-home-view')), findsOne);
   });
 
   testWidgets('phase editor rejects a drop that reverses student stages', (

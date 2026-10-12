@@ -80,7 +80,6 @@ Future<void> _openPlanning(
   AppService service, {
   List<PlanElementPreset> presets = const [],
   bool loadRepositoryPlan = false,
-  bool legacyHome = false,
 }) async {
   await tester.pumpWidget(
     goldenMaterialHost(
@@ -88,24 +87,11 @@ Future<void> _openPlanning(
         service: service,
         initialPresets: presets,
         loadRepositoryPlan: loadRepositoryPlan,
-        legacyHome: legacyHome,
       ),
     ),
   );
   await tester.pumpAndSettle();
   expect(find.byKey(const ValueKey('planning-page')), findsOneWidget);
-}
-
-Future<void> _selectFirstPlanStudent(WidgetTester tester) async {
-  await _tapKey(tester, 'plan-student-selector-launch');
-  final grid = tester.widget<StudentDiagonalGrid>(
-    find.byKey(const ValueKey('plan-student-selector-grid')),
-  );
-  await tester.tap(
-    find.byKey(ValueKey('student-${grid.students.first.studentId}')),
-  );
-  await tester.pump();
-  await _tapKey(tester, 'plan-student-selector-confirm-selection');
 }
 
 /// 계획 만들기 장면 mock(학생 장면 fixture + 고정 계산 결과).
@@ -611,46 +597,8 @@ void main() {
   }, variant: goldenPlatform);
 
   // --- 계획 하위 화면 ---------------------------------------------------------
-  // FE5-c2: 옛 페이즈 편집기 · 학생 추가 · 요소 편집기는 옛 계획 홈(`legacyHome`)에서만 들어간다. FE5-f에서 정리한다.
-  testWidgets('plan-phase-editor', (tester) async {
-    setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(tester, service, legacyHome: true);
-    await _tapKey(tester, 'plan-phase-editor-launch');
-    expect(find.byKey(const ValueKey('plan-phase-editor')), findsOneWidget);
-    await expectGoldenScene(tester, 'plan-phase-editor');
-  }, variant: goldenPlatform);
-
-  testWidgets('plan-student-selector', (tester) async {
-    setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(tester, service, legacyHome: true);
-    await _tapKey(tester, 'plan-student-selector-launch');
-    expect(
-      find.byKey(const ValueKey('plan-range-condition-section')),
-      findsOneWidget,
-    );
-    await expectGoldenScene(tester, 'plan-student-selector');
-  }, variant: goldenPlatform);
-
-  testWidgets('plan-element-builder', (tester) async {
-    setGoldenViewport(tester);
-    final service = await _service();
-    await _openPlanning(
-      tester,
-      service,
-      presets: [goldenTestPreset()],
-      legacyHome: true,
-    );
-    await _selectFirstPlanStudent(tester);
-    await _tapKey(tester, 'plan-starter-preset-balanced-growth');
-    expect(
-      find.byKey(const ValueKey('plan-starter-return-to-plan')),
-      findsOneWidget,
-    );
-    await expectGoldenScene(tester, 'plan-element-builder');
-  }, variant: goldenPlatform);
-
+  // FE5-f1: 옛 계획 홈에서만 열리던 plan-phase-editor · plan-student-selector · plan-element-builder 장면 정의는 지웠다
+  // (기준 PNG는 CF가 별도 삭제 커밋).
   testWidgets('plan-preset-manager', (tester) async {
     setGoldenViewport(tester);
     final service = await _service();

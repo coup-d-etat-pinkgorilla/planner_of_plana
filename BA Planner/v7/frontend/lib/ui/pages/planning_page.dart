@@ -14,7 +14,6 @@ class PlanningPage extends StatelessWidget {
     this.initialPresets = const [],
     this.active = true,
     this.loadRepositoryPlan = false,
-    this.legacyHome = false,
   });
 
   final AppService service;
@@ -22,9 +21,6 @@ class PlanningPage extends StatelessWidget {
   final List<PlanElementPreset> initialPresets;
   final bool active;
   final bool loadRepositoryPlan;
-
-  /// 옛 계획 홈을 첫 화면으로 그린다(FE5-f 정리 전까지 옛 화면 테스트 · golden만 쓴다, [PlanSectionLayout.legacyHome]).
-  final bool legacyHome;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +34,6 @@ class PlanningPage extends StatelessWidget {
           initialSeed: initialSeed,
           initialPresets: initialPresets,
           loadRepositoryPlan: loadRepositoryPlan,
-          legacyHome: legacyHome,
         ),
       ),
     );

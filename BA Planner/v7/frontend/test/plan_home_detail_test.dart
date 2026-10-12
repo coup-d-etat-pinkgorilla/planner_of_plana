@@ -3,8 +3,8 @@
 // - Detail 위젯: seg를 켜면 페이즈별 · 전체 탭이 FE5-d 새 본문(페이즈 카드 · 전체 목록)으로 바뀌고, resourcePlaceholder가
 //   있으면 S3에 안내만 보인다(활성 계획 홈이 쓰는 매개변수).
 // - 계획 화면: 첫 화면이 비교 없는 Detail 홈이다(KPI · 활성 대비 칩 없음). S1은 시나리오 목록 · 계획 만들기 · 페이즈
-//   편집 + 정보 줄이고, 옛 섹션 1 진입 버튼은 없다. S3 seg 페이즈별 · 전체는 FE5-d 새 위젯이고 옛
-//   `PlanConsumptionSection`은 쓰지 않는다(FE5-d).
+//   편집 + 정보 줄이고, 옛 섹션 1 진입 버튼은 없다(FE5-f1에서 옛 홈 코드째 지웠다). S3 seg 페이즈별 · 전체는 FE5-d
+//   새 위젯이다.
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/plan_scenario_detail.dart';
@@ -13,8 +13,6 @@ import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_scenario_detail.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_scenario_list.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart'
-    show PlanConsumptionSection;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -230,7 +228,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('S3 seg 페이즈별 · 전체는 FE5-d 새 위젯이다(옛 PlanConsumptionSection 없음)', (tester) async {
+    testWidgets('S3 seg 페이즈별 · 전체는 FE5-d 새 위젯이다', (tester) async {
       final service = await _seededService();
       await _pumpHome(tester, service);
 
@@ -243,7 +241,6 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byType(PlanConsumptionSection), findsNothing);
       expect(
         find.byKey(const ValueKey('plan-home-summary-byPhase')),
         findsOneWidget,
@@ -255,7 +252,6 @@ void main() {
       );
       expect(find.text('재화 0종'), findsOneWidget);
       expect(find.byKey(const ValueKey('plan-home-overall-empty')), findsOneWidget);
-      expect(find.byType(PlanConsumptionSection), findsNothing);
       // 칩 3개는 홈에서 누를 수 있다(옛 홈 필터 상태).
       expect(
         tester

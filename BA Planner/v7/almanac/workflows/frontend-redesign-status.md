@@ -6469,3 +6469,198 @@ artboard `Inventory-Analysis-Opa.dc.html` → 앱:
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_074656\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-f 옛 계획 화면 정리 (Lane A, 로컬 Claude Code)
+
+### FE5-f 착수 기록 (2026-10-12, Lane A)
+
+- 상태: **f1 코드 완료(아래 종료 기록), f2 남음**. 시작 SHA `0566391311e591c4b979a50a19661c8ce110eb3b`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 워커 프롬프트 `debug/frontend_redesign_handoff/fe5f-worker-prompt-20261012.md`(CF 09:30 배정).
+- 막힘: 대장 막힘 요약 FE5-f 행 = FD-082(확정 2026-10-06, 권장안 (a)). 막는 열림 FD 없음. FD-086은 그대로 둔다(범위 밖).
+- 동작 보존 slice다. 새 화면을 만들지 않고, 사용자에게 보이는 화면(Detail 홈 · 계획 만들기 · 시나리오 목록 · 보기 · 비교 · 페이즈 편집 = 흐름 3단계)은 바꾸지 않는다.
+
+#### 0. 정리 목록(코드 고치기 전 grep)
+
+`plan_section_layout.dart`는 8504줄이고, 아래 항목의 대부분이 이 파일 안에서만 쓰인다. 앱 셸(`app_shell.dart`)은 `legacyHome`을 넘기지 않으므로 앱은 늘 Detail 홈이다.
+
+| 지울 것 | 아직 쓰는 곳(grep) | 대체 경로 | 처리 |
+|---|---|---|---|
+| `legacyHome` 다리(`PlanningPage` · `PlanSectionLayout` 매개변수, build 조건 4곳, `_closeScenarioList` 조건 2곳, 2-pane `section1Bounds` 분기) | lib: `planning_page.dart`. test: `planning_page_test`(`pumpPage` + 직접 3곳) · `plan_element_builder_test`(4곳) · `plan_preset_manager_test`(1곳) · golden(3장면) | Detail 홈(FE5-c2) | **f1** |
+| 옛 홈 섹션 1 버튼 묶음(페이즈 만들기 · FE4-f2 아이콘 · 학생 추가 · 프리셋 생성·관리 · 시나리오 비교 · 시나리오 생성 · 시나리오 리스트) | 옛 홈 build의 `sectionLayer('element-1')`만 | Detail 홈 S1(시나리오 목록 · 계획 만들기 · 페이즈 편집), 목록 S1 "프리셋 관리" · 비교 슬롯 | **f1** |
+| 옛 홈 섹션 2~6(읽기 전용 페이즈 목록 `PlanPhaseDiagonalList` · `PlanPhaseCard`, 섹션 3 탭 `PlanBottleneckDiagonalList` · `PlanConsumptionSection`, 섹션 4 `PlanResourceControls`, 섹션 5 `PlanResourceHeader` · 요약 행 3종 · projection, 섹션 6 `PlanResourceTypeFilterSection`) | 옛 홈 build만. test: `planning_page_test`, `plan_home_detail_test`(`PlanConsumptionSection` findsNothing 2줄), `planning_document_projection_test`(`PlanConsumptionResourcePreview`) | Detail 홈 S2 단계 행 · S3 병목 카드 · 페이즈별 · 전체(FE5-c1 · FE5-d) · 칩 3개 | **f1** |
+| 옛 홈 상태 · 핸들러(`_highlightedStudentIds` · `_highlightedStageKeys` · `_selectedSection3ResourceKey` · `_showResourceTypeFilters`, 토글 8개, `_bottleneckDetails` · `_phaseConsumptions` · `_overallConsumption`와 `_calculateDocument`의 옛 미리보기 만들기, `_stageKeysById` · `_consumptionResource` · `_resourceIcon`, `_openPresetManager`) | 옛 홈만(새 홈 `_applyHomeFilter` · `_selectResourceView`가 강조 상태를 지우기만 한다) | Detail 홈 자체 상태(`_homeSelected*`) | **f1** |
+| 옛 견본 데이터 · 기하(`dummyPlanBottleneckDetails` · `dummyPlanPhaseConsumptions` · `dummyPlanOverallConsumption` · 미리보기 클래스, `filterPlan*`, `planSectionPath` · `planResource*` 기하 · `planPhaseContainerPath` · `planBottleneckContainerPath`, `PlanSectionFoundationPainter`, 옛 모션 상수 `planSection1~5Motion` · `planSection3TabMotion` · `planSectionMotions`) | 옛 홈만. test: `planning_page_test` | — | **f1** |
+| 옛 학생 추가 진입(`_openStudentSelector` · `_closeStudentSelector` · `_selectPlanStudents`, `_showStudentSelector` · `_switchingStudentSelector`, build의 `PlanStudentSelector`) | 옛 섹션 1 "학생 추가"만 | 계획 만들기 1단계 학생 고르기(FE4-b) | **f1**(진입 제거). 위젯 파일 `plan_student_selector.dart`는 프리셋 관리 · 테스트가 상수를 쓰므로 **f2** |
+| `_PlanWorkspaceSnapshot` 왕복 | lib · test grep 0건. `git log -S`: FE4-a1 `a18897a1`에서 이미 사라졌다 | 흐름 초안(`PlanFlowController`) | 할 일 없음(기록만) |
+| 옛 `PlanPhaseEditor`(`plan_phase_editor.dart` 2246줄)와 홈 진입 | lib: `plan_section_layout`(요소 편집기 "페이즈 편집기" 대체 경로), `plan_element_builder`(`phaseEditorPathSurfaceTexture`), `plan_preset_manager`(텍스처 · 기하). test: `planning_page_test` 단위 13건 · 위젯 2건, `plan_element_builder_test`, `kit/diagonal_scrollbar_test`, `theme_tokens_test` | 흐름 3단계 칸 보드(FD-070) | **f2** |
+| 요소 편집기 대체 경로(계정 없음 → `PlanElementBuilder`)와 `_planPhases` · `_planElements` · `_draftsByStudent` · `_unassignedPlanElementIds` · `_rebuildDocumentFromPhases` · `dummyPlanPhases`(편집기 견본) | lib: `_openHandoffFlow` 대체 분기. test: `plan_element_builder_test` `_legacyBuilderService` 4건 | 계정 없음 빈 상태(아래 1번 권장안) | **f2** |
+| 키트로 대체 가능한 private 코드(목록만) | `plan_phase_editor.dart` `_lerpGridRect` · `phaseEditorElements` · `_PhaseEditorMotion`(FE6-d 발견 3) | `lib/ui/kit/section_morph.dart` | 교체 안 함 · f2에서 파일째 지움 |
+
+지울 테스트와 대체 테스트(f1 예정):
+
+- `planning_page_test.dart`: 옛 홈 단위 · 화면 테스트(섹션 기하 · 모션 상수 · 견본 합계 · 필터 · 섹션 3 탭 · 섹션 4/6 필터 · 페이즈 목록 스크롤 · 옛 홈 강조 등)와 옛 진입 버튼으로 여는 페이즈 편집기 · 학생 추가 화면 테스트를 지운다. 대체: `plan_home_detail_test`(Detail 홈 S1 · seg · 목록 왕복 · 페이즈 편집), `plan_scenario_detail_test` · `plan_detail_tabs_test`(병목 카드 · 페이즈별 · 전체 · 칩), `plan_flow_order_step_test`(칸 보드), `plan_flow_student_step_test`(학생 고르기). 남는 경로를 쓰던 테스트(목록 왕복 · 계획 만들기 · 편입 · 흐름 저장)는 Detail 홈에서 다시 쓴다. 정확한 목록은 종료 기록.
+- `plan_element_builder_test.dart` `_legacyBuilderService` 4건: f1에서는 대체 경로가 남으므로 `legacyHome`만 빼고 옛 홈 키를 쓰던 끝부분 2건만 고친다. 4건 삭제는 f2.
+- `plan_preset_manager_test.dart`: 여는 길을 목록 S1 "프리셋 관리"로 바꾼다.
+- `planning_document_projection_test.dart`(옛 `PlanConsumptionResourcePreview` 1건): 파일째 지운다(대체: Detail 모델의 보유 모름 '—' 테스트, 종료 기록).
+
+golden 장면 영향(f1, 실행하지 않음):
+
+- 지울 장면 정의 3개(옛 홈에서만 열린다): `plan-phase-editor` · `plan-student-selector` · `plan-element-builder`. 기준 PNG는 지우지 않는다.
+- 바뀔 장면: 없음(목표). 남는 계획 장면은 모두 Detail 홈 · 흐름 · 목록 경로라 옛 홈 코드를 지나지 않는다(근거는 종료 기록).
+
+#### 분할 결정(세션 운영 규칙 2)
+
+범위가 크다(지울 줄 `plan_section_layout.dart` 약 4,500줄 + `planning_page_test` 약 3,000줄 + `plan_phase_editor.dart` 2,246줄, golden 장면 정의 3개 삭제). 그래서 나눈다.
+
+- **f1(이번)** = `legacyHome` 다리 · 옛 홈 섹션 1~6(버튼 묶음 · 옛 위젯 · 견본 · 기하 · 상태) · 옛 학생 추가 진입 제거, 옛 홈 테스트 삭제 · 재작성, 옛 홈 전용 golden 장면 정의 3개 삭제. `legacyHome`을 빼면 세 장면을 열 길이 없어지므로 golden 정리는 f1에 들어간다(권장 분할과 다른 점).
+- **f2(다음)** = 계정 없음 빈 상태(1번) + 요소 편집기 대체 경로 · 옛 `PlanPhaseEditor`(파일 삭제, 프리셋 관리 · 요소 편집기가 쓰는 텍스처 · 기하 이관) · `plan_student_selector.dart` 정리 · `_legacyBuilderService` 4건과 페이즈 편집기 단위 · 위젯 테스트 정리. golden 장면 변화는 0 예상(남는 장면 없음).
+
+#### 1. 계정 없음 대체 경로(조사만, 구현은 f2)
+
+- 지금: 흐름을 열 수 없는 서비스(선택 계정 없음)로 학생이 넘어오면 옛 요소 편집기를 연다(`_openHandoffFlow`).
+- 다른 탭: 인벤토리는 가운데 안내 문구 하나(`inventory_workspace.dart` `_Notice`, "선택된 계정이 없습니다. 설정에서 계정을 고르면 인벤토리가 보입니다.", `AppColors.textSecondary`). 택틱은 아이콘 + 문구(`_Message`, "선택된 프로필이 없습니다."). 학생 탭은 선택이 없으면 첫 계정을 쓴다. **공통 위젯 · 문구가 없고 탭마다 다르다** → 지시대로 이 항목은 멈추고 권장안을 CF에 넘긴다.
+- 권장안: 인벤토리 방식(아이콘 없는 가운데 문구, ~습니다체)을 Detail 홈의 기존 안내 자리(`_homeNotice`, S2 · S3)에 쓴다. 문구 "선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다.", 키 `plan-home-no-profile`. 계산기에서 넘어온 학생은 버리지 않고 SnackBar "계정을 먼저 골라야 계획에 추가할 수 있습니다."로 알린다. S1 버튼은 지금처럼 꺼진다.
+- 발견(관련): 계정이 없을 때 `loadRepositoryPlan: true` 홈은 `_document`가 null로 남아 "활성 계획을 읽는 중입니다."를 계속 보인다(`_loadRepositoryPlan`의 `selected == null` 분기가 문서 · 안내 상태를 정하지 않는다). 위 빈 상태가 이 경우도 덮어야 한다(f2).
+
+#### 고칠 파일(f1)
+
+- `frontend/lib/ui/pages/planning_page.dart`
+- `frontend/lib/ui/widgets/plan_section_layout.dart`(CRLF 유지)
+- `frontend/test/planning_page_test.dart`, `frontend/test/plan_element_builder_test.dart`, `frontend/test/plan_preset_manager_test.dart`, `frontend/test/plan_home_detail_test.dart`
+- `frontend/test/planning_document_projection_test.dart`(삭제 — commit.json `deleted`)
+- `frontend/test/goldens/fe1g_baseline_golden_test.dart`(장면 정의 3개 · 그 전용 헬퍼 삭제만). `golden_harness.dart`는 옛 장면 전용 헬퍼가 없어 고치지 않는다(`goldenTestPreset`은 `plan-preset-manager` · 흐름 장면이 쓴다).
+- 이 status 문서.
+- 사본: `debug/frontend_fe5f1/pre/<v7 기준 경로>`(위 9개, cmp 일치 확인). WIP: 9개 모두 `git status --short <경로>`가 비어 있다(미커밋 변경 없음) → post 사본 없음.
+- 고치지 않음: `lib/services/**` · `lib/ui/inventory/**` · `inventory_studio_layout.dart`(Lane B), `lib/ui/kit/**` · `test/kit/**`(옛 상수 `planCreditIconAsset` 등과 `PlanInventoryCoverageBar`를 키트 테스트가 잠그고 있어 남긴다), `plan_studio_layout.dart`(옛 `planStudioDocument`가 쓰는 곳 없이 남는다), `app_shell.dart` · `app_section.dart`, `frontend/tool/**`, backend · contracts, 기준 PNG.
+
+### FE5-f 종료 기록 (2026-10-12, Lane A, f1 코드 완료 · CF gate 미실행)
+
+f1(옛 계획 홈 제거)을 끝냈다. 사용자에게 보이는 화면(Detail 홈 · 계획 만들기 · 시나리오 목록 · 보기 · 비교 · 페이즈 편집 = 흐름 3단계)은 바꾸지 않았다. 앱은 FE5-c2부터 이미 Detail 홈만 그렸고, 옛 홈은 테스트 · golden이 `legacyHome: true`로만 열었다. f2는 아래 "다음 행동".
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다. 로그 · 요약은 `debug/frontend_fe5f1/logs/`.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib`(중간) | 내 파일: 미사용 import 6건 → 지움. 같은 시각 `lib/ui/inventory/inventory_controller.dart` · `inventory_workspace.dart` 오류 3~5건(Lane B 편집 중, 손대지 않음) |
+| `flutter analyze`(최종, 전체) | **No issues found**(info 포함 0) |
+| `flutter test test/plan_element_builder_test.dart test/plan_preset_manager_test.dart test/plan_home_detail_test.dart`(1차) | 60 통과 · 1 실패: `plan_preset_manager_test` "narrow viewport" — 새 여는 길(시나리오 목록)이 1280×720에서 RenderFlex 넘침 3건(`plan_scenario_list.dart`, FE5-a 몫, 발견 사항 1) → 기준 창에서 연 뒤 좁은 창으로 줄이게 고침 |
+| `flutter test test/plan_preset_manager_test.dart`(2차) | 5 통과 · 0 실패 |
+| `flutter test` 계획 묶음 9개(`planning_page` · `planning_document_projection` · `plan_detail_tabs` · `plan_flow` · `plan_scenario_compare` · `_comparison` · `_detail` · `_list` · `_preview`) | 96 통과 · 0 실패 |
+| `flutter test` 셸 · 학생 · 키트 묶음 16개 | 147 통과 · 0 실패 |
+| 최종 회귀 `flutter test --reporter json` 45개 파일(`plan_*` · `planning_*` · `scenario_*` 중 process E2E 제외 전부 + `student_page_test` + `PlanningPage` · `plan_section_layout` · 앱 셸을 쓰는 파일 grep 전부) | **650 통과 · 1 실패**. 실패는 `planning_protocol_client_test` "real Python process serves every P0 planning method through AppService"(20초 시간 초과 — 다른 파일과 병렬로 돈 실제 프로세스 테스트) |
+| `flutter test test/planning_protocol_client_test.dart`(단독 재실행) | 24 통과 · 0 실패 |
+| `git diff --check`(고친 파일 9개) | 0(경고는 autocrlf 안내뿐) |
+
+최종 회귀 파일별(통과 · 실패): planning_page 32·0, plan_element_builder 51·0, plan_preset_manager 5·0, plan_home_detail 5·0, planning_document_projection 1·0, plan_detail_tabs 8·0, plan_flow 15·0, plan_flow_authoring 18·0, plan_flow_goal_step 23·0, plan_flow_handoff 23·0, plan_flow_order_step 19·0, plan_flow_presets 13·0, plan_flow_save 15·0, plan_flow_student_step 8·0, plan_scenario_compare 7·0, plan_scenario_comparison 2·0, plan_scenario_detail 12·0, plan_scenario_list 10·0, plan_scenario_preview 9·0, plan_student_step_tile 3·0, planning_authoring_service 75·0, planning_document_v2_service 19·0, planning_growth_rules 13·0, planning_protocol_client 23·1(단독 24·0), planning_protocol_contract 7·0, planning_resource_assets 1·0, scenario_authoring_service 75·0, scenario_service 2·0, student_page 9·0, title_page 25·0, widget_test 16·0, account_manager_fe8b 6·0, home_app_shell 1·0, statistics_app_shell 1·0, inventory_shell_lazy 1·0, profile_delete_fb2d 17·0, growth_calculator_view 24·0, section_template_studio 15·0, student_filter_followups 4·0, student_filter_modal 7·0, geometry/diagonal_geometry 5·0, kit/diagonal_scroll_viewport 5·0, kit/item_icon_tile 7·0, kit/skew_bar 8·0, widgets/section_surface 5·0.
+
+빌드 잠금 경합은 없었다(재시도 0회).
+
+#### 지운 코드
+
+- `lib/ui/widgets/plan_section_layout.dart`: 8504 → 3828줄(diff +154 / −4830, 추가 줄은 대부분 블록 이동에 따른 diff 정렬). CRLF 그대로.
+  - `legacyHome` 매개변수와 build · `_closeScenarioList` · 2-pane `section1Bounds`의 분기.
+  - 옛 홈 `sectionLayer`(섹션 1 버튼 7개 · 섹션 2 `PlanPhaseDiagonalList` · `PlanPhaseCard` · 섹션 3 탭 · 섹션 4 · 5 · 6), 위젯 `PlanResourceControls` · `PlanResourceTypeFilterSection` · `PlanResourceHeader`(+탭) · 요약 행 3종 · `PlanResourceItemSummary` · projection 4종 · `PlanConsumptionSection` · `DiagonalList` · `Card` · `CreditRow` · `ResourceTile` · `PlanBottleneckDiagonalList` · `DetailCard` · `CreditShortage` · `ResourceTile` · `PlanSectionFoundationPainter` · `PlanResourceHeaderPainter`와 private 페인터 · 클리퍼.
+  - 견본 · 모델: `PlanBottleneckResourcePreview` · `PlanDelayedStagePreview` · `PlanBottleneckDetailPreview` · `PlanConsumptionResourcePreview` · `PlanConsumptionGroupPreview`, `dummyPlanBottleneckDetails` · `dummyPlanPhaseConsumptions` · `dummyPlanOverallConsumption`, `filterPlan*` · `planBottleneckFocusStep` · `planStudentStageKey` · `formatPlanAmount`, 옛 이름 상수 9개.
+  - 기하 · 모션: `planSectionPath` · `planStudentSelectorSection1RightAtReference` · `planResource*`(탭 선반 · 머리 · 컨트롤 · 필터) · `planPhaseContainerPath` · `planBottleneckContainerPath` · `planPhaseItemRect` · 상수 `planPhaseItem*` · `planResource*Height` · `planSection1~5Motion` · `planSection3TabMotion` · `planSectionMotions`.
+  - 상태 · 핸들러: 강조 3종 · `_showResourceTypeFilters` · 토글 8개 · `_bottleneckDetails` · `_phaseConsumptions` · `_overallConsumption` · `_stageKeysById` · `_consumptionResource` · `_resourceIcon` · `_calculateDocument`의 옛 미리보기 만들기 · `_openPresetManager` · 학생 추가(`_openStudentSelector` · `_closeStudentSelector` · `_selectPlanStudents` · `_showStudentSelector` · `_switchingStudentSelector`, build의 `PlanStudentSelector`). 모션 컨트롤러는 `element-1`(비교 S1 메뉴) · `element-2`(Detail 홈) 둘만 만든다.
+  - 남긴 것(이유): `planScenarioListMotion` · `planResourceControlGap`(2-pane 비교가 씀), `PlanPhaseContainerPainter` · `planPhaseLeftBoundary` · `planPhaseRightBoundary` · `planPhaseRow*` · `_PlanLocalPathClipper`(비교 · 기하 테스트), `planResourceCategory` · `PlanResourceCategory` · `PlanResourceSort` · `PlanResourceView`(Detail 칩 · seg), 아이콘 상수 5개 · `PlanInventoryCoverageBar`(키트 테스트가 잠금), `PlanDiagonalScrollbar` typedef(남은 페이즈 편집기 테스트), `PlanPhasePreview` · `dummyPlanPhases` · 요소 편집기 · 페이즈 편집기 대체 경로(f2).
+- `lib/ui/pages/planning_page.dart`: 46 → 41줄(`legacyHome` 제거).
+- 파일 삭제 없음(commit.json `deleted` 빈 목록). `planning_document_projection_test.dart`는 착수 기록의 "파일째 지운다" 예정을 바꿔 새 모델로 다시 썼다(Detail 모델에 보유 모름 단위 테스트가 없어서).
+
+#### 지운 · 바꾼 테스트와 대체 테스트
+
+`planning_page_test.dart`(4488 → 1762줄, 61 → 32건). 지운 29건과 대체:
+
+| 지운 테스트 | 대체 |
+|---|---|
+| plan phase items use the expanded readable height · all section 3 tab bodies use intro 80 and outro 260 · uses the requested per-section intro and outro directions | 없음(상수째 지움). Detail 모션 · 배치는 `plan_scenario_list_test` "Studio 3섹션…" · `plan_home_detail_test` |
+| regular equipment uses the v6 default item background at every tier · overall consumption is the exact sum of phase consumption · bottleneck filtering preserves calculated focus-step data · plan-phase-consumption / plan-overall-consumption clamps a stale scroll offset when satisfied items hide(2건) | `plan_scenario_detail_test` "같은 단계 병목은 카드 한 장…" · `plan_detail_tabs_test` "페이즈 진입/필요/종료와 충족률(FD-037)" · "전체 확보율(FD-031 (a))…" · "칩: 재화 유형 · 충족 재화 숨기기가 전체 타일을 거른다" |
+| projects the five sections from the plan Studio document · section 4 controls and section 6 share the canonical geometry · phase items follow the parent parallelogram edges · two-column resources keep their size and align to long control rails · resource header follows the section 5 parallelogram safe interval · bottleneck container is inset to 95 percent with a small top margin | `plan_scenario_list_test` "Studio 3섹션: S1은 시안과 같고 S2·S3는 정수 칸 근사다"(Detail 3섹션 기하) |
+| places five sections and a diagonal phase preview · bottleneck is first and overall uses its dedicated two-line summary · resource summaries highlight their affected students in every tab · phase consumption cards reuse resources and overall aggregates one group · section 3 resources focus exact consuming plans in every resource tab · bottleneck delayed-stage button highlights exact rows and list scrolls · section 4 opens and operates the resource type filter · phase list scrolls while preserving its diagonal container | `plan_home_detail_test` 5건(Detail 홈 · S1 · seg · 목록 왕복 · 페이즈 편집) · `plan_scenario_detail_test` "카드를 고르면 그 단계 행이 분홍 테두리…" · `plan_detail_tabs_test` "페이즈별: 카드 · 타일 값, 카드 ↔ S2 페이즈 강조" · "전체: 크레딧 행 · 분야 그룹, 타일 ↔ S2 단계 강조, 열 수" |
+| phase editor keeps lists and side controls interactive · phase editor source rows follow the diagonal scroll rail · phase editor sections play their outro when the plan tab deactivates(옛 "페이즈 만들기" 버튼으로 연다) | `plan_flow_order_step_test`(칸 보드, FD-070) · `plan_element_builder_test` 대체 경로 2건(요소 편집기에서 페이즈 편집기). 페이즈 편집기 위젯 · 단위 테스트(이 파일 15건)는 f2까지 남는다 |
+| student selector keeps section 1 and resets search and filters on exit · student selector panels play outro when the plan tab deactivates · student selection exits both panels before opening and reopening the builder · multi-select processes students in click order and reopens the selected student plan | `plan_flow_student_step_test` "그리드에서 고르면 고른 순서 배지가 붙고…" · "필터 모달: 초안은 적용 전까지…" · "검색은 이름에 더해 학교·역할 이름으로도 찾는다" |
+
+바꾼 테스트:
+
+- `planning_page_test` "resource categories filter and sort the section 3 data" → "resource categories classify the Detail filter chip data"(`planResourceCategory` 분류만 남기고 옛 필터 부분 삭제).
+- `planning_page_test` `pumpPage`: `legacyHome` 제거(Detail 홈).
+- "comparison workspace incorporates a scenario after the active plan": Detail 홈 S1 "시나리오 목록"(`RailButton`) → 비교 슬롯 → "나란히 비교" → 편입.
+- "scenario list replaces the plan home with its three sections and returns to the active plan": 옛 `plan-element-1-motion` 대신 Detail 홈(`plan-home-view`) 모션 값 1 → 0 → 1, 옛 "시나리오 비교" 꺼짐 단언 삭제.
+- "scenario creation opens the plan flow step 1 and quitting plays the flow outro": `plan-scenario-create-launch` 위젯 타입 `FilledButton` → `RailButton`.
+- `plan_element_builder_test` 대체 경로 4건: `legacyHome` 제거. "builder deletes only the selected unassigned stage and return preserves the rest" → "… and the phase editor keeps the rest"(옛 홈 "페이즈 만들기" 대신 요소 편집기의 `plan-starter-open-phase-editor`). "phase completion exits the builder and returns to plan main": 끝 단언 `plan-phase-scroll` → `plan-home-view`.
+- `plan_preset_manager_test`: 여는 길 = 목록 S1 `plan-scenario-menu-presets`, 닫으면 `plan-home-view`. "narrow viewport"는 기준 창에서 연 뒤 1280×720으로 줄인다(발견 사항 1).
+- `plan_home_detail_test`: 옛 `PlanConsumptionSection` import · findsNothing 2줄 삭제, 테스트 이름에서 "(옛 PlanConsumptionSection 없음)"을 뺐다.
+- `planning_document_projection_test`: 같은 이름 테스트를 `PlanDetailResourceTile`(보유 모름 → owned · exit · shortage · fraction · percent null, satisfied false)로 다시 썼다.
+
+#### 계정 없음 빈 상태 결론
+
+- 다른 탭에 공통 방식이 없다(인벤토리 = 가운데 문구, 택틱 = 아이콘 + "프로필" 문구, 학생 = 첫 계정 대체). 지시대로 이 항목은 멈추고, 착수 기록 "1."의 권장안(인벤토리 방식 문구 `plan-home-no-profile` + 넘어온 학생은 SnackBar 안내)을 CF에 넘긴다. f1은 대체 경로(요소 편집기)를 그대로 두었다.
+
+#### golden
+
+- 지운 장면 정의(`fe1g_baseline_golden_test.dart`, 실행 안 함): `plan-phase-editor` · `plan-student-selector` · `plan-element-builder`, 그 장면 전용 헬퍼 `_selectFirstPlanStudent`, `_openPlanning`의 `legacyHome` 인자. `golden_harness.dart`는 고치지 않았다. 기준 PNG는 지우지 않았다 — CF 삭제 대상:
+  - `frontend/test/goldens/baseline/plan-phase-editor.png`
+  - `frontend/test/goldens/baseline/plan-student-selector.png`
+  - `frontend/test/goldens/baseline/plan-element-builder.png`
+- 남는 장면 변화 0 근거:
+  - 계획 장면(`plan-bottleneck` · `plan-by-phase` · `plan-overall` · `plan-preset-manager` · `plan-flow-*` 11 · `plan-scenario-*` 9)은 모두 `legacyHome: false`로 열던 장면이다. 그 경로의 build 분기(Detail 홈 · 목록 · 2-pane · 4열 · 비교 S1 메뉴 · 흐름 · 프리셋 관리)는 조건식에서 `legacyHome` 항만 빠졌고 그리는 위젯 · 인자는 같다(2-pane `section1Bounds`는 원래 쓰던 Detail S1 bounds 분기 그대로).
+  - Detail 홈은 `_homeProjection` · `_document` · `_homeSelected*` · 필터 3종 · `_selectedResourceView`만 읽는다. 이 값의 계산 · 갱신은 바뀌지 않았다(`_calculateDocument`는 같은 응답을 `_homeProjection`에 넣고, 지운 것은 옛 미리보기 목록뿐). 지운 강조 상태는 Detail 홈이 읽지 않았다.
+  - 모션: 그려지는 컨트롤러는 원래도 `element-1`(비교 S1 · 4열 메뉴) · `element-2`(Detail 홈)뿐이었다. 지운 `element-3~5`는 옛 홈만 그렸다. 두 컨트롤러의 forward/reverse 시점은 같다.
+  - 계획 밖 장면(타이틀 · 계정 · 홈 · 학생 · 인벤토리 · 스캔)은 계획 탭이 offstage이거나 계획 코드를 지나지 않는다.
+  - golden 테스트 파일은 analyze 0이다(컴파일 확인만, 실행 안 함).
+
+#### 처리한 FD
+
+- FD-082 (a)(확정): 옛 홈을 지워 첫 화면은 Detail 홈 하나만 남는다.
+- FD-086: 그대로(범위 밖).
+
+#### 미검증 항목
+
+- golden(`test/goldens/**`): 미실행. 남는 장면 변화 0은 위 코드 경로 근거로만 말한다.
+- 전체 `fe_gate.ps1`(`codealmanac validate` 포함): 미실행.
+- process E2E(`*_process_e2e_test.dart`): 미실행(서비스 계층은 고치지 않음).
+- 실제 앱 창에서 계획 탭 확인: 미실행.
+
+#### 검수표(계획 탭, mock 모드 · 기준 viewport)
+
+| 확인할 것 | 여는 방법 | 기대 |
+|---|---|---|
+| 첫 화면 | 계획 탭 | Detail 홈(S1 시나리오 목록 · 계획 만들기 · 페이즈 편집 + "이 계획" 정보, S2 단계 행, S3 병목 카드) — 지금과 같다 |
+| S3 seg · 칩 | 페이즈별 · 전체 탭, 재화 유형 · 충족 숨기기 · 정렬 | 지금과 같다 |
+| 시나리오 목록 왕복 | S1 "시나리오 목록" → "활성 계획으로" | 목록이 들어오고 나간 뒤 Detail 홈이 다시 들어온다 |
+| 나란히 비교(2개 · 4열) · 편입 | 목록 비교 슬롯 → "나란히 비교" | 비교 S1 메뉴 · 본문 위치 그대로, "활성 계획으로"로 홈 |
+| 프리셋 관리 | 목록 S1 "프리셋 관리" → 나가기 | 닫으면 Detail 홈 |
+| 페이즈 편집 · 계획 만들기 | S1 버튼 | 흐름 3단계 · 1단계, 닫으면 홈 |
+| 계산기 → 계획(계정 있음) | 학생 탭 계산기 "이 목표로 계획에 추가" | 흐름 2단계(지금과 같다) |
+| 계정 없음(지금 그대로, f2 대상) | 계정 없이 계산기에서 넘김 | 옛 요소 편집기가 열린다(f2에서 빈 상태로 바꿈) |
+
+#### WIP 보존 확인
+
+- 고친 파일 9개 모두 착수 때 WIP 없음(`git status --short` 빈 결과) → post 사본 없음. 다른 레인의 미커밋 변경(서비스 · 인벤토리 · 스캔 파일 등)은 건드리지 않았다.
+
+#### 발견 사항
+
+1. **시나리오 목록 1280×720 넘침(FE5-a 몫)**: 목록을 1280×720에서 열면 `plan_scenario_list.dart`의 Row 3곳(1139:14 · 1343:12 `plan-scenario-filter-row` · 2154:25)이 각각 123 · 37 · 1.8px 넘친다. 옛 홈 "프리셋 생성·관리" 버튼 대신 목록을 거쳐야 해서 드러났다. 이번에는 테스트를 기준 창에서 열게만 바꿨다.
+2. **계정 없을 때 홈이 "읽는 중"에 머문다**: `loadRepositoryPlan: true`인데 선택 계정이 없으면 `_document`가 null로 남아 "활성 계획을 읽는 중입니다."가 계속 보인다. f2 빈 상태가 이 경우도 덮어야 한다(착수 기록 1.).
+3. **계산 응답 형식 검사 하나가 빠짐**: 옛 미리보기 만들기에 있던 `projection['overall'] as Map` 캐스트가 함께 빠졌다. 전에는 `overall`이 없는 응답이 "계산 오류"가 되었고, 이제는 Detail 모델(`PlanDetailData.fromProjection`)이 그대로 읽는다. mock · process 응답은 늘 `overall`을 준다. 의도한 변경이 아니어서 적어 둔다.
+4. **남은 옛 공개 이름**: `plan_studio_layout.dart`의 `planStudioDocument`(옛 5섹션 Studio 문서)는 쓰는 곳이 없어졌다(studio 파일은 이 slice 범위 밖). 아이콘 상수 5개 · `PlanInventoryCoverageBar`는 키트 테스트(`test/kit/item_icon_tile_test` · `skew_bar_test`)만 쓴다. 정리하려면 키트 테스트를 함께 고치는 소단위가 필요하다.
+5. **키트 morph로 대체 가능한 private 코드**(목록만, FE6-d 발견 3): `plan_phase_editor.dart`의 `_lerpGridRect` · `phaseEditorElements` · `_PhaseEditorMotion`. f2에서 파일째 지우면 사라진다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe5f1/pre/<경로>`(9개). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe5f1/commit.json`: slice `fe5f1`, `status=true`, modified 8, added 0, deleted 0. message 근거: 워크플로 FE5-f 행 · FD-082 (a) · 이 status 착수 기록(정리 목록 · 분할).
+- 인계: `debug/frontend_fe5f1/output.md`.
+
+#### 다음 행동
+
+- f1 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 −29(planning_page_test) 외 변화 없음, golden은 장면 정의 3개가 빠지고 남는 장면 변화 0. 기준 PNG 3장은 사용자 승인 뒤 별도 삭제 커밋. 그다음 `fe_commit.ps1 -Slice fe5f1`.
+- CF 결정 대기: 계정 없음 빈 상태 권장안(착수 기록 1.).
+- **f2 범위**: ① 계정 없음 빈 상태(결정대로, 발견 2 포함) ② 요소 편집기 대체 경로 제거(`_openHandoffFlow` 대체 분기, `_builderSeed` · 큐 · `_planElements` · `_draftsByStudent` · `_unassignedPlanElementIds` · `_planPhases` · `_rebuildDocumentFromPhases` · `_completePhaseEditor` · `dummyPlanPhases` · `PlanPhasePreview`) ③ `plan_phase_editor.dart` 삭제(프리셋 관리 · 요소 편집기가 쓰는 텍스처 · 기하 이관, 필요하면 키트 morph) ④ `plan_student_selector.dart` 정리(프리셋 관리 · 테스트가 쓰는 상수 이관) ⑤ `PlanElementBuilder` 위젯 정리 범위 판단(`plan_element_builder.dart`에는 `PlanElementPreset` · `planElementCurrentTargets` 등 공용 정의가 있어 파일째는 못 지움) ⑥ 테스트: `_legacyBuilderService` 4건, `planning_page_test` 페이즈 편집기 · 학생 고르기 단위 · 위젯 15건과 "dummy phases keep student steps in execution order", `plan_element_builder_test` 페이즈 편집기 드롭 거부, `kit/diagonal_scrollbar_test` · `theme_tokens_test`의 옛 위젯 의존. golden 장면 변화 0 예상(남은 옛 장면 없음).
+
+### fe5f1 commit record (2026-10-12 21:30, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_211921\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
