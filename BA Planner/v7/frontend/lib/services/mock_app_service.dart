@@ -1928,6 +1928,24 @@ class MockAppService
   Future<List<RepositoryProfile>> listProfiles() async =>
       List.unmodifiable(_profiles);
 
+  // ---- FB-2d profile delete (Python profile_delete_transaction parity) ----
+  // The backend derives a stable ID from the create key and keeps a deletion
+  // tombstone (key, original expected revision, response) per deleted ID. Mock
+  // keeps the same two facts; IDs are never reused after a delete.
+  final Map<String, String> _mockCreateKeys = {};
+  final Map<String, ({String idempotencyKey, int expectedRevision, int revision})>
+  _mockDeleteTombstones = {};
+  int? _nextMockProfileNumber;
+
+  /// 다음 삭제는 저장소에서 끝내고 응답만 잃는다(`TimeoutException`). 같은 key·원 revision 재요청은 원 응답이다.
+  bool loseNextProfileDeleteResponse = false;
+
+  void _requireNotDeletedProfile(String profileId) {
+    if (_mockDeleteTombstones.containsKey(profileId)) {
+      throw StateError('profile_not_found');
+    }
+  }
+
   @override
   Future<RepositoryProfile> createProfile(
     String displayName,
@@ -1938,13 +1956,37 @@ class MockAppService
       failNextProfileMutation = false;
       throw StateError('revision_conflict');
     }
+    final knownId = _mockCreateKeys[idempotencyKey];
+    if (knownId != null) {
+      // 같은 create key: 삭제된 stable ID는 다시 만들지 않고, 살아 있으면 같은 내용일 때만 원 계정이다.
+      if (_mockDeleteTombstones.containsKey(knownId)) {
+        throw StateError('idempotency_conflict');
+      }
+      final existing = _profiles.where((item) => item.id == knownId).firstOrNull;
+      if (existing != null) {
+        if (existing.displayName != displayName ||
+            existing.avatarStudentId != avatarStudentId) {
+          throw StateError('idempotency_conflict');
+        }
+        return existing;
+      }
+    }
+    final next = _nextMockProfileNumber ?? 0;
+    var number = next > _profiles.length ? next : _profiles.length + 1;
+    String idOf(int value) => value.toRadixString(16).padLeft(24, '0');
+    while (_profiles.any((item) => item.id == idOf(number)) ||
+        _mockDeleteTombstones.containsKey(idOf(number))) {
+      number += 1;
+    }
+    _nextMockProfileNumber = number + 1;
     final profile = RepositoryProfile(
-      id: (_profiles.length + 1).toRadixString(16).padLeft(24, '0'),
+      id: idOf(number),
       displayName: displayName,
       avatarStudentId: avatarStudentId,
       revision: 0,
       selected: false,
     );
+    _mockCreateKeys[idempotencyKey] = profile.id;
     _profiles.add(profile);
     _currentHistories[profile.id] = RepositoryCurrentHistory.empty();
     _repositoryPlans[profile.id] = mockDocumentFromGoals({'version': 1, 'goals': <dynamic>[]});
@@ -2039,14 +2081,33 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
-    final index = _profiles.indexWhere((profile) => profile.id == profileId);
-    final profile = _profiles[index];
-    if (failNextProfileMutation || profile.revision != expectedRevision) {
+    if (failNextProfileMutation) {
       failNextProfileMutation = false;
+      throw StateError('revision_conflict');
+    }
+    // tombstone 먼저(백엔드와 같은 순서): 다른 key = profile_not_found, 같은 key·다른 revision =
+    // idempotency_conflict, 같은 key·원 revision = 원 응답.
+    final tombstone = _mockDeleteTombstones[profileId];
+    if (tombstone != null) {
+      if (tombstone.idempotencyKey != idempotencyKey) {
+        throw StateError('profile_not_found');
+      }
+      if (tombstone.expectedRevision != expectedRevision) {
+        throw StateError('idempotency_conflict');
+      }
+      return tombstone.revision;
+    }
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    if (index < 0) throw StateError('profile_not_found');
+    final profile = _profiles[index];
+    if (profile.revision != expectedRevision) {
       throw StateError('revision_conflict');
     }
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
+    // 7경로와 같은 범위: 프로필(학생·인벤토리·목표·이력)·계획·프리셋·시나리오·전술 v1. Mock에는 전술 v2·
+    // 로컬 공유 저장이 없다(ProcessAppService만).
+    _tacticalStates.remove(profileId);
     _repositoryStates.remove(profileId);
     _currentHistories.remove(profileId);
     _repositoryPlans.remove(profileId);
@@ -2067,12 +2128,24 @@ class MockAppService
         selected: true,
       );
     }
-    return expectedRevision + 1;
+    final revision = expectedRevision + 1;
+    _mockDeleteTombstones[profileId] = (
+      idempotencyKey: idempotencyKey,
+      expectedRevision: expectedRevision,
+      revision: revision,
+    );
+    if (loseNextProfileDeleteResponse) {
+      loseNextProfileDeleteResponse = false;
+      throw TimeoutException('Mock profile delete response lost');
+    }
+    return revision;
   }
 
   @override
-  Future<RepositoryState> loadRepositoryState(String profileId) async =>
-      RepositoryState.fromWire(_ensureMockRepositoryPlan(profileId));
+  Future<RepositoryState> loadRepositoryState(String profileId) async {
+    _requireNotDeletedProfile(profileId);
+    return RepositoryState.fromWire(_ensureMockRepositoryPlan(profileId));
+  }
 
   @override
   Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
@@ -2560,14 +2633,16 @@ class MockAppService
     return response;
   }
 
-  TacticalState _tactical(String profileId) =>
-      _tacticalStates[profileId] ??
-      TacticalState(
-        profileId: profileId,
-        revision: 0,
-        matches: const [],
-        jokbo: const [],
-      );
+  TacticalState _tactical(String profileId) {
+    _requireNotDeletedProfile(profileId);
+    return _tacticalStates[profileId] ??
+        TacticalState(
+          profileId: profileId,
+          revision: 0,
+          matches: const [],
+          jokbo: const [],
+        );
+  }
   @override
   Future<TacticalState> loadTacticalState(String profileId) async =>
       _tactical(profileId);

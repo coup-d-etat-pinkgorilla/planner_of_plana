@@ -425,6 +425,17 @@ class _TitlePageState extends State<TitlePage>
     });
   }
 
+  /// FB-2d: 계정 관리에서 지운 계정이 지금 타이틀에 보이는 계정이면 그 계정 값(프로필·state)만 비운다. 진행 중인
+  /// 계정 읽기는 지운 계정을 되살리지 않게 버리고, 타이틀로 돌아올 때 다시 읽는다.
+  void _forgetDeletedProfile(String profileId) {
+    if (_profile?.id != profileId) return;
+    _accountLoadGeneration += 1;
+    setState(() {
+      _profile = null;
+      _repositoryState = null;
+    });
+  }
+
   Future<void> _returnFromAccountCluster() async {
     setState(() {
       _accountClusterEntry = null;
@@ -499,6 +510,7 @@ class _TitlePageState extends State<TitlePage>
                   entry: _accountClusterEntry!,
                   onBackToTitle: _returnFromAccountCluster,
                   onEnterHome: () => _openShell(AppSection.home),
+                  onProfileDeleted: _forgetDeletedProfile,
                 ),
               ),
             if (_error != null)

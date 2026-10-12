@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -7,7 +8,7 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/planning_protocol_client.dart'
-    show BackendRemoteException;
+    show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
@@ -94,6 +95,43 @@ String repositoryLoadErrorText(Object error) =>
       'corrupt_data' => '저장된 계정 데이터가 손상되어 읽지 못했습니다. 원본은 그대로 두었습니다.',
       'repository_busy' => '저장소가 다른 작업을 하고 있습니다. 잠시 뒤 다시 시도해 주십시오.',
       _ => '$error',
+    };
+
+/// 계정 삭제 확인 문구(FB-2d). 전술 공유 데이터도 같은 확인 하나로 함께 지운다(사용자 결정 2026-10-11 20:50).
+String accountDeleteConfirmText(String displayName) =>
+    '$displayName 계정과 저장 데이터를 삭제하시겠습니까?\n'
+    '학생·인벤토리·계획·이력·프리셋·시나리오·전술대항전 기록과 함께 '
+    '전술 공유 데이터(이 PC에 저장된 전술대항전 공유 기록)도 지워지며, 되돌릴 수 없습니다.';
+
+/// 계정 삭제 실패 코드. 응답을 잃은 경우(시간 초과·연결 끊김)도 코드로 나눈다.
+String? accountDeleteErrorCode(Object error) => switch (error) {
+  TimeoutException() => 'timeout',
+  BackendDisconnectedException() => 'disconnected',
+  _ => repositoryErrorCode(error),
+};
+
+/// 같은 key와 원 expected_revision으로 다시 보내야 하는 실패(응답 손실·저장소 바쁨·쓰기 실패).
+bool accountDeleteRetryable(Object error) =>
+    const {
+      'timeout',
+      'disconnected',
+      'repository_busy',
+      'persistence_failed',
+    }.contains(accountDeleteErrorCode(error)) ||
+    (error is BackendRemoteException && error.retryable);
+
+/// 계정 삭제 실패 문구(~습니다체).
+String accountDeleteErrorText(Object error) =>
+    switch (accountDeleteErrorCode(error)) {
+      'profile_not_found' => '이미 삭제되었거나 찾을 수 없는 계정입니다. 계정 목록을 다시 읽었습니다.',
+      'idempotency_conflict' =>
+        '이 삭제 요청은 다른 내용으로 이미 쓰인 요청이라 삭제하지 않았습니다. 계정 목록을 다시 읽었습니다. '
+            '다시 삭제하려면 삭제를 한 번 더 눌러 주십시오.',
+      'revision_conflict' =>
+        '그 사이에 계정이 바뀌어 삭제하지 않았습니다. 계정 목록을 다시 읽었습니다. 확인한 뒤 다시 삭제해 주십시오.',
+      _ when accountDeleteRetryable(error) =>
+        '삭제 결과를 확인하지 못했습니다. 삭제를 다시 누르면 같은 요청으로 다시 확인합니다.',
+      _ => '계정을 삭제하지 못했습니다: ${repositoryLoadErrorText(error)}',
     };
 
 /// 저장소가 바쁘면(`repository_busy`, 재시도 가능) 잠깐 기다렸다가 두 번까지 다시 읽는다.
@@ -318,12 +356,16 @@ class AccountSectionCluster extends StatefulWidget {
     required this.entry,
     required this.onBackToTitle,
     required this.onEnterHome,
+    this.onProfileDeleted,
   });
 
   final AppService service;
   final AccountClusterEntry entry;
   final VoidCallback onBackToTitle;
   final VoidCallback onEnterHome;
+
+  /// 계정이 지워졌다(성공 또는 `profile_not_found`). 그 계정의 화면 캐시만 비우게 ID를 넘긴다.
+  final ValueChanged<String>? onProfileDeleted;
 
   @override
   State<AccountSectionCluster> createState() => _AccountSectionClusterState();
@@ -359,6 +401,10 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   String? _pickerDraft;
   bool _busy = false;
   String? _error;
+
+  /// 응답을 잃은 삭제 요청(FB-2d). 같은 계정을 다시 지우면 이 key와 원 expected_revision을 그대로 보낸다.
+  ({String profileId, int expectedRevision, String idempotencyKey})?
+  _pendingDelete;
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -707,7 +753,10 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       builder: (context) => AlertDialog(
         key: const ValueKey('account-delete-confirm'),
         title: const Text('계정 삭제'),
-        content: Text('${profile.displayName} 계정과 저장 데이터를 삭제할까요?'),
+        content: Text(
+          accountDeleteConfirmText(profile.displayName),
+          key: const ValueKey('account-delete-confirm-text'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -721,19 +770,67 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       ),
     );
     if (confirmed != true || !mounted) return;
-    setState(() => _busy = true);
+    // 응답을 잃은 같은 계정의 삭제는 같은 key와 원 expected_revision으로 다시 보낸다(목록의 새 revision으로
+    // 바꾸지 않는다). 백엔드는 이미 지웠으면 원 응답을, 아니면 처음 요청처럼 처리한다.
+    final pending = _pendingDelete;
+    final request = pending != null && pending.profileId == profile.id
+        ? pending
+        : (
+            profileId: profile.id,
+            expectedRevision: profile.revision,
+            idempotencyKey:
+                'account-delete-${profile.id}-${DateTime.now().microsecondsSinceEpoch}',
+          );
+    _pendingDelete = request;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await repository.deleteProfile(
-        profile.id,
-        profile.revision,
-        'account-delete-${DateTime.now().microsecondsSinceEpoch}',
+        request.profileId,
+        request.expectedRevision,
+        request.idempotencyKey,
       );
+      _pendingDelete = null;
+      _forgetDeletedProfile(request.profileId);
       await _load();
     } catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      final retryable = accountDeleteRetryable(error);
+      if (!retryable) _pendingDelete = null;
+      if (accountDeleteErrorCode(error) == 'profile_not_found') {
+        _forgetDeletedProfile(request.profileId);
+      }
+      // 응답을 잃었으면 저장소가 끊겼을 수 있어 다시 읽지 않는다. 나머지 실패는 목록을 다시 읽는다.
+      if (!retryable) await _load();
+      if (mounted) setState(() => _error = accountDeleteErrorText(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// 지워진 계정의 화면 캐시(목록 행·학생 수·선택·편집 대상)를 비운다. 다른 계정 값은 그대로 둔다.
+  void _forgetDeletedProfile(String profileId) {
+    if (mounted) {
+      setState(() {
+        final remaining = [
+          for (final item in _profiles)
+            if (item.id != profileId) item,
+        ];
+        _profiles = remaining;
+        _studentCounts = {
+          for (final entry in _studentCounts.entries)
+            if (entry.key != profileId) entry.key: entry.value,
+        };
+        if (_selected?.id == profileId) {
+          _selected =
+              remaining.where((item) => item.selected).firstOrNull ??
+              remaining.firstOrNull;
+        }
+        if (_editing?.id == profileId) _editing = null;
+      });
+    }
+    widget.onProfileDeleted?.call(profileId);
   }
 
   @override

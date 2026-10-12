@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE6-c 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `9d959d15`. 아래 "FE6-c 착수 기록"·"FE6-c 종료 기록". 그 전: fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**fb2d-dart 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `861eea56`. 아래 "fb2d-dart 착수 기록"·"fb2d-dart 종료 기록". 그 전: FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -2139,3 +2139,159 @@ artboard `Inventory-Tiers.dc.html` → 앱:
 - FE6-e 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 +19(집계 9 + 위젯 7 + 학교 맵 3), golden은 새 장면 `inventory-tiers` 기준 없음 RED + `inventory-analysis` 두 곳(티어 버튼 · 플라이아웃 두 줄)만 RED, `inventory`·`inventory-all` 포함 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe6e`.
 - 발견 사항 1(부유 섹션 spec) · 3(fe6a fixture 초상 id) · 4(티어 표 스크롤)는 CF 판단을 기다린다. 학생 화면 학교 맵 이전은 위 권장안대로 다음 학생 쪽 slice에서.
+
+## fb2d-dart 착수 기록 (2026-10-12)
+
+- 상태: 진행 중.
+- 범위: FB-2d 프로필 삭제(7경로)의 Dart 연결. 워커 프롬프트 `debug/frontend_redesign_handoff/fb2ddart-worker-prompt-20261012.md`, 목록은 backend 로그 2026-10-12 01:28("CF fb2d-dart 연결 목록"), 사용자 결정은 CF 로그 2026-10-11 20:50(tactical-share 함께 삭제).
+  1. wire 변경 0 확인 + 계약 fixture 양성·음성 테스트(기존 strict DTO·client는 그대로).
+  2. 계정 삭제 확인 문구에 전술 공유 데이터를 같은 확인 안에 넣는다(새 확인 단계 없음).
+  3. 삭제 성공 뒤 그 프로필의 Dart 쪽 캐시만 비우고 다른 프로필 캐시는 둔다.
+  4. 응답 손실 재시도 = 같은 key + 원 expected_revision. `idempotency_conflict`·`profile_not_found` 문구 구분. Mock 의미 맞춤.
+  5. process E2E 1개(7번째 파일 삭제·같은 key 재요청 = 원 revision).
+- 시작 조건: backend 로그 끝에 XB "FB-2d 메인 반영 완료"(2026-10-12 02:17, 10경로 표)와 02:31 후속이 있다. 충족했다.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `861eea5629550fa343fe8d6af32af1b17dd3254c`(XB 02:17 head before/after와 같다).
+- XB 반영 SHA 대조(메인 작업 트리 bytes/SHA256 = XB 02:17 표): **10개 모두 일치**.
+  - `backend/core/repository_transaction.py` 9887 `a335c2b0…7029`
+  - `backend/core/repository_store.py` 44276 `713ed632…4739`(working 쪽 값. selected `2fd99bd6…`는 커밋 투영)
+  - `backend/core/tactical_store.py` 16556 `023b97b1…95d9`
+  - `backend/core/tactical_v2.py` 56905 `c71c881c…9472`
+  - `backend/core/tactical_share_v1.py` 30760 `0fae3f63…41b4`
+  - `backend/core/profile_delete_transaction.py` 14060 `28446c60…5393`
+  - `backend/core/repository_participant_lock.py` 3272 `9fbaee53…ab1f`
+  - `backend/tests/test_profile_delete_fb2d.py` 20271 `ebaff54e…8815`
+  - `contracts/README.md` 85600 `16562377…84c1a0`(절 "FB-2d durable seven-path profile deletion")
+  - `contracts/fixtures/profile_delete_fb2d_v1.json` 952 `704a0cad…989c`
+- XB 목록과 메인 코드 대조: 요청 exact 3키·응답 exact `revision`·`deleted_paths` 없음이 `contracts/README.md`와 Dart 검사기(`isValidRepositoryProtocolMessage`의 `mutation({})`, 성공 `_exact({'revision'})`)에 그대로 있다. 백엔드 `delete_profile_locked`의 순서(tombstone: 다른 key → `profile_not_found`, 같은 key·다른 revision → `idempotency_conflict`, 같으면 원 응답)와 `create_profile`(삭제된 stable ID의 옛 create key → `idempotency_conflict`)도 목록과 같다. 차이 없음.
+- 막힘: 대장 막힘 요약에 fb2d-dart 행 없음, 현재 열림 0건.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb2ddart/pre/<v7 기준 경로>`)과 WIP(`git status --short <경로>`):
+  - `frontend/lib/services/mock_app_service.dart`: **WIP 있음**(스캐너 WIP, hunk 185·496~600줄 부근). CRLF. 고치는 곳은 createProfile·deleteProfile·loadRepositoryState·`_tactical`(2050줄 이후)이라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `frontend/lib/ui/widgets/account_section_cluster.dart`: WIP 없음. LF.
+  - `frontend/lib/ui/pages/title_page.dart`: WIP 없음. LF. 삭제 알림 콜백 연결만.
+- 고치지 않는다(확인만): `repository_service.dart`·`process_app_service.dart`(wire 그대로라 변경 0. `process_app_service.dart`는 WIP 있음, 손대지 않음), `planning_protocol_client.dart`.
+- 새 파일(예정): `frontend/test/profile_delete_fb2d_test.dart`(계약 fixture·Mock 의미·삭제 확인·재시도·캐시), `frontend/test/profile_delete_fb2d_process_e2e_test.dart`(실제 백엔드).
+- WIP는 지우거나 정리하지 않는다.
+
+## fb2d-dart 종료 기록 (2026-10-12, 코드 작성 완료·CF gate 미실행)
+
+FB-2d 프로필 삭제(7경로)의 Dart 연결을 끝냈다. wire·strict DTO·Process client는 바꾸지 않았다.
+
+### 실행 명령·결과
+
+- `flutter analyze`(frontend): **이슈 0**. 중간에 Lane A FE6-d가 고치던 `lib/ui/inventory/**`의 일시 오류(최대 7건, 이 slice 파일 0건)가 보였다가 Lane A 쪽에서 풀린 뒤 0건을 다시 확인했다. 마지막 줄바꿈 복원 뒤에도 0.
+- 새 테스트:
+  - `flutter test test/profile_delete_fb2d_test.dart`: 첫 실행 +16 −1(내 테스트의 잘못된 음성 예 `{'revision': 0}` — 기존 검사기는 revision ≥ 0을 받는다. 검사기는 그대로 두고 예를 `-1`로 고침) → **+17 통과**(마지막 확인도 +17).
+  - `flutter test --concurrency=1 test/profile_delete_fb2d_process_e2e_test.dart`: **+1 통과**(18초, 첫 실행).
+- 바뀐 동작에 걸리는 기존 테스트(grep: deleteProfile·createProfile·account-delete·loadTacticalState·title·account·settings·repository_*):
+  - `title_page_test.dart` +25, `account_manager_fe8b_test.dart` +6, `settings_page_test.dart` +10, `repository_profile_panel_test.dart` +1, `tactical_page_test.dart` +8, `tactical_page_revision_test.dart` +5 — 모두 통과.
+  - `repository_presets_service_test.dart` +49, `repository_history_query_service_test.dart` +71, `repository_history_scan_latest_test.dart` +48, `repository_history_service_test.dart` +24, `student_calculation_service_test.dart` +8, `tactical_service_test.dart` +6, `repository_protocol_contract_test.dart` +1, `mock_scanner_commit_history_test.dart` +9 — 모두 통과.
+  - process(차례로, `--concurrency=1`): `repository_process_e2e_test.dart` +1, `repository_presets_process_e2e_test.dart` +1, `tactical_v2_process_e2e_test.dart` +1 — 모두 통과.
+- 실패 0(위 첫 실행 1건 외), 잠금 충돌 0(재시도 없음). 로그는 `debug/frontend_fb2ddart/*.log`(실패 줄만 확인).
+- `git diff --check`(고친 3파일): exit 0.
+
+### 고친 파일
+
+- `frontend/lib/services/mock_app_service.dart`(스캐너 WIP 위, CRLF 주·LF 122줄 섞임 그대로):
+  - FB-2d tombstone(`_mockDeleteTombstones`: ID → key·원 expected_revision·응답 revision)과 create key → ID 맵(`_mockCreateKeys`), 다시 쓰지 않는 ID 번호(`_nextMockProfileNumber`). 필드는 WIP가 있는 필드 블록이 아니라 createProfile 바로 앞에 두었다.
+  - `createProfile`: 같은 key·같은 이름·초상 = 원 계정, 다른 내용 = `idempotency_conflict`, 삭제된 ID의 옛 key = `idempotency_conflict`. 새 ID는 지운 ID·있는 ID를 다시 쓰지 않는다(삭제가 없으면 예전 `len+1`과 같은 값).
+  - `deleteProfile`: tombstone 먼저(다른 key = `profile_not_found`, 같은 key·다른 revision = `idempotency_conflict`, 같으면 원 revision), 없는 계정 `profile_not_found`(예전엔 RangeError), 낡은 revision `revision_conflict`. 지울 때 전술 v1 `_tacticalStates`도 함께 지운다(빠져 있던 곳). `loseNextProfileDeleteResponse`(저장소에서 끝낸 뒤 `TimeoutException`).
+  - `loadRepositoryState`·전술 v1(`_tactical`)은 삭제된 ID에 `profile_not_found`(다시 읽기로 빈 state를 되살리지 않는다).
+- `frontend/lib/ui/widgets/account_section_cluster.dart`(LF): 확인 문구 함수 `accountDeleteConfirmText`, 오류 코드·재시도 판정·문구(`accountDeleteErrorCode`·`accountDeleteRetryable`·`accountDeleteErrorText`), 보류 요청 `_pendingDelete`, `_forgetDeletedProfile`, 선택 콜백 `onProfileDeleted`.
+- `frontend/lib/ui/pages/title_page.dart`(LF): `onProfileDeleted: _forgetDeletedProfile` — 타이틀이 들고 있는 그 계정의 `_profile`·`_repositoryState`만 비우고 진행 중인 계정 읽기를 버린다.
+- 새 파일: `frontend/test/profile_delete_fb2d_test.dart`(unit/widget, 17), `frontend/test/profile_delete_fb2d_process_e2e_test.dart`(process, 1).
+- 고치지 않음: `repository_service.dart`·`process_app_service.dart`·`planning_protocol_client.dart`(wire 그대로), backend/contracts, app_shell, Lane A·택틱·스캐너 소유 파일, golden harness·golden 테스트, frontend/tool.
+
+### XB 목록(01:28) 행별 검수
+
+| XB 목록 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| 요청 exact `profile_id, expected_revision, idempotency_key` | 변경 0. fixture 요청 양성, 키 3개 각각 빠짐·`deleted_paths`/`targets`/`include_tactical_share`/`display_name` 더함·음수 revision·빈 key 음성 | `profile_delete_fb2d_test` "요청은 exact 3키만" |
+| 응답 exact `revision`, `deleted_paths` 없음 | 변경 0. fixture 응답 양성, 빈 응답·`deleted_paths`·`profile_id` 더함·음수·문자열 revision 음성(성공 payload·응답 메시지 둘 다) | "응답은 exact revision만" |
+| fixture `profile_delete_fb2d_v1.json` | 7경로 목록(`tactical-share/{id}.v1.json` 포함)·tombstone 의미 키를 테스트에서 직접 읽음 | "fixture는 shape 변경 0과 7경로" |
+| 확인 문구에 local tactical-share를 같은 확인으로 | 같은 AlertDialog 한 개, 문구만 바꿈 | 위젯 "확인 하나로 지우고"(대화상자 1번, 삭제 호출 1번) |
+| 삭제 뒤 그 프로필 캐시 비움·다른 프로필 보존 | 아래 캐시 표 | Mock "그 계정의 데이터만", 위젯 "확인 하나로 지우고", E2E |
+| 응답 손실 재시도 = 같은 key + 원 expected_revision | `_pendingDelete` 재사용, 목록 revision이 올라도 원 값 | 위젯 "응답 손실 뒤 다시 누르면", "목록 revision이 바뀌어도" |
+| 재시작 뒤 같은 요청 = 원 `revision` | 실제 백엔드 재시작 뒤 확인 | E2E |
+| 같은 key·revision 변경 = `idempotency_conflict` | Mock·실제 둘 다 | Mock "같은 key·원 revision", E2E |
+| 삭제된 ID에 다른 key = `profile_not_found` | Mock·실제 둘 다, 화면 문구 따로 | Mock, E2E, 위젯 "이미 지워진 계정" |
+| 옛 create key로 삭제된 ID 재생성 불가, 새 key는 새 ID | Mock·실제 둘 다 | Mock "옛 create key", E2E |
+| Dart Mock 의미 맞춤 | 위 "고친 파일" | Mock 그룹 6건 |
+| process E2E 실제 삭제·재시도·7번째 파일 | 7경로 파일을 모두 만든 뒤 삭제(아래) | E2E |
+
+### process E2E 내용
+
+- 임시 저장소(`Directory.systemTemp`, 끝에 지움). 실제 게임·사용자 프로필·공용 저장소 접근 0.
+- 남길 계정과 지울 계정 둘 다에 같은 데이터를 만든다: 학생 2명, 전술 v1 매치, 전술 v2(v6 가져오기 fixture `tactical_v6_import_v2.json`을 `py -3.11`로 임시 sqlite에 넣어 가져오기 — 기존 `tactical_v2_process_e2e_test`와 같은 방법), 시나리오 1개, 프리셋(`repository_presets_v1.json`), 로컬 전술 공유 기록 1건(`tactical_share_v1.json`의 import 예에서 원문 이름 필드를 뺀 기록을 `importTacticalShares`로). 두 계정 모두 프로필별 파일 6개(`profiles`·`tactical` v1·v2·`scenarios`·`presets`·`tactical-share`)가 생겼는지 먼저 본다.
+- 삭제 → 응답 = 원 revision + 1, 지울 계정의 파일 6개 모두 없음(7번째 `tactical-share/{id}.v1.json` 포함), `catalog.json`에는 남길 계정만·선택 유지.
+- 백엔드를 끄고 새로 띄운 뒤: 같은 key·원 revision = 같은 revision, 같은 key·revision+1 = `idempotency_conflict`, 다른 key = `profile_not_found`, state 읽기 = `profile_not_found`, 옛 create key = `idempotency_conflict`. 남길 계정의 파일 6개·state revision·학생·공유 기록·시나리오 목록이 그대로. 새 create key는 다른 ID.
+
+### 계약 SHA 대조
+
+- 착수 때 10경로 bytes/SHA256이 XB 02:17 표와 모두 일치(착수 기록). 이 slice는 backend/contracts를 읽기만 했다.
+- `contracts/fixtures/profile_delete_fb2d_v1.json` 952 B `704a0cad6180fcf07ef62f7ffdeab6ec20ff47d19b42f87f62c61018bdfa989c`, `contracts/README.md` 85600 B `165623772939a19f06209bac6735bae564aacccb6be5a9c7424164b64584c1a0`.
+
+### 캐시 표(grep: cache·profileId·Map 필드·static shared·프로필 상태를 들고 있는 State)
+
+| 위치 | 키 | 비우는 방법 |
+|---|---|---|
+| `AccountSectionCluster` `_profiles`·`_studentCounts`·`_selected`·`_editing` | 프로필 ID | 성공·`profile_not_found` 즉시 `_forgetDeletedProfile`(그 ID만 뺌, 선택은 남은 선택 계정 또는 첫 계정) → `_load()`. 다시 읽기가 실패해도 지운 계정은 목록·선택에 남지 않는다 |
+| `AccountSectionCluster` `_pendingDelete` | 프로필 ID | 성공·재시도 불가 실패에서 비움. 응답 손실·바쁨·쓰기 실패만 남긴다 |
+| `TitlePage` `_profile`·`_repositoryState` | 타이틀에 보이는 계정 | `onProfileDeleted`가 같은 ID면 둘 다 null + 계정 읽기 세대 증가. 타이틀로 돌아올 때 `_loadAccount` |
+| `MockAppService` `_profiles`·`_repositoryStates`·`_currentHistories`·`_repositoryPlans`·`_repositoryPlanAuthoring`·`_planIdempotency`·`_repositoryPresets`·`_presetIdempotency`·`_planningScenarios`·`_planningScenarioRevisions`·`_scenarioIdempotency`·**`_tacticalStates`(이번에 추가)** | 프로필 ID | `deleteProfile`에서 그 ID만 remove. 다른 계정 값은 그대로(Mock 테스트로 확인) |
+| `MockAppService` `_mockDeleteTombstones`·`_mockCreateKeys` | 프로필 ID·create key | 비우지 않는다(백엔드 tombstone과 같음, 내용은 ID·key·revision뿐) |
+| `ProcessAppService` | — | 프로필별 캐시 없음(client·scanner 구독·연결 상태뿐). 7경로는 백엔드가 지운다 |
+| AppShell 아래 페이지 상태: 계획(`plan_flow_save`·`repository_presets_controller`·`plan_scenario_preview` `_cache`·`plan_scenario_compare` `_cache`), 인벤토리(`inventory_controller` `_acquisitions`, 자원 key), 전술(`tactical_page`), 스캔(`scan_page` state cache), 학생·통계·홈, `RecentStudents`·`_recentScans` | 프로필(페이지 key `$_profileGeneration`) | 삭제는 타이틀의 계정 관리에서만 된다. 타이틀은 `pushReplacement`로 AppShell을 열고 AppShell에서 타이틀로 돌아오는 길이 없어, 삭제 때 AppShell과 그 캐시는 존재하지 않는다. 다음 AppShell은 새로 만든다. 설정 페이지에는 삭제가 없다(선택·생성·v6 가져오기만, `_profileChanged`로 세대 증가) |
+| `StudentGridImageWarmup.shared`, `KitOverlayGroup.shared` | asset·overlay | 프로필 데이터 아님 |
+| Mock 스캐너 `_scannerCommitReceipts`·`_scannerSessionRaw`·`_scannerIdentifiedInventoryKeys` | 세션 ID | 대상 아님(세션 단위, 백엔드 scanner_session도 7경로 밖). 발견 사항 1 |
+
+### 확인 문구 전후
+
+- 전: 제목 "계정 삭제", 본문 `'{이름} 계정과 저장 데이터를 삭제할까요?'`, 버튼 취소·삭제.
+- 후: 제목·버튼 그대로, 같은 대화상자 하나. 본문 `'{이름} 계정과 저장 데이터를 삭제하시겠습니까?\n학생·인벤토리·계획·이력·프리셋·시나리오·전술대항전 기록과 함께 전술 공유 데이터(이 PC에 저장된 전술대항전 공유 기록)도 지워지며, 되돌릴 수 없습니다.'`(key `account-delete-confirm-text`).
+- 실패 문구(`account-cluster-error`):
+  - `profile_not_found`: "이미 삭제되었거나 찾을 수 없는 계정입니다. 계정 목록을 다시 읽었습니다."
+  - `idempotency_conflict`: "이 삭제 요청은 다른 내용으로 이미 쓰인 요청이라 삭제하지 않았습니다. 계정 목록을 다시 읽었습니다. 다시 삭제하려면 삭제를 한 번 더 눌러 주십시오."(보류 요청을 버리고 다음 삭제는 새 key — 사용자가 다시 누를 때만, 저절로 새 key를 만들지 않는다)
+  - `revision_conflict`: "그 사이에 계정이 바뀌어 삭제하지 않았습니다. 계정 목록을 다시 읽었습니다. 확인한 뒤 다시 삭제해 주십시오."
+  - 응답 손실(시간 초과·연결 끊김)·`repository_busy`·`persistence_failed`·retryable: "삭제 결과를 확인하지 못했습니다. 삭제를 다시 누르면 같은 요청으로 다시 확인합니다."(목록을 다시 읽지 않음, 같은 key·원 revision 보존)
+  - 그 밖: "계정을 삭제하지 못했습니다: {repositoryLoadErrorText}"(예전은 오류 객체 문자열 그대로)
+
+### golden 변화 예상
+
+- **변화 0.** 삭제 확인 대화상자가 열린 golden 장면이 없다(`test/goldens`에서 `account-delete`·AlertDialog 0건). `account-manager`·`account-editor`·`account-picker`(fe1g)·`account-new`(fe8b) 장면은 관리 레일·목록·편집기만 그리고 오류 문구가 없는 상태라 바뀌지 않는다. 타이틀은 콜백만 더해 그림 변화 없음.
+- CF gate 예상: analyze 0, 일반 테스트 +17, process +1.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·almanac validate·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, XB whole 1211 PASS 보고만 읽음).
+- 실제 앱에서 계정 삭제 확인 문구·응답 손실 재시도 화면: 사용자 시각 확인 미실행.
+- 실제 응답 손실(백엔드가 지운 뒤 응답 전 끊김)은 process E2E에서 "삭제 후 재시작 → 같은 요청"으로 대신했다. 응답 도중 끊기는 정확한 시점은 XB crash matrix 몫.
+- Windows 전원 손실·실제 사용자 프로필 삭제·native symlink fixture: XB가 NOT_VERIFIED로 남긴 경계 그대로.
+
+### WIP 보존 확인
+
+- `mock_app_service.dart`: pre 사본(스캐너 WIP 포함)과 끝 내용의 차이는 이 slice hunk 11개(2058줄 이후: createProfile 앞·안, deleteProfile, loadRepositoryState, `_tactical`)뿐이다. 편집 도구가 손대지 않은 LF 줄 122개를 CRLF로 바꾼 것을 찾아 pre의 줄바꿈으로 되돌렸다(바뀌지 않은 줄은 pre와 바이트까지 같다). WIP hunk(185·496~600줄 부근)는 그대로.
+- `account_section_cluster.dart`·`title_page.dart`: WIP 없음, LF 그대로.
+- 다른 WIP 파일(`process_app_service.dart`·`planning_protocol_client.dart`·`scanner_service.dart`·scan 계열·스캐너 테스트)은 수정 0.
+
+### 발견 사항
+
+1. Mock 스캐너 commit receipt는 세션 단위라 계정 삭제 뒤에도 남는다. 지운 계정의 pending(frozen) receipt를 같은 key로 재시도하면 Mock이 `_repositoryStates[지운 ID]`를 다시 쓸 수 있다. 백엔드 scanner_session도 7경로 밖이라 그대로 두었다(스캐너 소유. 실제 흐름에서는 삭제가 타이틀에서만 되고 스캔 세션은 AppShell 안이라 겹치기 어렵다). 필요하면 스캐너 slice에서 "commit 대상 프로필이 tombstone이면 `profile_not_found`".
+2. Mock `loadRepositoryState`는 처음부터 없던 ID에는 여전히 빈 state를 만들어 준다(삭제된 ID만 `profile_not_found`). 기존 테스트가 seed 없는 ID를 쓰는지 다 확인하지 않아 범위를 좁혔다.
+3. Mock `createProfile`은 선택 계정이 없을 때도 `selected: false`다(백엔드는 첫 계정을 선택). 기존 차이이며 호출처가 선택을 따로 한다. 이번에 바꾸지 않았다.
+4. 계정 삭제가 AppShell 안(예: 설정 페이지)에 생기면 위 표의 페이지 캐시가 살아 있는 상태에서 지우게 된다. 그때는 `onProfileChanged`(세대 증가)와 같은 경로가 필요하다.
+5. 착수 기록에 cluster·title을 처음에 CRLF로 잘못 적었다가 LF로 고쳤다(셸 루프의 줄바꿈 세기가 틀렸다). `mock_app_service.dart`는 CRLF 주 + LF 122줄 섞임이다.
+6. Lane A FE6-d 편집 중 `lib/ui/inventory/**` 컴파일 오류가 잠시 보였고, 위젯 테스트는 analyze 0건이 된 뒤 돌렸다. 이 slice와 파일 겹침 0.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fb2ddart/pre/<경로>`(고친 기존 파일 3개).
+- 끝 사본: `debug/frontend_fb2ddart/post/<경로>`(고친 기존 파일 3개와 새 테스트 2개).
+- `debug/frontend_fb2ddart/commit.json`: slice `fb2ddart`, `status=false`, `post_dir`, modified 3, added 2, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`(바뀌는 기준 이미지 없음). message 근거: backend 로그 01:28 Dart 목록·02:17 반영 완료, CF 로그 10-11 20:50.
+- 인계: `debug/frontend_fb2ddart/output.md`.
+
+### 다음 행동
+
+- fb2d-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A FE6-d와 이 slice가 모두 멈춘 뒤 XB source10과 같은 소스로 gate 1회(예상: analyze 0, 일반 +17, process +1, golden 변화 0) → XB FB-2d exact10 커밋 → `fe_commit.ps1 -Slice fb2ddart`(mock은 3-way 병합, WIP 인접 hunk 없음).
+- 발견 사항 1·2·4는 CF 판단을 기다린다.
