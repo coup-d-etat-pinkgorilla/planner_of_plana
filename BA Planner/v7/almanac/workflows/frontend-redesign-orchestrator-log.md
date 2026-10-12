@@ -2089,3 +2089,19 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - 사용자가 옛 기준 PNG 3장 삭제 커밋을 직접 실행: **`b4fc1b6d`**(작업 트리에서도 3장 없음). XB FB-10b exact9 **`404c47de`**(parent `b4fc1b6d`, backend 로그 21:57) 확인 → CF **fb10bdart `b49ce994`**(10파일, DryRun·실행 충돌 0, gate `20261012_211921`). `mock_app_service.dart` 작업 트리 = post 사본(스캐너 WIP 보존). **FB-10b 왕복 완료.**
 - XB 22:18·22:36 판단 수신: ① 계정 삭제 뒤 스캐너 성공 receipt 유지(역사적 성공 응답일 뿐 프로필 존재 뜻 아님, 새 key는 `profile_not_found`) — CF Mock도 같은 의미라 변경 없음. ② 공용 test-only 인벤토리 E2E 진입점(`backend/tests/inventory_e2e_backend.py` + fixture)을 XB가 격리 준비 중 — XB 메인 반영 뒤 CF가 `inventory_review_fb10b_process_e2e_test.dart`의 inline `-c`를 `-m tests.inventory_e2e_backend`로 바꾸는 소단위로 받는다(같은 소스 gate 필요).
 - 레인 A·B 비어 있음. 다음 배정은 사용자 요청 때.
+
+## 2026-10-12 23:15 — 배정(Lane A FE5-f2 · Lane B FE6-f)
+
+- 사용자 "다음 작업". 시작 SHA `9c03d50b`. 파일 겹침 없음.
+  · Lane A **FE5-f2** — `debug/frontend_redesign_handoff/fe5f2-worker-prompt-20261012.md`. 계정 없음 빈 상태(사용자 결정 21:45 문구 그대로, "읽는 중" 머묾 해소), 요소 편집기 대체 경로 제거, `plan_phase_editor.dart` 삭제(사용처 이관, 필요하면 FE6-d 키트 morph), `plan_student_selector.dart` 정리, `_legacyBuilderService` 테스트 정리, f1 발견 3(`overall` 형식 검사 복구). 남는 golden 변화 0. 파일 삭제는 commit.json `deleted` → CF가 사용자에게 삭제 커밋 명령 전달(git 쓰기 막기 때문).
+  · Lane B **FE6-f** 이력 연동 — `debug/frontend_redesign_handoff/fe6f-worker-prompt-20261012.md`. KPI 델타·상세 스파크라인·전체 아이템 D·분석 S5 최근 변화 + FD-042 예측(scan 3회 이상 선형, 미만 숨김 — FE6-c 발견 6을 FD-042로 갈음). 새 백엔드 없음. FE6-e 발견 3(fe6a fixture 초상 id)도 함께. `inventory`·`inventory-all`·`inventory-analysis` 기준 이미지 바뀜 예상, 새 장면 없음.
+- 다음: 두 워커 `TASK_OUTPUT_READY` → 검토 → gate 1회 → golden → fe5f2(삭제 파일은 사용자 커밋) → fe6f → redesigndocs. XB 공용 인벤토리 E2E 진입점이 그사이 메인에 오면 gate 범위를 다시 확인한다.
+
+## 2026-10-13 01:20 — FE5-f2·FE6-f 검토·gate·커밋, FE5·FE6 완료
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. output.md SHA 전부 일치(fe5f2 16행 — 지운 2파일은 pre 기준, fe6f 21행), 파일 겹침 0, 범위 밖 변경 0. XB 메인 변경 없음(공용 E2E 진입점 아직 미반영).
+- gate ① `20261013_005356` RED 2종: golden 3(예측대로 `inventory`·`inventory-all`·`inventory-analysis`) + **almanac validate dead_refs 2**(`almanac/design/plan-phase-editor-lessons-2026-07-31.md`·`plan-student-selector-lessons-2026-08-04.md`가 FE5-f2에서 지운 파일을 source로 가리킴). CF 수정: 두 문서에 "폐기 기록(2026-10-13)" 메모를 넣고 source 경로를 이관처 `plan_preset_manager.dart`로(인용 id 유지). `codealmanac validate` ok.
+- golden 검토·승인: `inventory`(KPI +3·−1·6종·3일 전, 상세 스파크라인 0·0·1·1, 리오·토키 실제 그림), `inventory-all`(KPI 네 곳, 엘레프 타일 그림 2, 상세 스파크라인 31·24·18·12 + "2주 뒤 소진 예상", 버튼 66px 아래), `inventory-analysis`(S5 순증감 6행 + 예측 2행, 다른 섹션 변화 0; 열린 밀레니엄 플라이아웃이 S5 첫 행 값을 덮음 — 장면 조작 문제로 기록). gate ② `20261013_010336` **GREEN**(analyze 0, 374 + 474 + 582 + 135, process 59, golden 42, almanac 45, diff 0).
+- 커밋: **fe5f2 `2f22859b`**(13파일, +692 −1586) → **fe6f `00290cea`**(23파일). `plan_phase_editor.dart`·`plan_student_selector.dart`는 작업 트리에서 지워졌고 git 삭제는 사용자 커밋(명령 전달).
+- 판단 수용: FE5-f2 발견 2(계정 없음 때 S1 버튼을 실제로 끔, 툴팁 = 결정 문구), 3(계정은 있는데 흐름을 못 열 때 새 SnackBar "계획 만들기를 열 수 없어 계산기 목표를 계획에 넣지 못했습니다."), 1(`overall` 검사는 `checkProjection`으로 계산 응답에서만). FE6-f 정한 규칙 1~6(4주 읽기, 재화별 "지난 스캔", 마지막 스캔 = 카탈로그 재화 scan).
+- 후속 목록: `PlanElementBuilder` 위젯 정리(앱 미사용, 공용 정의 분리), 키트 주석 2곳(`section_morph.dart`·`diagonal_scrollbar.dart`), 키트 승격(`InventorySparklinePainter`·`InventoryChangeBar` → FE7 통계 B3와 공유), `inventory-analysis` 장면의 플라이아웃이 S5를 덮는 문제(장면 분리 또는 플라이아웃 닫은 S5 장면), 상세 "마지막 확인" 메타 줄, 스캔 "자리" 묶음 규칙 FD 후보(FE7-h·타이틀 "스냅샷 n회"), 앱 셸 통합 테스트(계정 없는 셸 → 설정 → 계획 탭).
