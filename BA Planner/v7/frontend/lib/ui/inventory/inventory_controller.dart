@@ -21,12 +21,20 @@
 // - 저장 wire는 재화 항목을 저장된 map 그대로(이름·메타 포함) 두고, 없는 재화는 만들지 않으며 null을 '0'으로 바꾸지
 //   않는다. 고치지 않은 재료 항목도 통째로 둔다.
 // - 백엔드·Mock이 `invalid_payload` + `reason=currency_read_only`로 거부하면 draft를 지우지 않고 그 사유를 알린다.
+//
+// 확인 필요 표시(fb10b-dart, FB-10b · FD-146):
+// - 상태(`loadRepositoryState`) 뒤 `loadRepositoryInventoryReview`를 읽고, revision이 다르면 둘 다 다시 읽는다. 표시는
+//   그 행 key(정규 key)에만 매핑한다. `migration_required`·`corrupt_data`는 빈 표시로 바꾸지 않고 계정 오류로 알린다.
+// - 직접 고치기 저장은 scope(`applied_resource_keys`) = 고친 key + "이 값이 맞습니다"로 확인한 key만 보낸다.
+// - 응답 손실·저장소 바쁨·쓰기 실패 뒤 같은 내용을 다시 저장하면 원 revision·key·scope·bucket을 그대로 다시 보낸다.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
 import '../../services/app_service.dart';
-import '../../services/planning_protocol_client.dart' show BackendRemoteException;
+import '../../services/planning_protocol_client.dart'
+    show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import 'inventory_analysis.dart';
@@ -54,6 +62,55 @@ bool inventoryIsCurrencyReadOnlyError(Object error) =>
     error is BackendRemoteException &&
     error.code == 'invalid_payload' &&
     error.details?['reason'] == inventoryCurrencyReadOnlyReason;
+
+/// 저장 scope 밖 수량 변경 거부의 오류 사유(FB-10b).
+const inventoryScanScopeMismatchReason = 'scan_scope_mismatch';
+
+/// 저장소 오류 코드(Process는 [BackendRemoteException], Mock은 [StateError] 메시지).
+String? _repositoryErrorCode(Object error) => switch (error) {
+  BackendRemoteException(:final code) => code,
+  StateError(:final message) => message,
+  _ => null,
+};
+
+/// 같은 요청(원 revision·key·scope)으로 다시 보내야 하는 저장 실패(응답 손실·저장소 바쁨·쓰기 실패).
+bool inventorySaveRetryable(Object error) =>
+    error is TimeoutException ||
+    error is BackendDisconnectedException ||
+    (error is BackendRemoteException && error.retryable) ||
+    const {
+      'repository_busy',
+      'persistence_failed',
+    }.contains(_repositoryErrorCode(error));
+
+/// 확인 필요 표시를 읽지 못했을 때의 문구(빈 표시로 바꾸지 않는다).
+String inventoryReviewLoadErrorText(Object error) =>
+    switch (_repositoryErrorCode(error)) {
+      'migration_required' =>
+        '확인 필요 표시가 이 앱이 모르는 형식이라 인벤토리를 읽지 못했습니다. 원본은 그대로 두었습니다.',
+      'corrupt_data' => '저장된 확인 필요 표시가 손상되어 인벤토리를 읽지 못했습니다. 원본은 그대로 두었습니다.',
+      _ when error is _InventoryReviewRevisionMismatch =>
+        '수량과 확인 필요 표시를 같은 시점으로 읽지 못했습니다. 잠시 뒤 다시 읽어 주십시오.',
+      _ => '확인 필요 표시를 불러오지 못했습니다: $error',
+    };
+
+/// 수량과 확인 필요 표시의 revision이 다시 읽어도 계속 다르다.
+class _InventoryReviewRevisionMismatch implements Exception {
+  const _InventoryReviewRevisionMismatch();
+
+  @override
+  String toString() => 'inventory review revision mismatch';
+}
+
+/// 보낸 뒤 결과를 모르는 저장 요청. 같은 내용을 다시 저장하면 이 값을 그대로 보낸다.
+typedef _InventorySaveRequest = ({
+  String profileId,
+  String signature,
+  Map<String, dynamic> wire,
+  List<String> applied,
+  int expectedRevision,
+  String idempotencyKey,
+});
 
 class InventoryController extends ChangeNotifier {
   InventoryController(this.service);
@@ -120,6 +177,9 @@ class InventoryController extends ChangeNotifier {
 
   final Map<String, String> _drafts = {};
   final Set<String> _dirtyKeys = {};
+  Set<String> _reviewKeys = const {};
+  _InventorySaveRequest? _pendingSave;
+  int _saveSequence = 0;
   final Map<String, InventoryAcquisition> _acquisitions = {};
   int _generation = 0;
   bool _disposed = false;
@@ -283,6 +343,26 @@ class InventoryController extends ChangeNotifier {
   RepositoryPlanService? get _planService => service is RepositoryPlanService
       ? service as RepositoryPlanService
       : null;
+  RepositoryInventoryReviewService? get _reviews =>
+      service is RepositoryInventoryReviewService
+      ? service as RepositoryInventoryReviewService
+      : null;
+
+  /// [key] 행에 확인 필요 표시가 있는가(FB-10b, 그 행 key만 정규 key로 비교한다).
+  bool needsReview(String key) =>
+      _reviewKeys.contains(historyCanonicalResourceKey(key));
+
+  /// "이 값이 맞습니다"를 누를 수 있는가: 표시가 있고, 저장된 수량이 있으며(수량 없는 표시는 직접 고치기로 넣는다),
+  /// 그 품목을 고치는 중이 아니고, 계정 상태가 있고, 저장 중이 아니다.
+  bool canConfirmReview(String key) {
+    final view = _board[key];
+    return view != null &&
+        view.present &&
+        needsReview(key) &&
+        _editingKey != key &&
+        _state != null &&
+        !_saving;
+  }
   ScannerService? get _scanner =>
       service is ScannerService ? service as ScannerService : null;
 
@@ -380,6 +460,7 @@ class InventoryController extends ChangeNotifier {
       if (selected.isEmpty) {
         _profile = null;
         _state = null;
+        _reviewKeys = const {};
         _profileError = '선택된 계정이 없습니다. 설정에서 계정을 고르면 인벤토리가 보입니다.';
         _finishLoad();
         return;
@@ -400,12 +481,40 @@ class InventoryController extends ChangeNotifier {
           _planError = error;
         }
       }
-      final state = await repository.loadRepositoryState(profile.id);
+      var state = await repository.loadRepositoryState(profile.id);
       if (!_current(generation)) return;
+      // FB-10b: 확인 필요 표시는 수량과 같은 revision에서 읽는다. 다르면 둘 다 다시 읽는다(최대 2번 더).
+      var reviewKeys = const <String>{};
+      final reviews = _reviews;
+      if (reviews != null) {
+        try {
+          var review = await reviews.loadRepositoryInventoryReview(profile.id);
+          for (var attempt = 0; review.revision != state.revision; attempt++) {
+            if (!_current(generation)) return;
+            if (attempt >= 2) throw const _InventoryReviewRevisionMismatch();
+            state = await repository.loadRepositoryState(profile.id);
+            if (!_current(generation)) return;
+            review = await reviews.loadRepositoryInventoryReview(profile.id);
+          }
+          if (!_current(generation)) return;
+          reviewKeys = review.needsReviewKeys.toSet();
+        } catch (error) {
+          if (!_current(generation)) return;
+          // 표시를 모르는 채로 수량만 보여 주거나 고치지 않는다.
+          _profile = profile;
+          _state = null;
+          _reviewKeys = const {};
+          _profileError = inventoryReviewLoadErrorText(error);
+          _finishLoad();
+          return;
+        }
+      }
       _profile = profile;
       _state = state;
+      _reviewKeys = reviewKeys;
     } catch (error) {
       if (!_current(generation)) return;
+      _reviewKeys = const {};
       _profileError = '계정 상태를 불러오지 못했습니다: $error';
       _finishLoad();
       return;
@@ -749,8 +858,39 @@ class InventoryController extends ChangeNotifier {
     return save();
   }
 
+  /// 저장 scope(FB-10b `applied_resource_keys`): 고친 key 중 저장 전후 어느 쪽에든 항목이 있는 것 + "이 값이
+  /// 맞습니다"로 확인한 [confirmed]. 고치지 않은 key의 표시는 건드리지 않는다.
+  List<String> appliedResourceKeys(
+    Map<String, dynamic> wire, {
+    String? confirmed,
+  }) {
+    String identity(Object? entry) => historyCanonicalResourceKey(
+      inventoryEntryIdentity(Map<String, dynamic>.from(entry as Map)),
+    );
+    final identities = {
+      for (final entry in _state?.inventory.entries ?? const []) identity(entry),
+      for (final entry in wire['entries'] as List) identity(entry),
+    };
+    final keys = {
+      for (final key in _dirtyKeys) historyCanonicalResourceKey(key),
+      if (confirmed != null) historyCanonicalResourceKey(confirmed),
+    };
+    return repositoryInventoryAppliedKeys([
+      for (final key in keys)
+        if (identities.contains(key)) key,
+    ]);
+  }
+
   /// 고친 품목을 저장한다(bucket 전체, revision 확인). 실패하면 draft를 그대로 둔다.
-  Future<bool> save() async {
+  Future<bool> save() => _save();
+
+  /// "이 값이 맞습니다"(FB-10b): 수량은 그대로 두고 [key]의 확인 필요 표시만 해제한다(scope = 그 key).
+  Future<bool> confirmReview(String key) async {
+    if (!canConfirmReview(key)) return false;
+    return _save(confirmed: key);
+  }
+
+  Future<bool> _save({String? confirmed}) async {
     final repository = _repository;
     final profile = _profile;
     final state = _state;
@@ -760,38 +900,95 @@ class InventoryController extends ChangeNotifier {
     }
     if (_saving) return false;
     final Map<String, dynamic> wire;
+    final List<String> applied;
     try {
       wire = inventoryWire();
+      applied = appliedResourceKeys(wire, confirmed: confirmed);
     } on FormatException catch (error) {
       _setMessage(error.message, InventoryMessageTone.warning);
       return false;
     }
+    // 결과를 모르는 앞 요청과 같은 내용(고친 값·scope)이면 원 revision·key·bucket을 그대로 다시 보낸다.
+    final signature = jsonEncode({
+      'drafts': {
+        for (final key in _dirtyKeys.toList()..sort()) key: _drafts[key] ?? '',
+      },
+      'applied': applied,
+    });
+    final pending = _pendingSave;
+    final _InventorySaveRequest request =
+        pending != null &&
+            pending.profileId == profile.id &&
+            pending.signature == signature
+        ? pending
+        : (
+            profileId: profile.id,
+            signature: signature,
+            wire: wire,
+            applied: applied,
+            expectedRevision: state.revision,
+            // 시계 해상도가 낮아도 새 요청마다 다른 key(같은 key·다른 내용 = idempotency_conflict).
+            idempotencyKey:
+                'inventory-save-${DateTime.now().microsecondsSinceEpoch}-${++_saveSequence}',
+          );
+    _pendingSave = request;
     _saving = true;
     _message = null;
     _lastSaveErrorReason = null;
     _notify();
     try {
       final revision = await repository.saveRepositoryInventory(
-        profile.id,
-        RepositoryInventoryState.fromWire(wire),
-        state.revision,
-        'inventory-save-${DateTime.now().microsecondsSinceEpoch}',
+        request.profileId,
+        RepositoryInventoryState.fromWire(request.wire),
+        request.expectedRevision,
+        request.idempotencyKey,
+        appliedResourceKeys: request.applied,
       );
+      _pendingSave = null;
       if (_disposed) return true;
       _drafts.clear();
       _dirtyKeys.clear();
       _editingKey = null;
       _saving = false;
       await load();
-      _setMessage('저장했습니다(revision $revision).', InventoryMessageTone.info);
+      _setMessage(
+        confirmed == null
+            ? '저장했습니다(revision $revision).'
+            : '이 값을 확인했습니다. 확인 필요 표시를 지웠습니다(revision $revision).',
+        InventoryMessageTone.info,
+      );
       return true;
     } catch (error) {
+      final retryable = inventorySaveRetryable(error);
+      if (!retryable) _pendingSave = null;
       if (_disposed) return false;
       _saving = false;
+      final reason = switch (error) {
+        BackendRemoteException(:final details) => details?['reason'],
+        _ => null,
+      };
       if (inventoryIsCurrencyReadOnlyError(error)) {
         _lastSaveErrorReason = inventoryCurrencyReadOnlyReason;
         _setMessage(
           '재화(크레딧·엘리그마)는 스캔으로만 바뀌어 저장하지 않았습니다. 고친 수량은 그대로 남아 있습니다.',
+          InventoryMessageTone.warning,
+        );
+      } else if (retryable) {
+        _lastSaveErrorReason = _repositoryErrorCode(error) ?? 'save_unknown';
+        _setMessage(
+          '저장 결과를 확인하지 못했습니다. 고친 수량은 그대로 남아 있습니다. 다시 저장하면 같은 요청으로 다시 확인합니다.',
+          InventoryMessageTone.warning,
+        );
+      } else if (reason == inventoryScanScopeMismatchReason) {
+        _lastSaveErrorReason = inventoryScanScopeMismatchReason;
+        _setMessage(
+          '고친 범위 밖의 수량이 바뀌어 저장하지 않았습니다. 고친 수량은 그대로 남아 있습니다. 다시 읽은 뒤 저장합니다.',
+          InventoryMessageTone.warning,
+        );
+      } else if (_repositoryErrorCode(error) == 'idempotency_conflict') {
+        _lastSaveErrorReason = 'idempotency_conflict';
+        _setMessage(
+          '이 저장 요청은 다른 내용으로 이미 쓰인 요청이라 저장하지 않았습니다. 고친 수량은 그대로 남아 있습니다. 다시 저장하면 새 요청으로 보냅니다.',
           InventoryMessageTone.warning,
         );
       } else {

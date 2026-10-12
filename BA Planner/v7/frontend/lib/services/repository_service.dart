@@ -1,9 +1,11 @@
 import 'repository_plan_service.dart';
 import 'repository_presets_service.dart';
 import 'repository_history_service.dart';
+import 'repository_inventory_review.dart';
 export 'repository_plan_service.dart';
 export 'repository_presets_service.dart';
 export 'repository_history_service.dart';
+export 'repository_inventory_review.dart';
 
 class RepositoryProfile {
   const RepositoryProfile({
@@ -486,6 +488,9 @@ bool isValidRepositorySuccessPayload(
       case 'repository.history.scan_latest':
         RepositoryHistoryScanLatestResult.fromWire(payload);
         return true;
+      case 'repository.inventory.review.get':
+        RepositoryInventoryReview.fromWire(payload);
+        return true;
       case 'repository.plan.get':
         RepositoryPlanState.fromWire(payload);
         return true;
@@ -631,10 +636,20 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         if (ids.toSet().length != ids.length) return false;
         return true;
       case 'repository.inventory.update':
-        if (!mutation({'inventory'})) return false;
+        // FB-10b: optional `applied_resource_keys`(배열, null 금지, 빈 배열 허용, 별칭 중복 거부).
+        final scoped = payload.containsKey('applied_resource_keys');
+        if (!mutation({'inventory', if (scoped) 'applied_resource_keys'})) {
+          return false;
+        }
         RepositoryInventoryState.fromWire(
           _wireMap(payload['inventory'], 'inventory snapshot'),
         );
+        if (scoped) {
+          repositoryInventoryAppliedKeys(payload['applied_resource_keys']);
+        }
+        return true;
+      case 'repository.inventory.review.get':
+        RepositoryInventoryReviewRequest.fromWire(payload);
         return true;
       case 'repository.goals.save':
         if (!mutation({'goals'})) return false;
@@ -736,12 +751,16 @@ abstract interface class RepositoryService {
     int expectedRevision,
     String idempotencyKey,
   );
+  /// [appliedResourceKeys](FB-10b)가 있으면 그 key의 확인 필요 표시만 해제한다(같은 값 확인 포함). 수량이 바뀐
+  /// key가 scope 밖이면 `invalid_payload`(reason `scan_scope_mismatch`). 없으면(기존 호출) 실제로 수량이 바뀐
+  /// key만 해제한다. 재시도는 원 expected_revision·key·scope로 하고, 같은 key에 다른 scope는 `idempotency_conflict`.
   Future<int> saveRepositoryInventory(
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  );
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  });
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

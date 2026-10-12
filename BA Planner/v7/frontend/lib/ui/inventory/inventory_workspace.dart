@@ -125,6 +125,9 @@ abstract final class InventoryMetrics {
   static const useRowHeight = 46.0;
   static const methodRowHeight = 44.0;
   static const actionHeight = 40.0;
+
+  /// 확인 필요 줄(FB-10b, 표시가 있을 때만): 칩 · 설명 · "이 값이 맞습니다".
+  static const reviewHeight = 40.0;
   static const blockGap = 8.0;
   static const maxUses = 4;
   static const maxMethods = 3;
@@ -926,6 +929,7 @@ class InventoryWorkspace extends StatelessWidget {
                       key: ValueKey('inventory-tile-${view.key}'),
                       view: view,
                       selected: view.key == selected,
+                      needsReview: controller.needsReview(view.key),
                       onTap: () => controller.select(view.key),
                     ),
                   ),
@@ -1010,6 +1014,7 @@ class InventoryWorkspace extends StatelessWidget {
           key: ValueKey('inventory-row-${view.key}'),
           view: view,
           selected: view.key == selected,
+          needsReview: controller.needsReview(view.key),
           onTap: () => controller.select(view.key),
         );
       },
@@ -1154,6 +1159,21 @@ class InventoryWorkspace extends StatelessWidget {
     );
     y += InventoryMetrics.kvHeight;
     gap(12);
+
+    // 확인 필요(FB-10b · FD-146): 표시가 있을 때만. "이 값이 맞습니다"는 수량을 그대로 두고 그 key만 확인한다.
+    if (controller.needsReview(view.key)) {
+      children.add(
+        block(
+          y,
+          InventoryMetrics.reviewHeight,
+          420,
+          _ReviewLine(controller: controller, view: view),
+          key: const ValueKey('inventory-review-line'),
+        ),
+      );
+      y += InventoryMetrics.reviewHeight;
+      gap();
+    }
 
     // 수량 직접 고치기 / 재화 안내.
     if (view.isCurrency) {
@@ -2082,11 +2102,15 @@ class InventoryItemTile extends StatelessWidget {
     super.key,
     required this.view,
     required this.selected,
+    this.needsReview = false,
     required this.onTap,
   });
 
   final InventoryItemView view;
   final bool selected;
+
+  /// 확인 필요 표시(FB-10b). 74px 타일에는 칩이 들어가지 않아 왼쪽 위 warn 점으로 보인다(상세에 칩).
+  final bool needsReview;
   final VoidCallback onTap;
 
   /// 키트 막대 색과 채움 비율. 막대가 없으면 null.
@@ -2111,18 +2135,41 @@ class InventoryItemTile extends StatelessWidget {
     );
     final name = view.item.displayName;
     final bar = InventoryItemTile.bar(view);
+    final tile = ItemTile(
+      quantity: owned == null ? '—' : inventoryAmount(owned),
+      iconAsset: icon,
+      label: icon == null ? name.substring(0, math.min(4, name.length)) : null,
+      tone: bar?.tone,
+      fraction: bar?.fraction,
+      selected: selected,
+    );
     return KitPressable(
       onPressed: onTap,
       selected: selected,
-      semanticLabel: '$name 보유 ${owned ?? '모름'}',
-      builder: (context, state) => ItemTile(
-        quantity: owned == null ? '—' : inventoryAmount(owned),
-        iconAsset: icon,
-        label: icon == null ? name.substring(0, math.min(4, name.length)) : null,
-        tone: bar?.tone,
-        fraction: bar?.fraction,
-        selected: selected,
-      ),
+      semanticLabel:
+          '$name 보유 ${owned ?? '모름'}${needsReview ? ' · 확인 필요' : ''}',
+      builder: (context, state) => needsReview
+          ? Stack(
+              clipBehavior: Clip.none,
+              children: [
+                tile,
+                Positioned(
+                  left: 4,
+                  top: 4,
+                  child: Container(
+                    key: ValueKey('inventory-tile-review-${view.key}'),
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: AppTones.warn.base,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTones.warn.background),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : tile,
     );
   }
 }
@@ -2217,11 +2264,15 @@ class InventoryRiskRow extends StatelessWidget {
     super.key,
     required this.view,
     required this.selected,
+    this.needsReview = false,
     required this.onTap,
   });
 
   final InventoryItemView view;
   final bool selected;
+
+  /// 확인 필요 표시(FB-10b): 이름 옆 warn 칩(시안 Scan-Item-Review `.chip.wn`).
+  final bool needsReview;
   final VoidCallback onTap;
 
   /// 행 보조 글자(`보유 1 / 필요 450 · 사용 학생 1명`).
@@ -2234,6 +2285,12 @@ class InventoryRiskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final risk = view.risk;
+    final name = Text(
+      view.item.displayName,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: _body,
+    );
     return DiagonalRow(
       variant: DiagonalRowVariant.srow,
       mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
@@ -2252,12 +2309,20 @@ class InventoryRiskRow extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    view.item.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _body,
-                  ),
+                  if (needsReview)
+                    Row(
+                      children: [
+                        Flexible(child: name),
+                        const SizedBox(width: 6),
+                        BaChip(
+                          key: ValueKey('inventory-row-review-${view.key}'),
+                          label: '확인 필요',
+                          tone: AppTones.warn,
+                        ),
+                      ],
+                    )
+                  else
+                    name,
                   const SizedBox(height: 2),
                   Text(
                     summary(view),
@@ -2565,6 +2630,51 @@ class _InfoRow extends StatelessWidget {
           if (action != null) ...[const SizedBox(width: 10), action],
         ],
       ),
+    );
+  }
+}
+
+/// 상세 확인 필요 줄(FB-10b): warn 칩 · 설명 · "이 값이 맞습니다". 저장된 수량이 없는 표시는 확인 대신 직접 고치기로
+/// 넣도록 안내한다(백엔드 scope는 저장 전후에 있는 항목만 받는다).
+class _ReviewLine extends StatelessWidget {
+  const _ReviewLine({required this.controller, required this.view});
+
+  final InventoryController controller;
+  final InventoryItemView view;
+
+  @override
+  Widget build(BuildContext context) {
+    final editing = controller.editingKey == view.key;
+    return Row(
+      children: [
+        const BaChip(
+          key: ValueKey('inventory-detail-review'),
+          label: '확인 필요',
+          tone: AppTones.warn,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            view.present
+                ? '스캔에서 적용하지 않아 이전 값으로 남아 있습니다.'
+                : '스캔에서 적용하지 않았고 저장된 수량이 없습니다. 수량 직접 고치기로 넣어 주십시오.',
+            key: const ValueKey('inventory-review-note'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _muted,
+          ),
+        ),
+        if (view.present && !editing) ...[
+          const SizedBox(width: 10),
+          TonalButton(
+            key: const ValueKey('inventory-review-confirm'),
+            label: '이 값이 맞습니다',
+            onPressed: controller.canConfirmReview(view.key)
+                ? () => controller.confirmReview(view.key)
+                : null,
+          ),
+        ],
+      ],
     );
   }
 }

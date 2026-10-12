@@ -65,8 +65,9 @@ class _RejectingService extends MockAppService {
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  ) async {
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  }) async {
     saveCalls += 1;
     throw error;
   }

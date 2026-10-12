@@ -29,6 +29,7 @@ class ProcessAppService
         RepositoryService,
         RepositoryPlanService,
         RepositoryPresetsService,
+        RepositoryInventoryReviewService,
         ScannerService,
         TacticalService,
         TacticalEvidenceService,
@@ -613,13 +614,30 @@ class ProcessAppService
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  ) => _revisionMutation('repository.inventory.update', {
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  }) => _revisionMutation('repository.inventory.update', {
     'profile_id': profileId,
     'inventory': inventory.toWire(),
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
+    // FB-10b scope: 별칭을 현재 key로 바꾸고 중복이면 보내기 전에 FormatException.
+    if (appliedResourceKeys != null)
+      'applied_resource_keys': repositoryInventoryAppliedKeys(
+        appliedResourceKeys,
+      ),
   });
+
+  @override
+  Future<RepositoryInventoryReview> loadRepositoryInventoryReview(
+    String profileId,
+  ) async {
+    final request = RepositoryInventoryReviewRequest(profileId);
+    return RepositoryInventoryReview.fromWireFor(
+      profileId,
+      await _client.send('repository.inventory.review.get', request.toWire()),
+    );
+  }
 
   @override
   Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async {

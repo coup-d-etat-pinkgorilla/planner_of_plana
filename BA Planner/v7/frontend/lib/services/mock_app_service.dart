@@ -38,6 +38,7 @@ class MockAppService
         RepositoryService,
         RepositoryPlanService,
         RepositoryPresetsService,
+        RepositoryInventoryReviewService,
         ScannerService,
         TacticalService,
         DiagnosticsService {
@@ -702,6 +703,13 @@ class MockAppService
     };
     final before = RepositoryState.fromWire(current);
     final after = RepositoryState.fromWire(next);
+    // FB-10b: 승인 key는 확인 필요 표시를 지우고, 인식했지만 뺀 key는 이전 수량 그대로 표시를 단다(이전 수량이
+    // 없으면 표시만, 수량은 만들지 않는다). 쓰기 앞에서 계산해 깨진 메타면 아무것도 쓰지 않는다.
+    final reviewKeys = frozen.bucket == 'inventory'
+        ? (_mockReviewKeys(profileId).toSet()
+            ..addAll(frozen.excludedKeys)
+            ..removeAll(frozen.appliedKeys))
+        : null;
     final history =
         _currentHistories[profileId] ??
         RepositoryCurrentHistory.empty(legacy: before);
@@ -726,6 +734,7 @@ class MockAppService
       _scannerMockCurrentWrite = false;
     }
     _currentHistories[profileId] = updated;
+    if (reviewKeys != null) _storeMockReview(profileId, reviewKeys);
     if (_profiles.any((item) => item.id == profileId)) {
       _syncMockPlanRevision(profileId, revision);
     }
@@ -817,6 +826,7 @@ class MockAppService
       inventoryScanProfile: raw.inventoryScanProfile,
       context: context,
       appliedKeys: List.unmodifiable(applied),
+      excludedKeys: List.unmodifiable(excluded),
       // Server-internal provenance (Python flat context): kept with the frozen
       // request, never persisted in history or sent over the public RPC.
       provenance: historyCanonicalJson({
@@ -2110,6 +2120,7 @@ class MockAppService
     _tacticalStates.remove(profileId);
     _repositoryStates.remove(profileId);
     _currentHistories.remove(profileId);
+    _mockInventoryReviews.remove(profileId); // FB-10b 표시는 프로필 파일 안(FB-2d 삭제 범위).
     _repositoryPlans.remove(profileId);
     _repositoryPlanAuthoring.remove(profileId);
     _planIdempotency.remove(profileId);
@@ -2207,6 +2218,90 @@ class MockAppService
         details: {'reason': error.reason},
       );
     }
+  }
+
+  // ---- FB-10b 확인 필요 표시(백엔드 profile 안 private `inventory_review` v1) ----
+  // 계정마다 저장된 메타 원본(`{version, needs_review_keys}`)을 든다. 없으면 표시 없음(sparse). 수량·이력과
+  // 따로 두고, 계정 삭제 때 함께 지운다. 스캔: 승인 key 해제·인식했지만 뺀 key 표시(수량은 만들지 않음).
+  // 수동: scope key만 해제(scope 없으면 실제 수량이 바뀐 key만). 그 밖의 쓰기(목표·학생·unattributed)는 손대지 않는다.
+  final Map<String, Object?> _mockInventoryReviews = {};
+
+  /// 테스트 주입: 저장된 표시 메타를 원본 그대로 둔다(모르는 버전·깨진 모양 재현). null이면 지운다.
+  @visibleForTesting
+  void debugSetInventoryReviewMetadata(String profileId, Object? metadata) {
+    if (metadata == null) {
+      _mockInventoryReviews.remove(profileId);
+    } else {
+      _mockInventoryReviews[profileId] = jsonDecode(jsonEncode(metadata));
+    }
+  }
+
+  /// 저장된 표시(정렬된 정규 key). 모르는 버전은 `migration_required`, 깨진 모양은 `corrupt_data`(빈 목록으로
+  /// 바꾸지 않는다).
+  List<String> _mockReviewKeys(String profileId) {
+    if (!_mockInventoryReviews.containsKey(profileId)) return const [];
+    final raw = _mockInventoryReviews[profileId];
+    if (raw is! Map ||
+        raw.length != 2 ||
+        !raw.containsKey('version') ||
+        !raw.containsKey('needs_review_keys') ||
+        raw['version'] is! int) {
+      throw BackendRemoteException(
+        code: 'corrupt_data',
+        message: 'profile contains invalid repository data',
+        details: const {'reason': 'invalid_inventory_review'},
+      );
+    }
+    if (raw['version'] != 1) {
+      throw BackendRemoteException(
+        code: 'migration_required',
+        message: 'Inventory review version is unsupported',
+        details: const {'reason': 'unsupported_version'},
+      );
+    }
+    final stored = raw['needs_review_keys'];
+    try {
+      final keys = repositoryInventoryAppliedKeys(stored);
+      if (!listEquals<Object?>(keys, stored as List)) {
+        throw const FormatException('Stored review keys must be sorted');
+      }
+      return keys;
+    } on FormatException {
+      throw BackendRemoteException(
+        code: 'corrupt_data',
+        message: 'profile contains invalid repository data',
+        details: const {'reason': 'invalid_inventory_review'},
+      );
+    }
+  }
+
+  /// 표시를 쓴다. 표시가 없던 계정은 빈 목록을 새로 만들지 않는다(백엔드와 같은 sparse 규칙).
+  void _storeMockReview(String profileId, Iterable<String> keys) {
+    final sorted = repositoryInventoryAppliedKeys(keys.toList());
+    if (_mockInventoryReviews.containsKey(profileId) || sorted.isNotEmpty) {
+      _mockInventoryReviews[profileId] = {
+        'version': 1,
+        'needs_review_keys': sorted,
+      };
+    }
+  }
+
+  @override
+  Future<RepositoryInventoryReview> loadRepositoryInventoryReview(
+    String profileId,
+  ) async {
+    final request = RepositoryInventoryReviewRequest(profileId);
+    _requireNotDeletedProfile(request.profileId);
+    if (!_profiles.any((item) => item.id == request.profileId)) {
+      throw StateError('profile_not_found');
+    }
+    // 읽기는 계획 이관·빈 표시 쓰기를 하지 않는다(그 revision 그대로).
+    return RepositoryInventoryReview.fromWireFor(request.profileId, {
+      'version': 1,
+      'profile_id': request.profileId,
+      'revision': _mockRepositoryState(request.profileId)['revision'] as int,
+      'needs_review_keys': _mockReviewKeys(request.profileId),
+    });
   }
 
   void _observeMockCurrentWrite(String profileId, Map<String, dynamic>? stored,
@@ -2751,19 +2846,70 @@ class MockAppService
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  ) async {
-    return _saveMockCurrent(profileId, 'inventory', inventory.toWire(), expectedRevision, idempotencyKey);
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  }) async {
+    // FB-10b scope는 쓰기·캐시 앞에서 검사한다(상한·빈 key = invalid_inventory_review, 별칭 중복 = duplicate_identity).
+    List<String>? scope;
+    if (appliedResourceKeys != null) {
+      try {
+        scope = repositoryInventoryAppliedKeys(appliedResourceKeys);
+      } on FormatException catch (error) {
+        throw BackendRemoteException(
+          code: 'invalid_payload',
+          message: error.message,
+          details: {
+            'reason': error.message == 'Duplicate canonical review identity'
+                ? 'duplicate_identity'
+                : 'invalid_inventory_review',
+          },
+        );
+      }
+    }
+    return _saveMockCurrent(profileId, 'inventory', inventory.toWire(), expectedRevision, idempotencyKey,
+      appliedResourceKeys: scope);
+  }
+
+  /// 수동 저장의 확인 필요 전이(백엔드 `inventory_review.transition` manual). scope가 없으면 실제로 수량이 바뀐
+  /// key만 해제한다. scope key는 before·after에 있는 항목이어야 하고, 바뀐 key는 모두 scope 안이어야 한다(아니면
+  /// `invalid_payload` + `scan_scope_mismatch`).
+  Set<String> _mockManualReview(String profileId, RepositoryState before,
+    RepositoryState after, List<String>? scope) {
+    Map<String, Object?> quantities(RepositoryState state) => {
+      for (final entry in state.inventory.entries)
+        historyCanonicalResourceKey((entry['item_id'] ?? entry['key']) as String):
+            entry['quantity'],
+    };
+    final old = quantities(before);
+    final next = quantities(after);
+    final identities = {...old.keys, ...next.keys};
+    final changed = {
+      for (final key in identities)
+        if (!old.containsKey(key) || !next.containsKey(key) || old[key] != next[key]) key,
+    };
+    final applied = scope?.toSet() ?? changed;
+    if (!identities.containsAll(applied) || !applied.containsAll(changed)) {
+      throw BackendRemoteException(
+        code: 'invalid_payload',
+        message: 'Manual quantities changed outside explicit applied identities',
+        details: const {'reason': 'scan_scope_mismatch'},
+      );
+    }
+    return _mockReviewKeys(profileId).toSet()..removeAll(applied);
   }
 
   int _saveMockCurrent(String profileId, String bucket, Object value,
-    int expectedRevision, String idempotencyKey) {
+    int expectedRevision, String idempotencyKey, {List<String>? appliedResourceKeys}) {
     if (!_profiles.any((item) => item.id == profileId)) throw StateError('profile_not_found');
     if (expectedRevision < 0 || idempotencyKey.isEmpty) throw const FormatException('invalid_payload');
     final current = _ensureMockRepositoryPlan(profileId);
     final next = <String, dynamic>{...current, 'revision': expectedRevision + 1, bucket: value};
     final after = RepositoryState.fromWire(next);
-    final fingerprint = historyCanonicalJson({'operation': '$bucket:${historyCanonicalJson(value)}', 'expected_revision': expectedRevision});
+    // FB-10b: scope가 있는 요청은 scope까지 fingerprint에 넣는다(같은 key·다른 scope = idempotency_conflict).
+    final operation = appliedResourceKeys == null
+        ? '$bucket:${historyCanonicalJson(value)}'
+        : '$bucket-manual-scope-v1:${historyCanonicalJson({'current': value, 'applied_resource_keys': appliedResourceKeys})}';
+    final fingerprint = historyCanonicalJson({'operation': operation, 'expected_revision': expectedRevision});
     final cache = _planIdempotency.putIfAbsent(profileId, () => {});
     final cached = cache[idempotencyKey];
     if (cached != null) {
@@ -2777,6 +2923,9 @@ class MockAppService
     // unattributed 쓰기도 막지만, Mock의 unattributed 기록(`_observeMockCurrentWrite`)은 스캐너 소유 commit
     // 경로라 00:02 목록대로 손대지 않는다.
     if (bucket == 'inventory') _rejectMockCurrencyChange(before, after);
+    final reviewKeys = bucket == 'inventory'
+        ? _mockManualReview(profileId, before, after, appliedResourceKeys)
+        : null;
     final history = _currentHistories[profileId] ?? RepositoryCurrentHistory.empty(legacy: before);
     final updated = history.appendManual(before, after, bucket, _historyClock());
     _manualMockCurrentWrite = true;
@@ -2786,6 +2935,7 @@ class MockAppService
       _manualMockCurrentWrite = false;
     }
     _currentHistories[profileId] = updated;
+    if (reviewKeys != null) _storeMockReview(profileId, reviewKeys);
     _syncMockPlanRevision(profileId, expectedRevision + 1);
     cache[idempotencyKey] = (fingerprint: fingerprint, response: Map.unmodifiable({'revision': expectedRevision + 1}));
     return expectedRevision + 1;
@@ -2884,6 +3034,7 @@ class _MockFrozenScanCommit {
     required this.inventoryScanProfile,
     required this.context,
     required this.appliedKeys,
+    this.excludedKeys = const [],
     required this.provenance,
   });
   final String bucket;
@@ -2892,6 +3043,9 @@ class _MockFrozenScanCommit {
   final String? inventoryScanProfile;
   final Map<String, dynamic> context;
   final List<String> appliedKeys;
+
+  /// FB-10b: 인식했지만 승인에서 뺀 정규 key(이전 수량 + 확인 필요). 서버 내부 값이라 이력·RPC에 남지 않는다.
+  final List<String> excludedKeys;
   final String provenance;
 }
 

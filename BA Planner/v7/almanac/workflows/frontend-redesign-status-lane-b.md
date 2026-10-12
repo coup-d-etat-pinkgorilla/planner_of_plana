@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb2d-dart 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `861eea56`. 아래 "fb2d-dart 착수 기록"·"fb2d-dart 종료 기록". 그 전: FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**fb10b-dart 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `05663913`. 아래 "fb10b-dart 착수 기록"·"fb10b-dart 종료 기록". 그 전: fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -2295,3 +2295,160 @@ FB-2d 프로필 삭제(7경로)의 Dart 연결을 끝냈다. wire·strict DTO·P
 - fb2d-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A FE6-d와 이 slice가 모두 멈춘 뒤 XB source10과 같은 소스로 gate 1회(예상: analyze 0, 일반 +17, process +1, golden 변화 0) → XB FB-2d exact10 커밋 → `fe_commit.ps1 -Slice fb2ddart`(mock은 3-way 병합, WIP 인접 hunk 없음).
 - 발견 사항 1·2·4는 CF 판단을 기다린다.
+
+## fb10b-dart 착수 기록 (2026-10-12)
+
+- 상태: 진행 중.
+- 범위: FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결. 워커 프롬프트 `debug/frontend_redesign_handoff/fb10bdart-worker-prompt-20261012.md`, 목록은 backend 로그 2026-10-12 08:11·09:10과 `debug/xb_fb10b_product_20261012/artifacts/CF-CONNECTION.md`·`DART-HANDOFF.md`, 사용자 결정은 결정 대장 FD-146(해제 범위 2026-10-12).
+  1. 새 읽기 `repository.inventory.review.get`: 별도 strict DTO·client·Process·Mock·protocol validator. 수량 스냅숏과 같은 revision에서 읽고 다르면 다시 읽음. `migration_required`·`corrupt_data`는 오류 그대로.
+  2. `repository.inventory.update` optional `applied_resource_keys`(배열, null 금지, 빈 배열 허용, 최대 4096, 별칭 중복 거부). 직접 고치기 저장 = 바꾼 key + 같은 값으로 확인한 key. 재시도는 원 revision·key·scope.
+  3. 인벤토리 목록 행·상세 "확인 필요" 표시 + 상세 "이 값이 맞습니다"(확인 key로 저장).
+  4. Mock(수동·스캐너 commit) 의미 맞춤, 공유 fixture(`scanner_commit_history_sfb2b_v1` partial/replay, `inventory_review_fb10b_v1`)로 Mock·Process 검사.
+  5. process E2E(부분 스캔 commit → 재시작 → 표시 → 같은 값 확인 + scope → 재시작 → 해제 → replay, 다른 key·다른 프로필 보존, 같은 key 다른 scope 오류).
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `0566391311e591c4b979a50a19661c8ce110eb3b`.
+- XB 09:10 표 9경로 대조(메인 작업 트리 bytes/SHA256): **9개 모두 일치**.
+  - `backend/core/inventory_review.py` 3830 `083774af…0b13c`
+  - `backend/core/repository_store.py` 46178 `68585c7a…de35d`
+  - `backend/core/repository_protocol_v1.py` 9503 `7bc87895…6c983`
+  - `backend/tests/test_inventory_review_fb10b.py` 13627 `70b142a0…75f5f`
+  - `backend/tests/test_planning_protocol_contract.py` 7642 `88136204…a039`
+  - `contracts/README.md` 87563 `0b6aec87…69ee`(절 "FB10b durable inventory review flags v1")
+  - `contracts/repository-protocol-v1.schema.json` 24165 `df42bf7b…689b`(`inventoryReviewRequest`, `inventoryRequest`의 `applied_resource_keys`, 응답 갈래)
+  - `contracts/repository-inventory-review-v1.schema.json` 1305 `e8536699…2579`
+  - `contracts/fixtures/inventory_review_fb10b_v1.json` 2339 `58d1021e…547b`
+- XB 목록과 메인 코드 대조: `get_inventory_review`(plan 이관 없이 profile revision과 sparse 목록), `inventory_review.transition`(scan: excluded 추가 후 applied 해제·scope 밖 변경 거부 / manual: scope 없으면 실제 변경 key만, 있으면 scope ⊆ before∪after identity·변경 ⊆ scope, 아니면 `scan_scope_mismatch`), 별칭 정규화 뒤 중복 `duplicate_identity`, operation fingerprint에 scope 포함(같은 key 다른 scope = `idempotency_conflict`), profile 읽기 때 저장 버전 이상 → `migration_required`·모양 이상 → `corrupt_data`가 목록과 같다. 차이 없음. 단 목록에 없는 제약 하나: 수동 scope key는 저장된(또는 이번에 넣는) 항목이어야 한다(수량 없이 표시만 있는 key는 같은 값 확인으로 해제할 수 없고 수량을 넣어야 한다) — 발견 사항으로 종료 기록에 적는다.
+- 막힘: 대장 막힘 요약에 fb10b-dart 행 없음, 현재 열림 0건. FD-146은 확정(해제 범위 포함).
+- 시안: Inventory·Inventory-All(dc_outline `--text-only`)에 "확인 필요"·같은 값 확인 문구 없음. Scan-Item-Review에만 `.chip.wn` "확인 필요"와 "남은 칸은 인벤토리에 이전 값으로 남고 '확인 필요'로 표시됩니다."가 있다 → 키트 `BaChip`(warn)으로 최소 표시.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb10bdart/pre/<v7 기준 경로>`)과 WIP(`git status --short <경로>`), 줄바꿈:
+  - `frontend/lib/services/repository_service.dart`: WIP 없음. CRLF 주 + LF 27줄 섞임.
+  - `frontend/lib/services/process_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 1118~1160줄 부근). CRLF 주 + LF 24줄 섞임. 고치는 곳은 implements 목록·`saveRepositoryInventory`(612줄)·새 읽기 메서드라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `frontend/lib/services/mock_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 182~680줄 부근). CRLF 주 + LF 120줄 섞임. 고치는 곳은 implements 목록·Mock 스캐너 commit(810줄 이후)·`deleteProfile`·`saveRepositoryInventory`·`_saveMockCurrent`·`_MockFrozenScanCommit`과 새 읽기 메서드라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `frontend/lib/ui/inventory/inventory_controller.dart`: WIP 없음. LF.
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`: WIP 없음. LF.
+  - `frontend/test/inventory_controller_test.dart`: WIP 없음. LF(저장 대역 override 시그니처만).
+- 고치지 않는다(확인만): `planning_protocol_client.dart`(repository 응답 검사를 `isValidRepositorySuccessPayload`에 맡기고 오류 코드 집합에 `idempotency_conflict`·`corrupt_data`·`migration_required`가 이미 있다. WIP 있음, 손대지 않음).
+- 새 파일(예정): `frontend/lib/services/repository_inventory_review.dart`(DTO·요청·key 검사·capability), `frontend/test/inventory_review_fb10b_test.dart`(계약 fixture·Mock 의미·컨트롤러·위젯), `frontend/test/inventory_review_fb10b_process_e2e_test.dart`(실제 백엔드).
+- WIP는 지우거나 정리하지 않는다.
+- 줄바꿈 정정: 처음 적은 "CRLF"는 셸 줄바꿈 세기를 잘못한 값이었다. 바이트로 다시 센 pre 사본 기준으로 위처럼 고쳤다.
+
+## fb10b-dart 종료 기록 (2026-10-12, 코드 작성 완료·CF gate 미실행)
+
+FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결을 끝냈다. 새 읽기 DTO·client·Process·Mock·검사기, 수동 저장 scope, 인벤토리 행·타일·상세 표시와 "이 값이 맞습니다", Mock 스캐너 commit 의미, process E2E.
+
+### 실행 명령·결과
+
+- `flutter analyze`(frontend): 작업 중에는 Lane A FE5-f 편집 중 파일(`planning_page_test.dart`·`planning_document_projection_test.dart` 등)의 오류가 보였다(최대 108건, 이 slice 파일 0건). 이 slice의 구문 오류 3건(`error is T ? a?[..] : b` 해석)을 switch 패턴으로 고친 뒤 이 slice 파일 0건. 마지막 실행(줄바꿈 복원 뒤): **No issues found(0)**.
+- 새 테스트:
+  - `flutter test test/inventory_review_fb10b_test.dart`: ① 컴파일 오류 1(테스트의 `RepositoryProfile` `selected:` 빠짐) → ② **+18 −1**(컨트롤러 저장 key `inventory-save-<마이크로초>`가 빠른 두 저장에서 같아짐 — 같은 key·다른 내용이면 `idempotency_conflict`가 되는 실제 결함. key에 순번을 붙여 고침) → ③ **+19**. 마지막 확인 +19.
+  - `flutter test --concurrency=1 test/inventory_review_fb10b_process_e2e_test.dart`: **+1**(첫 실행부터 통과, 마지막 확인 +1).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `saveRepositoryInventory`·`InventoryController`·`InventoryPage`·`inventory.update`·`isValidRepository`·`commitScannerCandidate`·`MockAppService`, Lane A 계획 테스트 제외):
+  - 1차(expanded, 45파일 병렬): +601 −1. 실패 1은 `planning_protocol_client_test.dart`의 실제 Python 테스트 "real Python process serves every P0 planning method"가 병렬 부하로 20초 시간 초과 → 그 파일만 `--concurrency=1`로 다시 돌려 **+24 통과**.
+  - 2차(json, 그 파일 뺀 44파일): **+578 −0**. 파일별: account_manager_fe8b +6, diagnostics_service +2, home_app_shell +1, home_page +5, inventory_analysis_page +8, inventory_analysis +16, inventory_controller +13, inventory_currency_readonly +2, inventory_fb3_service +15, inventory_opa_page +6, inventory_opa +9, inventory_page +9, inventory_review_fb10b +19, inventory_shell_lazy +1, inventory_tiers_page +7, inventory_tiers +9, inventory_view_model +13, kit/ui_kit_gallery +6, mock_scanner_commit_history +9, mock_scanner_service +4, profile_delete_fb2d +17, recovery_banner +2, repository_history_query_service +71, repository_history_scan_latest +48, repository_history_service +24, repository_plan_replace_service +7, repository_plan_service +13, repository_presets_service +49, repository_profile_panel +1, repository_protocol_contract +1, scan_page_pause_fb10a +8, scan_page_revision +14, scan_page +17, scanner_pause_fb10a +39, scanner_target_metadata_fb4 +19, settings_page +10, statistics_app_shell +1, statistics_page +9, student_calculation_service +8, tactical_page_revision +5, tactical_page +8, tactical_service +6, title_page +25, widget_test +16.
+  - process(`--concurrency=1`, 10파일 차례로): **+13 −0** — inventory_review_fb10b_process_e2e +1, inventory_fb3_process_e2e +1, repository_history_process_e2e +2, repository_history_query_process_e2e +2, repository_history_scan_latest_process_e2e +1, repository_process_e2e +1, final_p6_process_e2e +2, scenario_process_e2e +1, scanner_process_e2e +1, profile_delete_fb2d_process_e2e +1.
+  - 줄바꿈 복원 뒤 마지막 확인: inventory_review_fb10b +19, inventory_controller +13, inventory_page +9, mock_scanner_commit_history +9, repository_protocol_contract +1, profile_delete_fb2d +17(합 +68), process E2E +1.
+- 잠금 충돌 0(재시도 없음). 로그는 `debug/frontend_fb10bdart/logs/`(실패 줄만 확인).
+- `git diff --check`(고친 6파일 + status): exit 0. 새 3파일: 줄 끝 공백 0, 끝 개행 하나.
+
+### 고친 파일
+
+- `frontend/lib/services/repository_inventory_review.dart`(새, LF): `RepositoryInventoryReview`(exact 4키, `version` int 1, profile_id 24hex, revision ≥ 0, key 목록 = 정규·code point 정렬·unique·각 1..1024 UTF-8 바이트·짝 없는 surrogate 거부·최대 4096, `needsReview`, `fromWireFor`), `RepositoryInventoryReviewRequest`(exact `profile_id`), `repositoryInventoryAppliedKeys`(scope: 배열만·별칭 → 현재 key·중복 거부·정렬), capability `RepositoryInventoryReviewService`(기존 대역 소스 호환, presets 선례).
+- `frontend/lib/services/repository_service.dart`(WIP 없음): 새 파일 export, 응답 검사 `repository.inventory.review.get`, 요청 검사 `repository.inventory.review.get`·`repository.inventory.update` optional `applied_resource_keys`, 인터페이스 `saveRepositoryInventory`에 optional named `appliedResourceKeys`(문서 주석).
+- `frontend/lib/services/process_app_service.dart`(스캐너 WIP 위): implements에 capability, `saveRepositoryInventory` scope 전송(정규화·중복은 보내기 전 FormatException), `loadRepositoryInventoryReview`(`fromWireFor`).
+- `frontend/lib/services/mock_app_service.dart`(스캐너 WIP 위): 계정별 저장 메타 원본 `_mockInventoryReviews`(sparse), `debugSetInventoryReviewMetadata`(테스트 주입), `_mockReviewKeys`(모르는 버전 `migration_required`, 깨진 모양 `corrupt_data`), `loadRepositoryInventoryReview`(이관·쓰기 없이 그 revision), 스캐너 commit 전이(쓰기 앞에서 계산: excluded 추가 → applied 해제), `_MockFrozenScanCommit.excludedKeys`, 수동 저장 scope 검사·fingerprint(`inventory-manual-scope-v1`)·전이(`_mockManualReview`), `deleteProfile`에서 표시 삭제.
+- `frontend/lib/ui/inventory/inventory_controller.dart`: 표시 읽기(상태 뒤, revision 다르면 둘 다 다시 읽기 최대 2번, 오류는 계정 오류 문구), `needsReview`·`canConfirmReview`·`confirmReview`·`appliedResourceKeys`, 저장 scope 항상 명시, 결과를 모르는 저장(시간 초과·연결 끊김·`repository_busy`·`persistence_failed`·retryable)은 같은 내용이면 원 revision·key·scope·bucket을 그대로 다시 보냄, `scan_scope_mismatch`·`idempotency_conflict`·응답 손실 문구 구분, 저장 key에 순번.
+- `frontend/lib/ui/inventory/inventory_workspace.dart`: `InventoryRiskRow.needsReview`(이름 옆 `BaChip` warn "확인 필요"), `InventoryItemTile.needsReview`(왼쪽 위 10px warn 점 + 접근성 이름 "· 확인 필요"), 상세 확인 필요 줄 `_ReviewLine`(칩·설명·"이 값이 맞습니다", `InventoryMetrics.reviewHeight` 40). 표시가 없으면 위젯 트리가 예전과 같다.
+- `frontend/test/inventory_controller_test.dart`: `_RejectingService.saveRepositoryInventory` override 시그니처만(optional named 추가).
+- 새 테스트: `frontend/test/inventory_review_fb10b_test.dart`(19), `frontend/test/inventory_review_fb10b_process_e2e_test.dart`(1).
+- 고치지 않음: `planning_protocol_client.dart`(repository 응답 검사를 `isValidRepositorySuccessPayload`에 맡기고 오류 코드 집합에 필요한 코드가 이미 있다), backend/contracts, kit, app_shell, Lane A 계획 파일·테스트, 택틱·스캐너 소유 파일, golden harness·golden 테스트, frontend/tool.
+
+### XB 목록(08:11·09:10·CF-CONNECTION) 행별 검수
+
+| XB 목록 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| 새 `repository.inventory.review.get`, 요청 exact `profile_id` | `RepositoryInventoryReviewRequest`·요청 검사(빈·키 더함·짧은 ID 음성) | `inventory_review_fb10b_test` "request is exact profile_id…" |
+| 응답 exact `version`(=1)·`profile_id`·`revision`·`needs_review_keys`, 정렬·unique·canonical, 없는 key = false | 별도 DTO(수량 DTO에 끼우지 않음), 음성 14종(키 더함·빠짐·버전 2·문자열·revision −1·bool·ID·null·역순·중복·별칭·빈 key·1025바이트·4097개) | "response DTO is exact…", fixture 5메시지 |
+| fixture `inventory_review_fb10b_v1.json` | policy 6항목과 메시지 5개 유효성 그대로 | "fixture policy and every shared message validity" |
+| 수량 스냅숏과 같은 revision에서 읽고 다르면 다시 읽기 | 컨트롤러: 상태 → 표시, 다르면 둘 다 다시(최대 2번 더), 계속 다르면 오류 | "a revision mismatch rereads both…" |
+| 모르는 버전 `migration_required`, 깨진 메타 `corrupt_data`, 빈 목록으로 삼키지 않음 | Mock 오류 그대로, 컨트롤러는 계정 오류 문구 + 상태 비움(편집 불가) | Mock "unsupported or corrupt…", 컨트롤러 "…block the inventory…" |
+| Process·Mock·protocol validator | Process `loadRepositoryInventoryReview`·scope 전송, Mock 구현, 검사기 두 곳 | 위 + process E2E |
+| update optional `applied_resource_keys`(null 금지·빈 배열 허용·4096·별칭 중복 거부) | 요청 검사·Process 정규화·Mock `invalid_payload`(`duplicate_identity`/`invalid_inventory_review`) | "request is exact…", Mock "changed quantity outside…" |
+| 직접 고치기 = 바꾼 key + 같은 값 확인 key만 | `appliedResourceKeys` = 고친 key 중 전후에 항목이 있는 것 + 확인 key. scope는 항상 명시 | 컨트롤러 "reads flags… saves edited keys as scope" |
+| 같은 값 확인("이 값이 맞습니다") | 상세 버튼 → scope = 그 key, 수량 그대로 | 컨트롤러 같은 테스트, 위젯 "rows, tiles and detail…" |
+| scope 밖 수량 변경 → `invalid_payload`/`scan_scope_mismatch` | Mock 같은 검사(쓰기 0), 컨트롤러 문구·draft 유지 | Mock, 컨트롤러 "scope mismatch and idempotency conflict…", E2E 6 |
+| 재시도 = 원 revision·key·scope, 같은 key 다른 scope = `idempotency_conflict` | 컨트롤러 보류 요청, Mock fingerprint에 scope | 컨트롤러 "a lost save response…", Mock "explicit unchanged…", E2E 3·5 |
+| scope 없는 기존 호출은 실제 변경 key만 해제 | Mock `_mockManualReview` | Mock "legacy full snapshot…" |
+| 화면: 행·상세 표시(그 행 key만) | 행 칩·상세 줄·타일 점, 정규 key로만 매핑 | 위젯 테스트 |
+| Mock: scan applied 해제, identified excluded 이전 수량 + 표시, 이전 수량 없으면 표시만, 빈 승인 scope commit 없음, 수동 scope key만, 가짜 스캔 시각 없음 | 위 "고친 파일" | Mock 스캐너 3건(sfb2b partial 2 + 빈 scope) · 수동 4건 |
+| unresolved slot key 없음, 리뷰·취소만으로 표시 없음 | Mock은 식별 key 없는 항목을 기억하지 않는다(기존). 리뷰 후 취소 = 표시 0 | "review or cancel alone never flags…" |
+| 공유 fixture `scanner_commit_history_sfb2b_v1` partial/replay | `inventory_partial_first`·`inventory_partial_nochange` 각각 commit + 같은 요청 replay(응답·revision·표시 그대로) | Mock 스캐너 2건 |
+| 계정 삭제 때 표시 삭제(FB-2d 범위)·다른 프로필 보존 | Mock `deleteProfile` | Mock "other buckets and the other profile…" |
+| 다른 bucket·unattributed 쓰기는 표시를 지우지 않음 | 학생·목표 저장 뒤 그대로 | 같은 테스트 |
+| process E2E: 부분 스캔 → 재시작 → B 표시 → B 같은 값 확인 + B scope → 재시작 → 해제 → 원 요청 replay, 관계없는 key·다른 프로필 보존, 같은 key 다른 scope 오류 | 아래 | `inventory_review_fb10b_process_e2e_test` |
+
+### process E2E 내용
+
+- 임시 저장소(`Directory.systemTemp`, 끝에 지움). 실제 게임·사용자 프로필·공용 저장소 접근 0. 백엔드 진입점은 inline(`-c`): 실제 `JsonRepository`·`ApplicationProtocolV1`·`ScannerSessionService`에 고정 인벤토리 matcher(A 7·B 99·C 70·D 5, 카탈로그 revision = `CATALOG_REVISION`)만 붙인다(기존 `tests.scanner_e2e_backend`는 인벤토리 matcher가 빈 목록이라 쓸 수 없다. backend 파일은 바꾸지 않음 — 발견 사항 1).
+- 두 계정에 A 3·B 9·C 7을 넣고, 한 계정만 스캔. 후보 A·B·C·D 중 A만 승인 → commit revision +1.
+- 재시작 뒤: 수량 A 7·B 9·C 7(D 없음), 표시 `[B, C, D]`(D는 이전 수량이 없어 표시만), 표시 revision = 상태 revision.
+- B를 같은 값으로 확인 + scope `[B]` → revision +1. 같은 key·scope `[B, C]` → `idempotency_conflict`.
+- 재시작 뒤: 표시 `[C, D]`, 수량 그대로. 원 revision·key·scope 재요청 = 원 revision(쓰기 없음). C를 바꾸면서 scope `[D]` → `invalid_payload`/`scan_scope_mismatch`, revision·표시 그대로.
+- 다른 계정: revision·수량 그대로, 표시 없음. 백엔드 프로세스 3개 모두 exit 0.
+
+### 계약 SHA 대조
+
+- 착수·종료 두 번 9경로 bytes/SHA256이 XB 09:10 표와 모두 일치(착수 기록). 이 slice는 backend/contracts를 읽기만 했다.
+- `contracts/repository-inventory-review-v1.schema.json` 1305 B `e85366990ae6060e39588f58cbfe1de9f6f48e248706edad76eee2ad74722579`, `contracts/fixtures/inventory_review_fb10b_v1.json` 2339 B `58d1021e1ac36cd84f41a72ca29d183a205c3dfbd75848df73d503d40a6a547b`, `contracts/repository-protocol-v1.schema.json` 24165 B `df42bf7b832eacd06f9988e8fc4585f4ee98f2070a89d9ac78684bc91186689b`, `contracts/README.md` 87563 B `0b6aec87ccf176ed018843f8c13140bcc9341b9bdfd639c202d4e4a7597c69ee`.
+- 함께 쓴 기존 fixture: `contracts/fixtures/scanner_commit_history_sfb2b_v1.json` 13433 B `3f7c1df74e640964a4a93b94b7f068b7d6bad129bf061113a862ca77f7386ff9`.
+
+### 화면 표시 근거(시안)
+
+- Inventory·Inventory-All(`dc_outline.py --text-only`): "확인 필요"·같은 값 확인 문구·표시 KPI·필터 없음. 그래서 KPI·필터에는 넣지 않았다.
+- Scan-Item-Review: `.chip.wn` "확인 필요"(→ 키트 `BaChip` `AppTones.warn`), "남은 칸은 인벤토리에 이전 값으로 남고 '확인 필요'로 표시됩니다."
+- 시안에 없는 문구(이 slice가 정함, ~습니다체): 버튼 "이 값이 맞습니다"(프롬프트 예시), 상세 설명 "스캔에서 적용하지 않아 이전 값으로 남아 있습니다." / "스캔에서 적용하지 않았고 저장된 수량이 없습니다. 수량 직접 고치기로 넣어 주십시오.", 저장 결과 "이 값을 확인했습니다. 확인 필요 표시를 지웠습니다(revision n).", 읽기 오류 문구 4종(모르는 형식·손상·같은 시점·읽기 실패)과 저장 실패 3종(결과 모름·범위 밖·다른 내용의 같은 요청).
+- 타일(74px)에는 칩이 들어가지 않아 10px warn 점으로 대신했다(발견 사항 3).
+
+### golden 변화 예상
+
+- **변화 0.** 인벤토리 장면(`inventory`·`inventory-all`·`inventory-analysis`·`inventory-analysis-opa`·`inventory-tiers`)의 fixture(`InventoryFixtureService`)에는 표시 메타가 없어 Mock 읽기가 빈 목록을 준다. 표시가 없을 때 행은 예전 `Text` 그대로, 타일은 예전 `ItemTile` 그대로(접근성 이름도 같음), 상세 확인 줄은 그리지 않는다. 다른 장면은 인벤토리 위젯을 쓰지 않는다. golden 테스트는 돌리지 않았다.
+- 표시가 보이는 장면은 만들지 않았다(CF 판단: 행 칩·상세 줄·타일 점이 보이는 장면이 필요하면 fixture에 `debugSetInventoryReviewMetadata`로 key를 두면 된다).
+- CF gate 예상: analyze 0, 일반 +19, process +1, golden 변화 0.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·almanac validate·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, XB canonical full 1226 PASS 보고만 읽음).
+- Lane A 계획 테스트(`plan_*`·`planning_page_test` 등): **미실행**(Lane A FE5-f 편집 중 파일. 이 slice가 바꾼 Mock 경로는 인벤토리 저장·스캔 commit·표시 읽기·계정 삭제뿐이다).
+- 실제 게임 인벤토리 스캔에서의 부분 승인 → 인벤토리 표시: **미실행**(사용자 실기). 스캔 탭 쪽 표시(FE8-g5)는 범위 밖.
+- 실제 앱에서 행 칩·타일 점·상세 확인 줄의 모양: 사용자 시각 확인 미실행.
+- 응답 손실 재시도는 Mock(저장 뒤 시간 초과)과 process(재시작 뒤 같은 요청)로 대신했다. 실제 응답 도중 끊김 시점은 XB 몫.
+
+### WIP 보존 확인
+
+- `mock_app_service.dart`: pre 사본(스캐너 WIP 포함)과 끝 내용의 차이는 이 slice hunk 11개(38·830·861·953·2247·2347·2973·3050·3062·3161·3170줄 부근)뿐이고 WIP hunk(182~680줄)와 겹치거나 맞닿지 않는다.
+- `process_app_service.dart`: hunk 2개(29·614줄 부근), WIP hunk(1118줄 이후)와 떨어져 있다.
+- 편집 도구가 줄바꿈이 섞인 파일 셋을 CRLF로 통일했던 것을 pre 기준 줄 정렬(difflib)로 되돌렸다: 바뀌지 않은 줄은 pre 줄바꿈 그대로(mock 128·process 24·repository_service 27줄 복원), 새 줄은 바로 앞 줄의 줄바꿈. 다시 검사해 차이 0. 인벤토리 파일·테스트는 LF 그대로.
+- 다른 WIP 파일(`planning_protocol_client.dart`·`scanner_service.dart`·scan 계열·스캐너 테스트)은 수정 0. `pubspec.yaml`·`pubspec.lock` 변경 0.
+
+### 발견 사항
+
+1. 인벤토리 스캔을 실제 게임 없이 돌리는 백엔드 E2E 진입점이 없다(`backend/tests/scanner_e2e_backend.py`의 인벤토리 matcher는 빈 목록). process E2E는 백엔드 클래스만 조립하는 inline `-c` 진입점을 테스트 파일 안에 두었다. XB가 `backend/tests/`에 인벤토리 E2E 진입점을 두기를 원하면 그쪽으로 옮길 수 있다(XB 판단).
+2. 수동 scope key는 저장 전후 항목에 있어야 한다(`inventory_review.transition`의 `applied ⊆ identities`). 그래서 이전 수량 없이 표시만 있는 key는 "같은 값 확인"으로 지울 수 없고, 수량을 넣어야(또는 스캔이 적용해야) 지워진다. 화면은 그 key에서 확인 버튼을 숨기고 직접 고치기를 안내한다. "모름"으로 두고 확인하는 길이 필요하면 백엔드 규칙 변경이 필요하다(XB·사용자 판단).
+3. 시안 Inventory·Inventory-All에 표시가 없어 행·상세는 키트 칩, 타일은 10px warn 점으로 최소 표시했다. 타일 점은 키트에 없는 표시라 디자인 확인이 필요하다(CF). 표시 행 수 KPI·필터는 넣지 않았다.
+4. 기존 인벤토리 저장 key `inventory-save-<마이크로초>`는 Windows에서 빠른 두 저장이 같은 key가 될 수 있다(테스트에서 재현). scope가 fingerprint에 들어가면서 `idempotency_conflict`가 될 수 있어 순번을 붙였다(key 모양만 바뀜). 다른 화면의 같은 패턴(`DateTime.now().microsecondsSinceEpoch` key)은 확인하지 않았다.
+5. Mock은 깨진·모르는 표시 메타를 표시 읽기와 인벤토리 쓰기에서만 오류로 낸다. 백엔드는 그 프로필의 모든 읽기(`state.get` 포함)가 같은 오류다. 화면 결과(계정 오류)는 같다.
+6. 스캔 탭에서 commit한 뒤 인벤토리 탭의 표시 갱신은 기존 탭 진입 때 다시 읽기에 기대고 이 slice에서 바꾸지 않았다. 스캔 탭 쪽 표시는 FE8-g5.
+7. `planning_protocol_client_test.dart`의 실제 Python 테스트는 다른 테스트와 병렬로 돌리면 20초 시간 초과가 날 수 있다(기존, 혼자 돌리면 통과). fe_gate의 process 분리 대상인지 CF 확인.
+8. 워커 재량 FD 없음(대장 열림 0건).
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fb10bdart/pre/<경로>`(고친 기존 파일 6개).
+- 끝 사본: `debug/frontend_fb10bdart/post/<경로>`(고친 기존 파일 6개와 새 파일 3개).
+- `debug/frontend_fb10bdart/commit.json`: slice `fb10bdart`, `status=false`, `post_dir`, modified 6, added 3, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`(바뀌는 기준 이미지 없음). message(ASCII) 근거: backend 로그 08:11 Dart 목록·09:10 반영 완료, CF-CONNECTION.md, FD-146.
+- 인계: `debug/frontend_fb10bdart/output.md`.
+
+### 다음 행동
+
+- fb10b-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A FE5-f와 이 slice가 모두 멈춘 뒤 XB 09:10 9경로와 같은 소스로 gate 1회(예상: analyze 0, 일반 +19, process +1, golden 변화 0) → XB selected exact9 커밋 → `fe_commit.ps1 -Slice fb10bdart`(mock·process는 3-way 병합, WIP 인접 hunk 없음).
+- 발견 사항 1·2는 XB, 3은 CF(디자인), 4·7은 CF 판단을 기다린다.
