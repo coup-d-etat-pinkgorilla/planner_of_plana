@@ -12,7 +12,7 @@ from core.runtime_paths import resolve_v6_root
 METHODS = frozenset({
     "repository.profile.list", "repository.profile.create", "repository.profile.current",
     "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
-    "repository.students.update", "repository.inventory.update", "repository.goals.save",
+    "repository.students.update", "repository.inventory.update", "repository.inventory.review.get", "repository.goals.save",
     "repository.plan.get", "repository.plan.save", "repository.plan.replace",
     "repository.presets.get", "repository.presets.save",
     "repository.migration.preview", "repository.migration.import",
@@ -124,9 +124,16 @@ class RepositoryProtocolV1:
             data, profile_id, revision, key = self._mutation(payload, {"students"})
             if not isinstance(data["students"], list): raise RepositoryError("invalid_payload", "students must be an array")
             return self.repository.update_students(profile_id, data["students"], revision, key, manual=True)
+        if method == "repository.inventory.review.get":
+            data = _require(payload, {"profile_id"})
+            return self.repository.get_inventory_review(_text(data["profile_id"], "profile_id"))
         if method == "repository.inventory.update":
-            data, profile_id, revision, key = self._mutation(payload, {"inventory"})
-            return self.repository.update_inventory(profile_id, data["inventory"], revision, key, manual=True)
+            extras = {"inventory", "applied_resource_keys"} if isinstance(payload, dict) and "applied_resource_keys" in payload else {"inventory"}
+            data, profile_id, revision, key = self._mutation(payload, extras)
+            if "applied_resource_keys" in data and not isinstance(data["applied_resource_keys"], list):
+                raise RepositoryError("invalid_payload", "applied_resource_keys must be an array")
+            return self.repository.update_inventory(profile_id, data["inventory"], revision, key, manual=True,
+                applied_resource_keys=data.get("applied_resource_keys"))
         if method == "repository.goals.save":
             data, profile_id, revision, key = self._mutation(payload, {"goals"})
             return self.repository.save_goals(profile_id, data["goals"], revision, key)

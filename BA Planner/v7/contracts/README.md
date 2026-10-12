@@ -1222,3 +1222,33 @@ recovery writes; corrupt journals are retained for diagnosis, interrupted recove
 retains the journal and is repeatable. Process-crash restart is tested using temporary
 profiles. Windows directory-entry durability under power loss and real user-profile
 deletion are separate acceptance boundaries. Fixture: `fixtures/profile_delete_fb2d_v1.json`.
+
+## FB10b durable inventory review flags v1
+
+`repository.inventory.review.get` request exact `{profile_id}` returns exact
+`{version:1,profile_id,revision,needs_review_keys}`. The sorted sparse canonical-key
+list is authoritative at that revision; absent keys have no review flag. The read
+does not migrate legacy plan/history or persist an empty field. State/quantity/
+history/scanner-success DTOs stay unchanged. Optional private `inventory_review`
+v1 resides in the profile file, within the same revision, idempotency and journal;
+FB2d deletion includes it without a new owned path.
+
+Validated scanner applied keys clear flags; identified excluded keys retain their
+previous quantities and gain/keep flags. Quantity changes outside applied scope
+are rejected. Unresolved slots have no resource identity and add no key. Empty
+approved scope remains a non-commit under the established scanner context contract.
+Review alone, cancellation, discarded candidates and answer-sample training cannot
+write these flags. Partial commit and response-loss replay share one durable write.
+
+Manual `repository.inventory.update` accepts optional `applied_resource_keys`.
+Explicit keys clear only those flags, including an unchanged value acknowledged
+by the user; changed quantities outside this scope are invalid_payload with
+reason scan_scope_mismatch. Retry uses original expected_revision/key/scope, and
+changing scope with the same key conflicts. Legacy calls without scope clear only
+actual quantity-change keys, preserving unrelated flags in full snapshots. Keys
+are bounded/unique after alias canonicalization. Manual/import never fabricate a
+scan timestamp. Existing v6 import creates a fresh profile, initially unflagged;
+there is no in-place import writer. Internal unattributed writes do not clear flags.
+
+Shared policy fixture: fixtures/inventory_review_fb10b_v1.json. This slice does
+not freeze the entire FB10 format or establish native/currency/crop behavior.

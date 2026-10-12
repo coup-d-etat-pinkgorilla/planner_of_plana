@@ -31,6 +31,7 @@ from core.current_history import (
 )
 from core.history_query import query_events, query_diff
 from core.scan_commit_history_context import ScanCommitHistoryContext
+from core.inventory_review import from_wire as inventory_review_from_wire, keys_from_wire as inventory_review_keys, transition as inventory_review_transition
 
 
 STORE_VERSION = 1
@@ -141,7 +142,7 @@ class JsonRepository:
     def _profile(self, profile_id: str) -> dict[str, Any]:
         value = self._read(self._profile_path(profile_id), "profile")
         required = {"version", "profile_id", "revision", "students", "inventory", "goals", "idempotency"}
-        shape = set(value) - {"current_history"}
+        shape = set(value) - {"current_history", "inventory_review"}
         if shape not in (required, required | {"plan"}, required | {"plan", "plan_authoring"}) or value["profile_id"] != profile_id:
             raise RepositoryError("corrupt_data", "profile has an invalid shape")
         revision = self._stored_revision(value["revision"], "profile revision")
@@ -179,6 +180,8 @@ class JsonRepository:
                     value["plan_authoring"] = planning_authoring_from_wire(value["plan_authoring"], value["plan"])
                 if goals != goals_from_document(value["plan"]):
                     raise ValueError("stored goals do not match the active document")
+            if "inventory_review" in value:
+                value["inventory_review"] = inventory_review_from_wire(value["inventory_review"])
             if "current_history" in value:
                 value["current_history"] = history_from_wire(value["current_history"], current=projection(value["students"], value["inventory"]), revision=revision)
         except HistoryError as error:
@@ -400,6 +403,14 @@ class JsonRepository:
         return {key: profile[key] for key in ("profile_id", "revision", "students", "inventory", "goals")}
 
     @locked(RepositoryError)
+    def get_inventory_review(self, profile_id: str) -> dict[str, Any]:
+        # Read metadata without migrating a legacy plan or writing empty flags.
+        profile = self._profile(profile_id)
+        metadata = profile.get("inventory_review", {"version": 1, "needs_review_keys": []})
+        return {"version": 1, "profile_id": profile_id, "revision": profile["revision"],
+                "needs_review_keys": list(metadata["needs_review_keys"])}
+
+    @locked(RepositoryError)
     def get_history_summary(self, profile_ids: list[str]) -> dict[str, Any]:
         # History reads recover the common journal, but do not trigger plan
         # migration, create history, prune records, or increment any revision.
@@ -536,8 +547,9 @@ class JsonRepository:
         finally:
             self._unlock(descriptor)
 
-    def _update_current(self, profile_id: str, bucket: str, canonical: object, expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None, manual: bool) -> dict[str, Any]:
+    def _update_current(self, profile_id: str, bucket: str, canonical: object, expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None, manual: bool, applied_resource_keys: list[str] | None = None) -> dict[str, Any]:
         source = "manual" if manual else "unattributed"
+        flat_context = None
         operation = f"{bucket}:{canonical_json(canonical)}"
         if history_context is not None:
             if manual:
@@ -557,12 +569,17 @@ class JsonRepository:
             operation = f"{bucket}-history:{canonical_json({'current': canonical, 'history_context': history_context.to_wire()})}"
             if flat_context is not None:
                 operation = f"{bucket}-scan-commit-history-v1:{canonical_json({'current': canonical, 'history_context': history_context.to_wire(), 'scan_commit_history_context': flat_context})}"
+        if applied_resource_keys is not None:
+            operation = f"{bucket}-manual-scope-v1:{canonical_json({'current': canonical, 'applied_resource_keys': applied_resource_keys})}"
         def mutate(_catalog: dict, profile: dict) -> None:
             try:
                 before = projection(profile["students"], profile["inventory"])
                 after = projection(canonical if bucket == "students" else profile["students"], canonical if bucket == "inventory" else profile["inventory"])
                 if bucket == "inventory":
                     _assert_currency_quantities_unchanged(before, after, source=source)
+                    inventory_review_transition(profile, before, after, source=source,
+                        flat_context=flat_context, history_context=history_context,
+                        applied_resource_keys=applied_resource_keys)
                 scope = {"student_ids": sorted({item['student_id'] for item in before['students'] + after['students']}) if bucket == "students" else [],
                          "resource_keys": sorted({item['resource_key'] for item in before['inventory'] + after['inventory']}) if bucket == "inventory" else []}
                 if history_context is not None:
@@ -583,9 +600,17 @@ class JsonRepository:
             raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
         return self._update_current(profile_id, "students", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
 
-    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None = None, manual: bool = False) -> dict[str, Any]:
+    def update_inventory(self, profile_id: str, inventory: dict[str, Any], expected_revision: int, idempotency_key: str, *, history_context: ScanHistoryContext | ScanCommitHistoryContext | None = None, manual: bool = False, applied_resource_keys: list[str] | None = None) -> dict[str, Any]:
         canonical = rebase_inventory_snapshot(inventory)
-        return self._update_current(profile_id, "inventory", canonical, expected_revision, idempotency_key, history_context=history_context, manual=manual)
+        if applied_resource_keys is not None:
+            try:
+                if not manual or history_context is not None:
+                    raise HistoryError("scan_scope_mismatch", "Public applied scope is only valid for manual inventory writes")
+                applied_resource_keys = inventory_review_keys(applied_resource_keys)
+            except HistoryError as error:
+                raise RepositoryError("invalid_payload", str(error), details={"reason": error.reason}) from error
+        return self._update_current(profile_id, "inventory", canonical, expected_revision, idempotency_key,
+            history_context=history_context, manual=manual, applied_resource_keys=applied_resource_keys)
 
     def save_goals(self, profile_id: str, goals: dict[str, Any], expected_revision: int, idempotency_key: str) -> dict[str, Any]:
         if not isinstance(goals, dict) or goals.get("version") != 1 or not isinstance(goals.get("goals"), list) or set(goals) != {"version", "goals"}:
