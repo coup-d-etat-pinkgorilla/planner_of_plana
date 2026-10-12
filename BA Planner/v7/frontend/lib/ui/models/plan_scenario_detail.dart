@@ -755,6 +755,22 @@ class PlanDetailData {
   /// 페이즈 수(단계가 있는 페이즈).
   int get phaseCount => phases.where((phase) => phase.stages.isNotEmpty).length;
 
+  /// 계산 응답 [projection]의 `overall` 형식을 확인한다(FE5-f2, FE5-f1 발견 3). `overall`이 없거나 Map이 아니거나,
+  /// `overall.resources`가 목록이 아니거나 그 줄이 Map이 아니면 [FormatException]을 던진다. 옛 계획 홈은 같은 응답을
+  /// `projection['overall'] as Map`으로 읽어 이런 응답을 "계산 오류"로 보였다. [PlanDetailData.fromProjection]은 계산
+  /// 전 빈 응답(`{}`)으로도 부르므로 그쪽에서는 던지지 않고, 계산 응답을 받는 곳(활성 계획 홈)이 이 검사를 부른다.
+  static void checkProjection(Map<String, dynamic> projection) {
+    final overall = projection['overall'];
+    if (overall is! Map) {
+      throw const FormatException('계산 응답에 overall이 없거나 형식이 다릅니다.');
+    }
+    final resources = overall['resources'];
+    if (resources != null &&
+        (resources is! List || resources.any((row) => row is! Map))) {
+      throw const FormatException('계산 응답의 overall.resources 형식이 다릅니다.');
+    }
+  }
+
   /// [document]와 그 문서 계산 [projection]으로 만든다. [comparison]이 있으면 활성 대비 칩 · KPI a쪽을 채운다.
   factory PlanDetailData.fromProjection({
     required PlanningDocument document,

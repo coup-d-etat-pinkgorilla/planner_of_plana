@@ -10,8 +10,6 @@ import 'package:ba_planner_v7/ui/kit/diagonal_scrollbar.dart';
 import 'package:ba_planner_v7/ui/kit/scroll_viewport_fog.dart';
 import 'package:ba_planner_v7/ui/widgets/account_section_cluster.dart'
     show portraitScrollbarTrackPoint;
-import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart'
-    show phaseEditorScrollbarStyle, phaseEditorScrollbarTrackPoint;
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart'
     show studentScrollbarDragPath, studentScrollbarTrackPoint;
 import 'package:flutter/material.dart';
@@ -170,47 +168,6 @@ class _OldPresetPainter extends CustomPainter {
   bool shouldRepaint(_OldPresetPainter oldDelegate) => true;
 }
 
-/// plan_phase_editor `_PhaseEditorDiagonalScrollbarPainter`.
-class _OldPhasePainter extends CustomPainter {
-  const _OldPhasePainter({required this.offset, required this.contentExtent});
-
-  final double offset;
-  final double contentExtent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const inset = 10.0;
-    final trackHeight = math.max(1.0, size.height - inset * 2);
-    final maxScroll = math.max(0.0, contentExtent - size.height);
-    final handleHeight = maxScroll <= 0
-        ? trackHeight
-        : math.max(28.0, trackHeight * size.height / contentExtent);
-    final travel = math.max(0.0, trackHeight - handleHeight);
-    final handleTop =
-        inset +
-        (maxScroll <= 0 ? 0 : travel * (offset / maxScroll).clamp(0.0, 1.0));
-    Offset point(double y) =>
-        _oldPlanTrackPoint(size, y, trackInset: inset);
-    final trackPaint = Paint()
-      ..color = AppColors.outline.withValues(alpha: 0.38)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    final handlePaint = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.9)
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(point(inset), point(size.height - inset), trackPaint);
-    canvas.drawLine(
-      point(handleTop),
-      point(handleTop + handleHeight),
-      handlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_OldPhasePainter oldDelegate) => true;
-}
-
 const _sizes = [Size(500, 300), Size(531.7, 417.3), Size(260.25, 96.5)];
 const _offsets = [0.0, 37.3, 120.75, 5000.0];
 
@@ -224,10 +181,6 @@ void main() {
             _oldPlanTrackPoint(size, y),
           );
           expect(studentScrollbarTrackPoint(size, y), _oldPlanTrackPoint(size, y));
-          expect(
-            phaseEditorScrollbarTrackPoint(size, y),
-            _oldPlanTrackPoint(size, y),
-          );
           expect(
             diagonalScrollbarRailTrackPoint(size, y),
             Offset(diagonalRightRailX(right: size.width - 10, y: y), y),
@@ -349,30 +302,6 @@ void main() {
       }
     });
 
-    test('phase editor (content ratio, thin accent, thumb when idle)', () {
-      for (final size in _sizes) {
-        for (final content in [size.height - 40, size.height, 812.6]) {
-          for (final offset in _offsets) {
-            final expected = _record(
-              _OldPhasePainter(offset: offset, contentExtent: content),
-              size,
-            );
-            final actual = _record(
-              DiagonalScrollbarPainter(
-                offset: offset,
-                maxScrollExtent: 0,
-                handleHeight: 0,
-                contentExtent: content,
-                style: phaseEditorScrollbarStyle,
-              ),
-              size,
-            );
-            expect(actual, expected, reason: '$size $content $offset');
-            expect(actual, hasLength(2));
-          }
-        }
-      }
-    });
   });
 
   group('DiagonalScrollbar widget', () {

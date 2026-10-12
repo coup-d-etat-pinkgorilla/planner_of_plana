@@ -30,16 +30,13 @@ import 'ba_triangle_background.dart';
 import 'diagonal_menu.dart' show roundedPolygonPath;
 import 'diagonal_media_list_item.dart';
 import 'lifted_path_shadow.dart';
-import 'plan_element_builder.dart';
 import 'plan_flow_workspace.dart';
-import 'plan_phase_editor.dart';
 import 'plan_preset_manager.dart';
 import '../models/plan_scenario_compare.dart' show planCompareActiveId;
 import 'plan_scenario_compare.dart';
 import 'plan_scenario_detail.dart';
 import 'plan_scenario_list.dart';
 import 'plan_scenario_preview.dart' show planScenarioPreviewAmount;
-import 'plan_student_step_tile.dart';
 import 'section_surface.dart';
 
 export 'plan_scenario_list.dart'
@@ -51,6 +48,16 @@ const planSectionOpacity = sectionSurfaceOpacity;
 /// 저장된 활성 계획의 `calculation`이 null일 때 Detail 홈 S3 문구(FE4-h). 문서 내용(S2 단계 행)은 그대로 보인다.
 const planCalculationUnavailableMessage =
     '계산할 수 없음\n지금은 이 계획을 계산할 수 없습니다. 계획 내용은 그대로 보여 줍니다.';
+
+/// 선택된 계정이 없을 때 계획 홈 S2 · S3 안내(FE5-f2, 사용자 결정 2026-10-12 21:45 — 인벤토리 탭과 같은 방식).
+/// S1 버튼이 꺼진 이유(툴팁)도 이 문구다.
+const planNoProfileMessage = '선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다.';
+
+/// 계정 없이 계산기에서 학생을 넘겼을 때 SnackBar(같은 결정). 학생은 계획에 넣지 않는다.
+const planNoProfileHandoffMessage = '계정을 먼저 골라야 계획에 추가할 수 있습니다.';
+
+/// 계정은 있지만 흐름을 열 수 없을 때(흐름을 열 수 없는 서비스 · 계정 상태 읽기 실패) SnackBar(FE5-f2).
+const planHandoffUnavailableMessage = '계획 만들기를 열 수 없어 계산기 목표를 계획에 넣지 못했습니다.';
 
 /// A↔B 비교 화면 모션(FE5-c2).
 const planScenarioListMotion = SectionMotionSpec(intro: 80, outro: 260);
@@ -135,147 +142,6 @@ PlanResourceCategory planResourceCategory({
   return PlanResourceCategory.ooparts;
 }
 
-@immutable
-class PlanPhasePreview {
-  const PlanPhasePreview({
-    required this.id,
-    required this.name,
-    required this.steps,
-  });
-
-  final String id;
-  final String name;
-  final List<PlanStudentStepPreview> steps;
-}
-
-const dummyPlanPhases = <PlanPhasePreview>[
-  PlanPhasePreview(
-    id: 'phase-1',
-    name: '기초 전력 확보',
-    steps: [
-      PlanStudentStepPreview(
-        studentId: 'shiroko',
-        displayName: '시로코',
-        step: 1,
-        target: 'Lv.50 · ★3',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'hoshino',
-        displayName: '호시노',
-        step: 1,
-        target: 'Lv.50 · EX 3',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'serika',
-        displayName: '세리카',
-        step: 1,
-        target: 'Lv.45 · 장비 T4',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'haruka',
-        displayName: '하루카',
-        step: 1,
-        target: 'Lv.50 · 방어 장비 T4',
-        bondRank: 35,
-      ),
-    ],
-  ),
-  PlanPhasePreview(
-    id: 'phase-2',
-    name: '핵심 학생 육성',
-    steps: [
-      PlanStudentStepPreview(
-        studentId: 'shiroko',
-        displayName: '시로코',
-        step: 2,
-        target: 'Lv.70 · ★4',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'nonomi',
-        displayName: '노노미',
-        step: 1,
-        target: 'Lv.65 · 스킬 4/4/4',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'hoshino',
-        displayName: '호시노',
-        step: 2,
-        target: 'Lv.70 · EX 5',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'yuuka',
-        displayName: '유우카',
-        step: 2,
-        target: 'Lv.75 · 장비 T6',
-        bondRank: 50,
-      ),
-    ],
-  ),
-  PlanPhasePreview(
-    id: 'phase-3',
-    name: '주력 완성',
-    steps: [
-      PlanStudentStepPreview(
-        studentId: 'shiroko',
-        displayName: '시로코',
-        step: 3,
-        target: 'Lv.90 · ★5 · 전무 1',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'serika',
-        displayName: '세리카',
-        step: 2,
-        target: 'Lv.85 · 장비 T8',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'nonomi',
-        displayName: '노노미',
-        step: 2,
-        target: 'Lv.90 · EX 5',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'azusa',
-        displayName: '아즈사',
-        step: 3,
-        target: 'Lv.90 · ★5 · 전무 2',
-        bondRank: 100,
-      ),
-    ],
-  ),
-  PlanPhasePreview(
-    id: 'phase-4',
-    name: '후속 보강',
-    steps: [
-      PlanStudentStepPreview(
-        studentId: 'aru',
-        displayName: '아루',
-        step: 1,
-        target: 'Lv.80 · ★5',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'ayane',
-        displayName: '아야네',
-        step: 1,
-        target: 'Lv.70 · 스킬 4/7/7',
-      ),
-      PlanStudentStepPreview(
-        studentId: 'hina',
-        displayName: '히나',
-        step: 2,
-        target: 'Lv.85 · EX 5',
-        bondRank: 50,
-      ),
-      PlanStudentStepPreview(
-        studentId: 'ako',
-        displayName: '아코',
-        step: 3,
-        target: 'Lv.90 · 스킬 MAX',
-        bondRank: 100,
-      ),
-    ],
-  ),
-];
-
 double planPhaseRowHorizontalOffset({
   required double viewportHeight,
   required double rowTop,
@@ -346,8 +212,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   PlanResourceView _selectedResourceView = PlanResourceView.bottleneck;
   bool _hideSatisfiedResources = false;
   PlanResourceSort _resourceSort = PlanResourceSort.defaultOrder;
-  bool _showPhaseEditor = false;
-  bool _showElementBuilder = false;
   bool _showPresetManager = false;
   bool _showScenarioList = false;
 
@@ -379,28 +243,26 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   /// 흐름 4단계 저장 결과(FE4-e). 흐름을 닫을 때 다시 읽기·시나리오 보기 이동에 쓰고 비운다.
   PlanFlowSaveOutcome? _flowSaveOutcome;
-  bool _usingLivePlanElements = false;
   String? _consumedHandoffId;
 
   /// 넘어온 학생(FE4-g)으로 흐름을 여는 중(흐름 상태를 읽는 동안). 이 동안 계획 홈 섹션을 들이지 않는다.
   bool _handoffPending = false;
-  PlanningStudentSeed? _builderSeed;
-  List<PlanningStudentSeed> _builderStudentQueue = const [];
-  int _builderStudentQueueIndex = 0;
+
+  /// 선택된 계정이 없다(FE5-f2, 사용자 결정 2026-10-12 21:45). 홈 S2 · S3에 계정 없음 안내를 보이고 S1을 끈다.
+  /// 계정을 고르면 앱 셸이 계획 화면을 새로 만든다(`plan-<profileGeneration>` 키).
+  bool _noProfile = false;
   final Map<String, PlanningStudentSeed> _studentSeedsById = {};
-  final Map<String, List<PlanElementStageDraft>> _draftsByStudent = {};
-  List<PlanStudentStepPreview> _planElements = const [];
+
+  /// 활성 계획 문서 학생의 이름(카탈로그 이름, 없으면 id). Detail 홈 [_catalogName]이 읽는다.
+  Map<String, String> _studentNames = const {};
   late List<PlanElementPreset> _presets;
-  Set<String> _unassignedPlanElementIds = const {};
-  List<PlanPhasePreview> _planPhases = dummyPlanPhases;
   RepositoryState? _repositoryState;
 
   /// 저장된 활성 계획(`plan.get`, FE4-h). [_repositoryState]와 같은 revision이다. 그 revision이 나중 저장(FE4-e)의
   /// `expectedRevision`이다. 서비스가 문서를 주지 않으면 null이다.
   RepositoryPlanState? _repositoryPlan;
 
-  /// 화면이 계산·비교에 쓰는 작업 문서. 처음에는 저장 문서(v2, null = 목표 없음) 그대로이고 편집·편입 뒤에는
-  /// 화면 상태에서 다시 만든다([_rebuildDocumentFromPhases]).
+  /// 화면이 계산·비교에 쓰는 작업 문서. 저장 문서(v2, null = 목표 없음) 그대로다(편입 · 흐름 저장 뒤에는 다시 읽는다).
   PlanningDocument? _document;
   String? _calculationError;
 
@@ -459,13 +321,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         orElse: () => null,
       );
       if (selected == null) {
-        if (mounted) {
-          setState(() {
-            _usingLivePlanElements = true;
-            _planElements = const [];
-            _planPhases = const [];
-          });
-        }
+        // 계정 없음 빈 상태로 끝낸다("활성 계획을 읽는 중입니다."에 머물지 않는다, FE5-f1 발견 2).
+        if (mounted) setState(_markNoProfile);
         return;
       }
       final results = await Future.wait<Object>([
@@ -499,76 +356,21 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             kind: PlanningDocumentKind.plan,
             phases: const [],
           );
-      // v2 null(목표 없음)은 기존 정수 화면에 넘길 때만 앞 단계 값(첫 단계는 확정 현재값)으로 채운다. 계산에는
-      // 저장 문서를 그대로 보낸다.
-      final integerTargets = planFlowDocumentIntegerTargets(
-        document,
-        seedFor: (studentId) =>
-            seedsById[studentId] ??
-            PlanningStudentSeed(
-              handoffId: 'repository-plan-$studentId',
-              studentId: studentId,
-              metadata: const {},
-              currentValues: currentById[studentId]?.values ?? const {},
-              owned: currentById.containsKey(studentId),
-            ),
-      );
-      final drafts = <String, List<PlanElementStageDraft>>{};
-      final elements = <PlanStudentStepPreview>[];
-      final phases = <PlanPhasePreview>[];
-      final stepByStudent = <String, int>{};
-      for (final phase in document.phases) {
-        final steps = <PlanStudentStepPreview>[];
-        for (final stage in phase.stages) {
-          final targets = integerTargets[stage.id]!;
-          final step = (stepByStudent[stage.studentId] ?? 0) + 1;
-          stepByStudent[stage.studentId] = step;
-          final preview = PlanStudentStepPreview(
-            studentId: stage.studentId,
-            displayName:
-                catalogById[stage.studentId]?.displayName ?? stage.studentId,
-            step: step,
-            target: stage.name,
-            bondRank: targets['bond_rank'],
-            stageId: stage.id,
-            targetValues: targets,
-          );
-          steps.add(preview);
-          elements.add(preview);
-          drafts
-              .putIfAbsent(stage.studentId, () => [])
-              .add(
-                PlanElementStageDraft(
-                  id: stage.id,
-                  name: stage.name,
-                  targets: targets,
-                ),
-              );
-        }
-        phases.add(
-          PlanPhasePreview(id: phase.id, name: phase.name, steps: steps),
-        );
-      }
+      final names = {
+        for (final stage in document.stages)
+          stage.studentId:
+              catalogById[stage.studentId]?.displayName ?? stage.studentId,
+      };
       if (!mounted) return;
       setState(() {
+        _noProfile = false;
         _repositoryState = state;
         _repositoryPlan = plan;
         _studentSeedsById
           ..clear()
           ..addAll(seedsById);
+        _studentNames = Map.unmodifiable(names);
         _document = document;
-        _usingLivePlanElements = true;
-        _draftsByStudent
-          ..clear()
-          ..addAll({
-            for (final entry in drafts.entries)
-              entry.key: List<PlanElementStageDraft>.unmodifiable(
-                entry.value,
-              ),
-          });
-        _planElements = List.unmodifiable(elements);
-        _unassignedPlanElementIds = const {};
-        _planPhases = List.unmodifiable(phases);
         _calculationError = null;
         _calculationUnavailable = plan != null && plan.calculation == null;
         _homeProjection = null;
@@ -606,6 +408,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         document: document.toWire(),
       );
       if (!mounted || generation != _calculationGeneration) return;
+      // `overall`이 없거나 형식이 다른 응답은 "계산 오류"다(FE5-f2, 옛 홈의 `as Map` 검사 복원).
+      PlanDetailData.checkProjection(projection);
       // Detail 홈(FE5-c2)은 계산 응답을 그대로 그린다([PlanDetailData.fromProjection]). 병목 지연 단계(FD-035)도
       // 그쪽([PlanDetailStageStates])이 정한다.
       setState(() {
@@ -620,31 +424,17 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
-  void _rebuildDocumentFromPhases() {
-    if (_repositoryState == null) return;
-    _document = PlanningDocument(
-      id: 'active-plan',
-      name: _document?.name ?? '계획',
-      kind: PlanningDocumentKind.plan,
-      phases: [
-        for (final phase in _planPhases)
-          PlanningDocumentPhase(
-            id: phase.id,
-            name: phase.name,
-            stages: [
-              for (final step in phase.steps)
-                if (step.stageId != null)
-                  PlanningDocumentStage(
-                    id: step.stageId!,
-                    studentId: step.studentId,
-                    name: step.target,
-                    targets: step.targetValues,
-                  ),
-            ],
-          ),
-      ],
-    );
-    _calculateDocument();
+  /// 계정 없음 빈 상태로 바꾼다(FE5-f2). 읽은 계정 상태 · 문서 · 계산은 버린다(setState 안에서 부른다).
+  void _markNoProfile() {
+    _noProfile = true;
+    _calculationGeneration++;
+    _repositoryState = null;
+    _repositoryPlan = null;
+    _document = null;
+    _studentNames = const {};
+    _homeProjection = null;
+    _calculationError = null;
+    _calculationUnavailable = false;
   }
 
   @override
@@ -659,8 +449,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 계획 탭으로 넘어온 학생(성장 계산기 "이 목표로 계획에 추가", FE4-g, FD-171 (a)).
   ///
   /// 계획 만들기 흐름을 2단계(목표 정하기)로 열고 그 학생 단계를 넘긴 목표로 채운다
-  /// ([PlanFlowController.receiveHandoff]). 진행 중 흐름이 있으면 그 초안에 덧붙인다. 흐름을 열 수 없는 서비스(계정
-  /// 상태·시나리오 저장소 없음)면 예전처럼 요소 편집기로 연다(목표는 싣지 않는다).
+  /// ([PlanFlowController.receiveHandoff]). 진행 중 흐름이 있으면 그 초안에 덧붙인다. 흐름을 열 수 없으면(선택된 계정
+  /// 없음 등) 학생을 넣지 않고 SnackBar로 알린다(FE5-f2, [_openHandoffFlow]).
   void _consumeInitialSeed() {
     final seed = widget.initialSeed;
     if (seed == null || seed.handoffId == _consumedHandoffId) return;
@@ -676,8 +466,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
     // 흐름이 들어올 자리를 비운다. 넘길 때는 계획 탭이 보이지 않으므로 모션 없이 내린다.
     _handoffPending = true;
-    _showElementBuilder = false;
-    _showPhaseEditor = false;
     _showPresetManager = false;
     _showScenarioList = false;
     _viewingScenarioId = null;
@@ -690,7 +478,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     _openHandoffFlow(seed);
   }
 
-  /// [seed]로 새 흐름을 연다(FE4-g). 상태를 읽는 사이 흐름이 생겼으면 그 초안에 넣는다.
+  /// [seed]로 새 흐름을 연다(FE4-g). 상태를 읽는 사이 흐름이 생겼으면 그 초안에 넣는다. 흐름을 열 수 없으면 학생을
+  /// 넣지 않고 알린다: 선택된 계정이 없으면 [planNoProfileHandoffMessage](FE5-f2), 그 밖에는
+  /// [planHandoffUnavailableMessage].
   Future<void> _openHandoffFlow(PlanningStudentSeed seed) async {
     PlanFlowContext? flowContext;
     if (widget.service is PlanningScenarioRepositoryService) {
@@ -711,13 +501,15 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         return;
       }
       if (flowContext == null) {
-        setState(() {
-          _builderSeed = seed;
-          _studentSeedsById[seed.studentId] = seed;
-          _builderStudentQueue = [seed];
-          _builderStudentQueueIndex = 0;
-          _showElementBuilder = true;
-        });
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              _noProfile
+                  ? planNoProfileHandoffMessage
+                  : planHandoffUnavailableMessage,
+            ),
+          ),
+        );
         return;
       }
       final flow = PlanFlowController(
@@ -730,7 +522,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       opened = true;
       _notifyHandoff(flow, result, seed.studentId);
     } finally {
-      // 흐름을 못 열었으면(요소 편집기 대체 · 오류) 계획 홈 섹션을 다시 들인다.
+      // 흐름을 못 열었으면(계정 없음 · 오류) 계획 홈 섹션을 다시 들인다.
       if (mounted) {
         setState(() => _handoffPending = false);
         if (!opened) _setActive(widget.active);
@@ -816,10 +608,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       (profile) => profile?.selected == true,
       orElse: () => null,
     );
-    if (selected == null) return null;
+    if (selected == null) {
+      if (mounted) setState(_markNoProfile);
+      return null;
+    }
     final snapshot = await loadRepositoryPlanSnapshot(repository, selected.id);
     if (mounted) {
       setState(() {
+        _noProfile = false;
         _repositoryState = snapshot.state;
         _repositoryPlan = snapshot.plan;
       });
@@ -1226,8 +1022,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             format: planScenarioPreviewAmount,
           )
         : null;
+    final noProfile = _noProfile;
     final Widget? resourceNotice;
-    if (calculationError != null) {
+    if (noProfile) {
+      resourceNotice = _homeNotice(planNoProfileMessage, 'plan-home-no-profile');
+    } else if (calculationError != null) {
       resourceNotice = Text(
         '계산 오류\n$calculationError',
         key: const ValueKey('plan-calculation-error'),
@@ -1309,7 +1108,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         currentTitle: document?.name ?? '활성 계획',
         currentSubtitle: '지금 쓰는 계획',
         currentSemanticLabel: '활성 계획 다시 읽기',
-        onCurrent: busy || !widget.loadRepositoryPlan
+        onCurrent: busy || noProfile || !widget.loadRepositoryPlan
             ? null
             : _reloadRepositoryPlan,
         actions: [
@@ -1319,10 +1118,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             icon: Icons.view_list_rounded,
             label: '시나리오 목록',
             onPressed:
-                busy || widget.service is! PlanningScenarioRepositoryService
+                busy ||
+                    noProfile ||
+                    widget.service is! PlanningScenarioRepositoryService
                 ? null
                 : _openScenarioList,
-            tooltip: '시나리오 저장소를 쓸 수 없습니다.',
+            tooltip: noProfile
+                ? planNoProfileMessage
+                : '시나리오 저장소를 쓸 수 없습니다.',
           ),
           (
             key: 'plan-scenario-create-launch',
@@ -1330,10 +1133,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             icon: Icons.add_rounded,
             label: '계획 만들기',
             onPressed:
-                busy || widget.service is! PlanningScenarioRepositoryService
+                busy ||
+                    noProfile ||
+                    widget.service is! PlanningScenarioRepositoryService
                 ? null
                 : _openScenarioCreation,
-            tooltip: '시나리오 저장소를 쓸 수 없습니다.',
+            tooltip: noProfile
+                ? planNoProfileMessage
+                : '시나리오 저장소를 쓸 수 없습니다.',
           ),
           // FD-070: 페이즈 편집 = 저장된 활성 계획을 계획 만들기 3단계로 연다. FE4-f2의 "흐름으로 열기" 아이콘
           // 버튼(활성 계획 단계 순서 바꾸기)과 같은 동작이라 이 버튼 하나로 합쳤다(같은 키).
@@ -1342,10 +1149,13 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             variant: RailButtonVariant.base,
             icon: Icons.edit_outlined,
             label: '페이즈 편집',
-            onPressed: busy || widget.service is! RepositoryPlanService
+            onPressed:
+                busy || noProfile || widget.service is! RepositoryPlanService
                 ? null
                 : _openActivePlanFlow,
-            tooltip: '활성 계획 저장소를 쓸 수 없습니다.',
+            tooltip: noProfile
+                ? planNoProfileMessage
+                : '활성 계획 저장소를 쓸 수 없습니다.',
           ),
         ],
         infoCaption: '이 계획',
@@ -1372,14 +1182,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   );
 
   /// 학생 이름(목록 카탈로그가 없으면 id).
-  String _catalogName(String studentId) {
-    for (final phase in _planPhases) {
-      for (final step in phase.steps) {
-        if (step.studentId == studentId) return step.displayName;
-      }
-    }
-    return studentId;
-  }
+  String _catalogName(String studentId) =>
+      _studentNames[studentId] ?? studentId;
 
   /// 홈 S3 칩(FE5-d [PlanDetailFilterChips])을 홈 필터 상태에 쓴다.
   void _applyHomeFilter(PlanDetailResourceFilter filter) {
@@ -1663,17 +1467,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     }
   }
 
-  Future<void> _openPhaseEditor() async {
-    if (_showPhaseEditor) return;
-    if (!_showElementBuilder) {
-      await Future.wait([
-        for (final controller in _controllers.values) controller.reverse(),
-      ]);
-    }
-    if (!mounted) return;
-    setState(() => _showPhaseEditor = true);
-  }
-
   void _closePresetManager() {
     if (!_showPresetManager) return;
     setState(() => _showPresetManager = false);
@@ -1684,202 +1477,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   void _replacePresets(List<PlanElementPreset> presets) {
     setState(() => _presets = List.unmodifiable(presets));
-  }
-
-  void _closeElementBuilder() {
-    if (!_showElementBuilder) return;
-    setState(() {
-      _showElementBuilder = false;
-      _builderSeed = null;
-      _builderStudentQueue = const [];
-      _builderStudentQueueIndex = 0;
-    });
-    for (final entry in _controllers.entries) {
-      if (entry.value.value < 1) entry.value.forward(from: entry.value.value);
-    }
-  }
-
-  void _closePhaseEditor() {
-    if (!_showPhaseEditor) return;
-    setState(() => _showPhaseEditor = false);
-    if (!_showElementBuilder) {
-      for (final controller in _controllers.values) {
-        controller.forward(from: 0);
-      }
-    }
-  }
-
-  void _confirmPlanElementStages(List<PlanElementStageDraft> stages) {
-    final seed = _builderSeed;
-    if (seed == null) return;
-    final displayName =
-        seed.metadata['display_name']?.toString() ?? seed.studentId;
-    final replacedIds = {
-      for (final element in _planElements)
-        if (element.studentId == seed.studentId && element.stageId != null)
-          element.stageId!,
-    };
-    final nextElements = [
-      for (final element in _planElements)
-        if (element.studentId != seed.studentId) element,
-      for (var index = 0; index < stages.length; index++)
-        PlanStudentStepPreview(
-          studentId: seed.studentId,
-          displayName: displayName,
-          step: index + 1,
-          target: stages[index].name,
-          bondRank: stages[index].targets['bond_rank'],
-          stageId: stages[index].id,
-          targetValues: stages[index].targets,
-        ),
-    ];
-    final newIds = {for (final stage in stages) stage.id};
-    final existingPhases = _usingLivePlanElements
-        ? _planPhases
-        : const <PlanPhasePreview>[];
-    setState(() {
-      _usingLivePlanElements = true;
-      _draftsByStudent[seed.studentId] = List.unmodifiable(stages);
-      _planElements = List.unmodifiable(nextElements);
-      _unassignedPlanElementIds = {
-        for (final id in _unassignedPlanElementIds)
-          if (!replacedIds.contains(id)) id,
-        ...newIds,
-      };
-      _planPhases = [
-        for (final phase in existingPhases)
-          PlanPhasePreview(
-            id: phase.id,
-            name: phase.name,
-            steps: [
-              for (final step in phase.steps)
-                if (step.studentId != seed.studentId) step,
-            ],
-          ),
-      ];
-    });
-    _rebuildDocumentFromPhases();
-    final nextIndex = _builderStudentQueueIndex + 1;
-    if (nextIndex < _builderStudentQueue.length && mounted) {
-      setState(() {
-        _builderStudentQueueIndex = nextIndex;
-        _builderSeed = _builderStudentQueue[nextIndex];
-      });
-    }
-  }
-
-  void _editPlanStudent(String studentId) {
-    final source = _studentSeedsById[studentId];
-    if (source == null) return;
-    final seed = PlanningStudentSeed(
-      handoffId:
-          'plan-edit-$studentId-${DateTime.now().microsecondsSinceEpoch}',
-      studentId: source.studentId,
-      metadata: source.metadata,
-      currentValues: source.currentValues,
-      owned: source.owned,
-    );
-    setState(() {
-      _builderStudentQueue = [seed];
-      _builderStudentQueueIndex = 0;
-      _builderSeed = seed;
-    });
-  }
-
-  void _renameUnassignedPlanElement(String id, String name) {
-    PlanStudentStepPreview? renamed;
-    setState(() {
-      _planElements = [
-        for (final element in _planElements)
-          if (element.stageId == id)
-            () {
-              renamed = element.copyWith(target: name);
-              return renamed!;
-            }()
-          else
-            element,
-      ];
-      final element = renamed;
-      if (element != null) {
-        final drafts = _draftsByStudent[element.studentId];
-        if (drafts != null) {
-          _draftsByStudent[element.studentId] = [
-            for (final draft in drafts)
-              if (draft.id == id) draft.copyWith(name: name) else draft,
-          ];
-        }
-      }
-    });
-  }
-
-  void _deleteUnassignedPlanElement(String id) {
-    final removed = _planElements.cast<PlanStudentStepPreview?>().firstWhere(
-      (element) => element?.stageId == id,
-      orElse: () => null,
-    );
-    if (removed == null || !_unassignedPlanElementIds.contains(id)) return;
-    setState(() {
-      _planElements = [
-        for (final element in _planElements)
-          if (element.stageId != id) element,
-      ];
-      _unassignedPlanElementIds = {
-        for (final elementId in _unassignedPlanElementIds)
-          if (elementId != id) elementId,
-      };
-      final drafts = _draftsByStudent[removed.studentId];
-      if (drafts != null) {
-        final remaining = [
-          for (final draft in drafts)
-            if (draft.id != id) draft,
-        ];
-        if (remaining.isEmpty) {
-          _draftsByStudent.remove(removed.studentId);
-        } else {
-          _draftsByStudent[removed.studentId] = List.unmodifiable(remaining);
-        }
-      }
-      _planPhases = [
-        for (final phase in _planPhases)
-          PlanPhasePreview(
-            id: phase.id,
-            name: phase.name,
-            steps: [
-              for (final step in phase.steps)
-                if (step.stageId != id) step,
-            ],
-          ),
-      ];
-      _usingLivePlanElements = _planElements.isNotEmpty;
-    });
-  }
-
-  void _completePhaseEditor(
-    List<PlanPhaseEditorGroup<PlanStudentStepPreview>> groups,
-  ) {
-    _controllers['element-2']!.value = 1;
-    setState(() {
-      _planPhases = [
-        for (final group in groups)
-          PlanPhasePreview(
-            id: group.id,
-            name: group.name,
-            steps: [for (final item in group.items) item.data],
-          ),
-      ];
-      _unassignedPlanElementIds = const {};
-      _showPhaseEditor = false;
-      _showElementBuilder = false;
-      _builderSeed = null;
-      _builderStudentQueue = const [];
-      _builderStudentQueueIndex = 0;
-    });
-    for (final entry in _controllers.entries) {
-      if (entry.key != 'element-2' && entry.value.value < 1) {
-        entry.value.forward(from: entry.value.value);
-      }
-    }
-    _rebuildDocumentFromPhases();
   }
 
   @override
@@ -1900,67 +1497,12 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         constraints.maxWidth,
         constraints.maxHeight.isFinite ? constraints.maxHeight : 660,
       );
-      final editorItems = _usingLivePlanElements
-          ? [
-              for (final step in _planElements)
-                PlanPhaseEditorItem<PlanStudentStepPreview>(
-                  id: step.stageId!,
-                  label: '${step.displayName} · ${step.target}',
-                  iconAsset: 'assets/student_portraits/${step.studentId}.png',
-                  data: step,
-                  sequenceGroup: step.studentId,
-                  sequenceIndex: step.step,
-                ),
-            ]
-          : [
-              for (final phase in dummyPlanPhases)
-                for (final step in phase.steps)
-                  PlanPhaseEditorItem<PlanStudentStepPreview>(
-                    id: '${phase.id}-${step.studentId}-${step.step}',
-                    label: '${step.displayName} · ${step.step}단계',
-                    iconAsset: 'assets/student_portraits/${step.studentId}.png',
-                    data: step,
-                  ),
-            ];
-      final editorItemsById = {for (final item in editorItems) item.id: item};
-      final initialEditorGroups = _usingLivePlanElements
-          ? [
-              for (final phase in _planPhases)
-                PlanPhaseEditorGroup<PlanStudentStepPreview>(
-                  id: phase.id,
-                  name: phase.name,
-                  items: [
-                    for (final step in phase.steps)
-                      if (step.stageId != null &&
-                          editorItemsById.containsKey(step.stageId))
-                        editorItemsById[step.stageId]!,
-                  ],
-                ),
-            ]
-          : const <PlanPhaseEditorGroup<PlanStudentStepPreview>>[];
-      final builderSeed = _builderSeed;
-      final unassignedBuilderItems = [
-        for (final step in _planElements)
-          if (step.stageId != null &&
-              _unassignedPlanElementIds.contains(step.stageId))
-            PlanElementUnassignedItem(
-              id: step.stageId!,
-              studentId: step.studentId,
-              displayName: step.displayName,
-              stageNumber: step.step,
-              stageName: step.target,
-              targetSummary: planElementTargetSummary(step.targetValues),
-            ),
-      ];
       return SizedBox.fromSize(
         size: size,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            if (!_showPhaseEditor &&
-                !_showElementBuilder &&
-                !_showPresetManager &&
-                _flow == null)
+            if (!_showPresetManager && _flow == null)
               Positioned.fill(child: _detailHome()),
             // FE5-a: 시나리오 목록은 S1 메뉴 · S2 목록 · S3 미리보기 3섹션이다(Detail 홈 대신). 모션은 섹션마다
             // 부착면 방향이고 같은 [_scenarioListController]로 움직인다.
@@ -2112,40 +1654,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
                   active: widget.active,
                   onSaved: (outcome) => _flowSaveOutcome = outcome,
                   onClosed: _closeFlow,
-                ),
-              ),
-            if (!_showPhaseEditor && _showElementBuilder && builderSeed != null)
-              Positioned.fill(
-                child: PlanElementBuilder(
-                  key: ValueKey(
-                    'plan-element-builder-${builderSeed.handoffId}',
-                  ),
-                  seed: builderSeed,
-                  initialStages:
-                      _draftsByStudent[builderSeed.studentId] ?? const [],
-                  unassignedItems: unassignedBuilderItems,
-                  hasPlanElements: _planElements.isNotEmpty,
-                  active: widget.active,
-                  presets: _presets,
-                  onConfirm: _confirmPlanElementStages,
-                  onRenameUnassigned: _renameUnassignedPlanElement,
-                  onDeleteUnassigned: _deleteUnassignedPlanElement,
-                  onEditStudent: _editPlanStudent,
-                  onExitToPlan: _closeElementBuilder,
-                  onOpenPhaseEditor: _openPhaseEditor,
-                ),
-              ),
-            if (_showPhaseEditor)
-              Positioned.fill(
-                child: PlanPhaseEditor<PlanStudentStepPreview>(
-                  key: const ValueKey('plan-phase-editor'),
-                  items: editorItems,
-                  initialGroups: initialEditorGroups,
-                  active: widget.active,
-                  itemBuilder: (context, item, order) =>
-                      PlanStudentStepTile(order: order, step: item.data),
-                  onCancel: _closePhaseEditor,
-                  onComplete: _completePhaseEditor,
                 ),
               ),
             if (_showPresetManager)

@@ -9,8 +9,6 @@ import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart'
     show planElementBuilderSectionOpacity;
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart'
     show planSectionOpacity;
-import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart'
-    show planStudentSelectorSectionOpacity;
 import 'package:ba_planner_v7/ui/widgets/section_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart'
@@ -63,7 +61,6 @@ void main() {
     // 기존 화면별 상수는 공용 값을 가리킨다.
     expect(planSectionOpacity, sectionSurfaceOpacity);
     expect(studentSectionOpacity, sectionSurfaceOpacity);
-    expect(planStudentSelectorSectionOpacity, sectionSurfaceOpacity);
     expect(planElementBuilderSectionOpacity, sectionSurfaceOpacity);
   });
 

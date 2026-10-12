@@ -6664,3 +6664,194 @@ f1(옛 계획 홈 제거)을 끝냈다. 사용자에게 보이는 화면(Detail 
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261012_211921\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE5-f2 옛 계획 화면 정리 나머지 (Lane A, 로컬 Claude Code)
+
+### FE5-f2 착수 기록 (2026-10-13, Lane A)
+
+- 상태: **코드 완료(아래 FE5-f2 종료 기록), CF gate 미실행**. 시작 SHA `9c03d50b0c00fcf0a0df72da44be0c8694c99629`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 배정: CF 로그 2026-10-12 23:15, 프롬프트 `debug/frontend_redesign_handoff/fe5f2-worker-prompt-20261012.md`.
+- 막힘: 대장 막힘 요약 FE5-f 행 = FD-082(확정 2026-10-06). 막는 열림 FD 없음, 워커 재량 FD 없음.
+- 범위: f1 종료 기록 "다음 행동"의 f2 = ① 계정 없음 빈 상태(사용자 결정 2026-10-12 21:45, f1 발견 2 포함) ② 요소 편집기 대체 경로 제거 ③ `plan_phase_editor.dart` 삭제 ④ `plan_student_selector.dart` 정리 ⑤ 테스트 ⑥ f1 발견 3(`overall` 형식 검사).
+- 동작 보존 + 결정된 빈 상태만 추가. 남는 golden 장면 변화 0이 완료 조건이다(계정 없음 장면은 golden에 없고 새 장면을 만들지 않는다).
+
+#### 3. `plan_phase_editor.dart` 사용처(grep, 이 파일 밖)
+
+| 공개 이름 | lib 사용처 | test 사용처 | 처리 |
+|---|---|---|---|
+| `PlanPhaseEditor` · `PlanPhaseEditorItem` · `PlanPhaseEditorGroup` | `plan_section_layout`(대체 경로 build · `_completePhaseEditor`) | `planning_page_test`(위젯 2건) · `plan_element_builder_test`(대체 경로 2건 · 드롭 거부 1건) | 지움(대체 경로와 함께). 대체 = 흐름 3단계 칸 보드(FD-070) |
+| `PhaseEditorPathButton`(+ private `_PhaseEditorButtonPainter` · `_PhaseEditorPathClipper`, `phaseEditorButtonHoverColor` · `PressedColor` · `phaseEditorSelectionColor`) | `plan_preset_manager` | `theme_tokens_test`(색 2개) | `plan_preset_manager.dart`로 옮김(쓰는 쪽 파일) |
+| `phaseEditorCenteredTrapezoidListRect`(+ `phaseEditorShortTrapezoidEdgeLength` · `phaseEditorContainerInset` · `phaseEditorCompactListNormalGap`) | `plan_preset_manager` | `planning_page_test`(단위) | `plan_preset_manager.dart`로 옮김 |
+| `phaseEditorControlGap` · `phaseEditorControlHeight`(+ 최소 · 최대 · 비율 상수) | `plan_preset_manager` | `planning_page_test`(단위) | `plan_preset_manager.dart`로 옮김 |
+| `phaseEditorParallelogramPath` | `plan_preset_manager` | — | `plan_preset_manager.dart`로 옮김 |
+| `phaseEditorPathSurfaceTexture` | `plan_element_builder`(`planPresetListTexture`의 원값) · `plan_preset_manager` | `plan_element_builder_test`(`same`) | 값을 `plan_element_builder.dart`의 `planPresetListTexture`에 직접 둠, 프리셋 관리는 그 이름을 씀 |
+| `phaseEditorScrollbarStyle` · `phaseEditorScrollbarTrackPoint` | — | `kit/diagonal_scrollbar_test`(옛 painter 대조) | 지움(페이즈 편집기 전용). 키트 테스트의 그 대조 줄 · 1건을 지운다 |
+| `phaseEditorMotionDuration` | — | `theme_tokens_test` | 지움(그 줄 삭제) |
+| 나머지(`phaseEditorElements` · 기하 · 상수 · `phaseEditorMotionDirection` · `_lerpGridRect` · `_PhaseEditorMotion` 등) | — | `planning_page_test`(단위 11건) | 지움(키트 morph로 옮길 것 없음: 쓰는 화면이 함께 사라진다) |
+
+#### 4. `plan_student_selector.dart` 사용처(grep, 이 파일 밖)
+
+| 공개 이름 | lib | test | 처리 |
+|---|---|---|---|
+| `PlanStudentSelector` | — (f1에서 진입 제거) | `planning_page_test` · `plan_flow_test`(`findsNothing` 각 1줄) | 지움(그 줄 삭제) |
+| `planStudentSelectorFilterControlGap`(8.0) | `plan_preset_manager` | — | `plan_preset_manager.dart` 상수로 옮김 |
+| `planStudentSelectorMotion` · `SelectionSectionRect` · `ConfirmTexture` | — | `planning_page_test`(단위 2건) | 지움 |
+| `planStudentSelectorDiagonalDepth` | — | `geometry/diagonal_geometry_test`(1줄) | 지움(그 줄 삭제) |
+| `planStudentSelectorSectionOpacity` | — | `widgets/section_surface_test`(1줄) | 지움(그 줄 삭제) |
+| `planStudentSelectorMotionDuration` | — | `theme_tokens_test`(1줄) | 지움(그 줄 삭제) |
+| 나머지 공개 이름 18개 | — | — | 지움 |
+
+→ 두 파일 모두 파일째 지운다(commit.json `deleted`, git rm은 CF · 사용자).
+
+#### 고칠 · 지울 파일과 WIP
+
+| 파일 | 처리 | WIP(`git status --short`) |
+|---|---|---|
+| `frontend/lib/ui/widgets/plan_section_layout.dart`(CRLF) | 고침 | 없음 |
+| `frontend/lib/ui/widgets/plan_preset_manager.dart` | 고침(이관 받음) | 없음 |
+| `frontend/lib/ui/widgets/plan_element_builder.dart` | 고침(텍스처 값) | 없음 |
+| `frontend/lib/ui/models/plan_scenario_detail.dart` | 고침(`overall` 검사) | 없음 |
+| `frontend/lib/ui/widgets/plan_phase_editor.dart` | **삭제** | 없음 |
+| `frontend/lib/ui/widgets/plan_student_selector.dart` | **삭제** | 없음 |
+| `frontend/test/plan_element_builder_test.dart` · `planning_page_test.dart` · `plan_home_detail_test.dart` · `plan_flow_test.dart` · `theme_tokens_test.dart` · `kit/diagonal_scrollbar_test.dart` · `geometry/diagonal_geometry_test.dart` · `widgets/section_surface_test.dart` | 고침 | 모두 없음 |
+| `almanac/workflows/frontend-redesign-status.md` | 고침(이 기록) | 없음 |
+
+- 사본: `debug/frontend_fe5f2/pre/<v7 기준 경로>` 15개(cmp 일치). WIP가 없어 post 사본 · `post_dir`은 없다.
+- `planning_page.dart`는 고칠 것이 없으면 그대로 둔다(종료 기록에 적는다).
+- 고치지 않음: `lib/services/**` · `lib/ui/inventory/**` · `inventory_studio_layout.dart`(Lane B), 학생 · 인벤토리 · 스캔 · 타이틀 화면, `app_shell.dart` · `app_section.dart`, `lib/ui/kit/**`(옮길 기하가 없음), `frontend/tool/**`, backend · contracts, golden 테스트 · harness(지울 장면 없음), 기준 PNG.
+
+### FE5-f2 종료 기록 (2026-10-13, Lane A, 코드 완료 · CF gate 미실행)
+
+f2(옛 계획 화면 정리의 나머지)를 끝냈다. 계정 없음 빈 상태(사용자 결정)만 새로 보이고, 계정이 있을 때의 화면(Detail 홈 · 계획 만들기 · 시나리오 목록 · 보기 · 비교 · 프리셋 관리)은 바꾸지 않았다. 이로써 FE5-f(f1 + f2)의 코드 범위가 끝난다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다. 로그 · 요약은 `debug/frontend_fe5f2/logs/`.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib`(중간 1) | 미사용 import 2건(`plan_section_layout.dart`의 `plan_element_builder.dart` · `plan_student_step_tile.dart`) → 지움 |
+| `flutter analyze lib`(중간 2 · 3) | No issues found |
+| `flutter analyze test/<고친 파일>`(파일별) | 미사용 import 6건 · 불필요 import 1건 · 미사용 선언 1건(`_threeStageTestPreset`) · 지운 파일 URI 1건 · 컴파일 2건(새 테스트의 `AppColors` import · `const` 생성자) → 모두 고침, 최종 0 |
+| `flutter test test/plan_home_detail_test.dart`(1차) | 8 통과 · 1 실패: 새 `overall` 테스트 — mock `plan.get`도 같은 계산 응답의 `overall`을 캐스트해서 요약을 만들기 때문에(빼면 `calculation`이 null → "계산할 수 없음") 테스트 mock이 계획 화면의 계산 호출에서만 `overall`을 빼게 고침 |
+| `flutter test test/plan_home_detail_test.dart`(2차) | 9 통과 · 0 실패 |
+| 확인용: `_calculateDocument`의 검사 줄을 잠시 빼고 `--plain-name overall` | 실패(테스트가 검사에 걸린다는 확인) → 파일을 원래대로 되돌림(`checkProjection` 1곳 확인) |
+| `flutter analyze`(최종, 전체) | **No issues found**(info 포함 0) |
+| `flutter test --reporter json` 73개 파일(`plan_*` · `planning_*` · `scenario_*` 중 process E2E · `planning_protocol_client` 제외 전부 + `PlanningPage` · `plan_section_layout` · `plan_preset_manager` · `plan_element_builder` · 앱 셸 · 학생 탭 · 계산기를 쓰는 파일 grep 전부 + `test/kit/*` 전부 + `theme_tokens` · `geometry/diagonal_geometry` · `widgets/section_surface` + f1 목록의 `title_page` · `account_manager_fe8b` · `statistics_app_shell` · `profile_delete_fb2d` · `section_template_studio` · `student_filter_modal`) | **822 통과 · 0 실패** |
+| `flutter test test/planning_protocol_client_test.dart`(단독, 실제 Python 프로세스 테스트가 병렬에서 시간 초과될 수 있어 따로) | 24 통과 · 0 실패 |
+| `git diff --check`(고친 파일 · status) | 0(autocrlf 안내만) |
+
+회귀 파일별(통과 · 실패): planning_page 17·0, plan_element_builder 47·0, plan_home_detail 9·0, plan_preset_manager 5·0, plan_detail_tabs 8·0, plan_flow 15·0, plan_flow_authoring 18·0, plan_flow_goal_step 23·0, plan_flow_handoff 23·0, plan_flow_order_step 19·0, plan_flow_presets 13·0, plan_flow_save 15·0, plan_flow_student_step 8·0, plan_scenario_compare 7·0, plan_scenario_comparison 2·0, plan_scenario_detail 12·0, plan_scenario_list 10·0, plan_scenario_preview 9·0, plan_student_step_tile 3·0, planning_authoring_service 75·0, planning_document_projection 1·0, planning_document_v2_service 19·0, planning_growth_rules 13·0, planning_protocol_contract 7·0, planning_resource_assets 1·0, scenario_authoring_service 75·0, scenario_service 2·0, student_page 9·0, student_bond_gauge 12·0, student_filter_followups 4·0, student_filter_modal 7·0, student_range_condition_section 4·0, student_search_section 13·0, growth_calculator_adapter 24·0, growth_calculator_rules 15·0, growth_calculator_state 16·0, growth_calculator_view 24·0, title_page 25·0, widget 16·0, account_manager_fe8b 6·0, home_app_shell 1·0, statistics_app_shell 1·0, inventory_shell_lazy 1·0, profile_delete_fb2d 17·0, section_template_studio 15·0, theme_tokens 3·0, diagonal_geometry 5·0, section_surface 5·0, kit: anchored_flyout 8·0, ba_chip 4·0, ba_modal 5·0, ba_modal_a11y 4·0, buttons 6·0, diagonal_row 6·0, diagonal_scroll_viewport 5·0, diagonal_scrollbar 8·0, info_popover 8·0, item_icon_tile 7·0, kit_overlay 7·0, kpi_tile 2·0, range_controls 12·0, scroll_viewport_fog 6·0, section_morph 7·0, skew_bar 8·0, skew_controls 7·0, stat_chart 7·0, stepper 6·0, titles 4·0, ui_kit_gallery 6·0, ui_kit_gallery_controls 2·0, ui_kit_gallery_data 2·0, ui_kit_gallery_overlays 4·0, ui_kit_gallery_range 2·0. 별도: planning_protocol_client 24·0.
+
+빌드 잠금 경합은 없었다(재시도 0회).
+
+#### 지운 코드 · 파일
+
+- **파일 삭제(작업 트리, commit.json `deleted`, git rm은 CF · 사용자)**: `frontend/lib/ui/widgets/plan_phase_editor.dart`(2246줄), `frontend/lib/ui/widgets/plan_student_selector.dart`(898줄).
+- `lib/ui/widgets/plan_section_layout.dart`: 3828 → 3336줄(CRLF 그대로).
+  - 요소 편집기 대체 경로: `_openHandoffFlow`의 "흐름을 열 수 없는 서비스" 분기(→ 아래 빈 상태 · SnackBar), build의 `PlanElementBuilder` · `PlanPhaseEditor` 자리, `editorItems` · `initialEditorGroups` · `unassignedBuilderItems`.
+  - 상태: `_showPhaseEditor` · `_showElementBuilder` · `_usingLivePlanElements` · `_builderSeed` · `_builderStudentQueue` · `_builderStudentQueueIndex` · `_draftsByStudent` · `_planElements` · `_unassignedPlanElementIds` · `_planPhases`.
+  - 함수: `_rebuildDocumentFromPhases` · `_openPhaseEditor` · `_closeElementBuilder` · `_closePhaseEditor` · `_confirmPlanElementStages` · `_editPlanStudent` · `_renameUnassignedPlanElement` · `_deleteUnassignedPlanElement` · `_completePhaseEditor`, `_loadRepositoryPlan`의 편집기용 정수 목표 · 초안 · 페이즈 미리보기 만들기(`planFlowDocumentIntegerTargets` 호출 포함, 계산 문서에는 쓰이지 않았다).
+  - 모델 · 견본: `PlanPhasePreview` · `dummyPlanPhases`.
+  - 바뀐 것: Detail 홈 학생 이름(`_catalogName`)은 지운 `_planPhases` 대신 읽은 문서 학생의 카탈로그 이름 지도(`_studentNames`, 없으면 id — 전과 같은 값)에서 읽는다.
+- 남긴 것(이유): `PlanElementBuilder` 위젯과 `plan_element_builder.dart`(공용 정의 `PlanElementPreset` · `PlanElementStageDraft` · `planElementCurrentTargets` 등을 흐름 · 학생 탭 · 프리셋 관리가 쓰고, 위젯은 자기 위젯 테스트 20여 건이 직접 띄운다 — 발견 사항 4), `PlanDiagonalScrollbar` typedef(`planning_page_test` 시나리오 포그 테스트), `_studentSeedsById`(편입).
+
+#### 옮긴 것과 새 위치
+
+| 옛 이름(`plan_phase_editor.dart` · `plan_student_selector.dart`) | 새 위치 · 이름 | 비고 |
+|---|---|---|
+| `PhaseEditorPathButton`(+ `_PhaseEditorButtonPainter` · `_PhaseEditorPathClipper`) | `plan_preset_manager.dart` `_PlanPresetPathButton`(+ `_PlanPresetButtonPainter` · `_PlanPresetPathClipper`) | 프리셋 관리만 쓴다. 쓰지 않던 `emphasized` 인자(늘 false)는 빼고 false 경로 그리기를 그대로 옮겼다. 잠금 아이콘 키 `plan-phase-editor-lock-icon` → `plan-preset-lock-icon`(참조 0건) |
+| `phaseEditorButtonHoverColor` · `PressedColor` | `plan_preset_manager.dart` `planPresetButtonHoverColor` · `PressedColor`(공개, 값 같음) | `theme_tokens_test`가 같은 값으로 잠근다 |
+| `phaseEditorCenteredTrapezoidListRect` · `ShortTrapezoidEdgeLength` · `ContainerInset` · `CompactListNormalGap`(= `SectionSeamGap` 12) | `plan_preset_manager.dart` `_planPresetCenteredTrapezoidListRect` 등 private | 식 그대로 |
+| `phaseEditorControlGap` · `ControlHeight`(+ 최소 44 · 최대 72 · 비율 0.065) | `plan_preset_manager.dart` `_planPresetControlGap` · `_planPresetControlHeight` 등 | 식 그대로 |
+| `phaseEditorParallelogramPath` | `plan_preset_manager.dart` `_planPresetParallelogramPath` | 식 그대로 |
+| `phaseEditorPathSurfaceTexture` | `plan_element_builder.dart` `planPresetListTexture`(원래 이 이름이 옛 값을 가리켰다)에 값 직접. 프리셋 관리도 이 이름을 쓴다 | 값 12개 그대로 |
+| `planStudentSelectorFilterControlGap`(8.0) | `plan_preset_manager.dart` `_planPresetFilterControlGap` | |
+| 키트 morph로 대체 가능하던 `_lerpGridRect` · `phaseEditorElements` · `_PhaseEditorMotion`(FE6-d 발견 3) | 없음(파일째 지움) | 쓰는 화면이 함께 사라져 키트로 옮길 것이 없었다. `lib/ui/kit/**`는 고치지 않았다 |
+
+#### 지운 · 바꾼 테스트와 대체 테스트
+
+| 지운 테스트 | 대체 |
+|---|---|
+| `planning_page_test`: phase editor uses the requested motions and responsive section sizes · detail contents follow main section 2 sizing · side lists use the short edge and equal margins · side-list gaps survive responsive resizing · detail rows reserve one full-height assign button · item surface is a bilateral 80 degree parallelogram · scrollbar follows the same 80 degree rail · facing sections preserve the explicit diagonal seam · controls preserve equal height and diagonal clearances · outer container is clipped as a parallelogram(단위 10건) | 없음(화면째 지움). 페이즈 편집 = 흐름 3단계 칸 보드: `plan_flow_order_step_test`. 프리셋 관리로 옮긴 기하는 `plan_preset_manager_test`(5건)와 golden `plan-preset-manager`가 지킨다 |
+| `planning_page_test`: phase editor bulk and phase-order controls update editor state · inserts and reorders items between phase rows(위젯 2건) | `plan_flow_order_step_test` "카드를 끌어 칸을 옮기고…" · "칸 이름 바꾸기 · 칸 추가 · 자동 정렬" |
+| `planning_page_test`: all plan student selector panels use intro 80 and outro 260 · selector confirmation is bottom-right and shares the title texture(단위 2건) | `plan_flow_student_step_test`(1단계 학생 고르기) |
+| `planning_page_test`: dummy phases keep student steps in execution order | 없음(견본째 지움) |
+| `plan_element_builder_test`: preset overwrites the draft and confirmation creates unassigned items · builder deletes only the selected unassigned stage and the phase editor keeps the rest · phase completion exits the builder and returns to plan main(대체 경로 3건) | 계획 탭 쪽: `plan_home_detail_test` 계정 없음 3건(아래). 위젯 쪽(직접 띄움): "preset clamps an explicit T9 equipment level…" · "level-only preset raises…"(프리셋 → 확정) · "right list selection enables deletion for one stage" · "restored phase button opens only after plan elements exist" |
+| `plan_element_builder_test`: phase editor rejects a drop that reverses student stages | `plan_flow_order_step_test` "선행보다 앞 칸 · 뒤 단계보다 뒤 칸은 거부하고 이유를 돌려준다" · "카드를 끌어 칸을 옮기고, 선행보다 앞 칸은 거부하고…" |
+| `kit/diagonal_scrollbar_test`: phase editor (content ratio, thin accent, thumb when idle)(옛 painter 대조 1건) | 없음(스타일 상수째 지움). 나머지 대조(계획 · 학생 · 계정 · 프리셋)는 그대로 |
+
+바꾼 테스트:
+
+- `plan_element_builder_test` "planning seed opens the four-section element builder"(대체 경로 4건 중 1) → "element builder opens its four sections and student status": `PlanningPage`(계정 없음 mock) 대신 `_pumpBuilder`로 위젯을 바로 띄우고 단언은 그대로. "right list and phase action reuse…": `same(phaseEditorPathSurfaceTexture)` → `triangleSize` 104 값 단언. `_legacyBuilderService` · `_threeStageTestPreset` · 쓰지 않게 된 import 삭제.
+- `planning_page_test` "scenario creation opens the plan flow step 1…" · `plan_flow_test`: `find.byType(PlanStudentSelector), findsNothing` 1줄씩 삭제(클래스째 지움). 쓰지 않게 된 import 6개 삭제.
+- `theme_tokens_test`: 버튼 색 2개는 새 이름(`planPresetButton*Color`)으로 같은 값, `phaseEditorMotionDuration` · `planStudentSelectorMotionDuration` 줄 삭제. `geometry/diagonal_geometry_test`: `planStudentSelectorDiagonalDepth` 줄 삭제. `widgets/section_surface_test`: `planStudentSelectorSectionOpacity` 줄 삭제. `kit/diagonal_scrollbar_test`: `phaseEditorScrollbarTrackPoint` 대조 줄 · 옛 `_OldPhasePainter` 삭제.
+- 추가(`plan_home_detail_test`, 5 → 9건): 계정 없음 "S2 · S3 안내 문구, '읽는 중'에 머물지 않고 S1은 꺼진다" · "계산기에서 넘어온 학생은 SnackBar로 알리고 흐름 · 요소 편집기를 열지 않는다" · "계정을 고르면 다시 만든 계획 화면은 바로 정상 홈이다", 그리고 "계산 응답에 overall이 없으면 계산 오류다(FE5-f1 발견 3)".
+
+#### 계정 없음 빈 상태 동작
+
+- 계정 목록에 선택된 계정이 없으면(`_loadRepositoryPlan` · `_ensureRepositoryContext`가 알게 되는 시점) `_noProfile`을 켜고 읽은 상태 · 문서 · 계산을 비운다(`_markNoProfile`). `loadRepositoryPlan: true`도 "활성 계획을 읽는 중입니다."에 머물지 않는다(f1 발견 2 해소).
+- Detail 홈 S2 · S3 안내 자리(`_homeNotice`)에 "선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다."(키 `plan-home-no-profile`, `AppColors.textSecondary`, 아이콘 없음, 상수 `planNoProfileMessage`).
+- S1의 시나리오 목록 · 계획 만들기 · 페이즈 편집과 "활성 계획 다시 읽기" 카드는 꺼진다. 꺼진 버튼 툴팁은 같은 문구다(발견 사항 2).
+- 계산기에서 넘어온 학생: 흐름 · 요소 편집기를 열지 않고 SnackBar "계정을 먼저 골라야 계획에 추가할 수 있습니다."(`planNoProfileHandoffMessage`). 홈은 계정 없음 빈 상태로 돌아온다. 계정은 있는데 흐름을 열 수 없을 때(흐름을 열 수 없는 서비스 · 계정 상태 읽기 실패)는 "계획 만들기를 열 수 없어 계산기 목표를 계획에 넣지 못했습니다."(발견 사항 3).
+- 계정을 고르면 앱 셸이 `_profileChanged`에서 계획 화면 키(`plan-<profileGeneration>`)를 바꾸고 넘긴 학생(`_planningSeed`)도 비우므로, 새로 만든 계획 화면은 바로 정상 홈이다(테스트는 같은 키 교체를 흉내 낸다).
+
+#### golden
+
+- 지운 장면: 없음. 새 장면: 없음(계정 없음 장면은 만들지 않았다). golden 테스트 · harness는 고치지 않았고 지운 이름을 참조하지 않는다(전체 analyze 0).
+- 남는 장면 변화 0 근거(실행 안 함):
+  - 계정이 있는 장면만 있다(golden mock은 모두 기본 선택 계정). `_noProfile`은 false로 남아 S1 버튼 · 툴팁 · 안내 분기가 전과 같다. `loadRepositoryPlan: false`로 여는 `plan-preset-manager` · 흐름 · 목록 장면은 `_ensureRepositoryContext`에서 `_noProfile = false`만 더 쓴다.
+  - Detail 홈은 같은 `_document` · `_homeProjection`을 그린다. 학생 이름은 같은 값(카탈로그 이름, 없으면 id)이다. 새 `checkProjection`은 mock · golden 계산 응답(`overall` Map, `resources` Map 목록)을 그대로 통과시킨다.
+  - `plan-preset-manager`: 옮긴 버튼 · 기하 · 텍스처는 식 · 값이 같고, 지운 `emphasized` 인자는 프리셋 관리가 넘긴 적이 없다(늘 false 경로).
+  - 지운 build 분기(요소 편집기 · 페이즈 편집기)는 계정 없음 대체 경로로만 열렸고, golden에는 그 장면이 없다(f1에서 정의 삭제).
+
+#### 처리한 FD
+
+- FD-082 (a)(확정): 그대로. 이번 slice를 막는 열림 FD · 워커 재량 FD 없음.
+
+#### 미검증 항목
+
+- golden(`test/goldens/**`): 미실행. 남는 장면 변화 0은 위 코드 경로 근거로만 말한다.
+- 전체 `fe_gate.ps1`(`codealmanac validate` 포함): 미실행.
+- process E2E(`*_process_e2e_test.dart`): 미실행(서비스 계층은 고치지 않음).
+- 실제 앱 창(앱 셸에서 계정 없이 계산기 → 계획, 설정에서 계정 고르기): 미실행. 앱 셸 경로는 코드 읽기와 키 교체를 흉내 낸 위젯 테스트로만 확인했다.
+
+#### 검수표(계획 탭, mock 모드 · 기준 viewport)
+
+| 확인할 것 | 여는 방법 | 기대 |
+|---|---|---|
+| 계정 없음 상태 | 계정을 하나도 고르지 않은 상태(예: 계정 없는 mock · 계정을 모두 지운 뒤)로 계획 탭 | S2 · S3 가운데에 "선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다."(회색, 아이콘 없음). "읽는 중"이 남지 않는다. S1 버튼 셋 · 현재 계획 카드는 꺼져 있고 툴팁이 같은 문구 |
+| 계산기에서 넘기기(계정 없음) | 학생 탭 계산기 "이 목표로 계획에 추가" | 계획 탭으로 가고 SnackBar "계정을 먼저 골라야 계획에 추가할 수 있습니다.". 흐름 · 옛 요소 편집기가 열리지 않고 위 빈 상태 그대로 |
+| 계정 고른 뒤 | 설정에서 계정 고르기 → 계획 탭 | 바로 정상 Detail 홈(빈 계획이면 "활성 계획이 비어 있습니다…", S1 켜짐). 넘겼던 학생은 남지 않는다 |
+| 계정 있음(회귀) | 계획 탭 첫 화면 · 계산기에서 넘기기 · 목록 S1 "프리셋 관리" | 지금과 같다(흐름 2단계, 프리셋 관리 버튼 · 목록 모양 그대로) |
+
+#### WIP 보존 확인
+
+- 고친 · 지운 파일 14개(+ status) 모두 착수 때 WIP 없음(`git status --short` 빈 결과) → post 사본 · `post_dir` 없음. 종료 때 `git status`의 다른 변경(스캐너 소유 `scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · 스캐너 테스트 등)은 이 slice가 건드리지 않은 기존 WIP다.
+
+#### 발견 사항
+
+1. **`overall` 검사 위치**: 지시는 "`PlanDetailData.fromProjection`에서"였지만 `fromProjection`은 계산 전 빈 응답(`{}`, 홈 "계산하는 중")과 시나리오 미리보기 응답으로도 불려 거기서 던지면 그 화면들이 깨진다. 그래서 같은 모델 파일에 `PlanDetailData.checkProjection`(overall이 Map이 아니거나 `overall.resources`가 Map 목록이 아니면 `FormatException`)을 두고, 옛 캐스트가 있던 자리(활성 계획 홈이 계산 응답을 받는 `_calculateDocument`)에서 부른다. 결과는 옛 동작과 같다("계산 오류\n…", S2 단계 행은 그대로).
+2. **"S1 버튼은 지금처럼 꺼진다"는 사실과 달랐다**: 계정이 없을 때 S1 버튼은 켜져 보이고 눌러도 아무 일이 없었다(서비스 종류만 봤다). 결정 문구대로 이제 실제로 끈다. 꺼진 이유 툴팁은 새 문구를 만들지 않고 결정 문구(`planNoProfileMessage`)를 쓴다. "활성 계획 다시 읽기" 카드도 같이 끈다. CF 확인 필요.
+3. **새 문구 1개(CF 확인 필요)**: 계정은 있는데 흐름을 열 수 없을 때(서비스가 시나리오 저장소가 아님 · 계정 상태 읽기 예외) SnackBar "계획 만들기를 열 수 없어 계산기 목표를 계획에 넣지 못했습니다."(`planHandoffUnavailableMessage`). 전에는 이 경우도 옛 요소 편집기가 열렸다. 결정 문구("계정을 먼저 골라야…")를 쓰면 사실과 달라 따로 두었다. mock · process 서비스에서는 읽기 실패 때만 보인다.
+4. **`PlanElementBuilder` 위젯이 앱에서 쓰이지 않게 됐다**: 계획 탭 대체 경로가 유일한 사용처였다. 위젯은 `plan_element_builder_test` 위젯 테스트 20여 건(`_pumpBuilder`)이 직접 띄우고, 파일에는 흐름 · 학생 탭 · 프리셋 관리가 쓰는 공용 정의가 있다. 위젯(과 `onOpenPhaseEditor` 같은 인자) 정리는 별도 소단위(공용 정의 분리 + 위젯 테스트 정리)가 필요하다. 이번에는 범위 밖으로 두었다(f1 "다음 행동" ⑤의 판단).
+5. **키트 주석 2곳이 지운 파일을 가리킨다**: `lib/ui/kit/section_morph.dart` 6줄("그 파일은 FE5-f에서 지울 예정") · `lib/ui/kit/diagonal_scrollbar.dart` 5줄("페이즈 편집기가"). 코드 영향 없음, 키트는 이번 범위가 아니라 고치지 않았다.
+6. **계정 선택 복귀 테스트는 앱 셸을 흉내 낸다**: 계획 화면 자체는 계정 바뀜을 듣지 않고 앱 셸의 키 교체에 기댄다. 테스트는 키를 바꿔 다시 띄우는 방식이다. 앱 셸 통합 테스트(계정 없는 셸 → 설정에서 고르기 → 계획 탭)는 없다.
+7. f1 발견 1(시나리오 목록 1280×720 넘침) · 4(`planStudioDocument` · 키트 테스트만 쓰는 옛 이름)는 그대로 남는다(다른 slice).
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe5f2/pre/<v7 기준 경로>` 15개(고친 파일 12 + 지운 파일 2 + status). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe5f2/commit.json`: slice `fe5f2`, `status=true`, modified 12, added 0, deleted 2(`plan_phase_editor.dart` · `plan_student_selector.dart`). message 근거: 워크플로 FE5-f 행 · f1 종료 기록 "다음 행동" · CF 로그 2026-10-12 21:45.
+- 인계: `debug/frontend_fe5f2/output.md`.
+
+#### 다음 행동
+
+- f2 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트 −20 +4(planning_page −15, plan_element_builder −4, kit/diagonal_scrollbar −1, plan_home_detail +4), golden 장면 수 그대로 · 변화 0. 지운 파일 2개는 사용자 승인 뒤 삭제 커밋(`git rm`) — `fe_commit.ps1 -Slice fe5f2`가 `deleted`를 다루지 않으면 같은 삭제 커밋에 넣는다.
+- CF 확인: 발견 사항 2(S1 끄기 · 툴팁) · 3(새 SnackBar 문구). 그 뒤 워크플로 FE5-f 행에 f2 완료를 적으면 FE5 표가 끝난다.
+- 후속 소단위 후보: 발견 4(`PlanElementBuilder` 위젯 정리), 5(키트 주석), f1 발견 1 · 4.
+
+### fe5f2 commit record (2026-10-13 01:13, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_010336\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

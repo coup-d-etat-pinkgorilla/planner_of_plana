@@ -3,16 +3,13 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:ba_planner_v7/app/theme.dart';
-import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
-import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/studio/plan_starter_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/preset_element_studio_layout.dart';
 import 'package:ba_planner_v7/ui/studio/section_studio_document.dart';
 import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
@@ -61,22 +58,6 @@ PlanningStudentSeed _seed({
     'stat_heal': 0,
   },
   owned: owned,
-);
-
-/// FE4-g부터 계획 탭으로 넘어온 시드는 계획 만들기 흐름(2단계)을 연다. 선택된 계정이 없어 흐름을 열 수 없을
-/// 때만 예전 요소 편집기로 여는 대체 경로가 남는다. 이 파일의 페이지 통합 테스트는 계정 없는 mock으로 그
-/// 대체 경로를 연다(요소 편집기와 함께 FE5-f에서 정리).
-MockAppService _legacyBuilderService() => MockAppService(profiles: const []);
-
-PlanElementPreset _threeStageTestPreset() => PlanElementPreset(
-  id: 'balanced-growth',
-  name: '테스트 프리셋',
-  isDefault: false,
-  stages: const [
-    {'level': 30},
-    {'level': 50},
-    {'level': 70},
-  ],
 );
 
 Future<void> _pumpBuilder(
@@ -489,7 +470,7 @@ void main() {
       expect(planPresetListTexture.baseColor, const Color(0x8a29435b));
       expect(planPresetListTexture.panelColor, const Color(0x8a355a75));
       expect(planPresetListTexture.randomSeed, 8404);
-      expect(planPresetListTexture, same(phaseEditorPathSurfaceTexture));
+      expect(planPresetListTexture.triangleSize, 104);
       final action = planStarterPhaseActionTexture(60);
       expect(action.baseColor, const Color(0xff80688e));
       expect(action.panelColor, const Color(0xff92779e));
@@ -796,27 +777,12 @@ void main() {
     },
   );
 
-  testWidgets('planning seed opens the four-section element builder', (
+  // FE5-f2: 계획 탭의 요소 편집기 대체 경로(계정 없음)를 지웠다. 계획 탭에서는 더 열리지 않으므로 위젯을 바로 띄워
+  // 네 섹션 · 상태 배치를 본다(계정 없음 계획 탭은 `plan_home_detail_test`의 빈 상태 테스트).
+  testWidgets('element builder opens its four sections and student status', (
     tester,
   ) async {
-    final service = _legacyBuilderService();
-    addTearDown(service.dispose);
-    await tester.binding.setSurfaceSize(const Size(2560, 1392));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: BAPlannerTheme.dark(),
-        home: Scaffold(
-          body: PlanningPage(
-            service: service,
-            initialSeed: _seed(),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    // 대체 경로는 계정 목록을 읽은 뒤(비동기) 요소 편집기를 연다.
-    await tester.pump();
+    await _pumpBuilder(tester);
 
     expect(find.byKey(const ValueKey('plan-starter-element-3')), findsOne);
     expect(find.byKey(const ValueKey('plan-starter-element-5')), findsOne);
@@ -1811,58 +1777,6 @@ void main() {
     );
   });
 
-  testWidgets(
-    'preset overwrites the draft and confirmation creates unassigned items',
-    (tester) async {
-      final service = _legacyBuilderService();
-      addTearDown(service.dispose);
-      await tester.binding.setSurfaceSize(const Size(2560, 1392));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: BAPlannerTheme.dark(),
-          home: Scaffold(
-            body: PlanningPage(
-              service: service,
-              initialSeed: _seed(),
-              initialPresets: [_threeStageTestPreset()],
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey('plan-starter-unassigned-scroll')),
-        findsOne,
-      );
-      expect(
-        find.byKey(const ValueKey('plan-starter-open-phase-editor')),
-        findsOne,
-      );
-      expect(
-        tester
-            .widget<InkWell>(
-              find.descendant(
-                of: find.byKey(
-                  const ValueKey('plan-starter-open-phase-editor'),
-                ),
-                matching: find.byType(InkWell),
-              ),
-            )
-            .onTap,
-        isNotNull,
-      );
-    },
-  );
-
   testWidgets('preset clamps an explicit T9 equipment level to the v6 cap', (
     tester,
   ) async {
@@ -1923,163 +1837,4 @@ void main() {
     expect(confirmed?.single.targets['equip1_level'], 70);
   });
 
-  testWidgets(
-    'builder deletes only the selected unassigned stage and the phase editor keeps the rest',
-    (tester) async {
-      final service = _legacyBuilderService();
-      addTearDown(service.dispose);
-      await tester.binding.setSurfaceSize(const Size(2560, 1392));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: BAPlannerTheme.dark(),
-          home: Scaffold(
-            body: PlanningPage(
-              service: service,
-              initialSeed: _seed(),
-              initialPresets: [_threeStageTestPreset()],
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
-      );
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
-      await tester.pump();
-
-      await tester.tap(
-        find.byKey(const ValueKey('plan-unassigned-media-hoshino-stage-2')),
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-delete-unassigned')),
-      );
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey('plan-unassigned-row-host-hoshino-stage-2')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const ValueKey('plan-unassigned-row-host-hoshino-stage-3')),
-        findsOne,
-      );
-
-      // FE5-f1: 옛 계획 홈의 "페이즈 만들기" 버튼은 없다. 요소 편집기의 페이즈 편집기 진입으로 남은 단계를 본다.
-      await tester.tap(
-        find.byKey(const ValueKey('plan-starter-open-phase-editor')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(PlanElementBuilder), findsNothing);
-      expect(
-        find.byKey(const ValueKey('plan-phase-editor-source-hoshino-stage-2')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const ValueKey('plan-phase-editor-source-hoshino-stage-3')),
-        findsOne,
-      );
-    },
-  );
-
-  testWidgets('phase completion exits the builder and returns to plan main', (
-    tester,
-  ) async {
-    final service = _legacyBuilderService();
-    addTearDown(service.dispose);
-    await tester.binding.setSurfaceSize(const Size(2560, 1392));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: BAPlannerTheme.dark(),
-        home: Scaffold(
-          body: PlanningPage(
-            service: service,
-            initialSeed: _seed(),
-            initialPresets: [_threeStageTestPreset()],
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(
-      find.byKey(const ValueKey('plan-starter-preset-balanced-growth')),
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('plan-starter-confirm')));
-    await tester.pump();
-    await tester.tap(
-      find.byKey(const ValueKey('plan-starter-open-phase-editor')),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('plan-phase-editor')), findsOne);
-
-    await tester.tap(
-      find.byKey(const ValueKey('plan-phase-editor-assign-all')),
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('plan-phase-editor-complete')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('plan-phase-editor')), findsNothing);
-    expect(find.byType(PlanElementBuilder), findsNothing);
-    // FE5-f1: 계획 메인 = Detail 홈(옛 홈 페이즈 목록은 지웠다).
-    expect(find.byKey(const ValueKey('plan-home-view')), findsOne);
-  });
-
-  testWidgets('phase editor rejects a drop that reverses student stages', (
-    tester,
-  ) async {
-    const first = PlanPhaseEditorItem<int>(
-      id: 'stage-1',
-      label: '1단계',
-      iconAsset: 'assets/student_portraits/hoshino.png',
-      data: 1,
-      sequenceGroup: 'hoshino',
-      sequenceIndex: 1,
-    );
-    const second = PlanPhaseEditorItem<int>(
-      id: 'stage-2',
-      label: '2단계',
-      iconAsset: 'assets/student_portraits/hoshino.png',
-      data: 2,
-      sequenceGroup: 'hoshino',
-      sequenceIndex: 2,
-    );
-    await tester.binding.setSurfaceSize(const Size(1280, 720));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: BAPlannerTheme.dark(),
-        home: Scaffold(
-          body: PlanPhaseEditor<int>(
-            items: const [first, second],
-            itemBuilder: (_, item, _) => Text(item.label),
-            onCancel: () {},
-            onComplete: (_) {},
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(
-      find.byKey(const ValueKey('plan-phase-editor-quick-assign-stage-2')),
-    );
-    await tester.pump();
-    await tester.tap(
-      find.byKey(const ValueKey('plan-phase-editor-quick-assign-stage-1')),
-    );
-    await tester.pump();
-
-    expect(
-      find.byKey(const ValueKey('plan-phase-editor-source-stage-1')),
-      findsOne,
-    );
-    expect(find.text('같은 학생의 단계 순서를 지켜 배치하세요.'), findsOne);
-  });
 }

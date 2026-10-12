@@ -19,7 +19,6 @@ import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
 import 'diagonal_flow_indicator.dart';
-import 'plan_phase_editor.dart' show phaseEditorPathSurfaceTexture;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_section_layout.dart';
@@ -1816,7 +1815,22 @@ class _PlanStarterFoundationPainter extends CustomPainter {
       oldDelegate.path != path;
 }
 
-const planPresetListTexture = phaseEditorPathSurfaceTexture;
+/// 프리셋 목록 · 프리셋 관리 면의 삼각 텍스처. FE5-f2에서 옛 페이즈 편집기(`plan_phase_editor.dart`, 삭제)의
+/// `phaseEditorPathSurfaceTexture` 값을 그대로 옮겼다.
+const planPresetListTexture = BATriangleTextureConfig(
+  baseColor: Color(0x8a29435b),
+  panelColor: Color(0x8a355a75),
+  softColor: Color(0x8a47738d),
+  accentColor: Color(0x916291ad),
+  triangleSize: 104,
+  tessellationContrast: 0.026,
+  randomSeed: 8404,
+  macroTriangleChance: 0.06,
+  macroTriangleContrast: 0.018,
+  lightStrength: 0.12,
+  edgeVignetteStrength: 0.12,
+  fogStrength: 0.08,
+);
 
 BATriangleTextureConfig planStarterPhaseActionTexture(double height) =>
     BATriangleTextureConfig(

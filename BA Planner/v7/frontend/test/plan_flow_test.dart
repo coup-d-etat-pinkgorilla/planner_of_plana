@@ -20,7 +20,6 @@ import 'package:ba_planner_v7/ui/widgets/plan_flow_order_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_student_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -860,7 +859,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     // FE4-b1: 1단계는 기존 선택기가 아니라 B 본문·C 보조에 그리는 새 학생 고르기다.
-    expect(find.byType(PlanStudentSelector), findsNothing);
     expect(find.byType(PlanFlowStudentBody), findsOneWidget);
     expect(find.byType(PlanFlowStudentAside), findsOneWidget);
     expect(find.byKey(const ValueKey('plan-flow-legacy-slot')), findsNothing);

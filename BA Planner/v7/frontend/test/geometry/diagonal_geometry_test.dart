@@ -18,8 +18,6 @@ import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart'
         planPhaseRowHorizontalOffset,
         planPhaseRowWidth,
         planScenarioParallelogramDepth;
-import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart'
-    show planStudentSelectorDiagonalDepth;
 import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart'
     show buildRoundedSectionPolygon, sectionTemplateCutDepth;
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart'
@@ -144,10 +142,6 @@ void main() {
       expect(
         diagonalParallelogramBottomCenterX(width: 520, height: h),
         (520 - h / _legacyTan80) / 2,
-      );
-      expect(
-        planStudentSelectorDiagonalDepth(Size(300, h.abs())),
-        math.min(300 * 0.42, h.abs() / _legacyTan80),
       );
       final rect = Rect.fromLTWH(3, 4, 150, h.abs());
       expect(

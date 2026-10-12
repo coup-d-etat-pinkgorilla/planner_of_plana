@@ -5,7 +5,14 @@
 // - 계획 화면: 첫 화면이 비교 없는 Detail 홈이다(KPI · 활성 대비 칩 없음). S1은 시나리오 목록 · 계획 만들기 · 페이즈
 //   편집 + 정보 줄이고, 옛 섹션 1 진입 버튼은 없다(FE5-f1에서 옛 홈 코드째 지웠다). S3 seg 페이즈별 · 전체는 FE5-d
 //   새 위젯이다.
+// - 계정 없음(FE5-f2, 사용자 결정 2026-10-12 21:45): 홈 S2 · S3에 인벤토리 방식 안내, S1은 꺼짐, 계산기에서 넘어온 학생은
+//   SnackBar로 알린다. 계정을 고르면(앱 셸이 `plan-<profileGeneration>` 키로 다시 만든다) 정상 홈이다.
+// - 계산 응답에 `overall`이 없으면 "계산 오류"다(FE5-f1 발견 3).
+import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/repository_service.dart'
+    show RepositoryPlanState;
+import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/plan_scenario_detail.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
@@ -13,6 +20,8 @@ import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_scenario_detail.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_scenario_list.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart'
+    show planNoProfileHandoffMessage, planNoProfileMessage;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,8 +57,8 @@ PlanningDocument _document(String id) => PlanningDocument(
 );
 
 /// 활성 계획(아야네 1단계)을 저장한 mock.
-Future<MockAppService> _seededService() async {
-  final service = MockAppService();
+Future<MockAppService> _seededService([MockAppService? base]) async {
+  final service = base ?? MockAppService();
   addTearDown(service.dispose);
   final profile = (await service.listProfiles()).firstWhere(
     (profile) => profile.selected,
@@ -64,17 +73,76 @@ Future<MockAppService> _seededService() async {
   return service;
 }
 
-Future<void> _pumpHome(WidgetTester tester, MockAppService service) async {
+Future<void> _pumpHome(
+  WidgetTester tester,
+  MockAppService service, {
+  Key? key,
+  PlanningStudentSeed? seed,
+}) async {
   await tester.binding.setSurfaceSize(const Size(2560, 1392));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: PlanningPage(service: service, loadRepositoryPlan: true),
+        body: PlanningPage(
+          key: key,
+          service: service,
+          initialSeed: seed,
+          loadRepositoryPlan: true,
+        ),
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+/// 계획 화면의 계산 응답에서 `overall`을 뺀 mock(FE5-f1 발견 3). mock `plan.get`도 같은 계산으로 요약을 만들므로
+/// 그 안에서는 빼지 않는다.
+class _NoOverallService extends MockAppService {
+  bool _loadingPlan = false;
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    _loadingPlan = true;
+    try {
+      return await super.loadRepositoryPlan(profileId);
+    } finally {
+      _loadingPlan = false;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final projection = Map<String, dynamic>.of(
+      await super.calculatePlanningDocument(
+        currentStudents: currentStudents,
+        inventory: inventory,
+        document: document,
+      ),
+    );
+    if (!_loadingPlan) projection.remove('overall');
+    return projection;
+  }
+}
+
+const _noProfileActions = [
+  'plan-scenario-list-launch',
+  'plan-scenario-create-launch',
+  'plan-flow-edit-active-launch',
+];
+
+void _expectActions(WidgetTester tester, {required bool enabled}) {
+  for (final key in _noProfileActions) {
+    expect(
+      tester.widget<RailButton>(find.byKey(ValueKey(key))).onPressed != null,
+      enabled,
+      reason: key,
+    );
+  }
 }
 
 Future<void> _tapTab(WidgetTester tester, String prefix, String label) async {
@@ -288,5 +356,94 @@ void main() {
       expect(flow.step, PlanFlowStep.order);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('계정 없음 빈 상태(FE5-f2)', () {
+    testWidgets('S2 · S3 안내 문구, "읽는 중"에 머물지 않고 S1은 꺼진다', (tester) async {
+      final service = MockAppService(profiles: const []);
+      addTearDown(service.dispose);
+      await _pumpHome(tester, service);
+
+      expect(find.byKey(const ValueKey('plan-home-view')), findsOneWidget);
+      // S2 · S3 두 자리 모두 같은 문구다.
+      expect(
+        find.byKey(const ValueKey('plan-home-no-profile')),
+        findsNWidgets(2),
+      );
+      expect(
+        find.text('선택된 계정이 없습니다. 설정에서 계정을 고르면 계획이 보입니다.'),
+        findsNWidgets(2),
+      );
+      final notice = tester.widget<Text>(
+        find.byKey(const ValueKey('plan-home-no-profile')).first,
+      );
+      expect(notice.style?.color, AppColors.textSecondary);
+      expect(find.byKey(const ValueKey('plan-home-loading')), findsNothing);
+      expect(find.byKey(const ValueKey('plan-home-not-loaded')), findsNothing);
+      _expectActions(tester, enabled: false);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('계산기에서 넘어온 학생은 SnackBar로 알리고 흐름 · 요소 편집기를 열지 않는다', (
+      tester,
+    ) async {
+      final service = MockAppService(profiles: const []);
+      addTearDown(service.dispose);
+      await _pumpHome(
+        tester,
+        service,
+        seed: PlanningStudentSeed(
+          handoffId: 'calculator-ayane',
+          studentId: 'ayane',
+          metadata: const {'student_id': 'ayane', 'display_name': '아야네'},
+          currentValues: const {},
+          owned: true,
+        ),
+      );
+
+      expect(find.text(planNoProfileHandoffMessage), findsOneWidget);
+      expect(find.text('계정을 먼저 골라야 계획에 추가할 수 있습니다.'), findsOneWidget);
+      expect(find.byType(PlanFlowWorkspace), findsNothing);
+      expect(
+        find.byKey(const ValueKey('plan-element-builder-calculator-ayane')),
+        findsNothing,
+      );
+      // 홈은 계정 없음 빈 상태로 돌아온다.
+      expect(find.byKey(const ValueKey('plan-home-view')), findsOneWidget);
+      expect(find.text(planNoProfileMessage), findsNWidgets(2));
+      _expectActions(tester, enabled: false);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('계정을 고르면 다시 만든 계획 화면은 바로 정상 홈이다', (tester) async {
+      final service = MockAppService(profiles: const []);
+      addTearDown(service.dispose);
+      await _pumpHome(tester, service, key: const ValueKey('plan-0'));
+      expect(find.byKey(const ValueKey('plan-home-no-profile')), findsWidgets);
+
+      final profile = await service.createProfile('새 계정', 'fe5f2-create');
+      await service.selectProfile(profile.id, profile.revision, 'fe5f2-select');
+      // 앱 셸은 계정이 바뀌면 `plan-<profileGeneration>` 키로 계획 화면을 새로 만든다.
+      await _pumpHome(tester, service, key: const ValueKey('plan-1'));
+
+      expect(find.byKey(const ValueKey('plan-home-no-profile')), findsNothing);
+      expect(find.byKey(const ValueKey('plan-home-empty')), findsWidgets);
+      _expectActions(tester, enabled: true);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  testWidgets('계산 응답에 overall이 없으면 계산 오류다(FE5-f1 발견 3)', (tester) async {
+    final service = await _seededService(_NoOverallService());
+    await _pumpHome(tester, service);
+
+    expect(find.byKey(const ValueKey('plan-calculation-error')), findsWidgets);
+    expect(find.textContaining('overall'), findsWidgets);
+    // 문서 내용(S2 단계 행)은 그대로다.
+    expect(
+      find.byKey(const ValueKey('plan-home-stage-ayane-stage-1')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 }

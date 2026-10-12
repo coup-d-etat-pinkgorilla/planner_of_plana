@@ -1,8 +1,6 @@
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_phase_editor.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_preset_manager.dart';
-import 'package:ba_planner_v7/ui/widgets/plan_student_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,8 +27,8 @@ void main() {
     expect(AppColors.typeComposite, const Color(0xff7a8ea3));
 
     expect(diagonalMediaHighlightColor, const Color(0xfff2b3ef));
-    expect(phaseEditorButtonHoverColor, const Color(0x33f2b3ef));
-    expect(phaseEditorButtonPressedColor, const Color(0x4df2b3ef));
+    expect(planPresetButtonHoverColor, const Color(0x33f2b3ef));
+    expect(planPresetButtonPressedColor, const Color(0x4df2b3ef));
     expect(AppTextStyles.planPhaseNumber.color, const Color(0xfff2b3ef));
     expect(AppTextStyles.planPhaseNumber.fontSize, 17);
   });
@@ -71,9 +69,7 @@ void main() {
     expect(AppMotion.sectionCurve, Curves.easeInOutCubic);
     expect(AppMotion.entranceCurve, Curves.easeOutCubic);
 
-    expect(phaseEditorMotionDuration, AppMotion.section);
     expect(planPresetManagerMotionDuration, AppMotion.section);
-    expect(planStudentSelectorMotionDuration, AppMotion.section);
 
     expect(AppRadii.section, 14);
     expect(AppRadii.control, 10);

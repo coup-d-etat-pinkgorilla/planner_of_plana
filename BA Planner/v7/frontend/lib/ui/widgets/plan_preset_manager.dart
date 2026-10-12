@@ -12,15 +12,6 @@ import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_element_builder.dart';
-import 'plan_phase_editor.dart'
-    show
-        PhaseEditorPathButton,
-        phaseEditorCenteredTrapezoidListRect,
-        phaseEditorControlGap,
-        phaseEditorControlHeight,
-        phaseEditorParallelogramPath,
-        phaseEditorPathSurfaceTexture;
-import 'plan_student_selector.dart' show planStudentSelectorFilterControlGap;
 import 'section_template_surface.dart';
 
 const planPresetManagerMotionDuration = AppMotion.section;
@@ -487,24 +478,24 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
   Widget _buildListSection(Size canvasSize, Path sectionPath) {
     final sectionBounds = sectionPath.getBounds();
     final sectionRect = planPresetManagerSectionRect(canvasSize, 'element-1');
-    final listRect = phaseEditorCenteredTrapezoidListRect(
+    final listRect = _planPresetCenteredTrapezoidListRect(
       canvasSize,
       _presetManagerElement('element-1'),
     );
     final listPath = Path.combine(
       PathOperation.intersect,
-      phaseEditorParallelogramPath(listRect),
+      _planPresetParallelogramPath(listRect),
       sectionPath,
     );
     final localListPath = listPath.shift(-sectionBounds.topLeft);
-    final buttonHeight = phaseEditorControlHeight(sectionRect);
-    final horizontalGap = diagonalNormalInset(phaseEditorControlGap);
+    final buttonHeight = _planPresetControlHeight(sectionRect);
+    final horizontalGap = diagonalNormalInset(_planPresetControlGap);
     final buttons = <String, Path>{};
     for (var index = 0; index < 4; index++) {
       final top =
           sectionRect.top +
-          phaseEditorControlGap +
-          index * (buttonHeight + phaseEditorControlGap);
+          _planPresetControlGap +
+          index * (buttonHeight + _planPresetControlGap);
       final bottom = top + buttonHeight;
       final rightTop = _presetListLeftBoundary(listRect, top) - horizontalGap;
       final rightBottom =
@@ -513,10 +504,10 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
       buttons[id] = Path.combine(
         PathOperation.intersect,
         buildRoundedSectionPolygon([
-          Offset(sectionRect.left + phaseEditorControlGap, top),
+          Offset(sectionRect.left + _planPresetControlGap, top),
           Offset(rightTop, top),
           Offset(rightBottom, bottom),
-          Offset(sectionRect.left + phaseEditorControlGap, bottom),
+          Offset(sectionRect.left + _planPresetControlGap, bottom),
         ], radius: 8),
         sectionPath,
       ).shift(-sectionBounds.topLeft);
@@ -611,7 +602,7 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
     final bounds = path.getBounds();
     return Positioned.fromRect(
       rect: bounds,
-      child: PhaseEditorPathButton(
+      child: _PlanPresetPathButton(
         key: key,
         path: path.shift(-bounds.topLeft),
         onPressed: onPressed,
@@ -652,7 +643,7 @@ class _PlanPresetManagerState extends State<PlanPresetManager>
     final tangent = diagonalTan80;
     final railInset = diagonalNormalInset(planElementBuilderGap);
     final containerTop =
-        searchRect.bottom + planStudentSelectorFilterControlGap;
+        searchRect.bottom + _planPresetFilterControlGap;
     final containerBottom =
         sectionBounds.bottom -
         planStarterStageControlHeight -
@@ -893,7 +884,7 @@ class _PresetManagerPresetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final path = phaseEditorParallelogramPath(
+      final path = _planPresetParallelogramPath(
         Offset.zero & constraints.biggest,
         radius: 8,
       );
@@ -1020,7 +1011,7 @@ class _PresetManagerSurfacePainter extends CustomPainter {
     canvas
       ..save()
       ..clipPath(path);
-    BATriangleTexturePainter(phaseEditorPathSurfaceTexture).paint(canvas, size);
+    BATriangleTexturePainter(planPresetListTexture).paint(canvas, size);
     canvas.restore();
     canvas.drawPath(
       path,
@@ -1037,4 +1028,208 @@ class _PresetManagerSurfacePainter extends CustomPainter {
 
   @override
   bool? hitTest(Offset position) => path.contains(position);
+}
+
+// FE5-f2: 옛 페이즈 편집기(`plan_phase_editor.dart`, 삭제)에서 옮긴 프리셋 관리 전용 기하 · 버튼이다. 값 · 그리기는
+// 그대로다(이름만 이 파일 private으로 바꿨다).
+
+const _planPresetContainerInset = 10.0;
+const _planPresetCompactListNormalGap = 12.0;
+const _planPresetFilterControlGap = 8.0;
+const _planPresetControlGap = 12.0;
+const _planPresetControlMinimumHeight = 44.0;
+const _planPresetControlMaximumHeight = 72.0;
+const _planPresetControlHeightRatio = 0.065;
+final planPresetButtonHoverColor = AppColors.accent.withValues(
+  alpha: 0x33 / 255,
+);
+final planPresetButtonPressedColor = AppColors.accent.withValues(
+  alpha: 0x4d / 255,
+);
+
+double _planPresetControlHeight(Rect sectionRect) =>
+    (sectionRect.height * _planPresetControlHeightRatio)
+        .clamp(_planPresetControlMinimumHeight, _planPresetControlMaximumHeight)
+        .toDouble();
+
+double _planPresetShortTrapezoidEdgeLength(
+  Size size,
+  SectionCanvasElement element,
+) {
+  final rect = sectionCanvasElementRect(size, element);
+  final points = buildAttachedSectionPolygon(
+    rect.size,
+    element.spec,
+    gridSize: sectionTemplateDetailGridSize,
+  );
+  final horizontalEdges = <double>[];
+  for (var index = 0; index < points.length; index++) {
+    final start = points[index];
+    final end = points[(index + 1) % points.length];
+    if ((start.dy - end.dy).abs() <= 0.01) {
+      horizontalEdges.add((start.dx - end.dx).abs());
+    }
+  }
+  if (horizontalEdges.isEmpty) return rect.width;
+  return horizontalEdges.reduce(math.min);
+}
+
+Rect _planPresetCenteredTrapezoidListRect(
+  Size size,
+  SectionCanvasElement element,
+) {
+  final bounds = buildSectionCanvasElementPath(size, element).getBounds();
+  final top = bounds.top + _planPresetContainerInset;
+  final bottom = bounds.bottom - _planPresetContainerInset;
+  final height = math.max(1.0, bottom - top);
+  final horizontalGap = diagonalNormalInset(_planPresetCompactListNormalGap);
+  final targetBottomEdge = math.max(
+    1.0,
+    _planPresetShortTrapezoidEdgeLength(size, element) - horizontalGap * 2,
+  );
+  final diagonalDepth = diagonalCutDepth(height);
+  final width = math.min(bounds.width, targetBottomEdge + diagonalDepth);
+  return Rect.fromLTWH(bounds.center.dx - width / 2, top, width, height);
+}
+
+Path _planPresetParallelogramPath(Rect rect, {double radius = 9}) {
+  final maximumDepth = math.max(0.0, (rect.width - radius * 2) / 2);
+  final depth = math.min(diagonalCutDepth(rect.height), maximumDepth);
+  return buildRoundedSectionPolygon([
+    Offset(rect.left + depth, rect.top),
+    rect.topRight,
+    Offset(rect.right - depth, rect.bottom),
+    rect.bottomLeft,
+  ], radius: radius);
+}
+
+class _PlanPresetPathClipper extends CustomClipper<Path> {
+  const _PlanPresetPathClipper(this.path);
+
+  final Path path;
+
+  @override
+  Path getClip(Size size) => path;
+
+  @override
+  bool shouldReclip(_PlanPresetPathClipper oldClipper) =>
+      oldClipper.path != path;
+}
+
+class _PlanPresetPathButton extends StatelessWidget {
+  const _PlanPresetPathButton({
+    super.key,
+    required this.path,
+    required this.onPressed,
+    required this.icon,
+    this.label,
+    this.disabledMessage,
+  });
+
+  final Path path;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String? label;
+  final String? disabledMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final locked = !enabled && disabledMessage != null;
+    final foreground = enabled
+        ? AppColors.text
+        : AppColors.textMuted.withValues(alpha: 0.58);
+    final button = Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(
+          painter: _PlanPresetButtonPainter(path: path, enabled: enabled),
+        ),
+        if (locked)
+          ClipPath(
+            clipper: _PlanPresetPathClipper(path),
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.38)),
+          ),
+        ClipPath(
+          clipper: _PlanPresetPathClipper(path),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              hoverColor: planPresetButtonHoverColor,
+              highlightColor: planPresetButtonPressedColor,
+              splashColor: planPresetButtonPressedColor,
+              child: Align(
+                alignment: Alignment.center,
+                child: locked
+                    ? Icon(
+                        Icons.lock_rounded,
+                        key: const ValueKey('plan-preset-lock-icon'),
+                        size: 19,
+                        color: AppColors.textMuted,
+                      )
+                    : FractionallySizedBox(
+                        widthFactor: 0.84,
+                        heightFactor: 0.72,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icon,
+                                size: label == null ? 18 : 17,
+                                color: foreground,
+                              ),
+                              if (label != null) ...[
+                                const SizedBox(width: 5),
+                                Text(
+                                  label!,
+                                  style: TextStyle(
+                                    color: foreground,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    return locked ? Tooltip(message: disabledMessage!, child: button) : button;
+  }
+}
+
+class _PlanPresetButtonPainter extends CustomPainter {
+  const _PlanPresetButtonPainter({required this.path, required this.enabled});
+
+  final Path path;
+  final bool enabled;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 옛 페이즈 편집기 버튼의 `emphasized: false` 경로다(프리셋 관리는 강조 버튼을 쓰지 않는다).
+    const base = Color(0xff355a75);
+    canvas.drawPath(
+      path,
+      Paint()..color = base.withValues(alpha: enabled ? 0.92 : 0.28),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.outline.withValues(alpha: enabled ? 0.72 : 0.28)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PlanPresetButtonPainter oldDelegate) =>
+      oldDelegate.path != path || oldDelegate.enabled != enabled;
 }
