@@ -31,7 +31,7 @@ void main() {
     await pumpUntilFound(
       tester,
       find.byKey(
-        const ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed'),
+        const ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle'),
       ),
     );
     await tester.pumpAndSettle();

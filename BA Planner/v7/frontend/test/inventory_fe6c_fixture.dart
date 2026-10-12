@@ -11,8 +11,18 @@
 //   학생 7명), 가방 T10(필요 30 · 보유 8 · 학생 2명), 헤어핀 T10(필요 20 · 보유 8 · 학생 1명)이다. 목걸이 T9는 보유 항목이
 //   없다(모름, 빗금).
 // - 부족 계산과 문서 계산은 FE6-a fixture와 같은 방식(문서 순서대로 보유를 깎는다)이다.
+// - S5 최근 변화(FE6-f, [inventoryAnalysisFixtureScans]): 지금 = 2026-10-05 12:00 UTC, 스캔 회차 31 · 24 · 17 · 10 · 3일 전.
+//   1주 순증감 상위 6행 = 상급 활동 보고서 +120 · 로혼치 사본 T1 +36 · 밀레니엄 BD (최상급) +24 · 트리니티 기술 노트
+//   (최상급) −7 · 시계 T8 설계도 −9 · 게헨나 기술 노트 (최상급) −14. 이 추세라면 = 트리니티 기술 노트 (최상급) 부족이
+//   커지는 중(4주 뒤 −66) · 밀레니엄 BD (상급)은 곧 충분(2주 뒤 0). 시안 견본(로혼치 +86 · 네브라 −6)은 계획 재화의 지금
+//   보유(S2 · S4 값)를 바꾸지 않고는 낼 수 없어 가까운 값으로 두었다. 상급 활동 보고서와 밀레니엄 BD (최상급)은 계획에
+//   쓰지 않는 보유 항목으로 더했다(S1 · S2 · S4는 계획 재화만 그린다).
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/inventory/inventory_controller.dart'
+    show InventoryClockSource;
+
+import 'inventory_history_fixture.dart';
 
 const inventoryAnalysisFixtureProfileId = '000000000000000000000001';
 const inventoryAnalysisFixtureRevision =
@@ -206,8 +216,64 @@ final _fixture = () {
       owned[key] = '${total * percents[tier - 1] ~/ 100}';
     }
   }
+  // FE6-f: 계획에 쓰지 않는 보유 항목(S5 순증감 행).
+  catalog.add(
+    _entry('Item_Icon_ExpItem_2', '상급 활동 보고서', 'activity_report', 'activity_reports', 2,
+        family: 'activity_report', tier: 3),
+  );
+  owned['Item_Icon_ExpItem_2'] = '640';
+  owned['Item_Icon_Material_ExSkill_Millennium_3'] = '40';
   return (catalog: catalog, owned: owned, plan: plan);
 }();
+
+/// 스캔 이력(FE6-f): scan profile → 재화 → (며칠 전 → 수량). 마지막 값은 지금 보유와 같다.
+const inventoryAnalysisFixtureScans = <String, Map<String, Map<int, int>>>{
+  'activity_reports': {
+    'Item_Icon_ExpItem_2': {31: 400, 10: 520, 3: 640},
+  },
+  'ooparts': {
+    'Item_Icon_Material_Rohonc_0': {31: 20, 10: 12, 3: 48},
+  },
+  'tactical_bd': {
+    'Item_Icon_Material_ExSkill_Millennium_3': {31: 10, 10: 16, 3: 40},
+    'Item_Icon_Material_ExSkill_Millennium_2': {31: 70, 24: 77, 17: 84, 10: 91},
+  },
+  'equipment': {
+    'Equipment_Icon_Watch_Tier8': {31: 60, 10: 53, 3: 44},
+  },
+  'tech_notes': {
+    'Item_Icon_SkillBook_Gehenna_3': {31: 80, 10: 71, 3: 57},
+    'Item_Icon_SkillBook_Trinity_3': {31: 72, 24: 65, 17: 57, 10: 50, 3: 43},
+  },
+};
+
+/// 계정 상태 wire(학생 · 목표는 fixture 그대로, 수량만 [owned]).
+Map<String, dynamic> _stateWire(int revision, Map<String, String> owned) => {
+  'profile_id': inventoryAnalysisFixtureProfileId,
+  'revision': revision,
+  'students': [
+    for (final id in inventoryAnalysisFixtureStudents.keys)
+      {
+        'version': 1,
+        'student_id': id,
+        'values': {'level': 70, 'student_star': 3},
+      },
+  ],
+  'inventory': {
+    'version': 1,
+    'entries': [
+      for (final entry in owned.entries)
+        {'key': entry.key, 'item_id': entry.key, 'quantity': entry.value},
+    ],
+  },
+  'goals': {
+    'version': 1,
+    'goals': [
+      for (final id in inventoryAnalysisFixtureStudents.keys)
+        {'student_id': id, 'target_level': 80, 'notes': '목표'},
+    ],
+  },
+};
 
 /// 카탈로그.
 List<InventoryCatalogEntry> get inventoryAnalysisFixtureCatalog => _fixture.catalog;
@@ -219,42 +285,29 @@ Map<String, String> get inventoryAnalysisFixtureOwned => _fixture.owned;
 Map<String, Map<String, int>> get inventoryAnalysisFixturePlan => _fixture.plan;
 
 /// 분석 검수 fixture 서비스.
-class InventoryAnalysisFixtureService extends MockAppService {
-  InventoryAnalysisFixtureService()
+class InventoryAnalysisFixtureService extends MockAppService
+    implements InventoryClockSource {
+  InventoryAnalysisFixtureService({bool history = true})
     : super(
         repositoryStates: {
-          inventoryAnalysisFixtureProfileId: {
-            'profile_id': inventoryAnalysisFixtureProfileId,
-            'revision': 3,
-            'students': [
-              for (final id in inventoryAnalysisFixtureStudents.keys)
-                {
-                  'version': 1,
-                  'student_id': id,
-                  'values': {'level': 70, 'student_star': 3},
-                },
-            ],
-            'inventory': {
-              'version': 1,
-              'entries': [
-                for (final entry in _fixture.owned.entries)
-                  {
-                    'key': entry.key,
-                    'item_id': entry.key,
-                    'quantity': entry.value,
-                  },
-              ],
-            },
-            'goals': {
-              'version': 1,
-              'goals': [
-                for (final id in inventoryAnalysisFixtureStudents.keys)
-                  {'student_id': id, 'target_level': 80, 'notes': '목표'},
-              ],
-            },
-          },
+          inventoryAnalysisFixtureProfileId: _stateWire(
+            inventoryHistoryFixtureRevision,
+            _fixture.owned,
+          ),
+        },
+        historyClock: () => inventoryHistoryFixtureNow,
+        repositoryHistories: {
+          if (history)
+            inventoryAnalysisFixtureProfileId: inventoryFixtureScanHistory(
+              stateWire: _stateWire,
+              current: _fixture.owned,
+              scans: inventoryAnalysisFixtureScans,
+            ),
         },
       );
+
+  @override
+  DateTime get inventoryNow => inventoryHistoryFixtureNow;
 
   @override
   Future<InventoryCatalogResult> listInventoryItems() async =>

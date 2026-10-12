@@ -195,7 +195,7 @@ const inventoryAnalysisOopartsSectionId = 'inventory-analysis-ooparts';
 /// S4 종류 × 티어 충족률 + 부족 상위.
 const inventoryAnalysisTiersSectionId = 'inventory-analysis-tiers';
 
-/// S5 최근 변화(FE6-f 전 빈 상태).
+/// S5 최근 변화(FE6-f 기간 순증감 상위 · 이 추세라면).
 const inventoryAnalysisChangesSectionId = 'inventory-analysis-changes';
 
 SectionCanvasElement inventoryAnalysisSection(String id) => inventoryAnalysisStudioDocument
@@ -255,6 +255,27 @@ abstract final class InventoryAnalysisMetrics {
 
   // S5 최근 변화 캡션(위 78).
   static const changeCaptionTop = 78.0;
+
+  // S5 최근 변화 본문(FE6-f, 시안 값). 캡션 `.plain` 높이 24 · 안쪽 16.2. 증감 행 `.plain` 위 108 · 높이 30 · 피치 34(행 아래
+  // 왼쪽이 왼쪽 변에서 23.9, 안쪽 17.3, 라벨 폭 196). 막대 칸(395 × 30)은 사선을 따라 밀리지 않고 섹션 위 왼쪽 꼭짓점에서
+  // 222.9에 고정이다. 가운데 축선은 위 104 · 높이 208. "이 추세라면" 캡션 위 328, 예측 행 `.row` 위 358 · 높이 44 · 피치 50
+  // (안쪽 19.8 · 14). 오른쪽 여백은 모두 22다.
+  static const changeCaptionHeight = 24.0;
+  static const changeCaptionInner = 16.2;
+  static const changeRowsTop = 108.0;
+  static const changeRowHeight = 30.0;
+  static const changeRowPitch = 34.0;
+  static const changeRowLeft = 23.9;
+  static const changeRowInner = 17.3;
+  static const changeLabelWidth = 196.0;
+  static const changeBarLeft = 222.9;
+  static const changeAxisTop = 104.0;
+  static const changeAxisHeight = 208.0;
+  static const changeRight = 22.0;
+  static const forecastCaptionTop = 328.0;
+  static const forecastRowsTop = 358.0;
+  static const forecastRowHeight = 44.0;
+  static const forecastRowPitch = 50.0;
 }
 
 /// 오파츠 확장 완료 상태(FE6-d, 시안 Inventory-Analysis-Opa, E 보고서 §4.1). 사이드바 · S1 · S4 · S5가 모두 퇴장하고 S2만

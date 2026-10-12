@@ -309,14 +309,14 @@ void main() {
       expect(controller.usesAvailable, isTrue);
       // 기본 진입은 부족 진단이고 첫 행(가장 위험한 재화)을 고른다(FD-094).
       expect(controller.view, InventoryView.shortage);
-      expect(controller.selectedKey, 'Item_Icon_SecretStone_rio_armed');
-      final uses = controller.usesFor('Item_Icon_SecretStone_rio_armed');
-      expect(uses.single.studentId, 'rio_armed');
+      expect(controller.selectedKey, 'Item_Icon_SecretStone_rio_battle');
+      final uses = controller.usesFor('Item_Icon_SecretStone_rio_battle');
+      expect(uses.single.studentId, 'rio_battle');
       expect(uses.single.phaseNumber, 1);
       expect(uses.single.studentStep, 1);
       expect(uses.single.stageName, '성급 3→5');
       expect(uses.single.shortageAtEntry, 449);
-      expect(controller.studentName('rio_armed'), '리오(무장)');
+      expect(controller.studentName('rio_battle'), '리오(무장)');
       final note = controller.usesFor('Item_Icon_SkillBook_Gehenna_3');
       expect(note.map((use) => use.studentId), [
         'aru',

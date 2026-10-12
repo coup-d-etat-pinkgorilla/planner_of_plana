@@ -27,8 +27,18 @@
 //   그 행 key(정규 key)에만 매핑한다. `migration_required`·`corrupt_data`는 빈 표시로 바꾸지 않고 계정 오류로 알린다.
 // - 직접 고치기 저장은 scope(`applied_resource_keys`) = 고친 key + "이 값이 맞습니다"로 확인한 key만 보낸다.
 // - 응답 손실·저장소 바쁨·쓰기 실패 뒤 같은 내용을 다시 저장하면 원 revision·key·scope·bucket을 그대로 다시 보낸다.
+//
+// 이력(FE6-f, FB-2 · FD-041 · FD-042):
+// - 로드가 끝난 뒤(보드를 먼저 그린 다음) 지금 − 28일 이력(`repository.history.events`, cursor 끝까지)과 카탈로그 재화의
+//   마지막 스캔(`repository.history.scan_latest`, 256개씩)을 읽어 [InventoryHistory]를 만든다. 같은 계정 · 같은 revision이면
+//   다시 읽지 않는다. 저장 · 후보 승인은 [load]를 다시 부르므로 revision이 바뀐 뒤 다시 읽는다.
+// - 이력 응답의 revision이 읽은 상태와 다르면(사이에 쓰기) 이력을 버리고 다음 기회에 다시 읽는다(섞어 그리지 않는다).
+// - 탭을 다시 열 때 [refreshIfChanged]가 `repository.history.summary`의 revision만 보고, 다르면(다른 탭의 스캔 commit 등)
+//   [load]를 다시 부른다. 셸 시작 때(탭을 열기 전)는 아무것도 읽지 않는다(FE6-b).
+// - "지금"은 [InventoryClockSource]가 주는 시각(검수 fixture · 테스트의 고정 시계), 없으면 기기 시계다.
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
@@ -38,8 +48,17 @@ import '../../services/planning_protocol_client.dart'
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import 'inventory_analysis.dart';
+import 'inventory_history.dart';
 import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
+
+/// 인벤토리 이력 집계의 "지금"을 주는 서비스(검수 fixture · 테스트가 고정 시각을 준다). 없으면 기기 시계다.
+abstract interface class InventoryClockSource {
+  DateTime get inventoryNow;
+}
+
+/// 이력 events를 끝까지 읽을 때의 쪽 수 상한(200 × 50 = FB-2 보존 상한 10,000건).
+const _historyMaxPages = 50;
 
 /// 스캔 탭이 인벤토리로 넘긴 후보(FE8-g5 전까지 인벤토리에서 승인한다).
 class InventoryCandidateContext {
@@ -113,9 +132,18 @@ typedef _InventorySaveRequest = ({
 });
 
 class InventoryController extends ChangeNotifier {
-  InventoryController(this.service);
+  InventoryController(this.service, {DateTime Function()? clock})
+    : _clock = clock ?? _serviceClock(service);
 
   final AppService service;
+  final DateTime Function() _clock;
+
+  static DateTime Function() _serviceClock(AppService service) {
+    if (service case final InventoryClockSource source) {
+      return () => source.inventoryNow;
+    }
+    return DateTime.now;
+  }
 
   List<InventoryCatalogEntry> _catalog = const [];
   String? _catalogRevision;
@@ -183,6 +211,21 @@ class InventoryController extends ChangeNotifier {
   final Map<String, InventoryAcquisition> _acquisitions = {};
   int _generation = 0;
   bool _disposed = false;
+
+  // 이력(FE6-f).
+  InventoryHistory? _history;
+  String? _historyProfileId;
+  int? _historyRevision;
+  bool _historyLoading = false;
+  String? _historyError;
+
+  // 이력 집계 메모(보드 · 이력이 바뀌면 다시 센다).
+  InventoryBoard? _historyBoard;
+  InventoryHistory? _historyMemo;
+  InventoryKpiDeltas? _kpiDeltas;
+  final Map<String, InventorySparkline> _sparklines = {};
+  final Map<InventoryChangeWindow, InventoryNetChanges> _netChanges = {};
+  List<InventoryForecast>? _forecasts;
 
   // --- 읽기 -----------------------------------------------------------------
 
@@ -323,6 +366,60 @@ class InventoryController extends ChangeNotifier {
     );
   }
 
+  /// 읽은 이력(지금 − 28일). 아직 읽지 않았거나 읽지 못했으면 null.
+  InventoryHistory? get history => _history;
+
+  /// 이력을 읽는 중이다.
+  bool get historyLoading => _historyLoading;
+
+  /// 이력을 읽지 못한 이유(문구). 읽었거나 아직 읽지 않았으면 null.
+  String? get historyError => _historyError;
+
+  void _syncHistory() {
+    if (identical(_historyBoard, _board) && identical(_historyMemo, _history)) {
+      return;
+    }
+    _historyBoard = _board;
+    _historyMemo = _history;
+    _kpiDeltas = null;
+    _sparklines.clear();
+    _netChanges.clear();
+    _forecasts = null;
+  }
+
+  /// KPI 띠 이력 값(FD-041). 이력이 없으면 모두 모름.
+  InventoryKpiDeltas get kpiDeltas {
+    _syncHistory();
+    return _kpiDeltas ??= inventoryKpiDeltas(_history, _board);
+  }
+
+  /// [key] 재화의 상세 스파크라인. 이력이 없으면 null.
+  InventorySparkline? sparklineFor(String key) {
+    final history = _history;
+    if (history == null) return null;
+    _syncHistory();
+    return _sparklines.putIfAbsent(key, () => inventorySparkline(history, key));
+  }
+
+  /// S5 지금 기간의 순증감 상위. 이력이 없으면 null.
+  InventoryNetChanges? get netChanges {
+    final history = _history;
+    if (history == null) return null;
+    _syncHistory();
+    return _netChanges.putIfAbsent(
+      _changeWindow,
+      () => inventoryNetChanges(history, _board, _changeWindow),
+    );
+  }
+
+  /// S5 "이 추세라면" 행(FD-042). 이력이 없으면 빈 목록.
+  List<InventoryForecast> get forecasts {
+    final history = _history;
+    if (history == null) return const [];
+    _syncHistory();
+    return _forecasts ??= inventoryForecasts(history, _board);
+  }
+
   InventoryListMode get mode => _mode;
   InventoryView get view => _view;
   String? get category => _category;
@@ -425,6 +522,8 @@ class InventoryController extends ChangeNotifier {
     }
     _disconnected = false;
     _loading = true;
+    // 앞 로드의 이력 읽기는 세대가 바뀌어 버려진다. 새 로드가 이력을 다시 읽거나 지운다.
+    _historyLoading = false;
     _catalogError = null;
     _profileError = null;
     _shortageError = null;
@@ -533,6 +632,130 @@ class InventoryController extends ChangeNotifier {
     await _calculate(generation);
     if (!_current(generation)) return;
     _finishLoad();
+    await _loadHistory(generation);
+  }
+
+  /// 이력(지금 − 28일)과 마지막 스캔을 읽는다. 같은 계정 · 같은 revision이면 다시 읽지 않는다.
+  Future<void> _loadHistory(int generation) async {
+    final repository = _repository;
+    final profile = _profile;
+    final state = _state;
+    if (repository == null || profile == null || state == null) {
+      _clearHistory();
+      _notify();
+      return;
+    }
+    if (_history != null &&
+        _historyProfileId == profile.id &&
+        _historyRevision == state.revision) {
+      return;
+    }
+    _historyLoading = true;
+    _historyError = null;
+    _notify();
+    InventoryHistory? history;
+    String? error;
+    try {
+      final now = _clock();
+      final pages = <RepositoryHistoryEventsResult>[];
+      var request = RepositoryHistoryEventsRequest(
+        profileId: profile.id,
+        fromAt: now.subtract(inventoryHistoryWindow),
+        limit: inventoryHistoryPageLimit,
+      );
+      while (true) {
+        final page = await repository.loadRepositoryHistoryEvents(request);
+        if (!_current(generation)) return;
+        pages.add(page);
+        final cursor = page.nextCursor;
+        if (cursor == null) break;
+        if (pages.length >= _historyMaxPages) {
+          throw StateError('history_too_large');
+        }
+        request = request.withCursor(cursor);
+      }
+      if (pages.first.revision != state.revision) {
+        error = '수량이 바뀌는 사이에 읽어 이력을 맞추지 못했습니다. 탭을 다시 열면 다시 읽습니다.';
+      } else {
+        final keys = {
+          for (final item in _catalog)
+            historyCanonicalResourceKey(item.resourceKey),
+        }.toList();
+        final latest = <RepositoryHistoryScanLatestResult>[];
+        for (
+          var start = 0;
+          start < keys.length;
+          start += inventoryScanLatestChunk
+        ) {
+          final result = await repository.loadRepositoryHistoryScanLatest(
+            RepositoryHistoryScanLatestRequest(
+              profileId: profile.id,
+              resourceKeys: keys.sublist(
+                start,
+                math.min(keys.length, start + inventoryScanLatestChunk),
+              ),
+            ),
+          );
+          if (!_current(generation)) return;
+          latest.add(result);
+        }
+        history = InventoryHistory.build(
+          inventoryHistoryInputFromQuery(
+            now: now,
+            inventory: state.inventory,
+            pages: pages,
+            lastScanAt: inventoryLastScanAt(latest),
+          ),
+        );
+      }
+    } on UnsupportedError {
+      if (!_current(generation)) return;
+      error = '이 연결은 변화 기록 조회를 지원하지 않습니다.';
+    } catch (caught) {
+      if (!_current(generation)) return;
+      error = '변화 기록을 불러오지 못했습니다: $caught';
+    }
+    _history = history;
+    _historyProfileId = history == null ? null : profile.id;
+    _historyRevision = history == null ? null : state.revision;
+    _historyError = error;
+    _historyLoading = false;
+    _notify();
+  }
+
+  void _clearHistory() {
+    _history = null;
+    _historyProfileId = null;
+    _historyRevision = null;
+    _historyLoading = false;
+    _historyError = null;
+  }
+
+  /// 탭을 다시 열 때 부른다: 저장소 revision이 읽은 상태와 다르면(다른 탭의 스캔 commit 등) 다시 읽는다. 같으면 아무것도
+  /// 다시 읽지 않는다(계산 0).
+  Future<void> refreshIfChanged() async {
+    if (_loading || _saving || !_loaded) return;
+    final repository = _repository;
+    final profile = _profile;
+    final state = _state;
+    if (repository == null || profile == null || state == null) return;
+    final generation = _generation;
+    try {
+      final summary = await repository.loadRepositoryHistorySummary([
+        profile.id,
+      ]);
+      if (!_current(generation) || _loading || _saving) return;
+      final revision = summary.profiles
+          .firstWhere((item) => item.profileId == profile.id)
+          .revision;
+      if (revision != state.revision) {
+        await load();
+      } else if (_history == null && !_historyLoading) {
+        await _loadHistory(generation);
+      }
+    } catch (_) {
+      // 읽지 못하면 다음 저장 · 활성화 때 다시 본다.
+    }
   }
 
   /// 부족 계산(목표 v1)과 활성 문서 계산(사용 학생). 실패는 각자 알리고 나머지는 계속한다.
@@ -595,6 +818,8 @@ class InventoryController extends ChangeNotifier {
   void _finishLoad() {
     _loading = false;
     _loaded = true;
+    // 계정 상태를 못 읽었으면 이전 계정의 이력도 남기지 않는다.
+    if (_state == null) _clearHistory();
     _rebuildBoard();
     _notify();
   }

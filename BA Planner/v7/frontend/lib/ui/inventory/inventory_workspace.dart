@@ -3,12 +3,12 @@
 // - A 사이드바(왼쪽 사다리꼴): "목록 · 분석" seg → (목록) "아이템 · 장비" seg → 보기("부족한 것 n종"
 //   기본 FD-094 / "전체 n종") → 종류 버튼(category 1:1 FD-095, 사선을 따라 폭이 줄고 "부족 n" 칩) → 주요 재화 카드
 //   (크레딧 · 엘리그마, 누르면 상세).
-// - B KPI 띠: 보유 품목 · 부족 재화 · 과잉 재화(FD-040) · 계획 충족률(FD-031 (a)) · 최근 감소 · 마지막 스캔. 증감 ·
-//   최근 감소 · 마지막 스캔은 이력 연동(FE6-f) 전이라 `—`다.
+// - B KPI 띠: 보유 품목 · 부족 재화 · 과잉 재화(FD-040) · 계획 충족률(FD-031 (a)) · 최근 감소 · 마지막 스캔. 지난 스캔
+//   대비 증감 · 최근 감소 · 마지막 스캔은 이력(FE6-f, `inventory_history.dart`)에서 오고, 모르면 `—`다.
 // - C 부족 위험도 순위(평행사변형): 제목 + (i) + 정렬 칩, 위험도 행(막대 폭 = 점수, FD-030 (b)). 행을 누르면 D가 바뀐다.
 //   후보 승인 패널(FE8-g5 전까지)과 알림 줄은 목록 위 띠에 둔다.
 // - D 상세(오른쪽 사다리꼴): 머리(아이콘 · 이름 · FB-3 메타) · kv(보유 · 필요 · 부족 · 충족률) · 수량 직접 고치기 칸 ·
-//   사용 학생(FD-101) · 보충 방법(FB-3 획득처) · 최근 변화(FE6-f 전 빈 상태) · 액션 3개(FD-125).
+//   사용 학생(FD-101) · 보충 방법(FB-3 획득처) · 최근 변화(FE6-f 스파크라인, 한 재화 안 FD-033) · 액션 3개(FD-125).
 // - 분석 모드(FE6-c, 시안 Inventory-Analysis): A 사이드바 아래쪽이 분석 메뉴로 바뀌고 B·C·D 대신 S1 학교별 · S2 오파츠 ·
 //   S4 종류 × 티어 · S5 최근 변화 네 섹션을 그린다(`inventory_analysis_sections.dart`).
 // - 티어별 충족률(FE6-e, 시안 Inventory-Tiers): 분석 모드 안에서 사이드바는 그대로 두고 네 섹션 대신 T1 기술 노트 · T2 BD
@@ -59,6 +59,8 @@ import '../widgets/section_template_surface.dart';
 import 'inventory_analysis.dart';
 import 'inventory_analysis_charts.dart';
 import 'inventory_controller.dart';
+import 'inventory_history.dart';
+import 'inventory_history_charts.dart';
 import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
 
@@ -125,6 +127,12 @@ abstract final class InventoryMetrics {
   static const useRowHeight = 46.0;
   static const methodRowHeight = 44.0;
   static const actionHeight = 40.0;
+
+  /// 최근 변화 스파크라인 줄(FE6-f, 시안 `.row` 112: 안쪽 왼쪽 31.7 · 오른쪽 14, svg 높이 92 · 폭 = 줄 폭 − 70).
+  static const sparklineRowHeight = 112.0;
+  static const sparklineLeft = 31.7;
+  static const sparklineRight = 14.0;
+  static const sparklineWidthInset = 70.0;
 
   /// 확인 필요 줄(FB-10b, 표시가 있을 때만): 칩 · 설명 · "이 값이 맞습니다".
   static const reviewHeight = 40.0;
@@ -580,7 +588,11 @@ class InventoryWorkspace extends StatelessWidget {
     final board = controller.board;
     final kpis = board.kpis;
     final planReady = board.hasShortages;
+    // FE6-f 이력 값(FD-041): 지난 스캔 대비 증감 · 최근 감소 · 마지막 스캔. 이력이 없거나 1회뿐이면 `—`.
+    final deltas = controller.kpiDeltas;
     String kinds(int? value) => value == null ? '—' : '$value종';
+    String signed(int? value) =>
+        value == null ? '—' : inventorySignedCount(value);
     final items = <_KpiValue>[
       _KpiValue('owned', '보유 품목', kinds(kpis.ownedKinds)),
       _KpiValue(
@@ -588,16 +600,27 @@ class InventoryWorkspace extends StatelessWidget {
         '부족 재화',
         planReady ? kinds(kpis.shortageKinds) : '—',
         color: AppColors.accent,
+        delta: planReady ? '${signed(deltas.shortage)} 지난 스캔 대비' : null,
       ),
-      _KpiValue('excess', '과잉 재화', planReady ? kinds(kpis.excessKinds) : '—'),
+      _KpiValue(
+        'excess',
+        '과잉 재화',
+        planReady ? kinds(kpis.excessKinds) : '—',
+        delta: planReady ? signed(deltas.excess) : null,
+      ),
       _KpiValue(
         'fulfillment',
         '계획 충족률',
         _percentOrDash(kpis.fulfillment),
         delta: kpis.unknownKinds > 0 ? '${kpis.unknownKinds}종 모름' : null,
       ),
-      const _KpiValue('decline', '최근 감소', '—'),
-      const _KpiValue('last-scan', '마지막 스캔', '—'),
+      _KpiValue('decline', '최근 감소', kinds(deltas.decline)),
+      _KpiValue(
+        'last-scan',
+        '마지막 스캔',
+        inventoryDaysAgoLabel(deltas.lastScanDays),
+        color: AppColors.warning,
+      ),
     ];
     return Stack(
       clipBehavior: Clip.none,
@@ -1264,34 +1287,71 @@ class InventoryWorkspace extends StatelessWidget {
     }
     gap(6);
 
-    // 최근 변화(FE6-f 전).
+    // 최근 변화(FE6-f): 머리 "최근 변화 · 스캔 n회" + 순변화 글자, 스파크라인 줄(한 재화 안, FD-033). 점이 없으면 안내 줄.
+    final spark = controller.sparklineFor(view.key);
     children.add(
       block(
         y,
         InventoryMetrics.subHeaderHeight,
         320,
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: SubHeader('최근 변화', fontSize: AppType.microSize),
+        Row(
+          children: [
+            SubHeader(
+              spark == null || spark.points.isEmpty ? '최근 변화' : spark.header,
+              key: const ValueKey('inventory-history-header'),
+              fontSize: AppType.microSize,
+            ),
+            if (spark != null && spark.points.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  spark.summary,
+                  key: const ValueKey('inventory-history-summary'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _muted.copyWith(
+                    fontSize: AppType.bodySmallSize,
+                    fontWeight: AppType.bold,
+                    color: spark.warning ? AppColors.accent : AppColors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
     y += InventoryMetrics.subHeaderHeight;
     gap(6);
-    children.add(
-      block(
-        y,
-        InventoryMetrics.methodRowHeight,
-        420,
-        const _InfoRow(
-          key: ValueKey('inventory-history-empty'),
-          title: '아직 변화 기록이 없습니다.',
-          detail: '스캔 이력 연결 뒤에 보입니다.',
+    if (spark != null && spark.points.isNotEmpty) {
+      children.add(
+        block(
+          y,
+          InventoryMetrics.sparklineRowHeight,
+          420,
+          _SparklineRow(points: spark.points),
+          key: const ValueKey('inventory-history-sparkline'),
         ),
-      ),
-    );
-    y += InventoryMetrics.methodRowHeight;
-    gap(16);
+      );
+      y += InventoryMetrics.sparklineRowHeight;
+      gap(14);
+    } else {
+      final (title, detail) = _historyEmptyText(spark);
+      children.add(
+        block(
+          y,
+          InventoryMetrics.methodRowHeight,
+          420,
+          _InfoRow(
+            key: const ValueKey('inventory-history-empty'),
+            title: title,
+            detail: detail,
+          ),
+        ),
+      );
+      y += InventoryMetrics.methodRowHeight;
+      gap(16);
+    }
 
     // 액션.
     children.add(
@@ -1327,6 +1387,20 @@ class InventoryWorkspace extends StatelessWidget {
       ),
     );
     return Stack(clipBehavior: Clip.none, children: children);
+  }
+
+  /// 상세 "최근 변화"에 그릴 점이 없을 때의 안내(제목, 설명).
+  (String, String?) _historyEmptyText(InventorySparkline? spark) {
+    if (spark != null) {
+      return (
+        '4주 안에 이 재화를 스캔한 기록이 없습니다.',
+        '인벤토리 스캔으로 이 재화를 읽으면 변화가 쌓입니다.',
+      );
+    }
+    if (controller.historyLoading) return ('변화 기록을 읽는 중입니다.', null);
+    final error = controller.historyError;
+    if (error != null) return (error, null);
+    return ('아직 변화 기록이 없습니다.', null);
   }
 
   /// 사용 학생 줄(최대 [InventoryMetrics.maxUses]개 + "외 n단계").
@@ -2592,6 +2666,47 @@ class _UseRow extends StatelessWidget {
 }
 
 /// 상세의 한 줄 정보(`.row`: 제목 + 보조 글자 + 선택 버튼).
+/// 상세 "최근 변화" 스파크라인 줄(FE6-f, 시안 `.row` 112 안 svg 92).
+class _SparklineRow extends StatelessWidget {
+  const _SparklineRow({required this.points});
+
+  final List<InventorySparkPoint> points;
+
+  @override
+  Widget build(BuildContext context) => DiagonalRow(
+    variant: DiagonalRowVariant.row,
+    padding: const EdgeInsets.fromLTRB(
+      InventoryMetrics.sparklineLeft,
+      0,
+      InventoryMetrics.sparklineRight,
+      0,
+    ),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        // svg 폭 = 줄 폭 − 70 = 안쪽 폭 − (70 − 31.7 − 14).
+        final width = math.max(
+          0.0,
+          constraints.maxWidth -
+              (InventoryMetrics.sparklineWidthInset -
+                  InventoryMetrics.sparklineLeft -
+                  InventoryMetrics.sparklineRight),
+        );
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: width,
+            height: InventorySparklineMetrics.height,
+            child: CustomPaint(
+              key: const ValueKey('inventory-history-sparkline-paint'),
+              painter: InventorySparklinePainter(points: points),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({super.key, required this.title, this.detail, this.action});
 

@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb10b-dart 코드 작성 완료, CF gate 대기(2026-10-12).** 시작 커밋 `05663913`. 아래 "fb10b-dart 착수 기록"·"fb10b-dart 종료 기록". 그 전: fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE6-f 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `9c03d50b`. 아래 "FE6-f 착수 기록"·"FE6-f 종료 기록". 그 전: fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -2452,3 +2452,221 @@ FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결을 끝냈다. �
 - fb10b-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A FE5-f와 이 slice가 모두 멈춘 뒤 XB 09:10 9경로와 같은 소스로 gate 1회(예상: analyze 0, 일반 +19, process +1, golden 변화 0) → XB selected exact9 커밋 → `fe_commit.ps1 -Slice fb10bdart`(mock·process는 3-way 병합, WIP 인접 hunk 없음).
 - 발견 사항 1·2는 XB, 3은 CF(디자인), 4·7은 CF 판단을 기다린다.
+
+## FE6-f 착수 기록 (2026-10-13)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: 인벤토리 화면과 FB-2 이력(커밋된 백엔드·Dart 서비스)의 연결. 워커 프롬프트(CF, 로컬 Claude Code). 새 백엔드·계약 없음.
+  1. KPI 델타(Inventory B): "부족 재화 +n 지난 스캔 대비"·"과잉 재화 ±n"·"최근 감소 n종"·"마지막 스캔 n일 전"(FD-041, 이력 0·1회 → `—`).
+  2. 상세 스파크라인(Inventory D "최근 변화 · 스캔 n회", 시안 기간 4주, FD-033 한 재화 안, 모르는 구간은 끊긴 선 · 빗금).
+  3. Inventory-All D "최근 변화"(순변화 · 소진 예상)와 Inventory-Analysis S5(1주·2주·4주 순증감 상위 6행 diverging 막대 + "이 추세라면" 예측 행, FD-042).
+  4. 이력 읽기: 탭을 처음 열 때 한 번, 저장·스캔 commit 뒤 revision이 바뀌면 다시(오프스테이지 계산 0 유지).
+  5. FE6-e 발견 3: `inventory_fe6a_fixture.dart`의 그림 없는 id `rio_armed`·`toki_armed` → 실제 asset id `rio_battle`·`toki_battle`.
+- 범위 밖: `lib/services/**`(읽기만), `lib/ui/kit/**`, Lane A 계획 파일·테스트, 통계 화면, golden harness, `app_shell.dart`, `frontend/tool/**`, backend·contracts, 택틱·스캐너 소유 파일. 새 golden 장면 없음.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `9c03d50b0c00fcf0a0df72da44be0c8694c99629`.
+- 막힘: 대장 막힘 요약의 FE6-f 행은 FD-041(확정 2026-10-06)뿐이고 지금 `열림` 0건. FD-042는 워커 재량(권장안대로), FD-031·FD-033·FD-146은 확정.
+- 쓸 history 메서드와 응답 필드(`RepositoryService`, 읽기만):
+  - `loadRepositoryHistoryEvents(RepositoryHistoryEventsRequest(profileId, fromAt: 지금 − 28일, limit: 200))`(+ `nextCursor` → `withCursor`): `revision`·`coverage`(origin · baseline_at · first_retained_at · timestamps_monotonic · reasons) · `events[]`(sequence · recorded_at · source · scan_context.session_id · applied_scope.resource_keys · inventory_changes before/after present·quantity) · `scan_points[]`(session_id · sequence · recorded_at).
+  - `loadRepositoryHistoryScanLatest(RepositoryHistoryScanLatestRequest(profileId, resourceKeys: 카탈로그 정규 key 256개씩))`: `by_resource_key[].latest_scan.recorded_at`(마지막 인벤토리 스캔).
+  - `loadRepositoryHistorySummary([profileId])`: `revision`(탭을 다시 열 때 저장소가 바뀌었는지만 본다).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe6f/pre/<v7 기준 경로>`, 사본과 작업 트리 `cmp` 일치):
+  - `frontend/lib/ui/inventory/inventory_controller.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/inventory/inventory_analysis_sections.dart`
+  - `frontend/lib/ui/studio/inventory_studio_layout.dart`
+  - `frontend/lib/ui/pages/inventory_page.dart`
+  - `frontend/test/inventory_fe6a_fixture.dart`, `frontend/test/inventory_fe6c_fixture.dart`
+  - `frontend/test/inventory_page_test.dart`, `inventory_controller_test.dart`, `inventory_view_model_test.dart`, `inventory_shell_lazy_test.dart`, `inventory_analysis_page_test.dart`, `inventory_review_fb10b_test.dart`(id 변경에 걸리는 키·기대)
+  - `frontend/test/goldens/fe6a_inventory_golden_test.dart`(fixture id가 들어간 기다림 키 한 줄)
+- 새 파일(예정): `frontend/lib/ui/inventory/inventory_history.dart`(집계 순수 함수), `frontend/lib/ui/inventory/inventory_history_charts.dart`(스파크라인 · 증감 막대 painter, 키트 승격 후보), 테스트 `frontend/test/inventory_history_test.dart`·`frontend/test/inventory_history_page_test.dart`.
+- WIP: 고칠 기존 파일 14개 모두 `git status --short <경로>`가 비어 있다(미커밋 변경 없음). 줄바꿈은 `inventory_page.dart`·`inventory_page_test.dart`가 작업 트리 CRLF, 나머지는 LF(`git ls-files --eol`).
+
+## FE6-f 종료 기록 (2026-10-13, 코드 작성 완료·CF gate 미실행)
+
+인벤토리 화면과 FB-2 이력(커밋된 서비스 `repository.history.*`)을 연결했다. 새 백엔드 · 계약 · 서비스 변경은 없다.
+
+### 실행 명령·결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe6f/logs/`에 있고, 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차) | 이슈 64(오류: `const m = 클래스` 별칭으로 정적 상수를 읽음, info `prefer_initializing_formals` 3) → 고침 |
+| `flutter analyze`(2차) | 오류 1(`InventoryClockSource` 승격이 클로저 안에서 안 됨) + info 3 → switch 패턴 · 위치 인자로 고침 |
+| `flutter analyze`(fixture · 테스트 작성 중 3회) | warning 1씩(쓰지 않는 import · 매개변수) → 고침 |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| 기존 인벤토리 테스트 13파일(1차) | +125 −2: `inventory_page_test` "fixture plan…"(상세 `inventory-history-empty` 기대), `inventory_analysis_page_test` "…S5 empty state"(S5 빈 상태 기대). 둘 다 이력이 생겨 바뀐 동작이라 기대를 고쳤다(아래) |
+| `flutter test test/inventory_history_test.dart`(새) | 33 통과 · 0 실패(첫 실행) |
+| `flutter test test/inventory_history_page_test.dart`(새) | 11 통과 · 0 실패(첫 실행) |
+| 최종 19파일(json reporter, 아래) | **+323 −0** |
+| `flutter test --concurrency=1` process 5파일 | **+7 −0**: inventory_fb3_process_e2e +1, inventory_review_fb10b_process_e2e +1, repository_history_process_e2e +2, repository_history_query_process_e2e +2, repository_history_scan_latest_process_e2e +1 |
+| `git diff --check`(고친 14파일 + 이 문서) | exit 0. 새 5파일은 LF · 줄 끝 공백 0 · 끝 개행 하나. 기존 파일 줄바꿈은 pre와 같다(`inventory_page.dart`·`inventory_page_test.dart` CRLF, 나머지 LF) |
+
+최종 19파일의 파일별 결과:
+
+- inventory_analysis_page +8, inventory_analysis +16, inventory_controller +13, inventory_currency_readonly +2, inventory_fb3_service +15
+- **inventory_history_page +11**(새), **inventory_history +33**(새)
+- inventory_opa_page +6, inventory_opa +9, inventory_page +9, inventory_review_fb10b +19, inventory_shell_lazy +1, inventory_tiers_page +7, inventory_tiers +9, inventory_view_model +13
+- mock_scanner_commit_history +9, repository_history_query_service +71, repository_history_scan_latest +48, repository_history_service +24
+
+- 걸리는 기존 테스트는 grep으로 찾았다. 찾은 말: `inventory-kpi`·`inventory-history`·`inventory-analysis-changes`·`InventoryController`·`InventoryPage`·`inventory_workspace`·`inventory_studio_layout`·`InventoryFixtureService`·`InventoryAnalysisFixtureService`·`top-tab-inventory`·`inventory_history`·`rio_armed`·`toki_armed`. goldens를 뺀 걸린 파일은 전부 실행했다. 프롬프트대로 `inventory_*_test` 전부, `repository_history_*`, `mock_scanner_commit_history`도 돌렸다.
+- 일회성 렌더 확인: `inventory`·`inventory-all`·`inventory-analysis`와 같은 조작을 실제 글꼴로 그려 scratchpad PNG로 한 번 보았다. harness 공개 함수(`loadGoldenFonts`·`settleGoldenScene`)만 썼고 golden 비교는 아니다. 임시 테스트 `test/zz_fe6f_render_tmp_test.dart`는 실행 뒤 지웠다. KPI 증감 · 스파크라인 · S5 행 · 막대 · 예측 행이 시안 자리에 들어오고 넘침이 없었다.
+- `dart format`을 기존 파일에 돌려 손대지 않은 줄 17곳(컨트롤러 7 · 분석 섹션 10)이 다시 감싸졌다. pre 사본 기준으로 그 hunk만 되돌렸고, diff에는 이 slice 줄만 남았다.
+- 빌드 잠금(`build/`·`.dart_tool/`) 충돌은 없었다. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock`·`pubspec.yaml`은 바뀌지 않았다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, `codealmanac validate`.
+
+### 고친 파일
+
+- **`lib/ui/inventory/inventory_history.dart`(새)**: 이력 집계 순수 함수다. 위젯 · 서비스 호출이 없어 FE7-h가 다시 쓸 수 있다.
+  - `InventoryHistory`: 지금 − 28일 적용(모든 출처)을 지금 확정 수량에서 거꾸로 되돌려, 재화별 스캔 점과 기간(1 · 2 · 4주) 시작 수량을 만든다.
+  - 집계: KPI 증감 `inventoryKpiDeltas`, 스파크라인 `inventorySparkline`, 추세 `inventoryTrend`, S5 순증감 `inventoryNetChanges`, 예측 `inventoryForecasts`.
+  - 표시 도우미: 부호 · n일 전 · n주 전 · 조사.
+  - 서비스 DTO 어댑터: `inventoryHistoryInputFromQuery`·`inventoryLastScanAt`.
+- **`lib/ui/inventory/inventory_history_charts.dart`(새)**: 그림 둘. **키트 승격 후보**다(W-Data-Widgets `LineTrend` · `DivergingBars`). 키트는 Lane A 몫이라 고치지 않았다.
+  - `InventorySparklinePainter`: 시안 svg 높이 92. 바닥선 76, 값 68↔24, 점 r4, 선 2.5, 값 글자는 점 위 9, 시간 글자는 88. 모르는 점은 선을 끊고 이웃 구간을 빗금으로 칠한다. 지금(수동) 점은 속이 빈 원이다.
+  - `InventoryChangeBar`: S5 395 × 30. 축 171, 증가는 171부터 · 감소는 169까지, 높이 8 · 위 11 · 둥글기 4, 최장 156, 값 글자는 351~395.
+- **`lib/ui/inventory/inventory_controller.dart`**: FE6-a~e · fb10b 로직은 그대로다.
+  - `InventoryClockSource`(서비스가 "지금"을 주는 interface, 없으면 기기 시계)와 생성자 선택 인자 `clock`.
+  - 로드 끝(보드를 먼저 그린 뒤)에 `_loadHistory`: events를 cursor 끝까지(최대 50쪽), scan_latest를 256개씩 읽는다. 같은 계정 · 같은 revision이면 다시 읽지 않는다. 이력 revision이 상태 revision과 다르면 버리고 안내한다.
+  - `refreshIfChanged`: summary revision만 보고 다르면 `load`.
+  - 집계 메모(`kpiDeltas`·`sparklineFor`·`netChanges`·`forecasts`): 보드 · 이력이 바뀔 때만 다시 센다.
+- **`lib/ui/inventory/inventory_workspace.dart`**: KPI 띠 증감 · 최근 감소 · 마지막 스캔(노랑). 상세 "최근 변화 · 스캔 n회" + 순변화 글자 + 스파크라인 줄(112) 또는 안내 줄(44). metrics `sparklineRowHeight` 등.
+- **`lib/ui/inventory/inventory_analysis_sections.dart`**: S5 캡션 · 증감 행 6 · 축선 · 막대 칸 · "이 추세라면" 캡션 · 예측 행 2(`_ChangeLabel`·`_ForecastRow`). 안내는 기록 없음 · 기간 처음 모름 · 읽는 중 · 오류 · 계획 막힘이다.
+- **`lib/ui/studio/inventory_studio_layout.dart`**: `InventoryAnalysisMetrics`에 S5 본문 좌표(시안 값)를 더했다. 섹션 rect 변경 0.
+- **`lib/ui/pages/inventory_page.dart`**(CRLF 유지, +7줄): 탭을 다시 열 때(active false → true) `refreshIfChanged`를 부른다.
+- 테스트 · fixture:
+  - `test/inventory_history_fixture.dart`(새, 테스트 파일 아님): 고정 시계 2026-10-05 12:00 UTC. legacy 기준선 위에 회차 · profile별 scan 세션으로 `current_history`를 쌓는다. Mock 생성자가 이력 → 지금 재구성을 검사한다.
+  - `test/inventory_fe6a_fixture.dart`:
+    - `rio_armed`·`toki_armed` → `rio_battle`·`toki_battle`(학생 id · 엘레프 key, FE6-e 발견 3).
+    - 이력(회차 31 · 24 · 17 · 10 · 3일 전), `InventoryClockSource`.
+    - 상태 revision 3 → 40(이력 적용 30건을 담기 위해). 상태 wire를 함수로 정리했다.
+    - `history:` 인자. 기본은 `owned`를 바꾸지 않았을 때만 이력을 넣는다.
+  - `test/inventory_fe6c_fixture.dart`: S5 이력, 계획 밖 보유 항목 2개(상급 활동 보고서 카탈로그 + 640, 밀레니엄 BD (최상급) 보유 40), `InventoryClockSource`, revision 40, `history:` 인자.
+  - 새 테스트: `test/inventory_history_test.dart`(33), `test/inventory_history_page_test.dart`(11).
+  - 바뀐 동작으로 기대를 고친 기존 테스트:
+    - `inventory_page_test.dart` "fixture plan…": 상세 빈 상태 → "최근 변화 · 스캔 4회" · "순변화 +1 · 이전 스캔과 이상 없음" · 스파크라인.
+    - `inventory_analysis_page_test.dart` "S4 heatmap…; S5 empty state" → "…; S5 recent changes": 빈 상태 → 주간 · 4주 캡션.
+    - `inventory_shell_lazy_test.dart`: 이력 읽기 셈을 더했다. 셸 시작 0, 탭을 열면 events 1 · scan_latest 1, 다시 열면 summary 1만.
+  - id 변경으로 키만 바뀐 곳: `inventory_view_model_test`(8곳), `inventory_controller_test`(4), `inventory_page_test`(9), `inventory_shell_lazy_test`(1), `inventory_analysis_page_test`(1), `inventory_review_fb10b_test`(2), `goldens/fe6a_inventory_golden_test.dart`(기다림 키 1줄). 지운 테스트 없음.
+- 고치지 않음: `lib/services/**`(읽기만), `lib/ui/kit/**`, golden harness · 다른 golden 테스트, `app_shell.dart`, Lane A 계획 파일 · 테스트, 통계 화면, FE6-d · FE6-e fixture, backend · contracts, `frontend/tool/**`.
+  - `inventory_analysis.dart`도 고치지 않았다. S5 seg 주석 "데이터는 FE6-f"가 남아 있고, 기간 길이 · 캡션은 `inventory_history.dart`의 extension에 두었다.
+
+### 처리한 FD
+
+- **FD-041(확정)**: 이력은 수동 수정도 담는다(지금 수량 · 스파크라인 "지금" 점). "지난 스캔" 기준은 scan 점이다. 이력 0 · 1회 → `—`.
+- **FD-042(워커 재량, 권장안)**: 그 재화의 scan 점(수량을 아는 것) 3개 이상일 때 최근 구간(읽는 기간 4주) 최소제곱 직선. 미만이면 문구를 숨긴다. FE6-c 발견 6의 FD는 FD-042로 갈음한다.
+- **FD-033(확정)**: 스파크라인 · 순증감 · 예측은 한 재화 안에서만, KPI는 품목 수(종). 모르는 수량은 `—` · 빗금 · 끊긴 선이고 0으로 채우지 않는다.
+- **FD-031(확정)**: 예측의 필요량은 활성 계획 필요량(부족 계산 행)이다.
+- **FD-146(확정)**: 확인 필요 표시는 이력 수량과 별개다(손대지 않음).
+
+### 정한 규칙(근거)
+
+1. **읽는 기간 4주, 한 번 읽기**: 화면에서 가장 긴 기간(S5 4주, 시안 스파크라인 "3주 전 … 지금")만 읽는다. 비용이 기록량(보존 365일)이 아니라 4주 활동량에 묶여, 저장마다 다시 읽어도 가볍다.
+2. **재화별 스캔 점 = 그 세션 승인 scope에 그 재화가 든 세션**: 인벤토리 스캔은 scan profile마다 세션이 따로다(카탈로그 profile = 스캔 profile 이름). 다른 profile 세션은 그 재화를 다시 보지 않았다. scan_kind 원문에는 기대지 않는다(불투명 문자열 규칙).
+3. **"지난 스캔" = 재화마다 마지막 바로 앞 스캔 점**(FD-041):
+   - 전역 `scan: previous`로 하면 profile을 차례로 스캔한 한 자리에서 바로 앞 profile 세션이 기준이 되어 증감이 뜻을 잃는다.
+   - 비교는 지금 보유(수동 수정 포함) vs 그 점 수량이고, 둘 다 아는 품목(재화 제외)만 센다.
+   - 부족 · 과잉 증감은 그중 계획 재화의 (지금 부족 − 그때 부족) 합이다. 비교 못 하는 품목을 "변화 없음"으로 둔 것과 같은 수다.
+   - 필요량은 지금 계획이다(이력은 지난 계획을 남기지 않는다).
+   - 4주 안에 2회 미만 스캔한 재화는 비교하지 않는다. 모두 그러면 `—`다.
+4. **최근 감소 = 지난 스캔보다 지금 수량이 적은 품목 수**: 재화를 빼고, 3과 같은 기준이다.
+5. **마지막 스캔 = 카탈로그 재화를 적용한 가장 최근 scan**(`scan_latest` by_resource_key 최댓값):
+   - 지역 달력 날짜 차 "n일 전", 0이면 "오늘". 색은 시안대로 노랑이다.
+   - 학생 · 전술 스캔은 세지 않는다. 요약 `last_scan_at`은 모든 종류라 쓰지 않았다.
+6. **스파크라인**:
+   - 점 = 4주 안 그 재화의 스캔 점(같은 간격). 시간 라벨은 지난 주 수 반올림(`n주 전`, 0 = `지금`)이고, 같은 라벨이 이어지면 마지막 점에만 쓴다.
+   - 지금 수량이 마지막 스캔과 다르면 속 빈 `지금` 점을 더한다.
+   - 머리는 "최근 변화 · 스캔 n회"(n = 스캔 점 수).
+   - 오른쪽 글자: 순변화(끝 점 − 첫 점) 뒤에 다음 중 하나를 붙인다.
+     - 추세로 지금 보유가 4주 안에 0 → `n주 뒤 소진 예상`(분홍).
+     - 아니면 끝 두 점이 같으면 `이전 스캔과 이상 없음`, 다르면 `이전 스캔 대비 ±n`(회색).
+     - 점이 1개면 `비교할 이전 스캔이 없습니다`만.
+7. **S5 순증감 = 지금 수량 − 기간 시작 직전 수량**(모든 출처 포함):
+   - 기간 시작을 이력이 덮을 때만 센다: `empty`, 남은 첫 적용 ≤ 시작, compacted 기준선 < 시작, 시계 되돌림 없음.
+   - |순증감| 큰 6개를 고르고(같으면 증가 먼저 → 카탈로그 순서), 순증감 큰 순(같으면 카탈로그 순서)으로 놓는다.
+   - 재화(크레딧 · 엘리그마)는 뺀다. 막대 축척을 뭉개고, KPI 띠와 같은 범위다.
+   - 캡션: 1주 "주간 순증감 상위 …", 2 · 4주 "n주 순증감 상위 …". 막대 길이 = 156 × |Δ| / 행 최댓값.
+8. **이 추세라면 = 계획 재화 기준**(활성 계획 필요량, 부족 계산 행). 지금 모자라고 추세가 있는 품목만 본다.
+   - 줄어들면 "<이름> 부족이 커지는 중" + 위험 칩 `4주 뒤 −<4주 뒤 예상 부족>`. 보유는 0 아래로 내려가지 않는다.
+   - 늘어 4주 안에 필요량에 닿으면 "<이름>은/는 곧 충분" + 충분 칩 `<주 올림>주 뒤 0`.
+   - 둘 다 있으면 각 1위(예상 부족 큰 것 · 빠른 것), 한쪽만 있으면 그쪽 2개.
+   - 근거: 시안 두 문구가 모두 "부족" · "충분"(필요량 비교)이고, 분석 사이드바의 비교 기준 seg가 "계획 요구량"이다. 계획에 없는 재화는 "부족"이 정의되지 않는다.
+9. **다시 읽기**:
+   - 저장 · 후보 승인은 `load`를 부르고, revision이 바뀌었으니 이력도 다시 읽는다.
+   - 탭을 다시 열면 summary의 revision만 보고, 다르면 `load`(다른 탭의 스캔 commit).
+   - 이력 응답 revision이 상태와 다르면 섞지 않고 "수량이 바뀌는 사이에 읽어 이력을 맞추지 못했습니다. 탭을 다시 열면 다시 읽습니다."를 보인다.
+10. **시계**: 검수 fixture · 테스트는 `InventoryClockSource`로 고정 시각을 준다. 앱 셸 · golden 테스트 파일을 고치지 않고, golden이 실제 날짜에 흔들리지 않게 하기 위해서다. 실제 서비스는 기기 시계다.
+
+### golden 변화 예상(장면별)
+
+- **`inventory`(바뀜)**:
+  1. KPI 띠: 부족 재화 옆 `+3 지난 스캔 대비`, 과잉 재화 옆 `−1`, 최근 감소 `—` → `6종`, 마지막 스캔 `—` → `3일 전`(노랑). 값(7종 · 6종 · 1종 · 33%)은 그대로다.
+  2. 상세 최근 변화: 머리 "최근 변화" → "최근 변화 · 스캔 4회" + "순변화 +1 · 이전 스캔과 이상 없음". 안내 줄(44)이 스파크라인 줄(112, 0 · 0 · 1 · 1, 3주 전 · 2주 전 · 1주 전 · 지금)로 바뀌어 아래 액션 3개가 66px 내려간다.
+  3. id 변경(FE6-e 발견 3): 리오 · 토키 엘레프 아이콘(목록 행 · 상세 머리)과 사용 학생 줄 리오(무장) 초상이 빈 상자에서 실제 그림(`Item_Icon_SecretStone_*_battle` · `rio_battle`)으로 바뀐다.
+- **`inventory-all`(바뀜)**:
+  - KPI 띠는 `inventory`와 같은 네 곳이 바뀐다.
+  - 엘레프 그룹 타일 두 개에 그림이 보인다.
+  - 상세(기술 노트 (최상급)) 최근 변화: "최근 변화 · 스캔 4회" + 분홍 "순변화 −19 · 2주 뒤 소진 예상" + 스파크라인 31 · 24 · 18 · 12. 액션이 66px 내려간다.
+  - 플라이아웃 · 타일 수량은 그대로다.
+- **`inventory-analysis`(바뀜, S5만)**:
+  - "변화 기록이 아직 없습니다." 대신 캡션 "주간 순증감 상위 (오른쪽 증가 · 왼쪽 감소)"가 보인다.
+  - 6행: 상급 활동 보고서 +120 · 로혼치 사본 T1 +36 · 밀레니엄 BD (최상급) +24 · 트리니티 기술 노트 (최상급) −7 · 시계 T8 설계도 −9 · 게헨나 기술 노트 (최상급) −14. 아이콘 32 × 26, 행마다 사선 −6px. 가운데 축선과 초록 · 분홍 막대.
+  - "이 추세라면" + 두 행: 트리니티 기술 노트 (최상급) 부족이 커지는 중(위험 칩 `4주 뒤 −66`) / 밀레니엄 BD (상급)은 곧 충분(충분 칩 `2주 뒤 0`).
+  - 열려 있는 밀레니엄 플라이아웃(FE6-c 장면 조작)이 S5 첫 행 막대 · 값 위를 덮는다(발견 사항 3).
+  - S1 · S2 · S4 · 사이드바 변화 0. 더한 두 보유 항목은 계획 밖이라 그리지 않는다.
+- **`inventory-tiers` · `inventory-analysis-opa`: 변화 0.** FE6-e · FE6-d fixture는 고치지 않았고 이력이 없다(Mock 기록 없음). 티어 화면에는 KPI · 상세 · S5가 없고, 오파츠 확장 완료 장면에서는 S5가 퇴장해 트리에 없다.
+- **다른 장면: 변화 0.** 인벤토리 탭은 오프스테이지에서 아무것도 읽지 않는다(셸 지연 테스트로 고정).
+- 바뀌는 기준 이미지 3개는 commit.json `whole`에 파일 단위로 넣었다. CF가 `failures/`를 보고 승인한다.
+
+### 미검증 항목
+
+- golden 비교: **미실행**. `inventory`·`inventory-all`·`inventory-analysis`는 바뀌고 `inventory-tiers`·`inventory-analysis-opa`는 변화 0으로 예상한다. CF가 `fe_gate.ps1` · `failures/` 검토 · `-UpdateGoldens`를 한다. 일회성 렌더는 배치 확인만이다.
+- 전체 `fe_gate.ps1`(다른 테스트 · 그 밖의 process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드에서 인벤토리 화면의 이력 읽기(실제 계정 4주 events 쪽 수 · 속도, 카탈로그 614개 → scan_latest 3번): **미실행**. 서비스 계층 process E2E는 통과했고, 화면 연결은 Mock으로만 보았다.
+- 섹션 안 새 요소 ±2px: 시안 좌표를 상대값으로 옮긴 계산과 위젯 테스트(막대 길이 · 축 · 행 간격 · svg 폭 = 줄 − 70)뿐이고 화면에서 재지 않았다. S5 막대 칸은 섹션 위 왼쪽 꼭짓점 기준이다. Studio S5 꼭짓점이 시안보다 1px 왼쪽이라 막대도 1px 왼쪽이다.
+- 실제 기록이 compacted · legacy · 시계 되돌림인 계정에서의 안내: 단위 테스트로만 보았다.
+
+### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Inventory | 인벤토리 탭(기본 "부족한 것"). Mock 기본 실행은 계획 · 이력이 없어 `—`와 "아직 변화 기록이 없습니다."만 보인다. 시안 숫자는 fixture로 본다(golden `inventory`, `test/inventory_history_page_test.dart`) | KPI `+3 지난 스캔 대비` · `−1` · 최근 감소 `6종` · 마지막 스캔 `3일 전`(노랑) / 상세 "최근 변화 · 스캔 4회", "순변화 +1 · 이전 스캔과 이상 없음", 스파크라인 점 4개 · 값 글자 · 시간 글자 / 엘레프 아이콘 · 초상 그림 |
+| Inventory-All | 사이드바 "전체" → 기술 노트(최상급) 타일 | 상세 "순변화 −19 · 2주 뒤 소진 예상"(분홍), 스파크라인 31 → 12 / 수량을 "수량 직접 고치기"로 바꿔 저장하면 끝에 속 빈 "지금" 점이 붙는가 |
+| Inventory-Analysis | 사이드바 "분석" | S5 캡션 · 6행(왼쪽 아이콘 · 이름은 사선을 따라 밀리고 막대 칸은 세로로 정렬) · 축 오른쪽 초록 / 왼쪽 분홍 · 값 글자 / "이 추세라면" 두 행 · 위험 · 충분 칩 / 1주 · 2주 · 4주 seg로 캡션 · 행이 바뀌는가 / 작은 창(1280 × 720)에서 예외 없음 |
+| (공통) | 다른 탭에서 스캔 commit 뒤 인벤토리 탭으로 | 다시 열 때 숫자 · 스파크라인이 새 수량으로 바뀌는가(revision이 같으면 다시 읽지 않는다) |
+
+### WIP 보존 확인
+
+- 고친 기존 파일 14개는 착수 때 WIP가 없었다(`git status --short` 빈 줄). 그래서 post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이다(format 되돌림 확인).
+- 작업 트리의 다른 미커밋 변경은 고치지 않았다. Lane A `plan_*`·`planning_page_test` 등, 스캐너 `scan_page`·`scan_companion_dock`·`scan_student_review_workspace`, 서비스 `mock_app_service`·`planning_protocol_client`·`process_app_service`·`scanner_service`, `plan_scenario_detail`, 키트 테스트 등이다. git 쓰기는 하지 않았다.
+
+### 발견 사항
+
+1. **시안 견본 값 불일치**:
+   - Inventory-All 상세 "18 · 15 · 12 · 12 / 순변화 −6 · 2주 뒤 소진 예상"은 끝 두 점이 같아 어떤 선형 추세로도 2주 소진이 나오지 않는다. fixture는 31 · 24 · 18 · 12(−19 · 2주)로 두었다.
+   - S5의 로혼치 +86 · 네브라 −6은 계획 재화의 지금 보유(S2 · S4 값)를 바꾸지 않고는 낼 수 없다. 로혼치 사본 T1 +36 · 트리니티 노트 −7로 두었다.
+   - 시안 숫자 그대로인 것: KPI +3 · −1 · 6종 · 3일 전, 엘레프 0 · 0 · 1 · 1, S5 +120 · +24 · −9 · −14, `4주 뒤 −66` · `2주 뒤 0`.
+2. **시안 빼기 기호 혼용**: S5 막대 값은 ASCII `-9`, 칩은 `−66`이다. 앱은 모두 U+2212(`−`)로 썼다.
+3. **`inventory-analysis` 장면의 밀레니엄 플라이아웃이 S5 첫 행을 덮는다**: FE6-c 장면 조작(플라이아웃 열기) 그대로라 S5 첫 행 막대 · 값이 가려진다. 장면 조작(테스트 파일)은 고치지 않았다. S5를 기준 이미지로 온전히 보려면 CF가 장면을 정하거나 새 장면이 필요하다(새 장면은 Lane A 몫).
+4. **상세 머리 "마지막 확인 · 인벤토리 스캔 n일 전 · 인식 성공"**(시안 상세 메타 줄)은 이번 범위(KPI)에 넣지 않았다. 재화별 마지막 스캔은 이미 읽는 `scan_latest` by_resource_key로 그릴 수 있다. "인식 성공"은 이력에 없다(스캐너 결과). 후속 slice 후보다.
+5. **스캔 profile ↔ 세션 묶음**: "지난 스캔"을 재화별로 정한 이유다(규칙 3). 한 자리에서 여러 profile을 차례로 스캔하면 전역 "지난 스캔"은 뜻을 잃는다. 통계(FE7-h) · 타이틀 계정 메타의 "스냅샷 n회"도 세션 단위라 같은 문제가 생길 수 있다(FD 후보: 스캔 "자리" 묶음 규칙).
+6. **키트 승격 후보**: `InventorySparklinePainter`·`InventoryChangeBar`(W-Data-Widgets `LineTrend` · `DivergingBars`). 통계 B3 재화 변화가 같은 그림을 쓸 것이다.
+7. **`inventory_analysis.dart` S5 seg 주석**("데이터는 FE6-f")이 남아 있다. 다음에 그 파일을 고치는 slice에서 한 줄 고치면 된다.
+8. 워커 재량 FD는 FD-042 하나(권장안)다. 막는 `열림` FD는 없었다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe6f/pre/<경로>`(고친 기존 파일 14개). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe6f/commit.json`: slice `fe6f`, `status=false`, modified 14, added 5.
+  - `whole = [이 문서, frontend/test/goldens/baseline/inventory.png, inventory-all.png, inventory-analysis.png]`(바뀌는 기존 기준 이미지는 파일 단위).
+  - message 근거: Inventory · Inventory-All · Inventory-Analysis artboard, E §1~3 이력 부분, FD-041 · FD-042.
+- 인계: `debug/frontend_fe6f/output.md`.
+
+### 다음 행동
+
+- FE6-f 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다.
+  - 예상: analyze 0, 일반 테스트 +44(집계 33 + 위젯 11, 셸 지연 테스트는 기대만 늘었다).
+  - golden은 `inventory`·`inventory-all`·`inventory-analysis` RED(위 장면별 예측), `inventory-tiers`·`inventory-analysis-opa`를 포함한 다른 장면 변화 0.
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe6f`.
+- 발견 사항 3(장면 조작) · 4(상세 메타 줄) · 5(스캔 자리 묶음 FD) · 6(키트 승격)은 CF 판단을 기다린다.

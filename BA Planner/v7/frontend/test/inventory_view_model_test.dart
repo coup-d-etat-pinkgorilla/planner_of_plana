@@ -112,10 +112,10 @@ void main() {
         sort: InventorySort.risk,
       );
       expect(rows.map((row) => row.key), [
-        'Item_Icon_SecretStone_rio_armed',
+        'Item_Icon_SecretStone_rio_battle',
         'Item_Icon_Material_Nebra_1',
         'Item_Icon_SkillBook_Gehenna_3',
-        'Item_Icon_SecretStone_toki_armed',
+        'Item_Icon_SecretStone_toki_battle',
         'Item_Icon_Material_ExSkill_Gehenna_3',
         // 보유를 모르는 계획 재화는 점수가 없어 뒤로 간다.
         'Item_Icon_ExpItem_2',
@@ -144,12 +144,12 @@ void main() {
           .map((row) => row.key)
           .toList();
       expect(keys(InventorySort.fulfillment).first,
-          'Item_Icon_SecretStone_rio_armed');
+          'Item_Icon_SecretStone_rio_battle');
       expect(keys(InventorySort.fulfillment).last, 'Item_Icon_ExpItem_2');
       expect(keys(InventorySort.shortage).first,
-          'Item_Icon_SecretStone_rio_armed');
+          'Item_Icon_SecretStone_rio_battle');
       expect(keys(InventorySort.shortage)[1],
-          'Item_Icon_SecretStone_toki_armed');
+          'Item_Icon_SecretStone_toki_battle');
       expect(keys(InventorySort.shortage).last, 'Item_Icon_ExpItem_2');
     });
 
@@ -272,8 +272,8 @@ void main() {
       ]);
       expect(items.map((group) => group.shortageCount), [2, 1, 0, 1, 1]);
       expect(items.first.shortages.map((view) => view.key), [
-        'Item_Icon_SecretStone_rio_armed',
-        'Item_Icon_SecretStone_toki_armed',
+        'Item_Icon_SecretStone_rio_battle',
+        'Item_Icon_SecretStone_toki_battle',
       ]);
       final equipment = board.tileGroups(
         mode: InventoryListMode.equipment,
@@ -322,7 +322,7 @@ void main() {
       InventoryTileTone tone(String key) => inventoryTileTone(board[key]!);
       expect(tone('Item_Icon_ExpItem_0'), InventoryTileTone.none);
       expect(tone('Item_Icon_ExpItem_2'), InventoryTileTone.unknown);
-      expect(tone('Item_Icon_SecretStone_rio_armed'), InventoryTileTone.shortage);
+      expect(tone('Item_Icon_SecretStone_rio_battle'), InventoryTileTone.shortage);
       expect(tone('Item_Icon_ExpItem_1'), InventoryTileTone.excess);
       final enough = InventoryBoard.build(
         catalog: inventoryFixtureCatalog,

@@ -10,7 +10,9 @@
 // - S2 오파츠 · 보유율 × 수요: 티어 토글 + 산점도(`inventory_analysis_charts.dart`). 점을 누르면 그 오파츠를 고른다.
 //   "확장"(FE6-d)은 사이드바 · S1 · S4 · S5를 빼고 S2를 키운 뒤 선택 오파츠 상세 열을 보인다(`inventory_opa_sections.dart`).
 // - S4 종류 × 티어 충족률: 종류 seg · 표시 칩 · 히트맵 · 범례 · 부족 상위 3행.
-// - S5 최근 변화: 틀 · 기간 seg · 빈 상태(데이터 FE6-f).
+// - S5 최근 변화(FE6-f): 기간 seg(1주 · 2주 · 4주)의 재화별 순증감 상위 6행(가운데 축 기준 증가 오른쪽 · 감소 왼쪽 막대,
+//   `inventory_history_charts.dart`)과 "이 추세라면" 예측 행(FD-042, 스캔 점 3회 미만이면 숨김). 집계는
+//   `inventory_history.dart`다. 기간 처음 수량을 모르면 안내만 보인다.
 part of 'inventory_workspace.dart';
 
 const _analysisFocusSections = {
@@ -837,41 +839,287 @@ class _InventoryAnalysisSections extends StatelessWidget {
 
   Widget _changes() {
     final quad = _quad(inventoryAnalysisChangesSectionId);
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _title(
-          quad,
-          '최근 변화',
-          left: 23.9,
-          inner: 19.1,
-          minWidth: 420,
-          trailing: [
-            const SizedBox(width: 10),
-            SkewSegmented<InventoryChangeWindow>(
-              key: const ValueKey('inventory-change-window'),
-              segments: [
-                for (final window in InventoryChangeWindow.values)
-                  SkewSegment(value: window, label: window.label),
-              ],
-              selected: controller.changeWindow,
-              onChanged: controller.setChangeWindow,
-              height: 26,
-              fontSize: AppType.captionSize,
-            ),
-          ],
+    final children = <Widget>[
+      _title(
+        quad,
+        '최근 변화',
+        left: 23.9,
+        inner: 19.1,
+        minWidth: 420,
+        trailing: [
+          const SizedBox(width: 10),
+          SkewSegmented<InventoryChangeWindow>(
+            key: const ValueKey('inventory-change-window'),
+            segments: [
+              for (final window in InventoryChangeWindow.values)
+                SkewSegment(value: window, label: window.label),
+            ],
+            selected: controller.changeWindow,
+            onChanged: controller.setChangeWindow,
+            height: 26,
+            fontSize: AppType.captionSize,
+          ),
+        ],
+      ),
+      _rule(quad),
+    ];
+    final changes = controller.netChanges;
+    if (changes == null || !changes.known) {
+      final (text, detail) = _changesNotice(changes);
+      children.add(
+        _notice(quad, 'inventory-analysis-changes-empty', text, detail: detail),
+      );
+      return Stack(clipBehavior: Clip.none, children: children);
+    }
+    Widget caption(double top, String text, Key key) {
+      final y = quad.top + top;
+      final left =
+          quad.leftAt(y + InventoryAnalysisMetrics.changeCaptionHeight) +
+          InventoryAnalysisMetrics.changeRowLeft +
+          InventoryAnalysisMetrics.changeCaptionInner;
+      return Positioned(
+        left: left,
+        top: y,
+        width: math.max(
+          0.0,
+          quad.rightAt(y) - InventoryAnalysisMetrics.changeRight - left,
         ),
-        _rule(quad),
-        // FE6-f(인벤토리 이력 연동) 전에는 빈 상태다.
-        _notice(
-          quad,
-          'inventory-analysis-changes-empty',
-          '변화 기록이 아직 없습니다.',
-          detail: '스캔 이력이 쌓이면 기간별 순증감과 추세가 보입니다.',
+        height: InventoryAnalysisMetrics.changeCaptionHeight,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            text,
+            key: key,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _captionStyle,
+          ),
+        ),
+      );
+    }
+
+    children.add(
+      caption(
+        InventoryAnalysisMetrics.changeCaptionTop,
+        controller.changeWindow.caption,
+        const ValueKey('inventory-change-caption'),
+      ),
+    );
+    final rows = changes.rows;
+    final barLeft =
+        quad.leftAt(quad.top) + InventoryAnalysisMetrics.changeBarLeft;
+    if (rows.isEmpty) {
+      final y = quad.top + InventoryAnalysisMetrics.changeRowsTop;
+      final left =
+          quad.leftAt(y + InventoryAnalysisMetrics.changeRowHeight) +
+          InventoryAnalysisMetrics.changeRowLeft +
+          InventoryAnalysisMetrics.changeRowInner;
+      children.add(
+        Positioned(
+          left: left,
+          top: y,
+          width: math.max(
+            0.0,
+            quad.rightAt(y) - InventoryAnalysisMetrics.changeRight - left,
+          ),
+          height: InventoryAnalysisMetrics.changeRowHeight,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '이 기간에 수량이 바뀐 재화가 없습니다.',
+              key: const ValueKey('inventory-change-none'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _muted.copyWith(fontSize: AppType.bodySmallSize),
+            ),
+          ),
+        ),
+      );
+    } else {
+      final axisTop = quad.top + InventoryAnalysisMetrics.changeAxisTop;
+      children.add(
+        Positioned(
+          key: const ValueKey('inventory-change-axis'),
+          left: barLeft + InventoryChangeBarMetrics.axisX,
+          top: axisTop,
+          width: math.max(
+            0.0,
+            math.min(
+              1.0,
+              quad.rightAt(axisTop) -
+                  InventoryAnalysisMetrics.changeRight -
+                  barLeft,
+            ),
+          ),
+          height: InventoryAnalysisMetrics.changeAxisHeight,
+          child: const ColoredBox(color: _changeAxisColor),
+        ),
+      );
+    }
+    final maxMagnitude = changes.maxMagnitude;
+    for (final (index, row) in rows.indexed) {
+      final y =
+          quad.top +
+          InventoryAnalysisMetrics.changeRowsTop +
+          index * InventoryAnalysisMetrics.changeRowPitch;
+      final left =
+          quad.leftAt(y + InventoryAnalysisMetrics.changeRowHeight) +
+          InventoryAnalysisMetrics.changeRowLeft +
+          InventoryAnalysisMetrics.changeRowInner;
+      children.add(
+        Positioned(
+          left: left,
+          top: y,
+          width: InventoryAnalysisMetrics.changeLabelWidth,
+          height: InventoryAnalysisMetrics.changeRowHeight,
+          child: _ChangeLabel(
+            key: ValueKey('inventory-change-row-$index'),
+            view: row.view,
+          ),
+        ),
+      );
+      children.add(
+        Positioned(
+          left: barLeft,
+          top: y,
+          width: math.max(
+            0.0,
+            math.min(
+              InventoryChangeBarMetrics.width,
+              quad.rightAt(y) - InventoryAnalysisMetrics.changeRight - barLeft,
+            ),
+          ),
+          height: InventoryAnalysisMetrics.changeRowHeight,
+          child: _Fit(
+            minWidth: InventoryChangeBarMetrics.width,
+            minHeight: InventoryAnalysisMetrics.changeRowHeight,
+            child: InventoryChangeBar(
+              key: ValueKey('inventory-change-bar-${row.view.key}'),
+              delta: row.delta,
+              maxMagnitude: maxMagnitude,
+            ),
+          ),
+        ),
+      );
+    }
+    // "이 추세라면"(FD-042): 스캔 점 3회 이상인 재화만, 없으면 문구를 숨긴다.
+    final forecasts = controller.forecasts;
+    if (forecasts.isNotEmpty) {
+      children.add(
+        caption(
+          InventoryAnalysisMetrics.forecastCaptionTop,
+          '이 추세라면',
+          const ValueKey('inventory-forecast-caption'),
+        ),
+      );
+      for (final (index, forecast) in forecasts.indexed) {
+        final y =
+            quad.top +
+            InventoryAnalysisMetrics.forecastRowsTop +
+            index * InventoryAnalysisMetrics.forecastRowPitch;
+        final left =
+            quad.leftAt(y + InventoryAnalysisMetrics.forecastRowHeight) +
+            InventoryAnalysisMetrics.changeRowLeft;
+        children.add(
+          Positioned(
+            left: left,
+            top: y,
+            width: math.max(
+              0.0,
+              quad.rightAt(y) - InventoryAnalysisMetrics.changeRight - left,
+            ),
+            height: InventoryAnalysisMetrics.forecastRowHeight,
+            child: _Fit(
+              minWidth: 520,
+              minHeight: InventoryAnalysisMetrics.forecastRowHeight,
+              child: _ForecastRow(
+                key: ValueKey('inventory-forecast-$index'),
+                forecast: forecast,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    return Stack(clipBehavior: Clip.none, children: children);
+  }
+
+  /// S5에 증감 행을 그릴 수 없을 때의 안내(제목, 설명).
+  (String, String?) _changesNotice(InventoryNetChanges? changes) {
+    if (changes != null && (controller.history?.eventCount ?? 0) > 0) {
+      return (
+        '이 기간 처음 수량을 알 수 없어 순증감을 셀 수 없습니다.',
+        '변화 기록이 이 기간보다 짧거나 일부가 정리되었습니다.',
+      );
+    }
+    if (_blocker case final blocker?) return (blocker, null);
+    if (_waiting || controller.historyLoading) {
+      return ('변화 기록을 읽는 중입니다.', null);
+    }
+    if (controller.historyError case final error?) return (error, null);
+    return ('변화 기록이 아직 없습니다.', '스캔 이력이 쌓이면 기간별 순증감과 추세가 보입니다.');
+  }
+}
+
+/// S5 가운데 축선 색(시안 rgba(56,81,107,.9)).
+const _changeAxisColor = Color.fromRGBO(56, 81, 107, 0.9);
+
+/// S5 증감 행의 왼쪽(아이콘 32 × 26 · 간격 8 · 이름 12px 600, 시안 폭 196).
+class _ChangeLabel extends StatelessWidget {
+  const _ChangeLabel({super.key, required this.view});
+
+  final InventoryItemView view;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      _itemIcon(view, const Size(32, 26)),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          view.item.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _body.copyWith(
+            fontSize: AppType.bodySmallSize,
+            fontWeight: AppType.semiBold,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+/// S5 "이 추세라면" 행(시안 `.row` 44: 글자 13px + 칩 위험 · 충분).
+class _ForecastRow extends StatelessWidget {
+  const _ForecastRow({super.key, required this.forecast});
+
+  final InventoryForecast forecast;
+
+  @override
+  Widget build(BuildContext context) => DiagonalRow(
+    variant: DiagonalRowVariant.row,
+    padding: const EdgeInsets.fromLTRB(19.8, 0, 14, 0),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            forecast.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _body.copyWith(fontSize: AppType.bodySize),
+          ),
+        ),
+        const SizedBox(width: 10),
+        BaChip(
+          label: forecast.chip,
+          tone: forecast.kind == InventoryForecastKind.worsening
+              ? AppTones.danger
+              : AppTones.ok,
         ),
       ],
-    );
-  }
+    ),
+  );
 }
 
 /// 분석 섹션 안 안내(가운데, 글자 묶음만 줄여 맞춘다).

@@ -1,5 +1,6 @@
 // FE6-c 인벤토리 분석 모드 위젯 테스트(시안 Inventory-Analysis): 사이드바 분석 메뉴, S1 학교 행 · 플라이아웃,
-// S2 산점도 · 티어 토글, S4 히트맵 · 부족 상위, S5 빈 상태, 목록 ↔ 분석 전환, 작은 창.
+// S2 산점도 · 티어 토글, S4 히트맵 · 부족 상위, S5 최근 변화(FE6-f, 행 값은 inventory_history_page_test), 목록 ↔ 분석
+// 전환, 작은 창.
 // 숫자는 `inventory_fe6c_fixture.dart`다.
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
@@ -289,7 +290,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('S4 heatmap: kinds, value chips, top shortages; S5 empty state', (
+  testWidgets('S4 heatmap: kinds, value chips, top shortages; S5 recent changes', (
     tester,
   ) async {
     await _standardSurface(tester);
@@ -334,12 +335,13 @@ void main() {
     expect(_inside('inventory-top-shortage-1', '게헨나 BD (상급)'), findsOneWidget);
     expect(_inside('inventory-top-shortage-2', '트리니티 BD (상급)'), findsOneWidget);
 
-    // S5: 데이터는 FE6-f. 틀 · seg · 빈 상태만.
+    // S5(FE6-f): 기간 순증감 상위(행 값은 inventory_history_page_test). seg를 바꾸면 캡션이 기간을 따른다.
     expect(find.text('최근 변화'), findsOneWidget);
-    expect(find.byKey(const ValueKey('inventory-analysis-changes-empty')), findsOneWidget);
-    expect(find.text('변화 기록이 아직 없습니다.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('inventory-analysis-changes-empty')), findsNothing);
+    expect(find.text('주간 순증감 상위 (오른쪽 증가 · 왼쪽 감소)'), findsOneWidget);
     await _tapSegment(tester, 'inventory-change-window', '4주');
     expect(controller.changeWindow, InventoryChangeWindow.week4);
+    expect(find.text('4주 순증감 상위 (오른쪽 증가 · 왼쪽 감소)'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -367,7 +369,7 @@ void main() {
     await _tap(tester, 'inventory-mode-analysis');
     await _tap(tester, 'inventory-mode-list');
     expect(
-      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed')),
+      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

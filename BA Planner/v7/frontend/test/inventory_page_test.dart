@@ -147,10 +147,10 @@ void main() {
 
     // 위험도 순(FD-030 (b)): 99.78 → 100, 95.4999 → 95, 91.07 → 91, 83.94 → 84, 55.05 → 55, 보유 모름 → —.
     const order = {
-      'Item_Icon_SecretStone_rio_armed': '100',
+      'Item_Icon_SecretStone_rio_battle': '100',
       'Item_Icon_Material_Nebra_1': '95',
       'Item_Icon_SkillBook_Gehenna_3': '91',
-      'Item_Icon_SecretStone_toki_armed': '84',
+      'Item_Icon_SecretStone_toki_battle': '84',
       'Item_Icon_Material_ExSkill_Gehenna_3': '55',
       'Item_Icon_ExpItem_2': '—',
     };
@@ -192,7 +192,16 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('아직 정리된 획득처가 없습니다.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('inventory-history-empty')), findsOneWidget);
+    // FE6-f: 최근 변화는 리오 엘레프 스캔 4회 스파크라인이다(시안 0 · 0 · 1 · 1).
+    expect(find.text('최근 변화 · 스캔 4회'), findsOneWidget);
+    expect(
+      _text(tester, 'inventory-history-summary'),
+      '순변화 +1 · 이전 스캔과 이상 없음',
+    );
+    expect(
+      find.byKey(const ValueKey('inventory-history-sparkline')),
+      findsOneWidget,
+    );
 
     // 다른 행을 고르면 상세가 바뀐다. FB-3 메타(학교 · 티어)가 메타 줄에 보인다.
     await _tap(tester, 'inventory-row-Item_Icon_SkillBook_Gehenna_3');
@@ -203,10 +212,10 @@ void main() {
     // 정렬 칩: 부족량 순이면 토키 엘레프(277)가 둘째다.
     await _tap(tester, 'inventory-sort-shortage');
     final rio = tester.getTopLeft(
-      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed')),
+      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle')),
     );
     final toki = tester.getTopLeft(
-      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_toki_armed')),
+      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_toki_battle')),
     );
     final nebra = tester.getTopLeft(
       find.byKey(const ValueKey('inventory-row-Item_Icon_Material_Nebra_1')),
@@ -228,7 +237,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed')),
+      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle')),
       findsNothing,
     );
 
@@ -278,7 +287,7 @@ void main() {
       ),
     );
     // 부족(분홍, 충족률), 과잉(노랑, FD-040: 500 ≥ 120 × 1.5), 계획 무관(막대 없음), 보유 모름(빗금).
-    final eleph = tile('Item_Icon_SecretStone_rio_armed');
+    final eleph = tile('Item_Icon_SecretStone_rio_battle');
     expect(eleph.tone, CoverageTone.shortage);
     expect(eleph.fraction, closeTo(1 / 450, 1e-9));
     expect(eleph.quantity, '1');
@@ -310,7 +319,7 @@ void main() {
     await tester.pumpAndSettle();
     // "모두 보기"는 그 종류의 부족한 것 보기로 간다.
     expect(
-      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed')),
+      find.byKey(const ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle')),
       findsOneWidget,
     );
     expect(
@@ -357,8 +366,8 @@ void main() {
     final service = InventoryFixtureService();
     await tester.pumpWidget(_subject(service));
     await tester.pumpAndSettle();
-    const rioRow = ValueKey('inventory-row-Item_Icon_SecretStone_rio_armed');
-    const rioTile = ValueKey('inventory-tile-Item_Icon_SecretStone_rio_armed');
+    const rioRow = ValueKey('inventory-row-Item_Icon_SecretStone_rio_battle');
+    const rioTile = ValueKey('inventory-tile-Item_Icon_SecretStone_rio_battle');
     for (var round = 0; round < 2; round++) {
       await _tap(tester, 'inventory-view-all');
       expect(find.byKey(rioTile), findsOneWidget, reason: 'round $round');

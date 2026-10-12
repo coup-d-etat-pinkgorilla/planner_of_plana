@@ -724,8 +724,8 @@ void main() {
   });
 }
 
-const _rio = 'Item_Icon_SecretStone_rio_armed';
-const _toki = 'Item_Icon_SecretStone_toki_armed';
+const _rio = 'Item_Icon_SecretStone_rio_battle';
+const _toki = 'Item_Icon_SecretStone_toki_battle';
 const _expItem0 = 'Item_Icon_ExpItem_0';
 const _expItem2 = 'Item_Icon_ExpItem_2';
 

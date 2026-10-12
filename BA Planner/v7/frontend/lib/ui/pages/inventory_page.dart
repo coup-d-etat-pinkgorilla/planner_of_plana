@@ -3,6 +3,7 @@
 // 후보 승인 패널(`_CandidatePanel`)은 스캔 탭 아이템 검토(FE8-g5)로 옮길 때까지 그대로 두고 위험도 목록 위 띠에 둔다.
 // FE6-b: 셸은 모든 탭을 오프스테이지로 짓는다. 인벤토리는 [InventoryPage.active]가 처음 true가 될 때(탭을 처음 열 때)
 // 읽기·계산을 시작한다. 그 전에는 백엔드를 부르지 않는다.
+// FE6-f: 탭을 다시 열 때(false → true)는 저장소 revision만 보고, 바뀌었으면(다른 탭의 스캔 commit 등) 다시 읽는다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -63,7 +64,13 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   void didUpdateWidget(InventoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final started = _started;
     if (widget.active) _start();
+    if (started && widget.active && !oldWidget.active) {
+      Future<void>.microtask(() {
+        if (mounted) _controller.refreshIfChanged();
+      });
+    }
     // FE6-c: 스캔 후보가 새로 오면 후보 승인 띠가 있는 목록 보기로 돌린다(build 밖에서 알린다).
     if (widget.candidateContext != null &&
         widget.candidateContext != oldWidget.candidateContext) {
