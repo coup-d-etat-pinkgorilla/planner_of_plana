@@ -21,46 +21,6 @@ const _b = 'Item_Icon_SkillBook_Abydos_1';
 const _c = 'Item_Icon_SkillBook_Abydos_2';
 const _d = 'Item_Icon_SkillBook_Abydos_3';
 
-/// 백엔드 진입점: 실제 저장소·프로토콜·스캐너 세션 서비스에 고정 인벤토리 matcher(A 7, B 99, C 70, D 5)를 붙인다.
-const _entryPoint = '''
-import sys
-from pathlib import Path
-from core.application_protocol_v1 import ApplicationProtocolV1
-from core.inventory_catalog import CATALOG_REVISION
-from core.repository_store import JsonRepository
-from core.runtime_paths import resolve_repository_root
-from core.scanner_session import ScannerSessionService
-from core.stdio_server import serve
-
-def entry(key, quantity):
-    return {'key': key, 'item_id': key, 'quantity': quantity}
-
-def inventory_matcher(_target, _cancel, progress):
-    progress(1, 1, 'fb10b_e2e_fixture')
-    return [{
-        'candidate_id': 'fb10b-e2e-candidate',
-        'payload': {
-            'version': 1,
-            'catalog_revision': CATALOG_REVISION,
-            'entries': [entry('$_a', '7'), entry('$_b', '99'), entry('$_c', '70'), entry('$_d', '5')],
-        },
-        'evidence': [],
-        'review_required': False,
-    }]
-
-sys.stdin.reconfigure(encoding='utf-8')
-sys.stdout.reconfigure(encoding='utf-8')
-root = resolve_repository_root()
-service = ScannerSessionService(
-    target_provider=lambda: [{'target_id': 'fb10b-e2e-target', 'title': 'FB10b E2E Fixture', 'status': 'ready', 'foreground': False}],
-    student_matcher=lambda *_args: [],
-    inventory_matcher=inventory_matcher,
-    repository=JsonRepository(root),
-    asset_status=lambda: {'ready': True, 'manifest_version': 1, 'asset_count': 16, 'missing': [], 'corrupt': []},
-)
-serve(protocol=ApplicationProtocolV1(storage_root=Path(root), scanner_service=service))
-''';
-
 Map<String, Object?> _quantities(RepositoryState state) => {
   for (final entry in state.inventory.entries)
     (entry['item_id'] ?? entry['key']) as String: entry['quantity'],
@@ -98,8 +58,9 @@ void main() {
         executable: executable,
         arguments: [
           if (Platform.isWindows && usesPyLauncher) '-3.11',
-          '-c',
-          _entryPoint,
+          // XB 공용 test-only 진입점(실제 저장소·프로토콜·스캐너 세션 + 고정 인벤토리 matcher A 7, B 99, C 70, D 5).
+          '-m',
+          'tests.inventory_e2e_backend',
         ],
         workingDirectory: backendDirectory.absolute.path,
         environment: {
