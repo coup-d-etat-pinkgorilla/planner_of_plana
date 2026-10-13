@@ -7564,3 +7564,143 @@ FE7-b/c에서 복원(시안 위젯으로):
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_004608\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-d 통계 원본 탭 이동 (Lane A, 로컬 Claude Code)
+
+### FE7-d 착수 기록 (2026-10-14, Lane A)
+
+- 상태: **코드 완료(아래 FE7-d 종료 기록), CF gate 미실행**. 시작 SHA = `1f73913da099028ba2493655d4bd5c0c3160b570`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서에 다른 "FE7-d 착수 기록" 없음(grep 0건).
+- 범위: navigation intent(학생 · 인벤토리 · 계획), 대상 탭 한 번 적용, "← 통계" 복귀 칩 + 통계 복원, 근거 패널 이동 버튼 켜기, FE7-c 발견 6(근거 "외 n종 · 외 n명" 펼침).
+- 막힘: 대장 막힘 요약 FE7-d 행 = FD-028 → 확정(2026-10-06). 막는 `열림` FD 없음. 워커 재량 FD-063 · FD-108은 종료 기록에 처리를 적는다.
+- 착수 중 사용자 확인(질문 4건, 2026-10-14, 모두 권장안): ① 계획 버튼 "계획 만들기 3 · 단계 순서" = 페이즈 편집 흐름 3단계 + 첫 부족 단계 카드 선택(흐름 컨트롤러에 처음 고를 단계 하나) ② 학생 탭 = 임시 학생 ID 목록 + S4 적용 필터 줄 맨 앞 제거형 칩, 학생 필터 상태 그대로(FD-063 육성도 행은 넣지 않음) ③ 복귀 = 다시 읽고 주제 · 스크롤은 그대로, 고른 것 · 펼침은 다시 읽은 뒤에도 근거가 있으면 복원 ④ "이 구간 학생을 계획에 추가" = 계획 만들기 1단계(새 시나리오)를 그 학생들을 미리 고른 채 연다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7d/pre/<v7 기준 경로>`, 작업 트리와 cmp 일치, 모두 WIP 없음 = `git status --short <경로>` 빈 줄). 줄바꿈은 작업 트리 그대로 유지(`git ls-files --eol`):
+  - `frontend/lib/ui/app_shell.dart`(LF, 최소 diff) · `frontend/lib/ui/pages/statistics_page.dart`(CRLF)
+  - `frontend/lib/ui/statistics/statistics_topics.dart`(LF) · `statistics_workspace.dart`(LF) · `statistics_growth_evidence.dart`(CRLF) · `statistics_supply_evidence.dart`(LF)
+  - 수신부(최소): `frontend/lib/ui/pages/student_page.dart`(LF) · `frontend/lib/ui/widgets/student_section_layout.dart`(LF) · `frontend/lib/ui/pages/inventory_page.dart`(CRLF) · `frontend/lib/ui/pages/planning_page.dart`(LF) · `frontend/lib/ui/widgets/plan_section_layout.dart`(CRLF) · `frontend/lib/ui/models/plan_flow_draft.dart`(LF) · `frontend/lib/ui/models/plan_flow_order_editor.dart`(LF)
+  - 테스트: `frontend/test/statistics_page_test.dart`(CRLF) · `frontend/test/statistics_workspace_test.dart`(LF)
+  - `almanac/workflows/frontend-redesign-status.md`(이 문서, LF)
+- 새 파일(예정): `frontend/lib/ui/navigation/app_navigation_intent.dart`, `frontend/test/app_navigation_fe7d_test.dart`.
+- 고치지 않음: `lib/ui/pages/scan_page.dart` · `lib/services/student_scan_diagnostic.dart` · `lib/services/scanner_review_images.dart`와 그 테스트(Lane B fb10c-dart, 읽기만), `lib/services/**`, `main.dart`, `app_section.dart`(필요 없음), `lib/ui/kit/**`, golden harness · 기존 golden 테스트 파일, `frontend/tool/**`, backend · contracts, 택틱 · 스캐너 소유 파일.
+
+### FE7-d 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계 근거 패널 아래 두 버튼이 고른 구간 · 재화를 원본 탭(학생 · 인벤토리 · 계획)으로 넘긴다. 대상 탭은 같은 의도를 한 번만 적용하고, 넘어간 탭 머리말의 "← 통계" 칩으로 돌아오면 통계가 다시 읽은 뒤 고른 것 · 펼침을 되살린다. 재화 근거 "외 n종 · 외 n명"은 성장 근거 "모두 보기"와 같은 펼침이다(FE7-c 발견 6). 새 서비스 메서드 · 백엔드 · 키트 변경 없음.
+
+착수 기록 정정: `frontend/test/statistics_page_test.dart` · `statistics_workspace_test.dart`는 고치지 않았다(사본을 지웠다, 작업 트리 = HEAD). 새 테스트는 `frontend/test/app_navigation_fe7d_test.dart` 한 파일이다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7d/logs/`이고, 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/ui/statistics lib/ui/pages/statistics_page.dart lib/ui/navigation`(통계 쪽 뒤) | 1 issue(warning `unused_element_parameter`, `_ResourceRow` key — 행 키를 `Positioned`로 옮긴 뒤) → 고침 |
+| `flutter analyze`(수신부 뒤, 전체) | **No issues found** |
+| 관련 기존 58파일 한 번에(`--file-reporter json`, 아래, 새 테스트 전) | **+674 −0** |
+| `flutter analyze test/app_navigation_fe7d_test.dart` | error 1(`AppSection` import 없음) · warning 1(쓰지 않는 import) → 고침 |
+| `flutter test test/app_navigation_fe7d_test.dart`(1차, 11건) | +10 −1: 셸 계획 1단계 테스트에서 흐름이 열리지 않음 — 테스트 서비스가 계정 상태를 fixture revision 1로, Mock 활성 계획은 다른 revision으로 줘서 `loadRepositoryPlanSnapshot`이 맞지 않는 revision으로 거절(구현 문제 아님) → 테스트 서비스가 Mock revision을 쓰게 고침 |
+| 같은 파일(2차 · 셸 단계 순서 테스트 더한 3차 · 1280×720 테스트 더한 4차) | **+11 −0** · **+12 −0** · **+13 −0** |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| 관련 59파일 한 번에(기존 58 + 새 1, `--file-reporter json`) | **+687 −0** |
+| `git diff --check`(고친 기존 13파일 + 이 문서 + 새 2파일) · 줄바꿈 | 0. 기존 파일은 pre와 같은 줄바꿈(`statistics_page.dart` · `statistics_growth_evidence.dart` · `inventory_page.dart` · `plan_section_layout.dart` CRLF, 나머지 LF), 새 파일 LF · 끝 개행 하나 |
+
+관련 59파일(파일별 통과, 모두 −0): app_navigation_fe7d +13(새), account_editor_fe8c +9, account_manager_fe8b +6, connected_target_fe8d +8, growth_calculator_view +24, home_app_shell +1, home_connect_fe8e +10, home_page +5, inventory_analysis_page +8, inventory_analysis +16, inventory_controller +13, inventory_currency_readonly +2, inventory_history_page +11, inventory_opa_page +6, inventory_page +9, inventory_shell_lazy +1, inventory_tiers_page +7, inventory_tiers +9, inventory_view_model +13, mock_design_review_scenario +11, plan_detail_tabs +8, plan_flow_authoring +18, plan_flow_goal_step +23, plan_flow_handoff +23, plan_flow_order_step +19, plan_flow_presets +13, plan_flow_save +15, plan_flow_student_step +8, plan_flow +15, plan_home_detail +9, plan_preset_manager +5, plan_scenario_compare +7, plan_scenario_detail +12, plan_scenario_list +10, plan_scenario_preview +9, planning_page +17, profile_delete_fb2d +17, scan_page_revision +14, section_template_studio +15, statistics_app_shell +2, statistics_growth_projection +11, statistics_growth_view +12, statistics_page +14, statistics_plan_projection +7, statistics_plan_view +9, statistics_projection +7, statistics_supply_projection +8, statistics_supply_view +11, statistics_workspace +13, student_bond_gauge +12, student_filter_followups +4, student_filter_modal +7, student_filter_selection +15, student_page +9, student_search_section +13, student_studio_layout +45, tactical_page +8, title_page +25, widget +16.
+
+- 걸리는 기존 테스트 찾기: test/ 전체를 `BAPlannerApp(|AppShell(|StudentPage(|InventoryPage(|PlanningPage(|PlanSectionLayout(|StudentSectionLayout(|StudentAppliedFilterRow|PlanFlowOrderEditor|PlanFlowController(|StatisticsPage|statistics_|evidence`로 grep했다. 셸을 띄우는 테스트 전부, 학생 · 인벤토리 · 계획(흐름 · Detail 홈 · 시나리오) 화면 테스트 전부, 통계 테스트 전부를 돌렸다. 스캐너 테스트(`scan_page_test` · `scan_student_review_workspace_test` · `scanner_*` · `mock_scanner_service_test` · `student_scan_diagnostic_test`, Lane B · 스캐너 WIP)와 process E2E · `metadata_manager_dto_test` · `tactical_lobby_scanner_service_test`는 이 slice와 무관하거나 다른 레인 작업 중이라 돌리지 않았다.
+- 빌드 잠금 충돌 없음. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### intent 모델 · 대상 탭별 수신 방식
+
+새 파일 `lib/ui/navigation/app_navigation_intent.dart`: `sealed class AppNavigationIntent`(만들 때마다 새 `id`, `origin` 기본 통계, `returnLabel` = "← 통계"). 셸은 마지막 의도 하나(`_navigation`)를 들고 대상 탭에 그 타입만 넘긴다.
+
+| 대상 | intent · payload | 수신부 | 적용 시점 · 한 번 | 쓰는 기존 API | 새 상태 |
+|---|---|---|---|---|---|
+| 학생 | `StudentsNavigationIntent(studentIds, label)` | `StudentPage.navigation` → `StudentSectionLayout.restrictedIds` · `restrictionLabel` · `onClearRestriction` | 받은 다음 프레임(빌드 중 알림 없음), `_navigationId`로 한 번 | `_select` · `_syncEditors` · `_closeCalculator`, 그리드 reveal(`_revealStudentId` · `_revealRequest`, 최근 본 학생과 같은 길), S4 `StudentAppliedFilterRow`(칩 목록 앞에 하나 더함) | 페이지: 임시 목록(의도 · id 집합). 레이아웃: 매개변수 3개뿐 |
+| 인벤토리 | `InventoryNavigationIntent.row(resourceKey)` · `.tiers()` | `InventoryPage.navigation` | microtask, 첫 로드가 끝난 뒤(`loaded && !loading`, 컨트롤러 리스너로 기다림), `_navigationId`로 한 번 | 행: `setScreenMode(list)` → `setMode(inventoryModeOf)` → 부족한 것 보기에 들면 `showCategoryShortages(category)`, 아니면 `setView(all)` + `toggleCategory` → `select(key)`(상세가 그 재화). 재화(크레딧 · 엘리그마)는 `select`만. 티어: `setScreenMode(analysis)` + `toggleTiers()` | 페이지: 의도 id · 기다리는 의도 |
+| 계획 | `PlanNavigationIntent.students(ids)` · `.order(stageId)` | `PlanningPage.navigation` → `PlanSectionLayout.navigation` | 계산기 넘기기(`_consumeInitialSeed`)와 같은 길: 홈을 모션 없이 내리고(`_clearHomeForFlow`, 넘기기와 공용으로 꺼냄) 흐름 상태를 읽은 뒤 연다. `_navigationId`로 한 번 | 학생: `PlanFlowController(newScenario)..addStudents(ids)`(1단계). 단계: "페이즈 편집"(`_openActivePlanFlow`)과 같은 초안(`_flowContext(refresh: true)` → `PlanFlowDocumentBoundary.fromDocument`) · `editActivePlan` · 3단계 | `PlanFlowController.initialOrderStageId`(final 하나), `PlanFlowOrderEditor`가 생성 때 읽음 |
+
+#### `app_shell.dart` diff(+79 −0)와 이유
+
+- import 1줄, 필드 3개(`_navigation` · `_returnFrom` · `_statisticsReturnToken`), `_open`에 1줄(탭이 바뀌면 복귀 칩 지움), `_navigate` · `_returnToOrigin` 두 메서드, 계정 전환 때 의도 · 칩 지움 2줄, 페이지 4곳에 매개변수(학생 · 계획 · 인벤토리 `navigation`, 통계 `onNavigate` · `returnToken`), 머리말 두 위젯에 `returnLabel` · `onReturn` 전달과 칩 그리기(계산기 "← 학생" 칩과 같은 `KitPressable` + `BaChip`, 키 `page-header-return-chip`).
+- 지운 줄 0, 기존 줄 변경 0(모두 추가). 복귀 칩을 `PageHeaderOverrideController`에 싣지 않은 이유: 그 값은 제목 · 부제를 바꾸고 "같은 탭 다시 누르기 = 복귀"이며 한 번에 하나라, 학생 탭 계산기 "← 학생"과 겹치면 서로 지운다. 별도 값이면 두 칩이 함께 보이고 각자 동작한다.
+- `app_section.dart`는 고치지 않았다.
+
+#### 처리한 FD
+
+- **FD-104(확정 (a))**: 학생 탭 이동은 학생 필터 상태(`StudentFilterController`)에 쓰지 않는다. 이동용 임시 목록을 필터와 함께(그리고) 건다.
+- **FD-108(워커 재량, 권장안)**: `AppShell`에 navigation intent(대상 탭 + 학생 목록 · 선택 행 · 단계 · 하위 화면), "← 통계" 칩 시안 위치(넘어간 탭 머리말 제목 옆, Statistics-Proposal D). "모든 탭 이동이 같은 intent 사용"은 이번에 통계 출발만이다(인벤토리 "계획에서 보기" `onOpenPlan` · 계산기 FD-173은 그대로 — 아래 발견 사항 8).
+- **FD-063(워커 재량)**: 권장안(필터 모달 "기본" 그룹에 육성도 행)을 따르지 않았다. 사용자 결정 2026-10-14 ②(임시 ID 목록 + 칩, 학생 필터 그대로)와 FD-104 때문이다. 근거: 육성도 행으로 이동하려면 학생 필터에 60~70을 써야 하고(덮어쓰기), 통계 구간은 반열림 [60, 70)이라 정수 포함 범위 60~70과 인원이 다를 수 있다. 행 자체가 필요하면 FE7-e(통계 전용 필터)에서 판단.
+- FD-028(확정): 학생 목록은 성장 근거(FD-028 식) 그대로의 학생이다. 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **버튼 켜짐**: 고른 구간 · 재화가 없으면 FE7-a 그대로 비활성 · 같은 글자(둘째 줄 없음). 성장: 구간 · 항목 근거에 학생이 있으면 둘 다 켜짐, ghost 둘째 줄 "필터: <근거 머리>"(예 "필터: 육성도 60~70%", A2면 "필터: 성작 완성도"). 인벤토리(B1 카테고리): ghost "인벤토리 · 티어별 충족률"은 표가 있는 노트 · BD · 오파츠만, primary "인벤토리 · 부족 위험에서 보기 · 해당 행 선택 · 획득처"는 그 카테고리 근거 첫 행(충족률 가장 낮은 재화). 계획(C1 · C2 재화): ghost "인벤토리 · 부족 위험에서 보기"는 그 재화 행, primary "계획 만들기 3 · 단계 순서 · Pn 선택 · 순서 바꾸기"는 그 재화의 막히는 단계가 활성 문서 계산에 있을 때만(첫 막히는 단계 = 근거 "막히는 단계" 첫 행, Pn = 그 단계 페이즈).
+2. **켜진 버튼 모양**: 바탕 키트 버튼(좌우 반전 `RailButton`)이 `onPressed`를 받고 hover · 누르기를 그린다. 글자 흐림(.45)은 비활성일 때만.
+3. **학생 임시 목록**: 칩 글자 "통계: <근거 머리> · n명"(n = 넘긴 학생 수), S4 적용 필터 줄 맨 앞 제거형 칩(키 `student-applied-filter-navigation-statistics`). 학생 필터 · 검색과 함께 걸어 "표시 N"은 실제 보이는 수다(필터가 있으면 n보다 작을 수 있다). 고른 학생이 목록에 없으면 목록 첫 학생(근거 순서)을 고르고 그리드를 그 학생으로 스크롤한다. 계산기가 열려 있으면 닫는다. 칩 × · "모두 지우기" · 학생 탭을 떠날 때 지운다(필터 상태는 "모두 지우기"가 원래 지우는 것만).
+4. **복귀 칩**: 이동한 탭에 있는 동안만 보인다. 다른 탭(통계 포함 주 탭)으로 가면 사라진다. 누르면 통계로 가서 평소처럼 다시 읽고, 다시 읽은 뒤 고른 구간 · 재화에 근거가 있으면(구간 학생 1명 이상 · 재화 근거 있음) 고른 것 · 펼침을 되살린다. 주제 · 가운데 스크롤 · C1 순서 · A1 seg는 다시 읽어도 원래 남는다. 주 탭 "통계"로 직접 돌아가면 FE7-b 그대로 고른 것을 지운다.
+5. **계획 흐름이 이미 열려 있을 때**: 학생 의도는 그 초안에 학생을 더하고 1단계로 가며 "만들던 초안에 통계에서 고른 학생 n명을 더했습니다."를 알린다(계산기 넘기기와 같은 규칙). 단계 순서 의도는 초안을 버리지 않고 "진행 중인 계획 만들기가 있어 단계 순서를 새로 열지 않았습니다."만 알린다. 흐름을 열 수 없으면 계정 없음 "계정을 먼저 골라야 계획에 추가할 수 있습니다."(기존 문구) 또는 "계획 만들기를 열 수 없어 통계에서 고른 것을 계획에서 열지 못했습니다."(새 문구).
+6. **단계 선택**: 3단계 편집기는 생성 때 `initialOrderStageId`를 고른다. 초안에 그 단계가 없으면(그 사이 활성 계획이 바뀜) 3단계 기본 선택(첫 칸의 첫 단계)이다.
+7. **근거 "외 n종 · 외 n명"**: 성장 "나머지 n명 모두 보기"와 같은 버튼(왼쪽 회색 "외 n종", 오른쪽 "모두 보기", 키 `statistics-evidence-rest` 그대로)과 같은 세로 스크롤 목록(공용 `statisticsEvidenceList`, 행 자리 + 버튼 자리). 다른 것을 고르거나 주제를 바꾸거나 다시 읽으면 접힌다(복귀는 위 4). "외 n단계"는 글자 그대로다.
+
+#### golden 변화 예상(장면별)
+
+- **`statistics-growth` · `statistics-inventory` · `statistics-plan`: 변화 0.** 세 장면 모두 아무것도 고르지 않는다(장면 조작은 주제 버튼만, `fe7a_statistics_golden_test.dart` grep). 고른 것이 없으면 버튼은 FE7-a와 같은 위젯 트리다(바탕 `onPressed: null`, 글자 `Opacity(.45)`, 둘째 줄은 FE7-a와 같은 인벤토리 · 계획 고정 글자뿐). 근거 펼침 · 복귀 칩도 고른 것 · 이동이 있을 때만 생긴다.
+- **학생 · 인벤토리 · 계획 · 홈 · 타이틀 · 스캔 · 셸 장면: 변화 0.** 의도가 없으면 학생 S4 칩 목록은 같은 내용(`[...filter.searchRowChips]`), 그리드 거르기 조건은 참, 인벤토리 · 계획은 아무것도 적용하지 않고, 셸 머리말은 복귀 칩을 그리지 않는다. 키트 · golden harness 변경 없음.
+- commit.json `whole` = `[]`(바뀌는 기존 기준 이미지 없음). 새 golden 장면 없음.
+
+#### 검수표(통계 근거 → 각 탭 → 복귀)
+
+mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`, 기준 viewport 최대화). 시안 숫자는 Lane B 검수 시나리오 `--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`(학생 성장 · 계획 집계 데이터, 커밋 상태는 Lane B 확인)에서 본다. 기본 Mock은 목표가 없어 인벤토리 · 계획 주제가 빈 상태다.
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth 아래 버튼 | 통계 → A1 60~70% 막대 | ghost "학생 탭에서 보기" + 둘째 줄 "필터: 육성도 60~70%", primary "이 구간 학생을 계획에 추가" 둘 다 또렷 · hover, 구간을 풀면 다시 흐림 |
+| (D) 학생 탭 | ghost 누르기 | 학생 탭, 머리말 "학생" 옆 "← 통계" 칩, S4 적용 필터 맨 앞 "통계: 육성도 60~70% · 22명" 칩, 표시 22, 첫 학생 선택 · 그리드에 보임, 학생 필터 버튼 배지 · 모달 조건 그대로 |
+| (D) 복귀 | "← 통계" | 통계 학생 성장, 같은 구간 근거(모두 보기를 펼쳤으면 펼친 채), 스크롤 위치 그대로. 학생 탭을 다시 열면 칩 · 임시 목록 없음 |
+| (D) 계획 1단계 | primary 누르기 | 계획 만들기 1단계, 그 구간 학생이 고른 순서 배지로 들어 있음, "← 통계" 칩 |
+| Stats-Inventory 아래 버튼 | 인벤토리 현황 → B1 기술 노트 · 장비 설계도 | 기술 노트: 두 버튼 또렷 → ghost = 인벤토리 티어별 충족률 화면, primary = 목록 모드 · 기술 노트 종류 · 충족률 가장 낮은 노트 행 선택 · 상세. 장비 설계도: ghost 흐림, "외 2종 모두 보기" → 9종 세로 스크롤 |
+| Stats-Plan 아래 버튼 | 계획 집계 → C2 기술 노트 (최상급) 점 | primary 둘째 줄 "P2 선택 · 순서 바꾸기" → 페이즈 편집 흐름 3단계, P2 단계 카드 선택. ghost → 인벤토리 그 재화 행. C1 크레딧 행이면 primary 흐림 |
+| (공통) | 다른 탭으로 이동 · 1280×720 | 칩이 사라짐, 작은 창에서 버튼 글자 · 칩 넘침 예외 없음 |
+
+#### 미검증 항목
+
+- golden(세 통계 장면 · 다른 장면 변화 0 예측): **미실행**.
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드 계정에서의 이동(활성 계획 revision이 통계를 읽은 뒤 바뀐 경우의 단계 선택 대체, 실제 학생 수 · 인벤토리 카테고리): **미실행**. Mock · fixture만 보았다.
+- 실제 창에서 탭 전환 모션 중 학생 그리드 스크롤(reveal) 체감, 인벤토리 행이 목록에서 보이는지(스크롤 없음 — 발견 2), 계획 흐름이 탭 진입 모션과 함께 들어오는 모습: **미실행**(위젯 테스트는 상태만 확인).
+
+#### WIP 보존 확인
+
+- 고친 기존 13파일 + 이 문서는 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다.
+- 건드리지 말 것으로 받은 미커밋 파일(`scan_page.dart` · `student_scan_diagnostic.dart` · `scanner_review_images.dart`와 그 테스트), `lib/services/**`(검수 시나리오 · fixture 데이터 `design_review/`는 읽기만), `main.dart`, 다른 레인 · 스캐너 WIP 파일은 고치지 않았다. git 쓰기는 하지 않았다.
+
+#### 발견 사항
+
+1. **티어별 충족률에는 종류 탭 · 티어 선택이 없다**: 앱 티어 화면은 노트 · BD · 오파츠 표를 한꺼번에 그리고 고르는 상태가 없다. 시안 ghost 둘째 줄 "기술 노트 탭 · 최상급 선택"은 붙일 대상이 없어 빼고(첫 줄만) 티어 화면만 연다. 표 강조가 필요하면 인벤토리 티어 화면 상태 추가(FE6-e 소관) 결정.
+2. **인벤토리 목록은 고른 행으로 스크롤하지 않는다**: 목록 viewport에 컨트롤러 · reveal이 없다(`inventory_workspace.dart`). 종류 · 보기로 좁혀 행이 보이게 했지만, 행이 많은 종류(장비 등)에서는 화면 밖일 수 있다(상세 패널은 그 재화). reveal은 인벤토리 workspace 변경이라 후속 후보.
+3. **학생 "목록" 보기(S2 목록 모드)에는 reveal이 없다**: 그리드만 고른 학생으로 스크롤한다(기존 최근 본 학생과 같은 한계).
+4. **학생 임시 목록 ∧ 학생 필터**: 칩은 "22명"인데 학생 필터 · 검색이 걸려 있으면 "표시"가 더 작다(규칙 3). 필터를 무시하고 목록만 보이게 할지는 CF 판단.
+5. **"이 구간 학생을 계획에 추가"는 A2 항목 근거에서도 켜진다**("구간" 글자는 시안 그대로). 새 시나리오 1단계로 열리므로 활성 계획에 바로 들어가지 않는다(Proposal "계획 만들기 1 · 학생 고르기 (미리 선택)").
+6. **복귀 뒤 계획 흐름은 그대로 남는다**: 통계로 돌아가도 계획 탭의 열린 흐름(1단계 · 3단계 초안)은 사용자가 닫을 때까지 있다. 다음 "단계 순서" 이동은 그 초안 때문에 알림만 낸다(규칙 5).
+7. **근거 패널 버튼 모양(FE7-a 발견 6)**: 누를 수 있게 되었지만 여전히 좌우 반전 `RailButton` 바탕 + 글자 겹침이다. hover · 누름 모양은 키트 그대로라 문제는 없으나, 키트 변형(왼쪽 80° · 오른쪽 수직)으로 바꾸는 키트 요청 후보는 남는다.
+8. **다른 탭 이동은 아직 intent가 아니다**: 인벤토리 상세 "계획에서 보기"(`onOpenPlan`), 계산기 "인벤토리 · 부족 위험에서 보기"(FD-173, 숨김)는 그대로다. FD-108 "모든 탭 이동이 같은 intent"는 그 slice들에서(intent 모델은 출발 탭 `origin`을 받는다).
+9. **"외 n단계"는 펼치지 않는다**(프롬프트 범위 "외 n명 · 외 n종"). 단계가 5개 이상인 재화는 근거에 4개만 보인다.
+10. **머리말 칩 두 개**: 셸 머리말 복귀 칩과 계산기 "← 학생" 칩이 함께 보일 수 있다(학생 탭에서 계산기를 열면 "성장 계산기 ← 학생 ← 통계"). 시안에 겹친 모습이 없다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7d/pre/<경로>`(고친 기존 13파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7d/commit.json`: slice `fe7d`, `status=true`, modified 14(이 문서 포함), added 2, `whole` = `[]`.
+- 인계: `debug/frontend_fe7d/output.md`.
+
+#### 다음 행동
+
+- FE7-d 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트에 새 13건(`app_navigation_fe7d_test.dart`), golden은 변화 0(세 통계 장면 포함, Lane B 변화는 별도). 승인 뒤 `fe_commit.ps1 -Slice fe7d`.
+- 남은 CF 판단: 발견 1 · 2(인벤토리 티어 선택 · 행 reveal), 4(임시 목록과 필터 관계), 6(복귀 뒤 남는 흐름), 7(키트 변형), 8(다른 탭 이동 intent화).
+
+### fe7d commit record (2026-10-14 02:39, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_023144\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

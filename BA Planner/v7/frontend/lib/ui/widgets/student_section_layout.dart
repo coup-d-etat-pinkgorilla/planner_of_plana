@@ -858,6 +858,9 @@ class StudentSectionLayout extends StatefulWidget {
     this.onOpenCalculator,
     this.calculator,
     this.active = true,
+    this.restrictedIds,
+    this.restrictionLabel,
+    this.onClearRestriction,
   });
 
   final List<StudentCatalogEntry> students;
@@ -893,6 +896,13 @@ class StudentSectionLayout extends StatefulWidget {
   /// 성장 계산기 모드(FE3-f2a). 있으면 S1 버튼 세트와 S2 본문을 계산기로 바꾼다. S3·S4는 f2b에서 바꾼다.
   final GrowthCalculatorModeData? calculator;
   final bool active;
+
+  /// 통계 근거에서 넘긴 이동용 임시 학생 목록(FE7-d). 있으면 그리드 · 목록에 이 학생만 보인다(필터와 함께 건다). 필터
+  /// 상태에는 넣지 않는다(FD-104). S4 적용 필터 줄 맨 앞에 [restrictionLabel] 제거형 칩이 있고, × · "모두 지우기"가
+  /// [onClearRestriction]을 부른다.
+  final Set<String>? restrictedIds;
+  final String? restrictionLabel;
+  final VoidCallback? onClearRestriction;
 
   @override
   State<StudentSectionLayout> createState() => _StudentSectionLayoutState();
@@ -1005,6 +1015,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       _filter.addListener(_filterChanged);
     }
     if (!_sameFilterInputs(oldWidget, widget)) _candidates = null;
+    // 이동용 임시 목록이 새로 오면(FE7-d) 고른 학생이 보이게 그리드를 스크롤한다(최근 본 학생과 같은 길).
+    final restrictedIds = widget.restrictedIds;
+    if (restrictedIds != null &&
+        !identical(restrictedIds, oldWidget.restrictedIds) &&
+        restrictedIds.contains(widget.selectedId)) {
+      _revealStudentId = widget.selectedId;
+      _revealRequest += 1;
+    }
     // 계산기 모드를 열고 닫을 때 S1·S2 내용이 바뀌므로 그 두 섹션만 다시 들어온다.
     if (widget.active &&
         (oldWidget.calculator == null) != (widget.calculator == null)) {
@@ -1103,6 +1121,9 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     }
 
     final filter = _filter;
+    final restrictionLabel = widget.restrictedIds == null
+        ? null
+        : widget.restrictionLabel;
     add(
       studentSearchDividerHeight,
       studentSearchDividerGap - studentSearchDividerHeight,
@@ -1127,9 +1148,22 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       studentSearchChipRowGap,
       (_) => StudentAppliedFilterRow(
         key: const ValueKey('student-applied-filters'),
-        filters: filter.searchRowChips,
-        onRemove: filter.removeApplied,
-        onClearAll: filter.clearApplied,
+        filters: [
+          if (restrictionLabel != null)
+            StudentFilterChipItem(
+              groupKey: studentNavigationChipGroupKey,
+              value: 'statistics',
+              label: restrictionLabel,
+            ),
+          ...filter.searchRowChips,
+        ],
+        onRemove: (item) => item.groupKey == studentNavigationChipGroupKey
+            ? widget.onClearRestriction?.call()
+            : filter.removeApplied(item),
+        onClearAll: () {
+          filter.clearApplied();
+          if (restrictionLabel != null) widget.onClearRestriction?.call();
+        },
         onShowMore: _openFilterModal,
       ),
     );
@@ -1340,9 +1374,13 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
           );
       final filter = _filter;
       final calculator = widget.calculator;
+      final restrictedIds = widget.restrictedIds;
       final filteredGridStudents = [
         for (final candidate in _filterCandidates)
-          if (filter.matches(candidate)) candidate.student,
+          if ((restrictedIds == null ||
+                  restrictedIds.contains(candidate.student.studentId)) &&
+              filter.matches(candidate))
+            candidate.student,
       ];
       final gridStudents = sortStudentGridEntries(
         filteredGridStudents,
@@ -1832,6 +1870,9 @@ class _StudentGridDisplayToggle extends StatelessWidget {
 // 시안 값(기준 viewport): 토글 4줄(27) 아래 6 → 구분선 1(#71c7f4@.28, 구분선 위끝에서 6) → 결과 수 줄 24 → 8 →
 // 적용 필터 줄 26 → 10 → "최근 본 학생" 20 → 2 → 썸네일 50×40.5(간격 5). 줄 왼쪽은 S4 왼쪽 80° 변에서
 // 줄 밑변 높이 기준 22px 안쪽, 오른쪽 끝은 검색 상자 오른쪽.
+
+/// S4 적용 필터 줄의 이동용 임시 목록 칩(FE7-d) 그룹 키. 필터 상태의 그룹 키와 겹치지 않는다.
+const studentNavigationChipGroupKey = 'navigation';
 
 const studentSearchToggleTopGap = 6.0;
 const studentSearchToggleRowHeight = 27.0;

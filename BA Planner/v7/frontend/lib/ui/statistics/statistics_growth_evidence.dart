@@ -6,7 +6,8 @@
 // 부제 "A2에서 고른 항목 · 낮은 학생 순", 행 칩 = 그 항목 완성도, 요약 "항목 요약": 평균 레벨 · 평균 완성도 · 계획 등록).
 // "모두 보기"를 누르면 행 자리와 그 버튼 자리를 합친 곳에서 모든 학생을 세로로 스크롤한다(공용 스크롤바 · 포그).
 // 행 모양은 시안 `.row`(왼쪽 변 80° · 오른쪽 변 수직, 바탕 · 테두리는 키트 [DiagonalRowLook] `.row`)다.
-// 원본 탭 이동(아래 버튼 · 학생 탭 필터)은 FE7-d다.
+// 원본 탭 이동(아래 버튼 · 학생 탭 임시 목록)은 FE7-d(`statistics_page.dart`)다. 펼친 목록 · "모두 보기" 버튼은 재화 근거
+// "외 n종 · 외 n명"(FE7-d)도 같이 쓴다([statisticsEvidenceList] · [StatisticsEvidenceMoreButton]).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -296,20 +297,18 @@ List<Widget> statisticsGrowthEvidenceChildren({
   final visible = StatisticsMetrics.evidenceVisibleRows;
   final children = <Widget>[];
   if (expanded && students.length > visible) {
-    final listTop = frame.top + StatisticsMetrics.evidenceRowTop * scale;
-    final listBottom = frame.top + StatisticsMetrics.evidenceListBottom * scale;
-    final left = frame.leftEdge(listBottom);
     children.add(
-      Positioned(
-        left: left,
-        top: listTop,
-        width: math.max(0.0, frame.right - left),
-        height: math.max(0.0, listBottom - listTop),
-        child: _EvidenceList(
-          key: ValueKey('statistics-evidence-list-${content.title}'),
-          frame: frame,
-          origin: Offset(left, listTop),
-          content: content,
+      statisticsEvidenceList(
+        key: ValueKey('statistics-evidence-list-${content.title}'),
+        frame: frame,
+        top: StatisticsMetrics.evidenceRowTop,
+        bottom: StatisticsMetrics.evidenceListBottom,
+        itemCount: students.length,
+        rowKey: (index) =>
+            ValueKey('statistics-evidence-row-${students[index].studentId}'),
+        itemBuilder: (index) => StatisticsEvidenceStudentRow(
+          student: students[index],
+          chip: content.chipOf(students[index]),
         ),
       ),
     );
@@ -344,7 +343,11 @@ List<Widget> statisticsGrowthEvidenceChildren({
           ),
           child: StatisticsScaledBox(
             scale: scale,
-            child: _MoreButton(rest: rest, onPressed: onExpand),
+            child: StatisticsEvidenceMoreButton(
+              key: const ValueKey('statistics-evidence-more'),
+              restText: '나머지 $rest명',
+              onPressed: onExpand,
+            ),
           ),
         ),
       );
@@ -520,18 +523,22 @@ class StatisticsEvidenceStudentRow extends StatelessWidget {
   }
 }
 
-/// "나머지 n명 모두 보기"(시안 `.plain` 30 높이).
-class _MoreButton extends StatelessWidget {
-  const _MoreButton({required this.rest, required this.onPressed});
+/// "나머지 n명 모두 보기"(시안 `.plain` 30 높이). 왼쪽은 [restText](회색), 오른쪽은 "모두 보기"다. 재화 근거
+/// "외 n종 · 외 n명"도 같은 버튼이다(FE7-d).
+class StatisticsEvidenceMoreButton extends StatelessWidget {
+  const StatisticsEvidenceMoreButton({
+    super.key,
+    required this.restText,
+    required this.onPressed,
+  });
 
-  final int rest;
+  final String restText;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => KitPressable(
-    key: const ValueKey('statistics-evidence-more'),
     onPressed: onPressed,
-    semanticLabel: '나머지 $rest명 모두 보기',
+    semanticLabel: '$restText 모두 보기',
     builder: (context, state) => Padding(
       padding: EdgeInsets.only(
         left: diagonalCutDepth(StatisticsMetrics.evidenceMoreHeight) + 12,
@@ -541,7 +548,7 @@ class _MoreButton extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              '나머지 $rest명',
+              restText,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: _mutedStyle,
@@ -605,6 +612,37 @@ class _SummaryRow extends StatelessWidget {
   );
 }
 
+/// 근거 섹션 위에서 [top] ~ [bottom](시안 값, 세로 비율 적용) 자리에 모두 펼친 근거 목록을 놓는다. 행은
+/// [itemBuilder](시안 크기, 근거 행 높이 · 피치)이고 키는 [rowKey]다.
+Widget statisticsEvidenceList({
+  required Key key,
+  required StatisticsEvidenceFrame frame,
+  required double top,
+  required double bottom,
+  required int itemCount,
+  required Key Function(int index) rowKey,
+  required Widget Function(int index) itemBuilder,
+}) {
+  final scale = frame.scale;
+  final listTop = frame.top + top * scale;
+  final listBottom = frame.top + bottom * scale;
+  final left = frame.leftEdge(listBottom);
+  return Positioned(
+    left: left,
+    top: listTop,
+    width: math.max(0.0, frame.right - left),
+    height: math.max(0.0, listBottom - listTop),
+    child: _EvidenceList(
+      key: key,
+      frame: frame,
+      origin: Offset(left, listTop),
+      itemCount: itemCount,
+      rowKey: rowKey,
+      itemBuilder: itemBuilder,
+    ),
+  );
+}
+
 /// 모두 펼친 근거 목록. 행 왼쪽은 지금 화면 높이의 섹션 사선을 따라가고 오른쪽은 고정이다(시안 근거 행과 같은 규칙).
 /// 공용 스크롤바(섹션 오른쪽 변이 수직이라 트랙도 수직) · 포그를 쓴다.
 class _EvidenceList extends StatefulWidget {
@@ -612,14 +650,18 @@ class _EvidenceList extends StatefulWidget {
     super.key,
     required this.frame,
     required this.origin,
-    required this.content,
+    required this.itemCount,
+    required this.rowKey,
+    required this.itemBuilder,
   });
 
   final StatisticsEvidenceFrame frame;
 
   /// 이 목록 자리의 왼쪽 위(섹션 좌표).
   final Offset origin;
-  final StatisticsGrowthEvidenceContent content;
+  final int itemCount;
+  final Key Function(int index) rowKey;
+  final Widget Function(int index) itemBuilder;
 
   @override
   State<_EvidenceList> createState() => _EvidenceListState();
@@ -652,12 +694,10 @@ class _EvidenceListState extends State<_EvidenceList> {
     builder: (context, constraints) {
       final frame = widget.frame;
       final scale = frame.scale;
-      final students = widget.content.students;
+      final count = widget.itemCount;
       final rowHeight = StatisticsMetrics.evidenceRowHeight * scale;
       final pitch = StatisticsMetrics.evidenceRowPitch * scale;
-      final contentHeight = students.isEmpty
-          ? 0.0
-          : pitch * (students.length - 1) + rowHeight;
+      final contentHeight = count == 0 ? 0.0 : pitch * (count - 1) + rowHeight;
       final right =
           frame.right -
           StatisticsMetrics.evidenceButtonRight -
@@ -677,7 +717,7 @@ class _EvidenceListState extends State<_EvidenceList> {
             builder: (context, _) {
               final scroll = _controller.hasClients ? _controller.offset : 0.0;
               final rows = <Widget>[];
-              for (final (index, student) in students.indexed) {
+              for (var index = 0; index < count; index++) {
                 final top = pitch * index;
                 final screenBottom =
                     widget.origin.dy + top - scroll + rowHeight;
@@ -687,19 +727,14 @@ class _EvidenceListState extends State<_EvidenceList> {
                     widget.origin.dx;
                 rows.add(
                   Positioned(
-                    key: ValueKey(
-                      'statistics-evidence-row-${student.studentId}',
-                    ),
+                    key: widget.rowKey(index),
                     left: left,
                     top: top,
                     width: math.max(0.0, right - left),
                     height: rowHeight,
                     child: StatisticsScaledBox(
                       scale: scale,
-                      child: StatisticsEvidenceStudentRow(
-                        student: student,
-                        chip: widget.content.chipOf(student),
-                      ),
+                      child: widget.itemBuilder(index),
                     ),
                   ),
                 );

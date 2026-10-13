@@ -18,6 +18,10 @@
 // 읽기는 탭이 처음 보일 때 시작한다(FE6-b 인벤토리와 같은 정책). 셸은 모든 탭을 오프스테이지로 짓고, 보이지 않는
 // 탭은 `TickerMode`가 꺼져 있으므로 그것으로 보임을 판단한다(`app_shell.dart`를 고치지 않는다). 숨어 있는 동안
 // 다시 읽기 요청(`reloadToken` · 연결 · 서비스 교체)이 오면 표시만 해 두고, 다시 보일 때 한 번 읽는다.
+// FE7-d: 근거 패널 아래 두 버튼이 고른 구간 · 재화를 원본 탭으로 넘긴다([StatisticsPage.onNavigate], 의도는
+// `ui/navigation/app_navigation_intent.dart`). 고른 것이 없거나 넘길 대상이 없으면 버튼은 비활성이다. 넘어간 탭의
+// "← 통계" 칩으로 돌아오면([StatisticsPage.returnToken]) 평소처럼 다시 읽고, 다시 읽은 뒤에도 근거가 있는 고른 것 ·
+// 펼침을 되살린다(주제 · 스크롤은 다시 읽어도 그대로다).
 import 'package:flutter/material.dart';
 
 import '../../services/app_service.dart';
@@ -26,7 +30,13 @@ import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../app_section.dart';
+import '../inventory/inventory_analysis.dart'
+    show
+        inventoryOopartCategory,
+        inventoryTacticalBdCategory,
+        inventoryTechNotesCategory;
 import '../models/plan_scenario_detail.dart' show PlanDetailData;
+import '../navigation/app_navigation_intent.dart';
 import '../statistics/statistics_growth_evidence.dart';
 import '../statistics/statistics_source.dart';
 import '../statistics/statistics_supply_evidence.dart';
@@ -40,11 +50,19 @@ class StatisticsPage extends StatefulWidget {
     super.key,
     required this.service,
     required this.onOpen,
+    this.onNavigate,
     this.reloadToken = 0,
+    this.returnToken = 0,
   });
   final AppService service;
   final ValueChanged<AppSection> onOpen;
+
+  /// 근거 패널 이동 버튼(FE7-d). 없으면 버튼은 비활성이다.
+  final ValueChanged<AppNavigationIntent>? onNavigate;
   final int reloadToken;
+
+  /// 넘어간 탭의 "← 통계" 칩으로 돌아올 때마다 바뀐다(다음 다시 읽기에서 고른 것을 되살린다).
+  final int returnToken;
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
@@ -87,6 +105,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
   /// 인벤토리 · 계획 화면 상태(FE7-c): 고른 카테고리 · 재화.
   StatisticsSupplySelection? _supplySelection;
 
+  /// 재화 근거 "외 n종 · 외 n명"을 모두 펼쳤는가(FE7-d, 성장 "모두 보기"와 같은 동작).
+  bool _supplyExpanded = false;
+
+  /// 다음 다시 읽기가 "← 통계" 복귀다(FE7-d).
+  bool _restoreOnReload = false;
+
   /// 인벤토리 · 계획 projection 캐시(읽은 인벤토리 목록 · 계정 상태 · 부족 계산 · 성장이 같으면 다시 만들지 않는다).
   StatisticsSupply? _supply;
   Map<String, StatisticsEvidenceStudent> _supplyStudents = const {};
@@ -127,6 +151,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void didUpdateWidget(StatisticsPage old) {
     super.didUpdateWidget(old);
+    if (old.returnToken != widget.returnToken) _restoreOnReload = true;
     if (old.service != widget.service) {
       old.service.state.removeListener(_connectionChanged);
       widget.service.state.addListener(_connectionChanged);
@@ -166,11 +191,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Future<void> _reload() async {
     final generation = ++_generation;
     _stale = false;
+    final restore = _restoreOnReload
+        ? (
+            growth: _growthSelection,
+            supply: _supplySelection,
+            expanded: _evidenceExpanded,
+            supplyExpanded: _supplyExpanded,
+          )
+        : null;
+    _restoreOnReload = false;
     setState(() {
       _loading = true;
       _growthSelection = null;
       _supplySelection = null;
       _evidenceExpanded = false;
+      _supplyExpanded = false;
       _profile = null;
       _state = null;
       _students = null;
@@ -295,7 +330,41 @@ class _StatisticsPageState extends State<StatisticsPage> {
     }
     if (!mounted || generation != _generation) return;
     await _calculatePlan(generation, snapshot);
-    if (mounted && generation == _generation) setState(() => _loading = false);
+    if (mounted && generation == _generation)
+      setState(() {
+        _loading = false;
+        if (restore != null) _restoreSelection(restore);
+      });
+  }
+
+  /// "← 통계"로 돌아와 다시 읽은 뒤: 고른 구간 · 재화가 아직 근거를 가지면 되살린다(FE7-d). setState 안에서 부른다.
+  void _restoreSelection(
+    ({
+      StatisticsGrowthSelection? growth,
+      StatisticsSupplySelection? supply,
+      bool expanded,
+      bool supplyExpanded,
+    })
+    saved,
+  ) {
+    final growth = _currentGrowth();
+    final growthSelection = saved.growth;
+    if (growthSelection != null &&
+        (StatisticsGrowthView(
+              growth: growth,
+              metric: _growthMetric,
+              selection: growthSelection,
+            ).evidence?.students.isNotEmpty ??
+            false)) {
+      _growthSelection = growthSelection;
+      _evidenceExpanded = saved.expanded;
+    }
+    final supplySelection = saved.supply;
+    if (supplySelection != null &&
+        _supplyView(growth, supplySelection).evidence != null) {
+      _supplySelection = supplySelection;
+      _supplyExpanded = saved.supplyExpanded;
+    }
   }
 
   /// 활성 문서 계산(FE7-g): 문서에 단계가 있고, 서비스가 계산할 수 있다고 한 문서(`calculation` 요약이 있음)만 부른다(계획
@@ -385,6 +454,127 @@ class _StatisticsPageState extends State<StatisticsPage> {
     _evidenceExpanded = false;
   });
 
+  /// 인벤토리 · 계획 주제 화면 상태(지금 읽은 자료 + [selection]).
+  StatisticsSupplyView _supplyView(
+    StatisticsGrowth? growth,
+    StatisticsSupplySelection? selection,
+  ) => StatisticsSupplyView(
+    supply: _loading ? null : _currentSupply(growth),
+    loading: _loading,
+    selection: selection,
+    students: _supplyStudents,
+    onSelectionChanged: (selection) => setState(() {
+      _supplySelection = selection;
+      _supplyExpanded = false;
+    }),
+    expanded: _supplyExpanded,
+    onExpand: () => setState(() => _supplyExpanded = true),
+    planning: _loading ? null : _currentPlanning(),
+    planningError: _planError,
+    c1Order: _c1Order,
+    onC1OrderChanged: (order) => setState(() {
+      _c1Order = order;
+      // 고른 C1 행은 순서가 바뀌면 화면에 없을 수 있다.
+      if (_supplySelection case StatisticsResourceSelection(
+        source: StatisticsResourceSource.c1,
+      )) {
+        _supplySelection = null;
+        _supplyExpanded = false;
+      }
+    }),
+  );
+
+  /// 근거 패널 아래 두 버튼(FE7-d, 시안 Stats-Growth · Stats-Inventory · Stats-Plan 문구). 고른 것이 없거나 넘길 대상이
+  /// 없으면 FE7-a 글자 그대로 비활성이다.
+  /// - 학생 성장: "학생 탭에서 보기 · 필터: <구간>" → 학생 탭 임시 목록(근거 학생 전부), "이 구간 학생을 계획에 추가" →
+  ///   계획 만들기 1단계에 그 학생들을 미리 고른다.
+  /// - 인벤토리 현황(B1 카테고리): "인벤토리 · 티어별 충족률" → 티어별 충족률(그 표가 있는 노트 · BD · 오파츠만),
+  ///   "인벤토리 · 부족 위험에서 보기" → 그 카테고리 근거 첫 행(충족률 가장 낮은 재화).
+  /// - 계획 집계(C1 · C2 재화): "인벤토리 · 부족 위험에서 보기" → 그 재화 행, "계획 만들기 3 · 단계 순서 · Pn 선택 ·
+  ///   순서 바꾸기" → 페이즈 편집 흐름 3단계에서 그 재화의 첫 막히는 단계 카드(활성 문서 계산에 막히는 단계가 있을 때만).
+  (StatisticsEvidenceAction, StatisticsEvidenceAction) _evidenceActions(
+    StatisticsGrowthView growthView,
+    StatisticsSupplyView supplyView,
+  ) {
+    final defaults = _mode.evidenceActions;
+    final (secondary, primary) = defaults;
+    final navigate = widget.onNavigate;
+    if (navigate == null || _loading) return defaults;
+    switch (_mode) {
+      case StatisticsMode.students:
+        final evidence = growthView.evidence;
+        if (evidence == null || evidence.students.isEmpty) return defaults;
+        final ids = [
+          for (final student in evidence.students) student.studentId,
+        ];
+        final title = evidence.title;
+        return (
+          StatisticsEvidenceAction(
+            secondary.label,
+            '필터: $title',
+            () => navigate(
+              StudentsNavigationIntent(
+                studentIds: ids,
+                label: '통계: $title · ${ids.length}명',
+              ),
+            ),
+          ),
+          StatisticsEvidenceAction(
+            primary.label,
+            primary.detail,
+            () => navigate(PlanNavigationIntent.students(ids)),
+          ),
+        );
+      case StatisticsMode.inventory:
+        final category = supplyView.selectedCategory;
+        final evidence = supplyView.evidence;
+        if (category == null || evidence == null) return defaults;
+        final first = evidence.resources?.firstOrNull;
+        return (
+          _tierCategories.contains(category)
+              ? StatisticsEvidenceAction(
+                  secondary.label,
+                  secondary.detail,
+                  () => navigate(InventoryNavigationIntent.tiers()),
+                )
+              : secondary,
+          first == null
+              ? primary
+              : StatisticsEvidenceAction(
+                  primary.label,
+                  primary.detail,
+                  () => navigate(InventoryNavigationIntent.row(first.key)),
+                ),
+        );
+      case StatisticsMode.plan:
+        final evidence = supplyView.evidence;
+        final resource = evidence?.resource;
+        if (evidence == null || resource == null) return defaults;
+        final stage = evidence.stages.firstOrNull?.stage;
+        return (
+          StatisticsEvidenceAction(
+            secondary.label,
+            secondary.detail,
+            () => navigate(InventoryNavigationIntent.row(resource.key)),
+          ),
+          stage == null
+              ? primary
+              : StatisticsEvidenceAction(
+                  primary.label,
+                  'P${stage.phase} 선택 · 순서 바꾸기',
+                  () => navigate(PlanNavigationIntent.order(stage.stageId)),
+                ),
+        );
+    }
+  }
+
+  /// 인벤토리 티어별 충족률 표가 있는 카테고리(노트 · BD 학교 × 티어, 오파츠 종류 × 티어, FE6-e).
+  static const _tierCategories = {
+    inventoryTechNotesCategory,
+    inventoryTacticalBdCategory,
+    inventoryOopartCategory,
+  };
+
   @override
   Widget build(BuildContext context) {
     final data = StatisticsSourceData(
@@ -409,48 +599,33 @@ class _StatisticsPageState extends State<StatisticsPage> {
       ],
     );
     final growth = _loading ? null : _currentGrowth();
+    final growthView = StatisticsGrowthView(
+      growth: growth,
+      metric: _growthMetric,
+      selection: _growthSelection,
+      expanded: _evidenceExpanded,
+      onMetricChanged: (metric) => setState(() {
+        _growthMetric = metric;
+        _growthSelection = null;
+        _evidenceExpanded = false;
+      }),
+      onSelectionChanged: _select,
+      onExpand: () => setState(() => _evidenceExpanded = true),
+    );
+    final supplyView = _supplyView(growth, _supplySelection);
     return StatisticsWorkspace(
       key: const ValueKey('statistics-page'),
       mode: _mode,
       data: data,
-      growth: StatisticsGrowthView(
-        growth: growth,
-        metric: _growthMetric,
-        selection: _growthSelection,
-        expanded: _evidenceExpanded,
-        onMetricChanged: (metric) => setState(() {
-          _growthMetric = metric;
-          _growthSelection = null;
-          _evidenceExpanded = false;
-        }),
-        onSelectionChanged: _select,
-        onExpand: () => setState(() => _evidenceExpanded = true),
-      ),
-      supply: StatisticsSupplyView(
-        supply: _loading ? null : _currentSupply(growth),
-        loading: _loading,
-        selection: _supplySelection,
-        students: _supplyStudents,
-        onSelectionChanged: (selection) =>
-            setState(() => _supplySelection = selection),
-        planning: _loading ? null : _currentPlanning(),
-        planningError: _planError,
-        c1Order: _c1Order,
-        onC1OrderChanged: (order) => setState(() {
-          _c1Order = order;
-          // 고른 C1 행은 순서가 바뀌면 화면에 없을 수 있다.
-          if (_supplySelection case StatisticsResourceSelection(
-            source: StatisticsResourceSource.c1,
-          )) {
-            _supplySelection = null;
-          }
-        }),
-      ),
+      growth: growthView,
+      supply: supplyView,
+      evidenceActions: _evidenceActions(growthView, supplyView),
       onModeChanged: (mode) => setState(() {
         _mode = mode;
         _growthSelection = null;
         _supplySelection = null;
         _evidenceExpanded = false;
+        _supplyExpanded = false;
       }),
       onRescan: () => widget.onOpen(AppSection.scan),
     );

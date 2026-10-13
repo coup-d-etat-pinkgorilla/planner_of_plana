@@ -15,7 +15,10 @@
 //   않는다). 보유 · 필요 · 부족 세 줄은 시안 Stats-Plan에 없어 이 틀에서는 빼고, 모자라지 않거나 문서 계산이 없으면 위 FE7-c
 //   틀 그대로다.
 // - C1 순서(FE7-g): "부족 큰 순" · "페이즈 순"(활성 문서 계산이 있을 때만).
-// 원본 탭 이동(아래 두 버튼)은 FE7-d다.
+// - "외 n종 · 외 n명"(FE7-d, FE7-c 발견 6): 성장 근거 "모두 보기"와 같은 버튼이고, 누르면 그 행 자리와 버튼 자리를 합친 곳에서
+//   모든 재화 · 학생을 세로로 스크롤한다(통계 안 펼침, 다른 탭으로 가지 않는다). 다른 것을 고르면 접힌다. "외 n단계"는
+//   그대로 글자다.
+// 원본 탭 이동(아래 두 버튼)은 FE7-d(`statistics_page.dart`)다.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -117,6 +120,8 @@ class StatisticsSupplyView {
     this.planningError,
     this.c1Order = StatisticsC1Order.shortage,
     this.onC1OrderChanged,
+    this.expanded = false,
+    this.onExpand,
   });
 
   /// 부족 계산이 없으면(목표 없음 · 계산 실패 · 읽는 중) null.
@@ -137,6 +142,10 @@ class StatisticsSupplyView {
   /// 고른 C1 순서. "페이즈 순"은 [planning]이 있을 때만 쓴다.
   final StatisticsC1Order c1Order;
   final ValueChanged<StatisticsC1Order>? onC1OrderChanged;
+
+  /// 근거 "외 n종 · 외 n명"을 모두 펼쳤는가(FE7-d)와 펼치는 콜백.
+  final bool expanded;
+  final VoidCallback? onExpand;
 
   /// 실제로 쓰는 C1 순서(문서 계산이 없으면 "부족 큰 순").
   StatisticsC1Order get effectiveC1Order =>
@@ -376,48 +385,98 @@ Widget _resourceIcon(InventoryItemView view, Size size) {
 List<Widget> statisticsSupplyEvidenceChildren({
   required StatisticsEvidenceFrame frame,
   required StatisticsSupplyEvidenceContent content,
+  bool expanded = false,
+  VoidCallback? onExpand,
 }) {
   final resource = content.resource;
   return resource == null
-      ? _categoryChildren(frame, content)
-      : _resourceChildren(frame, content, resource);
+      ? _categoryChildren(frame, content, expanded, onExpand)
+      : _resourceChildren(frame, content, resource, expanded, onExpand);
+}
+
+/// 근거 행 [count]개 중 [visible]개를 [top]부터 그리고 남으면 "외 n…" 모두 보기 버튼을 둔다. [expanded]면 행 자리와 버튼
+/// 자리를 합친 곳에서 모두를 세로로 스크롤한다(성장 근거 "모두 보기"와 같은 동작, FE7-d).
+List<Widget> _evidenceRows({
+  required StatisticsEvidenceFrame frame,
+  required double top,
+  required int count,
+  required int visible,
+  required String Function(int rest) restText,
+  required String listKey,
+  required bool expanded,
+  required VoidCallback? onExpand,
+  required Key Function(int index) rowKey,
+  required Widget Function(int index) itemBuilder,
+}) {
+  final rest = count - visible;
+  if (expanded && rest > 0) {
+    return [
+      statisticsEvidenceList(
+        key: ValueKey(listKey),
+        frame: frame,
+        top: top,
+        bottom:
+            top +
+            StatisticsMetrics.evidenceRowPitch * visible +
+            StatisticsMetrics.evidenceMoreHeight,
+        itemCount: count,
+        rowKey: rowKey,
+        itemBuilder: itemBuilder,
+      ),
+    ];
+  }
+  return [
+    for (var index = 0; index < math.min(count, visible); index++)
+      Positioned.fromRect(
+        key: rowKey(index),
+        rect: frame.row(
+          top + StatisticsMetrics.evidenceRowPitch * index,
+          StatisticsMetrics.evidenceRowHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: frame.scale,
+          child: itemBuilder(index),
+        ),
+      ),
+    if (rest > 0)
+      Positioned.fromRect(
+        rect: frame.row(
+          top + StatisticsMetrics.evidenceRowPitch * visible,
+          StatisticsMetrics.evidenceMoreHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: frame.scale,
+          child: StatisticsEvidenceMoreButton(
+            key: const ValueKey('statistics-evidence-rest'),
+            restText: restText(rest),
+            onPressed: onExpand,
+          ),
+        ),
+      ),
+  ];
 }
 
 List<Widget> _categoryChildren(
   StatisticsEvidenceFrame frame,
   StatisticsSupplyEvidenceContent content,
+  bool expanded,
+  VoidCallback? onExpand,
 ) {
   final scale = frame.scale;
   final resources = content.resources ?? const <InventoryItemView>[];
-  const visible = StatisticsMetrics.evidenceVisibleRows;
-  final children = <Widget>[
-    for (final (index, view) in resources.take(visible).indexed)
-      Positioned.fromRect(
-        rect: frame.row(
-          StatisticsMetrics.evidenceRowTop +
-              StatisticsMetrics.evidenceRowPitch * index,
-          StatisticsMetrics.evidenceRowHeight,
-        ),
-        child: StatisticsScaledBox(
-          scale: scale,
-          child: _ResourceRow(
-            key: ValueKey('statistics-evidence-resource-${view.key}'),
-            view: view,
-          ),
-        ),
-      ),
-  ];
-  final rest = resources.length - visible;
-  if (rest > 0) {
-    children.add(
-      _moreLine(
-        frame,
-        StatisticsMetrics.evidenceRowTop +
-            StatisticsMetrics.evidenceRowPitch * visible,
-        '외 $rest종',
-      ),
-    );
-  }
+  final children = _evidenceRows(
+    frame: frame,
+    top: StatisticsMetrics.evidenceRowTop,
+    count: resources.length,
+    visible: StatisticsMetrics.evidenceVisibleRows,
+    restText: (rest) => '외 $rest종',
+    listKey: 'statistics-evidence-list-${content.title}',
+    expanded: expanded,
+    onExpand: onExpand,
+    rowKey: (index) =>
+        ValueKey('statistics-evidence-resource-${resources[index].key}'),
+    itemBuilder: (index) => _ResourceRow(view: resources[index]),
+  );
   children.add(
     _sectionTitle(
       frame,
@@ -456,6 +515,8 @@ List<Widget> _resourceChildren(
   StatisticsEvidenceFrame frame,
   StatisticsSupplyEvidenceContent content,
   InventoryItemView resource,
+  bool expanded,
+  VoidCallback? onExpand,
 ) {
   final scale = frame.scale;
   final headerTop = frame.top + StatisticsMetrics.evidenceHeaderTop * scale;
@@ -479,7 +540,10 @@ List<Widget> _resourceChildren(
     ),
   ];
   if (content.stages.isNotEmpty) {
-    return [...children, ..._stageChildren(frame, content)];
+    return [
+      ...children,
+      ..._stageChildren(frame, content, expanded, onExpand),
+    ];
   }
   for (final (index, (key, label, value, color)) in content.facts.indexed) {
     children.add(
@@ -514,45 +578,54 @@ List<Widget> _resourceChildren(
       caption: '${students.length}명',
     ),
   );
-  const visible = StatisticsMetrics.evidenceUserRows;
-  for (final (index, student) in students.take(visible).indexed) {
-    children.add(
-      Positioned.fromRect(
-        rect: frame.row(
-          StatisticsMetrics.evidenceUsersTop +
-              StatisticsMetrics.evidenceRowPitch * index,
-          StatisticsMetrics.evidenceRowHeight,
-        ),
-        child: StatisticsScaledBox(
-          scale: scale,
-          child: StatisticsEvidenceStudentRow.plain(
-            key: ValueKey('statistics-evidence-row-${student.id}'),
-            studentId: student.id,
-            displayName: student.name,
-            level: student.level,
-          ),
-        ),
-      ),
-    );
-  }
-  final rest = students.length - visible;
-  if (rest > 0) {
-    children.add(
-      _moreLine(
-        frame,
-        StatisticsMetrics.evidenceUsersTop +
-            StatisticsMetrics.evidenceRowPitch * visible,
-        '외 $rest명',
-      ),
-    );
-  }
+  children.addAll(
+    _studentRows(
+      frame: frame,
+      top: StatisticsMetrics.evidenceUsersTop,
+      visible: StatisticsMetrics.evidenceUserRows,
+      content: content,
+      expanded: expanded,
+      onExpand: onExpand,
+    ),
+  );
   return children;
+}
+
+/// "쓰는 학생" 행(초상 · 이름 · Lv) + "외 n명" 모두 보기.
+List<Widget> _studentRows({
+  required StatisticsEvidenceFrame frame,
+  required double top,
+  required int visible,
+  required StatisticsSupplyEvidenceContent content,
+  required bool expanded,
+  required VoidCallback? onExpand,
+}) {
+  final students = content.students;
+  return _evidenceRows(
+    frame: frame,
+    top: top,
+    count: students.length,
+    visible: visible,
+    restText: (rest) => '외 $rest명',
+    listKey: 'statistics-evidence-list-${content.title}',
+    expanded: expanded,
+    onExpand: onExpand,
+    rowKey: (index) =>
+        ValueKey('statistics-evidence-row-${students[index].id}'),
+    itemBuilder: (index) => StatisticsEvidenceStudentRow.plain(
+      studentId: students[index].id,
+      displayName: students[index].name,
+      level: students[index].level,
+    ),
+  );
 }
 
 /// 계획 집계 재화 근거(FE7-g, 시안 Stats-Plan): "막히는 단계" + 단계 행 + "외 n단계" + "Pn부터 누적 부족" + "쓰는 학생".
 List<Widget> _stageChildren(
   StatisticsEvidenceFrame frame,
   StatisticsSupplyEvidenceContent content,
+  bool expanded,
+  VoidCallback? onExpand,
 ) {
   final scale = frame.scale;
   final stages = content.stages;
@@ -620,36 +693,16 @@ List<Widget> _stageChildren(
     ),
   );
   offset += StatisticsMetrics.evidencePlanUsersRowGap;
-  const visible = StatisticsMetrics.evidenceVisibleRows;
-  for (final (index, student) in students.take(visible).indexed) {
-    children.add(
-      Positioned.fromRect(
-        rect: frame.row(
-          offset + StatisticsMetrics.evidenceRowPitch * index,
-          StatisticsMetrics.evidenceRowHeight,
-        ),
-        child: StatisticsScaledBox(
-          scale: scale,
-          child: StatisticsEvidenceStudentRow.plain(
-            key: ValueKey('statistics-evidence-row-${student.id}'),
-            studentId: student.id,
-            displayName: student.name,
-            level: student.level,
-          ),
-        ),
-      ),
-    );
-  }
-  final restStudents = students.length - visible;
-  if (restStudents > 0) {
-    children.add(
-      _moreLine(
-        frame,
-        offset + StatisticsMetrics.evidenceRowPitch * visible,
-        '외 $restStudents명',
-      ),
-    );
-  }
+  children.addAll(
+    _studentRows(
+      frame: frame,
+      top: offset,
+      visible: StatisticsMetrics.evidenceVisibleRows,
+      content: content,
+      expanded: expanded,
+      onExpand: onExpand,
+    ),
+  );
   return children;
 }
 
@@ -703,7 +756,7 @@ Widget _sectionTitle(
   );
 }
 
-/// "외 n종 · 외 n명"(시안 `.plain` 30 높이, 누르는 동작 없음).
+/// "외 n단계"(시안 `.plain` 30 높이, 누르는 동작 없음).
 Widget _moreLine(
   StatisticsEvidenceFrame frame,
   double offset,
@@ -782,7 +835,7 @@ class _ResourceHeader extends StatelessWidget {
 
 /// 재화 행(52 높이, 시안 `.row`): 아이콘 44×36 · 이름 13 · "보유 n / 필요 m" 11.5 회색 · 충족률 칩.
 class _ResourceRow extends StatelessWidget {
-  const _ResourceRow({super.key, required this.view});
+  const _ResourceRow({required this.view});
 
   static const iconSize = Size(44, 36);
 

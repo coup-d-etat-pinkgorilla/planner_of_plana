@@ -10,7 +10,8 @@
 //   범위 칩 페이즈 수, C1 "페이즈 순", C3 페이즈별 누적 부족을 더한다(FE7-g, `statistics_plan_charts.dart`). 다른 타일은
 //   제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면 그래프 타일 안에 빈 상태 문구다.
 //   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
-// - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d 전까지 비활성).
+// - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d: 고른 구간 · 재화가 있으면
+//   원본 탭으로 넘긴다, 버튼 글자 · 동작은 [StatisticsWorkspace.evidenceActions]).
 //   학생 성장에서 A1 구간 · A2 항목을 고르면 그 근거 목록이다(`statistics_growth_evidence.dart`). B1 막대 · C1 행 · C2 점을
 //   고르면 재화 · 학생 근거다(`statistics_supply_evidence.dart`).
 // 좌표는 `statistics_studio_layout.dart`의 Studio 문서와 [StatisticsMetrics]다. 창이 낮으면 왼쪽 · 오른쪽 섹션 요소는
@@ -172,6 +173,7 @@ class StatisticsWorkspace extends StatelessWidget {
     required this.onRescan,
     this.growth = const StatisticsGrowthView(growth: null),
     this.supply = const StatisticsSupplyView(supply: null),
+    this.evidenceActions,
   });
 
   final StatisticsMode mode;
@@ -188,6 +190,9 @@ class StatisticsWorkspace extends StatelessWidget {
 
   /// 왼쪽 "다시 스캔"(FD-125 권장안 중 지금 되는 부분: 스캔 탭을 연다).
   final VoidCallback onRescan;
+
+  /// 근거 패널 아래 ghost · primary 버튼(FE7-d). 없으면 주제 기본 글자(비활성)다.
+  final (StatisticsEvidenceAction, StatisticsEvidenceAction)? evidenceActions;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -221,6 +226,7 @@ class StatisticsWorkspace extends StatelessWidget {
               data: data,
               growth: growth,
               supply: supply,
+              actions: evidenceActions ?? mode.evidenceActions,
             ),
           ),
         ],
@@ -1616,6 +1622,7 @@ class _EvidenceSection extends StatelessWidget {
     required this.data,
     required this.growth,
     required this.supply,
+    required this.actions,
   });
 
   final Size size;
@@ -1623,6 +1630,7 @@ class _EvidenceSection extends StatelessWidget {
   final StatisticsSourceData data;
   final StatisticsGrowthView growth;
   final StatisticsSupplyView supply;
+  final (StatisticsEvidenceAction, StatisticsEvidenceAction) actions;
 
   @override
   Widget build(BuildContext context) {
@@ -1689,7 +1697,7 @@ class _EvidenceSection extends StatelessWidget {
       right: right,
       scale: scale,
     );
-    final (secondary, primary) = mode.evidenceActions;
+    final (secondary, primary) = actions;
     return _SectionFrame(
       sectionId: statisticsEvidenceSectionId,
       surfaceKey: 'statistics-evidence-surface',
@@ -1765,6 +1773,8 @@ class _EvidenceSection extends StatelessWidget {
           ...statisticsSupplyEvidenceChildren(
             frame: frame,
             content: supplyEvidence,
+            expanded: supply.expanded,
+            onExpand: supply.onExpand,
           ),
         Positioned.fromRect(
           rect: button(
@@ -1801,8 +1811,9 @@ class _EvidenceSection extends StatelessWidget {
   }
 }
 
-// 근거 패널 아래 이동 버튼 자리. 시안 모양은 왼쪽 변 80° · 오른쪽 변 수직이라 키트 [RailButton]을 좌우로 뒤집어
-/// 바탕만 쓰고, 글자는 뒤집지 않고 위에 올린다. 원본 탭 이동은 FE7-d라 지금은 누를 수 없다(onPressed 없음).
+// 근거 패널 아래 이동 버튼. 시안 모양은 왼쪽 변 80° · 오른쪽 변 수직이라 키트 [RailButton]을 좌우로 뒤집어
+/// 바탕만 쓰고, 글자는 뒤집지 않고 위에 올린다. [StatisticsEvidenceAction.onPressed]가 없으면 비활성(FE7-a 모양 그대로),
+/// 있으면 누를 수 있고 글자를 흐리게 하지 않는다(FE7-d). 누르기 · hover는 바탕 키트 버튼이 받는다.
 class _EvidenceButton extends StatelessWidget {
   const _EvidenceButton({
     super.key,
@@ -1819,6 +1830,7 @@ class _EvidenceButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = RailButtonLook.of(variant).foreground;
     final detail = action.detail;
+    final enabled = action.onPressed != null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -1830,14 +1842,14 @@ class _EvidenceButton extends StatelessWidget {
             semanticLabel: detail == null
                 ? action.label
                 : '${action.label} · $detail',
-            onPressed: null,
+            onPressed: action.onPressed,
             child: const SizedBox.shrink(),
           ),
         ),
         IgnorePointer(
           child: ExcludeSemantics(
             child: Opacity(
-              opacity: kitDisabledOpacity,
+              opacity: enabled ? 1 : kitDisabledOpacity,
               child: Padding(
                 padding: EdgeInsets.only(
                   left: diagonalCutDepth(height) + 12,

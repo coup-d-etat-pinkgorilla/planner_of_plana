@@ -12,6 +12,7 @@ import 'kit/ba_chip.dart';
 import 'kit/ba_modal.dart';
 import 'kit/kit_pressable.dart';
 import 'models/recent_students.dart';
+import 'navigation/app_navigation_intent.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
@@ -104,6 +105,15 @@ class _AppShellState extends State<AppShell>
   /// 머리글 칩을 누르면 올린다. 홈이 창 선택 패널을 연다(FE8-e).
   var _targetPickerRequest = 0;
   var _statisticsReloadToken = 0;
+
+  /// 통계 근거에서 넘긴 마지막 이동 의도(FE7-d). 대상 탭이 id로 한 번만 적용한다.
+  AppNavigationIntent? _navigation;
+
+  /// 복귀 칩을 보일 이동(대상 탭에 있는 동안만). 다른 탭으로 가면 지운다.
+  AppNavigationIntent? _returnFrom;
+
+  /// "← 통계"로 돌아왔다(통계가 다시 읽은 뒤 고른 것을 복원한다).
+  var _statisticsReturnToken = 0;
   var _tacticalReloadToken = 0;
   var _profileGeneration = 0;
   late bool _studentTabActive;
@@ -208,6 +218,7 @@ class _AppShellState extends State<AppShell>
       if (section == AppSection.home) _homeReloadToken += 1;
       if (section == AppSection.statistics) _statisticsReloadToken += 1;
       if (section == AppSection.pvp) _tacticalReloadToken += 1;
+      if (changingSection) _returnFrom = null;
       if (changingSection &&
           (_section == AppSection.students || section == AppSection.students)) {
         _studentTabActive = false;
@@ -218,6 +229,25 @@ class _AppShellState extends State<AppShell>
       }
       _section = section;
     });
+  }
+
+  /// 통계 근거의 이동 버튼(FE7-d): 대상 탭을 열고 의도를 넘기고 복귀 칩을 둔다.
+  void _navigate(AppNavigationIntent intent) {
+    _open(intent.section);
+    setState(() {
+      _navigation = intent;
+      _returnFrom = intent;
+    });
+  }
+
+  /// 복귀 칩: 출발 탭(통계)으로 돌아간다.
+  void _returnToOrigin() {
+    final from = _returnFrom;
+    if (from == null) return;
+    _open(from.origin);
+    if (from.origin == AppSection.statistics) {
+      setState(() => _statisticsReturnToken += 1);
+    }
   }
 
   void _openTargetPicker() {
@@ -278,6 +308,8 @@ class _AppShellState extends State<AppShell>
       _studentCandidate = null;
       _inventoryCandidate = null;
       _recentScans = const [];
+      _navigation = null;
+      _returnFrom = null;
     });
     _loadSelectedProfile();
   }
@@ -321,6 +353,10 @@ class _AppShellState extends State<AppShell>
                               child: _CompoundPageHeader(
                                 section: _section,
                                 headerOverride: _headerOverride,
+                                returnLabel: _returnFrom?.section == _section
+                                    ? _returnFrom?.returnLabel
+                                    : null,
+                                onReturn: _returnToOrigin,
                                 service: widget.service,
                                 profile: _selectedProfile,
                                 developmentPanelVisible: _showDevelopmentPanel,
@@ -387,6 +423,11 @@ class _AppShellState extends State<AppShell>
                                   active: _studentTabActive,
                                   recentStudents: _recentStudents,
                                   headerOverride: _headerOverride,
+                                  navigation: switch (_navigation) {
+                                    final StudentsNavigationIntent intent =>
+                                      intent,
+                                    _ => null,
+                                  },
                                 ),
                                 PlanningPage(
                                   key: ValueKey('plan-$_profileGeneration'),
@@ -394,6 +435,10 @@ class _AppShellState extends State<AppShell>
                                   initialSeed: _planningSeed,
                                   active: _planTabActive,
                                   loadRepositoryPlan: true,
+                                  navigation: switch (_navigation) {
+                                    final PlanNavigationIntent intent => intent,
+                                    _ => null,
+                                  },
                                 ),
                                 InventoryPage(
                                   key: ValueKey(
@@ -406,6 +451,11 @@ class _AppShellState extends State<AppShell>
                                   onCandidateCommitted:
                                       _clearInventoryCandidate,
                                   active: _section == AppSection.inventory,
+                                  navigation: switch (_navigation) {
+                                    final InventoryNavigationIntent intent =>
+                                      intent,
+                                    _ => null,
+                                  },
                                 ),
                                 TacticalPage(
                                   key: ValueKey('tactical-$_profileGeneration'),
@@ -418,7 +468,9 @@ class _AppShellState extends State<AppShell>
                                   ),
                                   service: widget.service,
                                   onOpen: _open,
+                                  onNavigate: _navigate,
                                   reloadToken: _statisticsReloadToken,
+                                  returnToken: _statisticsReturnToken,
                                 ),
                                 ScanPage(
                                   key: ValueKey('scan-$_profileGeneration'),
@@ -530,6 +582,8 @@ class _CompoundPageHeader extends StatelessWidget {
   const _CompoundPageHeader({
     required this.section,
     required this.headerOverride,
+    this.returnLabel,
+    this.onReturn,
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
@@ -541,6 +595,10 @@ class _CompoundPageHeader extends StatelessWidget {
 
   final AppSection section;
   final PageHeaderOverrideController headerOverride;
+
+  /// 복귀 칩 글자("← 통계", FE7-d). null이면 칩이 없다.
+  final String? returnLabel;
+  final VoidCallback? onReturn;
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
@@ -649,6 +707,8 @@ class _CompoundPageHeader extends StatelessWidget {
                           builder: (context, _) => _AppHeader(
                             section: section,
                             pageOverride: headerOverride.valueFor(section),
+                            returnLabel: returnLabel,
+                            onReturn: onReturn,
                             service: service,
                             profile: profile,
                             developmentPanelVisible: developmentPanelVisible,
@@ -892,6 +952,8 @@ class _AppHeader extends StatelessWidget {
   const _AppHeader({
     required this.section,
     this.pageOverride,
+    this.returnLabel,
+    this.onReturn,
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
@@ -902,6 +964,8 @@ class _AppHeader extends StatelessWidget {
 
   final AppSection section;
   final PageHeaderOverride? pageOverride;
+  final String? returnLabel;
+  final VoidCallback? onReturn;
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
@@ -912,6 +976,7 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageOverride = this.pageOverride;
+    final returnLabel = this.returnLabel;
     return ValueListenableBuilder(
       valueListenable: service.state,
       builder: (context, state, _) {
@@ -951,6 +1016,20 @@ class _AppHeader extends StatelessWidget {
                               semanticLabel: pageOverride.backLabel,
                               builder: (context, state) => BaChip(
                                 label: pageOverride.backLabel,
+                                tone: state.hovered || state.focused
+                                    ? AppTones.pink
+                                    : AppTones.info,
+                              ),
+                            ),
+                          ],
+                          if (returnLabel != null) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            KitPressable(
+                              key: const ValueKey('page-header-return-chip'),
+                              onPressed: onReturn,
+                              semanticLabel: returnLabel,
+                              builder: (context, state) => BaChip(
+                                label: returnLabel,
                                 tone: state.hovered || state.focused
                                     ? AppTones.pink
                                     : AppTones.info,

@@ -51,13 +51,14 @@ class StatisticsTileRow {
   final List<StatisticsTileSpec> tiles;
 }
 
-/// 오른쪽 아래 이동 버튼 글자(행동 + 목적지 설명). 이동은 FE7-d라 지금은 누를 수 없다.
+/// 오른쪽 아래 이동 버튼 글자(행동 + 목적지 설명)와 누르면 할 일(FE7-d 원본 탭 이동). [onPressed]가 없으면 비활성이다.
 @immutable
 class StatisticsEvidenceAction {
-  const StatisticsEvidenceAction(this.label, [this.detail]);
+  const StatisticsEvidenceAction(this.label, [this.detail, this.onPressed]);
 
   final String label;
   final String? detail;
+  final VoidCallback? onPressed;
 }
 
 extension StatisticsModeSpec on StatisticsMode {
@@ -222,7 +223,8 @@ extension StatisticsModeSpec on StatisticsMode {
     ],
   };
 
-  /// 오른쪽 아래 ghost · primary 버튼(시안 글자 중 구간에 묶이지 않은 부분).
+  /// 오른쪽 아래 ghost · primary 버튼(시안 글자 중 구간에 묶이지 않은 부분, 비활성). 고른 구간 · 재화에 묶인 둘째 줄과
+  /// 이동은 통계 페이지가 붙인다(FE7-d).
   (StatisticsEvidenceAction, StatisticsEvidenceAction) get evidenceActions =>
       switch (this) {
         StatisticsMode.students => (

@@ -17,6 +17,7 @@ import '../models/planning_models.dart';
 import '../models/recent_students.dart';
 import '../models/repository_plan_snapshot.dart';
 import '../models/student_filter_controller.dart';
+import '../navigation/app_navigation_intent.dart';
 import '../widgets/diagonal_section.dart';
 import '../widgets/growth_calculator_section.dart';
 import '../widgets/page_header_override.dart';
@@ -44,6 +45,7 @@ class StudentPage extends StatefulWidget {
     this.active = true,
     this.recentStudents,
     this.headerOverride,
+    this.navigation,
   });
 
   final AppService service;
@@ -61,6 +63,11 @@ class StudentPage extends StatefulWidget {
 
   /// 성장 계산기 모드의 머리말 제목·"← 학생" 칩(FD-161 (a)). 앱 셸이 넘긴다.
   final PageHeaderOverrideController? headerOverride;
+
+  /// 통계 근거 "학생 탭에서 보기"(FE7-d). 같은 의도는 한 번만 적용한다: 그 학생만 보이는 이동용 임시 목록을 걸고(학생
+  /// 필터 상태는 그대로, FD-104), 고른 학생이 목록에 없으면 첫 학생을 고르고, 계산기가 열려 있으면 닫는다. 임시 목록은
+  /// S4 칩 × · "모두 지우기" · 탭을 떠날 때 지운다.
+  final StudentsNavigationIntent? navigation;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -99,6 +106,11 @@ class _StudentPageState extends State<StudentPage> {
   final StudentFilterController _filter = StudentFilterController();
   RecentStudents? _ownRecent;
 
+  /// 마지막으로 적용한 이동 의도 id와 그 임시 목록(FE7-d).
+  int? _navigationId;
+  StudentsNavigationIntent? _restriction;
+  Set<String>? _restrictedIds;
+
   RecentStudents get _recent =>
       widget.recentStudents ?? (_ownRecent ??= RecentStudents());
 
@@ -117,6 +129,33 @@ class _StudentPageState extends State<StudentPage> {
     _recent.addListener(_stateChanged);
     _recentCalculations.addListener(_stateChanged);
     _loadCatalog();
+    _receiveNavigation();
+  }
+
+  /// 새 이동 의도를 다음 프레임에 적용한다(빌드 중에 선택 · 최근 본 학생 · 머리말 알림이 생기지 않게).
+  void _receiveNavigation() {
+    final intent = widget.navigation;
+    if (intent == null || intent.id == _navigationId) return;
+    _navigationId = intent.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _navigationId != intent.id) return;
+      if (_calculator != null) _closeCalculator();
+      final ids = intent.studentIds;
+      setState(() {
+        _restriction = intent;
+        _restrictedIds = ids.toSet();
+        if (ids.isNotEmpty && !ids.contains(_selectedId)) _select(ids.first);
+      });
+      _syncEditors();
+    });
+  }
+
+  void _clearRestriction() {
+    if (_restriction == null) return;
+    setState(() {
+      _restriction = null;
+      _restrictedIds = null;
+    });
   }
 
   void _stateChanged() {
@@ -131,6 +170,12 @@ class _StudentPageState extends State<StudentPage> {
       _recent.addListener(_stateChanged);
     }
     if (oldWidget.active != widget.active) _syncCalculatorEscape();
+    // 이동용 임시 목록은 탭을 떠나면 지운다(다음에 학생 탭을 열면 평소 목록이다).
+    if (oldWidget.active && !widget.active) {
+      _restriction = null;
+      _restrictedIds = null;
+    }
+    _receiveNavigation();
   }
 
   // --- 성장 계산기 모드 ------------------------------------------------------
@@ -618,6 +663,9 @@ class _StudentPageState extends State<StudentPage> {
                     for (final id in _recent.ids) ?catalogById[id],
                   ],
                   active: widget.active,
+                  restrictedIds: _restrictedIds,
+                  restrictionLabel: _restriction?.label,
+                  onClearRestriction: _clearRestriction,
                   searchController: _search,
                   onSearchChanged: (_) => setState(() {}),
                   onStudentSelected: (studentId) {

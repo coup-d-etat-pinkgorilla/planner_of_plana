@@ -1510,6 +1510,7 @@ class PlanFlowController extends ChangeNotifier {
     this.scenarioCollectionRevision,
     this.activePlanRevision,
     this.initialSaveTarget,
+    this.initialOrderStageId,
     this.debounce = planFlowCalculationDebounce,
   }) : _draft = initialDraft ?? PlanFlowDraft.empty,
        _step = initialStep {
@@ -1532,6 +1533,10 @@ class PlanFlowController extends ChangeNotifier {
 
   /// 4단계 저장 위치를 미리 고른 채 연다(FE5-c1 시나리오 "계획에 적용…", FD-088). null이면 목적의 기본 위치다.
   final PlanFlowSaveTarget? initialSaveTarget;
+
+  /// 3단계를 처음 열 때 고를 단계 카드(FE7-d 통계 "계획 만들기 3 · 단계 순서 · Pn 선택"). 초안에 없으면 3단계 기본
+  /// 선택(첫 칸의 첫 단계)이다.
+  final String? initialOrderStageId;
 
   PlanFlowStep _step;
   PlanFlowDraft _draft;

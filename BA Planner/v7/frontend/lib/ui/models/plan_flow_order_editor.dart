@@ -121,7 +121,9 @@ const planFlowOrderCompactThreshold = 12;
 
 /// 3단계 화면 상태: 고른 카드, 마지막 거부 이유, 크게·작게 보기와 작게 보기 툴바.
 class PlanFlowOrderEditor extends ChangeNotifier {
-  PlanFlowOrderEditor({required this.flow});
+  /// 처음 고른 카드는 흐름이 넘긴 단계다([PlanFlowController.initialOrderStageId], FE7-d). 없으면 첫 칸의 첫 단계다.
+  PlanFlowOrderEditor({required this.flow})
+    : _selectedStageId = flow.initialOrderStageId;
 
   final PlanFlowController flow;
 

@@ -24,6 +24,7 @@ import '../models/plan_scenario_list_state.dart';
 import '../models/planning_models.dart';
 import '../models/planning_resource_assets.dart';
 import '../models/repository_plan_snapshot.dart';
+import '../navigation/app_navigation_intent.dart';
 import '../studio/plan_scenario_detail_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
@@ -58,6 +59,16 @@ const planNoProfileHandoffMessage = '계정을 먼저 골라야 계획에 추가
 
 /// 계정은 있지만 흐름을 열 수 없을 때(흐름을 열 수 없는 서비스 · 계정 상태 읽기 실패) SnackBar(FE5-f2).
 const planHandoffUnavailableMessage = '계획 만들기를 열 수 없어 계산기 목표를 계획에 넣지 못했습니다.';
+
+/// 통계 근거 이동(FE7-d)으로 흐름을 열 수 없을 때 SnackBar(계정은 있지만 서비스 · 상태 · 활성 계획을 읽지 못함).
+const planNavigationUnavailableMessage = '계획 만들기를 열 수 없어 통계에서 고른 것을 계획에서 열지 못했습니다.';
+
+/// 통계 "계획 만들기 3 · 단계 순서"를 눌렀는데 진행 중인 계획 만들기가 있을 때(초안을 버리지 않는다, FE7-d).
+const planNavigationFlowOpenMessage = '진행 중인 계획 만들기가 있어 단계 순서를 새로 열지 않았습니다.';
+
+/// 통계 "이 구간 학생을 계획에 추가"를 진행 중인 초안에 더했을 때(FE7-d).
+String planNavigationAppendedMessage(int count) =>
+    '만들던 초안에 통계에서 고른 학생 $count명을 더했습니다.';
 
 /// A↔B 비교 화면 모션(FE5-c2).
 const planScenarioListMotion = SectionMotionSpec(intro: 80, outro: 260);
@@ -191,6 +202,7 @@ class PlanSectionLayout extends StatefulWidget {
     this.initialSeed,
     this.initialPresets = const [],
     this.loadRepositoryPlan = false,
+    this.navigation,
   });
 
   final AppService? service;
@@ -198,6 +210,9 @@ class PlanSectionLayout extends StatefulWidget {
   final PlanningStudentSeed? initialSeed;
   final List<PlanElementPreset> initialPresets;
   final bool loadRepositoryPlan;
+
+  /// 통계 근거에서 넘긴 이동 의도(FE7-d). 같은 의도는 한 번만 적용한다([_PlanSectionLayoutState._consumeNavigation]).
+  final PlanNavigationIntent? navigation;
 
   @override
   State<PlanSectionLayout> createState() => _PlanSectionLayoutState();
@@ -244,6 +259,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// 흐름 4단계 저장 결과(FE4-e). 흐름을 닫을 때 다시 읽기·시나리오 보기 이동에 쓰고 비운다.
   PlanFlowSaveOutcome? _flowSaveOutcome;
   String? _consumedHandoffId;
+
+  /// 마지막으로 받은 통계 이동 의도 id(FE7-d).
+  int? _navigationId;
 
   /// 넘어온 학생(FE4-g)으로 흐름을 여는 중(흐름 상태를 읽는 동안). 이 동안 계획 홈 섹션을 들이지 않는다.
   bool _handoffPending = false;
@@ -302,6 +320,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     super.initState();
     _presets = List.unmodifiable(widget.initialPresets);
     _consumeInitialSeed();
+    _consumeNavigation();
     if (widget.loadRepositoryPlan) _loadRepositoryPlan();
     if (widget.active) _setActive(true);
   }
@@ -444,6 +463,130 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (oldWidget.initialSeed?.handoffId != widget.initialSeed?.handoffId) {
       _consumeInitialSeed();
     }
+    _consumeNavigation();
+  }
+
+  /// 통계 근거 이동(FE7-d, Statistics-Proposal D). 계산기 넘기기([_consumeInitialSeed])와 같은 길로 흐름을 연다(탭이
+  /// 보이기 전이라 홈 섹션은 모션 없이 내린다).
+  /// - "이 구간 학생을 계획에 추가": 계획 만들기 1단계(새 시나리오)를 그 학생들을 고른 채 연다. 진행 중 흐름이 있으면 그
+  ///   초안에 더하고 1단계로 간다.
+  /// - "계획 만들기 3 · 단계 순서": 페이즈 편집(활성 계획을 다시 읽은 초안) 흐름을 3단계로 열고 그 단계 카드를 고른다
+  ///   ([PlanFlowController.initialOrderStageId], "페이즈 편집" 메뉴와 같은 초안). 진행 중 흐름이 있으면 초안을 버리지
+  ///   않고 알리기만 한다.
+  void _consumeNavigation() {
+    final intent = widget.navigation;
+    if (intent == null || intent.id == _navigationId) return;
+    _navigationId = intent.id;
+    final flow = _flow;
+    if (flow != null) {
+      // 빌드 중에 흐름 리스너 · SnackBar를 깨우지 않게 다음 프레임에 넣는다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !identical(_flow, flow)) return;
+        switch (intent.target) {
+          case PlanNavigationTarget.students:
+            final before = flow.selectedStudentIds.length;
+            flow
+              ..addStudents(intent.studentIds)
+              ..goTo(PlanFlowStep.students);
+            _showMessage(
+              planNavigationAppendedMessage(
+                flow.selectedStudentIds.length - before,
+              ),
+            );
+          case PlanNavigationTarget.order:
+            _showMessage(planNavigationFlowOpenMessage);
+        }
+      });
+      return;
+    }
+    _clearHomeForFlow();
+    _openNavigationFlow(intent);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// [_consumeNavigation]: 흐름 상태(학생 고르기는 시나리오 저장소, 단계 순서는 활성 계획을 다시 읽어서)를 읽어 연다. 열 수
+  /// 없으면 알리고 계획 홈을 다시 들인다.
+  Future<void> _openNavigationFlow(PlanNavigationIntent intent) async {
+    final order = intent.target == PlanNavigationTarget.order;
+    final service = widget.service;
+    PlanFlowContext? flowContext;
+    if (order
+        ? service is RepositoryPlanService
+        : service is PlanningScenarioRepositoryService) {
+      try {
+        flowContext = await _flowContext(refresh: order);
+      } on Object {
+        flowContext = null;
+      }
+    }
+    // 그 사이 다른 의도 · 학생이 넘어왔으면 그쪽이 연다(대기 표시도 그쪽이 푼다).
+    if (!mounted || _navigationId != intent.id) return;
+    var opened = false;
+    try {
+      if (_flow != null) return;
+      final plan = _repositoryPlan;
+      if (flowContext == null || (order && plan == null)) {
+        _showMessage(
+          _noProfile
+              ? planNoProfileHandoffMessage
+              : planNavigationUnavailableMessage,
+        );
+        return;
+      }
+      final PlanFlowController flow;
+      if (order) {
+        final draft = PlanFlowDocumentBoundary.fromDocument(
+          plan!.document,
+          seedFor: flowContext.seedFor,
+          authoring: plan.authoring,
+        );
+        flow = PlanFlowController(
+          purpose: PlanFlowPurpose.editActivePlan,
+          context: flowContext,
+          service: widget.service,
+          initialDraft: draft,
+          initialStep: draft.hasStages
+              ? PlanFlowStep.order
+              : PlanFlowStep.students,
+          activePlanRevision: plan.revision,
+          initialOrderStageId: intent.stageId,
+        );
+      } else {
+        flow = PlanFlowController(
+          purpose: PlanFlowPurpose.newScenario,
+          context: flowContext,
+          service: widget.service,
+        )..addStudents(intent.studentIds);
+      }
+      setState(() => _flow = flow);
+      opened = true;
+    } finally {
+      if (mounted) {
+        setState(() => _handoffPending = false);
+        if (!opened) _setActive(widget.active);
+      }
+    }
+  }
+
+  /// 넘어온 흐름이 들어올 자리를 비운다([_consumeInitialSeed] · [_consumeNavigation]). 넘길 때는 계획 탭이 보이지
+  /// 않으므로 모션 없이 내린다.
+  void _clearHomeForFlow() {
+    _handoffPending = true;
+    _showPresetManager = false;
+    _showScenarioList = false;
+    _viewingScenarioId = null;
+    _showScenarioComparison = false;
+    _compareScenarioIds = const [];
+    _scenarioListController.value = 0;
+    for (final controller in _controllers.values) {
+      controller.value = 0;
+    }
   }
 
   /// 계획 탭으로 넘어온 학생(성장 계산기 "이 목표로 계획에 추가", FE4-g, FD-171 (a)).
@@ -465,16 +608,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
       return;
     }
     // 흐름이 들어올 자리를 비운다. 넘길 때는 계획 탭이 보이지 않으므로 모션 없이 내린다.
-    _handoffPending = true;
-    _showPresetManager = false;
-    _showScenarioList = false;
-    _viewingScenarioId = null;
-    _showScenarioComparison = false;
-    _compareScenarioIds = const [];
-    _scenarioListController.value = 0;
-    for (final controller in _controllers.values) {
-      controller.value = 0;
-    }
+    _clearHomeForFlow();
     _openHandoffFlow(seed);
   }
 
