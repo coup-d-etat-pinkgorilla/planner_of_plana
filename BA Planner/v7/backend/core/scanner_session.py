@@ -1,4 +1,5 @@
 from __future__ import annotations
+from core.student_fallback_evidence import attach_student_fallback_details, remove_student_crop_images
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from copy import deepcopy
@@ -344,11 +345,8 @@ class ScannerSessionService:
                 raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
             self._validated_payload(item.scan_kind, payload)
             self._train_answer_sample(session, item, payload, reason, approve)
-            if item.answer_specimen and (
-                approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}
-            ):
-                self._close_specimen(item.answer_specimen)
-                item.answer_specimen = {}
+            if approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}:
+                self._release_candidate_images(session, item)
             if (
                 item.scan_kind == "student"
                 and reason == "edited_and_revalidated_in_scan_page"
@@ -570,8 +568,7 @@ class ScannerSessionService:
             receipt.request = None  # Keep signature/response; release full bucket/context before cleanup.
             item = session.candidates.get(request["candidate_id"])
             if item is not None:
-                specimen, item.answer_specimen = item.answer_specimen, {}
-                self._close_specimen(specimen)
+                self._release_candidate_images(session, item)
             return json.loads(receipt.response_json)
         finally:
             receipt.in_flight = False
@@ -596,8 +593,19 @@ class ScannerSessionService:
         with self._lock:
             for session in self._sessions.values():
                 for candidate in session.candidates.values():
-                    self._close_specimen(candidate.answer_specimen)
-                    candidate.answer_specimen = {}
+                    self._release_candidate_images(session, candidate)
+
+    def _release_candidate_images(self, session, item) -> None:
+        specimen, item.answer_specimen = item.answer_specimen, {}
+        if item.scan_kind == "student":
+            remove_student_crop_images(item.evidence)
+            for event in session.events:
+                candidate = event.get("payload", {}).get("candidate")
+                if isinstance(candidate, dict) and candidate.get("candidate_id") == item.candidate_id:
+                    remove_student_crop_images(candidate.get("evidence"))
+        # Redact retained copies before closing PIL resources, including when a
+        # resource close raises after a durable repository write.
+        self._close_specimen(specimen)
 
     @classmethod
     def _close_specimen(cls, value: object) -> None:
@@ -743,21 +751,21 @@ class ScannerSessionService:
             isinstance(item, dict) and item.get("status") not in NON_REVIEW_EVIDENCE_STATUSES
             for item in evidence
         )
+        evidence = deepcopy(evidence)
+        specimen = dict(raw.get("_answer_specimen", {})) if isinstance(raw.get("_answer_specimen"), Mapping) else {}
+        if session.scan_kind == "student":
+            attach_student_fallback_details(evidence, specimen)
         return SessionCandidate(
             candidate_id=str(raw.get("candidate_id") or self._id_factory()),
             session_id=session.session_id,
             generation=session.generation,
             scan_kind=session.scan_kind,
             payload=deepcopy(payload),
-            evidence=deepcopy(evidence),
+            evidence=evidence,
             review_required=review_required,
             identified_inventory_keys=(self._inventory_keys(payload) if session.scan_kind == "inventory" else ()),
             validation_relationship_ranks=dict(relationship_ranks or {}),
-            answer_specimen=(
-                dict(raw.get("_answer_specimen", {}))
-                if isinstance(raw.get("_answer_specimen"), Mapping)
-                else {}
-            ),
+            answer_specimen=specimen,
         )
 
     def _batch_relationship_ranks(self, candidates: list[dict[str, Any]]) -> dict[int, int]:

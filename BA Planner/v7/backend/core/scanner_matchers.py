@@ -1,4 +1,5 @@
 from __future__ import annotations
+from core.student_fallback_evidence import weapon_fallback_review_details
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -843,6 +844,9 @@ class StudentMatcherAdapter:
                 "source_size": crops.source_size,
                 "numeric_groups": self._numeric_groups(crops),
             }
+            review_details = weapon_fallback_review_details(fallback_evidence, crops)
+            if review_details:
+                answer_specimen["fallback_review_details"] = review_details
         finally:
             crops.close()
         candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
