@@ -3104,3 +3104,235 @@ golden mock(`MockAppService`·`GoldenMockAppService`·각 장면 mock)은 백엔
   - `failures/`를 isolatedDiff로 한 장씩 대조한다. 칩 영역 밖이 바뀌었으면(`home`의 지표 이동 제외) 이 예측이 틀린 것이다.
   - 그 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8d`(`scan_page.dart`는 3-way 병합, 모의 충돌 0).
 - 발견 1·2·3·4·9는 CF 판단을 기다린다. FE8-e는 발견 5를 이어받는다.
+
+## FE8-e 착수 기록 (2026-10-13)
+
+- 상태: 진행 중.
+- 범위: 홈 창 선택 패널(Home-Connect-Pick)과 메뉴 교체 이펙트(Home-Connect-Effect, A §7.2), 머리글 칩 → 패널 열기, FE8-d 후속 3건(머리글 칩에서 크기 빼기, FD-115 나머지 홈 지표 숫자만·초상 62×52, 홈이 셸의 `ConnectedTargetController`를 받음). 스캔 팝업(Home-Connected-Scan, FE8-f3)은 범위 밖.
+- 막힘 확인: 막힘 요약의 FE8-e 행 FD-116은 확정(2026-10-06). 막는 '열림' FD 없음(현재 열림 0건). FD-119는 워커 재량.
+- 중복 실행 확인: 이 문서 끝에 다른 "FE8-e 착수 기록" 없음.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `c2ceb57ebc1429372b53fd6c260b02d9a2bf06ca`.
+- 고칠 기존 파일과 WIP(`git status --short <경로>`), 착수 사본 `debug/frontend_fe8e/pre/<v7 기준 경로>`:
+
+  | 파일 | WIP | 줄바꿈 | 고칠 곳 |
+  |---|---|---|---|
+  | `frontend/lib/ui/pages/home_page.dart` | 없음 | CRLF | 컨트롤러 받기, 패널 열기, 행1 선택 표시·flash, 메뉴 교체 연출 |
+  | `frontend/lib/ui/app_shell.dart` | 없음 | LF | 홈에 컨트롤러 전달, 칩 → 홈 + 패널 열기, 지표 숫자만·초상 둥근 사각(FD-115, 지표·초상이 `_AppHeader`에 있음) |
+  | `frontend/lib/ui/scan/header_connection_chip.dart` | 없음 | LF | 머리글 칩 문구에서 크기 빼기 |
+  | `frontend/lib/app/theme.dart` | 없음 | CRLF·LF 섞임 | `AppMotion` 교체 연출 구간 토큰, flash 색 토큰 `connectFlash`(FD-119) — 추가만 |
+  | `frontend/test/widget_test.dart` | 없음 | CRLF | `42명`·초상 기대 |
+  | `frontend/test/connected_target_fe8d_test.dart` | 없음 | LF | 머리글 칩 문구·칩 누름 동작 기대 |
+  | `frontend/test/home_page_test.dart` | 없음 | LF | (필요하면) 컨트롤러 없는 홈 기대 |
+
+- 새 파일(예정): `frontend/lib/ui/home/connect_target_panel.dart`(창 선택 패널), `frontend/lib/ui/home/home_menu_swap.dart`(교체 타임라인), `frontend/test/home_connect_fe8e_test.dart`.
+- `lib/services/**`·`lib/ui/kit/**`·`scan_page.dart`·Lane A 파일은 읽기만 한다. WIP 있는 파일은 고치지 않을 예정이라 post 사본은 없을 수 있다.
+
+## FE8-e 종료 기록 (2026-10-13, 코드 작성 완료·CF gate 미실행)
+
+홈 `싯딤의 상자와 연결`이 오른쪽 부착 창 선택 패널을 열고, 고른 창을 셸의 `ConnectedTargetController.connect`로 연결한다. 연결되면 홈 메뉴가 시안 타임라인대로 빠졌다가 첫 버튼이 `스캔`으로 바뀌어 들어오고, 해제되면 역연출한다. 머리글 칩은 어느 탭에서든 홈 패널을 연다. FE8-d 후속 3건(머리글 칩 크기 빼기, FD-115 지표·초상, 홈이 셸 컨트롤러 사용)도 했다.
+
+### 실행 명령·결과
+
+모두 `frontend` 폴더에서 실행했다. golden·process E2E·전체 gate는 돌리지 않았다.
+
+- `flutter analyze`: 마지막 실행(모든 편집 뒤) **No issues found**(0, info 포함).
+  - 중간에 Lane A의 작업 중 파일(`lib/ui/statistics/statistics_workspace.dart`, `supply`·`supplyEmpty` 인자 3건 + 안 쓰는 import 1건)로 4건이 보인 때가 있었다. 이 slice 파일의 지적은 아니며, Lane A 파일이 컴파일되자 0이 되었다.
+- `flutter test test/<파일>.dart --reporter expanded`(파일마다 따로, 로그 `debug/frontend_fe8e/logs/`): 23개 파일 모두 통과, 실패 0.
+
+  | 파일 | 통과 | 실패 |
+  |---|---:|---:|
+  | `home_connect_fe8e_test.dart`(새) | 10 | 0 |
+  | `connected_target_fe8d_test.dart`(기대 수정) | 8 | 0 |
+  | `widget_test.dart`(기대 수정) | 16 | 0 |
+  | `home_app_shell_test.dart` | 1 | 0 |
+  | `home_page_test.dart`(수정 없음) | 5 | 0 |
+  | `theme_tokens_test.dart` | 3 | 0 |
+  | `scan_page_test.dart` | 17 | 0 |
+  | `scan_page_revision_test.dart` | 14 | 0 |
+  | `scan_page_pause_fb10a_test.dart` | 8 | 0 |
+  | `mock_scanner_service_test.dart` | 4 | 0 |
+  | `scanner_protocol_client_test.dart` | 6 | 0 |
+  | `scanner_target_metadata_fb4_test.dart` | 19 | 0 |
+  | `scanner_pause_fb10a_test.dart` | 39 | 0 |
+  | `account_editor_fe8c_test.dart` | 9 | 0 |
+  | `account_manager_fe8b_test.dart` | 6 | 0 |
+  | `growth_calculator_view_test.dart` | 24 | 0 |
+  | `inventory_shell_lazy_test.dart` | 1 | 0 |
+  | `profile_delete_fb2d_test.dart` | 17 | 0 |
+  | `section_template_studio_test.dart` | 15 | 0 |
+  | `statistics_app_shell_test.dart` | 2 | 0 |
+  | `student_filter_followups_test.dart` | 4 | 0 |
+  | `student_filter_modal_test.dart` | 7 | 0 |
+  | `title_page_test.dart` | 25 | 0 |
+
+  - 고른 기준: FE8-d가 고른 21개(셸·`BAPlannerApp`·`ScanPage`·칩 문구·대상 목록 DTO) + 새 파일 + `theme.dart` 토큰 테스트.
+  - 첫 실행에서 아래 10개(`account_editor_fe8c`~`title_page`)가 0초에 컴파일 실패했다. 원인은 위 Lane A 파일의 컴파일 오류다(로그 `Compilation failed … statistics_workspace.dart:216:15`). 잠금 충돌은 아니다. Lane A 파일이 컴파일된 뒤 한 번 다시 돌려 모두 통과했다(표의 수치가 재실행 결과).
+- `git diff --check`(이 slice의 기존 파일 6개): 지적 없음. 새 파일 3개는 끝 개행 하나, 줄 끝 공백 없음.
+
+### 고친 파일
+
+- **`frontend/lib/ui/home/connect_target_panel.dart`(새)**: `ConnectTargetPanel`. 시안 Home-Connect-Pick 패널 rect(1822.5,202 719.5×1018)를 원점으로 한 설계 px로 배치한다.
+  - 표면: 공용 `SectionSurface`(왼쪽 80° 사선·오른쪽 수직, r14).
+  - 제목(분홍 사선 막대 7×24 + `싯딤의 상자와 연결` 24px dsp), 안내 `Blue Archive 창을 선택해 주십시오.`, 상태 줄 `선택 예정 <제목>`·`현재 선택: <연결된 창 | 없음>`.
+  - 창 목록: 행 38·피치 44, 오른쪽 끝 고정(시안 2484), 왼쪽 끝은 행 아래 경계 높이의 패널 사선 + 24(스크롤해도 사선을 따라감). viewport clip은 시안 clip-path(사선 + 14, r8).
+  - 행: 게임 창이면 `BA` 태그 #3dbf7a·제목 #b9f1d0, 아니면 태그 없음·제목 #f4f8fb. 선택 예정 행은 분홍 .16 + 2.8px, 나머지는 행 표면 .72 + 외곽선 .55 1.2px. 크기 칸 min 90 오른쪽 정렬, 제목은 한 줄 말줄임.
+  - 수직 스크롤바: 키트 `DiagonalScrollbar`에 수직 `trackPoint`(오른쪽에서 14, 위아래 8)와 레일 드래그를 넘겼다. 아래 포그는 `ScrollFogSpec.panel`(surface .96, 44px). 키트 파일은 고치지 않았다.
+  - 버튼: `새로고침`(왼쪽 사선 200×56, #3a4b58), `취소`(tonal 130×56), `선택한 창 사용`(tonal pri 220×56, 링크 아이콘). 고를 창이 없거나 닫힌 창이면 `선택한 창 사용`은 비활성(.45).
+  - 목록 읽기 결과로 `ConnectedTargetController.updateTargets`도 부른다(FE8-d의 스캔 새로고침과 같은 경로).
+  - 선택 예정 기본값: 이미 고른 창 → 연결된 창 → 첫 게임 창(FD-118), 닫힌 창 제외.
+  - 상태 표시(워커 재량, 발견 1): 크기 칸에 `최소화됨`·`미지원`·`닫힘`. 닫힌 창은 .45로 흐리고 고를 수 없다.
+  - 문구(워커 재량, 발견 1): 목록 칸 `창 목록을 읽고 있습니다.`·`창 목록을 읽지 못했습니다.`·`백엔드에 연결되어 있지 않습니다.`·`감지된 창이 없습니다.`
+- **`frontend/lib/ui/home/home_menu_swap.dart`(새)**: `HomeMenuSwapTimeline`(connect·release). 아래 "모션 타임라인" 표. 메뉴·패널 거리, 교체 시점, flash 불투명도를 시각으로 계산한다.
+- **`frontend/lib/ui/pages/home_page.dart`(CRLF 유지, +340 −43)**:
+  - 새 인자 `connectedTarget`(선택), `openTargetPickerRequest`(셸 요청 카운터).
+  - 컨트롤러가 없으면(단독 테스트) 첫 버튼은 예전처럼 `onOpen(AppSection.scan)`이다. 있으면 미연결일 때 패널을 열고, 연결되면 첫 버튼이 `스캔`(`scan.png`)이 되어 누르면 스캔 탭으로 간다(스캔 팝업은 FE8-f3).
+  - 패널은 메뉴와 같은 높이 배율의 FittedBox로 오른쪽 위에 붙인다. intro 180°·outro 0°(820 설계 px, `AppMotion.section` 360ms·`sectionCurve`).
+  - 패널이 열려 있고 메뉴가 A이면 행1에 분홍 3.2px 선택 선(`home-menu-featured-selected`). flash(`home-menu-featured-flash`)는 #76D7FF 3.2px + 채움 .16.
+  - 연결 상태가 메뉴 표시와 다르면 교체 연출을 시작한다. 연출 중 다시 바뀌면 끝난 뒤 이어서 맞춘다. 연출 중 메뉴는 누를 수 없다.
+  - 미연결 → 연결이면 열린 패널이 연출과 함께 빠진다. 이미 연결된 상태에서 다른 창을 고르면 메뉴 연출 없이 패널만 닫는다.
+  - 메뉴 구조: 행1만 `Stack(expand)`로 감싸 겹침을 올린다. 겹침이 없을 때 배치·그림은 예전과 같다.
+- **`frontend/lib/ui/app_shell.dart`**: 아래 "app_shell diff".
+- **`frontend/lib/ui/scan/header_connection_chip.dart`(+6 −4)**: `connectedTargetLabel(target, {includeSize = true})`. 머리글 칩은 `includeSize: false`로 `연결됨 · Blue Archive`다(game 모름 → `연결됨`). 크기 포함 문구는 그대로 남겨 패널·스캔 팝업 칩이 쓴다. `onOpenTargetPicker` 주석을 바꿨다.
+- **`frontend/lib/app/theme.dart`(추가만, +19)**: `AppMotion.connectAnticipate`·`connectMenuExit`·`connectSwapHold`·`connectMenuEnter`·`connectReleaseEnter`·`connectMenuSettle`·`connectFlashIn`·`connectFlashOut`·`connectPanelDelay`·`connectPanelExit`, `AppColors.connectFlash`(#76D7FF). 프롬프트 "AppMotion 안에서"와 FD-119 "flash 색은 토큰(`connectFlash`)으로만 추가"에 따랐다. 이 파일은 프롬프트의 고치는 곳 목록에 없었다(발견 7). 착수 기록 표의 줄바꿈 "CRLF·LF 섞임"은 틀렸다: CR이 없는 LF 파일이다(`file` 오판).
+- **`frontend/test/widget_test.dart`(CRLF 유지, +20 −8)**:
+  - `selected account portrait is left of the student count`: AssetImageGrid 기대 → 62×52, r9, 흰 2px 링(`boxShadow` spread 2, `AppColors.text`), 이미지 `hasumi.png` cover. 지표 `42명` → `42`, `42명` 없음.
+  - `mock state is reflected without replacing widgets`: `42명` → `42`, `9999명` → `9,999`.
+  - 안 쓰게 된 `asset_image_grid.dart` import를 지웠다.
+- **`frontend/test/connected_target_fe8d_test.dart`(+35 −8)**:
+  - 머리글 칩 문구 기대 6곳: `… · 2560×1440`·`… · 1920×1080` → `연결됨 · Blue Archive`.
+  - `connectedTargetLabel(…, includeSize: false)` 기대 2건 추가(크기 포함 기대 4건은 그대로).
+  - 칩 누름: 스캔 탭 이동 → 홈 패널 열림, `현재 선택: Mock Blue Archive`, 스캔 드롭다운은 그대로 `mock-window`.
+- **`frontend/test/home_connect_fe8e_test.dart`(새, 10건)**:
+  - 타임라인 2건: 연결 keyframe 값(0.25s +14, 0.9s −820, 0.95s 교체, 1.8s −10, 2.2s 0, flash 2.0→2.2 최대→2.8, 패널 0.2→0.9s +820·숨김), 해제(2.2s, flash·패널 없음).
+  - 패널 6건:
+    - 기준 viewport(2560×1392, 머리글 184) rect: 패널 1822.5,202 719.5×1018, 메뉴 18,202 742×1018, 행1 1990.7,364 493.3×38, 행2 1983.0,408 501.0×38, 버튼 3개(±1px). intro 중간에 패널이 오른쪽에 있음. 선택 예정·현재 선택·`BA` 태그·크기·`—`, 취소 → 닫힘.
+    - 상태 문구·닫힌 창 고를 수 없음·긴 제목 말줄임·새로고침 재조회(1280×720, 넘침 없음).
+    - 30행 스크롤: 피치마다 왼쪽 끝 7.76px, 오른쪽 끝 2484, 스크롤 뒤 행이 그 높이의 사선 자리.
+    - 연결 연출(1280×720): +14 → 0.25·0.5·0.75 지점 넘침 없음, 교체 전 A·교체 뒤 B, 패널 퇴장, flash 차오름, 안착 → `스캔` 누름 = 스캔 탭. 해제: +14 예비동작, flash 없이 A로 복귀, `lastRelease = user`.
+    - 연결된 상태에서 셸 요청으로 열기 → 다른 창 사용 → 메뉴 연출 없이 패널만 닫힘, B 메뉴에는 선택 선 없음.
+    - 백엔드 끊김: 패널 문구, 선택 예정 `—`, 사용 불가, 목록 읽지 않음.
+  - 셸 2건: 학생 탭에서 칩 → 홈 + 패널 → 창 사용 → 칩 녹색 `연결됨 · Blue Archive`·메뉴 `스캔` → 누르면 스캔 탭. 지표 `217`·`1,284`(단위 없음).
+- 지운 테스트 없음. `home_page_test.dart`는 고치지 않았다(컨트롤러 없는 홈은 예전 동작, 5건 통과). 그 착수 사본은 지웠다.
+
+### app_shell diff (+48 −24, 이유)
+
+- FE8-e 몫(+16 −3):
+  - `_targetPickerRequest` 필드(주석 포함 3줄)와 `_openTargetPicker()`(5줄: 홈으로 이동 + 요청 올림).
+  - `_CompoundPageHeader`에 `onOpenTargetPicker` 인자·필드(2줄), 셸이 넘김(1줄). 옛 람다(`onSelected(AppSection.scan)`)와 그 주석 3줄 → `onOpenTargetPicker: onOpenTargetPicker` 1줄.
+  - `HomePage(…)`에 `connectedTarget`·`openTargetPickerRequest` 2줄.
+  - 이유: 홈이 셸의 같은 컨트롤러를 써야 한다(FE8-d 발견 5). 칩 → 패널 열기는 홈 상태라 셸은 요청만 보낸다.
+- FD-115 몫(+32 −21): 머리글 지표·초상이 `_AppHeader`에 있어서 이 파일을 고쳤다.
+  - 초상 `SizedBox.square(62) + AssetImageGrid(square.png 겹침)` → `Container` 62×52 r9, #c9d6e2 바탕, 흰 2px 링, 이미지 cover 50% 22%(시안 `object-position`).
+  - 지표 `명`·`개` 단위 문자열 → `_headerCount(n)`(세 자리 쉼표, 9줄 함수).
+  - 안 쓰게 된 `asset_image_grid.dart` import 1줄 삭제.
+- `app_section.dart`는 고치지 않았다.
+
+### 모션 타임라인 (시안 Home-Connect-Effect 10초 루프 → 앱 1회 재생)
+
+곡선은 구간마다 CSS keyframes 기본 `ease`(`Curves.ease`)다. 거리는 메뉴 설계 px라서 화면에서는 메뉴 배율로 줄어든다.
+
+| 연결 t(ms) | 시안 시각 | 메뉴(`menuOffset`) | 패널 | 첫 버튼 | flash | 토큰 |
+|---|---|---|---|---|---|---|
+| 0–250 | 1.8–2.05s | 0 → +14 | 그대로 | A | — | `connectAnticipate` 250 |
+| 200–900 | 2.0–2.7s | — | 0 → +820(0°), 900 이후 숨김 | — | — | `connectPanelDelay` 200 · `connectPanelExit` 700 |
+| 250–900 | 2.05–2.7s | +14 → −820(180°) | — | A | — | `connectMenuExit` 650 |
+| 900–1000 | 2.7–2.8s | −820 유지 | 숨김 | 950에 A → B(2.75s) | — | `connectSwapHold` 100 · 교체 = 퇴장 끝 + 50 |
+| 1000–1800 | 2.8–3.6s | −820 → −10(0°) | — | B | — | `connectMenuEnter` 800 |
+| 1800–2200 | 3.6–4.0s | −10 → 0 | — | B | 2000–2200 0 → 1 | `connectMenuSettle` 400 · `connectFlashIn` 200 |
+| 2200–2800 | 4.0–4.6s | 0 | — | B | 1 → 0 | `connectFlashOut` 600 |
+
+| 해제 t(ms) | 시안 시각 | 메뉴 | 첫 버튼 | 토큰 |
+|---|---|---|---|---|
+| 0–250 | 7.0–7.25s | 0 → +14 | B | `connectAnticipate` |
+| 250–900 | 7.25–7.9s | +14 → −820 | B | `connectMenuExit` |
+| 900–1800 | 7.9–8.8s | −820 → −10 | 950에 B → A(7.95s) | `connectReleaseEnter` 900 |
+| 1800–2200 | 8.8–9.2s | −10 → 0 | A | `connectMenuSettle` |
+
+- 머리글 칩은 컨트롤러 값을 바로 그린다(시안은 2.75s에 칩도 바꾼다, 발견 5).
+- 패널 intro/outro(첫 버튼·칩으로 열기, 취소)는 시안에 없어 공용 `AppMotion.section` 360ms·`sectionCurve`, 거리 820이다.
+
+### 처리한 FD
+
+- **FD-116 (a)(확정)**: 홈 패널 → `connect`. 해제(사유 무관: user·targetMissing·targetClosed·backendDisconnected)는 B → A 역연출. dock은 그대로(연결 때 dock 안 함).
+- **FD-115(확정) 나머지**: 지표 숫자만(`217`·`1,284`), 초상 둥근 사각 62×52 흰 2px. 칩 색은 FE8-d에서 끝났다.
+- **FD-119(워커 재량) → 권장안**: 이 전이 전용 곡선(`HomeMenuSwapTimeline`, 공용 섹션 모션으로 올리지 않음), flash 색은 토큰 `AppColors.connectFlash`로만 추가.
+- **FD-001**: 머리글 칩에서 크기를 뺐다(CF 2026-10-13 17:40 결정). 패널은 행마다 크기를 보인다.
+- **FD-118(워커 재량)**: 선택 예정 = 첫 게임 창.
+- **FD-019(확정)**: 패널은 오른쪽 부착 사다리꼴(왼쪽 80° 사선)이라 부유 섹션 예외가 필요 없다.
+- **FD-117(워커 재량)**: 그대로(백엔드 끊김 > 게임 창). 백엔드 끊김이면 칩을 누를 수 없다.
+- FD-140·FD-155는 읽기만 했다. 연결된 `스캔` 버튼은 FE8-f3 전까지 스캔 탭 이동이다. 패널 위젯은 `designSize` 단독 위젯이라 FE8-g1(FD-155)이 다시 쓸 수 있다.
+
+### golden 변화 예상 (실행하지 않음)
+
+golden mock은 고른 창이 없다(미연결). 머리글 칩은 미연결 회색 `연결 안 됨` 그대로라 칩 변화는 없다. 홈 메뉴는 미연결 A 그대로이고, 패널은 닫혀 있다.
+
+바뀔 장면(1):
+1. `home` — 머리글 지표가 숫자만(단위 글자 없음, 1000 이상이면 쉼표)이라 폭이 줄어 초상·지표가 오른쪽(칩 쪽)으로 붙는다. 초상이 정사각 62(square.png 테두리 겹침) → 62×52 둥근 사각 r9 + 흰 2px 링(시안). 메뉴·칩·탭은 그대로다.
+
+바뀌지 않을 장면(나머지 전부, Lane A 새 장면 포함):
+- 셸 머리글이 보이는 다른 장면(`students-*` 7, `inventory*` 5, `statistics-*`): 지표·초상은 홈 탭에서만 보인다(`showMetrics = section == home`). 칩 문구는 미연결이라 같다.
+- `title`·`account-*` 4: `TitlePage`만 그린다(셸·머리글 지표 없음).
+- `plan-*` 23, `scan-student-review`: 셸 없음.
+
+새 golden 장면은 만들지 않았다.
+
+### 미검증 항목
+
+- golden 비교: **미실행**(위 예상 `home` 1장).
+- 전체 `fe_gate.ps1`·process E2E·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 게임 창 연결과 연출(Windows 창 목록, 게임 창 고르기 → 이펙트, 게임 종료 → 5초 안 해제 연출): **미실행**(사용자 실기). Mock과 가짜 목록으로만 확인했다.
+- 실제 화면에서 연출의 체감(예비동작 14px·overshoot 10px·flash 세기): 테스트는 값만 확인했다. 눈으로 보지 않았다.
+- `scan.png`가 시안 `스캔` 이미지(blob `9e57…`)와 같은 그림인지: 확인 못 함(A §7.3과 같음).
+- 패널 내부 글자 위치(제목·안내·상태 줄): 시안 좌표로 놓았지만 테스트는 패널·행·버튼 rect만 비교했다.
+
+### 검수표 (artboard `Home-Connect-Pick.dc.html`, `Home-Connect-Effect.dc.html`)
+
+앱에서 여는 방법: mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 2560×1440 모니터 최대화, 타이틀 → 시작.
+
+| # | 확인 포인트 | 코드 |
+|---|---|---|
+| E1 | 머리글 지표가 숫자만(`학생 N`, `인벤토리 N`, 1000 이상 쉼표), 초상이 62×52 둥근 사각에 흰 2px 테두리 | `_AppHeader`·`_headerCount` |
+| E2 | `싯딤의 상자와 연결`을 누르면 오른쪽에서 패널이 들어와 1822,202 720×1018에 붙고, 메뉴 행1에 분홍 선이 생긴다 | `ConnectTargetPanel`, `home-menu-featured-selected` |
+| E3 | 패널: 제목·안내·`선택 예정 Mock Blue Archive`·`현재 선택: 없음`, 행 `BA · Mock Blue Archive · 2560×1440`(분홍 선택), 수직 스크롤바 트랙, 새로고침·취소·선택한 창 사용 | 같은 파일 |
+| E4 | `취소` → 패널이 오른쪽으로 빠지고 분홍 선이 사라진다 | `_closePanel` |
+| E5 | `선택한 창 사용` → 메뉴가 살짝 오른쪽(+14)으로 갔다가 왼쪽으로 빠지고, 패널은 오른쪽으로 빠진다 → 첫 버튼이 `스캔`인 메뉴가 왼쪽에서 들어와 안착 → 행1에 하늘색(#76D7FF) flash가 차올랐다 사라진다. 칩은 녹색 `연결됨 · Blue Archive`(크기 없음) | `HomeMenuSwapTimeline.connect` |
+| E6 | 연결된 뒤 `스캔`을 누르면 스캔 탭으로 간다(팝업은 FE8-f3) | `_openFeatured` |
+| E7 | 다른 탭(예: 학생)에서 칩을 누르면 홈으로 와서 패널이 열리고, 연결된 상태면 `현재 선택: Mock Blue Archive`다 | `_openTargetPicker` |
+| E8 | 개발 상태 패널에서 백엔드를 `disconnected`로 → 홈 메뉴가 같은 방식으로 빠졌다가 `싯딤의 상자와 연결`로 돌아온다(flash 없음). 칩은 빨강 `백엔드 끊김` | `HomeMenuSwapTimeline.release` |
+| E9 | 창을 작게(1280×720) 해도 패널·메뉴가 같은 배율로 줄고 넘치지 않는다. 긴 창 제목은 말줄임 | FittedBox 배율 |
+| E10 (실기) | 실제 게임 창을 고르면 E5, 게임을 끄면 5초 안에 E8과 같은 해제 연출 | 주기 확인(FE8-d) |
+
+### WIP 보존 확인
+
+- 고친 기존 파일 6개 모두 착수 때 WIP 없음(`git status --short` 빈 출력). 착수 사본 `debug/frontend_fe8e/pre/`는 HEAD와 같다. WIP 파일을 고치지 않아 post 사본·`post_dir`은 없다.
+- 줄바꿈: `home_page.dart`·`widget_test.dart` CRLF 유지(편집 스크립트가 CRLF로 다시 썼고 `file`로 확인), 나머지 LF 유지. 새 파일 3개는 LF.
+- 수정 0: `lib/services/**`(스캐너 WIP 있음), `lib/ui/kit/**`, `scan_page.dart`, Lane A 파일(`lib/ui/statistics/**`·`lib/statistics/**`·`statistics_page.dart`), 스캐너 소유 위젯, `diagonal_menu.dart`, golden harness·golden 테스트, `frontend/tool/**`, `backend/**`·`contracts/**`.
+
+### 발견 사항
+
+1. 미지원·닫힘·최소화 창 표시는 시안(Home-Connect-Pick 행은 전부 크기만)·FD-116 어디에도 문구가 없다. 크기 칸에 `최소화됨`·`미지원`·`닫힘`을 쓰고, 닫힌 창만 흐리게(.45) 고를 수 없게 했다. 목록 칸 안내 4문구(읽는 중·실패·백엔드 없음·빈 목록)도 워커가 지었다. CF 판단.
+2. 사용자 해제(`disconnect`) UI는 시안(Pick·Effect·Connected-Scan)에 없다. 그래서 만들지 않았다. 해제 연출은 창 사라짐·닫힘·백엔드 끊김(그리고 테스트의 `disconnect()`)으로만 일어난다. 해제 버튼이 필요하면 자리를 정해야 한다.
+3. 연결된 `스캔` 버튼은 FE8-f3(스캔 팝업) 전까지 스캔 탭으로 간다.
+4. 홈이 안 보일 때(다른 탭) 연결이 바뀌면(예: 스캔 탭 드롭다운, 백엔드 끊김) 홈 탭의 ticker가 멈춰 있어 연출이 기다렸다가, 홈으로 돌아올 때 재생된다. 바로 바뀐 메뉴를 원하면 CF 판단.
+5. 머리글 칩은 연결 즉시 바뀐다. 시안은 칩도 2.75s(메뉴 교체 시점)에 바꾼다. 칩을 메뉴 연출에 맞추려면 칩이 홈 연출 상태를 알아야 해서 하지 않았다.
+6. 패널 표면은 공용 `SectionSurface`(.76, FD-006)이고 시안 패널은 .78이다. 홈 메뉴 섹션은 아직 옛 `DiagonalTrapezoidSection`(블러 + 그라데이션)이라 두 섹션 표면이 다르다(FE1-c가 홈 메뉴에 적용되지 않은 기존 상태). 이 slice에서는 메뉴 표면을 고치지 않았다.
+7. `lib/app/theme.dart`는 프롬프트의 고치는 곳 목록에 없지만 "AppMotion 안에서"·FD-119 토큰 지시에 따라 추가만 했다(+19). 공용 토큰 파일이라 Lane A와 겹칠 수 있다(지금은 WIP 없음). CF 확인 필요.
+8. 패널 안내 `Blue Archive 창을 선택해 주십시오.`는 사용법 문장이지만 시안이 상시 보이므로 그대로 두었다(FD-001 시안 우선).
+9. 패널이 열린 채 칩을 다시 누르면 패널은 그대로이고 목록을 다시 읽지 않는다(새로고침 버튼으로 읽음).
+10. 같은 작업 트리에서 Lane A 파일이 컴파일되지 않는 동안 셸을 그리는 테스트 10개가 컴파일 실패했다(위 실행 결과). 동시 실행의 한계로 적어 둔다.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe8e/pre/<경로>`(고친 기존 파일 6개). 끝 사본(post)은 없다(WIP 파일 없음).
+- 테스트·analyze 로그: `debug/frontend_fe8e/logs/`(커밋 대상 아님).
+- `debug/frontend_fe8e/commit.json`: slice `fe8e`, `status=false`, modified 6, added 3, `whole` = [이 문서, `frontend/test/goldens/baseline/home.png`], message는 ASCII.
+- 인계: `debug/frontend_fe8e/output.md`.
+
+### 다음 행동
+
+- FE8-e 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-c)와 이 slice가 모두 멈춘 뒤 gate를 1회 돌린다.
+  - 예상: analyze 0, 일반 테스트 +10(새 파일), golden RED = `home` 1장(+ Lane A 몫).
+  - `home` 차이가 머리글 지표·초상 영역 밖(메뉴·칩)에 있으면 이 예측이 틀린 것이다.
+  - 그 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8e`(기존 파일은 모두 WIP 없음).
+- 발견 1·2·4·5·7은 CF 판단을 기다린다.

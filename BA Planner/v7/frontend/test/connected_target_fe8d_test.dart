@@ -132,6 +132,24 @@ void main() {
         ),
         '연결됨 · —',
       );
+      // 머리글 칩은 크기를 빼고 쓴다(시안 머리글 `연결됨 · Blue Archive`, FE8-e).
+      expect(
+        connectedTargetLabel(_ready, includeSize: false),
+        '연결됨 · Blue Archive',
+      );
+      expect(
+        connectedTargetLabel(
+          const ScannerTarget(
+            id: 'unknown-game',
+            title: 'Window',
+            status: ScannerTargetStatus.ready,
+            clientWidth: 1600,
+            clientHeight: 900,
+          ),
+          includeSize: false,
+        ),
+        '연결됨',
+      );
     });
 
     test('backend loss outranks the game window connection', () {
@@ -170,7 +188,7 @@ void main() {
         _ready,
       );
       expect(connected.kind, HeaderConnectionKind.targetConnected);
-      expect(connected.label, '연결됨 · Blue Archive · 2560×1440');
+      expect(connected.label, '연결됨 · Blue Archive');
       // 시안 연결됨 칩: #58d6a7, 채움 .12, 안쪽 선 .55.
       expect(connected.foreground, const Color(0xff58d6a7));
       expect(connected.dot, const Color(0xff58d6a7));
@@ -385,23 +403,32 @@ void main() {
       expect(_chipColor(tester), AppColors.textSecondary);
 
       await _pickTargetInScanTab(tester, 'mock-window');
-      expect(_chipText(tester), '연결됨 · Blue Archive · 2560×1440');
+      expect(_chipText(tester), '연결됨 · Blue Archive');
       expect(_chipColor(tester), AppColors.success);
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byKey(const ValueKey('top-tab-home')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('home-menu-section')), findsOneWidget);
-      expect(_chipText(tester), '연결됨 · Blue Archive · 2560×1440');
+      expect(_chipText(tester), '연결됨 · Blue Archive');
       expect(tester.takeException(), isNull);
 
-      // 칩을 누르면 창을 고르는 곳(창 선택 패널 전에는 스캔 탭)으로 간다.
+      // 칩을 누르면 홈의 창 선택 패널이 열린다(FE8-e). 현재 선택은 연결된 창이다.
       await tester.tap(
         find.byKey(const ValueKey('header-connection-chip-button')),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-connect-panel')), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('home-connect-panel-current')),
+            )
+            .data,
+        '현재 선택: Mock Blue Archive',
+      );
       expect(_scanDropdownValue(tester), 'mock-window');
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a target written elsewhere is the scan selection too', (
@@ -431,7 +458,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(_chipText(tester), '연결됨 · Blue Archive · 2560×1440');
+      expect(_chipText(tester), '연결됨 · Blue Archive');
 
       await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
       await tester.pumpAndSettle();
@@ -458,7 +485,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _pickTargetInScanTab(tester, 'ba-window');
-      expect(_chipText(tester), '연결됨 · Blue Archive · 2560×1440');
+      expect(_chipText(tester), '연결됨 · Blue Archive');
 
       // 창이 목록에서 사라짐 → 다음 주기 확인에서 미연결.
       service.targets = const [_other];
@@ -477,7 +504,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('other-window').last);
       await tester.pumpAndSettle();
-      expect(_chipText(tester), '연결됨 · Blue Archive · 1920×1080');
+      expect(_chipText(tester), '연결됨 · Blue Archive');
 
       service.setConnection(BackendConnection.disconnected);
       await tester.pump();

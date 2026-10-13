@@ -66,6 +66,10 @@ abstract final class AppColors {
   static const warning = Color(0xffffc66d);
   static const danger = Color(0xffff7e8a);
 
+  /// 게임 창 연결 직후 홈 메뉴 첫 버튼 flash(시안 Home-Connect-Effect `#76D7FF`, FD-119).
+  /// 이 전이에만 쓴다.
+  static const connectFlash = Color(0xff76d7ff);
+
   // --- 성작 노랑(FD-012: 두 값 모두 시안 값이므로 둘 다 둔다) -------------
   /// 학생 성작 표시(9칸 인디케이터의 학생 5칸).
   static const starDisplay = Color(0xfff3c96b);
@@ -164,6 +168,21 @@ abstract final class AppMotion {
 
   /// 주 탭 선택 배경.
   static const tab = Duration(milliseconds: 180);
+
+  /// 홈 메뉴 교체(시안 Home-Connect-Effect 10초 루프, A §7.2, FD-119). 연결: 1.8s 예비동작부터 4.6s flash 끝까지.
+  /// 해제(B → A)는 7.0s부터 같은 예비동작·퇴장, 진입만 [connectReleaseEnter]다.
+  static const connectAnticipate = Duration(milliseconds: 250);
+  static const connectMenuExit = Duration(milliseconds: 650);
+  static const connectSwapHold = Duration(milliseconds: 100);
+  static const connectMenuEnter = Duration(milliseconds: 800);
+  static const connectReleaseEnter = Duration(milliseconds: 900);
+  static const connectMenuSettle = Duration(milliseconds: 400);
+  static const connectFlashIn = Duration(milliseconds: 200);
+  static const connectFlashOut = Duration(milliseconds: 600);
+
+  /// 창 선택 패널 퇴장: 예비동작 시작 0.2s 뒤 0.7s(시안 2.0–2.7s).
+  static const connectPanelDelay = Duration(milliseconds: 200);
+  static const connectPanelExit = Duration(milliseconds: 700);
 }
 
 /// 모서리 반경 토큰.

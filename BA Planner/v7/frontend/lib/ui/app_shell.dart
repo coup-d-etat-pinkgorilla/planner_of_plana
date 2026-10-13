@@ -25,7 +25,6 @@ import 'pages/tactical_page.dart';
 import 'scan/connected_target_controller.dart';
 import 'scan/header_connection_chip.dart';
 import 'widgets/animated_section_stack.dart';
-import 'widgets/asset_image_grid.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
@@ -101,6 +100,9 @@ class _AppShellState extends State<AppShell>
   InventoryCandidateContext? _inventoryCandidate;
   List<ScannerRecentSummary> _recentScans = const [];
   var _homeReloadToken = 0;
+
+  /// 머리글 칩을 누르면 올린다. 홈이 창 선택 패널을 연다(FE8-e).
+  var _targetPickerRequest = 0;
   var _statisticsReloadToken = 0;
   var _tacticalReloadToken = 0;
   var _profileGeneration = 0;
@@ -218,6 +220,11 @@ class _AppShellState extends State<AppShell>
     });
   }
 
+  void _openTargetPicker() {
+    _open(AppSection.home);
+    setState(() => _targetPickerRequest += 1);
+  }
+
   void _addStudentToPlan(PlanningStudentSeed seed) {
     setState(() {
       _planningSeed = seed;
@@ -319,6 +326,7 @@ class _AppShellState extends State<AppShell>
                                 developmentPanelVisible: _showDevelopmentPanel,
                                 connectedTarget: _connectedTarget,
                                 onSelected: _open,
+                                onOpenTargetPicker: _openTargetPicker,
                                 onToggleDevelopmentPanel: () {
                                   setState(() {
                                     _showDevelopmentPanel =
@@ -366,6 +374,8 @@ class _AppShellState extends State<AppShell>
                                       _inventoryCandidate != null,
                                   recentScans: _recentScans,
                                   entranceAnimation: _homeEntranceController,
+                                  connectedTarget: _connectedTarget,
+                                  openTargetPickerRequest: _targetPickerRequest,
                                 ),
                                 StudentPage(
                                   key: ValueKey('students-$_profileGeneration'),
@@ -525,6 +535,7 @@ class _CompoundPageHeader extends StatelessWidget {
     required this.developmentPanelVisible,
     required this.connectedTarget,
     required this.onSelected,
+    required this.onOpenTargetPicker,
     required this.onToggleDevelopmentPanel,
   });
 
@@ -535,6 +546,7 @@ class _CompoundPageHeader extends StatelessWidget {
   final bool developmentPanelVisible;
   final ConnectedTargetController connectedTarget;
   final ValueChanged<AppSection> onSelected;
+  final VoidCallback onOpenTargetPicker;
   final VoidCallback onToggleDevelopmentPanel;
 
   @override
@@ -641,9 +653,7 @@ class _CompoundPageHeader extends StatelessWidget {
                             profile: profile,
                             developmentPanelVisible: developmentPanelVisible,
                             connectedTarget: connectedTarget,
-                            // 창 선택 패널(FE8-e) 전에는 스캔 탭의 기존 고르기로 이동한다.
-                            onOpenTargetPicker: () =>
-                                onSelected(AppSection.scan),
+                            onOpenTargetPicker: onOpenTargetPicker,
                             onToggleDevelopmentPanel: onToggleDevelopmentPanel,
                           ),
                         ),
@@ -968,34 +978,37 @@ class _AppHeader extends StatelessWidget {
                 ),
                 if (showMetrics) ...[
                   if (profile != null) ...[
-                    SizedBox.square(
-                      dimension: 62,
-                      child: AssetImageGrid(
-                        key: const ValueKey('home-header-profile-portrait'),
-                        items: [
-                          const AssetImageGridItem(
-                            asset: 'assets/studio_features/square.png',
-                            column: 0,
-                            row: 0,
-                          ),
-                          AssetImageGridItem(
-                            asset:
-                                'assets/student_portraits/${profile!.avatarStudentId}.png',
-                            column: 0,
-                            row: 0,
-                            scale: 0.98,
-                            clipRadiusFraction: 0.12,
-                          ),
+                    // 시안 초상: 둥근 사각 62×52 r9, 흰 2px 테두리, 이미지 cover 50% 22%(FD-115).
+                    Container(
+                      key: const ValueKey('home-header-profile-portrait'),
+                      width: 62,
+                      height: 52,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: const BoxDecoration(
+                        color: Color(0xffc9d6e2),
+                        borderRadius: BorderRadius.all(Radius.circular(9)),
+                        boxShadow: [
+                          BoxShadow(color: AppColors.text, spreadRadius: 2),
                         ],
+                      ),
+                      child: Image.asset(
+                        'assets/student_portraits/${profile!.avatarStudentId}.png',
+                        fit: BoxFit.cover,
+                        alignment: const Alignment(0, -0.56),
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                   ],
-                  _HeaderMetric(label: '학생', value: '${state.studentCount}명'),
+                  // 지표는 숫자만(시안 `217`·`1,284`, FD-115).
+                  _HeaderMetric(
+                    label: '학생',
+                    value: _headerCount(state.studentCount),
+                  ),
                   const SizedBox(width: AppSpacing.md),
                   _HeaderMetric(
                     label: '인벤토리',
-                    value: '${state.inventoryItemCount}개',
+                    value: _headerCount(state.inventoryItemCount),
                   ),
                   const SizedBox(width: AppSpacing.lg),
                 ],
@@ -1020,6 +1033,17 @@ class _AppHeader extends StatelessWidget {
       },
     );
   }
+}
+
+/// 머리글 지표 숫자: 단위 없이 세 자리마다 쉼표(`1,284`).
+String _headerCount(int value) {
+  final digits = value.abs().toString();
+  final buffer = StringBuffer(value < 0 ? '-' : '');
+  for (var index = 0; index < digits.length; index++) {
+    if (index > 0 && (digits.length - index) % 3 == 0) buffer.write(',');
+    buffer.write(digits[index]);
+  }
+  return buffer.toString();
 }
 
 class _HeaderMetric extends StatelessWidget {

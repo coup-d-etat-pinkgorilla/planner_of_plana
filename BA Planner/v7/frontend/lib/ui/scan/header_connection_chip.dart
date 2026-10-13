@@ -75,7 +75,8 @@ class HeaderConnectionChipState {
         outline: AppColors.textMuted.withValues(alpha: 0.45),
       );
     }
-    final label = connectedTargetLabel(target);
+    // 머리글 칩에는 크기를 두지 않는다(시안 Home-Connected-Scan·Home-Connect-Effect 머리글, FD-001, CF 2026-10-13 17:40).
+    final label = connectedTargetLabel(target, includeSize: false);
     return _tinted(
       HeaderConnectionKind.targetConnected,
       label,
@@ -102,7 +103,8 @@ class HeaderConnectionChipState {
 }
 
 /// `연결됨 · Blue Archive · 2560×1440`. game을 모르면 이름 없이 크기만, 크기를 모르면 '—'.
-String connectedTargetLabel(ScannerTarget target) {
+/// [includeSize]가 false면 크기 칸을 뺀다(머리글 칩 `연결됨 · Blue Archive`). 크기는 창 선택 패널·스캔 팝업 칩에만 둔다.
+String connectedTargetLabel(ScannerTarget target, {bool includeSize = true}) {
   final game = switch (target.game) {
     ScannerTargetGame.blueArchive => 'Blue Archive',
     null => null,
@@ -110,7 +112,7 @@ String connectedTargetLabel(ScannerTarget target) {
   final width = target.clientWidth;
   final height = target.clientHeight;
   final size = width != null && height != null ? '$width×$height' : '—';
-  return ['연결됨', ?game, size].join(' · ');
+  return ['연결됨', ?game, if (includeSize) size].join(' · ');
 }
 
 /// 머리글 연결 칩. 백엔드 상태와 앱 전역 연결 대상([ConnectedTargetController])을 함께 본다.
@@ -125,7 +127,7 @@ class HeaderConnectionChip extends StatelessWidget {
   final BackendConnection backend;
   final ConnectedTargetController? connectedTarget;
 
-  /// 게임 창 칸을 누르면 부른다. 창 선택 패널(FE8-e) 전에는 스캔 탭의 기존 고르기로 이동한다.
+  /// 게임 창 칸을 누르면 부른다. 셸은 홈으로 가서 창 선택 패널을 연다(FE8-e).
   final VoidCallback? onOpenTargetPicker;
 
   /// 긴 창 정보가 머리글 제목을 밀어내지 않게 칩 폭을 묶는다.
