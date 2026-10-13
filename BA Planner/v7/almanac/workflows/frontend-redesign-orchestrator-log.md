@@ -2338,3 +2338,99 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - gate ① `20261014_003521`: analyze 0, 381 + 460 + 600 + 238, process 60(fb10c E2E +1), golden RED 1 = `statistics-plan`. 차이 bbox를 영역별로 나눠 확인: KPI 띠·범위 칩·C1 seg·C3만, C2·C4·C5·왼쪽 변화 0. 이미지 검토(첫 부족 P2 · 기술 노트 (최상급), 막힌 학생 6명, 페이즈 5, C1 "페이즈 순" 켜짐, C3 재화별 계단선 3개 + 첫 부족 P2 점) → 승인. ② `20261014_004608` **GREEN**(golden 45).
 - 커밋: **fe7g `5990875c`**(17파일). fb10cdart DryRun 통과(post_dir — 스캐너 WIP 파일 scan_page.dart), XB selected4 커밋 판단 대기(backend 로그 01:00 — Python RED 1이 입력 기준 문제라 XB가 지금 커밋할 수 있는지 판단 요청).
 - 판단 수용: FE7-g 정한 규칙 1~8(첫 부족 = Detail 페이즈 요약 규칙, C3 시안 viewBox, C1 페이즈 순 = 첫 부족 페이즈). fb10c-dart 메타 키 유지·승인 응답 시점 제거·보관물 9곳 표. 발견 기록: FE7-g 3(근거 단계 칩 단위 — 수량으로 정함, %일 수도), 5(KPI 재화 짧은 이름), 8(goals vs 문서 학생 수 어긋날 가능성); fb10c-dart 1(최근 스캔 다시 열면 적용·폐기한 후보도 되살아남 — FE8-g 결과 검토 몫), 2(보류 crop 최근 목록 잔존), 4(학생 handoff 재개 시 같은 해제 필요), 6(Mock crop 시나리오 — FE8-g4).
+
+## 2026-10-14 01:25 — 배정(Lane A FE7-d · Lane B mockdemo), XB 커밋 진행 중
+
+- 사용자 확인: XB가 커밋 중이어도 레인 착수 가능 — XB 커밋은 backend 경로 index 전용이고 워커는 git 쓰기를 하지 않으며 frontend 작업 파일과 겹치지 않는다. 충돌 지점은 CF의 `fe_commit`(빈 index 필요)뿐이므로 **CF 문서 커밋은 XB 커밋이 끝난 뒤** 한다.
+- 두 프롬프트 모두 fb10c-dart 미커밋 파일(`scan_page.dart`·`student_scan_diagnostic.dart`·`scanner_review_images.dart`와 테스트)을 읽기 전용으로 못박았다(XB 커밋 → CF fb10cdart 커밋 대기).
+  · Lane A **FE7-d** — `debug/frontend_redesign_handoff/fe7d-worker-prompt-20261014.md`. navigation intent(학생 — FD-104 학생 탭 필터에 덮어쓰지 않음 / 인벤토리 행 / 계획 Detail 단계), 대상 탭 1회 적용, "← 통계" 복귀 칩(주제·선택·스크롤 복원), 근거 패널 이동 버튼 켜기, FE7-c 발견 6("외 n" 펼침). 이번 라운드 `app_shell.dart`는 Lane A만.
+  · Lane B **mockdemo** — `debug/frontend_redesign_handoff/mockdemo-worker-prompt-20261014.md`. `--dart-define=BA_PLANNER_MOCK_SCENARIO=…`일 때만 쓰는 검수 시나리오 Mock(계정 `거모이는존재한다 (v7 UI 테스트)`, 통계·인벤토리·계획·계정 메타 시안 숫자 — 기존 test fixture를 lib 공용 데이터로 옮겨 재사용). 기본 Mock·golden Mock 동작 불변 → **golden 전 장면 변화 0**이 완료 조건. 화면 코드·test/goldens 금지.
+- FE7-h(통계 이력)는 FE7-d와 같은 통계 파일이라 다음 라운드. FE8-f1은 fb10cdart 커밋 뒤.
+
+
+## 2026-10-14 01:07 — 회신(XB, CF 01:00 판단 답): CF 20:05·20:20·01:00 수신, 결정 A의 격리 개발팩 준비
+
+- AGENTS/README/헌장·마스터 프롬프트/인계·XB/CF/CM/metadata 로그 및 소유 상태, scanner D17/D24·기준팩/실제 추출기·독립 CompactCatalog를 읽었다. CF FE7-c/FE8-e/FE7-g 커밋과 fb10c-dart 같은 소스 gate **20261014_004608 GREEN** 수신; crop source4 pins 확인. 사용자 결정 **A(현재 설치 public catalog의 새 격리 개발팩 + 독립 전수 diff)**를 진행한다. main 보호4107 exact 일치/빈index(HEAD1f73913d), prior sealed evidence 보존.
+- **CF 01:00 판단 답**: C5e RED는 FB10c code와 무관한 native 입력 차이로 조사됐지만, 헌장 §3.2/§4는 **전체 Python 녹색**을 요구한다. 기존1239 PASS를 새 입력의 GREEN으로 계산하거나 RED1 waiver로 crop을 지금 커밋하지 않는다. 후보+1268 icon/13 sprite/2 font 독립 비교→변경된 입력의 새 표준 전체 gate→근거·기준자료 별도 slice 조율 뒤 selected4 커밋 재개. CF fb10cdart 커밋과 main4107 동결은 유지해 달라. 후보 준비는 새 debug/xb_native_pack_refresh_20261014 안에서만 진행한다.
+- 공용 store/lock/pipeline/원본catalog·bundle 복사/keys/Viewer/Arena/holdout/프로필/골든/CF source 변경0. CM 승인은 공용 소유 영역에 실제 닿는 경우만 필요하고, 이번 격리 후보는 결정 A 범위다. 기준자료 main 반영 시점은 별도 pins와 영향 보고를 먼저 보내 조율한다. FB6 source9 봉인/FB7 parser 후속 순서 유지. crop 새 producer 이미지 key·공용 fixture·보류 cache 알림도 수신했으며 첫 producer crop_png_base64만 현재 범위다.
+
+
+## 2026-10-14 01:21 — 알림·조율 요청(XB): 결정 A의 독립 개발팩/전수 diff 준비, 전체Python 진행 중
+
+- 새 task **debug/xb_native_pack_refresh_20261014**. production extract 함수로 정답을 생성하지 않고 별도 CompactCatalog parser의 primary dependency/내부asset주소→유일한 실제 Texture2D container를 확인하여 개발팩을 만들었다. Atlas는 Common.asset→material→_MainTex→Common.png 포인터와 470 sprite rect, font는 concrete Font container를 확인했다. UnityPy decoder는 runtime과 같은 library라는 한계를 명시한다. public source catalog+44 bundle SHA 전후 불변/원본 복사0/keys·Viewer·Arena·holdout0/공용store·lock·pipeline0이다.
+- **전수 결과**: old icon1268 = samebundle1243 **모두 pixel 동일** + changedbundle25(24 pixel동일/1 pixel·size변경). 바뀐 하나는 기존FAIL Item_Icon_Favor_SSR_GL_21(684×540→304×240)이다. missing0/중복zipmember0. sprites13 exactdecodedpixels동일/fonts2 exactbytes동일. catalog-only 새62도 concrete address/pixel/hash검증(총 **1330=item1129+equipment201**), rarity/class/name 새metadata 추론0/D24 snapshot-outdated 경로 유지.
+- **부가 정합성 발견**: 기존sprite13 actualPNG byteSHA가 오래된 manifest 선언과 다르지만 decodedpixels는 currentclient와13/13같다(기존baseline actualbytes는 시작map/봉인본과같음). candidate SHA는 모두실제bytes와일치한다. Card_Select_Line border 배열은 old [left,right,top,bottom]과 candidate [left,bottom,right,top]의 **표현 순서 차이1**이고 x/y/w/h·pixel변경0. 별도 semantic geometry audit로 명시하며 main projection은 기존 배열 순서를 보존해야 한다. prefab_parity는 historical로표시/현재prefab NOT_VERIFIED이고 조사대상으로 추가하지 않았다.
+- candidate20files+전수all-icon/changed25/new62/sprite-font diff 실제파일준비. candidate manifest **803730B/SHA77715302e773e043ae6e2c6271011ae3a4c74aae3667452405110155b09cab72**. **FB6 source9를 포함한 새 canonical copy**에서 pack18파일만변경, 표준전체1263/제외0/skip0조건으로검증중. main4107/테스트코드/골든/CFsource 변경0. 이것을 아직 mainGREEN/commit로계산하지않는다.
+- **CF window 요청**: 전체PASS 후 현재 crop 동결에 **개발기준팩만** 별도 slice로반영할 조율window를 회신해 달라. CF fb10cdart가 XBselected4를 기다리고, XB는 fullGREEN/input정리를 기다리는 상태라 기준팩반영window가 필요하다. 기존 코어/계약/툴/crop4/FB6 source9를 함께바꾸지않는다. tracked manifest+README exact2, local ignored binaries exact16(기존fonts2는동일)와최종projection SHA를먼저게시→CFwindow→baseline반영→새main-equivalent 전체Python/같은소스CFgate→baseline별도commit→crop selected4→CF fb10cdart 순서를 제안한다. full FB6 overlay는그paired뒤의별도window다.
+- **CM은 인지 보고**: 사용자 결정 A 범위의 local devpack 후보이며 현재 CM소유store/lock/pipeline/연구결론 변경0이라 그영역의 승인·실행을 요구하지않는다. 향후그영역에닿으면 헌장대로 CM승인+사용자실행. 메인반영·기준자료커밋·crop커밋·paired완료는아직0이다.
+
+
+## 2026-10-14 01:25 — 요청(XB→CF): 기준팩 별도 slice의 최종 반영 경로·SHA20 (메인4107 동결 그대로)
+
+- 앞 native diff를 소비하는 실제 **publication-pack**를 별도로 만들었다. candidate 이미지/font bytes와모두같고, manifest sprite rect는 기존 [left,right,top,bottom] 순서/기존모든rect로보존하여 **실제 geometry13동등**이다. Atlas rawborder의표현순서차이1을 새행동변경으로계산하지않는다. currentprefab NOT_VERIFIED 표시는유지한다. gate실행중인candidate-pack-v2/working-v7 입력은바꾸지않았다.
+- **정확20/변경18 = tracked2 + ignored변경16 + 동일fonts2**. 실제 tracked/ignored는Git읽기검증했고 indexempty/diffPASS/Almanac45 PASS다. 새메서드/DTO/계약/툴 변경0, Dart변경목록0. 이표는review/publication window용이며 **main반영0·projection의exactmetadata wholePython 아직NOT_VERIFIED**다. 검증중candidate의 기존native실패test는이번에PASS, 전체footer는아직RUNNING이다.
+- **CF 회신 요청**: 기존crop4107 freeze 중 이20개기준팩경로만 별도slice로반영할window를 허용하는지 회신해달라. 다른backend/contract/tool은그대로 유지한다. Window 뒤 main-equivalent wholePython·새same-source CFgate를결과로받은다음 baseline tracked2와crop selected4를별도commit하고 CFfb10cdart로닫는다. baseline바이너리는커밋/배포하지않고 runtime각사용자localextract 그대로다. 요청은공유트리조율이며 CM소유공용자료승인을대신하는것이아니다(현재그경로변경0).
+
+| 정확 반영 경로 | Bytes | SHA256 | Main 대비 | 처리 |
+|---|---:|---|---|---|
+| `backend/assets/recognition/asset_pack/README.md` | 1211 | `87e4b9666734cf81c2d52d4d5065e5ed96fabc0f9ccea097150588dcf7545331` | 변경 | tracked commit |
+| `backend/assets/recognition/asset_pack/fonts/GyeonggiTitle-Bold.ttf` | 3118992 | `f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6` | 동일 | local ignored |
+| `backend/assets/recognition/asset_pack/fonts/GyeonggiTitle-Medium.ttf` | 2974600 | `11a877937389617c0fa4ba621d0a75da2e36b22556d0faded51401697ff29fb0` | 동일 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-01.zip` | 18961918 | `a8c8f5a8c09a12aa8498431e2bf6be8a8b11f8f7bfd9fe1af042099746a734ae` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-02.zip` | 18970559 | `1eacc62c80f3eba06ff51d7016c8aa9fba987ff3f2b1712822670e401ae33e1b` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-03.zip` | 11706527 | `8449411a75414935bde44ca61c2c33f43bc443fad873ecf0b31f40fb5c1ed54f` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/manifest.json` | 804021 | `1409187b3e2cd6a4ad9e3addc20d939b6ed0fdd1f0ef6cff72efeeb54f29956b` | 변경 | tracked commit |
+| `backend/assets/recognition/asset_pack/sprites/Card_Bg.png` | 28826 | `fa12fe82d5443e9b4cccd74c788df5d4d7771f06cd6c7f48cb5bead2eda40be3` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_C.png` | 39897 | `281264bbed3992542b77d1940305ab4db8123d4fa0d3f2aaeebee985a7f16930` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_N.png` | 24309 | `960edd27065baa2410a6f8cb9b961554604931227dbf0137ff4efa8ea10527e7` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_R.png` | 33083 | `4d824edc9be893be48186576a4b9b2377a3333c60bae8e2bf16de7b652136155` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_SR.png` | 44189 | `1784149d3954530911e34663af977b78c3899dac5866b2349cd801be8b01ba30` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_SSR.png` | 40041 | `ac5a2f77e392ab834fed661b78d1e7ba6a14e988664ba01fa4d98995acd51e64` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Select_Line.png` | 6378 | `685f22432f584c95cf8d0f6f8339b59870737750dbd9fdec547bbdc17452de3c` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Bg_Raius20px.png` | 758 | `c96189bfb4fe3a63e06b21e08201c3238eb1c70c693beeb5450856d2c9f13987` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Check_B.png` | 5359 | `8b1ac0af5ac106f64aba5a2386715a2d49c43ee7f53bf820944b74472ce64c14` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Formation_Star.png` | 5763 | `765418799c4bc65b53656984116a9ee3aee30074a521e2dcb3a879205c9f87dd` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Lock.png` | 2745 | `653bdba7cfe6869fd4d36b1eaf086573de5a9631ef7d50dbad756d47df6e792f` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Line_Raius20px.png` | 980 | `412abb30428a4a8086c2fd6015874de8d219239ec51ae98a60a3a138e1dbab26` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Tab_Normal_Btn.png` | 2512 | `325b5254088d2ec3b4c5d67b1e72648c2e711e7e3407725e0be31221b9b0cf5e` | 변경 | local ignored |
+
+- 상세 **debug/xb_native_pack_refresh_20261014/artifacts/publication-plan.json**, 실제사본 **artifacts/publication-pack/**. 원본실패/봉인된oldpack·golden/CM연구/holdout/inputsha보존. 전체PASS전반영/commit/push0이다.
+
+
+## 2026-10-14 01:35 — 알림(XB): 독립 새 개발팩 + FB6 source9 canonical 전체1263 GREEN, 메인 동결 유지
+
+- 표준 `py -3.11 -m unittest discover -s tests -v` **1263/902.616s OK**, failures/errors/skips/추가제외0. 기존 LiveClientAnswerKey pixel parity PASS, 기존scannergolden/전술등 discovery전체포함/기준완화0. test코드/골든변경0. 전후input5164/main4107/외부fixture4/currentpublic catalog+bundle44 SHA 보존·unexpected source changes0. log **220449B/SHA2fb6988bd31399251edc19e35744d5e4f7d78b449b28bef274958a0e07f40a63**, receipt **debug/xb_native_pack_refresh_20261014/artifacts/python-full-receipt.json**.
+- 이것은 **새 격리 후보의 GREEN**이다. 메인은oldreference그대로이고 FB6 source9반영0/새commit0이라 main전체GREEN/paired완료로계산하지않는다. 현재main과같은backend/contracts/tool4107에 **최종publication-pack만** 적용한 두번째사본을준비했다. FB6新5파일제외/기존4파일main원본복구·1239 discovery로검증한다. Arrayorder를보존한 최종metadata bytes의 whole확인과 FB6를제외한 현재crop backend의whole확인을한번에한다. 서로다른inputs gate이고 무의미한동일재시도가아니다.
+- CF에는앞에exact20표/manifest+README2/SHA가있다. 기준팩window회신 대기(main동결 예외는그20개만), pack별도slice→cropselected4→CFfb10cdartpaired→FB6window 순서다. CM소유store/lock/pipeline/연구·CFsource·nativeOS/push변경0. 별도source정합성논의와 oldRED증거는보존한다.
+
+
+## 2026-10-14 01:47 — 알림(XB): CF 01:00 공용 학생crop E2E 개선 후보(격리 source2)
+
+- 현재 native baseline/main-equivalent 전체 gate와 별개 task **debug/xb_student_crop_e2e_prepare_20261014**에서 공용 `tests.student_crop_e2e_backend` 진입점과 Python회귀 test를 준비했다. CF inline과같은 target fb10c-dart-target, crop-1/shiroko/level6×3·crop-2/hoshino/star5×2/실제cropencoder·Session·JsonRepository·JSONL. 합성메모리PNG만쓰고 PIL핸들즉시close·캡처/game/native원본0. 기존scanner/inventoryentry변경0이다.
+- fixture는 explicit ba_planner_ Temp root+전용owner marker, 미지정/일반workspace/미표시nonempty/wrongmarker 거부. repository/scanner만허용·migration/developer_tools/tactical차단. **실제processfocus3/0.756s PASS**: PNG/optional4키·hold/다른후보discard동안sibling/eventretention·approve/commit후이미지해제·durablePNG0·재시작state같음·guard/차단메서드쓰기0. main4107/WIP/CFsource보존, profile은통제Temp만.
+- exact2 source pins: entry **4812B/SHAde4791801e3eeb30a669ef5d025f1a3e48f506114e6424ff558a130b6b7ec404**, test **8557B/SHA3d11fc1b4f344b217059def98c6f376c1d86e5544cbd5268b71744d36f414b53**. **output.md 1864B/SHA676a8b8a4fcf620850eaa2f9562b890feb3e0ee63201e9cf2917a3e550334291**, actual11artifacts. 封印/새task에서후속실행. 공용진입점사용은 현재crop/native기준팩paired뒤 별도test-onlyslice로조율한다. wholePython(신규3포함)/CF -m연결gate는NOT_VERIFIED, source2 main반영0·새commit/push0이다. Dart DTO/메서드변경0; CF inline `-c`→`-m tests.student_crop_e2e_backend` 인자만후속예정(Frontend수정은CF).
+
+
+## XB 보고 — 2026-10-14 01:58: 결정 A의 새 개발팩 전수 diff·두 전체GREEN·공용crop fixture 격리 인계
+
+- **수신/판단**: CF20:05/20:20/01:00, FE7-g5990875c·fb10cdart 같은source **20261014_004608 GREEN** 수신. 사용자A로 새독립local개발팩을준비했다. 01:07에현재RED1을waiver로crop커밋하지않는다고회신했고 exact20기준팩window요청/최종SHA표를XB·CF에게시했다. 지금은그원인에대한새표준검증이실제로모두GREEN이다. 아직CFwindow회신없어 **main4107동결/기준팩반영0/commit0/push0**이다.
+- **독립 전수 근거**: 별도CompactCatalog primary location + 실제유일container, Common.asset→material→_MainTex, fontcontainer를확인. UnityPy decoder는공유라는한계명시. old1268=1243 samebundle **모든pixel동일** +25 changedbundle(24same/1실제size·pixel변경), missing/zipduplicate0. sprites13 exactpixel같음/fonts2 exactbytes같음/geometry13같음. 새catalog-only62추가(총1330=item1129/equipment201), rarity/metadata발명0·snapshot변경0. 현재catalog+publicbundle44SHA전후불변/원본복사0. oldsprite13 선언PNGsha≠실제baselinebytes는기존불일치로보존하고 새candidateSHA모두검증. Border표현순서차이1은publication에서기존rect convention보존. prefab은historical/currentNOT_VERIFIED, 추가조사·O3승격0이다.
+- **두 whole gate**: 독립candidate+봉인FB6source9 exactcode **1263/902.616s OK**, log220449B/SHA2fb6988bd31399251edc19e35744d5e4f7d78b449b28bef274958a0e07f40a63. **현재main과같은backend/contracts/tool4107 + 최종publicationpack만**(FB6새5제외/기존4원본) **1239/890.236s OK**, log216153B/SHAf3fefc7e15ec94dbf9112134c71025eac8345cfc084d7309a1f8922e907e2cff. 두검증fail/error/skip/exclusion/newtimeout/golden변경0, input5164/5159·main4107·외부fixture4·nativehash보존/unexpectedchanges0. 서로다른inputs이며중복된test수를합산하지않는다. selectedwholeHEAD/mainoldreference를GREEN으로계산하지않는다.
+- **반영안 exact20**: publication-pack 실제사본과publication-plan.json. 변경18=tracked2+ignoredbinary변경16, 동일fonts2 포함전체20. tracked README **1211B/SHA87e4b9666734cf81c2d52d4d5065e5ed96fabc0f9ccea097150588dcf7545331**, manifest **804021B/SHA1409187b3e2cd6a4ad9e3addc20d939b6ed0fdd1f0ef6cff72efeeb54f29956b**. Gittracked2/모든binary18ignore·빈index를확인했다. 新DTO/메서드/계약/툴0. **CFwindow→정확20반영(기존coreWIP보존)→CFsame-source조율/gate→baselineexact2별도commit→crop selectedHEAD4→CFfb10cdartpaired→FB6window/source9/CFfb6gate/XB9/CF→FB7**. CFsource/공용store·lock·pipeline·택틱연구결론·프로필·OS변경0. 이local후보는CM소유영역에닿지않아추가CM승인대기로계산하지않는다.
+- **독립 후속준비**: CF01:00의공용cropentry제안 source2, 실제JSONL **3/0.756s PASS_ISOLATED_ONLY**, controlledTemp+marker/허용methodguard·같은2fallbackrows·siblingcrop/eventhold·discard/approve/commit해제·durablePNG0·restartstate. **debug/xb_student_crop_e2e_prepare_20261014/output.md1864B/SHA676a8b8a4fcf620850eaa2f9562b890feb3e0ee63201e9cf2917a3e550334291**, actual11artifacts 봉인. main0/whole-with-new3/CF-migratedgateNOT_VERIFIED. FB6우선규칙을유지해현재paired뒤가능한별도testslice로조율한다.
+- **증거/남은 것**: **debug/xb_native_pack_refresh_20261014/artifacts/session-report.md**, 두전체receipt·all-icon/changed25/new62/sprite-font/semanticgeometry/native-source/publication-plan·MASTER_REQUIRED 실제파일. 최종Almanac/diff/index읽기gate뒤output.md를마지막으로봉인하고해시를같은3로그에알린다. 최초UTF8기본encoding오류/primary+shareddependency오해/oldPNGdeclaredSHA검사FAIL도별도증거로보존했다(골든·기준완화/원본변경0). 실제productbaseline/crop/FB6/FB7/fullFB10/FD145/currency/nativeM2/M3/M4/O3/fullP0-P6완료는아직선언하지않는다.
+
+
+## 2026-10-14 01:59 — 인계(XB): 새 개발팩/두 전체GREEN 최종 output 봉인
+
+- **debug/xb_native_pack_refresh_20261014/output.md 2655263B/SHAfa1c4814d236db1045ea0861a36afab48e61407addfecd914c31aae67d702d22**, actual **10975 artifacts**. Short report **artifacts/session-report.md**. Whole1263/902.616s +main-equivalent1239/890.236s 각각OK/제로fail,error,skip,exclusion/golden변경0; freshAlmanac45/diff/index PASS. HEAD **1f73913da099028ba2493655d4bd5c0c3160b570**·main4107/refs4/nativehash/WIP/CFsource보존. 封印된old실패/새raw로그/실제사본불변.
+- **CF 조율 회신 필요**: exact20 baseline-only main반영window(기존core/contracts/tools변경0). 최종pins앞표/plan참조. 회신뒤 새task에서byte확인/backup→반영→same-source조율→baselinetracked2별도commit→cropselected4→CFfb10cdart, 그paired뒤FB6source9/CFfb6, 그뒤FB7. local후보에CM소유영역의추가승인대기0/store·lock·pipeline0. 지금main반영/새commit/push0이며mainoldreference전체GREEN/전체작업완료로계산하지않는다. Source2공용cropfixture는별도封印focus3만PASS/whole·CF NOT_VERIFIED로FB6를미루지않는다.
+
+## 2026-10-14 02:45 — FE7-d·mockdemo 검토·gate·커밋, XB 기준팩 window 허가
+
+- 사용자 "두 워커 끝, XB 커밋도 완료". 확인 결과 **XB 커밋은 없다** — XB는 결정 A 새 개발팩·두 전체 GREEN을 끝내고 기준팩 exact20 메인 반영 window를 CF에 요청(01:25·01:59)한 상태였다. 사용자에게 정정해 알림.
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe7d 17행, mockdemo 13행 — 출력 하단 pre 사본 해시를 파서가 잘못 집은 5건은 본 표와 실제 파일 일치 확인), 겹침 0, fb10c-dart 미커밋 파일 미접촉(post = 작업 트리), 범위 밖 변경 0. XB 메인 변경 없음.
+- gate `20261014_023144` **GREEN 한 번에**(analyze 0, 387 + 458 + 596 + 262, process 60, golden 45 변화 0, almanac 45, diff 0).
+- 커밋: **fe7d `dd17e1f0`**(16파일, `app_shell.dart` 포함 — tactic CF 보고) → **mockdemo `0dd0b368`**(13파일, README.md 작업 트리 = post — 다른 세션 WIP 보존).
+- 판단 수용: FE7-d 정한 규칙(학생 임시 목록은 학생 필터를 덮어쓰지 않음, 이동 1회 적용, 복귀 칩), mockdemo 화면별 일치표(우선순위 인벤토리 → 성장 → 계획 → 계정 메타). 발견 후속: FE7-d 2·3(인벤토리 목록·학생 목록 모드 reveal 없음), 4(임시 목록 ∧ 학생 필터), 7(근거 버튼 키트 변형), 8(FD-108 모든 탭 이동 intent화 — 인벤토리 "계획에서 보기"·계산기 링크), 10(머리말 칩 두 개); mockdemo 1(헤더 지표 Mock 고정값 42·186), 2·4(시안 모순), 5(services → ui import — 시계 계약 위치), 6(워크플로 "lib/services/** Lane A만" 문구 정리).
+- **XB 요청(backend 로그 02:45)**: 기준팩 exact20만 메인 반영 허가 → CF 같은 소스 gate → XB 기준팩 tracked2 → XB FB-10c selected4 → CF fb10cdart → FB-6 window → FB-7. 추가: 공용 학생 crop E2E 진입점(FB-10c 뒤 test-only), 다음 폴백 producer 이미지 키 규칙, 학생 live 5값·early candidate 사전목록(FE8-g2용). CF 레인은 XB 반영 완료 기록 뒤 새 워커를 띄운다.
