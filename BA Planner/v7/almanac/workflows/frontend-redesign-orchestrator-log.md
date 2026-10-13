@@ -2217,3 +2217,11 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - FE7-b 검토: A1 평균 63.4% vs A2 막대 평균 약 65.6% — FD-028 "A1 평균 = A2 평균"과 다르지만, FE7-b 세션 사용자 결정(애장품 없는 학생 = 6항목 평균, A2 애장품 행은 있는 학생만)의 결과이고 모든 학생이 7항목이면 같다는 테스트가 있다 → 수용. 대장 FD-028 행에 보충으로 기록. 시안 숫자 모순(완전 육성 22명 등)은 fixture가 서로 맞는 숫자만 재현.
 - FE8-d 판단: 발견 1(시안 머리글 칩은 "연결됨 · Blue Archive"로 크기 없음, 크기는 스캔 팝업 칩에만) → **시안을 따른다(FD-001)** — 워크플로 FE8-d 행·프롬프트가 크기를 넣으라 한 것은 조사 요약 오류. golden mock은 미연결이라 이번 기준 이미지와 무관, 다음 FE8-e에서 크기를 뺀다. 발견 2(주황 "백엔드 연결 중")·4(5초 주기)·6(최소화도 연결)·7(최근 스캔 기록 → 그 창 연결) 수용. 발견 3(FD-115 나머지: 홈 지표 숫자만·초상 62×52 흰 2px, `widget_test` "42명")·5(홈 창 선택 → 컨트롤러)는 FE8-e로.
 - 커밋: **fe7b `86554308`**(16파일) → **fe8d `998fe0cc`**(20파일, `scan_page.dart` 작업 트리 = post — 스캐너 WIP 보존). 공유 파일 `app_shell.dart` +25 −42(FE8-d) — tactic 로그 CF 보고.
+
+## 2026-10-13 17:55 — 배정(Lane A FE7-c · Lane B FE8-e), XB 요청(FB-6·FB-7·FB-10 형식 고정·FB-10c 확인)
+
+- 사용자 "다음 작업용 프롬프트와 XB 작업 요청". 시작 SHA `79de785f`. 파일 겹침 없음.
+  · Lane A **FE7-c** — `debug/frontend_redesign_handoff/fe7c-worker-prompt-20261013.md`. B1(FD-031/032 식, `ShortageCategoryStatistics` 이종 합산 교체), C1 불릿(부족 큰 순만), C2 산점도, 인벤토리·계획 KPI 각 5(FD-105, FD-034), 근거 패널, 미구현 타일 "준비 중"(FD-106). 새 장면 `statistics-inventory`·`statistics-plan`.
+  · Lane B **FE8-e** — `debug/frontend_redesign_handoff/fe8e-worker-prompt-20261013.md`. 홈 창 선택 패널 + 메뉴 교체 이펙트(A §7.2), 머리글 칩 → 패널, FE8-d 후속(머리글 칩 크기 빼기 — 시안, FD-115 나머지 홈 지표 숫자만·초상 62×52, 홈이 셸 컨트롤러 사용). 이번 라운드도 `app_shell.dart`는 Lane B만 최소 diff.
+- 워크플로 FE8-d 행 문구 정정(머리글 칩에 크기 없음 — 시안).
+- XB 요청(backend 로그 17:55, 요청서는 `frontend-redesign-status-backend.md` 끝): **FB-6** 전술 v2 쓰기(설계 조사 먼저), **FB-7** 엑셀 가져오기(FB-6 뒤), **FB-10 형식 고정 계획**(FE8-g2~g5 착수 조건, 부분 고정 가능 범위), **FB-10c** 반영 확인(반영되면 fb10c-dart를 같은 gate에). 권장 순서 FB-10c → FB-6 조사 → FB-10 계획 → FB-6 구현 → FB-7.

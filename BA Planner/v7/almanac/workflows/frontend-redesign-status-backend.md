@@ -1968,3 +1968,26 @@ process E2E는 legacy 첫 get→새 문서 save→재시작 get→goals/문서 �
 - **진행 방식**: 계약이 크므로 먼저 **읽기 전용 설계 조사**(지금 메타데이터에 학교·family·tier를 만들 근거가 있는지, 통화 항목의 key, 획득처 표 위치, 분할 제안)를 이 문서 끝이나 XB 로그에 남기고 프론트 로그에 알려 달라. CF는 소비자 쪽 문제만 짚고 막지 않는다(헌장 §3.2: 설계 확정은 XB). 그다음 구현.
 - **Dart**: 새 키가 기존 Dart를 깨므로 XB 커밋과 CF `fb3-dart`(`InventoryCatalogEntry` 확장, Mock 카탈로그, fixture)를 **같은 gate**에 묶는다. 커밋 전에 바뀌는 키 목록·fixture 경로를 프론트 로그로.
 - **필요 시점**: Lane A가 FE5(시나리오 a~f) → FE6-a·b 뒤 FE6-c에서 쓴다. 조사는 지금, 구현은 FB-2b 다음이면 맞는다.
+
+# FB-6 요청서 (CF → XB, 2026-10-13 17:50) — 전술 v2 기록·족보 쓰기
+
+- **목적**: 전술대항전 탭 개편(Lane C FE9-b~e: 기록 화면 v2 데이터 계층, 시그니처 족보 패널, 분석·전체 보기)이 v2 계약으로 쓰고 읽는다. 지금 쓰기는 v1(`tactical.match.upsert`, 자유 문자열 opponent, null 슬롯)뿐이고 v2는 읽기·통계·추천·공유·v6 가져오기만 있다. 근거: 결정 대장 FD-126·FD-127·FD-128(확정, 저장 경로 하나 — 빈칸·출처·시도가 분석에 바로 쓰이고 "같은 시그니처 족보에 자동 연결")·FD-129, 조사 `docs/frontend-redesign/survey/G-pvp.md` §1.5·§2.5·§6·§7.1.
+- **요청**(G §7.1 "없음" 목록 중 FB-6 몫):
+  1. **v2 match upsert**: 빈칸(wildcard)·슬롯 출처·상대 identity(`TacticalOpponentIdentity`/별칭)를 보존해 쓰는 경로. 로비 스캔 후보 링크(`commitTacticalLobby`·`linkTacticalMatch`)와 같은 저장소·revision으로. v1 쓰기와 v2 state가 같은 저장소를 보는지, v1 기록의 v2 이관 규칙을 설계 조사에 적어 달라.
+  2. **시도 횟수**: 기록마다 attempt(첫 시도·N회 누적·평균의 기반). 지금 `attempt_index`/`attempt_session_id`는 공유 페이로드에만 있다.
+  3. **족보 이름·편집**: 족보 이름 저장과 편집(FD-128 "같은 시그니처 족보에 자동 연결").
+  4. **집계 보강(가능한 것만)**: 채택률, 상대 방어 승률(30일). 정의가 없으면 FD 초안을 CM·CF에 올리고 이번 범위에서 뺀다. 모집단(상위 500위) 슬롯 통계·변경 확률은 데이터원이 없어 범위 밖(FD-127: Slots S2 빈 상태).
+  5. idempotency·revision 규칙은 기존 repository 쓰기와 같게(같은 key 재요청 = 원 응답, 다른 payload = conflict).
+- **진행 방식**: 먼저 **읽기 전용 설계 조사**(현재 v2 저장 구조, v1↔v2 관계, 메서드·DTO 초안, 분할 제안)를 XB 로그에 남기고 이 로그·프론트 로그에 알려 달라. CF는 소비자 쪽 문제만 짚는다(헌장 §3.2: 설계 확정은 XB). 택틱 연구(CM) 결론(scope engine/observed)을 바꾸는 부분이 있으면 그 부분만 CM 승인.
+- **Dart**: v2 DTO는 일부가 wire 필드를 버린다(G §7.1). 새 메서드·키는 strict DTO에 영향이 있으므로 커밋 전에 **바뀌는 Dart DTO·메서드 목록**을 프론트 로그 끝에 보내 달라. CF가 `fb6-dart`(DTO·strict validator·Mock v2·process E2E)를 같은 gate에 묶는다(FE9-b 앞).
+- **완료 조건**: 전체 Python, codealmanac, diff --check, Flutter에 닿으면 같은 소스 CF gate 뒤 XB 커밋 → CF 커밋. 프론트 로그 끝 "XB 보고(FB-6)".
+
+# FB-7 요청서 (CF → XB, 2026-10-13 17:50) — 엑셀 가져오기 해석
+
+- **목적**: 전술대항전 "엑셀 가져오기 → 해석 결과 승인"(시안 Tactical-Import-Excel, FE9-f). 파서는 Python 백엔드(G §5.5 판단: 기존 `tactical.v2.import.preview/commit`·`importV6Account`처럼 Flutter는 경로만 넘김, 학생 이름 퍼지 매칭·상대 identity 병합에 백엔드 데이터가 필요). 근거: FD-128, G §5 전체.
+- **요청**:
+  1. preview: 파일 경로 → 시트·열 매핑 후보, 해석된 행(날짜·상대·덱·결과·시도), 모르는 문자열 그룹(학생 이름 별칭 후보 — 예 "무장리오 → 리오(무장)"), 파일 지문, 기존 기록과의 충돌(같은 날짜·상대) 목록.
+  2. commit: `{…, resolutions, save_rules, on_conflict: skip|overwrite, expected_fingerprint, expected_revision, idempotency_key}`(G §5.5 초안 — 최종은 XB). "이 처리 방법을 저장해 다음 가져오기에도 쓰기" 규칙 저장, "덮어쓰기" 중복 키 정의(날짜+상대만인지 시각·덱 포함인지)를 정해 계약 README에.
+  3. 형식 범위: `.xlsx`(필수), `.xls`·`.csv` 지원 여부와 라이브러리(openpyxl 등 — 의존성 추가·배포 번들 영향)를 설계 조사에서 정한다.
+  4. 쓰기는 FB-6 v2 match upsert 경로를 쓴다(빈칸·시도 보존). 그래서 **FB-6 뒤**에 착수한다.
+- **진행 방식·Dart·완료 조건**: FB-6과 같다(설계 조사 먼저 → Dart 목록 사전 통지 → `fb7-dart`(DTO·Mock·화면 연결은 FE9-f)와 같은 gate).
