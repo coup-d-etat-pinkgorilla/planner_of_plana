@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../../services/scanner_review_images.dart';
 import '../../services/scanner_service.dart';
 import '../../services/student_scan_diagnostic.dart';
 import '../../services/window_dock_service.dart';
@@ -924,6 +925,7 @@ class _ScanPageState extends State<ScanPage> {
       setState(() {
         _candidates.remove(candidate.id);
         _candidateErrors.remove(candidate.id);
+        _releaseStudentCandidateImages(candidate);
         _candidateNotice = '후보를 폐기했습니다. 확정된 현재값은 변경되지 않았습니다.';
       });
     } catch (error) {
@@ -936,6 +938,42 @@ class _ScanPageState extends State<ScanPage> {
       }
     } finally {
       if (mounted) setState(() => _busyCandidateIds.remove(candidate.id));
+    }
+  }
+
+  /// FB-10c: 승인·폐기·적용 성공 뒤 그 학생 후보의 검토 이미지(crop)를 이 화면의 보관물(지금 후보, 최근 스캔 요약,
+  /// 시작 전 버퍼 이벤트)에서 지운다. 백엔드는 같은 시점에 자기 사본만 지우고 이미 보낸 사본은 회수하지 못한다.
+  /// 보류·수정·재검증·적용 실패 동안과 다른 후보의 crop은 그대로 둔다. setState 안에서 부른다.
+  void _releaseStudentCandidateImages(ScannerCandidate candidate) {
+    if (candidate.kind != ScannerKind.student) return;
+    bool sameSession(String sessionId, int generation) =>
+        sessionId == candidate.sessionId && generation == candidate.generation;
+    final shown = _candidates[candidate.id];
+    if (shown != null && sameSession(shown.sessionId, shown.generation)) {
+      _candidates[candidate.id] = scannerCandidateWithoutReviewImages(shown);
+    }
+    for (var index = 0; index < _pendingStartEvents.length; index += 1) {
+      final event = _pendingStartEvents[index];
+      if (sameSession(event.sessionId, event.generation)) {
+        _pendingStartEvents[index] = scannerEventWithoutCandidateImages(
+          event,
+          candidate.id,
+        );
+      }
+    }
+    var recentChanged = false;
+    for (var index = 0; index < _recent.length; index += 1) {
+      final item = _recent[index];
+      if (!sameSession(item.sessionId, item.generation)) continue;
+      final released = scannerRecentWithoutCandidateImages(item, candidate.id);
+      if (identical(released, item)) continue;
+      _recent[index] = released;
+      recentChanged = true;
+    }
+    if (recentChanged) {
+      widget.onRecentChanged?.call(
+        List<ScannerRecentSummary>.unmodifiable(_recent),
+      );
     }
   }
 
@@ -1045,7 +1083,11 @@ class _ScanPageState extends State<ScanPage> {
         );
         _pendingApplies[slot] = created;
         request = created;
-        setState(() => _keepCandidate(approved));
+        setState(() {
+          _keepCandidate(approved);
+          // 백엔드는 승인 때 자기 crop을 지웠다. 이미 받은 사본도 같은 시점에 지운다.
+          _releaseStudentCandidateImages(approved);
+        });
       }
       sent = request;
       final committed = await retryRepositoryBusy(
@@ -1070,6 +1112,7 @@ class _ScanPageState extends State<ScanPage> {
           _candidates.remove(candidate.id);
           _candidateErrors.remove(candidate.id);
         }
+        _releaseStudentCandidateImages(candidate);
         _candidateNotice =
             '결과를 repository revision $committedRevision에 적용했습니다.';
       });
