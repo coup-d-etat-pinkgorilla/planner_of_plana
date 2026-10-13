@@ -1092,11 +1092,6 @@ void main() {
         listPath.getBounds(),
       );
 
-      Path containerPath(String id) => buildStudioContainerPath(
-        size,
-        accountStudioDocument.elements,
-        accountStudioDocument.containers.singleWhere((item) => item.id == id),
-      )!;
       Path runtimeActionPath(String key) {
         final finder = find.byKey(ValueKey(key));
         final bounds = tester.getRect(finder);
@@ -1229,14 +1224,8 @@ void main() {
       expect(nameInput.decoration!.border, InputBorder.none);
       expect(nameInput.decoration!.focusedBorder, InputBorder.none);
 
-      final inputPath = buildStudioFeaturePath(
-        const Size(1440, 900),
-        accountStudioDocument.elements,
-        accountStudioDocument.containers,
-        accountStudioDocument.features.singleWhere(
-          (item) => item.id == 'feature-8',
-        ),
-      )!;
+      // FE8-c: 입력은 패널 표면 위에 채움 .55 path를 따로 그린다(패널 표면은 입력 자리를 빼지 않는다).
+      final inputRect = accountEditorRect(size, 'feature-8', 'feature-8', 0);
       final editorBase = find.byKey(
         const ValueKey('account-editor-base-surface'),
       );
@@ -1244,27 +1233,28 @@ void main() {
         find.descendant(of: editorBase, matching: find.byType(ClipPath)),
       );
       expect(
-        editorBaseClip.clipper!
-            .getClip(const Size(1440, 900))
-            .contains(inputPath.getBounds().center),
+        editorBaseClip.clipper!.getClip(size).contains(inputRect.center),
         isTrue,
       );
 
+      // stucard는 Studio rect(사선 포함) 그대로이고, "초상 변경"과 두 중심을 잇는 선이 80°다(시안 값).
       final portraitBounds = tester.getRect(
         find.byKey(const ValueKey('account-editor-portrait-grid')),
       );
       final changeBounds = tester.getRect(
         find.byKey(const ValueKey('account-change-portrait')),
       );
-      expect(
-        changeBounds.width,
-        closeTo(squareAssetImageSideLength(portraitBounds), 0.5),
+      _expectRectClose(
+        portraitBounds,
+        accountEditorBounds(
+          accountEditorRect(size, 'container-4', 'container-4', 0),
+        ),
       );
       expect(changeBounds.width, lessThan(portraitBounds.width));
       expect(
         (portraitBounds.center.dx - changeBounds.center.dx) /
             (changeBounds.center.dy - portraitBounds.center.dy),
-        closeTo(1 / math.tan(80 * math.pi / 180), 0.001),
+        closeTo(1 / math.tan(80 * math.pi / 180), 0.01),
       );
 
       await tester.tap(nameInputFinder);
@@ -1301,11 +1291,41 @@ void main() {
       expect(nameInput.controller!.value.composing, TextRange.empty);
       expect(nameInput.showCursor, isTrue);
 
-      await tester.tap(find.byKey(const ValueKey('account-change-portrait')));
-      await _pumpUntilFound(
-        tester,
-        find.byKey(const ValueKey('account-picker-motion-transform')),
+      // FE8-c: 초상 고르기는 별도 섹션이 아니라 같은 편집 패널이 펼쳐지는 것이다(편집기는 움직이지 않는다).
+      final editorShift = tester
+          .widget<Transform>(
+            find.byKey(const ValueKey('account-editor-motion-transform')),
+          )
+          .transform
+          .getTranslation();
+      final collapsedPanel = accountEditorBounds(
+        accountEditorRect(size, 'container-20', 'container-20', 0),
       );
+      final expandedPanel = accountEditorBounds(
+        accountEditorRect(size, 'container-21', 'container-21', 0),
+      );
+      Rect panelBounds() => tester
+          .widget<LiftedPathShadow>(
+            find.byKey(const ValueKey('account-editor-section-shadow')),
+          )
+          .path
+          .getBounds();
+      await tester.tap(find.byKey(const ValueKey('account-change-portrait')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(panelBounds().height, greaterThan(collapsedPanel.height + 1));
+      expect(panelBounds().height, lessThan(expandedPanel.height - 1));
+      expect(
+        tester
+            .widget<Transform>(
+              find.byKey(const ValueKey('account-editor-motion-transform')),
+            )
+            .transform
+            .getTranslation(),
+        editorShift,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('account-manager-section')),
         findsOneWidget,
@@ -1314,49 +1334,32 @@ void main() {
         find.byKey(const ValueKey('account-editor-section')),
         findsOneWidget,
       );
-      final pickerStart = tester
-          .widget<Transform>(
-            find.byKey(const ValueKey('account-picker-motion-transform')),
-          )
-          .transform
-          .getTranslation();
-      expect(pickerStart.x, lessThan(0));
-      expect(pickerStart.y, greaterThan(0));
-      await tester.pump(const Duration(milliseconds: 100));
-      final pickerLater = tester
-          .widget<Transform>(
-            find.byKey(const ValueKey('account-picker-motion-transform')),
-          )
-          .transform
-          .getTranslation();
-      expect(pickerLater.x, greaterThan(pickerStart.x));
-      expect(pickerLater.y, lessThan(pickerStart.y));
-      await tester.pumpAndSettle();
       final pickerSection = accountStudioDocument.elements.singleWhere(
         (item) => item.id == 'element-4',
       );
       expect(
         tester.getRect(find.byKey(const ValueKey('account-picker-section'))),
-        sectionCanvasElementRect(const Size(1440, 900), pickerSection),
+        sectionCanvasElementRect(size, pickerSection),
       );
-      expect(
-        find.byKey(const ValueKey('account-picker-section-shadow')),
-        findsOneWidget,
-      );
+      // 둥근 모서리(r16)라 path bounds는 사선 꼭짓점에서 조금 안쪽이다.
+      _expectRectClose(panelBounds(), expandedPanel, 3);
       final portraitGridFinder = find.byKey(
         const ValueKey('account-portrait-grid'),
       );
       final portraitGrid = tester.widget<AssetImageGrid>(portraitGridFinder);
-      final pickerGridBounds = containerPath('container-8').getBounds();
+      final pickerGridBounds = accountEditorBounds(
+        accountEditorRect(size, 'container-8', 'container-8', 0),
+      );
       expect(
         tester.getSize(portraitGridFinder).width,
         closeTo(pickerGridBounds.width, 0.5),
       );
       expect(tester.getSize(portraitGridFinder).height, greaterThan(0));
-      expect(portraitGrid.columns, 4);
+      expect(portraitGrid.columns, accountPortraitColumns);
+      expect(portraitGrid.columns, 6);
       expect(portraitGrid.rows, greaterThan(1));
       expect(portraitGrid.items.length, greaterThan(8));
-      expect(portraitGrid.selectionWidthFraction, 0.02);
+      expect(portraitGrid.selectionWidthFraction, closeTo(1.88 / 90.67, 1e-9));
       expect(
         portraitGrid.selectionShapeAsset,
         'assets/studio_features/square.png',
@@ -1369,7 +1372,16 @@ void main() {
 
       portraitGrid.onCellTap!(0);
       await tester.pump();
-      final trackedRow = math.min(2, portraitGrid.rows - 1);
+      // FE8-c: 펼칠 때 고른 초상(hasumi) 행으로 옮겨 두므로, 지금 viewport 안에 있는 행을 따라간다.
+      final maxRowOffset = portraitGridTrajectoryOffset(
+        0,
+        pickerGridBounds.height,
+      );
+      final trackedRow = tester
+          .widget<AssetImageGrid>(portraitGridFinder)
+          .rowHorizontalOffsets
+          .indexWhere((offset) => offset > 1 && offset < maxRowOffset - 1);
+      expect(trackedRow, isNonNegative);
       final beforeScrollOffset = tester
           .widget<AssetImageGrid>(portraitGridFinder)
           .rowHorizontalOffsets[trackedRow];
@@ -1511,12 +1523,22 @@ void main() {
       findsOneWidget,
     );
 
+    // FE8-c: 펼친 패널에는 편집기 `뒤로`가 없다(시안: 닫기·저장만). "고르는 중"을 다시 누르면 닫기와 같다.
+    await tester.tap(find.byKey(const ValueKey('account-change-portrait')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('account-editor-back')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('account-change-portrait')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('account-picker-section')), findsNothing);
+    expect(find.byKey(const ValueKey('account-editor-back')), findsOneWidget);
+
+    // 관리 레일 `뒤로`는 펼친 패널·편집기·관리 화면을 차례로 내보내고 타이틀로 돌아간다.
     await tester.tap(find.byKey(const ValueKey('account-change-portrait')));
     await tester.pumpAndSettle();
     tester
         .widget<InkWell>(
           find.descendant(
-            of: find.byKey(const ValueKey('account-editor-back')),
+            of: find.byKey(const ValueKey('account-manager-back')),
             matching: find.byType(InkWell),
           ),
         )
@@ -1792,7 +1814,7 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final entry in const {
-        'account-change-portrait': '변경',
+        'account-change-portrait': '초상 변경',
         'account-editor-back': '뒤로',
         'account-editor-save': '저장',
       }.entries) {
@@ -1808,14 +1830,11 @@ void main() {
       final input = tester.getRect(
         find.byKey(const ValueKey('account-name-input')),
       );
-      final inputPath = buildStudioFeaturePath(
-        const Size(480, 270),
-        accountStudioDocument.elements,
-        accountStudioDocument.containers,
-        accountStudioDocument.features.singleWhere(
-          (item) => item.id == 'feature-8',
-        ),
-      )!.getBounds();
+      // FE8-c: 입력 path는 Studio feature-8 rect의 80° 평행사변형(r7)이다.
+      final inputPath = accountEditorPath(
+        accountEditorRect(const Size(480, 270), 'feature-8', 'feature-8', 0),
+        7 * accountManagerScale(const Size(480, 270)),
+      ).getBounds();
       expect(
         tester.getRect(find.byKey(const ValueKey('account-name-input-path'))),
         inputPath,

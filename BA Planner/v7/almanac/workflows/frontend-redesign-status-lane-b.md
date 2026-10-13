@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE6-f 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `9c03d50b`. 아래 "FE6-f 착수 기록"·"FE6-f 종료 기록". 그 전: fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE8-c 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `cac83222`. 아래 "FE8-c 착수 기록"·"FE8-c 종료 기록". 그 전: FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -2670,3 +2670,189 @@ FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결을 끝냈다. �
   - golden은 `inventory`·`inventory-all`·`inventory-analysis` RED(위 장면별 예측), `inventory-tiers`·`inventory-analysis-opa`를 포함한 다른 장면 변화 0.
   - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe6f`.
 - 발견 사항 3(장면 조작) · 4(상세 메타 줄) · 5(스캔 자리 묶음 FD) · 6(키트 승격)은 CF 판단을 기다린다.
+
+## FE8-c 착수 기록 (2026-10-13)
+
+- 상태: 진행 중 → **코드 작성 완료**(아래 종료 기록). 범위: 계정 편집기와 초상 고르기를 시안(`Title-Accounts.dc.html` 편집 패널, `Title-Accounts-Portrait.dc.html`)대로 한 패널로 통합한다 — 레일 "수정" → 편집 패널(부유, FD-019), "초상 변경" → 같은 패널이 1000×262 → 1000×850으로 확장되며 6열 초상 그리드, 메타 줄 `보유 n / 전체 · 마지막 스캔 …`(FD-041, 이력 읽기만), FE8-b 발견 5(편집기 해요체 문구), 계정 클러스터 문서 계약 갱신(FD-001·FD-113).
+- 시작 커밋(HEAD): `cac83222bac7cc7ae7bb4b71f562b45713c4e10b`.
+- 막힘: 대장 "slice별 막힘 요약"에서 FE8-c는 `—`(열림 FD 없음). 관련 FD: FD-019(확정, 부유 패널 예외), FD-041(확정), FD-113(확정), FD-001.
+- 고칠 기존 파일과 WIP(`git status --short`, 줄바꿈은 바이트로 셈):
+  - `frontend/lib/ui/widgets/account_section_cluster.dart` — WIP 없음, LF
+  - `frontend/lib/ui/studio/account_studio_layout.dart` — WIP 없음, LF
+  - `frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json`(typed 문서와 같이 비교되는 Studio 저장 사본) — WIP 없음, LF, 끝 개행 없음
+  - `frontend/test/title_page_test.dart` — WIP 없음, LF
+  - `frontend/test/account_manager_fe8b_test.dart`(편집기를 여는 기대가 바뀌면) — WIP 없음, LF
+  - `almanac/design/section-template-studio.md`(계정 클러스터 절만) — **기존 미커밋 변경 있음**(다른 세션, 파일 끝 "2026-09-08 시나리오 비교" 두 절 +41줄). 계정 절(243~455줄)과 겹치지 않는다. pre/post 사본 + commit.json `post_dir`.
+  - `frontend/lib/ui/pages/title_page.dart` — 고칠 필요가 생기면만(WIP 없음, LF). 지금 계획은 변경 0.
+- 착수 사본: `debug/frontend_fe8c/pre/<경로>`(위 6개).
+- 새 파일(예정): `frontend/test/account_editor_fe8c_test.dart`.
+- 고치지 않는 것: `lib/services/**`(이력 `loadRepositoryHistorySummary` 읽기만), `lib/ui/kit/**`, 통계 화면·통계 Studio 문서(Lane A), golden harness·golden 테스트 파일, `app_shell.dart`, `frontend/tool/**`, backend·contracts.
+
+## FE8-c 종료 기록 (2026-10-13, 코드 작성 완료·CF gate 미실행)
+
+편집기와 초상 고르기를 시안대로 한 부유 패널로 합쳤다. 레일 "수정" → 편집 패널(1010,470 1000×262), "초상 변경" → 같은 패널이 1010,270 1000×850으로 펼쳐지며 6열 그리드. 저장 서비스 호출·revision 처리는 그대로다.
+
+### 실행 명령·결과
+
+- `flutter analyze`(frontend 전체): **이슈 0**(info 포함).
+- `flutter test <파일>`(각각 따로, 마지막 실행 결과):
+
+  | 파일 | 결과 |
+  |---|---|
+  | `test/account_editor_fe8c_test.dart`(새) | +9 −0 |
+  | `test/title_page_test.dart` | +25 −0 |
+  | `test/account_manager_fe8b_test.dart` | +6 −0 |
+  | `test/profile_delete_fb2d_test.dart` | +17 −0 |
+  | `test/scan_page_revision_test.dart` | +14 −0 |
+  | `test/geometry/diagonal_geometry_test.dart` | +5 −0 |
+  | `test/kit/diagonal_scrollbar_test.dart` | +8 −0 |
+  | `test/settings_page_test.dart` | +10 −0 |
+  | `test/repository_profile_panel_test.dart` | +1 −0 |
+  | `test/inventory_shell_lazy_test.dart`(이력 요약 호출 셈) | +1 −0 |
+
+  - 고른 근거(grep): `showTitle: true`·`AccountSectionCluster`·`accountStudioDocument`·`portraitScrollbarTrackPoint`·`portraitGridTrajectoryOffset`·`loadRepositoryHistorySummary`. 잠금 충돌 0(재시도 없음). 로그 `debug/frontend_fe8c/final_*.log`(실패 줄만 확인).
+  - 중간 실패와 처리:
+    - title 1건: 1440×900에서 stucard↔"초상 변경" 80° 선이 깨짐(가로·세로 축척이 달라서) → 구현에 `accountEditorChangeRect`(가로만 맞춤)를 더했다. 기존 규칙 유지.
+    - fe8c 2건: 내 테스트의 칸 index 오류(칸 1의 초상은 `items[3]`), 펼친 첫 프레임에 그리드가 없어 고른 초상 위치로 못 옮김 → 진행률 0에서도 그리드를 붙였다.
+    - title 1건: 위 수정 뒤 기존 테스트가 따라가던 2행이 화면 밖(궤적 clamp)이 됨 → 테스트가 viewport 안의 행을 따라가게 고쳤다.
+  - 실수 1건: 고친 파일 3개에 `dart format`을 파일째 돌려 손대지 않은 줄까지 바뀌었다. pre 사본을 같은 포매터로 돌린 차이를 역패치로 되돌려 이 slice hunk만 남겼다(`title_page_test.dart` +69/−59). `account_studio_layout.dart`는 생성한 부분 외 변화 없음.
+- `git diff --check`(고친 파일): exit 0. 새 테스트 파일은 끝 공백 0·끝 개행 하나 확인.
+- 미실행: 전체 `fe_gate.ps1`, golden 비교, `codealmanac validate`(CF 몫).
+
+### 고친 파일
+
+- **`frontend/lib/ui/widgets/account_section_cluster.dart`**
+  - `_buildEditor` 하나가 접힘·펼침을 모두 그린다(`_buildPicker`·`_portraitChangePath`·`squareAssetImageSideLength` 삭제). 펼침 진행률(`_pickerMotion`, `AppMotion.sectionCurve`)로 짝 rect를 보간한다.
+  - 공개 함수: `accountEditorRect`·`accountEditorBounds`·`accountEditorPath`·`accountEditorChangeRect`·`accountPortraitGridMetrics`·`accountPortraitScrollbarTrackPoint`·`accountLastScanText`·`accountEditorMetaText`, 상수 `accountEditorPanelFill`·입력·저장·viewport 색.
+  - 패널: 채움 .95 + lifted shadow, 패널에서 텍스처 버튼만 차감. stucard는 목록 행과 같은 학생 카드 평행사변형(흰 1.5px). 입력 path 채움 .55 + 외곽선(포커스 #f2b3ef 2.4 / 평소 rgba(56,81,107,.9) 1.6, `FocusNode`로 바꿈), TextField 16 w600(작은 창은 축척).
+  - 펼침: "고르는 중"(분홍 3.2, 다시 누르면 닫기), 뒤로는 흐려져 사라짐, 닫기·저장·머리 `초상 고르기` + (i)(`InfoPopover`)는 나타남. 전이 중 버튼은 누르지 않는다. 그리드는 펼친 자리에 고정하고 보간되는 패널 path로만 드러낸다.
+  - 그리드: 6열, 칸 112×90.67, 간격 14·17.33, stucard + 98% 초상, 선택 #ff72b6 1.88, 흰 1px. 스크롤바는 공용 표준(썸 #e5a0ea) + 공용 포그, 레일 가로 5.94·위아래 10. 펼칠 때 고른 초상 행이 밖이면 가운데로 옮긴다.
+  - 메타 줄: `_load`가 state와 함께 `loadRepositoryHistorySummary`(128개씩)를 읽어 `_lastScans`에 둔다. 실패하면 비우고 목록은 그대로다. 삭제 때 `_forgetDeletedProfile`이 그 ID를 뺀다(fb2d 캐시 표 유지). "지금"은 서비스가 `InventoryClockSource`면 그 시각, 아니면 기기 시계.
+  - `_DiagonalScrollbar`: 초상 전용 썸 #8edcff 스타일을 없애고 표준만 쓴다(`trackPoint` 인자 추가). 안 쓰게 된 `_PathOutline` 삭제.
+  - 문구: 입력 안내 `계정명을 입력하세요` → `계정명을 입력하십시오`(FE8-b 발견 5), 라벨 `계정명 :` → `계정명`, `변경` → `초상 변경`.
+- **`frontend/lib/ui/studio/account_studio_layout.dart`**·**`frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json`**: 아래 배치 표. 같은 Python 생성기(값 = 시안 px)로 둘을 만들어 typed ↔ JSON 비교 테스트가 그대로 통과한다. JSON은 LF·끝 개행 없음 유지.
+- **`frontend/test/title_page_test.dart`**(25 → 25, 지운 테스트 없음, 고친 테스트 3):
+  - `account manager uses Studio paths …`: 입력 rect·stucard Studio rect·80° 선, 펼침 중간 프레임 패널 높이(접힘과 펼침 사이)·편집기 이동 없음·예외 0, 펼친 패널 bounds, 그리드 폭 = container-8 bounds, 6열, 선택 두께 1.88/90.67, 스크롤 추적 행.
+  - `nested account sections exit independently`: 펼침에 편집기 뒤로 없음, "고르는 중" 재클릭 = 닫기, 관리 레일 뒤로로 타이틀 복귀.
+  - `account editor text remains inside Studio paths in a small window`: `초상 변경`, 입력 path는 `accountEditorPath`.
+- **새 `frontend/test/account_editor_fe8c_test.dart`**(9): Studio 값 ↔ 시안 px(패널 ±1, 요소 ±2), 그리드 metrics·레일, 마지막 스캔 문구, 접힘 화면(문구·색·두께·포커스·메타 줄·요약 1회), 펼침 화면(위치·문구·(i)·그리드 첫 칸·행 이동·선택·스크롤바·포그·중간 프레임 예외 0), 닫기 = 버림·"고르는 중" = 닫기·펼침 저장 = draft만·편집기 저장 = `updateProfile` 1회, 고른 초상 스크롤, 이력 실패·기록 없음 = '—', 1280×720·480×270 펼침·접힘 예외 0과 글자 ⊂ 버튼.
+- **`almanac/design/section-template-studio.md`**(계정 클러스터 절만, 아래 문서 갱신).
+- 변경 0: `title_page.dart`(고칠 필요 없음), `account_manager_fe8b_test.dart`(pre 사본만 있고 내용 같음 — commit.json에 넣지 않았다).
+
+### 처리한 FD
+
+- **FD-019(확정)**: 편집 패널(접힘·펼침)은 어느 경계에도 붙지 않는 부유 패널 예외, 진입 80°·퇴장 260°. 펼침은 방향 이동이 아니라 rect 보간.
+- **FD-041(확정)**: 메타 줄 "마지막 스캔"은 이력 요약의 프로필별 `last_scan_at`. 없으면 '—'.
+- **FD-113(확정)**: FE8-c 몫(편집 패널 1000×262·입력 fill + 분홍 포커스·초상 6열·편집 패널 확장) 반영. Studio JSON 재저장.
+- **FD-001**: 패널 채움 .95·viewport .45·입력 .55는 공용 표면 .76의 예외로 시안을 따랐다. 문서도 시안으로 고쳤다.
+- 막힘 요약: FE8-c `—`. 워커 재량 FD 없음.
+
+### 정한 규칙
+
+1. **마지막 스캔 = 계정의 모든 종류 scan 적용 중 가장 최근**(`repository.history.summary` `last_scan_at`). FE6-f의 "카탈로그 재화 scan"(`scan_latest` by_resource_key)과 다르다.
+   - 근거: FE6-f 규칙은 인벤토리 탭 지표(재화 수량)의 기준이다. 계정 메타 줄은 계정 전체 요약이고 시안 문구에 종류 한정이 없다("마지막 스캔 어제 21:40"). FD-041 "마지막 스캔 시각은 같은 이력에서 프로필별로 유도", A §3.4 "프로필별 마지막 스캔 시각"과 맞는다.
+   - 한 요청(최대 128 프로필)으로 모든 계정을 읽어 목록 로드 비용이 거의 늘지 않는다. scan_kind 원문에는 기대지 않는다.
+2. **표기**: 지역 달력 날짜 차 0 `오늘 HH:mm`, 1 `어제 HH:mm`(시안), 2 이상 `n일 전`(FE6-f와 같은 말), 지금보다 뒤(시계 차이) `M/d HH:mm`. 모르면 '—'. 보유 수를 못 읽으면 `보유 — / 265`, 전체를 모르면 `/ —`.
+3. **펼침 저장 = 편집 중인 초상에만 반영**(지금과 같은 의미). 저장소 쓰기는 접힌 편집기의 저장 한 곳이다.
+4. **"고르는 중" 다시 누름 = 닫기**(버림). 시안은 누른 상태만 그렸다.
+5. **고른 초상 자동 스크롤**: 펼칠 때 고른 초상 행이 viewport 밖이면 가운데로 옮긴다(267명 중 기본 `hasumi`는 10번째 행).
+6. **입력 자동 포커스 없음**: 시안 접힘은 포커스(분홍) 상태를 그렸지만, golden에서 깜빡이는 커서를 고정할 수 없어(harness·golden 테스트는 고치지 않는다) 열 때 포커스를 주지 않는다. 누르면 분홍이다(발견 3).
+
+### 섹션 배치 표 (기준 viewport 2560×1392)
+
+| 대상 | Studio | px | 시안 | 차이 |
+|---|---|---|---|---|
+| 섹션 1(접힘 감싸기) | (37,32,37,19) | 986.7,464 986.7×275.5 | 패널 1010,470 1000×262 | 감싸는 표지(아래 예외) |
+| 섹션 4(펼침 감싸기) | (37,18,37,60) | 986.7,261 986.7×870 | 패널 1010,270 1000×850 | 감싸는 표지 |
+| 패널 접힘 container-20 | 섹션 1 비율 | 1010,470 953.8×262(사선 포함 1000) | 1010,470 1000×262 | 0(그린 path bounds는 r16이라 ≤3px 안쪽) |
+| 패널 펼침 container-21 | 섹션 4 비율 | 1010,270 850.1×850(사선 포함 1000) | 1010,270 1000×850 | 0 |
+| stucard 4 / 22 | | 1068.81,501.76 / 1172.49,301.76 176×142.48 | 같음 | 0 |
+| 초상 변경 3 / 고르는 중 23 | | 1058.3,660 / 1162,460 158.6×44 | 같음 | 0(다른 비율 창은 가로만 80° 정렬) |
+| 계정명 4 / 10 | | 1331,506 / 1434,306 | `.ihdr` 왼쪽 위 | 0 |
+| 입력 8 / 11 | | 1310.8,530 569.9×56 / 1414.5,330 535.1×56 | 같음 | 0 |
+| 메타 줄 9 / 12 | | 1311,598 / 1414,398 | `.mut` 왼쪽 위 | 0 |
+| 뒤로 6 · 저장 7 | | 1691.3,662 · 1819.3,662 118×50 | 같음 | 0 |
+| 초상 viewport 8 | | 1057.6,570 859.5×450 | 같음 | 0 |
+| 닫기 9 · 저장 10 | | 1587.6,1050 · 1715.6,1050 118×50 | 같음 | 0 |
+| 머리 13(`초상 고르기` + (i)) | | 1152,530 126×24, (i) 1254,530 24×24 | 1152,536 글자 · 1254,530 | 0 |
+
+- **±1px 예외**: 시안 패널의 위·아래 y(470·732·270·1120)가 grid 줄(14.5px) 사이라 섹션 rect로는 ±1px가 안 된다(최선 −6px). FE8-b 관리 화면(섹션 5 표지 + 보이는 표면 container-11)과 같이, 섹션 1·4는 grid에 맞춘 감싸는 rect로 두고 보이는 패널을 컨테이너 20·21(소수 비율, 0px)로 그렸다. Studio placement는 0~1이어야 해서 섹션이 짝 요소를 모두 감싼다.
+
+### 문서 갱신 (`section-template-studio.md`, FD-001 대장 "갱신" 칸)
+
+- sources: `account-studio-document` 경로 `release/…`(git 밖, 이전 배치) → `frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json`. 새 source `account-editor-tests` → `frontend/test/account_editor_fe8c_test.dart`. **source 경로가 바뀌었다 — CF gate의 codealmanac validate 대상.**
+- 「Title 계정 생성·관리 클러스터 적용」 문단: FE8-b 몫(관리 섹션 표면 없음·목록 .9·레일 74·22px·행 그라데이션·진행 막대·추가 = 모달)과 FE8-c 몫(부유 편집 패널·펼침 보간·짝 표·닫기/저장 의미·입력 path 채움과 외곽선·메타 줄·6열·stucard 선택선·표준 스크롤바와 포그)으로 바꿨다. IME·tight width·궤적·Space 단축키 규칙은 그대로.
+- 「요소별 작업 스타일」: Section 1·4 표를 "펼치는 편집 패널" 표 하나로, Section 5 표를 시안 값으로.
+- 「시행착오」: 맨 앞에 "FE8-b·FE8-c가 바꾼 규칙은 위 절이 이긴다" 한 문단. 표는 기록으로 둔다.
+- 파일 끝 다른 세션 WIP(2026-09-08 두 절)는 그대로(아래).
+- FE8-a 발견 1(Title 관련 문단·로고 띠 .93 예외)은 계정 절 밖이라 이번에도 손대지 않았다.
+
+### golden 변화 예상 (실행하지 않음)
+
+- **`account-editor`**: 편집 패널 전체가 바뀐다 — 위치·크기(853,464 853×232 → 1010,470 1000×262), 채움 .76 → .95, 반경 16, stucard(학생 카드 모양 + 흰 외곽선), `초상 변경`(13 w700, 새 자리), 라벨 `계정명`(파란 점 `.ihdr`, 이전 `계정명 :` 22px), 입력 path 채움 .55 + 평소 외곽선 .9 1.6, 이름 16 w600, 메타 줄 `보유 0 / 2 · 마지막 스캔 —`(golden mock = 기본 Mock: 학생 0·카탈로그 2·이력 없음), 뒤로·저장 새 자리, 저장 분홍 외곽선·시작 버튼 텍스처, 버튼 외곽선. 뒤의 관리 화면은 그대로.
+- **`account-picker`**: 별도 섹션 4(720,725 853×667, 4열, 썸 #8edcff) 대신 펼친 패널 1010,270 1000×850. `고르는 중` 분홍 3.2, 머리 + (i), 6열 그리드가 `hasumi` 행(10번째 행)을 가운데로 스크롤한 상태, 선택 분홍 1.88, 표준 썸 #e5a0ea, 아래 포그, 닫기·저장. 관리 화면은 그대로.
+- 변화 0: `title`(title_page 변경 0), `account-manager`(관리 화면 렌더 변경 0 — 스크롤바 스타일·포그는 전과 같은 표준·true), `account-new`(모달 뒤 관리 화면 그대로), `home`과 다른 탭 장면(타이틀·클러스터를 거치지 않음). 이 밖의 장면이 RED면 예측이 틀린 것이니 갱신하지 말고 알려 달라.
+- 참고: 장면 조작(golden 테스트 파일)은 바꿀 필요가 없었다. `account-picker`가 기다리는 `account-picker-section` 표지를 펼침 상태에 그대로 둔다.
+- commit.json `whole`: 이 문서, `account-editor.png`, `account-picker.png`.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 백엔드에서 `repository.history.summary`를 타이틀에서 읽는 경로: **미실행**(process E2E 없음, Mock만). 읽기 전용이고 FB-2b 서비스 테스트는 기존 통과분이다.
+- 실제 앱 눈 검수(아래 표): **미실행**. 버리는 스크래치 테스트로 2560×1392 접힘·펼침 두 장면을 한 번씩 렌더해 배치만 눈으로 확인했다(저장소 밖 임시 폴더, golden 장면 아님).
+- 경기천년제목 800(`.ihdr`)은 등록 굵기가 500뿐이라 합성 굵게일 수 있다(FE8-b와 같음).
+- Windows IME 조합 중 펼침·접힘 전환: 같은 TextField가 유지되도록 했지만 실제 IME로는 **미검증**.
+
+### 검수표 (artboard `Title-Accounts.dc.html` 편집 패널 · `Title-Accounts-Portrait.dc.html`)
+
+앱에서 여는 방법: mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 2560×1440 모니터 최대화. 타이틀 → 설정(톱니) → 계정 관리 → "수정" → "초상 변경". mock 기본 계정은 이력이 없어 메타 줄 마지막 스캔이 `—`다(시안 `어제 21:40`은 테스트 fixture로만 재현, 발견 6).
+
+| # | 확인 포인트 | 코드 |
+|---|---|---|
+| E1 | "수정"을 누르면 편집 패널이 오른쪽 아래(80°)에서 들어와 1010,470 1000×262 평행사변형(모서리 16, 거의 불투명 .95, 그림자)으로 선다. "수정" 레일이 분홍 3.2 | `account-editor-section-shadow` |
+| E2 | 왼쪽 stucard 176×142가 학생 카드 모양 + 흰 외곽선, 아래 `초상 변경` 버튼과 중심이 80° 선 위 | `account-editor-portrait`, `account-change-portrait` |
+| E3 | `계정명` 머리(파란 점) 아래 입력 569.9×56: 어두운 채움, 평소 외곽선은 회청색, 누르면 분홍 2.4 | `account-name-input-outline` |
+| E4 | 입력 아래 `보유 n / 전체 · 마지막 스캔 —`(12px 회색, 한 줄) | `account-editor-meta` |
+| E5 | 오른쪽 아래 `뒤로`(회청 외곽선)·`저장`(분홍 외곽선) 118×50 | `account-editor-back`·`-save` |
+| P1 | `초상 변경`을 누르면 같은 패널이 위(270)·아래(1120)로 늘어나며 1000×850이 된다. 편집기가 빠졌다 들어오지 않는다 | `_pickerMotion` |
+| P2 | 버튼이 `고르는 중` + 분홍 3.2로 바뀌고, 위쪽 요소(stucard·입력·메타 줄)가 패널 사선을 따라 오른쪽으로 옮겨 간다 | 짝 rect 보간 |
+| P3 | `뒤로`가 흐려져 사라지고 아래 `닫기`·`저장`(1587.6/1715.6, 1050)이 나타난다 | `account-picker-close`·`-save` |
+| P4 | `초상 고르기` 머리 + (i)(누르면 "학생 초상 중 하나를 고릅니다. 저장해야 계정 카드에 반영됩니다.") | `account-picker-info` |
+| P5 | viewport(1057.6,570 859.5×450, 어두운 채움 + 얇은 외곽선) 안 6열 그리드, 4행이 보이고 행마다 19px씩 왼쪽(80° 계단) | `account-portrait-grid` |
+| P6 | 지금 초상 칸이 분홍 1.88 외곽선이고, 처음 열면 그 행이 보이게 스크롤되어 있다 | `_revealSelectedPortrait` |
+| P7 | 오른쪽 사선 스크롤바(분홍 썸), 아래 포그. 휠·끌기·키보드로 행이 80° 사선으로 움직인다 | `account-portrait-*` |
+| P8 | 다른 초상을 누르고 `닫기`(또는 `고르는 중`) → 원래 초상 그대로 접힌다. 다시 골라 `저장` → 접힌 stucard만 바뀌고 계정 카드는 아직 그대로 | `_closePicker` |
+| P9 | 접힌 패널 `저장` → 패널이 260°로 나가고 목록 행 초상·이름이 바뀐다 | `_saveEditor` |
+| P10 | 펼친 채 관리 레일 `뒤로` → 접힘·패널·관리 화면이 차례로 나가고 타이틀로 | `_back` |
+| P11 | 창을 작게(예: 1280×720) 해도 펼침·접힘 중 글자가 버튼 밖으로 넘치지 않는다 | small-window 테스트 |
+
+### WIP 보존 확인
+
+- `almanac/design/section-template-studio.md`(기존 미커밋 변경 있음): pre 사본과 끝 내용의 차이는 앞머리 sources(50줄 부근)와 계정 절(248~427줄)뿐이다. 파일 끝 45줄(다른 세션 WIP "2026-09-08 시나리오 비교 UI 정리"·"후속" 두 절)은 pre와 바이트까지 같다. LF·끝 개행 하나 유지. 끝 사본 `debug/frontend_fe8c/post/almanac/design/section-template-studio.md`.
+- 나머지 고친 파일은 WIP 없음, LF 유지(JSON은 끝 개행 없음 유지).
+- 다른 WIP 파일(서비스·스캔·통계 테스트 등 작업 트리의 `M` 파일)은 수정 0.
+
+### 발견 사항
+
+1. Lane A 키트 요청(고치지 않음): `lib/ui/kit/diagonal_scrollbar.dart` 머리 주석 "계정: 포그가 없고 썸이 #8edcff"는 이제 틀리다(계정 화면 둘 다 표준 + 포그).
+2. "지금" 시계로 `InventoryClockSource`(인벤토리 이름)를 재사용했다. 화면 공용 시계 interface(예: `AppClockSource`)로 올리는 것은 서비스·키트 몫이라 요청만 한다.
+3. 시안 접힘 입력은 포커스(분홍) 상태다. 앱은 열 때 자동 포커스하지 않는다(정한 규칙 6). 자동 포커스를 원하면 golden 장면에 `debugDeterministicCursor`가 필요하다(harness·`fe1g` 테스트는 Lane A 몫).
+4. (i) 문구 "저장해야 계정 카드에 반영됩니다"는 펼침 `저장`이 곧바로 저장소에 쓰는 것으로 읽힐 수 있다. 지금은 프롬프트대로 "편집 중인 값에 반영 → 접힌 패널 저장"의 두 단계다. 한 번에 저장으로 바꿀지는 CF 판단.
+5. 펼칠 때 자동 스크롤 때문에 golden `account-picker`는 시안(첫 4행, 15번째 선택)과 다른 행이 보인다. 시안 선택 위치는 예시 데이터다.
+6. 검수용 시안 수치(`보유 217 / 265 · 마지막 스캔 어제 21:40`)는 기본 Mock(`lib/services`, 이 slice 범위 밖)에 이력·학생이 없어 앱에서는 재현되지 않는다. 테스트 fixture(`account_editor_fe8c_test.dart`)만 재현한다. 필요하면 Mock 검수 fixture를 서비스 쪽에 요청한다.
+7. 메타 줄은 못 읽은 보유 수를 `—`로, 목록 행은 `읽지 못함`으로 쓴다(프롬프트 "없으면 '—'"). 통일 여부는 CF 판단.
+8. `release/section-account-create-manager.ba-section-studio.json`(git 밖)은 더 오래된 배치다. Studio에서 같은 문서를 열려면 `frontend/assets/studio_sections/`의 추적 사본을 연다(FE8-b 발견 1과 같음).
+9. `account_manager_fe8b_test.dart`는 pre 사본을 만들었지만 고칠 필요가 없었다(내용 같음, commit.json에서 뺐다).
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe8c/pre/<경로>`(6개, 그중 `account_manager_fe8b_test.dart`는 변경 없음).
+- 끝 사본: `debug/frontend_fe8c/post/<경로>`(고친 기존 파일 5개와 새 테스트 1개).
+- `debug/frontend_fe8c/commit.json`: slice `fe8c`, `status=false`, `post_dir`, modified 5, added 1, `whole = [이 문서, account-editor.png, account-picker.png]`. message는 ASCII(근거: Title-Accounts·Title-Accounts-Portrait artboard, A §3·§5, FD-019·FD-041·FD-113).
+- 인계: `debug/frontend_fe8c/output.md`.
+
+### 다음 행동
+
+- FE8-c 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-a)와 이 slice가 모두 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 녹색, golden RED = `account-editor`·`account-picker` 2건) → `failures/` 검토 → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8c`(`section-template-studio.md`는 3-way 병합, WIP hunk와 떨어져 있다).
+- 발견 사항 1·2·3·4·6·7은 CF 판단을 기다린다.

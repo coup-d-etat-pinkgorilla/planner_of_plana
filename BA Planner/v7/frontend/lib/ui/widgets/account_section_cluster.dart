@@ -11,9 +11,11 @@ import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../inventory/inventory_controller.dart' show InventoryClockSource;
 import '../kit/ba_chip.dart';
 import '../kit/ba_modal.dart';
 import '../kit/diagonal_scrollbar.dart';
+import '../kit/info_popover.dart';
 import '../kit/skew_bar.dart';
 import '../studio/account_studio_layout.dart';
 import '../studio/section_template.dart';
@@ -31,16 +33,6 @@ const _managerIntroDegrees = 0.0;
 const _managerOutroDegrees = 180.0;
 const _editorIntroDegrees = 80.0;
 const _editorOutroDegrees = 260.0;
-const _squareAssetCanvasSize = Size(252, 204);
-const _squareAssetImageSide = 204.0;
-
-double squareAssetImageSideLength(Rect targetBounds) {
-  final scale = math.min(
-    targetBounds.width / _squareAssetCanvasSize.width,
-    targetBounds.height / _squareAssetCanvasSize.height,
-  );
-  return _squareAssetImageSide * scale;
-}
 
 double portraitGridTrajectoryOffset(double viewportY, double viewportHeight) {
   if (viewportHeight <= 0) return 0;
@@ -349,6 +341,210 @@ double accountManagerRowLeft(Size size, double centerY) {
   return (Alignment(-end.x, -end.y), end);
 }
 
+// FE8-c(2026-10-13): 편집 패널은 시안 `Title-Accounts.dc.html`(접힘 1010,470 1000×262)·
+// `Title-Accounts-Portrait.dc.html`(펼침 1010,270 1000×850) 값이다. 두 상태의 같은 역할 요소는 Studio 문서에서
+// 짝(접힘 id ↔ 펼침 id)이고, 초상 바꾸기의 확장 진행률로 rect를 보간한다. 길이는 기준 viewport에서의 px이다.
+
+/// 편집 패널 채움 rgba(29,42,58,.95). 공용 섹션 표면(.76)의 예외다(FD-001 시안 우선).
+const accountEditorPanelFill = Color.fromRGBO(29, 42, 58, 0.95);
+const _accountEditorPanelRadius = 16.0;
+const _accountEditorButtonRadius = 8.0;
+const _accountEditorInputRadius = 7.0;
+const _accountPortraitViewportRadius = 12.0;
+
+/// 편집기 stucard 흰 외곽선 1.5px(카드 높이 142.48 기준).
+const _accountEditorStucardOutlineFraction = 1.5 / 142.48;
+
+/// 계정명 입력: 채움 rgba(10,16,24,.55), 포커스 #f2b3ef 2.4px, 평소 rgba(56,81,107,.9) 1.6px.
+const accountEditorInputFill = Color.fromRGBO(10, 16, 24, 0.55);
+const accountEditorInputIdleOutline = Color.fromRGBO(56, 81, 107, 0.9);
+const accountEditorInputIdleOutlineWidth = 1.6;
+const accountEditorInputFocusOutlineWidth = 2.4;
+
+/// 저장 버튼 외곽선 rgba(242,179,239,.9) 1.8px(뒤로·닫기·초상 변경은 레일과 같은 .72 1.8px).
+const accountEditorSaveOutline = Color.fromRGBO(242, 179, 239, 0.9);
+
+/// 초상 그리드 viewport: 채움 rgba(10,16,24,.45), 외곽선 rgba(56,81,107,.6) 1px.
+const accountPortraitViewportFill = Color.fromRGBO(10, 16, 24, 0.45);
+const accountPortraitViewportOutline = Color.fromRGBO(56, 81, 107, 0.6);
+
+/// 초상 그리드 열 수(시안 6열 × 4행 가시).
+const accountPortraitColumns = 6;
+
+/// 초상 그리드 기준(viewport bounds 859.5×450): 칸 112×90.67, 간격 14·17.33, 첫 행 위 17.67, 첫 칸 왼쪽 9.74
+/// (+ 행 궤적 이동). 선택 stucard 외곽선 #ff72b6 1.88px, 나머지는 흰 1px.
+const _portraitViewportReference = Size(859.5, 450);
+const _portraitCell = Size(112, 90.67);
+const _portraitColumnGap = 14.0;
+const _portraitRowGap = 17.33;
+const _portraitPaddingLeft = 9.74;
+const _portraitPaddingTop = 17.67;
+const _portraitSelectionWidth = 1.88;
+const _portraitOutlineWidth = 1.0;
+
+/// 초상 그리드 스크롤바: 위·아래 여백 10, 레일은 viewport 오른쪽 사선에서 가로 5.94(시안 line 899.4→823.5).
+const _portraitTrackInset = 10.0;
+const _portraitTrackHorizontalRatio = 0.594;
+
+const _accountEditorActionStyle = TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  fontSize: 15,
+  fontWeight: FontWeight.w700,
+  color: Colors.white,
+);
+
+const _accountEditorMetaStyle = TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  fontSize: 12,
+  fontWeight: FontWeight.w500,
+  color: AppColors.textMuted,
+);
+
+const _accountEditorParallelogram = AttachedSectionSpec(
+  mode: SectionShapeMode.parallelogram,
+  face: SectionAttachmentFace.bottom,
+  faceStart: 0,
+  faceSpan: 96,
+  height: 96,
+);
+
+/// 편집 패널 Studio 요소 [id](컨테이너 또는 feature)의 rect. 평행사변형은 사선을 뺀 폭이다.
+Rect _accountEditorStudioRect(Size size, String id) {
+  final container = accountStudioDocument.containers
+      .where((item) => item.id == id)
+      .firstOrNull;
+  if (container != null) {
+    return studioContainerRect(
+      size,
+      accountStudioDocument.elements,
+      container,
+    )!;
+  }
+  return studioFeatureRect(
+    size,
+    accountStudioDocument.elements,
+    accountStudioDocument.containers,
+    accountStudioDocument.features.singleWhere((item) => item.id == id),
+  )!;
+}
+
+/// 편집 패널 짝 요소 [collapsedId](접힘)↔[expandedId](펼침)의 rect를 확장 진행률 [expand](0~1)로 보간한다.
+Rect accountEditorRect(
+  Size size,
+  String collapsedId,
+  String expandedId,
+  double expand,
+) => Rect.lerp(
+  _accountEditorStudioRect(size, collapsedId),
+  _accountEditorStudioRect(size, expandedId),
+  expand,
+)!;
+
+/// 평행사변형 rect의 사선을 포함한 bounds(시안 path bounds와 같다).
+Rect accountEditorBounds(Rect rect) => Rect.fromLTWH(
+  rect.left,
+  rect.top,
+  rect.width + diagonalCutDepth(rect.height),
+  rect.height,
+);
+
+/// "초상 변경" rect [change]를 가로로만 옮겨, stucard bounds [portraitBounds] 중심과 잇는 선이 80°가 되게 한다
+/// (기준 viewport에서는 시안 값 그대로이고, 가로·세로 비율이 다른 창에서도 80°를 지킨다).
+Rect accountEditorChangeRect(Rect change, Rect portraitBounds) {
+  final bounds = accountEditorBounds(change);
+  final centerX =
+      portraitBounds.center.dx -
+      diagonalCutDepth(bounds.center.dy - portraitBounds.center.dy);
+  return change.shift(Offset(centerX - bounds.center.dx, 0));
+}
+
+/// 편집 패널 요소의 80° 평행사변형 path(왼쪽 위 꼭짓점이 높이/tan80°만큼 오른쪽).
+Path accountEditorPath(Rect rect, double radius) =>
+    _accountRoundedPolygon(rect, _accountEditorParallelogram, radius);
+
+/// 초상 그리드 배치. 칸·간격·여백은 viewport bounds [viewport]의 기준(859.5×450) 대비 작은 축 비율로 줄어든다.
+({
+  double scale,
+  Size cell,
+  double columnGap,
+  double rowGap,
+  EdgeInsets padding,
+  int rows,
+  double height,
+})
+accountPortraitGridMetrics(Size viewport, int count) {
+  final scale = math.min(
+    viewport.width / _portraitViewportReference.width,
+    viewport.height / _portraitViewportReference.height,
+  );
+  final cell = _portraitCell * scale;
+  final columnGap = _portraitColumnGap * scale;
+  final rowGap = _portraitRowGap * scale;
+  final rows = math.max(1, (count / accountPortraitColumns).ceil());
+  final left = _portraitPaddingLeft * scale;
+  final top = _portraitPaddingTop * scale;
+  final contentWidth =
+      cell.width * accountPortraitColumns +
+      columnGap * (accountPortraitColumns - 1);
+  return (
+    scale: scale,
+    cell: cell,
+    columnGap: columnGap,
+    rowGap: rowGap,
+    padding: EdgeInsets.fromLTRB(
+      left,
+      top,
+      math.max(0.0, viewport.width - left - contentWidth),
+      top,
+    ),
+    rows: rows,
+    height: top * 2 + rows * cell.height + (rows - 1) * rowGap,
+  );
+}
+
+/// 초상 그리드 스크롤바 레일 점. 위·아래 여백은 [trackInset], 가로는 오른쪽 사선에서 그 .594배다.
+Offset accountPortraitScrollbarTrackPoint(
+  Size size,
+  double y, {
+  double trackInset = _portraitTrackInset,
+}) => portraitScrollbarTrackPoint(
+  size,
+  y,
+  trackInset: trackInset * _portraitTrackHorizontalRatio,
+);
+
+/// 메타 줄의 마지막 스캔(FD-041): 계정의 가장 최근 scan 적용 시각(이력 요약 `last_scan_at`, 학생·아이템 등
+/// 모든 종류). 지역 달력 날짜 차로 `오늘 21:40`·`어제 21:40`, 그 전은 `n일 전`, 지금보다 뒤(시계 차이)는
+/// `10/12 21:40`. 모르면 '—'.
+String accountLastScanText(String? lastScanAt, DateTime now) {
+  final parsed = lastScanAt == null ? null : DateTime.tryParse(lastScanAt);
+  if (parsed == null) return '—';
+  final at = parsed.toLocal();
+  final today = now.toLocal();
+  final days = DateTime.utc(
+    today.year,
+    today.month,
+    today.day,
+  ).difference(DateTime.utc(at.year, at.month, at.day)).inDays;
+  String two(int value) => value.toString().padLeft(2, '0');
+  final clock = '${two(at.hour)}:${two(at.minute)}';
+  return switch (days) {
+    0 => '오늘 $clock',
+    1 => '어제 $clock',
+    > 1 => '$days일 전',
+    _ => '${at.month}/${at.day} $clock',
+  };
+}
+
+/// 편집 패널 메타 줄 `보유 217 / 265 · 마지막 스캔 어제 21:40`. 모르는 값은 '—'.
+String accountEditorMetaText({
+  required int? owned,
+  required int total,
+  required String lastScan,
+}) => '보유 ${owned ?? '—'} / ${total > 0 ? total : '—'} · 마지막 스캔 $lastScan';
+
 class AccountSectionCluster extends StatefulWidget {
   const AccountSectionCluster({
     super.key,
@@ -379,6 +575,9 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   late final AnimationController _editorMotion;
   late final AnimationController _pickerMotion;
   late final TextEditingController _nameController;
+
+  /// 계정명 입력 포커스(외곽선: 포커스 분홍 2.4, 평소 .9 1.6).
+  late final FocusNode _nameFocus;
   late final ScrollController _profileListController;
   late final ScrollController _portraitGridController;
 
@@ -392,6 +591,9 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
 
   /// 학생 수. state를 읽지 못한 계정(이관 실패 등)은 빠진다(0으로 보이지 않는다).
   Map<String, int> _studentCounts = const {};
+
+  /// 계정별 마지막 scan 적용 시각(이력 요약 `last_scan_at`, FD-041). 없거나 읽지 못하면 빠진다(메타 줄 '—').
+  Map<String, String?> _lastScans = const {};
   List<String> _portraitIds = const ['hasumi'];
   int _catalogStudentCount = 0;
   RepositoryProfile? _selected;
@@ -420,6 +622,8 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     )..addListener(_createModalChanged);
     _createNameController = TextEditingController();
     _nameController = TextEditingController();
+    _nameFocus = FocusNode(debugLabel: 'account-name')
+      ..addListener(_nameFocusChanged);
     _profileListController = ScrollController();
     _portraitGridController = ScrollController();
     _managerMotion = AnimationController(
@@ -454,6 +658,9 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       ..dispose();
     _createNameController.dispose();
     _nameController.dispose();
+    _nameFocus
+      ..removeListener(_nameFocusChanged)
+      ..dispose();
     _profileListController.dispose();
     _portraitGridController.dispose();
     super.dispose();
@@ -507,7 +714,12 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         }
       }
 
+      // 마지막 스캔(메타 줄)은 state와 함께 읽되, 실패해도 목록은 그대로 보인다.
+      final lastScansLoad = _loadLastScans(repository, [
+        for (final profile in listed) profile.id,
+      ]);
       final loads = await Future.wait(listed.map(loadState));
+      final lastScans = await lastScansLoad;
       final profiles = [
         for (final (index, profile) in listed.indexed)
           switch (loads[index].state) {
@@ -539,6 +751,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         _profiles = profiles;
         _selected = selected;
         _studentCounts = counts;
+        _lastScans = lastScans;
         _catalogStudentCount = catalog.length;
         _error = failures.isEmpty ? null : failures.join('\n');
       });
@@ -547,6 +760,31 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// 계정마다 마지막 scan 적용 시각(`repository.history.summary`, 128개씩 읽기만). 읽지 못하면 비운다('—').
+  Future<Map<String, String?>> _loadLastScans(
+    RepositoryService repository,
+    List<String> profileIds,
+  ) async {
+    final result = <String, String?>{};
+    try {
+      for (var start = 0; start < profileIds.length; start += 128) {
+        final summary = await repository.loadRepositoryHistorySummary(
+          profileIds.sublist(start, math.min(profileIds.length, start + 128)),
+        );
+        for (final profile in summary.profiles) {
+          result[profile.profileId] = profile.lastScanAt;
+        }
+      }
+    } catch (_) {
+      return const {};
+    }
+    return result;
+  }
+
+  void _nameFocusChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _openEditor() async {
@@ -558,6 +796,9 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
   Future<void> _openPicker() async {
     if (!mounted) return;
     setState(() => _view = _ClusterView.picker);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _revealSelectedPortrait(),
+    );
     await _pickerMotion.forward(from: 0);
   }
 
@@ -822,6 +1063,10 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
           for (final entry in _studentCounts.entries)
             if (entry.key != profileId) entry.key: entry.value,
         };
+        _lastScans = {
+          for (final entry in _lastScans.entries)
+            if (entry.key != profileId) entry.key: entry.value,
+        };
         if (_selected?.id == profileId) {
           _selected =
               remaining.where((item) => item.selected).firstOrNull ??
@@ -862,7 +1107,6 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
               if (widget.entry == AccountClusterEntry.manage) _buildManager(size),
               if (_view == _ClusterView.editor || _view == _ClusterView.picker)
                 _buildEditor(size),
-              if (_view == _ClusterView.picker) _buildPicker(size),
               if (_error != null)
                 Positioned(
                   left: 24,
@@ -889,30 +1133,61 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     },
   );
 
+  /// FE8-c(시안 Title-Accounts 편집 패널 · Title-Accounts-Portrait): 편집기와 초상 고르기는 한 부유 패널이다
+  /// (FD-019 예외, 80°로 들어오고 260°로 나간다). "초상 변경"을 누르면 같은 패널이 1000×262에서 1000×850으로
+  /// 펼쳐지며 6열 초상 그리드가 드러난다. 접힘(섹션 1)·펼침(섹션 4)의 짝 요소 rect를 확장 진행률로 보간한다.
   Widget _buildEditor(Size size) {
-    final section = _section('element-1');
-    final sectionPath = buildSectionCanvasElementPath(size, section);
-    final portraitPath = _containerPath(size, 'container-4');
-    final changePath = _portraitChangePath(size, portraitPath);
-    final backPath = _containerPath(size, 'container-6');
-    final savePath = _containerPath(size, 'container-7');
-    final inputFeature = accountStudioDocument.features.singleWhere(
-      (item) => item.id == 'feature-8',
+    final scale = accountManagerScale(size);
+    final expand = AppMotion.sectionCurve.transform(_pickerMotion.value);
+    final expanded = _view == _ClusterView.picker;
+    final settled = !_pickerMotion.isAnimating;
+    Rect pair(String collapsedId, String expandedId) =>
+        accountEditorRect(size, collapsedId, expandedId, expand);
+    final panelPath = accountEditorPath(
+      pair('container-20', 'container-21'),
+      _accountEditorPanelRadius * scale,
     );
-    final inputPath = buildStudioFeaturePath(
-      size,
-      accountStudioDocument.elements,
-      accountStudioDocument.containers,
-      inputFeature,
-    )!;
-    final labelRect = studioFeatureRect(
-      size,
-      accountStudioDocument.elements,
-      accountStudioDocument.containers,
-      accountStudioDocument.features.singleWhere(
-        (item) => item.id == 'feature-4',
+    final portraitBounds = accountEditorBounds(
+      pair('container-4', 'container-22'),
+    );
+    final changePath = accountEditorPath(
+      accountEditorChangeRect(
+        pair('container-3', 'container-23'),
+        portraitBounds,
       ),
-    )!;
+      _accountEditorButtonRadius * scale,
+    );
+    final inputRect = pair('feature-8', 'feature-11');
+    final inputPath = accountEditorPath(
+      inputRect,
+      _accountEditorInputRadius * scale,
+    );
+    final savePath = accountEditorPath(
+      pair('container-7', 'container-10'),
+      _accountEditorButtonRadius * scale,
+    );
+    final backPath = accountEditorPath(
+      accountEditorRect(size, 'container-6', 'container-6', 0),
+      _accountEditorButtonRadius * scale,
+    );
+    final closePath = accountEditorPath(
+      accountEditorRect(size, 'container-9', 'container-9', 0),
+      _accountEditorButtonRadius * scale,
+    );
+    // 뒤로는 접힘에서만, 닫기·그리드는 펼침에서만 보인다. 반쯤 보이는 동안에는 패널 표면에서 빼지 않는다.
+    final backOpacity = 1 - expand;
+    final pickerOpacity = expand;
+    final backActive = !expanded && settled && !_busy;
+    final pickerActive = expanded && settled;
+    final editing = _editing;
+    final metaText = accountEditorMetaText(
+      owned: editing == null ? null : _studentCounts[editing.id],
+      total: _totalStudents,
+      lastScan: accountLastScanText(
+        editing == null ? null : _lastScans[editing.id],
+        _now(),
+      ),
+    );
     return _DirectionalAccountMotion(
       key: const ValueKey('account-editor-motion'),
       progress: _editorMotion.value,
@@ -923,21 +1198,62 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         children: [
           LiftedPathShadow(
             key: const ValueKey('account-editor-section-shadow'),
-            path: sectionPath,
+            path: panelPath,
           ),
           _PathSurface(
             key: const ValueKey('account-editor-base-surface'),
-            path: _subtractPaths(sectionPath, [changePath, backPath, savePath]),
+            path: _subtractPaths(panelPath, [
+              changePath,
+              savePath,
+              if (backOpacity >= 1) backPath,
+              if (pickerOpacity >= 1) closePath,
+            ]),
+            color: accountEditorPanelFill,
           ),
-          _PathSurface(path: changePath, texture: _accountActionTexture),
-          _PathSurface(path: backPath, texture: _accountActionTexture),
-          _PathSurface(path: savePath, texture: _accountActionTexture),
+          _PathSurface(
+            key: const ValueKey('account-change-portrait-surface'),
+            path: changePath,
+            texture: _accountActionTexture,
+          ),
+          _PathSurface(
+            key: const ValueKey('account-editor-save-surface'),
+            path: savePath,
+            texture: titlePrimaryActionTexture,
+          ),
+          if (backOpacity > 0)
+            Positioned.fill(
+              key: const ValueKey('account-editor-back-surface'),
+              child: Opacity(
+                opacity: backOpacity,
+                child: _PathSurface(
+                  path: backPath,
+                  texture: _accountActionTexture,
+                ),
+              ),
+            ),
+          if (pickerOpacity > 0)
+            Positioned.fill(
+              key: const ValueKey('account-picker-close-surface'),
+              child: Opacity(
+                opacity: pickerOpacity,
+                child: _PathSurface(
+                  path: closePath,
+                  texture: _accountActionTexture,
+                ),
+              ),
+            ),
           _positionedMarker(
             'account-editor-section',
-            sectionCanvasElementRect(size, section),
+            sectionCanvasElementRect(size, _section('element-1')),
           ),
+          if (expanded)
+            _positionedMarker(
+              'account-picker-section',
+              sectionCanvasElementRect(size, _section('element-4')),
+            ),
+          // 시안 stucard: 학생 카드 평행사변형(square.png 테두리 잘라 채움 + 초상 98%, 흰 1.5px 외곽선).
           _positionedContent(
-            portraitPath.getBounds(),
+            portraitBounds,
             AssetImageGrid(
               key: const ValueKey('account-editor-portrait-grid'),
               items: [
@@ -945,6 +1261,10 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
                   asset: 'assets/studio_features/square.png',
                   column: 0,
                   row: 0,
+                  edgeCropFraction: 0.11,
+                  clipPathBuilder: studentGridCardPath,
+                  outlineColor: Colors.white,
+                  outlineWidthFraction: _accountEditorStucardOutlineFraction,
                 ),
                 AssetImageGridItem(
                   asset: 'assets/student_portraits/$_portraitId.png',
@@ -952,117 +1272,243 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
                   row: 0,
                   scale: 0.98,
                   clipRadiusFraction: 0.12,
+                  alphaThreshold: 0.04,
                 ),
               ],
             ),
+            key: const ValueKey('account-editor-portrait'),
           ),
           _positionedContent(
-            labelRect,
-            const FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '계정명 :',
-                style: TextStyle(fontFamily: 'GyeonggiTitle', fontSize: 22),
+            pair('feature-4', 'feature-10'),
+            const _AccountFieldHeader('계정명'),
+            key: const ValueKey('account-editor-label'),
+          ),
+          Positioned.fromRect(
+            key: const ValueKey('account-name-input-surface'),
+            rect: accountEditorBounds(inputRect),
+            child: IgnorePointer(
+              child: ClipPath(
+                clipper: _FixedPathClipper(inputPath.shift(-inputRect.topLeft)),
+                clipBehavior: Clip.antiAlias,
+                child: const ColoredBox(
+                  color: accountEditorInputFill,
+                  child: SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            key: const ValueKey('account-name-input-outline'),
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: AccountPathOutlinePainter(
+                  inputPath,
+                  color: _nameFocus.hasFocus
+                      ? accountPressedOutline
+                      : accountEditorInputIdleOutline,
+                  strokeWidth: _nameFocus.hasFocus
+                      ? accountEditorInputFocusOutlineWidth
+                      : accountEditorInputIdleOutlineWidth,
+                ),
               ),
             ),
           ),
           _pathInput(
             inputPath,
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _nameController,
-              builder: (context, value, _) {
-                final isComposing =
-                    value.composing.isValid && !value.composing.isCollapsed;
-                return TextField(
-                  key: const ValueKey('account-name-input'),
-                  controller: _nameController,
-                  enabled: !_busy,
-                  maxLines: 1,
-                  showCursor: !isComposing,
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.left,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _saveEditor(),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    hintText: '계정명을 입력하세요',
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                );
-              },
+            Padding(
+              padding: EdgeInsets.fromLTRB(26 * scale, 0, 16 * scale, 0),
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameController,
+                builder: (context, value, _) {
+                  final isComposing =
+                      value.composing.isValid && !value.composing.isCollapsed;
+                  return TextField(
+                    key: const ValueKey('account-name-input'),
+                    controller: _nameController,
+                    focusNode: _nameFocus,
+                    enabled: !_busy,
+                    maxLines: 1,
+                    showCursor: !isComposing,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _saveEditor(),
+                    style: TextStyle(
+                      fontFamily: AppFonts.body,
+                      fontFamilyFallback: AppFonts.fallback,
+                      fontSize: 16 * math.min(1, scale),
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.text,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      hintText: '계정명을 입력하십시오',
+                      hintStyle: TextStyle(color: AppColors.textMuted),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
+          _positionedContent(
+            pair('feature-9', 'feature-12'),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                metaText,
+                key: const ValueKey('account-editor-meta'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _accountEditorMetaStyle,
+              ),
+            ),
+            key: const ValueKey('account-editor-meta-box'),
+          ),
+          // 펼치기 시작한 첫 프레임(진행률 0)에도 그리드를 붙여, 고른 초상 위치로 먼저 옮겨 둘 수 있게 한다.
+          if (expanded || pickerOpacity > 0)
+            Positioned.fill(
+              key: const ValueKey('account-picker-content'),
+              child: IgnorePointer(
+                ignoring: !pickerActive,
+                child: Opacity(
+                  opacity: pickerOpacity,
+                  // 펼쳐지는 동안 그리드는 제자리에 두고 패널 path로만 드러낸다(배치는 바뀌지 않는다).
+                  child: ClipPath(
+                    clipper: _FixedPathClipper(panelPath),
+                    child: _buildPortraitPicker(size),
+                  ),
+                ),
+              ),
+            ),
           _pathAction(
             'account-change-portrait',
             changePath,
-            _busy
+            _busy || !settled
                 ? null
+                : expanded
+                ? () => _closePicker()
                 : () {
                     _pickerDraft = _portraitId;
                     _openPicker();
                   },
-            const Text('변경'),
+            Text(
+              expanded ? '고르는 중' : '초상 변경',
+              style: _accountEditorActionStyle.copyWith(fontSize: 13),
+            ),
           ),
-          _pathAction(
-            'account-editor-back',
-            backPath,
-            _busy ? null : _back,
-            const Text('뒤로'),
+          _actionOutline(
+            'account-change-portrait-outline',
+            changePath,
+            expanded ? accountPressedOutline : accountRailOutline,
+            expanded ? accountPressedOutlineWidth : accountRailOutlineWidth,
           ),
-          _pathAction(
-            'account-editor-save',
+          if (backOpacity > 0)
+            _fadingAction(
+              'account-editor-back-box',
+              backOpacity,
+              active: backActive,
+              action: _pathAction(
+                'account-editor-back',
+                backPath,
+                backActive ? _back : null,
+                const Text('뒤로', style: _accountEditorActionStyle),
+              ),
+              outline: _actionOutline(
+                'account-editor-back-outline',
+                backPath,
+                accountRailOutline,
+                accountRailOutlineWidth,
+              ),
+            ),
+          if (pickerOpacity > 0)
+            _fadingAction(
+              'account-picker-close-box',
+              pickerOpacity,
+              active: pickerActive,
+              action: _pathAction(
+                'account-picker-close',
+                closePath,
+                pickerActive ? () => _closePicker() : null,
+                const Text('닫기', style: _accountEditorActionStyle),
+              ),
+              outline: _actionOutline(
+                'account-picker-close-outline',
+                closePath,
+                accountRailOutline,
+                accountRailOutlineWidth,
+              ),
+            ),
+          // 저장은 접힘(계정 저장)과 펼침(고른 초상을 편집 중인 값에 반영) 둘 다 같은 자리에서 옮겨 간다.
+          if (expanded)
+            _pathAction(
+              'account-picker-save',
+              savePath,
+              pickerActive ? () => _closePicker(applySelection: true) : null,
+              const Text('저장', style: _accountEditorActionStyle),
+            )
+          else
+            _pathAction(
+              'account-editor-save',
+              savePath,
+              _busy || !settled ? null : _saveEditor,
+              _busy
+                  ? const CircularProgressIndicator(strokeWidth: 2)
+                  : const Text('저장', style: _accountEditorActionStyle),
+            ),
+          _actionOutline(
+            'account-editor-save-outline',
             savePath,
-            _busy ? null : _saveEditor,
-            _busy
-                ? const CircularProgressIndicator(strokeWidth: 2)
-                : const Text('저장'),
+            accountEditorSaveOutline,
+            accountRailOutlineWidth,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPicker(Size size) {
-    final sectionPath = buildSectionCanvasElementPath(
+  /// 펼친 패널의 초상 고르기: 머리 `초상 고르기` + (i), 평행사변형 viewport(채움 .45 + 외곽선) 안의 6열 그리드,
+  /// 공용 사선 스크롤바·포그. 칸·간격·여백은 시안 값이고, 행은 하나의 80° 궤적을 따라 옮겨 간다.
+  Widget _buildPortraitPicker(Size size) {
+    final scale = accountManagerScale(size);
+    final viewportRect = accountEditorRect(
       size,
-      _section('element-4'),
+      'container-8',
+      'container-8',
+      0,
     );
-    final gridPath = _containerPath(size, 'container-8');
-    final closePath = _containerPath(size, 'container-9');
-    final savePath = _containerPath(size, 'container-10');
-    const columns = 4;
-    const gridGap = 6.0;
-    const gridInset = 8.0;
-    final rows = math.max(1, (_portraitIds.length / columns).ceil());
-    final gridBounds = gridPath.getBounds();
-    final trajectoryDepth = portraitGridTrajectoryOffset(0, gridBounds.height);
-    final cellSize = math.max(
-      1.0,
-      (gridBounds.width -
-              gridInset * 2 -
-              trajectoryDepth -
-              gridGap * (columns - 1)) /
-          columns,
+    final viewportBounds = accountEditorBounds(viewportRect);
+    final viewportPath = accountEditorPath(
+      viewportRect,
+      _accountPortraitViewportRadius * scale,
     );
-    final gridHeight = gridInset * 2 + rows * cellSize + gridGap * (rows - 1);
+    final metrics = accountPortraitGridMetrics(
+      viewportBounds.size,
+      _portraitIds.length,
+    );
     final selectedIndex = _portraitIds.indexOf(_pickerDraft ?? _portraitId);
+    final strokeFraction = 1 / metrics.cell.height;
     final items = <AssetImageGridItem>[];
     for (var index = 0; index < _portraitIds.length; index++) {
-      final column = index % columns;
-      final row = index ~/ columns;
+      final column = index % accountPortraitColumns;
+      final row = index ~/ accountPortraitColumns;
       items
         ..add(
           AssetImageGridItem(
             asset: 'assets/studio_features/square.png',
             column: column,
             row: row,
-            scale: 0.94,
+            edgeCropFraction: 0.11,
+            clipPathBuilder: studentGridCardPath,
+            outlineColor: Colors.white,
+            outlineWidthFraction:
+                _portraitOutlineWidth * metrics.scale * strokeFraction,
           ),
         )
         ..add(
@@ -1070,111 +1516,163 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
             asset: 'assets/student_portraits/${_portraitIds[index]}.png',
             column: column,
             row: row,
-            scale: 0.92,
+            scale: 0.98,
             clipRadiusFraction: 0.12,
+            alphaThreshold: 0.04,
           ),
         );
     }
-    return _DirectionalAccountMotion(
-      key: const ValueKey('account-picker-motion'),
-      progress: _pickerMotion.value,
-      introDegrees: _editorIntroDegrees,
-      outroDegrees: _editorOutroDegrees,
-      size: size,
-      child: Stack(
-        children: [
-          LiftedPathShadow(
-            key: const ValueKey('account-picker-section-shadow'),
-            path: sectionPath,
+    final headerRect = accountEditorRect(size, 'feature-13', 'feature-13', 0);
+    // (i)는 머리 칸 오른쪽 끝의 24×24(시안 1254,530)다.
+    final infoSide = headerRect.height;
+    return Stack(
+      children: [
+        _positionedContent(
+          headerRect,
+          const _AccountFieldHeader('초상 고르기'),
+          key: const ValueKey('account-picker-title'),
+        ),
+        Positioned.fromRect(
+          key: const ValueKey('account-picker-info-box'),
+          rect: Rect.fromLTWH(
+            headerRect.right - infoSide,
+            headerRect.top,
+            infoSide,
+            infoSide,
           ),
-          _PathSurface(
-            key: const ValueKey('account-picker-base-surface'),
-            path: _subtractPaths(sectionPath, [closePath, savePath]),
+          child: const InfoPopover(
+            key: ValueKey('account-picker-info'),
+            label: '초상 고르기 도움말',
+            title: '초상 고르기',
+            width: 330,
+            children: [
+              InfoPopoverText.plain('학생 초상 중 하나를 고릅니다. 저장해야 계정 카드에 반영됩니다.'),
+            ],
           ),
-          _PathOutline(path: gridPath),
-          _PathSurface(path: closePath, texture: _accountActionTexture),
-          _PathSurface(path: savePath, texture: _accountActionTexture),
-          _positionedMarker(
-            'account-picker-section',
-            sectionCanvasElementRect(size, _section('element-4')),
-          ),
-          Positioned.fromRect(
-            rect: gridBounds,
+        ),
+        Positioned.fromRect(
+          key: const ValueKey('account-picker-viewport-surface'),
+          rect: viewportBounds,
+          child: IgnorePointer(
             child: ClipPath(
-              clipper: _FixedPathClipper(gridPath.shift(-gridBounds.topLeft)),
-              child: _DiagonalScrollbar(
+              clipper: _FixedPathClipper(
+                viewportPath.shift(-viewportBounds.topLeft),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: const ColoredBox(
+                color: accountPortraitViewportFill,
+                child: SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+        _actionOutline(
+          'account-picker-viewport-outline',
+          viewportPath,
+          accountPortraitViewportOutline,
+          1,
+        ),
+        Positioned.fromRect(
+          key: const ValueKey('account-picker-viewport'),
+          rect: viewportBounds,
+          child: ClipPath(
+            clipper: _FixedPathClipper(
+              viewportPath.shift(-viewportBounds.topLeft),
+            ),
+            child: _DiagonalScrollbar(
+              controller: _portraitGridController,
+              keyPrefix: 'account-portrait',
+              trackInset: _portraitTrackInset * metrics.scale,
+              trackPoint: accountPortraitScrollbarTrackPoint,
+              child: SingleChildScrollView(
+                key: const ValueKey('account-portrait-scroll'),
                 controller: _portraitGridController,
-                keyPrefix: 'account-portrait',
-                child: SingleChildScrollView(
-                  key: const ValueKey('account-portrait-scroll'),
-                  controller: _portraitGridController,
-                  child: SizedBox(
-                    height: gridHeight,
-                    child: AnimatedBuilder(
-                      animation: _portraitGridController,
-                      builder: (context, _) {
-                        final scrollOffset = _portraitGridController.hasClients
-                            ? _portraitGridController.offset
-                            : 0.0;
-                        final rowOffsets = List<double>.generate(rows, (row) {
-                          final centerY =
-                              gridInset +
-                              row * (cellSize + gridGap) +
-                              cellSize / 2 -
-                              scrollOffset;
-                          return portraitGridTrajectoryOffset(
-                            centerY,
-                            gridBounds.height,
+                child: SizedBox(
+                  height: metrics.height,
+                  child: Builder(
+                    builder: (context) {
+                      // 이 그리드가 속한 Scrollable의 position을 읽는다(컨트롤러 전체 offset이 아니라).
+                      final position = Scrollable.of(context).position;
+                      return AnimatedBuilder(
+                        animation: position,
+                        builder: (context, _) {
+                          final scrollOffset = position.hasPixels
+                              ? position.pixels
+                              : 0.0;
+                          final rowOffsets = List<double>.generate(
+                            metrics.rows,
+                            (row) => portraitGridTrajectoryOffset(
+                              metrics.padding.top +
+                                  row * (metrics.cell.height + metrics.rowGap) +
+                                  metrics.cell.height / 2 -
+                                  scrollOffset,
+                              viewportBounds.height,
+                            ),
+                            growable: false,
                           );
-                        }, growable: false);
-                        return AssetImageGrid(
-                          key: const ValueKey('account-portrait-grid'),
-                          columns: columns,
-                          rows: rows,
-                          columnGap: gridGap,
-                          rowGap: gridGap,
-                          rowHorizontalOffsets: rowOffsets,
-                          contentPadding: EdgeInsets.fromLTRB(
-                            gridInset,
-                            gridInset,
-                            gridInset + trajectoryDepth,
-                            gridInset,
-                          ),
-                          items: items,
-                          selectedCell: selectedIndex < 0
-                              ? null
-                              : selectedIndex,
-                          selectionShapeAsset:
-                              'assets/studio_features/square.png',
-                          selectionWidthFraction: 0.02,
-                          onCellTap: (index) {
-                            if (index < _portraitIds.length) {
-                              setState(
-                                () => _pickerDraft = _portraitIds[index],
-                              );
-                            }
-                          },
-                        );
-                      },
-                    ),
+                          return AssetImageGrid(
+                            key: const ValueKey('account-portrait-grid'),
+                            columns: accountPortraitColumns,
+                            rows: metrics.rows,
+                            columnGap: metrics.columnGap,
+                            rowGap: metrics.rowGap,
+                            rowHorizontalOffsets: rowOffsets,
+                            contentPadding: metrics.padding,
+                            items: items,
+                            selectedCell: selectedIndex < 0
+                                ? null
+                                : selectedIndex,
+                            selectionShapeAsset:
+                                'assets/studio_features/square.png',
+                            selectionWidthFraction:
+                                _portraitSelectionWidth *
+                                metrics.scale *
+                                strokeFraction,
+                            onCellTap: (index) {
+                              if (index < _portraitIds.length) {
+                                setState(
+                                  () => _pickerDraft = _portraitIds[index],
+                                );
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ),
             ),
           ),
-          _pathAction(
-            'account-picker-close',
-            closePath,
-            () => _closePicker(),
-            const Text('닫기'),
-          ),
-          _pathAction(
-            'account-picker-save',
-            savePath,
-            () => _closePicker(applySelection: true),
-            const Text('저장'),
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  /// 펼칠 때 고른 초상이 viewport 밖이면 그 행이 가운데 오게 옮긴다.
+  void _revealSelectedPortrait() {
+    if (!mounted || !_portraitGridController.hasClients) return;
+    final size = context.size;
+    if (size == null) return;
+    final index = _portraitIds.indexOf(_pickerDraft ?? _portraitId);
+    if (index < 0) return;
+    final viewport = accountEditorBounds(
+      accountEditorRect(size, 'container-8', 'container-8', 0),
+    ).size;
+    final metrics = accountPortraitGridMetrics(viewport, _portraitIds.length);
+    final row = index ~/ accountPortraitColumns;
+    final rowTop =
+        metrics.padding.top + row * (metrics.cell.height + metrics.rowGap);
+    final position = _portraitGridController.position;
+    final visibleTop = position.pixels;
+    final visibleBottom = visibleTop + position.viewportDimension;
+    if (rowTop >= visibleTop && rowTop + metrics.cell.height <= visibleBottom) {
+      return;
+    }
+    _portraitGridController.jumpTo(
+      (rowTop - (position.viewportDimension - metrics.cell.height) / 2).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
       ),
     );
   }
@@ -1298,9 +1796,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
               child: _DiagonalScrollbar(
                 controller: _profileListController,
                 keyPrefix: 'account-profile',
-                style: DiagonalScrollbarStyle.standard,
                 trackInset: _accountScrollTrackInset * scale,
-                showFog: true,
                 child: ListView.separated(
                   key: const ValueKey('account-profile-list'),
                   controller: _profileListController,
@@ -1412,60 +1908,12 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
 
   SectionCanvasElement _section(String id) =>
       accountStudioDocument.elements.singleWhere((item) => item.id == id);
-  Path _containerPath(Size size, String id) => buildStudioContainerPath(
-    size,
-    accountStudioDocument.elements,
-    accountStudioDocument.containers.singleWhere((item) => item.id == id),
-  )!;
 
-  Path _portraitChangePath(Size size, Path portraitPath) {
-    final section = _section('element-1');
-    final sectionRect = sectionCanvasElementRect(size, section);
-    final container = accountStudioDocument.containers.singleWhere(
-      (item) => item.id == 'container-3',
-    );
-    final originalRect = container.rect;
-    final portraitBounds = portraitPath.getBounds();
-    final squareSide = squareAssetImageSideLength(portraitBounds);
-    final changeCenterY =
-        sectionRect.top +
-        sectionRect.height * (originalRect.top + originalRect.height / 2);
-    final centerX =
-        portraitBounds.center.dx -
-        diagonalCutDepth(changeCenterY - portraitBounds.center.dy);
-    var projectedRect = originalRect.copyWith(
-      width: squareSide / sectionRect.width,
-    );
-    var projectedPath = buildStudioContainerPath(
-      size,
-      accountStudioDocument.elements,
-      container.copyWith(rect: projectedRect),
-    )!;
-    projectedRect = projectedRect.copyWith(
-      width:
-          (projectedRect.width +
-                  (squareSide - projectedPath.getBounds().width) /
-                      sectionRect.width)
-              .clamp(0.01, 1.0),
-    );
-    projectedPath = buildStudioContainerPath(
-      size,
-      accountStudioDocument.elements,
-      container.copyWith(rect: projectedRect),
-    )!;
-    projectedRect = projectedRect.copyWith(
-      left:
-          (projectedRect.left +
-                  (centerX - projectedPath.getBounds().center.dx) /
-                      sectionRect.width)
-              .clamp(0.0, 1.0 - projectedRect.width),
-    );
-    return buildStudioContainerPath(
-      size,
-      accountStudioDocument.elements,
-      container.copyWith(rect: projectedRect),
-    )!;
-  }
+  /// 메타 줄 "마지막 스캔"의 지금. 검수 fixture·테스트는 서비스가 고정 시각을 준다(없으면 기기 시계).
+  DateTime _now() => switch (widget.service) {
+    final InventoryClockSource source => source.inventoryNow,
+    _ => DateTime.now(),
+  };
 }
 
 /// 계정 추가 모달 컨트롤러. [locked] 동안에는 닫지 않는다(키트 [BaModal]은 Esc·스크림에서 [close]를 부른다).
@@ -1861,43 +2309,104 @@ class _AccountRailLabel extends StatelessWidget {
 
 /// 계정 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 계정 화면 값을 넘긴다.
 ///
-/// 레일 점은 [portraitScrollbarTrackPoint]다. 초상 고르기는 포그 없이 썸 #8edcff, 계정 목록은 시안 표준이다.
+/// 계정 목록(FE8-b)·초상 그리드(FE8-c) 모두 시안 표준(썸 #e5a0ea)과 공용 포그다. 레일 점은 계정 목록이
+/// [portraitScrollbarTrackPoint], 초상 그리드가 [accountPortraitScrollbarTrackPoint]다.
 class _DiagonalScrollbar extends StatelessWidget {
   const _DiagonalScrollbar({
     required this.controller,
     required this.keyPrefix,
     required this.child,
-    this.style,
     this.trackInset = 10,
-    this.showFog = false,
+    this.trackPoint = portraitScrollbarTrackPoint,
   });
 
   final ScrollController controller;
   final String keyPrefix;
   final Widget child;
-
-  /// 없으면 초상 고르기 값(썸 #8edcff, FE8-c 전까지 그대로). 계정 목록(FE8-b)은 시안 표준(썸 #e5a0ea)이다.
-  final DiagonalScrollbarStyle? style;
   final double trackInset;
-
-  /// 계정 목록은 시안대로 공용 포그(36px #263d52)를 올린다.
-  final bool showFog;
-
-  static final _pickerStyle = DiagonalScrollbarStyle.standard.copyWith(
-    thumbColor: const Color(0xff8edcff),
-  );
+  final DiagonalScrollbarTrackPoint trackPoint;
 
   @override
   Widget build(BuildContext context) => DiagonalScrollbar(
     keyPrefix: keyPrefix,
     controller: controller,
-    style: style ?? _pickerStyle,
+    style: DiagonalScrollbarStyle.standard,
     trackInset: trackInset,
-    trackPoint: portraitScrollbarTrackPoint,
-    showFog: showFog,
+    trackPoint: trackPoint,
     child: child,
   );
 }
+
+/// 시안 `.ihdr` 머리: 파란 점 5×5(r1) + 간격 4 + 경기천년제목 11 w800. 칸이 작으면 함께 줄어든다.
+class _AccountFieldHeader extends StatelessWidget {
+  const _AccountFieldHeader(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerLeft,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox.square(
+          dimension: 5,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.all(Radius.circular(1)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          maxLines: 1,
+          style: const TextStyle(
+            fontFamily: AppFonts.display,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: AppColors.text,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// 접힘·펼침 한쪽에만 있는 버튼(뒤로·닫기): 진행률만큼 흐려지고, 다 바뀌기 전에는 누르지 않는다.
+Widget _fadingAction(
+  String key,
+  double opacity, {
+  required bool active,
+  required Widget action,
+  required Widget outline,
+}) => Positioned.fill(
+  key: ValueKey(key),
+  child: Opacity(
+    opacity: opacity,
+    child: IgnorePointer(
+      ignoring: !active,
+      child: Stack(children: [action, outline]),
+    ),
+  ),
+);
+
+/// 버튼·입력 외곽선(누르지 않는 덧그림).
+Widget _actionOutline(String key, Path path, Color color, double width) =>
+    Positioned.fill(
+      key: ValueKey(key),
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: AccountPathOutlinePainter(
+            path,
+            color: color,
+            strokeWidth: width,
+          ),
+        ),
+      ),
+    );
 
 class _DirectionalAccountMotion extends StatelessWidget {
   const _DirectionalAccountMotion({
@@ -1974,14 +2483,6 @@ Path _subtractPaths(Path source, Iterable<Path> exclusions) {
     result = Path.combine(PathOperation.difference, result, exclusion);
   }
   return result;
-}
-
-class _PathOutline extends StatelessWidget {
-  const _PathOutline({required this.path});
-  final Path path;
-  @override
-  Widget build(BuildContext context) =>
-      IgnorePointer(child: CustomPaint(painter: AccountPathOutlinePainter(path)));
 }
 
 /// path 외곽선(계정 클러스터). 기본은 [AppColors.outline] 1px이다.
