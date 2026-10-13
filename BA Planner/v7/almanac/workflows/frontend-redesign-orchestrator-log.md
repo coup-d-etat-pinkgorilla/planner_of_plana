@@ -2434,3 +2434,197 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - 커밋: **fe7d `dd17e1f0`**(16파일, `app_shell.dart` 포함 — tactic CF 보고) → **mockdemo `0dd0b368`**(13파일, README.md 작업 트리 = post — 다른 세션 WIP 보존).
 - 판단 수용: FE7-d 정한 규칙(학생 임시 목록은 학생 필터를 덮어쓰지 않음, 이동 1회 적용, 복귀 칩), mockdemo 화면별 일치표(우선순위 인벤토리 → 성장 → 계획 → 계정 메타). 발견 후속: FE7-d 2·3(인벤토리 목록·학생 목록 모드 reveal 없음), 4(임시 목록 ∧ 학생 필터), 7(근거 버튼 키트 변형), 8(FD-108 모든 탭 이동 intent화 — 인벤토리 "계획에서 보기"·계산기 링크), 10(머리말 칩 두 개); mockdemo 1(헤더 지표 Mock 고정값 42·186), 2·4(시안 모순), 5(services → ui import — 시계 계약 위치), 6(워크플로 "lib/services/** Lane A만" 문구 정리).
 - **XB 요청(backend 로그 02:45)**: 기준팩 exact20만 메인 반영 허가 → CF 같은 소스 gate → XB 기준팩 tracked2 → XB FB-10c selected4 → CF fb10cdart → FB-6 window → FB-7. 추가: 공용 학생 crop E2E 진입점(FB-10c 뒤 test-only), 다음 폴백 producer 이미지 키 규칙, 학생 live 5값·early candidate 사전목록(FE8-g2용). CF 레인은 XB 반영 완료 기록 뒤 새 워커를 띄운다.
+
+
+## 2026-10-14 02:44 — 반영 완료(XB): **기준팩 exact20 메인 반영 완료** · CF same-source gate 요청
+
+- CF02:45허가된 **asset_pack exact20만**메인에반영했다. 실제변경18=tracked2+ignored바이너리16, fonts2동일. 모든20을선백업하고최종SHA실측, 보호map4107은기존tested **projected-main4107.json**과정확히같다. 다른backend/core·contracts·frontend/tool/기존인식WIP/CF미커밋fb10cdart소스변경0. indexempty/새commit/push0, sharedstore/lock/pipeline/OS/원본gamecopy0이다.
+- evidence **debug/xb_native_pack_main_overlay_20261014/artifacts/overlay-receipt.json**, source20/measured20/mainbefore·after/backup20/nativebefore/CFwindow실제파일. 봉인oldpackage 불변. 기존표준전체 **1239/890.236s OK**를통과한코드·계약·툴·최종pack바이트와현재main4107정확일치, currentcatalog/bundle44도동일(제외/골든변경0). FB6격리source9 포함1263GREEN은별도근거이며main에섞지않았다.
+- **CF 다음행동**: 요청대로반영완료기록을남겼으므로CF다음worker/같은소스gate를진행할수있다. 기준팩20 + 기존FB10cworking4 + fb10cdart미커밋상태에서gate결과를회신해달라. 회신전mainbackend/contracts/tool을다시동결한다. **GREEN→XBbaseline tracked2→XBcropselected4→CFfb10cdartpaired→FB6window9→FB7**순서. 이번DartDTO/메서드변경0. 공용cropfixture2와live5/earlystreaming은독립준비만/현재gateinput추가0이다.
+
+| 메인 실측 경로 | Bytes | SHA256 | 기존 대비 | 처리 |
+|---|---:|---|---|---|
+| `backend/assets/recognition/asset_pack/README.md` | 1211 | `87e4b9666734cf81c2d52d4d5065e5ed96fabc0f9ccea097150588dcf7545331` | 변경 | tracked commit |
+| `backend/assets/recognition/asset_pack/fonts/GyeonggiTitle-Bold.ttf` | 3118992 | `f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6` | 동일 | local ignored |
+| `backend/assets/recognition/asset_pack/fonts/GyeonggiTitle-Medium.ttf` | 2974600 | `11a877937389617c0fa4ba621d0a75da2e36b22556d0faded51401697ff29fb0` | 동일 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-01.zip` | 18961918 | `a8c8f5a8c09a12aa8498431e2bf6be8a8b11f8f7bfd9fe1af042099746a734ae` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-02.zip` | 18970559 | `1eacc62c80f3eba06ff51d7016c8aa9fba987ff3f2b1712822670e401ae33e1b` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/icons-03.zip` | 11706527 | `8449411a75414935bde44ca61c2c33f43bc443fad873ecf0b31f40fb5c1ed54f` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/manifest.json` | 804021 | `1409187b3e2cd6a4ad9e3addc20d939b6ed0fdd1f0ef6cff72efeeb54f29956b` | 변경 | tracked commit |
+| `backend/assets/recognition/asset_pack/sprites/Card_Bg.png` | 28826 | `fa12fe82d5443e9b4cccd74c788df5d4d7771f06cd6c7f48cb5bead2eda40be3` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_C.png` | 39897 | `281264bbed3992542b77d1940305ab4db8123d4fa0d3f2aaeebee985a7f16930` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_N.png` | 24309 | `960edd27065baa2410a6f8cb9b961554604931227dbf0137ff4efa8ea10527e7` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_R.png` | 33083 | `4d824edc9be893be48186576a4b9b2377a3333c60bae8e2bf16de7b652136155` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_SR.png` | 44189 | `1784149d3954530911e34663af977b78c3899dac5866b2349cd801be8b01ba30` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Item_Bg_SSR.png` | 40041 | `ac5a2f77e392ab834fed661b78d1e7ba6a14e988664ba01fa4d98995acd51e64` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Card_Select_Line.png` | 6378 | `685f22432f584c95cf8d0f6f8339b59870737750dbd9fdec547bbdc17452de3c` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Bg_Raius20px.png` | 758 | `c96189bfb4fe3a63e06b21e08201c3238eb1c70c693beeb5450856d2c9f13987` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Check_B.png` | 5359 | `8b1ac0af5ac106f64aba5a2386715a2d49c43ee7f53bf820944b74472ce64c14` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Formation_Star.png` | 5763 | `765418799c4bc65b53656984116a9ee3aee30074a521e2dcb3a879205c9f87dd` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Icon_Lock.png` | 2745 | `653bdba7cfe6869fd4d36b1eaf086573de5a9631ef7d50dbad756d47df6e792f` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Line_Raius20px.png` | 980 | `412abb30428a4a8086c2fd6015874de8d219239ec51ae98a60a3a138e1dbab26` | 변경 | local ignored |
+| `backend/assets/recognition/asset_pack/sprites/Common_Tab_Normal_Btn.png` | 2512 | `325b5254088d2ec3b4c5d67b1e72648c2e711e7e3407725e0be31221b9b0cf5e` | 변경 | local ignored |
+
+
+## 2026-10-14 02:53 — 알림·조율 요청(XB→CF): 현재프론트 source를읽는Python release검사 RED1, 이전whole 적용범위 정정
+
+- 기준팩 exact20반영/backup/SHA4107일치는그대로다. 그뒤현재frontend/lib/assets를읽는기존Python검사2파일만확인했는데 **9/5.960s, FAIL1(학생catalog8 PASS)**. `test_release_developer_tools_exclusion`의importclosure regex가 **frontend/lib/ui/inventory/inventory_history.dart:5**의주석을directive로읽고 URI **지난 스캔**를없는파일로찾는다. 실제기록 frontend-dependency-red.json/rawlog는이새task에보존했다. 기준팩픽셀/DTO/프로덕션import오류로단정하지않고 actualDart directive인지먼저분리검증한다.
+- **이전whole 적용범위정정**: protected backend/contracts/tool4107+nativepack는현재main과정확같지만, 그사본의frontend support는이전봉인시점이다. fullPython의release검사가그밖의**actualfrontend/lib**도읽는것을확인했으므로 이전1239GREEN을현재프론트까지의wholeGREEN으로재사용하지않는다. 현재whole/commit gate는보류다. 오래된GREEN/새RED를모두보존하고skip/exclusion/기준완화0이다.
+- **수정경계/CF조율**: Backend-owned test의실제directive 파싱을주석·문자열과구분하는격리후보/회귀검증을준비한다. 메인backend/test는현재exact20 scope밖이라먼저바꾸지않는다. 후보source/pins와새전체근거를게시한뒤 **이검사파일/검사helper·회귀test만**현재window에추가할지회신을요청할예정이다. CF frontend주석을테스트통과목적으로바꾸지말아달라. CFsame-source gate가먼저끝나도 **이PythonRED해결후XB커밋**이어야한다. CFworkers를필요없이멈추지않고현재새프론트사본으로Python gate를준비한다.
+- 현재main계약/core/tool/CFsource/기준팩추가변경0·commit/push0이다. FB6/source2/FB7순서유지. 이조율은backend검사수정window이며CM소유자료/연구변경0이다.
+## 2026-10-14 03:00 — XB 기준팩 반영 확인, 같은 소스 gate GREEN, XB 커밋 대기
+
+- XB 02:44 "기준팩 exact20 메인 반영 완료" — 20경로 + FB-10c working4 = 24/24 bytes·SHA 일치 확인.
+- gate `20261014_025139` **GREEN**(analyze 0, 387 + 458 + 596 + 262, process 60, golden 45 변화 0, almanac 45, diff 0) — 기준팩 20 + FB-10c 4 + CF fb10c-dart 미커밋 그대로.
+- backend 로그 03:00: XB 기준팩 tracked2 → FB-10c selected4 커밋 요청. CF는 FB-10c 해시 뒤 fb10cdart 커밋, 그다음 FB-6 window.
+- 다음 CF 라운드 메모: FE8-f1(스캔 세션 컨트롤러 추출)은 `scan_page.dart`에 오래 남은 스캐너 미커밋 WIP(약 245줄) 위에서 큰 구조 변경을 해야 해 3-way 병합 충돌 위험이 크다. 이 WIP의 처리(원래 내용대로 먼저 커밋할지 — FE0-base 선례, XB/사용자 판단)를 먼저 정하는 것이 좋다.
+
+
+## 2026-10-14 03:03 — 요청(XB→CF): release Dart directive 검사 source3 격리 focus20 GREEN, 추가 test-only window 요청
+
+- 현재main release검사RED1의실제원인은 inventory_history.dart:5 **`// ... import ...` 주석**을첫진짜semicolon까지regex로삼키면서 `지난 스캔`을파일경로로잡는것이다. Dart공식 [comments](https://dart.dev/language/comments)·[libraries](https://dart.dev/language/libraries)로주석/실제directive 경계를확인했다. 프론트주석/프로덕션코드수정0, oldFAIL/출력encodingFAIL 보존이다.
+- source3는backend/tests만이다. existing test는**importclosure 17행만**actualpreamble helper호출로치환했고 다른release복사범위/developerentry제외/readonlystore-writer금지assertions은prefix·suffix exact보존이다. helper는line/doc/nestedblockcomments·librarymetadata·raw/Unicode URI·conditionalURI(조건문자열제외)·part·main-package/relative/rootguard를읽고첫declaration뒤body는검색하지않는다. Dartcompiler대체아님/analyze는CF다. 실제/간접/conditional developer경로는계속포함해제외assertion에걸리며 missing/rootescape/잘못된directive는오류로남긴다.
+- **focused20/6.276s PASS**(new11 regressions +release1+studentcatalog8). currentfrontend/lib/assets/pubspec를새canonicalcopy에실측반영해현재comment문제를직접통과했다. 현재 **표준whole1250**(기존1239+new11, skip/exclusion/golden변경0조건) 새사본에서진행한다. source3 main반영0/main4107보존. 실제code/data/front input과drift는receipt에분리한다.
+- **CF회신 요청**: 기준팩20 반영이끝났고코어/계약/툴은계속동결이다. 이 **검사 exact3만**추가mainwindow로허가할지회신해달라(전체PASS후반영/SHA게시). 그뒤같은sourceCFgate→XBtest-only3별도commit→baseline tracked2→cropselected4→CFfb10cdart를제안한다. 현재PythonRED1을waiver/skip으로커밋하지않는다. CFworkers의lib변경은허용하고최종currentclosure를재검증한다. gate에급히섞거나CFsource를직접바꾸지않는다. 新DartDTO/메서드0/CM소유영역·store·lock·pipeline·OS·push0/FB6와FB7순서는그대로다.
+
+| 후보 경로 | Bytes | SHA256 |
+|---|---:|---|
+| `backend/tests/dart_import_closure.py` | 6583 | `cfaf2bfc426efbdfdf31d31d2d12ef47bd9ffae92de2726cb3b573375bb9da61` |
+| `backend/tests/test_dart_import_closure.py` | 4412 | `1fc0099e8b88d7669d41f6fb44ed059786c2be2e5a5b27c850472ffd23da64a6` |
+| `backend/tests/test_release_developer_tools_exclusion.py` | 8518 | `fe388b6205e85992c31b66bc53d56a8bc6fadf7e3e94c61b7dcad93df2a8154a` |
+
+- 실제source **debug/xb_release_dart_closure_fix_20261014/artifacts/source/**, scope/focus/inputpins/newwhole로그 같은task. whole완료후output.md를마지막으로봉인한다. 메인기준팩20의실측표는직전XB반영완료항목그대로다.
+
+## 2026-10-14 03:17 — 알림(XB→CF): 학생 live5 표시·earlycandidate 설계/Dart 사전목록 draft(구현·계약고정0)
+
+- CF02:45추가요청수신. 시안직접읽기결과 **5값은5scalar가아니라5표시묶음**: 레벨(level), 성급(student_star·weapon_star), 스킬(ex_skill/skill1/2/3), 장비(equip1/2/3), 전용무기(weapon_level·weapon_state). name/portrait는기존form catalog. 실제rawkey12와관측/unknown 규칙을고정한설계이며bond는S4검증context로별도다.
+- **L1 draft**: 기존feedback envelope/DTO키변경0, extensible field **student_values_preview**, message scanner.student.values_preview, values에는이12keys중실제confirmed/non-null관측subset만. 각frame 전체projection교체/새student·form에clear·missingunknown, repo/current값backfill·conflictguess·숫자0/M발명0. 상세5묶음은기존필드타입그대로. 사진/answer_specimen/증거이미지/저장쓰기0. CF목록=새field핸들러·projection/controller·Mock부분→완성→conflict/nextstudent·processfixture.
+- **L2 draft**: existingcandidateevent에 **optional candidate_stage=provisional|final**(oldabsent=final), 같은ID provisional rev1→full/partial batch S4관계map검증후final rev2→terminal. `_scan_with_forms`의원래행후수정가능성을보존해한학생form family완료/resultsappend후publish; 전체matcher반환전nextnavigation보다앞서stream. 실제/ordered/full/partialbondmap/현재last-wins semantics보존, 확정통계검증을incompletecontext로당기지않는다. privateownerLease/중복·close·cancel·pause/terminalrace·unacceptedrawcleanup을계약조건으로둔다.
+- **Dart L2사전목록**: ScannerCandidate.stage optional/defaultfinal/strict wire+schema/Mock, ID+generation+increasingrevision으로upsert(새학생중복count0), provisional미리보기readonly/추정KPI→final재분류, 신규오류 **candidate_not_finalized**. serverownedstage로review/revalidate/commit/answertraining/적용할당차단, clientpayload로stage승격불가. publicprovisional crop0/final만기존crop키첨부/다른producer키는backend해제+CF진단같은slice. 新publicmethod/event_kind0. release검사·현재paired/FB6/FB7를막지않으며실제source반영/계약승격/성능·O3완료0이다.
+- 상세 **debug/xb_fb10_live_stream_design_20261014/artifacts/design.md** 및wire-draft/sourcepins/MASTER_REQUIRED. **output.md 1061B/SHAecdf02b55a0c9a8c68076df854e9e6b76199cc958878d259a18013da1d0a0ede**, actual5artifacts봉인. **DRAFT이며activeFE8-g2bounded계약을지금바꾸지않는다**. 구현시native최종판독패리티/관계context/revision/불완전행/이미지/무쓰기/generation/legacycallback fixture와wholePython/newCFsame-sourcegate, 커밋전최종키목록을다시게시한다.
+
+
+## 2026-10-14 03:24 — 요청·인계(XB→CF): release검사 exact3 whole1250 GREEN 봉인, test-only 추가window 회신대기
+
+- **새표준whole1250/882.181s OK**, focus20/6.276s PASS. 新11회귀+기존1239, fail/error/skip/exclusion/newtimeout/golden변경0. 현재frontend/lib/assets/pubspec실측사본/6270 inputs로검증했고 **CFfrontsnapshotdrift0/main4107변경0/nativecatalog+bundle44/외부fixture4보존**, unexpectedsourcechanges0. log **218023B/SHA50ca8e360fe8f9246f62ff7dcbdd178bf25e3dcc378903c672b94477352c1801**. 기존main9 FAIL1은안지웠고기준완화0이다.
+- 실제 **source3**와prefix/suffix보존diff/git apply--check PASS. 기존notice의17행표현은실측 existing-traversal-lines.json에서 **14행→2행**으로정정한다(범위변경0). 모든conditional/간접developeredges·실제parts/rootguard는계속검사하고storewriter/releasebundle assertions전부같다. Lexer는Dartcompiler대체아님/CFanalyze필수다.
+- **CF회신 요청**: mainbackend/tests의이exact3만추가window를허가해달라. 현재기준팩20반영완료그대로/main소스3미반영/commit0. 허가뒤NEW task backup→source3 반영실측→currentfrontinput/closure확인→CFsame-sourcegate→**XBtest-only3별도commit→baseline tracked2→cropselected4→CFfb10cdartpaired→FB6window→FB7**. Frontend파일/프로덕션Core·계약·툴은이번수정범위밖/CM소유영역0이다. 동결을임의해제하거나오래된1239를currentmainGREEN으로계산하지않는다.
+- **debug/xb_release_dart_closure_fix_20261014/output.md 1133334B/SHAa96ddaa5eb3f278ef9d16015d78c07a3b1462ab3173fa49b2dbbca510e23452d**, actual **6569 artifacts**, source3-v2.patch/scope/sourcepins/focus/newwhole/raw실패/MASTER_REQUIRED 실제인계. 봉인/재실행은NEWcopy, push0이다.
+
+| 메인 반영 후보 | Bytes | SHA256 |
+|---|---:|---|
+| `backend/tests/dart_import_closure.py` | 6583 | `cfaf2bfc426efbdfdf31d31d2d12ef47bd9ffae92de2726cb3b573375bb9da61` |
+| `backend/tests/test_dart_import_closure.py` | 4412 | `1fc0099e8b88d7669d41f6fb44ed059786c2be2e5a5b27c850472ffd23da64a6` |
+| `backend/tests/test_release_developer_tools_exclusion.py` | 8518 | `fe388b6205e85992c31b66bc53d56a8bc6fadf7e3e94c61b7dcad93df2a8154a` |
+
+
+## XB 보고 — 2026-10-14 03:28: 기준팩20 메인반영·실제front 의존검사RED정정·수정후보1250GREEN·live5설계
+
+- **완료**: CF02:45 window와현재main4107/봉인nativepackage/output/정확20/currentsourcecatalog+bundle44/외부fixture4/빈index를확인후 기준팩20선백업→변경18만메인반영. fonts2같음. 최종main4107=이전projected-main4107과정확같고core/contracts/tool/기존WIP/CF소스보존. exact20실측SHA표를**02:44 반영완료**항목에게시해CF다음gate를열었다. source3/FB6/commonfixture는main에추가하지않았다. 新commit/push0.
+- **새gate범위정정/원FAIL보존**: actualfrontend를읽는Python9/5.960s **FAIL1**(catalog8PASS). 기존releaseimport regex가 inventory_history.dart:5주석의import부터첫real`;`까지삼켜 `지난 스캔`을없는파일로읽는다. maincode/assetdata오류로단정하지않았다. 02:53에**이전1239의front support는이전사본이고currentmain전체GREEN재사용불가**라고XB·CF·CM에명시했다. 이전overlay receipt의protected4107/native일치는맞지만whole재사용범위는이새audit로제한한다. 골든/제외/timeout기준완화0/원9FAIL1불변.
+- **test-only source3 후보완료**: actualDartpreamble/line·nestedblock/doccomments/raw·UnicodeURI/libraryannotation/conditionalURIs/parts/relative·localpackage/rootguard. 기존release/staticstorewrite제외assertions은같고**importtraversal14행→2행만**교체(정규화textprefix/suffix같음). real·간접·conditionaldeveloper경로를계속포함해제외검사에걸린다. **focused20/6.276s PASS**, latestactualfrontend/lib/assets/pubspec를별도canonical로읽은 **전체1250/882.181s OK**(old1239+new11), fail/error/skip/exclusion/golden/newtimeout0. inputs6270/native44/refs4/main4107보존·frontdrift0/unexpectedsourcechanges0. source3main반영0. output **debug/xb_release_dart_closure_fix_20261014/output.md1133334B/SHAa96ddaa5eb3f278ef9d16015d78c07a3b1462ab3173fa49b2dbbca510e23452d**, actual6569artifacts봉인. 최초CRLF패치표현checkFAIL과LF-v2checkPASS를보존했고candidate바이트/whole입력은그사이안바꿨다.
+- **CF조율/커밋순서**: source3 exact경로·SHA와추가test-onlywindow를**03:01/후속인계항목**에요청했다. CF허가전mainfreeze4107유지. **NEWtask exact3 backup/반영실측→currentfrontclosure/pins확인→CF같은sourcegate→XBtest-only3별도commit→nativebaseline tracked2→cropselectedHEAD4→CFfb10cdartpaired→FB6source9window/CFfb6→FB7**. source3의격리GREEN을mainGREEN으로바꾸거나CF기존gate/구1239를새input승인으로계산하지않는다. CF는별도source 변경을원치않는프론트주석워크어라운드를할필요없다. backendchecker새scope만회신받으면된다. CM소유영역은안닿아추가CM승인대기0이다.
+- **독립요청완료**: CF학생live5/earlycandidate 설계와Dartdraft목록게시. 5는level·stars·skills·equipment·weapon표시묶음/실제rawkey12. L1 기존feedback의student_values_preview로knownnon-null관측subset+unknownreplace, L2 optionalcandidate_stage provisional→sameID final/rev2·완전/partialordered S4context검증후terminal·provisionalmutators오류candidate_not_finalized/사유쓰기·훈련0·private이미지ownership보존. activebounded계약/프로덕션미변경. output **debug/xb_fb10_live_stream_design_20261014/output.md1061B/SHAecdf02b55a0c9a8c68076df854e9e6b76199cc958878d259a18013da1d0a0ede**, actual5artifacts봉인. 현재paired/FB6/FB7우선순서를막지않는다.
+- **경계/증거**: **debug/xb_native_pack_main_overlay_20261014/artifacts/session-report.md**, overlay/source20/measured20/backup20/native/maps/CFwindow/현재frontendREDaudit/whole-scope-correction 실제파일. sharedstore·lock·pipeline·게임원본/keys/Viewer/Arena/추가holdout·userprofile·OS·골든/CFsource변경0. FullFB10/FD145/currency/M2native/M3/M4/O3/전체P0-P6완료는아직0이다. freshAlmanac/diff/index검증뒤output을마지막으로봉인하고같은3로그에해시를알린다.
+
+
+## 2026-10-14 03:28 — 인계(XB): 기준팩exact20 main반영 증거/세션보고 봉인
+
+- **debug/xb_native_pack_main_overlay_20261014/output.md 6696B/SHA63ad5b92d31144e632671e71d967c6ebd0ebcdce1c6f6bef255d0f07a180911e**, actual46artifacts, short **artifacts/session-report.md**. source20/backup20/measured20/protected4107/native/CFwindow실제근거. FreshAlmanac45/diff/index PASS·HEADd212a09426894587469fe7ce7e4535cdf29771d7·main4107/WIP/CFsource보존·새commit/push0이다.
+- 현재main의oldreleaseguard9 FAIL1은보존/전체GREEN미선언. **CF additional test-only source3window+같은sourcegate**회신을기다린다. 격리fix full1250/882.181와focus20PASS/정확source3 SHA표는직전요청에서검토가능하다. 회신후새task source3반영→test-only3별도commit→baseline2→cropselected4→CFpaired→FB6window→FB7순서. Live5/earlystreamdraft와원래commoncropfixture2는별도인계이며현재gateinput코어/계약/툴에추가0이다. CM소유store/lock/pipeline/연구변경0·native/O3/fullworkflows 완료0이다.
+
+## 2026-10-14 03:40 — XB 결과 확인: 커밋 전 release 검사 RED 정정, test-only 3 window 허가
+
+- 사용자 "XB 결과 확인". XB는 아직 커밋하지 않았다(HEAD `d212a094`). 03:03~03:28: 커밋 전 현재 메인으로 다시 돌린 release 제외 Python 검사(실제 frontend Dart를 읽음)가 FAIL1 — `inventory_history.dart` 5행 주석의 `import` 글자를 옛 regex가 잘못 읽음(프론트 코드 문제 아님). XB가 test-only 3파일(Dart preamble 정식 해석)로 고치고 전체 1250 GREEN(격리). 메인 반영 window를 CF에 요청.
+- CF 결정: **허가**(XB 소유 backend/tests 3파일만, backend 로그 03:40). 순서: XB 반영·SHA → CF 같은 소스 gate(03:00 gate 재사용 안 함) → XB test-only3 → 기준팩 tracked2 → FB-10c selected4 → CF fb10cdart → FB-6 → FB-7.
+- XB live5·early candidate 설계 draft(03:17) 수신 — 계약 미변경, FE8-g2 후속용.
+
+
+## 2026-10-14 07:42 — 반영 완료·검사 요청(XB→CF): **release 검사 test-only exact3 메인 반영 완료**
+
+- CF03:40 허가한 **backend/tests exact3만** 봉인 source3 원본 바이트로 메인에 반영했다. 기존 release 검사 백업1/신규 helper·회귀검사2, protected4107→4109이며 다른 backend/core·contracts·frontend/tool/기준팩20·FB10c working4/CF lib·test·asset WIP는 그대로다. native catalog+bundle44/외부 fixture4 일치, index 빈 상태, commit/push0.
+- 근거 **debug/xb_release_dart_closure_main_overlay_20261014/artifacts/**의 source seal·CF window·backup3/measured3/mainbefore·after/projected4109/overlay receipt. 이전 격리 **전체1250/882.181s OK**와 후보 바이트는 같다. 실제 frontend whole 입력 drift **1건**을 별도 기록했으며 현재 메인 focus20은 다음 검증으로 확인한다. 메인에서 전체1250을 실행했다고 쓰지 않는다.
+- **CF 새 gate 요청**: 실측 exact3 + 기준팩20 + FB10c working4 + CF fb10cdart 미커밋 소스로 fe_gate를 실행하고 결과를 이 로그에 회신해달라. **20261014_025139는 재사용하지 않는다.** 그 뒤 **XB test-only3 → baseline tracked2 → FB10c selected4** 각각 별도 커밋·해시 → CF fb10cdart 커밋·동결 해제 → FB6 source9 window → FB7 순서다. 새 gate/paired 회신 전 backend/contracts/frontend/tool 동결을 유지한다. Dart DTO 변경0/프로덕션 소스 추가0/CM 소유영역0이다.
+
+| 메인 실측 경로 | Bytes | SHA256 |
+|---|---:|---|
+| `backend/tests/dart_import_closure.py` | 6583 | `cfaf2bfc426efbdfdf31d31d2d12ef47bd9ffae92de2726cb3b573375bb9da61` |
+| `backend/tests/test_dart_import_closure.py` | 4412 | `1fc0099e8b88d7669d41f6fb44ed059786c2be2e5a5b27c850472ffd23da64a6` |
+| `backend/tests/test_release_developer_tools_exclusion.py` | 8518 | `fe388b6205e85992c31b66bc53d56a8bc6fadf7e3e94c61b7dcad93df2a8154a` |
+
+
+## 2026-10-14 07:43 — 검증 완료·입력 범위 정정(XB→CF): 메인 release 검사 **20 PASS**
+
+- 반영한 exact3로 현재 메인 focused **20/7.942s OK**(신규 Dart directive 회귀11 + 기존 release1 + 학생 catalog8), fail/error/skip/exclusion/timeout/골든변경0. 기존 release 주석 오인 FAIL1은 해결됐으며 이전 실패 기록은 보존했다. protected4109/CF 프론트 WIP/native catalog+bundle44/외부 fixture4 unchanged.
+- **07:42 입력 drift 표기 정정**: 전후 동일 범위의 실제 frontend/lib·assets·pubspec.yaml 입력은 **drift0**이다. 새 audit에 추가한 **기존 pubspec.lock**이 이전 whole map에 없어서 키1 증가로 집계된 것이며 파일 변경이 아니다. raw 비교 결과는 보존하고 whole-input-scope-correction.json에 분리했다. 이전 격리1250/882.181s GREEN의 tested protected projection + 실제 프론트 + native/fixture 입력과 현재 메인이 일치한다. 새 전체 메인 실행으로 표기하거나 gate 기준을 낮추지 않는다.
+- **새 CF 같은 소스 gate 대기**(025139 재사용 금지). 결과 GREEN 수신 뒤 test-only3 → baseline tracked2 → crop selected4 별도 커밋·해시를 회신한다. 현재 index/commit/push0, backend/contracts/frontend/tool 추가 변경0. 실제 receipt/log는 **debug/xb_release_dart_closure_main_overlay_20261014/artifacts/focused-main-receipt.json**이다.
+
+
+## XB 보고 — 2026-10-14 07:47: release 검사 exact3 메인 반영·focus20 GREEN·새 CF gate 대기
+
+- **완료**: CF03:40 허가의 backend/tests **exact3**(dart_import_closure.py·test_dart_import_closure.py·test_release_developer_tools_exclusion.py)를 기존 검사 백업 후 봉인 후보 원본 바이트로 반영했다. **07:42 반영 완료**에 경로·Bytes·SHA 실측표와 새 CF gate 요청을 게시했다. 보호 파일4107→4109, 다른 core/contracts/frontend/tool·기준팩20·FB10c WIP/CF 소스는 그대로다. source3/hash/backup3/CF window/overlay receipt가 실제 artifacts에 있다. index 쓰기·신규 commit/push0.
+- **검증**: 현재 메인 **20/7.942s OK**(신규 회귀11 + 기존 release1 + 학생 catalog8). 주석 import 오인 FAIL1 해결, 이전 실패 보존, skip/exclusion/골든/timeout 변경0. protected4109/CF 프론트/native catalog+bundle44/외부 fixture4 보존. 이전 격리 **전체1250/882.181s OK**와 protected4109·실제 lib/assets/pubspec.yaml 입력이 일치한다. 새 메인 전체 실행 또는 전체6270 support 동일이라고 표기하지 않는다. 추가 audit 키 pubspec.lock 1건은 파일 변경이 아니라 비교 범위 증가로 **07:43 정정**했다. 별도 support audit의 오래된 프론트 test/golden은 CF 새 gate가 검증한다.
+- **다음 커밋 준비**: test-only3 → baseline tracked2 → FB10c selected HEAD4 **정확9 경로/별도3커밋**을 읽기 전용으로 확인했다. crop 기준 cac83222와 현재 HEAD의 선택4 tree entry는 같고 Git clean-filter blob/줄바꿈 정책을 기록했다. scanner working WIP는 index-only selected projection으로 보존하며 미추적 student_matcher_adapter.py 전체를 커밋하지 않는다. 실제 staging/commit0.
+- **진행 중·대기**: **새 CF 같은 소스 gate**(기준팩20 + FB10c working4 + test-only3 + CF fb10cdart) 회신. **20261014_025139 재사용 금지**. GREEN 뒤 XB3 → baseline2 → crop4 각각 커밋·해시 → CF fb10cdart paired·동결 해제 → FB6 source9 window → FB7. 회신 전 backend/contracts/frontend/tool 동결 유지. FB6/공용 crop fixture2/Live5·streaming은 이전 격리·설계 상태 그대로다.
+- **근거/범위**: **debug/xb_release_dart_closure_main_overlay_20261014/artifacts/session-report.md** 및 focused-main-receipt/whole-input-scope-correction/whole-support-input-audit/exact-commit-plan/final maps. 세 로그에 같은 보고, P0-P6/post 상태 갱신. 공용 store/lock/pipeline·게임 원본/keys/Viewer/Arena/추가 holdout·사용자 profile·OS·프론트 source/골든 쓰기0. fullFB10/FD145/currency/M2native/M3/M4/O3/전체 P0-P6 완료는 선언하지 않는다. Almanac/diff/index 최종 검증 후 output.md를 마지막으로 봉인한다.
+
+
+## 2026-10-14 07:47 — 인계(XB): release exact3 메인 반영 증거 봉인
+
+- **debug/xb_release_dart_closure_main_overlay_20261014/output.md 6375B/SHA563b196227cb8b219c2896a3438486f636b06d089cf4e354b90853f95e92ae13**, actual40artifacts. 현재main20/7.942s OK·Almanac45/diff/index PASS·protected4109/CF WIP 보존·HEADd212a09426894587469fe7ce7e4535cdf29771d7·commit/push0.
+- 다음은 새 CF same-source GREEN 회신→XB 검사3/기준팩2/crop selected4 각각 커밋. 025139 재사용0·동결 유지. 이후 CF paired/FB6/FB7 순서. 이전1250은 격리실행 근거이며 source 입력 적용범위는 receipt에 구분했다.
+
+## 2026-10-14 08:15 — XB test-only3 반영 확인, 같은 소스 gate GREEN, XB 커밋 3건 대기
+
+- XB 07:47 release 검사 exact3 메인 반영 — test-only 3 + 기준팩 tracked 2 + FB-10c 4 = 9/9 SHA 일치, CF fb10c-dart 미커밋 5파일 post와 동일.
+- gate `20261014_080053` **GREEN**(analyze 0, 387 + 458 + 596 + 262, process 60, golden 45 변화 0, almanac 45, diff 0).
+- backend 로그 08:15: XB ① test-only3 ② 기준팩 tracked2 ③ FB-10c selected4 커밋 요청 → CF fb10cdart → FB-6 window.
+
+
+## 2026-10-14 08:17 — 커밋 완료(XB): test-only3 exact3
+
+- **3b65c3ea7f44c10013ce603d2b1a6af7f5a5d650** (parent d212a09426894587469fe7ce7e4535cdf29771d7), 정확 경로 3개만 별도 커밋했다: `backend/tests/dart_import_closure.py`, `backend/tests/test_dart_import_closure.py`, `backend/tests/test_release_developer_tools_exclusion.py`. Git clean-filter blob·커밋 parent/path/blob 전수 확인, protected4109/CF 프론트/기존 tracked WIP의 working bytes 보존 및 empty index 확인. 나머지 레인/인식 WIP는 포함하지 않았다.
+- 근거 **debug/xb_release_dart_closure_fix_20261014/output.md**, 현재 source 검증 **debug/xb_release_dart_closure_main_overlay_20261014/output.md**, CF 같은 source gate **20261014_080053 GREEN**. 상세 **debug/xb_test_baseline_crop_exact_commit_20261014/artifacts/commit1-receipt.json**. 기존 whole1250/메인20/selected72 적용범위를 유지한다. backend/contracts/frontend/tool source 추가변경0/push0.
+- 승인된 다음 별도 커밋을 계속 진행한다. CF fb10cdart paired·동결 해제 회신 전까지 source 동결 유지.
+
+
+## 2026-10-14 08:17 — 커밋 완료(XB): baseline-tracked2 exact2
+
+- **1ee862ae6668b8201e7d9d2a036833d18ef24c1d** (parent 3b65c3ea7f44c10013ce603d2b1a6af7f5a5d650), 정확 경로 2개만 별도 커밋했다: `backend/assets/recognition/asset_pack/README.md`, `backend/assets/recognition/asset_pack/manifest.json`. Git clean-filter blob·커밋 parent/path/blob 전수 확인, protected4109/CF 프론트/기존 tracked WIP의 working bytes 보존 및 empty index 확인. 나머지 레인/인식 WIP는 포함하지 않았다.
+- 근거 **debug/xb_native_pack_refresh_20261014/output.md**, 현재 source 검증 **debug/xb_release_dart_closure_main_overlay_20261014/output.md**, CF 같은 source gate **20261014_080053 GREEN**. 상세 **debug/xb_test_baseline_crop_exact_commit_20261014/artifacts/commit2-receipt.json**. 기존 whole1250/메인20/selected72 적용범위를 유지한다. backend/contracts/frontend/tool source 추가변경0/push0.
+- 승인된 다음 별도 커밋을 계속 진행한다. CF fb10cdart paired·동결 해제 회신 전까지 source 동결 유지.
+
+
+## 2026-10-14 08:18 — 커밋 완료(XB): FB10c-selected-HEAD4 exact4
+
+- **3d9f56cebc539f8e325a9aa8f0f3e933b044b174** (parent 1ee862ae6668b8201e7d9d2a036833d18ef24c1d), 정확 경로 4개만 별도 커밋했다: `backend/core/scanner_session.py`, `backend/core/scanner_matchers.py`, `backend/core/student_fallback_evidence.py`, `backend/tests/test_student_fallback_crop_fb10c.py`. Git clean-filter blob·커밋 parent/path/blob 전수 확인, protected4109/CF 프론트/기존 tracked WIP의 working bytes 보존 및 empty index 확인. FB10c는 index-only selected HEAD4이며 큰 working scanner/미추적 adapter를 포함하지 않았다.
+- 근거 **debug/xb_fb10c_crop_lifecycle_20261013/output.md**, 현재 source 검증 **debug/xb_release_dart_closure_main_overlay_20261014/output.md**, CF 같은 source gate **20261014_080053 GREEN**. 상세 **debug/xb_test_baseline_crop_exact_commit_20261014/artifacts/commit3-receipt.json**. 기존 whole1250/메인20/selected72 적용범위를 유지한다. backend/contracts/frontend/tool source 추가변경0/push0.
+- 세 번째 XB 커밋까지 완료했다. CF fb10cdart 커밋 및 paired·동결 해제 회신을 요청한다. 그 전까지 FB6source9/FB7을 메인에 반영하지 않는다.
+
+
+## XB 보고 — 2026-10-14 08:19: CF080053 GREEN → 검사3·기준팩2·FB10c4 별도 커밋 완료
+
+- **완료**: CF08:15 회신과 실제 gate **20261014_080053 GREEN**(analyze0, 테스트387+458+596+262, process60, golden45 변화0, Almanac45/diff0)을 확인했다. 현재 source9/보호4109/CF 프론트/native44/외부fixture4/봉인 output·기존 empty index 일치 확인 후 요청된 세 커밋을 순서대로 만들었다.
+
+| 순서 | 범위 | 경로 수 | 커밋 해시 |
+|---|---|---:|---|
+| 1 | test-only3 | 3 | `3b65c3ea7f44c10013ce603d2b1a6af7f5a5d650` |
+| 2 | baseline-tracked2 | 2 | `1ee862ae6668b8201e7d9d2a036833d18ef24c1d` |
+| 3 | FB10c-selected-HEAD4 | 4 | `3d9f56cebc539f8e325a9aa8f0f3e933b044b174` |
+
+- **정확한 커밋 범위**: 검사3=backend/tests/dart_import_closure.py·test_dart_import_closure.py·test_release_developer_tools_exclusion.py. 기준팩2=backend/assets/recognition/asset_pack/README.md·manifest.json(바이너리18 미포함). FB10c selected4=backend/core/scanner_session.py·scanner_matchers.py·student_fallback_evidence.py + backend/tests/test_student_fallback_crop_fb10c.py. 각각 clean-filter index blob/parent/커밋 changed paths·실제 blob을 전수 검증했다.
+- **WIP 보존**: FB10c는 봉인 selected-v7 HEAD4를 index에만 반영했다. 큰 working scanner_session/scanner_matchers 및 미추적 student_matcher_adapter.py/기존 인식 WIP·CF lib/test/assets·기타 기존 tracked dirty 파일의 바이트를 유지했다. protected4109 전후 동일/empty index/작업 트리 source 추가 변경0/**push0**이다. 아직 남은 인식 WIP를 완료·커밋한 것으로 계산하지 않는다.
+- **검증 근거**: 이전 actual frontend 입력의 격리 whole1250/882.181s, mainfocus20/7.942s, selected HEAD72/17.058s PASS와 현재 exact 입력·scope 일치, 새 CF gate080053를 사용했다. 새 Python 전체main/전체selectedHEAD 실행이라고 쓰지 않는다. 현재 새 Almanac/diff/staged check 전부 PASS. 원 FAIL·support 적용범위 구분·golden/skip/exclusion/timeout 변경0 유지. 기존 source outputs와 새 **debug/xb_test_baseline_crop_exact_commit_20261014/artifacts/commit1·2·3-receipt.json**가 실제 근거다.
+- **다음 행동(CF)**: 위 세 해시를 받으면 **CF fb10cdart 커밋 → FB10c paired 완료·동결 해제 회신**을 남겨달라. 그 전까지 **backend/contracts/frontend/tool 동결 유지·FB6 source9/FB7 메인 반영0**. 회신 뒤 FB6 window9/Dart 최종 목록/새 같은 source gate로 이어 간다. Live5/earlycandidate 및 공용 crop fixture2는 기존 설계·격리 상태다. CM 소유store/lock/pipeline·게임 원본/key/Viewer/Arena/새 holdout·userprofile·OS·골든 쓰기0, fullFB10/FD145/currency/M2native/M3/M4/O3/전체P0-P6 완료 미선언.
+- **인계**: 같은 보고를 XB·CF·CM 로그에 게시하고 P0-P6/post 상태를 갱신한다. 새 task **debug/xb_test_baseline_crop_exact_commit_20261014**, short **artifacts/session-report.md**, actual artifact bytes·SHA 확인 뒤 output.md 마지막 봉인. 현재 차단은 추가 사용자 승인 아니라 CF 짝 커밋/동결 해제 회신이다.
+
+
+## 2026-10-14 08:19 — 인계(XB): 검사3·기준팩2·FB10c4 세 커밋 증거 봉인
+
+- **debug/xb_test_baseline_crop_exact_commit_20261014/output.md 6699B/SHA02a080a3881006a08cc3fc91fc203906bad112147b2265c9efa94e181a725ae6**, actual42artifacts. 세 해시 순서 **3b65c3ea7f44c10013ce603d2b1a6af7f5a5d650 → 1ee862ae6668b8201e7d9d2a036833d18ef24c1d → 3d9f56cebc539f8e325a9aa8f0f3e933b044b174**. exact3/2/4·parent/blob·WIP working bytes/보호4109/CFsource/emptyindex 검증, 최종Almanac45/diff PASS·push0.
+- **CF fb10cdart 커밋/paired 완료·동결 해제 회신 대기**. 회신 전 backend/contracts/frontend/tool 추가변경0·FB6/FB7 미반영. 이전1250/메인20/selected72 적용범위를 유지하고 새CF080053 GREEN으로 커밋했다.
+
+## 2026-10-14 08:25 — XB 커밋 3건 확인, fb10cdart 커밋 — FB-10c 왕복 완료
+
+- XB: test-only `3b65c3ea`(release 검사 Dart 지시문 해석), 기준팩 `1ee862ae`(사용자 결정 A — 현재 설치 클라이언트 기준 새 개발팩 manifest·README), FB-10c `3d9f56ce`(학생 폴백 crop, HEAD scanner_matchers projection). CF **fb10cdart `16606c58`**(5파일). gate `20261014_080053`. scan_page 스캐너 WIP 보존.
+- backend 로그 08:25: 동결 해제, FB-6 window 요청(source9 → 경로·SHA·최종 Dart 목록 → CF fb6-dart), 스캐너 frontend WIP 유효성 판단 요청(FE8-f1 전).
