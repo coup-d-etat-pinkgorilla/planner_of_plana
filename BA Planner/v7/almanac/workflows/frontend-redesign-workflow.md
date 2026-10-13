@@ -329,7 +329,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE7-d 원본 탭 이동 | `AppShell._open`에 navigation intent(학생 필터·범위, 인벤토리 행, 계획 단계), 대상 탭 수신, "← 통계" 복귀 칩 | FE3-d, FE6-a, FE4-d, FD-028 |
 | FE7-e 통계 전용 필터 | 필터 모달 재사용, 통계 필터 상태 분리 + 학생 탭 필터 불러오기, A1~A6에만 적용 | FE3-d, FD-074, FD-104 |
 | FE7-f 2차 | A3·A4·B2·C4 | FD-028 |
-| FE7-g C3 계단선 | 활성 계획 문서 계산(phase_results·bottlenecks) → 페이즈별 누적 부족 | FB-1 |
+| FE7-g C3 계단선 | 활성 계획 문서 계산(phase_results·bottlenecks) → 페이즈별 누적 부족 | FB-1 — **완료 2026-10-14**: 커밋 `5990875c`, gate `20261014_004608`(`statistics-plan` 갱신). 통계가 활성 문서 계산을 읽음(FE7-c 발견 1 해소), KPI 첫 부족·막힌 학생, C3 재화별 계단선, C1 페이즈 순, 근거 막히는 단계 |
 | FE7-h 이력 연동 | A6·B3·KPI 증감·스냅샷 1회 문구 | FB-2, FD-041, FD-096 |
 | FE7-i 3차 | A5·C5 | FD-028 |
 
@@ -559,3 +559,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-13(오후): FE7-a `df0c4f39` · FE8-c `d0964853` · XB 공용 inventory E2E `4ae6c44a` → CF launcher `7862cbcc`(같은 소스 gate `20261013_141727` GREEN, golden 3장 승인). FE7-a 중복 배정 사고는 세션 A 재개로 정리. XB FB-10c(무기 폴백 crop) 메인 반영 허가 → CF fb10c-dart(진단 JSON 이미지 재귀 제거·images_included=false·캐시 정리) 대기. 다음 후보: fb10c-dart · FE7-b(FD-106 결정 먼저) · FE8-d·e(게임 창 연결) · FE8-f2 · 병합 퇴행 규칙 결정 · 작은 정리 묶음.
 - 2026-10-13(저녁): FE7-b `86554308` · FE8-d `998fe0cc`(gate `20261013_172627` GREEN, golden 14장 승인 — 12장은 칩 영역만, `home` 칩 + 지표 이동, `statistics-growth` 칩 + A1·A2·KPI). 다음 후보: fb10c-dart(XB crop 반영 뒤) · FE8-e(창 선택 패널 + 머리글 칩 크기 빼기·FD-115 나머지) · FE7-c(인벤토리·계획 1차) · FE8-f2 · 병합 퇴행 규칙 결정 · 작은 정리 묶음.
 - 2026-10-13(밤): FE7-c `606c6ca2` · FE8-e `9f11869f`(gate `20261013_194844` GREEN — XB FB-10c working4 메인 반영 포함, golden 3장 승인). XB: FB-10c 반영(18:02, CF fb10c-dart 대기)·FB-6 설계 조사·**FB-10 부분 형식 고정(FE8-g2 범위, 18:18)**·FB-6a 격리·FB-7 설계, 설치 클라이언트 아이콘 변경으로 Python 전체 RED 1(C5e) → 입력 기준 결정 대기(CM·사용자). 다음 후보: fb10c-dart(우선) · FE8-f1(→f2→g2) · FE7-g(문서 계산 → C3·첫 부족) · FE7-d · FE7-e.
+- 2026-10-14(새벽): FE7-g `5990875c`(같은 소스 gate `20261014_004608` GREEN, golden 1장 승인). fb10c-dart 코드 완료·DryRun 통과 — XB FB-10c selected4 커밋 판단 대기(Python RED 1은 설치 클라이언트 입력 문제, 사용자 결정 A 진행 중). 다음 후보: FE8-f1(스캔 세션 컨트롤러 추출 — fb10cdart 커밋 뒤 scan_page 겹침 해소) · FE7-d(원본 탭 이동) · FE7-e(통계 필터) · FE7-h(이력) · Mock 검수 시나리오(통계·계정 메타 시안 숫자) · 작은 정리 묶음.

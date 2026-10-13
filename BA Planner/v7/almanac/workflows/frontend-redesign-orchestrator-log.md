@@ -2331,3 +2331,10 @@ Common migration/recovery may precede a guard rejection and increment revision. 
   · Lane B **fb10c-dart** — `debug/frontend_redesign_handoff/fb10cdart-worker-prompt-20261013.md`. XB 18:02 4경로 SHA 대조 후 착수. details optional 4키 수용, 진단 JSON 이미지 재귀 제거(두 경로, `iVBORw0KGgo` 0건 테스트), apply/discard 뒤 이미지 보관물 정리. 스캐너 WIP 파일 pre/post. 워크플로 XB 연결 표에 행 추가.
   · Lane A **FE7-g** — `debug/frontend_redesign_handoff/fe7g-worker-prompt-20261013.md`. 통계가 활성 계획 문서 계산(bottlenecks·phase_results)을 읽게(FE7-c 발견 1), 계획 KPI 첫 부족·막힌 학생(FD-034) 채움, C3 페이즈별 누적 부족(재화별, FD-033), C1 "페이즈 순" 켜기, C2 막히는 단계. 계획 Detail projection 재사용(공용 추출 최소, 계획 golden 0).
 - FE8-f1(스캔 세션 컨트롤러 추출 — scan_page.dart)은 fb10c-dart와 파일이 겹쳐 다음 라운드. 그 뒤 FE8-f2 → FE8-g2(XB 부분 형식 고정 범위).
+
+## 2026-10-14 01:00 — FE7-g·fb10c-dart 검토·같은 소스 gate·fe7g 커밋, XB 커밋 판단 대기
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe7g 16행·fb10cdart 6행), 겹침 0, 범위 밖 변경 0. XB FB-10c 4경로 4/4 일치(XB 20:20 뒤 메인 변경 없음).
+- gate ① `20261014_003521`: analyze 0, 381 + 460 + 600 + 238, process 60(fb10c E2E +1), golden RED 1 = `statistics-plan`. 차이 bbox를 영역별로 나눠 확인: KPI 띠·범위 칩·C1 seg·C3만, C2·C4·C5·왼쪽 변화 0. 이미지 검토(첫 부족 P2 · 기술 노트 (최상급), 막힌 학생 6명, 페이즈 5, C1 "페이즈 순" 켜짐, C3 재화별 계단선 3개 + 첫 부족 P2 점) → 승인. ② `20261014_004608` **GREEN**(golden 45).
+- 커밋: **fe7g `5990875c`**(17파일). fb10cdart DryRun 통과(post_dir — 스캐너 WIP 파일 scan_page.dart), XB selected4 커밋 판단 대기(backend 로그 01:00 — Python RED 1이 입력 기준 문제라 XB가 지금 커밋할 수 있는지 판단 요청).
+- 판단 수용: FE7-g 정한 규칙 1~8(첫 부족 = Detail 페이즈 요약 규칙, C3 시안 viewBox, C1 페이즈 순 = 첫 부족 페이즈). fb10c-dart 메타 키 유지·승인 응답 시점 제거·보관물 9곳 표. 발견 기록: FE7-g 3(근거 단계 칩 단위 — 수량으로 정함, %일 수도), 5(KPI 재화 짧은 이름), 8(goals vs 문서 학생 수 어긋날 가능성); fb10c-dart 1(최근 스캔 다시 열면 적용·폐기한 후보도 되살아남 — FE8-g 결과 검토 몫), 2(보류 crop 최근 목록 잔존), 4(학생 handoff 재개 시 같은 해제 필요), 6(Mock crop 시나리오 — FE8-g4).
