@@ -70,6 +70,8 @@ Windows Release에는 backend source/data와 검증된 Python 3.11 가상환경�
 가상환경을 우선 사용하고, 가상환경이 없는 개발 트리에서만 시스템 `py -3.11`로
 대체합니다.
 
+mock 모드에서 화면을 시안과 같은 숫자로 검수하려면 `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`로 실행합니다(계정 `거모이는존재한다 (v7 UI 테스트)`, 쓰기는 메모리 안에서만 바뀌고 다시 실행하면 처음 값으로 돌아갑니다).
+
 ## v6 계정 가져오기
 
 첫 실행에 v7 계정이 없고 sibling `v6/config.json`이 발견되면 새 계정을 만들거나

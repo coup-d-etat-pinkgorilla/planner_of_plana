@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE8-d 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `75943ffc`. 아래 "FE8-d 착수 기록"·"FE8-d 종료 기록". 그 전: FE8-c(시작 `cac83222`, 커밋 `d0964853`), FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**fb10c-dart 코드 작성 완료, CF gate 대기(2026-10-14).** 시작 커밋 `cbc63d98`. 아래 "fb10c-dart 착수 기록"·"fb10c-dart 종료 기록". 그 전: FE8-e `9f11869f`, FE8-d(시작 `75943ffc`, 커밋 `998fe0cc`), FE8-c(시작 `cac83222`, 커밋 `d0964853`), FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -3336,3 +3336,281 @@ golden mock은 고른 창이 없다(미연결). 머리글 칩은 미연결 회�
   - `home` 차이가 머리글 지표·초상 영역 밖(메뉴·칩)에 있으면 이 예측이 틀린 것이다.
   - 그 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8e`(기존 파일은 모두 WIP 없음).
 - 발견 1·2·4·5·7은 CF 판단을 기다린다.
+
+## fb10c-dart 착수 기록 (2026-10-14)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: XB FB-10c(학생 무기 폴백 crop)의 프론트 개인정보·수명 연결. 근거는 backend 로그 2026-10-13 01:39·02:22·15:21·18:02와 `debug/xb_fb10c_crop_lifecycle_20261013/artifacts/CF-CONNECTION.md`·`MASTER_REQUIRED.md`·`cf-prior-list-notice.md`, 결정 대장 FD-145(워커 재량, 권장안 (a)).
+  1. wire 확인: `evidence.details` optional 4키(`crop_png_base64`·`crop_source`=`basic_info`·`crop_width`·`crop_height`, weapon_level_fallback·weapon_star_fallback만) 수용 여부.
+  2. 진단 JSON의 candidate.details·중첩 event.payload 두 경로에서 이미지 필드 재귀 제거, `privacy.images_included=false` 유지.
+  3. 승인·폐기·적용 성공 뒤 그 후보 crop을 프론트 보관물에서 지움(보류·수정·재검증 동안 유지, 다른 후보 보존).
+  4. 테스트(진단 이미지 0건, 승인·폐기 뒤 0건·다른 후보 보존, 보류·재검증 중 유지, 기존 테스트), 가능하면 실제 백엔드 process E2E 1건.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `cbc63d98bcc279ae9ca6d22c9fe2c45ee3569996`.
+- 착수 전 확인: 이 문서 끝에 다른 "fb10c-dart 착수 기록" 없음.
+- XB 18:02 표 4경로 대조(메인 작업 트리 bytes/SHA256): **4개 모두 일치**.
+  - `backend/core/student_fallback_evidence.py` 2777 `d61f21d9176d807f428017ebe2cfc2cb3451d0773d0268ccee57df4763b0694e`
+  - `backend/core/student_matcher_adapter.py` 56511 `6c40249e84d3915805a7b53bceddf985a8aef5a2093961758bc73b09faaab83a`
+  - `backend/core/scanner_session.py` 52964 `7e65d180d5381d2f67fce4c880977336cf25d466f661238b5320de9d679c123f`
+  - `backend/tests/test_student_fallback_crop_fb10c.py` 11262 `2a33cbfa71bf776d8e1ba2147bdbf9b7fa309f1b26d054a820eb92eb51e461c6`
+- XB 목록과 메인 코드 대조(읽기만): `weapon_fallback_review_details`가 4키를 만들고 `attach_student_fallback_details`가 두 폴백 행 details에만 붙인다. `_release_candidate_images`는 승인 review·폐기 review(`discarded_in_scan_page`·`discarded_in_student_page`)·durable commit 성공·close에서 그 후보 evidence와 retained event 안 같은 후보의 evidence에서 `crop_png_base64`만 재귀로 지운다(`crop_source`·`crop_width`·`crop_height` 유지). 목록과 차이 없음.
+- Dart 현재 상태(읽기): `ScannerFieldEvidence.fromWire`는 `details`를 임의 Map으로 그대로 받고, `planning_protocol_client.dart`의 `_validScannerCandidate`는 `evidence is List`만 본다 → 새 키를 거부하지 않는다(DTO·검사기 수정 불필요 예상). `student_scan_diagnostic.dart`는 `evidence.details`와 `event.payload`를 그대로 복사한다(XB 지적 그대로).
+- 막힘: 대장 막힘 요약에 fb10c-dart 행 없음, 현재 열림 0건. FD-145는 '워커 재량'(권장안 (a): 폴백 필드만 crop additive, 적용·폐기 시 삭제, `images_included:false` 유지) → 권장안대로 처리.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb10cdart/pre/<v7 기준 경로>`)과 WIP(`git status --short <경로>`), 줄바꿈(바이트로 셈):
+  - `frontend/lib/services/student_scan_diagnostic.dart`: WIP 없음. LF 171줄.
+  - `frontend/lib/ui/pages/scan_page.dart`: **WIP 있음**(스캐너 WIP hunk 19~1765줄 부근 여러 곳, +198/−47). LF 1892줄. 고칠 곳은 폐기 성공·승인 직후·적용 성공 분기와 새 private 메서드 하나로 예정.
+- 새 파일(예정): `frontend/lib/services/scanner_review_images.dart`(이미지 키 규칙·재귀 제거·후보/이벤트/최근 요약 사본), `frontend/test/scanner_review_images_fb10c_test.dart`, `frontend/test/scanner_review_images_fb10c_process_e2e_test.dart`.
+- 고치지 않음(읽기만): `scanner_service.dart`·`planning_protocol_client.dart`·`mock_app_service.dart`(WIP, 수정 필요 없음 예상), `scan_student_review_workspace.dart`(스캐너 소유), `app_shell.dart`, backend/**·contracts/**.
+- WIP는 지우거나 정리하지 않는다.
+
+## fb10c-dart 종료 기록 (2026-10-14, 코드 작성 완료·CF gate 미실행)
+
+FB-10c 학생 무기 폴백 crop의 프론트 개인정보·수명 연결을 끝냈다. wire 수용 확인, 진단 JSON 이미지 재귀 제거, 스캔 화면 보관물의 crop 해제(승인·폐기·적용 성공), 단위·위젯·실제 백엔드 process E2E. crop 표시 카드(FE8-g4)는 범위 밖이라 만들지 않았다.
+
+### 실행 명령·결과
+
+- `flutter analyze`(frontend 전체): 1차 **No issues found(0)**, 메서드 위치 이동·테스트 수정 뒤 2차 **No issues found(0)**. info 포함 0.
+- 새 테스트:
+  - `flutter test test/scanner_review_images_fb10c_test.dart`: 첫 실행 **+6 −0**. 마지막 확인(아래 묶음 안) +6.
+  - `flutter test --concurrency=1 test/scanner_review_images_fb10c_process_e2e_test.dart`: 첫 실행 **+1 −0**. 마지막 확인(아래 process 묶음 안) +1.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `ScanPage`·`buildStudentScanDiagnostic`·`student_scan_diagnostic`·`onRecentChanged`·`ScannerRecentSummary`·`reviewScannerCandidate`·`ScannerFieldEvidence`·`ScannerCandidate.fromWire`·`scannerSnapshot`·`recentScans`, golden 제외), json reporter로 파일별 집계. 1차와 최종 모두 **22파일 +276 −0**(실패·skip 0):
+  connected_target_fe8d +8, diagnostics_service +2, home_connect_fe8e +10, home_page +5, inventory_review_fb10b +19, mock_scanner_commit_history +9, mock_scanner_service +4, repository_history_scan_latest +48, repository_history_service +24, scan_companion_dock +3, scan_inventory_identity_review +2, scan_page_pause_fb10a +8, scan_page_revision +14, scan_page +17, scan_student_review_workspace +6, scanner_pause_fb10a +39, scanner_protocol_client +6, scanner_review_images_fb10c +6, scanner_target_metadata_fb4 +19, student_page +9, student_scan_diagnostic +2, widget_test +16.
+- 중간 확인(메서드 위치 이동 뒤): scanner_review_images_fb10c +6, student_scan_diagnostic +2, scan_page +17, scan_page_revision +14(합 +39).
+- process(`--concurrency=1`, 6파일 차례로), 1차와 최종 모두 **+7 −0**: scanner_review_images_fb10c_process_e2e +1, scanner_process_e2e +1, scanner_pause_process_e2e +1, scanner_target_metadata_process_e2e +1, final_p6_process_e2e +2, inventory_review_fb10b_process_e2e +1.
+- 잠금 충돌 0(재시도 없음). 로그는 `debug/frontend_fb10cdart/logs/`(실패 줄만 확인).
+- `git diff --check`(고친 2파일 + status): exit 0. 새 3파일: 줄 끝 공백 0, 끝 개행 하나. 고친 5파일 모두 LF만(CRLF 0).
+- `dart format`: 새 3파일에만 적용. WIP가 있는 `scan_page.dart`와 `student_scan_diagnostic.dart` 전체에는 돌리지 않았다(내 hunk는 손으로 맞춤).
+- 3-way 병합 모의(`diff3 -m HEAD사본 pre 현재`, 스크래치 폴더, 저장소·index 변경 없음): `scan_page.dart`·`student_scan_diagnostic.dart` 모두 충돌 0, 병합 결과와 HEAD의 차이는 이 slice 줄뿐(scan_page 45줄). 이 slice가 쓰는 DTO 클래스(`ScannerRecentSummary`·`ScannerFieldEvidence`·`ScannerCandidate`·`ScannerEvent`)는 HEAD와 작업 트리가 같다.
+
+### 고친 파일
+
+- `frontend/lib/services/scanner_review_images.dart`(새, LF): 이미지 규칙 하나. 키 = `crop_png_base64`와 `*_base64`·`*_b64`·`*_png`·`*_jpg`·`*_jpeg`·`*_webp`·`*_image`·`*_images`·`*_screenshot`, `image`·`images`·`screenshot`·`png`·`jpg`·`jpeg`. 값 = 바이트 배열(TypedData), `data:image/`, PNG(`iVBORw0KGgo`)·JPEG(`/9j/`)·GIF(`R0lGOD`)·WEBP(`UklGR`) base64. 재귀 사본(`scannerMapWithoutReviewImages`·`scannerValueWithoutReviewImages`, 원본 불변), 검사(`scannerValueHasReviewImage`), 후보 사본(`scannerCandidateWithoutReviewImages`, 이미지 없으면 같은 객체), 후보 이벤트 사본(`scannerEventWithoutCandidateImages`, 그 후보 id만), 최근 요약 사본(`scannerRecentWithoutCandidateImages`, 그 후보만·개수 그대로).
+- `frontend/lib/services/student_scan_diagnostic.dart`(WIP 없음): 후보 `payload`·`evidence.details`·`audit`와 이벤트 `payload`(안의 후보 evidence 포함)를 원래 Map 그대로 넣지 않고 이미지 뺀 재귀 사본을 넣는다. `privacy` 상수(`images_included:false`)는 그대로.
+- `frontend/lib/ui/pages/scan_page.dart`(스캐너 WIP 위): import 1줄, `_releaseStudentCandidateImages`(학생 후보만; 지금 후보·`_pendingStartEvents`·`_recent`에서 같은 세션·generation·후보 id 사본만 이미지 없는 사본으로 교체, 최근 요약이 바뀌면 `onRecentChanged` 재게시), 호출 3곳: 폐기 성공, 승인 응답 직후(`_keepCandidate(approved)` 옆), commit 성공.
+- 새 테스트: `frontend/test/scanner_review_images_fb10c_test.dart`(6), `frontend/test/scanner_review_images_fb10c_process_e2e_test.dart`(1).
+- 고치지 않음: `scanner_service.dart`·`planning_protocol_client.dart`(새 키를 이미 받음), `mock_app_service.dart`(Mock은 학생 crop을 만들지 않음), `process_app_service.dart`, `scan_student_review_workspace.dart`(스캐너 소유, 자체 crop 보관 없음), `app_shell.dart`, `student_page.dart`, backend/**·contracts/**, Lane A 통계 파일, kit, golden harness·golden 테스트, frontend/tool.
+
+### XB 목록 행별 검수(01:39·02:22·15:21·18:02, CF-CONNECTION.md·MASTER_REQUIRED.md)
+
+| XB 목록 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| optional `evidence.details` 4키(weapon_level/star_fallback만), top-level DTO·method·event 변경 0 | Dart 변경 불필요: `ScannerFieldEvidence.fromWire`가 details를 임의 Map으로 받고, 응답 검사기 `_validScannerCandidate`는 `evidence is List`만 본다. 거부하지 않으므로 타입 검사를 더하지 않았다(프롬프트 조건부 수정) | 단위 "optional crop details pass through…", process E2E 1(실제 응답이 검사기·DTO를 지나 4키 그대로, PNG 매직 바이트 확인) |
+| "Existing ScannerFieldEvidence.details is an arbitrary object, so Dart DTO shape changes are zero" | 확인(위) | 같음 |
+| 진단: candidate.details와 nested event candidate evidence **두 경로 재귀** 제거, `images_included=false` 유지 | `student_scan_diagnostic.dart` | 단위 "candidate details and nested event candidates…"(중첩 list 안 `panel_png_base64`까지), 위젯(적용 전 저장), process E2E 2 |
+| "More generic image-bearing details must also be excluded; do not serialize raw image fields by copying the original map" | 이름·값 규칙 하나로 payload·details·audit·event payload 모두 사본 | 단위 "image keys are removed recursively…" |
+| 숫자·문자열 evidence 보존 | 메타·delta·기타 값 유지 | 단위·process E2E(`crop_source` 4건) |
+| 진단은 적용 전에도 저장 가능 → 백엔드 삭제만으로 부족 | 백엔드가 crop을 들고 있는 동안 만든 진단도 0건 | 위젯 1(보류·재검증 뒤 저장), process E2E 2 |
+| 승인·폐기·적용 성공 뒤 프론트 캐시 후보 **와 이벤트** 사본 정리(또는 fresh snapshot) | 지금 후보·최근 요약(셸 재게시)·시작 전 버퍼 이벤트에서 그 후보만 지움. 화면은 이벤트 원본을 따로 보관하지 않음(아래 표). 진단은 매번 fresh snapshot | 위젯 1·2, 단위 "candidate, event and recent copies…" |
+| 보류·수정·재검증·writer 실패/재시도 동안 유지 | 보류·재검증은 해제 호출 없음. 적용 실패는 해제 안 함. 단 스캔 탭 적용은 언제나 승인 review 뒤 commit이라, 백엔드가 승인 때 이미 지운다(아래 근거) | 위젯 1(보류·재검증 유지), 위젯 2(실패 뒤 다른 후보 유지), process E2E 3 |
+| 다른 후보 보존 | 같은 세션·generation·후보 id만 | 위젯 1·2, 단위, process E2E 4 |
+| Basic Info crop을 상세 패널 캡처로 표시하지 않음 | 표시 자체를 만들지 않음(FE8-g4) | — |
+| 저장소 current/history/journal에 crop 없음 | (백엔드 몫) process E2E에서 임시 저장소 전체 파일에 `crop_png_base64`·PNG 시그니처 0 확인 | process E2E 5 |
+| inverse_value·다른 폴백 producer 없음 | 이번 범위 아님, Dart에 관련 코드 없음 | — |
+
+### SHA 대조
+
+- 착수·종료 두 번 XB 18:02 표 4경로 bytes/SHA256이 모두 일치(착수 기록과 같은 값). 이 slice는 backend/contracts를 읽기만 했다.
+
+### 이미지 보관 위치(grep: `ScannerCandidate`·`ScannerEvent`·`List<ScannerEvent>`·`Map<String, ScannerCandidate>`·`ScannerRecentSummary`·`recentScans`·`cropPng`·`crop_png_base64`·`Uint8List`, 통계 제외)
+
+| 보관물 | 담는 것 | 학생 crop | 이 slice 뒤 제거 시점 |
+|---|---|---|---|
+| `ScanPage._candidates` | 지금 후보 | 있음 | 승인 응답 때 이미지 없는 사본(백엔드 응답도 crop 없음), 폐기·적용 성공 때 후보 제거. 보류·재검증(새 revision도 crop)·적용 실패 동안 유지 |
+| `ScanPage._recent`(최대 8) | terminal 때 후보 사본 | 있음 | 승인·폐기·적용 성공 때 그 후보만 이미지 없는 사본, `onRecentChanged` 재게시 |
+| `AppShell._recentScans` | `_recent` 게시본 | 있음 | 위 재게시로 교체, 계정 변경 때 비움(기존) |
+| `HomePage.recentScans` | 셸 목록 전달(후보를 읽지 않음) | 참조만 | 셸 교체를 따름 |
+| `ScanPage._pendingStartEvents` | 시작 응답 전 이벤트 | 이론상 | 시작 때 비움(기존) + 해제 때 그 후보 이벤트 사본 교체 |
+| `ScanPage._pendingApplies` | 적용 고정 요청(승인된 후보) | 없음(승인 응답은 백엔드가 이미 지움) | 변경 없음(`identical` 비교를 깨지 않음) |
+| `ScannerProtocolClient._raceBuffer` | 시작 응답 전 이벤트 | 일시 | 시작 때 remove·연결 끊김 때 clear(기존), 스트림으로만 넘김 |
+| `ScannerProtocolClient._events`·`_cursors` | broadcast 스트림 / sequence만 | 보관 없음 | — |
+| `ScanStudentReviewWorkspace` 상태 | `widget.candidates`를 읽고 `_drafts`는 payload 값만 | 자체 보관 없음 | —(스캐너 소유, 읽기만) |
+| `AppShell._studentCandidate` | handoff 후보 | 현재 없음(학생 후보에는 handoff 버튼이 없다) | 학생 화면 commit 성공 때 비움(기존) |
+| 진단 JSON | 매번 새 snapshot으로 만든 문서 | 없음 | 만들 때 재귀 제거 |
+| `ScanPage._unresolvedSlots` | 인벤토리 미식별 슬롯 `cropPng` | 학생 아님(인벤토리 정책) | 기존 그대로 |
+| `MockAppService._scannerHistory`·`_scannerCandidates` | Mock 백엔드 | 없음(Mock은 crop을 만들지 않음) | — |
+
+### 메타 키 처리 근거
+
+- `crop_source`·`crop_width`·`crop_height`는 남긴다. CF-CONNECTION.md "Crop dimensions/source and other nonimage details can remain for diagnostics."와 백엔드 `remove_student_crop_images`(`crop_png_base64`만 pop)가 같은 결론이다. 진단 검토 때 폴백 행이 crop을 가졌다는 사실과 크기는 계정·화면을 드러내지 않는다.
+- 이미지 규칙은 백엔드보다 넓다(이름 규칙 + 값 시그니처). "same kind of base64 image field"를 이름만으로 고정하지 않기 위해서다.
+
+### 승인 시점 근거(writer 실패 재시도)
+
+- 백엔드 `_release_candidate_images`는 승인 review(approve=true)·폐기 review·durable commit 성공·close에서 부른다. writer 실패 동안 crop이 남는 것은 승인 없이 바로 commit하는 경로다(XB 테스트 `test_failed_repository_write_retains_crop_until_successful_original_retry`).
+- 스캔 탭 적용은 `candidate.approved`가 아니면 먼저 승인 review를 보내므로, 그 응답 때 백엔드 사본은 이미 없다. 그래서 프론트도 승인 응답 때 지우고, commit 실패(결과 모름·busy·충돌) 때 crop을 되살리지 않는다. 재시도는 고정 요청(id·revision·key)만 다시 보내 crop이 필요 없다.
+
+### golden 변화 예상
+
+- **변화 0.** 화면에 그리는 값(필드·상태·출처·confidence·note)은 바뀌지 않았고 details는 그리지 않는다. golden 장면의 스캔 데이터는 Mock이며 Mock은 crop을 만들지 않는다. golden 테스트는 돌리지 않았다.
+- CF gate 예상: analyze 0, 일반 +6, process +1, golden 변화 0.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·almanac validate·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫; XB 19:27 보고의 현재 RED 1 = C5e 입력 기준, 이 slice와 무관).
+- 실제 게임 폴백 crop(실제 Basic Info ROI가 폴백으로 넘어가는 학생): **미실행**(사용자 실기). process E2E는 합성 PIL 이미지를 XB `weapon_fallback_review_details`와 세션 경계 `attach_student_fallback_details`로 보낸 것이다(실제 adapter의 ROI 선택은 XB 테스트 몫).
+- 학생 화면(`approved_in_student_page`) 경로: 학생 후보 handoff가 지금 없어 실행 경로가 없다(발견 4).
+- 백엔드 재시작·close 뒤 프론트가 들고 있는 보류 후보 crop: 유지된다(발견 2), 실행 확인은 하지 않았다.
+
+### WIP 보존 확인
+
+- `scan_page.dart`: pre 사본(스캐너 WIP 포함)과 끝 내용의 차이는 이 slice hunk 5개(import 5줄, 새 메서드 1016줄, 폐기 1000줄, 승인 1158줄, commit 1187줄 부근)뿐이다. 처음에는 새 메서드를 `_keepCandidate` 바로 뒤(스캐너 WIP가 더한 인벤토리 분기·`_identitySlotKey` 블록과 맞닿음)에 넣었다가, 3-way 병합 충돌을 피하려고 `_newApplyKey` 앞(이 slice hunk 사이, WIP hunk에서 떨어진 곳)으로 옮겼다. 위 diff3 모의에서 충돌 0.
+- `student_scan_diagnostic.dart`: WIP 없음, hunk 3개.
+- 편집 도구가 줄바꿈을 바꾸지 않았다(편집 뒤 바이트로 셈: 모두 LF, CRLF 0). 복원할 것 없음.
+- 다른 WIP 파일(`scanner_service.dart`·`planning_protocol_client.dart`·`mock_app_service.dart`·`process_app_service.dart`·`scan_student_review_workspace.dart`·스캐너 테스트)은 수정 0. `pubspec.yaml`·`pubspec.lock` 변경 0.
+
+### 발견 사항
+
+1. `ScanPage._openRecent`는 최근 요약의 후보를 그대로 되살린다. 이미 적용·폐기한 후보도 다시 검토 목록에 나타날 수 있다(기존 동작, 이 slice에서 바꾸지 않음; 이제 이미지는 없다). FE8-g 결과 검토 slice에서 판단(CF).
+2. 보류한 후보의 crop은 `ScanPage._recent`와 `AppShell._recentScans`에 최대 8세션, 계정 변경 전까지 남는다. 백엔드는 close 때 자기 사본을 지우지만 프론트에는 그 신호(세션 종료 이벤트)가 없다. "보류 동안 유지" 규칙대로 두었다. 백엔드 재시작·스캔 탭 이탈 때도 지울지는 CF·XB 판단.
+3. 공개 계약 fixture(`contracts/fixtures/scanner_protocol_v1.json`)에 학생 crop details 사례가 없다(인벤토리 `unresolved_slots`의 crop만 있음). 그래서 계약 fixture 양성·음성 테스트는 만들지 못했다. Dart는 4키 타입을 검사하지 않는다(거부가 없어 조건부 수정 대상 아님). FE8-g4에서 crop을 실제로 그릴 때 그 자리에서 base64·양의 정수 검사를 넣는 것을 권한다(CF). fixture 추가는 XB 판단.
+4. `AppShell._studentCandidate`(학생 화면 handoff)는 지금 학생 후보를 받지 않는다(스캔 탭 handoff 버튼은 학생이 아닌 후보에만 있음). 학생 handoff를 다시 열면 학생 화면 승인·commit 경로에도 같은 해제가 필요하다(app_shell·student_page, 이 slice 범위 밖).
+5. 백엔드 해제(`remove_student_crop_images`)는 `crop_png_base64` 키만 지운다. 다른 폴백 producer가 다른 이미지 키를 쓰면 프론트 진단은 이름·값 규칙으로 빠지지만 백엔드 해제에도 같은 키가 필요하다(XB).
+6. Mock은 학생 crop을 만들지 않아 mock 실행에서는 이 경로가 보이지 않는다. FE8-g4에서 crop 카드를 만들 때 Mock 시나리오가 필요하다(CF).
+7. 공용 E2E 진입점(`tests.scanner_e2e_backend`)의 학생 matcher는 crop을 내지 않아, process E2E는 테스트 파일 안 inline `-c` 진입점을 썼다(fb10b 발견 1 선례). XB가 공용 진입점에 폴백 crop 행을 두기를 원하면 옮길 수 있다.
+8. 위젯 테스트가 부르는 검토 작업 공간 `onRevalidate`는 스캐너 WIP가 인자(`confirmedFields`)를 더했다(HEAD는 3개). 커밋 트리에서도 컴파일되도록 인자 수를 콜백 형태에 맞춰 `Function.apply`로 부른다.
+9. 워커 재량 FD: **FD-145** → 권장안 (a)(폴백 필드만 crop additive, 적용·폐기 때 삭제, `images_included:false` 유지)대로 처리.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fb10cdart/pre/<경로>`(고친 기존 파일 2개).
+- 끝 사본: `debug/frontend_fb10cdart/post/<경로>`(고친 기존 파일 2개와 새 파일 3개).
+- `debug/frontend_fb10cdart/commit.json`: slice `fb10cdart`, `status=false`, `post_dir`, modified 2, added 3, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`(바뀌는 기준 이미지 없음). message(ASCII) 근거: backend 로그 01:39·02:22·15:21 Dart 목록·18:02 반영 기록, CF-CONNECTION.md·MASTER_REQUIRED.md, README 진단 절, FD-145.
+- 인계: `debug/frontend_fb10cdart/output.md`.
+
+### 다음 행동
+
+- fb10c-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-g)와 이 slice가 모두 멈춘 뒤 XB 18:02 4경로와 같은 소스로 gate 1회(예상: analyze 0, 일반 +6, process +1, golden 변화 0) → XB selected4 커밋(XB 20:20 순서 결정과 C5e RED 1 처리에 따름) → `fe_commit.ps1 -Slice fb10cdart`(scan_page는 3-way 병합, WIP 인접 hunk 없음).
+- 발견 1·3·6은 CF, 2는 CF·XB, 5·7은 XB 판단을 기다린다.
+
+## mockdemo 착수 기록 (2026-10-14)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: `--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`(mock 모드에서만)일 때 main.dart가 검수 시나리오 Mock을 쓴다. 계정 `거모이는존재한다 (v7 UI 테스트)`, 기존 시안 숫자 fixture를 lib 공용 데이터로 옮겨 재사용한다. 값이 없으면 `MockAppService(fullStudentCatalog: true)` 그대로, 실제 백엔드 모드 영향 없음. 화면 코드·golden·서비스 공유 파일(`mock_app_service.dart`) 수정 없음(상속·생성자 주입만). 근거: CF 로그 2026-10-14 01:25 배정, 워크플로 불변식 "mock 기본 실행을 유지한다 … 검수용 fixture".
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `1f73913da099028ba2493655d4bd5c0c3160b570`.
+- 착수 전 확인: 이 문서 끝에 다른 "mockdemo 착수 기록" 없음. 대장 막힘 요약: 현재 열림 0건, mockdemo 행 없음 → 막힘 없음.
+- 고칠 기존 파일(착수 사본 `debug/frontend_mockdemo/pre/<v7 기준 경로>`, WIP는 `git status --short <경로>`, 줄바꿈은 바이트로 셈):
+  - `frontend/lib/main.dart`: WIP 없음. LF 39줄.
+  - `frontend/test/statistics_growth_fixture.dart`: WIP 없음. LF 280줄.
+  - `frontend/test/statistics_plan_fixture.dart`: WIP 없음. LF 289줄.
+  - `frontend/test/inventory_fe6a_fixture.dart`: WIP 없음. LF 373줄.
+  - `frontend/test/inventory_history_fixture.dart`: WIP 없음. LF 80줄.
+  - `README.md`: **WIP 있음**(다른 세션). LF 196줄. "실제 Python backend로 실행" 절에 한 줄만 더한다(post 사본).
+- 옮길 fixture(데이터·순수 함수만 lib로, 테스트 파일은 같은 이름을 export해 기대값 변화 0):
+  - `test/statistics_growth_fixture.dart` → `lib/services/design_review/statistics_growth_data.dart`(보유 128 · 학생 목록 170 · 계획 9명 wire). `StatisticsGrowthFixtureExpected`·단위 테스트용 catalog는 test에 남긴다.
+  - `test/statistics_plan_fixture.dart` → `lib/services/design_review/statistics_plan_data.dart`(활성 문서 5페이즈 · 문서 계산). `StatisticsPlanFixtureExpected`는 test에 남긴다.
+  - `test/inventory_fe6a_fixture.dart` → `lib/services/design_review/inventory_fe6a_data.dart`(카탈로그 · 보유 · 계획 표 · 스캔 표 · 부족 계산). `InventoryFixtureService`(테스트 서비스)는 test에 남기고 옮긴 함수를 부른다.
+  - `test/inventory_history_fixture.dart` → `lib/services/design_review/inventory_history_data.dart`(스캔 이력 생성기 · 고정 시계).
+  - 옮기지 않음: `statistics_supply_fixture.dart`·`inventory_fe6c_fixture.dart`·`inventory_fe6e_fixture.dart`(한 계정 인벤토리는 FE6-a 하나만 쓴다 — 우선순위 표는 종료 기록), FE8-c 계정 메타(값만 같게 둔다 — 시나리오는 실제 이력 이벤트로 "어제 21:40"을 만든다).
+- 새 파일(예정): `frontend/lib/services/mock_design_review_scenario.dart`(스위치 해석 + 시나리오 Mock), 위 데이터 4개, `frontend/test/mock_design_review_scenario_test.dart`.
+- 고치지 않음(읽기만): `lib/services/mock_app_service.dart`(스캐너 WIP), `test/goldens/**`(golden_harness 포함), `lib/ui/**`, fb10c-dart 미커밋 파일, `frontend/tool/**`, backend/**·contracts/**.
+- WIP는 지우거나 정리하지 않는다.
+
+## mockdemo 종료 기록 (2026-10-14, 코드 작성 완료·CF gate 미실행)
+
+- 상태: 코드 작성 완료. `flutter analyze` 0, 관련 테스트 18파일 188 통과 · 0 실패. golden · 전체 gate · 앱 실행은 실행하지 않았다(CF · 사용자 몫).
+- 스위치: `--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`. `BA_PLANNER_USE_REAL_BACKEND=false`(mock 모드)일 때만 읽는다. 값이 없거나 공백이면 `MockAppService(fullStudentCatalog: true)` 그대로(기본 동작 변화 0), 모르는 이름은 `ArgumentError`(다른 숫자를 조용히 보이지 않도록). 실제 백엔드 분기는 그대로다.
+- 앱 실행 명령: `cd frontend; flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`
+
+### 바꾼 것
+
+- `frontend/lib/main.dart`: `BA_PLANNER_MOCK_SCENARIO` 상수 하나, mock 분기가 `createMockAppService(scenario:)`를 부른다(import 하나 교체).
+- 새 `frontend/lib/services/mock_design_review_scenario.dart`: `createMockAppService`(스위치 해석)와 `MockDesignReviewScenario extends MockAppService implements InventoryClockSource`. `mock_app_service.dart`는 고치지 않았다 — 생성자 주입(`profiles` · `repositoryStates` · `repositoryHistories` · `historyClock`)과 읽기 메서드 상속만 쓴다.
+  - 계정 하나 `거모이는존재한다 (v7 UI 테스트)`(id `0000000000000000000000f1`, 초상 airi, 선택됨). Mock 기본 Main 계정은 없다.
+  - 계정 상태: 학생 · 목표 = 학생 성장 데이터(보유 128, 목표 9명), 인벤토리 = FE6-a 수량, revision 40.
+  - 이력: FE6-a 인벤토리 스캔(31 · 24 · 17 · 10 · 3일 전, 30회) + 학생 스캔 1회(지역 시각 2026-10-04 21:40, 수량 변화 없음, scope airi). 계정 메타 "마지막 스캔"은 모든 스캔(FD-041)이라 "어제 21:40", 인벤토리 KPI "마지막 스캔"은 재화를 적용한 스캔만이라 "3일 전" — 둘 다 시안 그대로.
+  - 시계: 지역 시각 2026-10-05 12:00 + 실행 뒤 흐른 시간(`inventoryNow` · `historyClock` 같은 시계, 새 쓰기 이력은 fixture 이력 뒤에 쌓인다).
+  - 활성 계획: 생성자에서 Mock 쓰기 경로(`saveRepositoryPlan`)로 Stats-Plan 문서(페이즈 5 · 학생 9명)를 저장한다. 목표 v1 → Mock 문서 이관이 revision을 하나 올려 기대 revision = 41, 저장 뒤 42. Mock 저장은 await 없이 끝나 생성자 반환 전에 반영된다(테스트로 확인).
+  - 읽기 상속: `listStudents`(번들 목록에서 성장 데이터 id 170명), `listInventoryItems`(FE6-a 카탈로그), `calculateShortages`(FE6-a 부족 계산), `calculatePlanningDocument`(문서의 페이즈 · 단계 id · 학생 구성이 시안 문서 그대로면 시안 문서 계산, 아니면 Mock 기본 계산), `loadRepositoryPlan`(시안 문서면 계산 요약도 시안 값 — 첫 병목 P2 · 재화 3종).
+- 쓰기: 저장 · 스캔 등은 Mock 그대로 메모리 안에서만 바뀌고, 다시 실행하면 위 초기값이다(테스트로 확인). 단계 구성을 바꾸지 않는 계획 편집(이름 · 목표 값)은 시안 문서 계산을 그대로 받는다(발견 7).
+- `README.md`: "실제 Python backend로 실행" 절 끝에 검수 시나리오 실행 한 줄(다른 세션 WIP 보존, post 사본).
+
+### 옮긴 fixture와 새 위치
+
+| 테스트 fixture(이름 그대로 `export`) | 새 위치(lib) | test에 남긴 것 |
+|---|---|---|
+| `test/statistics_growth_fixture.dart` | `lib/services/design_review/statistics_growth_data.dart`(typedef · 보유 128 · 미보유 42 · 애장품 · 계획 9명 · catalog id · 학생 / 목표 wire · 상태) | `StatisticsGrowthFixtureExpected`, 단위 테스트용 `statisticsGrowthFixtureCatalog()` |
+| `test/statistics_plan_fixture.dart` | `lib/services/design_review/statistics_plan_data.dart`(재화 키 · 보유 · 페이즈 · 문서 · 계획 상태 · 문서 계산). 계산 요약 map을 `statisticsPlanFixtureCalculationWire`(같은 값, `_resources.length` 그대로)로 꺼냈다 | `StatisticsPlanFixtureExpected` |
+| `test/inventory_fe6a_fixture.dart` | `lib/services/design_review/inventory_fe6a_data.dart`(계정 id · revision · 학생 · 단계 이름 · 카탈로그 · 보유 · 계획 표 · 스캔 표 · 상태 wire) + 새 공용 함수 `inventoryFixtureOwnedQuantity` · `inventoryFixtureItem` · `inventoryFixtureShortages`(원래 서비스 안 식 그대로) | `InventoryFixtureService`(호출 수 세기 · 문서 계산, 옮긴 함수를 부른다) |
+| `test/inventory_history_fixture.dart` | `lib/services/design_review/inventory_history_data.dart`(전부) | 머리 주석 + export |
+
+- 옮긴 코드는 착수 사본과 같다(`diff`: import 경로만 다름, 위 계산 요약 map 추출, FE6-a 서비스의 `_owned` · `_name` · `_category`를 같은 식의 공용 함수로 바꿈). 테스트 기대값은 고치지 않았다.
+- 옮기지 않음: `statistics_supply_fixture.dart` · `inventory_fe6c_fixture.dart` · `inventory_fe6e_fixture.dart`(한 계정의 인벤토리는 FE6-a 하나 — 아래 일치표), FE8-c 계정 메타(`account_editor_fe8c_test.dart`는 요약 응답을 덮어써 마지막 스캔을 만든다. 시나리오는 이름 · 초상 값만 같게 두고 실제 학생 스캔 이력으로 "어제 21:40"을 만든다 — 테스트 파일은 고치지 않았다).
+
+### 화면별 시안 일치표(우선순위)
+
+한 계정에서 화면마다 다른 시안 예시 값을 동시에 맞출 수 없다. 우선순위: ① 인벤토리 탭 KPI · 리오 엘레프(CF 지시 ②, FE6-a) ② Stats-Growth(학생 원천) ③ Stats-Plan · 계획 활성 문서(계획 원천) ④ 계정 메타 마지막 스캔. 학생 수 · 인벤토리 원천을 공유하는 나머지 화면은 근사다.
+
+| 화면(artboard) · 여는 방법 | 일치 | 정확한 값 / 근사 이유 |
+|---|---|---|
+| Inventory · 인벤토리 탭 "부족한 것" | **정확**(KPI · 리오 엘레프) | KPI `+3 지난 스캔 대비` · `−1` · 최근 감소 `6종` · 마지막 스캔 `3일 전`, 리오(무장)의 엘레프 1 / 450, 스파크라인 0 · 0 · 1 · 1 "순변화 +1 · 이전 스캔과 이상 없음"(golden `inventory`와 같은 데이터). 근사: 사용 학생 이름 — 리오(무장) · 토키(무장)은 학생 목록 170명 밖이라 id(`rio_battle`)로 보인다(발견 2), 단계별 사용처는 활성 계획(Stats-Plan 문서) 계산이라 FE6-a 단계 글자가 없다(발견 3) |
+| Inventory-All · 인벤토리 → 전체 보기 | **정확**(수량 · 카탈로그) | golden `inventory-all`과 같은 카탈로그 · 수량. 학생 이름 · 사용처는 위와 같은 근사 |
+| Stats-Growth · 통계 → 학생 성장 | **정확** | KPI 128 / 170 · 63.4% · 64명 · 8명 · 9명, A1 3 · 5 · 9 · 12 · 15 · 18 · 22 · 19 · 14 · 11, 60~70% 구간 계획 2명(golden `statistics-growth`와 같은 데이터). 시안끼리 모순인 "완전 육성 22명" · A2 60.5%는 FE7-b 발견 1 · 3 그대로 |
+| Stats-Plan · 통계 → 계획 집계 | **정확**(첫 부족 · 막힌 학생 · 범위 · C3) / 근사(충족 · C1 · C2) | 범위 칩 "활성 계획 · 9명 · 페이즈 5", KPI 첫 부족 P2 · 기술 노트 (최상급), 막힌 학생 6명, C3 74 · 30 · 15%(근거 −18 · −23 · −21 · −12, 누적 −74). 충족률 · 부족 재화 KPI와 C1 · C2는 부족 계산(FE6-a 인벤토리) 값이라 golden `statistics-plan`(supply fixture 72% · 14종 등)과 다르다. 크레딧 98.4M / 261.5M · 엘리그마 1020 / 2245는 FE6-a에도 같은 값이라 C1에 보일 것으로 예상한다(미실행) |
+| 계획 탭 활성 계획 · Detail | **정확**(Stats-Plan과 같은 문서 · 계산) / 근사(Plan Detail 시안 학생) | 페이즈 5 · 학생 9명 · 첫 병목 P2. 시안 학생 리오(무장) · 노아 · 미카 자리는 아리스 · 히나 · 카즈사(FE7-g 발견 2 그대로) |
+| Title-Accounts 편집 · 타이틀 → 설정 → 계정 관리 → 수정 | **정확**(이름 · 초상 · 마지막 스캔) / 근사(보유) | `거모이는존재한다 (v7 UI 테스트)`, 초상 airi, "마지막 스캔 어제 21:40". 보유는 `보유 128 / 170`(시안 217 / 265) — 보유 · 전체는 Stats-Growth와 같은 원천(계정 상태 학생 수 · 학생 목록 수)이라 Stats-Growth가 우선 |
+| Stats-Inventory · 통계 → 인벤토리 현황 | 근사 | 인벤토리 탭과 같은 계정 인벤토리(FE6-a 13품목 · 계획 10행)에서 계산된다. 시안 72% · 14종 · 6종 · 3 / 6 · 엘레프 1종 · B1 6행은 golden `statistics-inventory`(supply fixture)로 본다 |
+| Inventory-Analysis(S1~S5) · 인벤토리 → 분석 | 근사 | FE6-a 카탈로그(학교 1곳 · 오파츠 1종 · 장비 1종)로 그려져 행이 적고, S5는 FE6-a 이력의 순증감이다(시안 +120 · +24 · −9 · −14 아님). golden `inventory-analysis` · `test/inventory_analysis_page_test.dart`로 본다 |
+| Inventory-Tiers · 분석 → 티어별 충족률 | 근사 | 같은 이유. golden `inventory-tiers` · `test/inventory_tiers_page_test.dart` |
+| 헤더 지표(학생 · 인벤토리) | 근사 | Mock 고정값 42 · 186(시안 217 · 1,284). 계정 데이터가 아닌 `AppServiceState` 값이라 바꾸지 않았다(발견 1) |
+
+### golden 변화 0 근거(golden 미실행)
+
+1. 기본 Mock · golden Mock 불변: `lib/services/mock_app_service.dart`와 `test/goldens/**`(golden_harness 포함)를 이 세션에서 편집하지 않았다(`git status` 상 `test/goldens` 변경 없음, `mock_app_service.dart`의 diff는 착수 전부터 있던 스캐너 WIP). golden은 `BAPlannerApp(service: …)`를 직접 만들고 `main.dart`를 거치지 않는다.
+2. 옮긴 fixture를 import하는 golden 6장면(`inventory` · `inventory-all` · `inventory-analysis` · `statistics-growth` · `statistics-inventory` · `statistics-plan`)의 입력은 같은 이름 · 같은 코드다(`diff`로 확인: import 경로만 다름, 계산 요약 map은 같은 값을 상수로 꺼냄, FE6-a 서비스는 같은 식의 공용 함수를 부름). 다른 golden 파일은 바뀐 파일에 닿지 않는다(import 그래프로 확인).
+3. golden 테스트 파일도 `flutter analyze`(test 포함) 0 이슈로 그대로 컴파일된다.
+4. 같은 fixture 숫자를 단언하는 비-golden 테스트(통계 성장 · 계획 · 공급, 인벤토리 분석 · 이력 · 페이지 · 티어 등)가 모두 그대로 통과했다.
+
+### 실행한 명령과 결과(사용자 PC, `frontend` 폴더)
+
+- `flutter analyze`: 1차 2 info(`unnecessary_import`, `use_null_aware_elements`) → 고침 → 0, 테스트 추가 뒤 error 2(`RepositoryState.toWire` 없음, 새 테스트) → 고침 → **최종 0 issues**(`debug/frontend_mockdemo/logs/analyze_final.txt`).
+- `flutter test test/mock_design_review_scenario_test.dart`: 9 통과(1차), 화면 테스트 2건 추가 뒤 11 통과.
+- 최종 `flutter test`(18파일 한 번, `logs/tests_final.json`): `mock_design_review_scenario_test` 11 · `inventory_analysis_page_test` 8 · `inventory_controller_test` 13 · `inventory_history_page_test` 11 · `inventory_page_test` 9 · `inventory_review_fb10b_test` 19 · `inventory_shell_lazy_test` 1 · `inventory_tiers_page_test` 7 · `inventory_view_model_test` 13 · `statistics_growth_projection_test` 11 · `statistics_growth_view_test` 12 · `statistics_plan_projection_test` 7 · `statistics_plan_view_test` 9 · `statistics_supply_projection_test` 8 · `statistics_supply_view_test` 11 · `account_editor_fe8c_test` 9 · `statistics_workspace_test` 13 · `widget_test` 16 — **188 통과 · 0 실패**. 첫 15파일은 새 테스트와 바뀐 fixture에 import로 닿는 비-golden 테스트 전부(import 그래프로 셈), 뒤 3파일은 계정 · 통계 · 앱 셸 확인용. `main.dart`를 import하는 테스트는 없다. 잠금 충돌 없음.
+- `git diff --check`(고친 6파일 + status): exit 0. 새 6파일: 줄 끝 공백 0, 끝 개행 하나(`git diff --no-index --check`). 모든 파일 LF(CR 0) — 착수 기록을 처음 덧붙일 때 CRLF로 쓴 23줄을 바로 LF로 되돌렸다(이 문서는 원래 LF).
+
+### 새 테스트(`test/mock_design_review_scenario_test.dart`, 11)
+
+- 스위치: 값 없음 · 공백 → `MockAppService`(계정 · 상태 · 학생 목록 · 인벤토리 카탈로그가 `MockAppService(fullStudentCatalog: true)`와 같음, 시계 없음), `design-review` → 시나리오, 모르는 이름 → `ArgumentError`.
+- 시나리오: 계정 선택 · 이름 · 초상, Stats-Growth(128 / 170 · 구간 · 63.4% · 64명 · 9명, 번들 학생 목록으로), 활성 계획(페이즈 5 · 첫 병목 P2 · 목표 9명 · 첫 부족 P2 기술 노트 (최상급) · 막힌 학생 6 · C3), 단계 구성이 바뀌면 Mock 기본 계산, 인벤토리 컨트롤러 KPI(+3 · −1 · 6 · 3일) · 리오 스파크라인 · 1 / 450, 계정 메타 `보유 128 / 170 · 마지막 스캔 어제 21:40`, 쓰기는 메모리 안 · 새 시나리오는 초기값.
+- 화면: `StatisticsPage` KPI 띠 `128` · `63.4%` · `64명` · `8명` · `9명` · `/ 170 · —`, `InventoryPage` KPI `+3 지난 스캔 대비` · `−1` · `6종` · `3일 전`(2560×1392, 예외 없음).
+
+### 검수표(사용자 · 미실행)
+
+앱 실행 명령: `cd frontend; flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`
+
+| 탭 · 여는 방법 | 볼 숫자 |
+|---|---|
+| 타이틀 | 계정 `거모이는존재한다 (v7 UI 테스트)` · 초상 airi |
+| 타이틀 → 설정(톱니) → 계정 관리 → 수정 | 메타 줄 `보유 128 / 170 · 마지막 스캔 어제 21:40`(시안 217 / 265는 근사) |
+| 통계 → 학생 성장 | KPI 128 `/ 170` · 63.4% · 64명 · 8명 · 9명, A1 60~70% 막대 22명이 가장 높음 |
+| 통계 → 계획 집계 | 범위 칩 `활성 계획 · 9명 · 페이즈 5`, 첫 부족 `P2` · 기술 노트 (최상급), 막힌 학생 `6명`, C3 세 줄 74 · 30 · 15% |
+| 인벤토리(부족한 것) | KPI `+3 지난 스캔 대비` · `−1` · `6종` · `3일 전`, 리오(무장)의 엘레프 1 / 450 · 스파크라인 점 4개 0 · 0 · 1 · 1 |
+| 인벤토리 → 전체 보기 | golden `inventory-all`과 같은 수량 |
+| 계획 탭 | 활성 계획 페이즈 5 · 학생 9명 · 첫 병목 P2 |
+
+### 미검증(미실행)
+
+- 실제 앱 실행 눈 확인(사용자), golden 비교 · 전체 `fe_gate.ps1`(CF), `flutter build windows --release`. 시나리오 시계는 지역 시각이라 "어제 21:40" · "3일 전"은 어느 시간대에서도 같아야 하지만 이 PC 시간대 밖에서는 확인하지 않았다.
+- 일치표의 근사 화면에 실제로 보일 숫자(Stats-Inventory KPI 등)는 계산해 보지 않았다.
+
+### WIP 보존 확인
+
+- `README.md`: 착수 사본 대비 diff = 새 2줄(문장 + 빈 줄)뿐, 다른 세션 WIP 그대로. post 사본 `debug/frontend_mockdemo/post/README.md`.
+- `mock_app_service.dart` · fb10c-dart 미커밋 파일(`scan_page.dart` · `student_scan_diagnostic.dart` · `scanner_review_images.dart`와 테스트) · `lib/ui/**` · `test/goldens/**` · `frontend/tool/**` · backend/**·contracts/**: 편집 0회.
+- 착수 사본 `debug/frontend_mockdemo/pre/`, 끝 사본 `debug/frontend_mockdemo/post/`(고친 6파일 모두), commit.json `post_dir`.
+
+### 발견 사항
+
+1. **헤더 지표**(학생 · 인벤토리)는 `AppServiceState.studentCount` · `inventoryItemCount`의 Mock 고정값 42 · 186이고 계정 데이터와 무관하다(Process는 0으로 시작). 시안 217 · 1,284가 "보유 학생 수 · 인벤토리 항목 수"인지 메타 수인지 정해지지 않아 시나리오에서 바꾸지 않았다 — CF 판단.
+2. **인벤토리 사용 학생 이름**: FE6-a 계획 학생 리오(무장) · 토키(무장)은 성장 데이터 학생 목록 170명(id 앞 170명) 밖이라 인벤토리 상세에 id로 보인다. 학생 목록을 늘리면 Stats-Growth `/ 170`이 바뀐다 — 고치려면 FE6-a 계획 학생을 170명 안 학생으로 바꾸는 fixture 변경(golden `inventory` 변화)이 필요하다. CF 판단.
+3. **인벤토리 단계별 사용처**: 활성 계획이 Stats-Plan 문서(재화 3종)라 FE6-a 재화 대부분은 "활성 계획 계산에 이 재화를 쓰는 단계가 없습니다."가 될 것으로 본다(엘리그마만 P1~P5 단계, 미실행 — 코드 읽기 근거). 시안 Inventory 상세의 단계 글자와 다르다.
+4. **같은 원천의 시안 모순**: 계정 메타 "보유 217 / 265"와 Stats-Growth "128 / 170"은 같은 원천(계정 상태 학생 수 · 학생 목록 수)이라 동시에 맞출 수 없다. Stats-Inventory(supply fixture)와 Inventory 탭(FE6-a)도 같은 계정 인벤토리라 둘 중 하나다. 화면 묶음을 따로 보려면 시나리오 이름을 늘리는(예 `design-review-inventory-analysis`) 후속이 가능하다 — CF 판단.
+5. **레이어**: 시나리오가 시계 계약 `InventoryClockSource`(`lib/ui/inventory/inventory_controller.dart`)를 구현하려고 `lib/services` → `lib/ui` import를 쓴다(기존 `mock_app_service.dart`도 `ui/models`를 import). 계약 위치 정리는 CF 판단.
+6. **파일 소유 문구**: 워크플로 "Lane A·B 프론트 병렬" 문단은 `lib/services/**`를 Lane A만 고친다고 적지만 이번 배정은 Lane B가 `lib/services`에 새 파일을 둔다(공유 파일 수정은 없음). 배정대로 진행했다 — 문서 정리는 CF.
+7. **계획 편집 뒤 계산**: 시나리오는 문서의 페이즈 · 단계 id · 학생 구성이 시안 문서와 같으면 시안 문서 계산을 준다. 목표 값만 바꾸는 편집에는 계산이 바뀌지 않고(고정 응답), 구성이 바뀌면 Mock 기본 계산(재화 없음)으로 내려간다. Mock 쓰기 동작 자체는 그대로다.
+8. FD: 이 slice에 걸린 '열림' · '워커 재량' FD 없음.
+
+### 다음 행동
+
+- CF: 레인 워커가 모두 멈춘 뒤 `fe_gate.ps1` 1회(golden 전 장면 변화 0 예상) → `fe_commit.ps1 -Slice mockdemo -DryRun` → 커밋(README는 post 3-way 병합). 사용자: 위 앱 실행 명령으로 검수표 확인. 발견 1 · 2 · 4 · 5 · 6은 CF 판단.
+- 인계: `debug/frontend_mockdemo/output.md`.
