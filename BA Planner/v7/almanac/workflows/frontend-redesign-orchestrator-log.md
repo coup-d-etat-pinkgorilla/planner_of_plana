@@ -2197,3 +2197,8 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - 사용자 "XB쪽 작업 완료". backend 로그 15:21 XB exact3 **`4ae6c44a`**(parent `d0964853`) 확인 → CF **xbinvlauncher `7862cbcc`**(1파일, −42 +3, DryRun·실행 충돌 0, gate `20261013_141727`). 공용 inventory E2E 왕복 완료.
 - XB 15:21·15:35 요청: FB-10c 첫 무기 폴백 crop working4(`student_fallback_evidence.py`·`student_matcher_adapter.py`·`scanner_session.py`·`test_student_fallback_crop_fb10c.py`, canonical 1239 PASS) 메인 반영 시점. 레인 A·B 비어 있어 **반영 허가**(backend 로그 15:40). 공개 shape: optional `evidence.details` 4키(`crop_png_base64`·`crop_source=basic_info`·`crop_width`·`crop_height`), top-level DTO·method·event 변경 0.
 - CF 후속 **fb10c-dart**(다음 배정 후보): `frontend/lib/services/student_scan_diagnostic.dart`가 candidate.details와 중첩 event.payload를 그대로 저장하므로 두 경로에서 이미지 필드를 재귀 제거 + `privacy.images_included=false` 유지 + apply/discard 뒤 프론트 이미지 캐시 정리(또는 fresh snapshot 교체). 순서: XB 반영 완료 기록 → fb10c-dart → 같은 소스 gate → XB selected4 → CF 커밋.
+
+## 2026-10-13 15:50 — 사용자 결정: FD-106(통계 미구현 위젯·데이터 부족 문구)
+
+- 사용자 질문 "아직 안 만든 타일 = 스캔 데이터가 더 필요한 타일인가?"에 두 경우를 구분해 답함: ① 미구현(2·3차 순서) 위젯 ② 구현됐지만 데이터가 모자란 위젯(A6·B3 스냅샷 1회).
+- 결정: ① **"준비 중"으로 자리 유지**(FD-106 권장안 "빈 카드 없이 당김" 대신, FE7-a 동작 그대로) ② **시안 문구** "스캔을 더 실행하면 변화가 나타납니다." + 스냅샷 횟수·시각(Statistics-Proposal 확정 사항 4, Stats-Growth-Filter A6). 대장 FD-106 행을 "확정 2026-10-13"으로 고침. FE7-b 착수 조건 충족.
