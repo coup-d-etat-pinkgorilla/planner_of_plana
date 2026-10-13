@@ -1,16 +1,22 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+// 통계 탭(FE7-a 골격, 시안 Stats-Growth · Stats-Inventory · Stats-Plan).
+//
+// 화면은 `ui/statistics/statistics_workspace.dart`의 3섹션이다. 이 State는 원천 자료 읽기(`_reload()`)만 맡는다:
+// 계정 → 계정 상태 → 학생 목록 → 인벤토리 목록 → (목표가 있으면) 총 계산 · 부족 계산, generation 가드.
+// 읽기는 탭이 처음 보일 때 시작한다(FE6-b 인벤토리와 같은 정책). 셸은 모든 탭을 오프스테이지로 짓고, 보이지 않는
+// 탭은 `TickerMode`가 꺼져 있으므로 그것으로 보임을 판단한다(`app_shell.dart`를 고치지 않는다). 숨어 있는 동안
+// 다시 읽기 요청(`reloadToken` · 연결 · 서비스 교체)이 오면 표시만 해 두고, 다시 보일 때 한 번 읽는다.
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
-import '../../statistics/statistics_projection.dart';
 import '../app_section.dart';
-import '../widgets/bond_rank_portrait.dart';
-import '../widgets/diagonal_section.dart';
+import '../statistics/statistics_source.dart';
+import '../statistics/statistics_topics.dart';
+import '../statistics/statistics_workspace.dart';
 
-enum StatisticsMode { students, inventory, plan }
+export '../statistics/statistics_topics.dart' show StatisticsMode;
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({
@@ -45,15 +51,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
   bool _loading = true;
   int _generation = 0;
   StatisticsMode _mode = StatisticsMode.students;
-  String _studentDistribution = 'ownership';
-  StatisticsRow? _studentDetail;
-  InventoryCategoryStatistics? _inventoryDetail;
+
+  /// 이 탭이 지금 보이는가(`TickerMode`).
+  bool _visible = false;
+
+  /// 보이지 않는 동안 다시 읽기 요청이 있었는가. 처음에는 아직 읽지 않았으므로 true다.
+  bool _stale = true;
 
   @override
   void initState() {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
-    _reload();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible == _visible) return;
+    _visible = visible;
+    if (visible && _stale) _reload();
   }
 
   @override
@@ -62,9 +79,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     if (old.service != widget.service) {
       old.service.state.removeListener(_connectionChanged);
       widget.service.state.addListener(_connectionChanged);
-      _reload();
+      _requestReload();
     } else if (old.reloadToken != widget.reloadToken) {
-      _reload();
+      _requestReload();
     }
   }
 
@@ -78,15 +95,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void _connectionChanged() {
     if (!mounted) return;
     if (widget.service.state.value.connection == BackendConnection.connected) {
-      _reload();
+      _requestReload();
     } else {
       _generation++;
       setState(() => _loading = false);
     }
   }
 
+  /// 보이면 바로 읽고, 숨어 있으면 진행 중인 읽기를 버리고 다시 보일 때 읽는다.
+  void _requestReload() {
+    if (_visible) {
+      _reload();
+      return;
+    }
+    _generation++;
+    _stale = true;
+  }
+
   Future<void> _reload() async {
     final generation = ++_generation;
+    _stale = false;
     setState(() {
       _loading = true;
       _profile = null;
@@ -95,8 +123,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
       _inventory = null;
       _gross = null;
       _shortages = null;
-      _studentDetail = null;
-      _inventoryDetail = null;
       _profileError = _stateError = _studentError = _inventoryError =
           _grossError = _shortageError = null;
     });
@@ -109,7 +135,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     if (repository == null) {
       if (mounted && generation == _generation)
         setState(() {
-          _profileError = 'Repository service is unavailable.';
+          _profileError = '계정 저장소에 연결할 수 없습니다.';
           _loading = false;
         });
       return;
@@ -131,7 +157,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     } catch (error) {
       if (mounted && generation == _generation)
         setState(() {
-          _profileError = 'Profile loading failed: $error';
+          _profileError = '계정 목록을 읽지 못했습니다: $error';
           _loading = false;
         });
       return;
@@ -142,7 +168,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       if (mounted && generation == _generation) setState(() => _state = value);
     } catch (error) {
       if (mounted && generation == _generation)
-        setState(() => _stateError = 'Repository state failed: $error');
+        setState(() => _stateError = '계정 상태를 읽지 못했습니다: $error');
     }
     try {
       final value = await widget.service.listStudents();
@@ -150,7 +176,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         setState(() => _students = value);
     } catch (error) {
       if (mounted && generation == _generation)
-        setState(() => _studentError = 'Student catalog failed: $error');
+        setState(() => _studentError = '학생 목록을 읽지 못했습니다: $error');
     }
     try {
       final value = await widget.service.listInventoryItems();
@@ -158,7 +184,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         setState(() => _inventory = value.items);
     } catch (error) {
       if (mounted && generation == _generation)
-        setState(() => _inventoryError = 'Inventory catalog failed: $error');
+        setState(() => _inventoryError = '인벤토리 목록을 읽지 못했습니다: $error');
     }
     if (!mounted || generation != _generation) return;
     final snapshot = _state;
@@ -181,7 +207,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           setState(() => _gross = value);
       } catch (error) {
         if (mounted && generation == _generation)
-          setState(() => _grossError = 'Gross calculation failed: $error');
+          setState(() => _grossError = '성장 비용을 계산하지 못했습니다: $error');
       }
       try {
         final value = await widget.service.calculateShortages(
@@ -193,9 +219,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           setState(() => _shortages = value);
       } catch (error) {
         if (mounted && generation == _generation)
-          setState(
-            () => _shortageError = 'Shortage calculation failed: $error',
-          );
+          setState(() => _shortageError = '부족 재화를 계산하지 못했습니다: $error');
       }
     } else {
       _gross = null;
@@ -206,386 +230,33 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final connection = widget.service.state.value.connection;
-    final studentStats = _state != null && _students != null
-        ? buildStudentStatistics(_students!, _state!)
-        : null;
-    final inventoryStats = _state != null && _inventory != null
-        ? buildInventoryStatistics(_inventory!, _state!.inventory)
-        : null;
-    final planStats = _state == null
-        ? null
-        : buildPlanStatistics(_state!.goals.length, _gross, _shortages);
-    return ListView(
+    final data = StatisticsSourceData(
+      connection: widget.service.state.value.connection,
+      loading: _loading,
+      profile: _profile,
+      state: _state,
+      students: _students,
+      inventory: _inventory,
+      gross: _gross,
+      shortages: _shortages,
+      errors: [
+        for (final error in [
+          _profileError,
+          _stateError,
+          _studentError,
+          _inventoryError,
+          _grossError,
+          _shortageError,
+        ])
+          ?error,
+      ],
+    );
+    return StatisticsWorkspace(
       key: const ValueKey('statistics-page'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Profile statistics',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ),
-                  IconButton(
-                    key: const ValueKey('statistics-refresh'),
-                    onPressed: _loading ? null : _reload,
-                    tooltip: 'Refresh statistics',
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-              Text(
-                connection == BackendConnection.connected
-                    ? 'Selected profile scope'
-                    : connection == BackendConnection.connecting
-                    ? 'Backend connecting'
-                    : 'Backend disconnected',
-              ),
-              if (_profile != null)
-                Text(
-                  '${_profile!.displayName} · ${_profile!.id} · revision ${_state?.revision ?? _profile!.revision}',
-                ),
-              if (_loading) const LinearProgressIndicator(),
-              for (final error in [
-                _profileError,
-                _stateError,
-                _studentError,
-                _inventoryError,
-                _grossError,
-                _shortageError,
-              ])
-                if (error != null)
-                  Text(error, style: const TextStyle(color: AppColors.danger)),
-              if (!_loading &&
-                  _profile == null &&
-                  _profileError == null &&
-                  connection == BackendConnection.connected)
-                const Text('No selected profile.'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          SegmentedButton<StatisticsMode>(
-            key: const ValueKey('statistics-mode'),
-            segments: const [
-              ButtonSegment(
-                value: StatisticsMode.students,
-                label: Text('Students'),
-                icon: Icon(Icons.people_outline),
-              ),
-              ButtonSegment(
-                value: StatisticsMode.inventory,
-                label: Text('Inventory'),
-                icon: Icon(Icons.inventory_2_outlined),
-              ),
-              ButtonSegment(
-                value: StatisticsMode.plan,
-                label: Text('Plan'),
-                icon: Icon(Icons.route_outlined),
-              ),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (value) => setState(() {
-              _mode = value.single;
-              _studentDetail = null;
-            }),
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (_mode == StatisticsMode.students) _studentsView(studentStats),
-        if (_mode == StatisticsMode.inventory) _inventoryView(inventoryStats),
-        if (_mode == StatisticsMode.plan) _planView(planStats),
-      ],
-    );
-  }
-
-  Widget _section(Widget child) => DiagonalSection(
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 34, 16),
-      child: child,
-    ),
-  );
-  Widget _kpis(List<String> values) => Wrap(
-    spacing: 10,
-    runSpacing: 8,
-    children: [for (final value in values) Chip(label: Text(value))],
-  );
-
-  Widget _studentsView(StudentStatistics? stats) {
-    if (stats == null)
-      return _section(const Text('Student statistics are unavailable.'));
-    final rows = stats.distributions[_studentDistribution] ?? const [];
-    return Column(
-      children: [
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Student KPIs'),
-              _kpis([
-                'catalog ${stats.catalogCount}',
-                'confirmed ${stats.confirmedCount}',
-                'saved goals ${stats.goalCount}',
-                'orphan goals ${stats.orphanGoalCount}',
-                'average level ${stats.averageLevel?.toStringAsFixed(1) ?? 'n/a'} (${stats.knownLevelCount} known)',
-                'average star ${stats.averageStar?.toStringAsFixed(1) ?? 'n/a'} (${stats.knownStarCount} known)',
-              ]),
-              if (stats.missingCatalogIds.isNotEmpty)
-                Text(
-                  'Missing catalog metadata: ${stats.missingCatalogIds.join(', ')}',
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButton<String>(
-                key: const ValueKey('statistics-student-selector'),
-                value: _studentDistribution,
-                items:
-                    const {
-                          'ownership': 'Ownership',
-                          'level': 'Current level',
-                          'star': 'Current star',
-                          'school': 'School',
-                          'combat_class': 'Combat class',
-                          'attack_type': 'Attack type',
-                          'defense_type': 'Defense type',
-                          'role': 'Role',
-                        }.entries
-                        .map(
-                          (entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) => setState(() {
-                  _studentDistribution = value!;
-                  _studentDetail = null;
-                }),
-              ),
-              for (final row in rows)
-                ListTile(
-                  key: ValueKey('statistics-row-${row.key}'),
-                  title: Text(row.label),
-                  subtitle: LinearProgressIndicator(
-                    value: row.denominator == 0
-                        ? 0
-                        : row.count / row.denominator,
-                  ),
-                  trailing: Text(
-                    '${row.count}/${row.denominator} · ${row.percent.toStringAsFixed(1)}%',
-                  ),
-                  onTap: () => setState(() => _studentDetail = row),
-                ),
-              if (_studentDetail != null) ...[
-                const Divider(),
-                Text('Evidence: ${_studentDetail!.label}'),
-                for (final id in _studentDetail!.identities)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(
-                      key: ValueKey('statistics-student-bond-$id'),
-                      children: [
-                        SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: BondRankPortrait(
-                            portraitAsset: 'assets/student_portraits/$id.png',
-                            bondRank: stats.bondRanks[id],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text('${stats.displayNames[id] ?? id} · $id'),
-                        ),
-                        if (stats.bondRanks[id] case final bond?)
-                          Text('인연 $bond'),
-                      ],
-                    ),
-                  ),
-              ],
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  key: const ValueKey('statistics-open-students'),
-                  onPressed: () => widget.onOpen(AppSection.students),
-                  child: const Text('Review in Students'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _inventoryView(InventoryStatistics? stats) {
-    if (stats == null)
-      return _section(const Text('Inventory statistics are unavailable.'));
-    return Column(
-      children: [
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Inventory KPIs'),
-              _kpis([
-                'catalog ${stats.catalogCount}',
-                'snapshot ${stats.snapshotCount}',
-                'known ${stats.knownCount}',
-                'unknown ${stats.unknownCount}',
-                'absent ${stats.absentCount}',
-                'explicit zero ${stats.zeroCount}',
-                'positive ${stats.positiveCount}',
-              ]),
-              if (stats.missingCatalogIds.isNotEmpty)
-                Text(
-                  'Missing catalog identities: ${stats.missingCatalogIds.join(', ')}',
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Category coverage'),
-              for (final row in stats.categories)
-                ListTile(
-                  key: ValueKey('statistics-inventory-${row.category}'),
-                  title: Text(row.category),
-                  subtitle: Text(
-                    'catalog ${row.catalogCount} · snapshot ${row.snapshotCount} · absent ${row.absentCount} · known ${row.knownCount} · unknown ${row.unknownCount} · zero ${row.zeroCount} · positive ${row.positiveCount}',
-                  ),
-                  trailing: Text(
-                    '${row.knownPercent.toStringAsFixed(1)}% known',
-                  ),
-                  onTap: () => setState(() => _inventoryDetail = row),
-                ),
-              if (_inventoryDetail != null) ...[
-                const Divider(),
-                Text('Evidence: ${_inventoryDetail!.category}'),
-                for (final id in _inventoryDetail!.identities) Text(id),
-              ],
-              TextButton(
-                key: const ValueKey('statistics-open-inventory'),
-                onPressed: () => widget.onOpen(AppSection.inventory),
-                child: const Text('Review in Inventory'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _planView(PlanStatistics? stats) {
-    if (stats == null)
-      return _section(const Text('Plan statistics are unavailable.'));
-    if (stats.savedGoalCount == 0)
-      return _section(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'No saved goals; gross and shortage APIs were not requested.',
-            ),
-            TextButton(
-              key: const ValueKey('statistics-open-plan'),
-              onPressed: () => widget.onOpen(AppSection.plan),
-              child: const Text('Open Plan'),
-            ),
-          ],
-        ),
-      );
-    return Column(
-      children: [
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Plan KPIs'),
-              _kpis([
-                'saved goals ${stats.savedGoalCount}',
-                for (final entry in stats.grossScalars.entries)
-                  '${entry.key} ${entry.value}',
-                'shortage rows ${stats.shortageRowCount}',
-                'positive ${stats.positiveShortageCount}',
-                'unresolved ${stats.unresolvedCount}',
-                'affected students ${stats.affectedStudentCount}',
-              ]),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Gross material maps'),
-              if (stats.materials.isEmpty)
-                const Text('No gross material rows.'),
-              for (final row in stats.materials)
-                Text('${row.category} · ${row.key}: ${row.value}'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Shortage categories'),
-              for (final row in stats.shortageCategories)
-                Text(
-                  '${row.category} · required ${row.required} · known owned ${row.knownOwned} · positive shortage ${row.positiveShortage} · unknown ${row.unknownCount}',
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _section(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Positive shortages (top 10)'),
-              if (stats.topShortages.isEmpty)
-                const Text('No positive shortage rows.'),
-              for (final row in stats.topShortages)
-                Text(
-                  '${row.displayName} · required ${row.requiredAmount} · owned ${row.owned ?? 'Unknown'} · shortage ${row.shortage ?? 'Unknown'}',
-                ),
-              Wrap(
-                children: [
-                  TextButton(
-                    key: const ValueKey('statistics-open-plan'),
-                    onPressed: () => widget.onOpen(AppSection.plan),
-                    child: const Text('Review in Plan'),
-                  ),
-                  TextButton(
-                    key: const ValueKey('statistics-open-shortages'),
-                    onPressed: () => widget.onOpen(AppSection.inventory),
-                    child: const Text('Shortage details'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
+      mode: _mode,
+      data: data,
+      onModeChanged: (mode) => setState(() => _mode = mode),
+      onRescan: () => widget.onOpen(AppSection.scan),
     );
   }
 }

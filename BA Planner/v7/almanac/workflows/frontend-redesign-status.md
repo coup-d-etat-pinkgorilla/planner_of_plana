@@ -6855,3 +6855,249 @@ f2(옛 계획 화면 정리의 나머지)를 끝냈다. 계정 없음 빈 상태
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_010336\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-a 통계 골격 (Lane A, 로컬 Claude Code)
+
+### FE7-a 착수 기록 (2026-10-13, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `cac83222bac7cc7ae7bb4b71f562b45713c4e10b`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`).
+- 범위: 통계 탭 골격(시안 공통 레이아웃). Studio 문서 3섹션(왼쪽 주제·범위 / 가운데 KPI + 위젯 세로 스크롤 / 오른쪽 근거), 주제 3개 전환, 기준 데이터 자리, 범위·필터 버튼 자리(비활성), KPI 띠 자리, 위젯 타일 계단 배치("준비 중"), 근거 패널 틀, 기존 `_reload()` 재사용. 그래프 내용은 넣지 않는다(FE7-b 이후).
+- 막힘: 대장 막힘 요약의 FE7-a 행 = FD-104 → 확정(2026-10-06, (a)). 막는 `열림` FD 없음. 워커 재량 FD-106 · FD-125는 권장안으로 처리하고 종료 기록에 적는다.
+- 지금 통계 화면 기능(`statistics_page.dart`, `ListView` + `DiagonalSection` 카드):
+  1. 머리 카드: "Profile statistics", 연결 상태 글자(Backend disconnected/connecting/Selected profile scope), 계정 이름·id·revision, 읽기 막대, 출처별 오류 6종, "No selected profile.", 새로 고침(`statistics-refresh`).
+  2. 모드 seg(`statistics-mode`, Students/Inventory/Plan).
+  3. Students: KPI 칩 6개(catalog·confirmed·saved goals·orphan goals·평균 레벨·평균 성급), 누락 메타 id, 분포 선택(`statistics-student-selector`, 8종) → 행(`statistics-row-*`, 막대·n/m·%) → 근거(초상 + 인연 랭크, `statistics-student-bond-*`), "Review in Students".
+  4. Inventory: KPI 칩 7개(catalog·snapshot·known·unknown·absent·explicit zero·positive), 누락 id, 카테고리 커버리지 행(`statistics-inventory-*`) → 근거 id 목록, "Review in Inventory".
+  5. Plan: 목표 없음 안내 + "Open Plan", KPI 칩(saved goals·gross 스칼라·shortage rows·positive·unresolved·affected), gross 재료 맵, 부족 카테고리(수량 합산), 부족 상위 10, "Review in Plan"·"Shortage details".
+  6. 데이터: `_reload()`(계정 → 상태 → 학생 목록 → 인벤토리 목록 → 목표가 있으면 `calculatePlan`·`calculateShortages`, generation 가드), 연결 변화 시 다시 읽기, `reloadToken`.
+- 지울 것: 1~5의 옛 화면 위젯 전부(새 골격으로 대체). 남길 것: 6의 데이터 읽기(`_reload()` · generation 가드 · 연결 감시 · `reloadToken`). 읽기 시점만 "처음 보일 때"로 바꾼다(지금은 셸 시작 때 오프스테이지에서 읽는다).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7a/pre/<v7 기준 경로>`, 작업 트리와 cmp 일치):
+  - `frontend/lib/ui/pages/statistics_page.dart` — WIP 없음(`git status --short` 빈 줄), 작업 트리 CRLF
+  - `frontend/test/statistics_page_test.dart` — WIP 없음, CRLF
+  - `frontend/test/statistics_app_shell_test.dart` — WIP 없음, CRLF
+  - `almanac/workflows/frontend-redesign-status.md`(이 문서) — WIP 없음, LF
+- 새 파일(예정): `frontend/lib/ui/studio/statistics_studio_layout.dart`, `frontend/lib/ui/statistics/statistics_topics.dart`(주제·타일 목록), `frontend/lib/ui/statistics/statistics_source.dart`(읽은 원천 자료 묶음, 작업 중 추가), `frontend/lib/ui/statistics/statistics_workspace.dart`(3섹션 위젯), 테스트 `frontend/test/statistics_workspace_test.dart`, golden `frontend/test/goldens/fe7a_statistics_golden_test.dart`(장면 `statistics-growth` 1장, 실행하지 않음).
+- 읽기만: `frontend/lib/statistics/statistics_projection.dart`(바꾸지 않는다). 고치지 않음: `app_shell.dart`·`app_section.dart`, `lib/ui/kit/**`, `lib/services/**`, Lane B 타이틀 쪽, golden harness, `frontend/tool/**`, backend·contracts.
+
+### FE7-a 종료 기록 (2026-10-13, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계 탭을 시안 공통 레이아웃(3섹션) 골격으로 바꿨다. 그래프 · KPI 값 · 근거 목록 · 필터 · 원본 탭 이동은 넣지 않았다(FE7-b~h).
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7a/logs/`이고, 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차, 코드 작성 직후) | **No issues found** |
+| `flutter test` 통계 3파일(1차) | +13 −14: ① 필터 · 기준 데이터 · 다시 스캔 행 폭이 시안보다 14px 좁음(오른쪽 여백을 36으로 잘못 읽음 → 모든 행 22) ② 800×600 · 1280×720에서 "다시 스캔" 행 Row 넘침(폭 35) → 왼쪽 행을 최소 폭 180으로 배치하고 자름 ③ 계획 범위 칩(BaChip)이 좁은 제목 줄에서 넘침 → FittedBox scaleDown ④ 테스트 fixture에 계정이 없어 빈 상태 대신 "선택된 계정이 없습니다" → fixture에 계정 추가 |
+| `flutter test` 통계 3파일(2차) | **+27 −0** |
+| 일회성 렌더(임시 `test/zz_fe7a_render_tmp_test.dart`, harness 공개 함수 `loadGoldenFonts`·`settleGoldenScene`, scratchpad PNG 4장: 성장 · 인벤토리 · 계획 · 계획 1280×720) | 배치는 시안 자리. 제목 줄 범위 글자가 줄 가운데에 서 있음(느슨한 Flexible + Spacer가 남는 폭을 끝에 남김) → `spaceBetween`로 고치고 테스트에 오른쪽 끝 단언 추가. 임시 테스트는 지웠다. golden 비교 아님 |
+| `flutter test test/statistics_workspace_test.dart`(+ 임시 렌더) | +13 −0 |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| 관련 25파일 한 번에(`--reporter json`, 아래) | **+226 −0** |
+| `git diff --check`(고친 3파일) · 새 6파일 줄 끝 공백 검사 | 0 · 0. 새 파일은 LF · 끝 개행 하나, 고친 기존 3파일은 pre와 같은 CRLF |
+
+관련 25파일(파일별 통과 · 실패, 모두 −0): statistics_workspace +12(새), statistics_page +13, statistics_app_shell +2, statistics_projection +6, home_page +5, home_app_shell +1, widget_test +16, inventory_shell_lazy +1, section_template_studio +15, account_manager_fe8b +6, growth_calculator_view +24, profile_delete_fb2d +17, student_filter_followups +4, student_filter_modal +7, title_page +25, planning_page +17, scan_page_revision +14, tactical_page_revision +5, kit/diagonal_scroll_viewport +5, kit/scroll_viewport_fog +6, kit/diagonal_row +6, kit/kpi_tile +2, kit/titles +4, kit/section_morph +7, kit/buttons +6.
+
+- 걸리는 기존 테스트 찾기: `statistics`·`Statistics`·`top-tab-statistics`·`AppSection.statistics`·`statistics-page`로 test/ 전체를 grep했다. 셸 오프스테이지 읽기 시점이 바뀌므로 `BAPlannerApp(`을 쓰는 셸 테스트 전부와 `listProfiles`·`loadRepositoryState`를 덮어쓰는 테스트 전부, 쓰는 키트(scroll viewport · fog · diagonal_row · kpi_tile · titles · section_morph · buttons) 테스트를 함께 돌렸다. `developer_tools_app_test`의 "item statistics"·`metadata_manager_dto_test`·process E2E 2개의 `statistics`는 다른 기능(아이템 통계 · 전술 통계 · gross 계산)이라 돌리지 않았다.
+- 빌드 잠금(`build/`·`.dart_tool/`) 충돌은 없었다. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock`·`pubspec.yaml`은 바뀌지 않았다.
+- 실행하지 않음: golden(`test/goldens/**`, 새 `fe7a_statistics_golden_test.dart` 포함), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 고친 파일
+
+- **`lib/ui/studio/statistics_studio_layout.dart`(새)**: Studio 문서 `statisticsStudioDocument`(3 element), id 상수, `statisticsSection`, 섹션 안 좌표 `StatisticsMetrics`(시안 값 + 유도식 주석).
+- **`lib/ui/statistics/statistics_topics.dart`(새)**: `StatisticsMode`(옛 페이지 enum을 그대로 옮김, F §4 "enum 재사용") + 주제별 글자 · 도움말 · 범위 · KPI 라벨 · 타일 줄(ID · 제목 · 차수 · 시안 폭 · 높이) · 근거 버튼 글자, 순수 함수 `statisticsTileScale` · `statisticsTileSlots`.
+- **`lib/ui/statistics/statistics_source.dart`(새)**: `_reload()`가 읽은 원천 자료 묶음 `StatisticsSourceData`(버킷별 필드 + 오류 목록 + 근거 패널 읽기 상태 안내 `notice`). FE7-b가 여기서 값을 꺼낸다.
+- **`lib/ui/statistics/statistics_workspace.dart`(새)**: 3섹션 위젯 `StatisticsWorkspace`(섹션 표면 = 공용 `paintSectionSurface`, 내용은 섹션 path로 자름), `statisticsSectionPolygon`, `StatisticsViewportGeometry`. 쓰는 키트: `RailButton` · `DiagonalRow`(rail) · `BaChip` · `KitGlyph` · `InfoPopover` · `PanelTitle` · `TileTitle` · `KpiTile` · `WidgetTile` · `DiagonalScrollViewport`(translate, `ScrollFogSpec.statistics`) · `sectionCanvasElementPolygon`.
+- **`lib/ui/pages/statistics_page.dart`**(CRLF 유지): 옛 `ListView` 화면을 지우고 `StatisticsWorkspace`를 그린다. `_reload()`(순서 · generation 가드 · 목표 없을 때 계산 생략)는 그대로이고 오류 글자만 한국어로 바꿨다. 읽기 시점: `TickerMode.valuesOf(context).enabled`로 보임을 판단해 처음 보일 때 읽고, 숨어 있는 동안의 다시 읽기 요청(`reloadToken` · 연결 · 서비스 교체)은 표시만 해 두었다가 다시 보일 때 한 번 읽는다. `StatisticsMode`는 이 파일에서 export한다(옛 import 호환).
+- 테스트:
+  - `test/statistics_page_test.dart`(재작성, CRLF 유지) 13건: 연결 · 저장소 없음 · 계정 없음 안내, 읽는 중 → 빈 상태, 목표 없을 때 계산 생략 + 원천 자료 보존, 목표 있을 때 두 계산 페이로드(옛 테스트 그대로), 주제 전환(타일 목록 · viewport key, 다시 읽지 않음), 필터 · 근거 버튼 비활성 + 다시 스캔 → 스캔 탭, 출처 실패 안내 + token 다시 읽기 회복, 늦은 이전 응답 무시(옛 테스트, revision을 화면 글자 대신 넘긴 자료로 확인), 숨은 페이지는 처음 보일 때까지 읽지 않음, 4개 창 크기 넘침 없음.
+  - `test/statistics_app_shell_test.dart`(재작성, CRLF 유지) 2건: 셸 시작 때 통계 읽기 0회 → 탭을 열면 1회 → 홈 갔다 다시 열면 2회(호출 스택 `_StatisticsPageState.`로 센다), 셸 안 1280×720 세 주제 넘침 없음.
+  - `test/statistics_workspace_test.dart`(새) 12건: 섹션 path 꼭짓점 ±1px, viewport · 스크롤바 여백, 타일 자리 함수, 주제별 타일 순서, 왼쪽 요소 · 근거 버튼 · 성장 타일 · KPI 띠 · 제목 줄 · 인벤토리 · 계획 타일 rect ±2px, 스크롤하면 사선을 따라 15.9px 밀림 + 주제를 바꿨다 돌아오면 스크롤 처음, 주제 버튼 콜백, 1280×720 · 800×600 넘침 없음.
+  - `test/goldens/fe7a_statistics_golden_test.dart`(새, 장면 1장, 실행 안 함).
+- 지운 테스트(옛 화면 키 의존)와 대체:
+  - "empty goals skip both calculation APIs and expose all modes"(Students/Inventory/Plan 글자) → "empty goals skip both calculation APIs and keep every source" + "topic buttons switch the tile list without reading again".
+  - "detail and data-owner actions navigate without mutation"(`statistics-row-owned` · 근거 초상 · `statistics-open-*`) → "filter and evidence actions are placeholders; rescan opens scan". 행 · 근거 · 이동은 FE7-b · FE7-d에서 새 키로 다시 쓴다.
+  - "student source failure preserves inventory and refresh recovers"(`statistics-refresh`) → "source failure is reported and a token reload recovers".
+  - "statistics is scrollable at …"(`statistics-mode` · `ListView`) → "statistics fits …" + workspace 테스트의 크기별 넘침 검사.
+  - 셸 "statistics tab is service-backed and reloads on re-entry"("Profile statistics") → "statistics tab reads when first shown and reloads on re-entry"(읽기 횟수로 고정).
+  - 나머지 두 건(연결 · 저장소 · 계정 안내, 늦은 응답)은 기대를 새 표시 자리로 옮겼다.
+- 고치지 않음: `statistics_projection.dart`(읽기만, 화면에서 아직 안 씀), `app_shell.dart`·`app_section.dart`, `lib/ui/kit/**`, `lib/services/**`, Lane B 타이틀 · 계정 파일, 인벤토리 · 계획 · 학생 · 스캔 화면, golden harness, `frontend/tool/**`, backend · contracts.
+
+#### 섹션 배치(기준 viewport 2560×1392, Studio 문서)
+
+| 섹션 | rect(grid) · spec | 꼭짓점(기준 viewport) | 시안 대비 |
+|---|---|---|---|
+| 왼쪽 주제 · 범위 | (0,2,22,94) 왼쪽 면 사다리꼴, face 0+96, 깊이 96 | (0,209.2)·(586.7,209.2)·(378.1,1392)·(0,1392) | 0.1px 미만 |
+| 가운데 KPI + 위젯 | (15,2,64,94) 아래 면 평행사변형, **face 0+84**, 깊이 96 | (608.6,209.2)·(2101.9,209.2)·(1893.3,1392)·(400,1392) | 0.1px 미만(rect 오른쪽 4.8px는 path 밖) |
+| 오른쪽 근거 | (72,2,24,94) 오른쪽 면 사다리꼴, face 0+96, 깊이 96 | (2128.6,209.2)·(2560,209.2)·(2560,1392)·(1920,1392) | 0.1px 미만 |
+
+섹션 안(시안 값, 위젯 테스트로 재는 것은 ±2px):
+- 왼쪽: "통계" 21px (20, +22) · 주제 버튼 64높이 피치 74(폭 538 · 524.9 · 511.9 = 행 윗변 높이의 사선에서 22) · 필터 캡션 +316 · 필터 버튼 +342 52높이 · 보조 문구 +402 · 기준 데이터 캡션 +458 · 행 +484 44높이 피치 50 · 다시 스캔 아래에서 70, 52높이.
+- 가운데: 제목 줄 (635.9, +20, 1425.3×36) · viewport (400, +72, 1683.2×1100.8). viewport 오른쪽 끝 = 사선 − 6이라 공용 스크롤바 트랙이 시안 트랙 (1671.1,12)→(1481.2,1088.8)과 겹친다(트랙 위 · 아래 끝은 키트 inset 10이라 시안 12보다 2px 길다). KPI 띠 (627.4, 287.2, 1373.3×84).
+- 타일: A1 (549.3,393.2,791.4×322) · A2 (1303.9,393.2,695.5×322) · A4 (480.6,737.2,751.6×368) · A6 (1187.2,737.2,751.6×368) · A3 (421.5,1127.2,741.9×313) · A5 (1128.2,1127.2,741.9×313) / B1 (550.9,393.2,725.1×313) · B2 (1240.8,393.2,758.6×313) · B3 (485.2,728.2,1455.2×351) / C1 (543,393.2,749.8×358) · C2 (1249.7,393.2,749.8×358) · C3 (481.5,773.2,777×327) · C4 (1220.8,773.2,711.6×327) · C5 (422.4,1122.2,1448.5×313). 모두 테스트 ±2px 통과.
+- 오른쪽: 제목 (2160.8, +22) · 안내 줄 (2160, +72) · ghost (1959.2,1248,578.8×58) · primary (1948.2,1316,589.8×52).
+- 타일 계단은 공용 viewport translate 모드가 만든다: 줄 왼쪽 = inset + (viewport 바닥 − 줄 바닥) × tan 10°, inset = 30 + 사선 깊이(10) = 31.76, reserve = 70 − 6 − inset = 32.24(시안: 타일 아래 왼쪽이 섹션 사선에서 30, 줄 위 오른쪽이 70). 같은 줄 타일은 사선 변 사이 20, 폭은 시안 비율. 콘텐츠 높이 1191 · 830 · 1186(위 6, 사이 22, 아래 32 — 마지막 4px 빈 행)이 시안과 같아 스크롤 범위 90.2px · 가로 이동 15.9px도 같다(테스트).
+- 다른 창 크기: 섹션은 Studio grid로 바뀐다. 왼쪽 · 오른쪽 요소는 세로 비율(0.4~1)로 함께 줄고(계획 만들기 A 레일 규칙, 요소마다 FittedBox), 가운데 타일 높이는 viewport 폭 비율이다(타일 모양 유지). KPI 띠는 846px보다 좁으면 띠째 줄인다. 전체 화면 일괄 축소는 하지 않는다.
+
+#### 섹션 모션
+
+- 탭 진입 · 퇴장은 셸 `AnimatedSectionStack`의 기존 통계 모션(intro 90 · outro 270, `AppMotion.tabBody*`) 그대로다. 섹션별 부착면 방향 모션(왼쪽은 왼쪽, 가운데는 아래, 오른쪽은 오른쪽)은 셸의 `independentMotionIndices`에 통계를 넣어야 해서(`app_shell.dart`) 이번에 하지 않았다(발견 사항 7).
+- 주제 전환은 가운데 제목 줄 + viewport를 주제별 key(`statistics-topic-body-<topic>` · `statistics-viewport-<topic>`)로 바꿔 끼우고 `AppMotion.header`(220ms) 교차 페이드한다. 스크롤 위치는 넘기지 않는다(테스트).
+
+#### 처리한 FD
+
+- **FD-104(확정)**: 필터는 통계 전용(학생 성장에만) — 왼쪽 캡션 "필터 · 학생 성장에만 적용", 학생 성장은 "없음 · 보유 —명 전체", 인벤토리 · 계획은 "인벤토리 · 계획 집계는 항상 전체", 보조 문구 두 줄(시안 그대로). 버튼은 FE7-e 전까지 비활성.
+- **FD-105(워커 재량, 권장안)**: KPI는 주제별 5칸(시안 라벨), 값은 '—'. 누르면 스크롤은 FE7-b.
+- **FD-106(워커 재량)**: 권장안 "미구현 위젯은 빈 카드 없이 레이아웃을 당긴다"는 FE7-a 골격과 충돌한다(골격 단계에서는 모든 위젯이 미구현). CF 프롬프트대로 시안의 모든 타일을 "준비 중" + 차수 칩으로 두었다. 1차 출시 때 2·3차 타일을 빼는 방식은 발견 사항 1.
+- **FD-125(워커 재량, 권장안 중 지금 되는 부분)**: "다시 스캔"은 스캔 탭을 연다(`onOpen(AppSection.scan)`, FE6-a 인벤토리 스캔 버튼과 같음). "해당 종류 강조"는 스캔 쪽 진입점이 생기면.
+- FD-028 · FD-031 · FD-033 · FD-034: 이번에 쓰는 값이 없다. 모르는 값은 모두 '—'(FD-033)이고 다섯 버킷은 `StatisticsSourceData`에 출처별로 따로 둔다.
+- 막는 `열림` FD 없음.
+
+#### 지운 · 옮긴 기능과 "FE7-b/c에서 복원" 목록
+
+지운 옛 화면 위젯(모두 `statistics_page.dart` 안): 머리 카드("Profile statistics" · 연결 글자 · 계정 이름 · id · revision · 읽기 막대 · 오류 목록), 새로 고침 버튼(`statistics-refresh`), 모드 seg(`statistics-mode`), Students/Inventory/Plan 세 보기 전부(KPI 칩 · 분포 선택 · 행 · 근거 초상 · 카테고리 커버리지 · gross 재료 맵 · 부족 카테고리 · 부족 상위 10 · Review/Open/Shortage 버튼 4개).
+
+옮긴 것: 연결 · 저장소 없음 · 계정 없음 · 읽는 중 · 출처별 오류 → 근거 패널 안내 줄(`StatisticsSourceData.notice`). 모드 전환 → 주제 버튼 3개. 새로 고침 → 탭을 다시 열면 다시 읽는다(셸 reloadToken, 테스트로 고정). 계정 이름 · revision 표시는 시안에 자리가 없어 넘긴 자료에만 남는다.
+
+FE7-b/c에서 복원(시안 위젯으로):
+- FE7-b: 성장 KPI(보유 학생 · 평균 육성도 · 최대 레벨 · 완전 육성 · 계획 등록), A1(옛 레벨 분포를 대신하는 육성도 분포, 세그 육성도/레벨/스킬/장비), A2, 구간 선택 → 근거 학생 목록(옛 근거 초상 · 인연 랭크 `BondRankPortrait` 재사용 후보), "보유 n명" 범위 글자.
+- FE7-c: 인벤토리 KPI · B1(옛 카테고리 커버리지의 스캔 없음 판정을 빗금으로), 계획 KPI · C1(옛 부족 상위 목록) · C2, 근거 재화 목록, 범위 칩 "활성 계획 · n명 · 페이즈 n".
+- 그 뒤 slice: 이동(옛 Review in Students · Inventory · Plan · Shortage details → 근거 패널 아래 두 버튼, FE7-d), 기준 데이터 시각 · 스냅샷(FE7-h). 옛 분포 중 school · combat_class · attack_type · defense_type · role · star는 A3 · A4(FE7-f)와 통계 필터(FE7-e)로 간다. gross 재료 맵 · 옛 KPI 칩(orphan goals · unresolved 등)은 시안에 자리가 없다(복원하지 않음, 필요하면 개발 도구).
+
+#### golden 변화 예상
+
+- **기존 장면 전부: 변화 0.** 통계 탭이 보이는 장면이 없고(golden 테스트 `statistics` grep 0건), 통계 페이지는 오프스테이지에서 그리지 않는다. 바뀐 것은 오프스테이지 통계가 셸 시작 때 Mock을 읽지 않게 된 것뿐이라 다른 화면 그림에 닿지 않는다. 바뀌는 기존 기준 이미지가 없어 commit.json에 `whole`을 두지 않았다.
+- **새 장면 `statistics-growth`**(`fe7a_statistics_golden_test.dart`, 기준 이미지 없음 → RED, CF가 만든다). 기대 모습(일회성 렌더로 본 배치):
+  - 헤더: 통계 탭 선택, 제목 "통계", 부제 "계정 성장 통계"(app_section 그대로, 발견 사항 3).
+  - 왼쪽: "통계", 주제 버튼 3개(학생 성장 핑크 선택 · 인벤토리 현황 · 계획 집계, 부제 한 줄씩, 사선을 따라 좁아짐), "필터 · 학생 성장에만 적용" + 흐린 필터 버튼(깔때기 · "필터" · "없음 · 보유 —명 전체" · 꺾쇠) + 보조 문구 두 줄, "기준 데이터" + 3행(학생 스캔 · 인벤토리 · 스냅샷, 오른쪽 회색 칩 '—'), 아래 "다시 스캔"(스캔 아이콘 · 꺾쇠).
+  - 가운데: "학생 성장" + (i), 오른쪽 끝 "보유 —명 기준 · 지난 스냅샷 대비". KPI 5칸(보유 학생 · 평균 육성도 · 최대 레벨 · 완전 육성 · 계획 등록, 값 '—'). 타일 6장 계단(A1 육성도 분포 1차 · A2 항목별 완성도 1차 / A4 학교 · 역할 비교 2차 · A6 성장 추이 2차 / A3 성작 · 전용무기 2차 · A5 스킬 · 장비 매트릭스 3차, 각 가운데 "준비 중"), A3 · A5 줄은 viewport 아래에서 잘리고 아래 포그. 오른쪽에 공용 사선 스크롤바(긴 핑크 썸).
+  - 오른쪽: "근거 확인" 제목, "구간을 고르면 근거가 보입니다.", 아래 흐린 ghost "학생 탭에서 보기" · 흐린 핑크 primary "이 구간 학생을 계획에 추가"(둘 다 꺾쇠, 왼쪽 변 사선).
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth(골격) | 앱 mock 실행 → 통계 탭(기본 학생 성장) | 세 섹션 모양 · 간격(왼쪽 사다리꼴 · 가운데 평행사변형 · 오른쪽 사다리꼴), 주제 버튼 계단 폭, KPI 띠 5칸 자리, 타일 6장 계단(줄마다 사선을 따라 왼쪽으로), 가운데를 스크롤하면 타일이 사선을 따라 오른쪽으로 밀리고 위 포그가 나타남, 공용 스크롤바 |
+| Stats-Inventory(골격) | 왼쪽 "인벤토리 현황" | 타일 B1 · B2 / B3(전폭), 스크롤 없음(콘텐츠 830) → 썸 없음, 범위 글자 "활성 계획 기준 · 인벤토리 스캔 —", 필터 부제 "인벤토리 · 계획 집계는 항상 전체", 근거 버튼 글자 |
+| Stats-Plan(골격) | 왼쪽 "계획 집계" | 타일 C1 · C2 / C3 · C4 / C5(전폭), 범위 칩 "활성 계획 · —명 · 페이즈 —", 근거 버튼 글자 |
+| Statistics-Proposal | 위 세 화면 | 차수 칩(1차 핑크 · 2차 파랑 · 3차 회색)이 기능 카드 표와 같은가, 모르는 값이 모두 '—'인가, (i) 도움말 문구 |
+| (공통) | 주제를 바꾸고 돌아오기, 다른 탭 → 통계 | 주제 전환 때 가운데가 짧게 교차 페이드되고 스크롤이 처음으로, 탭 진입 · 퇴장은 다른 탭과 같은 셸 모션, 1280×720에서 예외 없이 줄어드는가, 필터 · 근거 버튼은 흐리고 눌리지 않음, "다시 스캔" → 스캔 탭 |
+
+#### 미검증 항목
+
+- golden(새 장면 `statistics-growth` · 기존 장면 변화 0 예측): **미실행**. 일회성 렌더는 배치 확인만이다.
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드에서의 통계 탭(처음 열 때 읽기 시간): **미실행**. Mock과 위젯 테스트만 보았다.
+- 섹션 안 요소 중 테스트로 재지 않은 것(제목 "통계" · 캡션 · 보조 문구 · 근거 제목 · 안내 줄 위치)은 시안 값을 옮긴 계산이다.
+- 실제 창에서의 주제 전환 페이드 · 셸 모션 체감.
+
+#### WIP 보존 확인
+
+- 고친 기존 4파일(통계 페이지 · 테스트 2 · 이 문서)은 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고, 기존 3파일의 CRLF를 유지했다.
+- 작업 트리의 다른 미커밋 변경(Lane B 타이틀 · 계정 쪽, 스캐너 · 백엔드 파일, 다른 문서)은 읽지도 고치지도 않았다. git 쓰기는 하지 않았다. 임시 렌더 테스트는 작업 트리에서 지웠다(커밋 대상 아님).
+
+#### 발견 사항
+
+1. **FD-106 vs 골격**: 권장안대로라면 1차 출시 때 2·3차 타일(A3 · A4 · A5 · A6 · B2 · B3 · C3 · C4 · C5)을 빼고 레이아웃을 당겨야 한다. 타일 목록에 차수가 있어 거르기는 한 줄이지만, 한 줄에 하나만 남는 경우(A4 없이 A6만 등) 타일 폭 · 줄 구성 규칙이 없다. FE7-b/c 착수 전 CF 결정 필요(빈 카드 유지 vs 당기기, 당길 때 줄 구성).
+2. **근거 패널 빈 상태 문구**: 시안 세 장 모두 구간이 선택된 상태라 빈 상태 문구가 없다. 프롬프트 예시 "구간을 고르면 근거가 보입니다."를 쓰고, 제목은 Proposal 흐름 2단계 "근거 확인"을 썼다. 읽기 상태 안내(연결 · 계정 없음 · 오류)도 같은 줄에 둔다.
+3. **헤더 부제**: 시안 "학생 성장 · 관심 구간 발견 → 근거 확인 → 원본 탭으로 이동"(주제별로 바뀜)인데 `app_section.dart`는 "계정 성장 통계"다. 고치지 않음 범위라 그대로다(FE6-e 발견 5 · FE6-d 발견 2와 같은 "탭 상태 → 부제" 소단위).
+4. **KPI 타일 높이**: 통계 시안 KPI는 84높이 · 값 28px, 키트 `KpiTile`은 70 · 26px다. 띠 자리(84)는 시안대로 두고 키트 타일을 가운데 놓았다. FE7-b에서 키트 높이 인자가 필요한지 판단(키트 요청 후보).
+5. **타일 제목의 회색 ID**: 시안 "A1"은 13px 회색이고 제목은 16px 흰색이다. 키트 `TileTitle`은 글자 하나만 받아 "A1 육성도 분포"를 한 색으로 그린다(키트 요청 후보: 앞 글자 슬롯). 프롬프트의 "PanelTitle" 대신 시안 타일 머리(6×18 막대 · 16px)와 같은 키트 `TileTitle`을 썼고, 근거 패널 제목에 `PanelTitle`을 썼다. A1 · B2 · B3 · C1의 머리 세그는 FE7-b 이후 차수 칩 자리를 바꾼다.
+6. **근거 패널 버튼 모양**: 시안은 왼쪽 변 80° · 오른쪽 수직(왼쪽 섹션 레일 버튼의 좌우 반전)인데 키트에 그 변형이 없다. 키트 `RailButton`을 좌우로 뒤집어 바탕만 쓰고 글자는 바로 세워 올렸다(지금은 비활성이라 문제없음). FE7-d에서 누를 수 있게 할 때 키트 변형으로 바꾸는 편이 낫다(키트 요청 후보).
+7. **셸 쪽 두 가지**: (a) 셸이 통계에 `active`를 주지 않아 페이지가 `TickerMode`로 보임을 판단한다(선례 `student_form_cycle.dart`). CF가 인벤토리처럼 `active` 인자를 원하면 셸 한 줄 + 페이지 몇 줄이다. (b) 섹션별 부착면 모션은 셸 `independentMotionIndices`에 통계를 넣고 페이지가 진입 모션을 그리는 소단위가 필요하다(학생 · 계획 탭 선례).
+8. **작은 창 가독성**: 1280×720에서 왼쪽 · 오른쪽 섹션 요소가 하한 0.4배까지 줄어 글자가 작다(계획 만들기 A 레일과 같은 규칙). 예외는 없다. 작은 창용 승인된 레이아웃 상태가 없어 그대로 두었다.
+9. 시안 KPI 띠 x(227.4)는 줄 자리 양쪽에서 17.4 안쪽이라는 것 말고 규칙을 찾지 못했다. 상수 `kpiInset`으로 두었다.
+10. 시안 오른쪽 아래 버튼의 둘째 줄 중 구간에 묶인 글자("필터: 육성도 60~70%", "기술 노트 탭 · 최상급 선택", "P2 선택 · 순서 바꾸기")는 빼고 구간과 무관한 글자만 두었다. 구간 글자는 FE7-d에서 선택에 따라 붙인다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7a/pre/<경로>`(고친 기존 4파일). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7a/commit.json`: slice `fe7a`, `status=true`, modified 4(이 문서 포함), added 6(새 기준 이미지 `statistics-growth.png`는 CF가 넣는다), `whole` 없음(바뀌는 기존 기준 이미지 없음). message 근거: Stats-Growth · Stats-Inventory · Stats-Plan artboard, F §2 · §3, FD-104(+ FD-105 · 106 · 125).
+- 인계: `debug/frontend_fe7a/output.md`.
+
+#### 다음 행동
+
+- FE7-a 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트에서 통계 3파일 +27(새 workspace 12 · page 13 · shell 2, 옛 page 9 · shell 1 대체), golden은 새 장면 `statistics-growth` 기준 없음 RED만, 다른 장면 변화 0. 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe7a`.
+- 발견 사항 1(FD-106 적용 방식)은 FE7-b 착수 전 CF 결정, 4 · 5 · 6은 키트 요청 후보, 3 · 7은 셸 · app_section 소단위 후보.
+
+#### 재개(13:10 CF 메시지)
+
+경위: 같은 FE7-a 프롬프트가 두 세션에 들어가 01:50에 다른 세션이 이 slice 파일(`statistics_topics.dart`·`statistics_workspace.dart`·`statistics_workspace_test.dart`)을 고쳤고, 그 세션이 12:50에 모두 되돌리고 멈췄다(CF 확인). 재개 때 파일이 내 마지막 상태(크기 8649 · 36899, `showsOrder`·`_TileHeader` 흔적 0)임을 확인했다. `debug/frontend_fe7a/logs/`에 남은 로그 8개(analyze1 · analyze_final · related.json · related_err · render_tmp · test1~3, 01:37~01:46)는 모두 이 세션 것이다. CF 시안 대조 3건(FD-001 시안 우선)을 고쳤다.
+
+##### 타일 머리 시안 대조(dc_outline: Stats-Growth · Stats-Inventory · Stats-Plan)
+
+| 타일 | 시안 제목 | 머리 seg(첫 칸 선택) | 차수 칩 | 앱(재개 뒤) |
+|---|---|---|---|---|
+| A1 | 육성도 분포 | 육성도 · 레벨 · 스킬 · 장비 | 없음 | seg 자리(비활성), 칩 없음 |
+| A2 | 항목별 완성도 | — | 1차(pk) | 칩 |
+| A4 | **학교 비교**(옛 앱 "학교 · 역할 비교") | 학교 · 역할 | 없음 | 제목 고침, seg 자리, 칩 없음 |
+| A6 | 성장 추이 | — | 2차 | 칩 |
+| A3 | 성작 · 전용무기 | — | 2차 | 칩 |
+| A5 | 스킬 · 장비 매트릭스 | — | 3차(gy) | 칩 |
+| B1 | 카테고리별 충족률 | — | 1차(pk) | 칩 |
+| B2 | 부족 · 과잉 | 부족 순 · 과잉 순 | 없음 | seg 자리, 칩 없음 |
+| B3 | 주요 재화 변화 | 스냅샷 6회 · 4주 · 전체 | 3차(gy, seg 뒤) | seg 자리 + 칩 |
+| C1 | 필요량 vs 보유 | 부족 큰 순 · 페이즈 순 | 없음 | seg 자리, 칩 없음 |
+| C2 | 병목 매트릭스 | — | 1차(pk) | 칩 |
+| C3 | 페이즈별 누적 부족 | — | 2차 | 칩 |
+| C4 | 학생별 목표 진행 | — | 2차 | 칩 |
+| C5 | 미계획 학생 | — | 3차(gy) | 칩 |
+
+제목은 A4만 시안과 달랐다. 다른 13개는 시안 그대로였다.
+
+##### 바뀐 것
+
+- `lib/ui/statistics/statistics_topics.dart`: `StatisticsTileSpec`에 `segments`(시안 seg 글자)와 `showsOrderChip`(기본 true)을 더했다. A1 · A4 · B2 · C1은 seg만 있고 칩은 없다. B3은 seg와 칩이 함께 있다. A4 제목은 "학교 비교"다.
+- `lib/ui/statistics/statistics_workspace.dart`: 키트 `TileTitle` 대신 이 파일의 `_TileHeader`를 쓴다. 키트 조각 `TitleBar`(6×18) · 간격 8 · `TitleRule`(캡 40) · 줄 사이 7은 `TileTitle`과 같다.
+  - ID는 `kitDisplayStyle(13, color: AppColors.textMuted)`(= `#9eb0c2`, 새 토큰은 필요 없다)이고 오른쪽 간격은 8이다. 제목은 `kitDisplayStyle(16)`(흰색 `AppColors.text`)이다. ID와 제목은 글자 기준선을 맞춘다.
+  - 오른쪽 묶음은 seg 자리(키트 `SkewSegmented`, `onChanged: null` → 키트 비활성 불투명도 .45, 높이 26 · 글자 11 · 안쪽 16 · 간격 6, 첫 칸 선택)와 seg 뒤 6px의 차수 칩이다.
+  - 제목 묶음과 오른쪽 묶음은 `spaceBetween`으로 양끝에 둔다. 좁으면 오른쪽 묶음을 줄인다(FittedBox scaleDown).
+  - 키: `statistics-tile-<id>-id` · `-title` · `-seg` · `-order`. 키트는 고치지 않았다.
+- `test/statistics_workspace_test.dart`: 새 테스트 "tile headers follow the artboard title, seg and order chip"를 더했다. 위 표 14타일의 제목 · seg 글자 · 선택 · 비활성 · 높이 26 · 칩 유무와 글자 · ID 13px `textMuted` · 제목 16px `text`를 세 주제에서 확인한다. 성장 타일 테스트의 `find.text('A1 육성도 분포')`는 `'육성도 분포'`로 바꿨다(ID와 제목이 나뉘었다).
+- 종료 기록 발견 사항 5(타일 제목의 회색 ID)는 이 변경으로 풀렸다. 키트 요청은 필요 없다(같은 조각을 이 slice 위젯에서 조합).
+- 종료 기록 발견 사항 10의 seg 글자는 이제 시안 그대로 보인다(비활성). 구간에 묶인 근거 버튼 둘째 줄 글자는 여전히 FE7-d다.
+
+##### 실행 명령 · 결과(재개 뒤)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(머리 교체 직후 · 최종) | **No issues found** · **No issues found** |
+| `flutter test test/statistics_workspace_test.dart` | **+13 −0**(새 머리 테스트 포함) |
+| 일회성 렌더(임시 `test/zz_fe7a_render_tmp_test.dart`, 성장 · 인벤토리 2장, 실행 뒤 지움) | 회색 ID · 흰 제목, A1 · A4 · B2 · C1은 흐린 seg만, B3은 흐린 seg + 3차 칩, 나머지는 칩만. 넘침 없음. golden 비교 아님 |
+| 관련 25파일 한 번에(`--reporter json`, 종료 기록과 같은 묶음) | **+227 −0**: statistics_workspace +13, statistics_page +13, statistics_app_shell +2, statistics_projection +6, 나머지 21파일은 종료 기록과 같은 수(home_page 5 · home_app_shell 1 · widget_test 16 · inventory_shell_lazy 1 · section_template_studio 15 · account_manager_fe8b 6 · growth_calculator_view 24 · profile_delete_fb2d 17 · student_filter_followups 4 · student_filter_modal 7 · title_page 25 · planning_page 17 · scan_page_revision 14 · tactical_page_revision 5 · kit 7파일 36), 모두 −0 |
+| `git diff --check`(고친 기존 4파일) · 새 6파일 줄 끝 공백 · 줄바꿈 | 0 · 0. 새 파일 LF · 끝 개행 하나, 기존 3파일 CRLF 유지 |
+
+- 로그: `debug/frontend_fe7a/logs/analyze_resume1.txt` · `analyze_resume2.txt` · `test_resume1.txt` · `render_tmp2.txt` · `related_resume.json`.
+- 빌드 잠금 충돌 없음. `pubspec.lock` 변화 없음.
+- 실행하지 않음: golden, 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+##### golden 예측(갱신)
+
+- 기존 장면 전부: 변화 0(종료 기록과 같은 이유).
+- 새 장면 `statistics-growth`: 종료 기록의 기대 모습에서 가운데 타일 머리만 바뀐다.
+  - 머리는 핑크 막대 · 회색 13px ID · 흰 16px 제목이다.
+  - A1 "육성도 분포": 오른쪽에 흐린 seg 육성도(분홍 테두리 선택) · 레벨 · 스킬 · 장비. 칩은 없다.
+  - A2 "항목별 완성도": 1차 핑크 칩.
+  - A4 "**학교 비교**": 흐린 seg 학교(선택) · 역할. 칩은 없다.
+  - A6 "성장 추이" 2차 · A3 "성작 · 전용무기" 2차 · A5 "스킬 · 장비 매트릭스" 3차(회색): 각자의 칩.
+  - 제목 아래 룰은 seg가 있는 머리(높이 26)에서 칩만 있는 머리(24)보다 2px 아래다.
+  - 나머지(세 섹션 · KPI 띠 · 근거 패널 · 왼쪽)는 종료 기록 그대로다.
+
+##### commit.json · 인계
+
+- `debug/frontend_fe7a/commit.json`은 파일 목록이 실제와 같아(modified 4 · added 6, `whole` 없음) 목록은 그대로 두었다. message에는 시안 머리(seg 자리 · 칩 유무 · 회색 ID)를 한 줄 더했다.
+- `debug/frontend_fe7a/output.md`의 해시는 이 재개 뒤 파일로 새로 계산한다.
+
+##### 다음 행동(갱신)
+
+- FE7-a 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF gate 예상: analyze 0, 통계 4파일 +34(workspace 13 · page 13 · shell 2 · projection 6), golden은 새 장면 `statistics-growth`만 RED(기준 없음), 다른 장면 변화 0.
+- 남은 CF 판단: 종료 기록 발견 사항 1(FD-106) · 3 · 4 · 6 · 7.
+
+### fe7a commit record (2026-10-13 14:28, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_141727\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
