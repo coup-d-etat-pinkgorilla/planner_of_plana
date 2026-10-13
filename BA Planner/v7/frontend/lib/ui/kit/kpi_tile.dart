@@ -1,7 +1,7 @@
 // KPI 사선 타일 (FE2-d, H §2.2, W-Data "KPI 사선 타일 · 전후 비교").
 //
 // 높이 70, 바탕 skewX(−10°) r7 #203243 + 안쪽 1px rgba(56,81,107,.8). 라벨 `.ihdr` 9px, 세로 간격 6.
-// - 기본형: 값 경기천년제목 26(시안 w800 → 700, FD-009) + 변화 11px w700(증가 #7fe3bd, 계획 #f7c9f4), 간격 8.
+// - 기본형: 값 경기천년제목 26(시안 w800 → 700, FD-009) + 변화 11px w700(증가 #7fe3bd, 계획 #f7c9f4, 모름 '—' #9eb0c2), 간격 8.
 //   안쪽 10 16 10 22.
 // - 전후 비교형: 이전값 14px #9eb0c2 → 화살표 13px 핑크 → 예상값 24px #7fe3bd, 간격 6. 안쪽 10 14 10 20.
 import 'package:flutter/material.dart';
@@ -16,7 +16,10 @@ enum KpiDeltaTone {
   gain(Color(0xff7fe3bd)),
 
   /// 계획에 걸린 값(#f7c9f4).
-  plan(AppColors.accentText);
+  plan(AppColors.accentText),
+
+  /// 비교할 이전 값이 없음('—', #9eb0c2 — 통계 시안 Stats-Growth-Filter, FE7-b).
+  unknown(AppColors.textMuted);
 
   const KpiDeltaTone(this.color);
 

@@ -7101,3 +7101,151 @@ FE7-b/c에서 복원(시안 위젯으로):
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_141727\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-b 통계 학생 성장 1차 (Lane A, 로컬 Claude Code)
+
+### FE7-b 착수 기록 (2026-10-13, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `75943ffcd529d57ce2de7cea703f32f93085ec96`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서에 다른 "FE7-b 착수 기록" 없음(grep 0건).
+- 범위: 육성도 · 항목 완성도 projection(FD-028 (a), 순수 함수), 성장 KPI 5개(FD-105, 증감 '—'), A1 육성도 분포 히스토그램 + 구간 선택 → 근거 학생 목록, A2 항목별 완성도 트랙 막대 + 항목 선택 → 근거, 미구현 타일 "준비 중" 유지(FD-106 사용자 결정 10-13).
+- 막힘: 대장 막힘 요약 FE7-b 행 = FD-028 → 확정(2026-10-06, (a)). 막는 `열림` FD 없음. 워커 재량 FD-029 · FD-105는 권장안으로 처리한다.
+- 착수 중 사용자 확인(질문 2건, 2026-10-13): ① 애장품이 없는 학생(카탈로그 265명 중 205명)은 애장품을 "해당 없음"으로 빼고 나머지 6항목 평균 ② A2는 FD-028대로 7행(시안 6행 + 애장품).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7b/pre/<v7 기준 경로>`, 작업 트리와 cmp 일치, 모두 WIP 없음 = `git status --short <경로>` 빈 줄):
+  - `frontend/lib/ui/statistics/statistics_workspace.dart`(LF) · `statistics_topics.dart`(LF) · `statistics_source.dart`(LF)
+  - `frontend/lib/ui/pages/statistics_page.dart`(CRLF)
+  - `frontend/lib/ui/studio/statistics_studio_layout.dart`(LF, 요소 좌표만)
+  - `frontend/lib/ui/kit/kpi_tile.dart`(LF, 키트 최소 — 모름 '—' 증감 색) · `frontend/test/kit/kpi_tile_test.dart`(LF)
+  - `frontend/test/statistics_workspace_test.dart`(LF) · `statistics_page_test.dart`(CRLF) · `statistics_app_shell_test.dart`(CRLF)
+  - `frontend/test/goldens/fe7a_statistics_golden_test.dart`(LF, fixture 입력만)
+  - `almanac/workflows/frontend-redesign-status.md`(이 문서, LF)
+- 새 파일(예정): `frontend/lib/statistics/statistics_growth_projection.dart`(projection), `frontend/lib/ui/statistics/statistics_growth_charts.dart`(A1 · A2 painter), `frontend/lib/ui/statistics/statistics_growth_evidence.dart`(근거 패널 내용), `frontend/test/statistics_growth_fixture.dart`(시안 숫자 fixture), `frontend/test/statistics_growth_projection_test.dart`, `frontend/test/statistics_growth_view_test.dart`.
+- 고치지 않음: `app_shell.dart` · `app_section.dart` · `lib/services/**`(읽기만) · 스캔 대상 상태(Lane B FE8-d), 학생 · 계획 · 인벤토리 · 스캔 · 타이틀 화면, golden harness, `frontend/tool/**`, backend · contracts, 택틱 · 스캐너 소유 파일.
+
+### FE7-b 종료 기록 (2026-10-13, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계 "학생 성장"에 KPI 5칸 값, A1 육성도 분포 히스토그램, A2 항목별 완성도 트랙 막대, A1 구간 · A2 항목 선택 → 오른쪽 근거 목록을 넣었다. 다른 타일(A3 · A4 · A5 · A6)은 "준비 중" 그대로다(FD-106 사용자 결정 10-13). 원본 탭 이동(아래 두 버튼)은 FE7-d라 비활성 그대로다.
+
+착수 기록 정정: `statistics_source.dart` · `statistics_page_test.dart` · `statistics_app_shell_test.dart`는 고치지 않았다(사본을 지웠다, 작업 트리 = HEAD).
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7b/logs/`이고, 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차 · 2차) | No issues found · No issues found |
+| `flutter test test/statistics_growth_projection_test.dart`(1차) | +10 뒤 마지막 테스트가 멈춤(`rootBundle.loadString`이 큰 자산을 isolate로 디코드해 테스트 시계에서 멈춤) → 중단하고 Mock처럼 `rootBundle.load` + `utf8.decode`로 고침 |
+| 같은 파일(2차) | **+11 −0** |
+| `flutter test test/statistics_growth_view_test.dart`(1차) | +8 −3: ① 시안 막대 x 433.5 vs 계산 433.4(시안 반올림) → 허용 0.15 ② 1280×720 · 800×600에서 근거 학생 행 Row 넘침(테스트 글꼴) → 행 내용 최소 폭 240 + 자름 |
+| 같은 파일(2차) | +9 −2: KPI 값 줄 넘침(테스트 글꼴 "63.4%" 26px × 5글자) · 근거 머리 Row 넘침 → KPI 띠 최소 폭 158 → 200칸, 근거 머리 최소 폭 240 + 자름 |
+| 같은 파일(3차 · 4차, 다시 읽기 · 주제 전환 테스트 추가 뒤) | **+11 −0** · **+12 −0** |
+| 통계 기존 4파일 + `kit/kpi_tile_test.dart` | +36 −1: workspace "growth tiles …"가 "준비 중" 6개를 기대 → 4개 + A1 · A2 '—'로 고침 → workspace **+13 −0** |
+| `flutter analyze`(3차, golden fixture 뒤) | 1 issue(info `curly_braces_in_flow_control_structures`, projection) → 고침 → 4차 No issues found |
+| 일회성 렌더(임시 `test/zz_fe7b_render_tmp_test.dart`, harness 공개 함수 · golden fixture 서비스, scratchpad PNG 2장: 기본 · 60~70% 선택) | 배치 · 숫자 시안 자리(아래 golden 예상). 임시 테스트는 지웠다. golden 비교 아님 |
+| 관련 31파일 한 번에(`--reporter json`, 아래) | **+276 −0** |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| `git diff --check`(고친 기존 8파일) · 새 6파일 줄 끝 공백 · 줄바꿈 | 0 · 0. 새 파일 LF · 끝 개행 하나, 기존 파일은 pre와 같은 줄바꿈(`statistics_page.dart` CRLF, 나머지 LF) |
+
+관련 31파일(파일별 통과 · 실패, 모두 −0): statistics_growth_projection +11(새), statistics_growth_view +12(새), statistics_workspace +13, statistics_page +13, statistics_app_shell +2, statistics_projection +6, home_page +5, home_app_shell +1, widget_test +16, inventory_shell_lazy +1, section_template_studio +15, account_manager_fe8b +6, growth_calculator_view +24, profile_delete_fb2d +17, student_filter_followups +4, student_filter_modal +7, title_page +25, planning_page +17, scan_page_revision +14, tactical_page_revision +5, kit/diagonal_scroll_viewport +5, kit/scroll_viewport_fog +6, kit/diagonal_row +6, kit/kpi_tile +3, kit/titles +4, kit/section_morph +7, kit/buttons +6, kit/stat_chart +7, kit/skew_bar +8, kit/diagonal_scrollbar +8, kit/ui_kit_gallery_data +2.
+
+- 걸리는 기존 테스트 찾기: `KpiTile`·`KpiDeltaTone`·`statistics`·`StatisticsPage`·`StatisticsMode`로 test/ 전체를 grep했고, FE7-a의 25파일 묶음(셸 · 통계 읽기 시점)에 쓰는 키트(stat_chart · skew_bar · diagonal_scrollbar · gallery data)를 더했다. `developer_tools_app_test` · `metadata_manager_dto_test` · process E2E 2개의 `statistics`는 다른 기능이라 돌리지 않았다.
+- 빌드 잠금 충돌 없음. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 고친 파일
+
+- **`lib/statistics/statistics_growth_projection.dart`(새, 순수 함수)**: `buildStatisticsGrowth(state, catalog)` → `StatisticsGrowth`(보유 · 학생 목록 수 · 육성도 아는 학생 · 모름 수 · 평균 육성도 · 최대 레벨 · 완전 육성 · 계획 등록 · A1 분포(seg 4종) · A2 항목 평균 · 강조 항목 · 구간/항목 근거 정렬), `statisticsStudentGrowth`, `StatisticsGrowthSummary`(구간 요약), 구간 · 퍼센트 글자 함수. 입력은 계정 상태(스캔 현재 상태 · 사용자 목표)와 학생 목록뿐이다(계산 · 부족 버킷 안 씀).
+- **`lib/ui/statistics/statistics_growth_charts.dart`(새)**: A1 · A2 painter(키트 `StatChartPainter` · `StatChartFrame` · `paintValueBar` · `skewedBarPath` · `statSkewMatrix` · `paintHatch` · `StatChartPalette`), 설계 좌표 `StatisticsA1Geometry` · `StatisticsA2Geometry`(시안 SVG 좌표), 누르면 hit test → 구간 · 항목 선택.
+- **`lib/ui/statistics/statistics_growth_evidence.dart`(새)**: 선택 모델(`StatisticsGrowthSelection` 구간/항목), 화면 상태 묶음 `StatisticsGrowthView`, 근거 내용(머리 · 부제 · 학생 행 7개 · "나머지 n명 모두 보기" · 요약 3행), 근거 행(`.row` 왼쪽 80° · 오른쪽 수직, 키트 `DiagonalRowLook` · `PortraitStrip` · `BaChip`), "모두 보기" 뒤 세로 스크롤 목록(공용 `DiagonalScrollbar` · 포그, 섹션 오른쪽 변이 수직이라 트랙도 수직).
+- **`lib/ui/statistics/statistics_workspace.dart`**: KPI 칸 값 · 누르면 그래프 줄로 스크롤(`_TopicViewport` → State, 공용 viewport에 controller), A1 · A2 타일 내용(그래프 · 빈 상태), A1 seg 동작, 범위 글자 · 필터 부제 "보유 n명", 근거 섹션에서 선택이 있으면 머리 + 인원 칩 + 부제 + 근거. 근거 부제 줄 왼쪽을 시안 x 2160으로 맞췄다(FE7-a는 2148.1). KPI 띠 최소 폭 158 → 200칸.
+- **`lib/ui/statistics/statistics_topics.dart`**: `scopeFor(owned)` · `filterNoteFor(owned)`(기존 `scope` · `filterNote`는 '—'로 남김), 주석.
+- **`lib/ui/pages/statistics_page.dart`**(CRLF 유지): A1 seg · 선택 · 근거 펼침 상태, projection 캐시(읽은 상태 · 학생 목록이 같으면 재계산 안 함), 다시 읽기 · 주제 전환 · seg 전환 때 선택 지움. `_reload()` 읽기 순서 · 서비스 호출은 그대로(새 서비스 메서드 없음).
+- **`lib/ui/studio/statistics_studio_layout.dart`**(요소 좌표만): 근거 부제 왼쪽 · 학생 행 · 모두 보기 · 펼친 목록 끝 · 요약 머리 · 요약 행, 타일 머리 – 그래프 간격 10.
+- **`lib/ui/kit/kpi_tile.dart`(키트 최소)**: `KpiDeltaTone.unknown`(#9eb0c2, 시안 Stats-Growth-Filter의 '—' 색) enum 값 하나. 기존 사용처 렌더 변화 없음.
+- 테스트: `test/statistics_growth_projection_test.dart`(새 11건), `test/statistics_growth_view_test.dart`(새 12건), `test/statistics_growth_fixture.dart`(새, 시안 숫자 fixture), `test/statistics_workspace_test.dart`("준비 중" 6 → 4 + A1 · A2 '—'), `test/kit/kpi_tile_test.dart`(모름 색 1건), `test/goldens/fe7a_statistics_golden_test.dart`(fixture 입력만: golden Mock 위에 계정 상태 학생 · 목표와 학생 목록을 fixture로 바꾸는 서비스. 장면 조작 · 기다리는 글자 · 장면 이름은 그대로). 지운 테스트 없음.
+
+#### FD-028 식(코드 위치 · 테스트)
+
+- 코드: `lib/statistics/statistics_growth_projection.dart` 머리 주석(대장 문구) · `statisticsGrowthCompletion`((현재 − 최소)/(최대 − 최소), `planElementTargetMinimums/Maximums`) · `statisticsStudentGrowth`(7항목: 레벨, EX, 일반 스킬 = skill1~3 완성도 평균, 장비 = equip1~3 티어 완성도 평균, 애장품 = equip4 티어, 성작, 전용무기 ★) · `StatisticsStudentGrowth.growth`(단순 평균).
+- 테스트(`statistics_growth_projection_test.dart`): 손계산 값 1건, 인연 · 추가 능력치 · 장비 레벨 · 전무 레벨을 바꿔도 육성도 불변, **A1 평균 = A2 막대 평균**(7항목 학생 3명, 1e-12), 애장품 없는 학생 6항목 평균 · A2 애장품은 있는 학생만, 모름 제외 · "n명 모름" 셈, 10% 구간 경계, FD-029 칩 · 완전 육성 · 최대 레벨 · 계획 등록(보유만), A2 강조, fixture가 시안 숫자를 재현, fixture id · 애장품 여부가 번들 학생 목록과 같음.
+
+#### 처리한 FD
+
+- **FD-028(확정 (a))**: 위 식 그대로. 착수 때 사용자 확인 2건(애장품 없는 학생 = 해당 없음 · 6항목 평균, A2 7행).
+- **FD-029(워커 재량, 권장안)**: 완전 육성 = 육성도 100%, 최대 레벨 = level 90, "낮음" = 그 항목 < 60%(A2 기준선과 같은 상수 `statisticsGrowthLowThreshold`).
+- **FD-105(워커 재량, 권장안)**: 주제별 5칸, 누르면 같은 주제 그래프 줄로 스크롤. 증감은 FE7-h라 '—'.
+- **FD-106(확정 2026-10-13, 사용자 결정)**: A3 · A4 · A5 · A6 "준비 중" 자리 유지. 데이터 부족 문구는 A1 · A2 안 빈 상태(아래 규칙 3). "스캔을 더 실행하면 변화가 나타납니다."는 FE7-h 몫이라 넣지 않았다.
+- FD-033: 모르는 값은 0이 아니라 제외 · '—' · 빗금(A2 해당 학생 없는 항목). FD-104: 필터 버튼은 그대로 비활성(FE7-e). 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **육성도를 아는 학생** = 해당 항목을 모두 아는 보유 학생. 하나라도 모르면(값 없음, 카탈로그에 없어 애장품 여부 모름) A1(육성도 seg) · A2 · 평균 육성도 · 완전 육성에서 빠지고 A1 왼쪽 위 · A2 왼쪽 아래에 "n명 모름"(회색 10.5)으로 센다. A2 항목 평균은 A1과 같은 학생 집합(육성도를 아는 학생)에서 그 항목이 해당되는 학생만 센다.
+2. 장비 · 애장품 티어는 확정값 글자(`T7`)의 숫자, 숫자가 없는 글자(`love_locked`)는 0(계획 요소 빌더와 같은 규칙), 값 없음은 모름.
+3. 빈 상태 문구(~습니다체, 시안 없음): 보유 0명 "보유 학생이 없습니다. 학생 스캔을 실행하면 나타납니다.", 값을 아는 학생 0명 "<육성도|레벨|스킬|장비> 값을 아는 학생이 없습니다. 보유 n명 모두 모르는 값이 있습니다.", 읽지 못함 · 읽는 중 '—'.
+4. A1 seg: 육성도 = 7항목, 레벨 = 레벨 완성도, 스킬 = EX · 일반 스킬 완성도 평균, 장비 = equip1~3 완성도. 보유 학생이 있으면 동작, seg를 바꾸면 선택을 지운다. 축 글자 0% · 40% · 100%(시안 그대로)는 평균 글자와 36 안쪽이면 그 축 글자를 뺀다.
+5. A2 강조: 60% 기준선 아래 항목 분홍(시안), 아래가 없으면 가장 낮은 항목 하나 분홍. 고른 항목은 라벨 분홍 글자 + 트랙 분홍 테두리. 7행 간격 = (163 − 23) / 6 = 23.3(시안 6행 28).
+6. 근거 칩(FD-029): 레벨 · EX · 일반 스킬 · 장비 중 60% 미만인 가장 낮은 항목 → "레벨 낮음" / "스킬 낮음" / "장비 뒤처짐". 성작 · 전용무기 · 애장품에는 칩을 달지 않는다(시안 칩 3종). A1 근거 순서 "낮은 항목 순" = 칩 항목 중 가장 낮은 완성도 → 육성도 → id.
+7. A2 항목 근거(시안 없음): 머리 "<항목> 완성도" + 인원 칩, 부제 "A2에서 고른 항목 · 낮은 학생 순", 행 칩 = 그 항목 완성도(60% 미만 노랑 · 이상 회색), 요약 "항목 요약": 평균 레벨 · 평균 완성도 · 계획 등록.
+8. 선택은 하나(A1 구간 또는 A2 항목). 같은 막대 · 행을 다시 누르면 푼다. 인원 0 구간 · 해당 학생 없는 항목은 누를 수 없다. 다시 읽기 · 주제 전환 · seg 전환 때 지운다.
+9. "모두 보기": 행 7개 자리 + 버튼 자리(위 100~536)에서 그 구간 전체를 세로 스크롤한다(행 왼쪽은 화면 높이의 사선 + 24, 오른쪽 = 섹션 오른쪽 − 22 − 스크롤바 14). 다른 구간을 고르면 접힌다. 접는 버튼 글자는 시안에 없어 두지 않았다.
+10. KPI 보유 학생 칸 증감 글자 "/ 170 · —"(초록, 시안 첫 칸 색), 나머지 칸 '—'(회색). 계획 등록 = 사용자 목표가 있는 **보유** 학생 수. 증감 '—'는 FE7-h가 바꾼다.
+11. 작은 창: KPI 띠 최소 폭 5 × 200칸(이보다 좁으면 띠째 줄임), 근거 행 · 요약 행 내용 최소 폭 240, 근거 머리 최소 폭 240(더 좁으면 오른쪽을 자름). 기준 viewport에는 영향 없다.
+
+#### golden 변화 예상
+
+- **`statistics-growth`: 변화 있음**(fixture 입력 + 성장 내용). 기대 모습(일회성 렌더로 본 배치):
+  - 왼쪽: 필터 부제 "없음 · 보유 128명 전체". 나머지(주제 버튼 · 기준 데이터 '—' · 다시 스캔)는 그대로.
+  - 가운데 제목 줄 오른쪽 "보유 128명 기준 · 지난 스냅샷 대비".
+  - KPI 5칸: "128" + 초록 "/ 170 · —", "63.4%" + 회색 "—", "64명" "—", "8명" "—", "9명" "—".
+  - A1: seg가 흐리지 않고 "육성도" 선택(분홍 테두리). 파랑 막대 10개 높이 3 · 5 · 9 · 12 · 15 · 18 · 22 · 19 · 14 · 11(60~70% 막대가 가장 높음, 구간을 고르지 않아 분홍 막대 · 인원 글자 없음), 63.4% 자리 흰 점선 + "평균 63.4%", 축 글자 0% · 40% · 100%, "n명 모름" 없음.
+  - A2: 7행 레벨 83% · EX 스킬 76% · 일반 스킬 74% · 장비 73% · 애장품 83% · 성작 56%(분홍) · 전용무기 14%(분홍), 60% 기준 분홍 점선 + "60% 기준". 1차 칩 그대로.
+  - A4 · A6 · A3 · A5: "준비 중" 그대로. 오른쪽 근거: "근거 확인" + "구간을 고르면 근거가 보입니다." — 부제 줄이 오른쪽으로 약 12px 옮겨(2148.1 → 2160) 머리 글자와 같은 세로줄.
+- 다른 장면 전부: **변화 0**. 통계 탭이 보이는 장면은 `statistics-growth` 하나다. 키트 변경은 `KpiDeltaTone`에 값 하나를 더한 것뿐이라 KPI 타일을 쓰는 다른 장면(갤러리 등) 렌더가 같다. 헤더 칩은 Lane B FE8-d 작업 트리 상태라 이 slice와 무관하다(같은 gate에서 함께 바뀔 수 있음).
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth(K · A1 · A2) | golden `statistics-growth`(시안 숫자 fixture). 앱 mock은 기본 계정(보유 42명 · 학생 목록 2명)이라 숫자가 시안과 다르다(발견 4) | KPI 128 / 170 · 63.4% · 64명 · 9명(완전 육성은 8명, 발견 1), A1 막대 높이 순서 · 60~70%가 22명으로 가장 높음 · 평균선 자리, A2 7행 · 60% 아래 분홍 · 기준선 기울기 |
+| Stats-Growth(구간 선택) | 통계 탭 → A1 60~70% 막대 누르기 | 막대 분홍 + 위 "22명", 오른쪽 "육성도 60~70%" + 분홍 "22명", 부제 "A1에서 고른 구간 · 낮은 항목 순", 학생 행 7개(사선 계단, 초상 · 이름 · Lv · 칩), "나머지 15명 모두 보기", "구간 요약" 평균 레벨 · 가장 낮은 항목 · 계획 등록 2명, 같은 막대를 다시 누르면 빈 상태 |
+| (동작) | A2 행 누르기 · A1 seg · KPI 누르기 · "모두 보기" | A2 항목 근거(낮은 학생 순), seg를 바꾸면 분포가 바뀌고 선택이 풀림, KPI를 누르면 가운데가 그래프 줄로 스크롤, "모두 보기"면 전체 학생 세로 스크롤 + 수직 스크롤바, 1280×720에서 예외 없음 |
+| Statistics-Proposal | 위 화면 | A1 · A2 기울어진 막대 · 공통 트랙, 색 역할(크기 파랑 · 강조 분홍 · 모름 회색), 모르는 값 '—' |
+
+#### 미검증 항목
+
+- golden(`statistics-growth` 변화 · 다른 장면 변화 0 예측): **미실행**. 일회성 렌더는 배치 확인만이다.
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드 계정에서의 숫자(애장품 여부 · 모르는 값 비율): **미실행**. Mock · fixture만 보았다.
+- 실제 창에서 KPI 스크롤 애니메이션 · hover 체감, 실제 글꼴에서 작은 창 글자 크기.
+
+#### WIP 보존 확인
+
+- 고친 기존 8파일 + 이 문서는 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다.
+- 작업 트리의 다른 미커밋 변경(Lane B `app_shell.dart` · `widget_test.dart` 등, 스캐너 · 백엔드 파일)은 읽지도 고치지도 않았다. git 쓰기는 하지 않았다. 임시 렌더 테스트는 지웠다.
+
+#### 발견 사항
+
+1. **시안 숫자 모순**: 시안 KPI "완전 육성 22명"은 A1 90~100% 구간 11명보다 많아 같은 화면에서 성립하지 않는다(fixture 8명). 시안 A2 6행 평균 60.5%도 A1 평균 63.4%와 맞지 않는다(FD-028의 "A1 평균 = A2 평균"과 어긋남). 서로 맞는 숫자(128 · 170 · 구간 인원 · 63.4% · 64명 · 9명 · 구간 계획 2명)만 재현했다.
+2. **시안 평균 63.4%는 구간 인원과 거의 한계값**: 구간 가운데값 평균이 58.5%라 63.4%가 되려면 학생 대부분이 구간 위 끝(예 69.9%)에 있어야 한다. fixture는 그렇게 골랐다(학생 값이 실제 분포처럼 보이지 않는다).
+3. **애장품 해당 없음 때문에 A1 평균 ≠ A2 막대 평균**: 학생 목록 265명 중 205명이 애장품이 없어(사용자 확인대로 6항목 평균) 실제 계정에서는 두 값이 근사치다. fixture는 30명이 애장품이 있다(A1 63.4% vs A2 막대 평균 약 65.6%).
+4. **mock 기본 계정의 통계**: `MockAppService` 기본 학생 목록이 2명(`fullStudentCatalog=false`)이고 보유 42명이라 "42 / 2"로 보인다. 검수용 시안 fixture를 mock 기본 실행에 넣으려면 `lib/services/**`(읽기 전용) 변경이 필요하다 — CF 요청 후보.
+5. KPI 타일 높이 70(키트) vs 시안 84(FE7-a 발견 4)는 그대로다. 근거 머리는 키트 `PanelTitle`(막대 7×22 · 룰 46)이라 시안 머리(6×18 · 40)와 막대 크기가 다르다.
+6. "나머지 n명 모두 보기"의 동작 · 접기 글자는 시안에 없다(규칙 9). FE7-d의 "학생 탭에서 보기 · 필터: 육성도 60~70%"와 겹치는지 FE7-d에서 판단.
+7. A1 seg "스킬"의 항목 묶음(EX + 일반 스킬)과 근거 칩 대상(레벨 · 스킬 · 장비)은 시안 문구에서 고른 해석이다(규칙 4 · 6).
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7b/pre/<경로>`(고친 기존 8파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7b/commit.json`: slice `fe7b`, `status=true`, modified 9(이 문서 포함), added 6, `whole` = `frontend/test/goldens/baseline/statistics-growth.png`.
+- 인계: `debug/frontend_fe7b/output.md`.
+
+#### 다음 행동
+
+- FE7-b 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트에 새 23건(projection 11 · view 12) + kpi_tile 1건, golden은 `statistics-growth`만 RED(위 기대 모습), 다른 장면 변화 0(Lane B 헤더 변화는 별도). 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe7b`.
+- 남은 CF 판단: 발견 1 · 3(시안 숫자 · A1/A2 근사), 4(mock 검수 fixture), 6(모두 보기 동작).
+
+### fe7b commit record (2026-10-13 17:37, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_172627\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -3,10 +3,12 @@
 // - 왼쪽 주제 · 범위: "통계" 제목, 주제 버튼 3개(선택 핑크), 필터 버튼(FE7-e 전까지 비활성) + 보조 문구,
 //   기준 데이터 3행(값 '—'), 아래 "다시 스캔"(FD-125: 스캔 탭으로).
 // - 가운데 KPI + 위젯: 제목 줄(제목 · (i) · 범위) + 공용 사선 스크롤 viewport(translate 모드, 공용 스크롤바 · 포그 C).
-//   행 0은 KPI 띠(라벨 + '—'), 그 아래 위젯 타일 줄(80° 평행사변형, 사선 계단은 translate 모드가 행 높이대로 만든다).
-//   타일 안은 제목 + 차수 칩 + "준비 중"만 있다(그래프는 FE7-b 이후). 주제를 바꾸면 제목 줄과 viewport를
-//   주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
+//   행 0은 KPI 띠, 그 아래 위젯 타일 줄(80° 평행사변형, 사선 계단은 translate 모드가 행 높이대로 만든다).
+//   학생 성장(FE7-b)은 KPI 5칸 값(증감은 FE7-h 전까지 '—', 누르면 그래프 줄로 스크롤)과 A1 · A2 그래프를 그린다
+//   (`statistics_growth_charts.dart`). 다른 타일은 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13).
+//   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
 // - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d 전까지 비활성).
+//   학생 성장에서 A1 구간 · A2 항목을 고르면 그 근거 목록이다(`statistics_growth_evidence.dart`).
 // 좌표는 `statistics_studio_layout.dart`의 Studio 문서와 [StatisticsMetrics]다. 창이 낮으면 왼쪽 · 오른쪽 섹션 요소는
 // 세로 비율대로 함께 줄고(계획 만들기 A 레일 규칙), 가운데 타일은 viewport 폭 비율로 높이가 바뀐다(타일 모양 유지).
 import 'dart:math' as math;
@@ -14,6 +16,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../statistics/statistics_growth_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
@@ -30,14 +33,23 @@ import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
+import 'statistics_growth_charts.dart';
+import 'statistics_growth_evidence.dart';
 import 'statistics_source.dart';
 import 'statistics_topics.dart';
 
 /// 근거 패널 빈 상태(구간을 아직 고르지 않음).
 const statisticsEvidenceEmptyText = '구간을 고르면 근거가 보입니다.';
 
-/// 타일 빈 상태(그래프는 FE7-b 이후).
+/// 아직 그리지 않는 타일(FD-106 사용자 결정 10-13: 자리를 유지하고 "준비 중").
 const statisticsTilePendingText = '준비 중';
+
+/// A1 · A2 빈 상태: 보유 학생이 없다(시안에 없는 문구, FE7-b가 정함).
+const statisticsGrowthNoStudentsText = '보유 학생이 없습니다. 학생 스캔을 실행하면 나타납니다.';
+
+/// A1 · A2 빈 상태: 보유 학생은 있지만 값을 아는 학생이 없다.
+String statisticsGrowthNoKnownText(String label, int owned) =>
+    '$label 값을 아는 학생이 없습니다. 보유 $owned명 모두 모르는 값이 있습니다.';
 
 const _mutedColor = AppColors.textMuted;
 
@@ -129,12 +141,16 @@ class StatisticsWorkspace extends StatelessWidget {
     required this.data,
     required this.onModeChanged,
     required this.onRescan,
+    this.growth = const StatisticsGrowthView(growth: null),
   });
 
   final StatisticsMode mode;
 
-  /// `_reload()`가 읽은 원천 자료. FE7-a는 읽기 상태만 쓴다.
+  /// `_reload()`가 읽은 원천 자료(읽기 상태 · 안내).
   final StatisticsSourceData data;
+
+  /// 학생 성장 projection과 고른 구간 · seg(FE7-b).
+  final StatisticsGrowthView growth;
   final ValueChanged<StatisticsMode> onModeChanged;
 
   /// 왼쪽 "다시 스캔"(FD-125 권장안 중 지금 되는 부분: 스캔 탭을 연다).
@@ -148,18 +164,24 @@ class StatisticsWorkspace extends StatelessWidget {
       return Stack(
         children: [
           Positioned.fill(
-            child: _WidgetsSection(size: size, mode: mode),
+            child: _WidgetsSection(size: size, mode: mode, growth: growth),
           ),
           Positioned.fill(
             child: _ScopeSection(
               size: size,
               mode: mode,
+              owned: growth.growth?.ownedCount,
               onModeChanged: onModeChanged,
               onRescan: onRescan,
             ),
           ),
           Positioned.fill(
-            child: _EvidenceSection(size: size, mode: mode, data: data),
+            child: _EvidenceSection(
+              size: size,
+              mode: mode,
+              data: data,
+              growth: growth,
+            ),
           ),
         ],
       );
@@ -311,8 +333,12 @@ class _FitWidth extends StatelessWidget {
   );
 }
 
-/// KPI 띠를 줄이지 않고 그리는 최소 폭(타일 다섯 칸 × 158 + 간격). 이보다 좁으면 띠 전체를 같은 비율로 줄인다.
-const _kpiBandMinWidth = 5 * 158.0 + 4 * StatisticsMetrics.kpiGap;
+/// KPI 띠를 줄이지 않고 그리는 최소 폭(타일 다섯 칸 × 200 + 간격). 이보다 좁으면 띠 전체를 같은 비율로 줄인다.
+/// FE7-b에서 값("63.4%" 26px · "/ 170 · —")이 들어와 158 → 200으로 넓혔다(기준 viewport 띠 1373.3에는 영향 없음).
+const _kpiBandMinWidth = 5 * 200.0 + 4 * StatisticsMetrics.kpiGap;
+
+/// 근거 머리(제목 + 인원 칩)를 그리는 최소 폭. 더 좁으면 오른쪽을 자른다.
+const _evidenceTitleMinWidth = 240.0;
 
 /// 왼쪽 섹션 행(주제 · 필터 · 기준 데이터 · 다시 스캔)을 그리는 최소 폭.
 const _scopeRowMinWidth = 180.0;
@@ -323,12 +349,16 @@ class _ScopeSection extends StatelessWidget {
   const _ScopeSection({
     required this.size,
     required this.mode,
+    required this.owned,
     required this.onModeChanged,
     required this.onRescan,
   });
 
   final Size size;
   final StatisticsMode mode;
+
+  /// 보유 학생 수(필터 부제). 모르면 null.
+  final int? owned;
   final ValueChanged<StatisticsMode> onModeChanged;
   final VoidCallback onRescan;
 
@@ -418,7 +448,7 @@ class _ScopeSection extends StatelessWidget {
           StatisticsMetrics.filterHeight,
           StatisticsMetrics.scopeRightMargin,
         ),
-        child: scaled(_FilterButton(note: mode.filterNote)),
+        child: scaled(_FilterButton(note: mode.filterNoteFor(owned))),
       ),
       text(
         StatisticsMetrics.filterNoteTop,
@@ -656,10 +686,15 @@ class _BaseDataRow extends StatelessWidget {
 // --- 가운데 KPI + 위젯 --------------------------------------------------------
 
 class _WidgetsSection extends StatelessWidget {
-  const _WidgetsSection({required this.size, required this.mode});
+  const _WidgetsSection({
+    required this.size,
+    required this.mode,
+    required this.growth,
+  });
 
   final Size size;
   final StatisticsMode mode;
+  final StatisticsGrowthView growth;
 
   @override
   Widget build(BuildContext context) {
@@ -690,7 +725,10 @@ class _WidgetsSection extends StatelessWidget {
                   top: top + StatisticsMetrics.titleTop,
                   width: math.max(0.0, titleRight - titleLeft),
                   height: StatisticsMetrics.titleHeight,
-                  child: _TopicTitle(mode: mode),
+                  child: _TopicTitle(
+                    mode: mode,
+                    owned: growth.growth?.ownedCount,
+                  ),
                 ),
                 Positioned.fromRect(
                   rect: viewport.rect,
@@ -698,6 +736,7 @@ class _WidgetsSection extends StatelessWidget {
                     key: ValueKey('statistics-viewport-${mode.key}'),
                     mode: mode,
                     geometry: viewport,
+                    growth: growth,
                   ),
                 ),
               ],
@@ -710,9 +749,10 @@ class _WidgetsSection extends StatelessWidget {
 }
 
 class _TopicTitle extends StatelessWidget {
-  const _TopicTitle({required this.mode});
+  const _TopicTitle({required this.mode, required this.owned});
 
   final StatisticsMode mode;
+  final int? owned;
 
   @override
   // 제목 묶음은 왼쪽, 범위 글자는 오른쪽 끝(시안 사이 빈 span). 둘 다 느슨한 Flexible이라 남는 폭을
@@ -754,11 +794,11 @@ class _TopicTitle extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: BaChip(
                     key: const ValueKey('statistics-scope-label'),
-                    label: mode.scope,
+                    label: mode.scopeFor(owned),
                   ),
                 )
               : Text(
-                  mode.scope,
+                  mode.scopeFor(owned),
                   key: const ValueKey('statistics-scope-label'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -771,18 +811,53 @@ class _TopicTitle extends StatelessWidget {
 }
 
 /// 주제 하나의 KPI 띠 + 위젯 타일 세로 스크롤(공용 viewport, translate 모드).
-class _TopicViewport extends StatelessWidget {
+class _TopicViewport extends StatefulWidget {
   const _TopicViewport({
     super.key,
     required this.mode,
     required this.geometry,
+    required this.growth,
   });
 
   final StatisticsMode mode;
   final StatisticsViewportGeometry geometry;
+  final StatisticsGrowthView growth;
+
+  @override
+  State<_TopicViewport> createState() => _TopicViewportState();
+}
+
+class _TopicViewportState extends State<_TopicViewport> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// KPI를 누르면 같은 주제의 그래프 줄로 스크롤한다(FD-105). 성장 KPI 5개의 그래프(A1 · A2)는 모두 KPI 아래 첫
+  /// 줄이라 그 줄 위로 맞추고, 스크롤 범위보다 아래면 끝까지다.
+  void _scrollToGraphs() {
+    if (!_controller.hasClients) return;
+    final position = _controller.position;
+    final target =
+        (StatisticsMetrics.contentTop +
+                StatisticsMetrics.kpiHeight +
+                StatisticsMetrics.rowGap)
+            .clamp(position.minScrollExtent, position.maxScrollExtent)
+            .toDouble();
+    _controller.animateTo(
+      target,
+      duration: AppMotion.header,
+      curve: AppMotion.entranceCurve,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final mode = widget.mode;
+    final geometry = widget.geometry;
     final rows = mode.rows;
     final scale = statisticsTileScale(geometry.rect.width);
     // 행: KPI 띠, 타일 줄들, 마지막 줄 아래 여백을 시안(32)에 맞추는 빈 행.
@@ -796,8 +871,10 @@ class _TopicViewport extends StatelessWidget {
       return rows[index - 1].height * scale;
     }
 
+    final growth = mode == StatisticsMode.students ? widget.growth : null;
     return DiagonalScrollViewport(
       keyPrefix: 'statistics-${mode.key}',
+      controller: _controller,
       itemCount: rows.length + 2,
       itemHeight: heightOf,
       itemGap: StatisticsMetrics.rowGap,
@@ -806,23 +883,62 @@ class _TopicViewport extends StatelessWidget {
       scrollbarReserve: geometry.scrollbarReserve,
       fog: ScrollFogSpec.statistics,
       itemBuilder: (context, index) {
-        if (index == 0) return _KpiBand(mode: mode);
+        if (index == 0) {
+          return _KpiBand(
+            mode: mode,
+            values: growth == null ? null : statisticsGrowthKpis(growth.growth),
+            onPressed: growth == null ? null : _scrollToGraphs,
+          );
+        }
         if (index > rows.length) return const SizedBox.shrink();
-        return _TileRow(row: rows[index - 1], height: heightOf(index));
+        return _TileRow(
+          row: rows[index - 1],
+          height: heightOf(index),
+          growth: growth,
+        );
       },
     );
   }
 }
 
-/// KPI 띠 자리: 라벨 다섯 칸, 값은 FE7-b부터(지금 '—').
+/// KPI 한 칸 값(값 · 증감 · 증감 색).
+typedef StatisticsKpiValue = ({String value, String? delta, KpiDeltaTone tone});
+
+/// 성장 KPI 5칸(FD-105 · 시안 Stats-Growth 라벨 순서): 보유 학생 · 평균 육성도 · 최대 레벨 · 완전 육성 · 계획 등록.
+/// 지난 스냅샷 대비 증감은 이력 연동(FE7-h) 전이라 '—'다(시안 Stats-Growth-Filter의 스냅샷 1회 표기, 회색).
+/// 보유 학생 칸만 "/ 학생 목록 수 · —"다. 자료를 못 읽었으면 값도 '—'다.
+List<StatisticsKpiValue> statisticsGrowthKpis(StatisticsGrowth? growth) {
+  const unknown = (value: '—', delta: null, tone: KpiDeltaTone.unknown);
+  if (growth == null) return List.filled(5, unknown);
+  String count(int? value) => value == null ? '—' : '$value명';
+  StatisticsKpiValue plain(String value) =>
+      (value: value, delta: '—', tone: KpiDeltaTone.unknown);
+  final average = growth.averageGrowth;
+  return [
+    (
+      value: '${growth.ownedCount}',
+      delta: '/ ${growth.catalogCount ?? '—'} · —',
+      tone: KpiDeltaTone.gain,
+    ),
+    plain(average == null ? '—' : statisticsPercentText(average, decimals: 1)),
+    plain(count(growth.maxLevelCount)),
+    plain(count(growth.fullGrowthCount)),
+    plain(count(growth.plannedCount)),
+  ];
+}
+
+/// KPI 띠: 다섯 칸. 값은 학생 성장만(FE7-b), 다른 주제는 '—'. [onPressed]가 있으면 칸을 누를 수 있다.
 class _KpiBand extends StatelessWidget {
-  const _KpiBand({required this.mode});
+  const _KpiBand({required this.mode, this.values, this.onPressed});
 
   final StatisticsMode mode;
+  final List<StatisticsKpiValue>? values;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final labels = mode.kpiLabels;
+    final values = this.values;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: StatisticsMetrics.kpiInset,
@@ -836,10 +952,11 @@ class _KpiBand extends StatelessWidget {
               if (index > 0) const SizedBox(width: StatisticsMetrics.kpiGap),
               Expanded(
                 child: Center(
-                  child: KpiTile(
+                  child: _KpiCell(
                     key: ValueKey('statistics-kpi-${mode.key}-$index'),
                     label: label,
-                    value: '—',
+                    value: values?[index],
+                    onPressed: onPressed,
                   ),
                 ),
               ),
@@ -851,12 +968,46 @@ class _KpiBand extends StatelessWidget {
   }
 }
 
+class _KpiCell extends StatelessWidget {
+  const _KpiCell({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onPressed,
+  });
+
+  final String label;
+  final StatisticsKpiValue? value;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = this.value;
+    final tile = KpiTile(
+      label: label,
+      value: value?.value ?? '—',
+      delta: value?.delta,
+      deltaTone: value?.tone ?? KpiDeltaTone.unknown,
+    );
+    final onPressed = this.onPressed;
+    if (onPressed == null) return tile;
+    return KitPressable(
+      onPressed: onPressed,
+      semanticLabel: '$label ${value?.value ?? '—'}',
+      builder: (context, state) => tile,
+    );
+  }
+}
+
 /// 위젯 타일 한 줄. 타일 자리는 [statisticsTileSlots]다.
 class _TileRow extends StatelessWidget {
-  const _TileRow({required this.row, required this.height});
+  const _TileRow({required this.row, required this.height, this.growth});
 
   final StatisticsTileRow row;
   final double height;
+
+  /// 학생 성장 주제일 때만 있다.
+  final StatisticsGrowthView? growth;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -879,6 +1030,7 @@ class _TileRow extends StatelessWidget {
                 key: ValueKey('statistics-tile-${tile.id}'),
                 tile: tile,
                 height: height,
+                growth: growth,
               ),
             ),
         ],
@@ -887,12 +1039,23 @@ class _TileRow extends StatelessWidget {
   );
 }
 
-/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg 자리 · 차수 칩) + "준비 중".
+/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2는 그래프(FE7-b),
+/// 나머지는 "준비 중"이다.
 class _StatisticsTile extends StatelessWidget {
-  const _StatisticsTile({super.key, required this.tile, required this.height});
+  const _StatisticsTile({
+    super.key,
+    required this.tile,
+    required this.height,
+    this.growth,
+  });
 
   final StatisticsTileSpec tile;
   final double height;
+
+  /// 학생 성장 주제일 때만 있다.
+  final StatisticsGrowthView? growth;
+
+  bool get _isGrowthChart => tile.id == 'A1' || tile.id == 'A2';
 
   @override
   Widget build(BuildContext context) {
@@ -900,6 +1063,13 @@ class _StatisticsTile extends StatelessWidget {
         diagonalCutDepth(height) +
         StatisticsMetrics.tileSideInset +
         StatisticsMetrics.tilePadding;
+    final growth = this.growth;
+    final onMetricChanged = growth?.onMetricChanged;
+    // A1 seg(육성도 · 레벨 · 스킬 · 장비)는 보유 학생이 있을 때 동작한다.
+    final metricSeg =
+        tile.id == 'A1' &&
+        growth != null &&
+        (growth.growth?.ownedCount ?? 0) > 0;
     return WidgetTile(
       padding: EdgeInsets.fromLTRB(
         side,
@@ -913,19 +1083,96 @@ class _StatisticsTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _TileHeader(tile: tile),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  statisticsTilePendingText,
-                  maxLines: 1,
-                  style: _mutedStyle,
-                ),
-              ),
+            _TileHeader(
+              tile: tile,
+              selectedSegment: metricSeg ? growth.metric.index : 0,
+              onSegmentChanged: metricSeg && onMetricChanged != null
+                  ? (index) =>
+                        onMetricChanged(StatisticsGrowthMetric.values[index])
+                  : null,
+            ),
+            Expanded(
+              child: growth != null && _isGrowthChart
+                  ? _growthBody(growth)
+                  : const Center(
+                      child: Text(
+                        statisticsTilePendingText,
+                        maxLines: 1,
+                        style: _mutedStyle,
+                      ),
+                    ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// A1 · A2 내용. 자료가 없으면 '—', 보유 학생 0이나 값을 아는 학생 0이면 빈 상태 문구다(FD-106 · 시안식).
+  Widget _growthBody(StatisticsGrowthView view) {
+    final data = view.growth;
+    final String? empty;
+    if (data == null) {
+      empty = '—';
+    } else if (data.ownedCount == 0) {
+      empty = statisticsGrowthNoStudentsText;
+    } else if (tile.id == 'A1' && data.histogram(view.metric).knownCount == 0) {
+      empty = statisticsGrowthNoKnownText(view.metric.label, data.ownedCount);
+    } else if (tile.id == 'A2' && data.known.isEmpty) {
+      empty = statisticsGrowthNoKnownText(
+        StatisticsGrowthMetric.growth.label,
+        data.ownedCount,
+      );
+    } else {
+      empty = null;
+    }
+    if (data == null || empty != null) {
+      return Center(
+        child: Text(
+          empty ?? '—',
+          key: ValueKey('statistics-tile-${tile.id}-empty'),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: _mutedStyle,
+        ),
+      );
+    }
+    final selection = view.selection;
+    final onSelectionChanged = view.onSelectionChanged;
+    final Widget chart;
+    if (tile.id == 'A1') {
+      final metric = view.metric;
+      chart = StatisticsGrowthHistogramChart(
+        histogram: data.histogram(metric),
+        selectedBin: switch (selection) {
+          StatisticsGrowthBinSelection(metric: final selected, :final bin)
+              when selected == metric =>
+            bin,
+          _ => null,
+        },
+        onBinSelected: (bin) => onSelectionChanged?.call(
+          bin == null ? null : StatisticsGrowthBinSelection(metric, bin),
+        ),
+      );
+    } else {
+      chart = StatisticsItemCompletionChart(
+        averages: data.itemAverages,
+        emphasized: data.emphasizedItems,
+        unknownCount: data.unknownCount,
+        selectedItem: switch (selection) {
+          StatisticsGrowthItemSelection(:final item) => item,
+          _ => null,
+        },
+        onItemSelected: (item) => onSelectionChanged?.call(
+          item == null ? null : StatisticsGrowthItemSelection(item),
+        ),
+      );
+    }
+    // 시안: 머리와 그래프 사이 10, 그래프는 남는 자리의 세로 가운데 · 왼쪽.
+    return Padding(
+      padding: const EdgeInsets.only(top: StatisticsMetrics.tileChartGap),
+      child: chart,
     );
   }
 }
@@ -935,9 +1182,17 @@ class _StatisticsTile extends StatelessWidget {
 /// 제목(16px 흰색)을 나눠 그린다. 오른쪽은 시안 머리 그대로 seg 자리(비활성, 높이 26 · 글자 11 · 안쪽 16 · 간격 6)와
 /// 차수 칩(1차 핑크 · 2차 기본 · 3차 회색)이다. 좁으면 오른쪽 묶음을 줄인다.
 class _TileHeader extends StatelessWidget {
-  const _TileHeader({required this.tile});
+  const _TileHeader({
+    required this.tile,
+    this.selectedSegment = 0,
+    this.onSegmentChanged,
+  });
 
   final StatisticsTileSpec tile;
+
+  /// seg 선택 칸과 바꾸는 콜백. 콜백이 없으면 비활성 자리다(A1은 성장 자료가 있을 때 동작, FE7-b).
+  final int selectedSegment;
+  final ValueChanged<int>? onSegmentChanged;
 
   static const idSize = 13.0;
   static const idGap = 8.0;
@@ -955,8 +1210,8 @@ class _TileHeader extends StatelessWidget {
             for (final (index, label) in segments.indexed)
               SkewSegment(value: index, label: label),
           ],
-          selected: 0,
-          onChanged: null,
+          selected: selectedSegment,
+          onChanged: onSegmentChanged,
           height: segHeight,
           fontSize: segFontSize,
         ),
@@ -1042,11 +1297,13 @@ class _EvidenceSection extends StatelessWidget {
     required this.size,
     required this.mode,
     required this.data,
+    required this.growth,
   });
 
   final Size size;
   final StatisticsMode mode;
   final StatisticsSourceData data;
+  final StatisticsGrowthView growth;
 
   @override
   Widget build(BuildContext context) {
@@ -1061,8 +1318,12 @@ class _EvidenceSection extends StatelessWidget {
     final titleLeft = topLeft.dx + StatisticsMetrics.evidenceTitleLeftInset;
     final titleTop = top + StatisticsMetrics.evidenceTitleTop * scale;
     final noteTop = top + StatisticsMetrics.evidenceNoteTop * scale;
-    final noteLeft = leftEdge(noteTop) + StatisticsMetrics.evidenceTitleLeftInset;
+    final noteLeft = topLeft.dx + StatisticsMetrics.evidenceNoteLeftInset;
     final notice = data.notice;
+    // 학생 성장에서 구간 · 항목을 고르면 머리 · 부제 · 근거 목록(FE7-b). 읽기 상태 안내가 있으면 안내가 먼저다.
+    final evidence = mode == StatisticsMode.students && notice == null
+        ? growth.evidence
+        : null;
     Rect button(double fromBottom, double height) {
       final y = bottom - fromBottom * scale;
       final left =
@@ -1090,9 +1351,29 @@ class _EvidenceSection extends StatelessWidget {
           height: StatisticsMetrics.evidenceTitleHeight * scale,
           child: _ScaledBox(
             scale: scale,
-            child: const Align(
+            child: Align(
               alignment: Alignment.centerLeft,
-              child: PanelTitle('근거 확인', key: ValueKey('statistics-evidence-title')),
+              child: evidence == null
+                  ? const PanelTitle(
+                      '근거 확인',
+                      key: ValueKey('statistics-evidence-title'),
+                    )
+                  : _MinBox(
+                      minWidth: _evidenceTitleMinWidth,
+                      minHeight: StatisticsMetrics.evidenceTitleHeight,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: PanelTitle(
+                          evidence.title,
+                          key: const ValueKey('statistics-evidence-title'),
+                          trailing: BaChip(
+                            key: const ValueKey('statistics-evidence-count'),
+                            label: '${evidence.students.length}명',
+                            tone: AppTones.pink,
+                          ),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),
@@ -1107,7 +1388,7 @@ class _EvidenceSection extends StatelessWidget {
           child: _ScaledBox(
             scale: scale,
             child: Text(
-              notice ?? statisticsEvidenceEmptyText,
+              notice ?? evidence?.subtitle ?? statisticsEvidenceEmptyText,
               key: const ValueKey('statistics-evidence-note'),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -1119,6 +1400,18 @@ class _EvidenceSection extends StatelessWidget {
             ),
           ),
         ),
+        if (evidence != null)
+          ...statisticsGrowthEvidenceChildren(
+            frame: StatisticsEvidenceFrame(
+              topLeft: topLeft,
+              bottomLeft: bottomLeft,
+              right: right,
+              scale: scale,
+            ),
+            content: evidence,
+            expanded: growth.expanded,
+            onExpand: growth.onExpand,
+          ),
         Positioned.fromRect(
           rect: button(
             StatisticsMetrics.evidenceSecondaryFromBottom,

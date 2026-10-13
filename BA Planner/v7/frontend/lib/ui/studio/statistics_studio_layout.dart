@@ -146,6 +146,9 @@ abstract final class StatisticsMetrics {
   static const tileSideInset = 10.0;
   static const tilePadding = 12.0;
 
+  /// 타일 머리와 그래프 사이(시안 열 간격 10, FE7-b A1 · A2).
+  static const tileChartGap = 10.0;
+
   // --- 오른쪽 근거 ------------------------------------------------------------
 
   /// 머리(시안 (2160.8, 231.2, 359.2×44)): 윗변 왼쪽 꼭짓점에서 32.2, 섹션 오른쪽에서 40 안쪽.
@@ -165,6 +168,33 @@ abstract final class StatisticsMetrics {
   static const evidencePrimaryHeight = 52.0;
   static const evidenceButtonEdgeGap = 24.0;
   static const evidenceButtonRight = 22.0;
+
+  /// 부제 · 빈 상태 줄 왼쪽(시안 x 2160 = 섹션 윗변 왼쪽 꼭짓점 2128.6 + 31.4, 머리 글자와 같은 세로줄).
+  static const evidenceNoteLeftInset = 31.4;
+
+  /// 근거 학생 행(FE7-b, 시안 (2125.8, 309.2, 412.2×52) …): 위 100, 높이 52, 피치 58, 7행까지. 왼쪽 · 오른쪽은
+  /// 아래 버튼과 같은 규칙(행 아래 높이의 사선에서 24, 섹션 오른쪽에서 22).
+  static const evidenceRowTop = 100.0;
+  static const evidenceRowHeight = 52.0;
+  static const evidenceRowPitch = 58.0;
+  static const evidenceVisibleRows = 7;
+
+  /// "나머지 n명 모두 보기"(시안 (2058.1, 715.2, 479.9×30)): 행 7개 바로 아래(위 506), 높이 30.
+  static const evidenceMoreHeight = 30.0;
+
+  /// 모두 펼친 목록의 아래 끝(= "모두 보기" 아래 끝, 506 + 30).
+  static const evidenceListBottom = 536.0;
+
+  /// "구간 요약" 머리(시안 (2067.9, 763.2, 452.1×34)): 위 554, 높이 34, 왼쪽은 머리 가운데 높이의 사선에서 40
+  /// (위 근거 머리 2160.8도 같은 규칙), 오른쪽은 섹션 오른쪽에서 40.
+  static const evidenceSummaryTitleTop = 554.0;
+  static const evidenceSummaryTitleHeight = 34.0;
+  static const evidenceSummaryTitleInset = 40.0;
+
+  /// 요약 행(시안 (2038.7, 807.2, 499.3×48) …): 위 598, 높이 48, 피치 52.
+  static const evidenceSummaryTop = 598.0;
+  static const evidenceSummaryHeight = 48.0;
+  static const evidenceSummaryPitch = 52.0;
 
   /// 낮은 창에서 세로 값을 줄이는 비율(0.4~1).
   static double scaleFor(double sectionHeight) =>

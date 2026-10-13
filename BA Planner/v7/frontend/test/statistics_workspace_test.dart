@@ -1,4 +1,5 @@
 // FE7-a: 통계 3섹션 골격의 배치(시안 Stats-Growth · Stats-Inventory · Stats-Plan, F 보고서 §2).
+// FE7-b 성장 그래프 · 근거 배치는 `statistics_growth_view_test.dart`다.
 //
 // 기준 viewport 2560×1392의 콘텐츠 캔버스(헤더 아래 2560×1208)에서 시안 좌표(y − 184)와 비교한다.
 // 섹션 path 꼭짓점은 ±1px, 섹션 안 요소(버튼 · 타일 · KPI 띠)는 ±2px.
@@ -244,7 +245,14 @@ void main() {
     _expectRect(tester, 'statistics-tile-A3', 421.5, 1127.2, 741.9, 313);
     _expectRect(tester, 'statistics-tile-A5', 1128.2, 1127.2, 741.9, 313);
     expect(find.text('육성도 분포'), findsOneWidget);
-    expect(find.text(statisticsTilePendingText), findsNWidgets(6));
+    // FE7-b: A1 · A2는 그래프 자리(자료를 못 읽었으면 '—'), 나머지 4장은 "준비 중"(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsNWidgets(4));
+    for (final id in ['A1', 'A2']) {
+      expect(
+        tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,
+        '—',
+      );
+    }
     expect(find.text('보유 —명 기준 · 지난 스냅샷 대비'), findsOneWidget);
     // 제목 줄(시안 (635.9, 229.2, 1425.3×36)): 제목은 왼쪽, 범위 글자는 오른쪽 끝.
     final title = tester.getRect(find.byKey(const ValueKey('statistics-topic-title')));

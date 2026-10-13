@@ -1,4 +1,4 @@
-// FE2-d KPI 타일 테스트: 기본형(값 + 변화)과 전후 비교형(이전 → 화살표 → 예상).
+// FE2-d KPI 타일 테스트: 기본형(값 + 변화, 모름 '—' 색은 FE7-b)과 전후 비교형(이전 → 화살표 → 예상).
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/ui/kit/kpi_tile.dart';
 import 'package:ba_planner_v7/ui/kit/skew_box.dart';
@@ -58,6 +58,23 @@ void main() {
     expect(box.fill, AppColors.indicatorSurface);
     expect(box.border, const Color.fromRGBO(56, 81, 107, 0.8));
     expect(box.radius, 7);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unknown delta "—" is muted (FE7-b, Stats-Growth-Filter)', (
+    tester,
+  ) async {
+    await _pumpKpi(
+      tester,
+      const KpiTile(
+        label: '평균 육성도',
+        value: '63.4%',
+        delta: '—',
+        deltaTone: KpiDeltaTone.unknown,
+      ),
+    );
+    expect(_style(tester, '—').color, AppColors.textMuted);
+    expect(_style(tester, '—').fontSize, 11);
     expect(tester.takeException(), isNull);
   });
 

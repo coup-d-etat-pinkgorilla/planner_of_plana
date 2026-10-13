@@ -1,9 +1,12 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
-// 통계 탭(FE7-a 골격, 시안 Stats-Growth · Stats-Inventory · Stats-Plan).
+// 통계 탭(FE7-a 골격 · FE7-b 학생 성장, 시안 Stats-Growth · Stats-Inventory · Stats-Plan).
 //
-// 화면은 `ui/statistics/statistics_workspace.dart`의 3섹션이다. 이 State는 원천 자료 읽기(`_reload()`)만 맡는다:
+// 화면은 `ui/statistics/statistics_workspace.dart`의 3섹션이다. 이 State는 원천 자료 읽기(`_reload()`)와 화면 상태
+// (주제, 학생 성장 A1 seg · 고른 구간 · 항목 · 근거 펼침)를 맡는다. 읽기 순서:
 // 계정 → 계정 상태 → 학생 목록 → 인벤토리 목록 → (목표가 있으면) 총 계산 · 부족 계산, generation 가드.
+// 학생 성장 projection(`buildStatisticsGrowth`, FD-028)은 읽은 계정 상태 · 학생 목록에서만 만든다(새 서비스 호출 없음).
+// 다시 읽으면 고른 구간을 지운다(학생 값이 바뀌었을 수 있다).
 // 읽기는 탭이 처음 보일 때 시작한다(FE6-b 인벤토리와 같은 정책). 셸은 모든 탭을 오프스테이지로 짓고, 보이지 않는
 // 탭은 `TickerMode`가 꺼져 있으므로 그것으로 보임을 판단한다(`app_shell.dart`를 고치지 않는다). 숨어 있는 동안
 // 다시 읽기 요청(`reloadToken` · 연결 · 서비스 교체)이 오면 표시만 해 두고, 다시 보일 때 한 번 읽는다.
@@ -11,7 +14,9 @@ import 'package:flutter/material.dart';
 
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../../statistics/statistics_growth_projection.dart';
 import '../app_section.dart';
+import '../statistics/statistics_growth_evidence.dart';
 import '../statistics/statistics_source.dart';
 import '../statistics/statistics_topics.dart';
 import '../statistics/statistics_workspace.dart';
@@ -51,6 +56,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
   bool _loading = true;
   int _generation = 0;
   StatisticsMode _mode = StatisticsMode.students;
+
+  /// 학생 성장 화면 상태(FE7-b).
+  StatisticsGrowthMetric _growthMetric = StatisticsGrowthMetric.growth;
+  StatisticsGrowthSelection? _growthSelection;
+  bool _evidenceExpanded = false;
+
+  /// projection 캐시(읽은 계정 상태 · 학생 목록이 같으면 다시 만들지 않는다).
+  StatisticsGrowth? _growth;
+  RepositoryState? _growthState;
+  List<StudentCatalogEntry>? _growthStudents;
 
   /// 이 탭이 지금 보이는가(`TickerMode`).
   bool _visible = false;
@@ -117,6 +132,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     _stale = false;
     setState(() {
       _loading = true;
+      _growthSelection = null;
+      _evidenceExpanded = false;
       _profile = null;
       _state = null;
       _students = null;
@@ -228,6 +245,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
     if (mounted && generation == _generation) setState(() => _loading = false);
   }
 
+  StatisticsGrowth? _currentGrowth() {
+    if (!identical(_growthState, _state) ||
+        !identical(_growthStudents, _students)) {
+      _growthState = _state;
+      _growthStudents = _students;
+      _growth = buildStatisticsGrowth(state: _state, catalog: _students);
+    }
+    return _growth;
+  }
+
+  void _select(StatisticsGrowthSelection? selection) => setState(() {
+    _growthSelection = selection;
+    _evidenceExpanded = false;
+  });
+
   @override
   Widget build(BuildContext context) {
     final data = StatisticsSourceData(
@@ -255,7 +287,24 @@ class _StatisticsPageState extends State<StatisticsPage> {
       key: const ValueKey('statistics-page'),
       mode: _mode,
       data: data,
-      onModeChanged: (mode) => setState(() => _mode = mode),
+      growth: StatisticsGrowthView(
+        growth: _loading ? null : _currentGrowth(),
+        metric: _growthMetric,
+        selection: _growthSelection,
+        expanded: _evidenceExpanded,
+        onMetricChanged: (metric) => setState(() {
+          _growthMetric = metric;
+          _growthSelection = null;
+          _evidenceExpanded = false;
+        }),
+        onSelectionChanged: _select,
+        onExpand: () => setState(() => _evidenceExpanded = true),
+      ),
+      onModeChanged: (mode) => setState(() {
+        _mode = mode;
+        _growthSelection = null;
+        _evidenceExpanded = false;
+      }),
       onRescan: () => widget.onOpen(AppSection.scan),
     );
   }

@@ -2,7 +2,7 @@
 //
 // 주제마다 왼쪽 주제 버튼 글자, 가운데 제목 · (i) 도움말 · 범위 글자, KPI 다섯 칸의 라벨, 위젯 타일 줄, 오른쪽 아래
 // 이동 버튼 글자를 둔다. 타일 폭 · 높이 · 순서는 시안 타일 rect, 차수(1·2·3차)는 Statistics-Proposal 기능 카드 표다.
-// 값(KPI 숫자 · 기준 시각 · 인원)은 FE7-b부터 채우므로 지금은 모두 '—'다.
+// 값: 학생 성장의 KPI · 보유 인원은 FE7-b부터 채운다(`StatisticsGrowthView`). 기준 시각 · 증감 · 다른 주제 값은 아직 '—'다.
 import 'package:flutter/foundation.dart';
 
 import '../geometry/diagonal_geometry.dart';
@@ -31,7 +31,7 @@ class StatisticsTileSpec {
   final int order;
   final double width;
 
-  /// 시안 머리 seg 글자(첫 칸이 선택). 동작은 그래프 slice(FE7-b 이후)가 달고, 지금은 비활성으로 자리만 그린다.
+  /// 시안 머리 seg 글자(첫 칸이 선택). A1 seg는 FE7-b부터 성장 자료가 있을 때 동작하고, 나머지는 그래프 slice 전까지 비활성 자리다.
   final List<String> segments;
 
   /// 시안 머리에 차수 칩이 있는가. seg만 있는 타일(A1 · A4 · B2 · C1)은 없고, B3은 seg와 칩이 함께 있다.
@@ -91,8 +91,11 @@ extension StatisticsModeSpec on StatisticsMode {
   };
 
   /// 가운데 제목 줄 오른쪽 범위 글자. 계획 집계는 칩이다(시안).
-  String get scope => switch (this) {
-    StatisticsMode.students => '보유 —명 기준 · 지난 스냅샷 대비',
+  String get scope => scopeFor(null);
+
+  /// [owned]는 보유 학생 수(학생 성장, FE7-b). 모르면 '—'다.
+  String scopeFor(int? owned) => switch (this) {
+    StatisticsMode.students => '보유 ${owned ?? '—'}명 기준 · 지난 스냅샷 대비',
     StatisticsMode.inventory => '활성 계획 기준 · 인벤토리 스캔 —',
     StatisticsMode.plan => '활성 계획 · —명 · 페이즈 —',
   };
@@ -100,8 +103,11 @@ extension StatisticsModeSpec on StatisticsMode {
   bool get scopeIsChip => this == StatisticsMode.plan;
 
   /// 왼쪽 필터 버튼 부제. 필터는 학생 성장에만 걸린다(FD-104, 확정 사항 1).
-  String get filterNote => switch (this) {
-    StatisticsMode.students => '없음 · 보유 —명 전체',
+  String get filterNote => filterNoteFor(null);
+
+  /// [owned]는 보유 학생 수(FE7-b). 모르면 '—'다.
+  String filterNoteFor(int? owned) => switch (this) {
+    StatisticsMode.students => '없음 · 보유 ${owned ?? '—'}명 전체',
     StatisticsMode.inventory ||
     StatisticsMode.plan => '인벤토리 · 계획 집계는 항상 전체',
   };
