@@ -2323,3 +2323,11 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - FE7-c 발견 1(중요): FD-034 막힌 학생(m − n)·첫 부족은 문서 계산(`calculatePlanningDocument`의 bottlenecks·phase_results)이 필요한데 통계 `_reload()`는 goals v1 평면 계산만 읽는다 → **FE7-g에서 통계가 활성 문서 계산을 읽게** 바꾼다(프론트만, 서비스 메서드는 있음). 발견 2·3(시안 숫자 모순), 4(mock 기본 계정 빈 상태 — 검수 시나리오 서비스 요청 후보), 5(C2 점 겹침), 6(근거 "외 n" 펼침 — FE7-d와 함께), 7(KPI 높이 70 vs 84) 기록.
 - FE8-e 발견 2: 사용자 해제 버튼이 시안에 없어 만들지 않음(해제는 창 사라짐·닫힘·백엔드 끊김) — 필요하면 사용자 결정. 4(다른 탭에서 연결 바뀌면 홈 복귀 때 연출 재생)·5(칩은 즉시, 시안은 2.75s에 바뀜) 수용, 6(홈 메뉴 섹션 표면이 옛 블러 표면 — FE1-c 미적용 기존 상태) 후속 목록.
 - **XB 18:00~19:27 수신**: ① FB-10c working4 메인 반영(18:02) → CF **fb10c-dart** 다음 라운드 우선 ② FB-6 설계 조사(18:09)·FB-6a 격리 구현 source9(18:42 Dart 사전목록) ③ **FB-10 부분 형식 고정 — FE8-g2 학생 진행 범위**(18:18: envelope·progress·feedback·terminal 고정, live 5값·early candidate는 미구현 → 없는 값 unknown). FE8-g2는 FE8-f1·f2 뒤 ④ FB-7 설계(18:47) ⑤ **Python 전체 RED 1**(19:23·19:27): 설치 클라이언트의 공개 아이콘 1건이 다른 bundle(684×540 → 304×240)로 연결돼 C5e LiveClientAnswerKey pixel parity 실패, 같은 bundle 1243·다른 25·나머지 동등성 미검증. XB가 CM·사용자에게 "현재 설치 클라이언트 기준 새 개발팩 후보 + diff를 격리 준비할지 / 기존 승인 snapshot 입력을 유지할지" 결정 요청 — FB-6a 커밋과 FB-10c의 새 GREEN 주장 보류. CM 응답 아직 없음 → 사용자에게 올림.
+
+## 2026-10-13 20:25 — 사용자 결정 A(입력 기준), 배정(Lane A FE7-g · Lane B fb10c-dart)
+
+- **사용자 결정(20:20)**: XB 입력 기준 질문 → **A**(현재 설치 클라이언트 기준 격리된 새 개발팩 후보 + 독립 diff, 기준자료 변경은 별도 slice·새 전체 gate, 공용 저장소·lock·pipeline 단계는 CM 승인 + 사용자 실행). backend 로그 20:20·tactic 로그 20:20(CM 앞)에 기록.
+- 배정(시작 SHA `cd2a24e1`):
+  · Lane B **fb10c-dart** — `debug/frontend_redesign_handoff/fb10cdart-worker-prompt-20261013.md`. XB 18:02 4경로 SHA 대조 후 착수. details optional 4키 수용, 진단 JSON 이미지 재귀 제거(두 경로, `iVBORw0KGgo` 0건 테스트), apply/discard 뒤 이미지 보관물 정리. 스캐너 WIP 파일 pre/post. 워크플로 XB 연결 표에 행 추가.
+  · Lane A **FE7-g** — `debug/frontend_redesign_handoff/fe7g-worker-prompt-20261013.md`. 통계가 활성 계획 문서 계산(bottlenecks·phase_results)을 읽게(FE7-c 발견 1), 계획 KPI 첫 부족·막힌 학생(FD-034) 채움, C3 페이즈별 누적 부족(재화별, FD-033), C1 "페이즈 순" 켜기, C2 막히는 단계. 계획 Detail projection 재사용(공용 추출 최소, 계획 golden 0).
+- FE8-f1(스캔 세션 컨트롤러 추출 — scan_page.dart)은 fb10c-dart와 파일이 겹쳐 다음 라운드. 그 뒤 FE8-f2 → FE8-g2(XB 부분 형식 고정 범위).
