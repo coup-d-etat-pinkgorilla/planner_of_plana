@@ -2202,3 +2202,18 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 
 - 사용자 질문 "아직 안 만든 타일 = 스캔 데이터가 더 필요한 타일인가?"에 두 경우를 구분해 답함: ① 미구현(2·3차 순서) 위젯 ② 구현됐지만 데이터가 모자란 위젯(A6·B3 스냅샷 1회).
 - 결정: ① **"준비 중"으로 자리 유지**(FD-106 권장안 "빈 카드 없이 당김" 대신, FE7-a 동작 그대로) ② **시안 문구** "스캔을 더 실행하면 변화가 나타납니다." + 스냅샷 횟수·시각(Statistics-Proposal 확정 사항 4, Stats-Growth-Filter A6). 대장 FD-106 행을 "확정 2026-10-13"으로 고침. FE7-b 착수 조건 충족.
+
+## 2026-10-13 16:00 — 배정(Lane A FE7-b · Lane B FE8-d)
+
+- 사용자 "다음 작업". 시작 SHA `75943ffc`. XB FB-10c crop은 아직 메인 미반영(backend 로그 15:40 허가 뒤 기록 없음) → fb10c-dart는 다음 라운드, Lane B는 FE8-d.
+  · Lane A **FE7-b** 성장 1차 — `debug/frontend_redesign_handoff/fe7b-worker-prompt-20261013.md`. FD-028 육성도·항목 완성도 projection(순수 함수), KPI 성장 5개(FD-105, 증감은 FE7-h → '—'), A1 히스토그램 + 구간 선택 → 근거 목록, A2 트랙 막대, 미구현 타일 "준비 중" 유지(FD-106 사용자 결정). `statistics-growth` 기준 이미지 갱신 예상.
+  · Lane B **FE8-d** 게임 창 연결 상태 — `debug/frontend_redesign_handoff/fe8d-worker-prompt-20261013.md`. 앱 전역 `connectedTarget`(FB-4 client 크기·game), 헤더 칩(회색 미연결 / 녹색 "연결됨 · Blue Archive · 2560×1440"), FD-116 끊김 조건, FD-148 중 백엔드 끊김 > 게임 창 연결만. **이번 라운드 예외: `app_shell.dart`를 Lane B가 최소 diff로 고친다(Lane A는 app_shell 금지).** 헤더가 보이는 장면 다수 변화 가능 → 장면 목록 예측 요구.
+- 중복 배정 재발 방지: 두 프롬프트에 "이 세션 하나에만, 같은 착수 기록이 이미 있으면 멈춤"을 넣었고, output.md 해시 표 백틱·맨 끝 `TASK_OUTPUT_READY` 줄을 명시했다(FE7-a 형식 차이).
+
+## 2026-10-13 17:40 — FE7-b·FE8-d 검토·gate·커밋
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(맨 끝 줄 형식 지킴). 착수·종료 기록 각 1벌(중복 실행 없음). output.md SHA 일치(fe7b 15행·fe8d 8행), 파일 겹침 0(두 commit.json 모두 `statistics-growth.png`를 whole에 둠 — 먼저 커밋한 fe7b에 칩 변화까지 함께 들어감), 범위 밖 변경 0. XB 메인 변경 없음(FB-10c 미반영).
+- gate ① `20261013_171416`: analyze 0, 374 + 468 + 607 + 175, process 59, almanac·diff 0, golden RED 14 = FE8-d 예측 13 + `statistics-growth`. CF가 마스터/테스트 이미지 차이 bbox를 계산해 확인: 12장 차이가 머리글 칩 영역(2366,105)–(2450,138) 안뿐, `home`은 칩 + 왼쪽 지표 이동(2173~2200), `statistics-growth`는 칩 + A1·A2·KPI. 칩 확대 비교(녹 "연결됨" → 회 "연결 안 됨", golden mock은 고른 창 없음) → 14장 승인. `-UpdateGoldens` + 재비교 ② `20261013_172627` **GREEN**(golden 43).
+- FE7-b 검토: A1 평균 63.4% vs A2 막대 평균 약 65.6% — FD-028 "A1 평균 = A2 평균"과 다르지만, FE7-b 세션 사용자 결정(애장품 없는 학생 = 6항목 평균, A2 애장품 행은 있는 학생만)의 결과이고 모든 학생이 7항목이면 같다는 테스트가 있다 → 수용. 대장 FD-028 행에 보충으로 기록. 시안 숫자 모순(완전 육성 22명 등)은 fixture가 서로 맞는 숫자만 재현.
+- FE8-d 판단: 발견 1(시안 머리글 칩은 "연결됨 · Blue Archive"로 크기 없음, 크기는 스캔 팝업 칩에만) → **시안을 따른다(FD-001)** — 워크플로 FE8-d 행·프롬프트가 크기를 넣으라 한 것은 조사 요약 오류. golden mock은 미연결이라 이번 기준 이미지와 무관, 다음 FE8-e에서 크기를 뺀다. 발견 2(주황 "백엔드 연결 중")·4(5초 주기)·6(최소화도 연결)·7(최근 스캔 기록 → 그 창 연결) 수용. 발견 3(FD-115 나머지: 홈 지표 숫자만·초상 62×52 흰 2px, `widget_test` "42명")·5(홈 창 선택 → 컨트롤러)는 FE8-e로.
+- 커밋: **fe7b `86554308`**(16파일) → **fe8d `998fe0cc`**(20파일, `scan_page.dart` 작업 트리 = post — 스캐너 WIP 보존). 공유 파일 `app_shell.dart` +25 −42(FE8-d) — tactic 로그 CF 보고.
