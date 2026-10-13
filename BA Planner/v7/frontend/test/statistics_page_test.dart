@@ -8,6 +8,7 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
+import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/pages/statistics_page.dart';
 import 'package:ba_planner_v7/ui/statistics/statistics_workspace.dart';
@@ -131,8 +132,36 @@ void main() {
     expect(data.inventory, isNotNull);
     expect(data.gross, isNull);
     expect(data.shortages, isNull);
+    // 활성 계획 읽기 실패(이 Mock에는 계정이 없다)는 계획 집계 C3 안에만 보이고 공용 오류가 아니다(FE7-g).
     expect(data.errors, isEmpty);
   });
+
+  testWidgets(
+    'the active plan is read before the state and its document is calculated',
+    (tester) async {
+      final service = _PlanOrderService(repositoryState(goals: true));
+      addTearDown(service.dispose);
+      await tester.pumpWidget(_subject(service));
+      await tester.pumpAndSettle();
+      // 활성 계획 → 계정 상태(목표 v1 계정은 첫 plan.get이 문서로 옮긴다), 문서 계산은 맨 뒤.
+      expect(service.order, ['plan', 'state', 'document']);
+      expect(service.lastDocument, service.document.toWire());
+      expect(service.grossCalls, 1);
+      expect(service.shortageCalls, 1);
+      expect(_note(tester), statisticsEvidenceEmptyText);
+      // 다시 읽으면 둘 다 다시 읽는다.
+      await tester.pumpWidget(_subject(service, token: 1));
+      await tester.pumpAndSettle();
+      expect(service.order, [
+        'plan',
+        'state',
+        'document',
+        'plan',
+        'state',
+        'document',
+      ]);
+    },
+  );
 
   testWidgets(
     'saved goals send exact immutable current goals inventory to both APIs',
@@ -397,6 +426,84 @@ class _StatisticsService extends MockAppService {
     lastPlan = plan;
     lastInventory = inventory;
     return const InventoryShortageResult([], []);
+  }
+}
+
+/// 활성 계획 · 문서 계산 읽기 순서를 적는다(FE7-g).
+class _PlanOrderService extends _StatisticsService {
+  _PlanOrderService(super.snapshot);
+
+  final order = <String>[];
+  Map<String, dynamic> lastDocument = const {};
+
+  final document = PlanningDocument(
+    id: 'active-plan',
+    name: '활성 계획',
+    kind: PlanningDocumentKind.plan,
+    version: 2,
+    goalMetadata: const {
+      'aru': PlanningGoalMetadata(favorite: false, notes: ''),
+    },
+    phases: [
+      PlanningDocumentPhase(
+        id: 'phase-1',
+        name: '1페이즈',
+        stages: [
+          PlanningDocumentStage(
+            id: 'stage-aru',
+            studentId: 'aru',
+            name: '레벨 60',
+            targets: {
+              for (final key in planningDocumentTargetKeys)
+                key: key == 'level' ? 60 : null,
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    order.add('plan');
+    return RepositoryPlanState.fromWire({
+      'profile_id': profileId,
+      'revision': 4,
+      'document': document.toWire(),
+      'calculation': {
+        'credits': 0,
+        'required_resource_type_count': 0,
+        'known_shortage_type_count': 0,
+        'inventory_complete': true,
+        'first_bottleneck_phase_number': null,
+        'representative_shortage': null,
+      },
+    });
+  }
+
+  @override
+  Future<RepositoryState> loadRepositoryState(String profileId) {
+    order.add('state');
+    return super.loadRepositoryState(profileId);
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    order.add('document');
+    lastDocument = document;
+    return {
+      'document_id': 'active-plan',
+      'kind': 'plan',
+      'stage_results': <dynamic>[],
+      'phase_results': <dynamic>[],
+      'overall': {'cost': <String, dynamic>{}, 'resources': <dynamic>[]},
+      'bottlenecks': <dynamic>[],
+      'warnings': <dynamic>[],
+    };
   }
 }
 

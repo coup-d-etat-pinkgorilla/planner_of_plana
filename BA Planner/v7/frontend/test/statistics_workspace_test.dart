@@ -285,9 +285,9 @@ void main() {
     _expectRect(tester, 'statistics-tile-C4', 1220.8, 773.2, 711.6, 327);
     _expectRect(tester, 'statistics-tile-C5', 422.4, 1122.2, 1448.5, 313);
     expect(find.text('활성 계획 · —명 · 페이즈 —'), findsOneWidget);
-    // FE7-c: C1 · C2는 그래프 자리, C3 · C4 · C5는 "준비 중".
-    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
-    for (final id in ['C1', 'C2']) {
+    // FE7-c: C1 · C2는 그래프 자리, FE7-g: C3도 그래프 자리(문서 계산이 없으면 '—'), C4 · C5는 "준비 중".
+    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    for (final id in ['C1', 'C2', 'C3']) {
       expect(
         tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,
         '—',

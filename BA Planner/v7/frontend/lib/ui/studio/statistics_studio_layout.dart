@@ -214,6 +214,21 @@ abstract final class StatisticsMetrics {
   static const evidenceUsersTop = 374.0;
   static const evidenceUserRows = 10;
 
+  /// 계획 집계 재화 근거(FE7-g, 시안 Stats-Plan 오른쪽): "막히는 단계" 머리(시안 (2138.8, 361.2, 381.2×34)) 위 152,
+  /// 단계 행(시안 `.row` (2108.8, 405.2, 429.2×52) …) 위 196 · 피치 58 · 4행까지(넘치면 "외 n단계" 30 + 6).
+  static const evidenceStagesTitleTop = 152.0;
+  static const evidenceStagesTop = 196.0;
+  static const evidenceStageRows = 4;
+  static const evidenceStagesMorePitch = 36.0;
+
+  /// "Pn부터 누적 부족"(시안 `.plain` (2071.1, 637.2, 466.9×34)): 마지막 단계 행 바로 아래, 높이 34, 글자 왼쪽 18.
+  static const evidenceCumulativeHeight = 34.0;
+  static const evidenceCumulativeInset = 18.0;
+
+  /// 그 아래 "쓰는 학생" 머리는 시안 "풀리는 방법" 자리(누적 줄 아래 끝에서 14, 머리에서 행까지 44, 7행까지).
+  static const evidencePlanUsersGap = 14.0;
+  static const evidencePlanUsersRowGap = 44.0;
+
   /// 낮은 창에서 세로 값을 줄이는 비율(0.4~1).
   static double scaleFor(double sectionHeight) =>
       (sectionHeight / referenceHeight).clamp(0.4, 1.0).toDouble();

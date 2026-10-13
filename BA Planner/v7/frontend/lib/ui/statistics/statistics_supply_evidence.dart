@@ -7,8 +7,14 @@
 // - C1 행 · C2 점(재화)을 고르면(시안 Stats-Inventory 근거 틀): 머리 "<재화>" + 칩(필요량 대비 −n% · 모름), 아이콘 행
 //   (79×64 · 이름 · 부제 "C1에서 고른 행 · 필요량 대비" / "C2에서 고른 병목 · 충족률 n% · 학생 n명"), 보유 · 필요(활성
 //   계획) · 부족 세 줄, "쓰는 학생 · n명" + 학생 행 10개 + "외 n명". 학생 행은 성장 근거 행(초상 · 이름 · Lv)이다.
-//   시안의 학생별 필요량 · 단계("P2 · 스킬 M 96"), Stats-Plan의 "막히는 단계" · "P2부터 누적 부족" · "풀리는 방법",
-//   Stats-Inventory의 "최근 변화"는 지금 읽는 자료(부족 계산 행)에 없어 그리지 않는다(FE7-g 문서 계산 · FE7-h 이력).
+//   시안의 학생별 필요량 · 단계("P2 · 스킬 M 96"), Stats-Inventory의 "최근 변화"는 지금 읽는 자료에 없어 그리지 않는다
+//   (FE7-h 이력).
+// - 계획 집계에서 고른 재화가 활성 문서 계산에서 모자라면(FE7-g, 시안 Stats-Plan 근거 틀): 머리 칩 "첫 부족 Pn"(분홍),
+//   아이콘 행, "막히는 단계 · 단계 순서" + 단계 행 4개(초상 · "Pn" · "<학생> · <단계>" · 부족 칩 "−n", 문서 순서) + "외 n단계",
+//   "Pn부터 누적 부족 −n"(그 재화의 전체 부족량), 그 아래 "쓰는 학생"(시안 "풀리는 방법" 자리 — what-if는 백엔드가 없어 그리지
+//   않는다). 보유 · 필요 · 부족 세 줄은 시안 Stats-Plan에 없어 이 틀에서는 빼고, 모자라지 않거나 문서 계산이 없으면 위 FE7-c
+//   틀 그대로다.
+// - C1 순서(FE7-g): "부족 큰 순" · "페이즈 순"(활성 문서 계산이 있을 때만).
 // 원본 탭 이동(아래 두 버튼)은 FE7-d다.
 import 'dart:math' as math;
 
@@ -17,12 +23,14 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../inventory/inventory_view_model.dart';
 import '../kit/ba_chip.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/item_icon_tile.dart';
+import '../kit/portrait_strip.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/statistics_studio_layout.dart';
@@ -93,6 +101,9 @@ Map<String, StatisticsEvidenceStudent> statisticsEvidenceStudents({
     ),
 };
 
+/// C1 행 순서(시안 seg "부족 큰 순" · "페이즈 순").
+enum StatisticsC1Order { shortage, phase }
+
 /// 인벤토리 · 계획 주제 화면 상태(페이지가 들고 있다)와 바꾸는 콜백.
 @immutable
 class StatisticsSupplyView {
@@ -102,6 +113,10 @@ class StatisticsSupplyView {
     this.selection,
     this.students = const {},
     this.onSelectionChanged,
+    this.planning,
+    this.planningError,
+    this.c1Order = StatisticsC1Order.shortage,
+    this.onC1OrderChanged,
   });
 
   /// 부족 계산이 없으면(목표 없음 · 계산 실패 · 읽는 중) null.
@@ -112,6 +127,30 @@ class StatisticsSupplyView {
   final StatisticsSupplySelection? selection;
   final Map<String, StatisticsEvidenceStudent> students;
   final ValueChanged<StatisticsSupplySelection?>? onSelectionChanged;
+
+  /// 활성 계획 문서 계산(FE7-g). 활성 계획이 없거나(단계 없음 · 문서를 주지 않는 서비스) 읽는 중 · 실패면 null.
+  final StatisticsPlanning? planning;
+
+  /// 활성 계획 · 문서 계산 읽기 오류(계획 집계 C3 타일에만 보인다).
+  final String? planningError;
+
+  /// 고른 C1 순서. "페이즈 순"은 [planning]이 있을 때만 쓴다.
+  final StatisticsC1Order c1Order;
+  final ValueChanged<StatisticsC1Order>? onC1OrderChanged;
+
+  /// 실제로 쓰는 C1 순서(문서 계산이 없으면 "부족 큰 순").
+  StatisticsC1Order get effectiveC1Order =>
+      planning == null ? StatisticsC1Order.shortage : c1Order;
+
+  /// C1 행(고른 순서, 최대 다섯). 부족 계산이 없으면 빈 목록.
+  List<InventoryItemView> get c1Rows {
+    final supply = this.supply;
+    if (supply == null) return const [];
+    final planning = this.planning;
+    return effectiveC1Order == StatisticsC1Order.phase && planning != null
+        ? statisticsC1PhaseRows(supply, planning)
+        : supply.c1Rows;
+  }
 
   String? get selectedCategory => switch (selection) {
     StatisticsCategorySelection(:final category) => category,
@@ -174,6 +213,31 @@ class StatisticsSupplyView {
             '${source.label} · 충족률 ${statisticsFillText(fulfillment)} · '
                 '학생 ${ids.length}명',
         };
+        final users = [
+          for (final id in ids) students[id] ?? (id: id, name: id, level: null),
+        ];
+        // 활성 문서 계산에서 이 재화가 모자라는 단계가 있으면 시안 Stats-Plan 근거 틀(FE7-g).
+        final stages = planning?.blockingStages(resourceKey) ?? const [];
+        if (stages.isNotEmpty) {
+          final first =
+              planning?.firstPhaseOf(resourceKey) ?? stages.first.phase;
+          return StatisticsSupplyEvidenceContent.resource(
+            title: view.item.displayName,
+            chip: ('첫 부족 P$first', AppTones.pink),
+            subtitle: subtitle,
+            resource: view,
+            facts: const [],
+            students: users,
+            stages: [
+              for (final stage in stages)
+                (
+                  stage: stage,
+                  studentName: students[stage.studentId]?.name ??
+                      stage.studentId,
+                ),
+            ],
+          );
+        }
         final shortage = view.shortageAmount;
         return StatisticsSupplyEvidenceContent.resource(
           title: view.item.displayName,
@@ -195,13 +259,17 @@ class StatisticsSupplyView {
               (shortage ?? 0) > 0 ? AppColors.accent : null,
             ),
           ],
-          students: [
-            for (final id in ids) students[id] ?? (id: id, name: id, level: null),
-          ],
+          students: users,
         );
     }
   }
 }
+
+/// 근거 "막히는 단계" 한 행(단계 + 학생 이름).
+typedef StatisticsEvidenceStage = ({
+  StatisticsBlockingStage stage,
+  String studentName,
+});
 
 /// 충족률 칩(60% 미만 분홍 · 이상 회색 · 모름 회색).
 (String, AppTone) _fillChip(double? fulfillment) => (
@@ -231,7 +299,8 @@ class StatisticsSupplyEvidenceContent {
     required List<(String, String, String)> this.summary,
   }) : resource = null,
        facts = const [],
-       students = const [];
+       students = const [],
+       stages = const [];
 
   const StatisticsSupplyEvidenceContent.resource({
     required this.title,
@@ -240,6 +309,7 @@ class StatisticsSupplyEvidenceContent {
     required InventoryItemView this.resource,
     required this.facts,
     required this.students,
+    this.stages = const [],
   }) : resources = null,
        summary = null;
 
@@ -255,6 +325,13 @@ class StatisticsSupplyEvidenceContent {
   final InventoryItemView? resource;
   final List<(String, String, String, Color?)> facts;
   final List<StatisticsEvidenceStudent> students;
+
+  /// 계획 집계 재화의 막히는 단계(FE7-g, 문서 순서). 비어 있으면 FE7-c 틀이다.
+  final List<StatisticsEvidenceStage> stages;
+
+  /// 막히는 단계 부족량 합(= 그 재화의 전체 부족량).
+  int get stageShortage =>
+      stages.fold<int>(0, (sum, item) => sum + item.stage.shortage);
 
   /// 부제가 아이콘 행 안에 있는가(재화). 그때 근거 섹션의 부제 줄은 비운다.
   bool get subtitleInHeader => resource != null;
@@ -401,6 +478,9 @@ List<Widget> _resourceChildren(
       ),
     ),
   ];
+  if (content.stages.isNotEmpty) {
+    return [...children, ..._stageChildren(frame, content)];
+  }
   for (final (index, (key, label, value, color)) in content.facts.indexed) {
     children.add(
       Positioned.fromRect(
@@ -469,6 +549,113 @@ List<Widget> _resourceChildren(
   return children;
 }
 
+/// 계획 집계 재화 근거(FE7-g, 시안 Stats-Plan): "막히는 단계" + 단계 행 + "외 n단계" + "Pn부터 누적 부족" + "쓰는 학생".
+List<Widget> _stageChildren(
+  StatisticsEvidenceFrame frame,
+  StatisticsSupplyEvidenceContent content,
+) {
+  final scale = frame.scale;
+  final stages = content.stages;
+  final children = <Widget>[
+    _sectionTitle(
+      frame,
+      StatisticsMetrics.evidenceStagesTitleTop,
+      '막히는 단계',
+      key: 'statistics-evidence-stages-title',
+      caption: '단계 순서',
+    ),
+  ];
+  var offset = StatisticsMetrics.evidenceStagesTop;
+  for (final item in stages.take(StatisticsMetrics.evidenceStageRows)) {
+    children.add(
+      Positioned.fromRect(
+        rect: frame.row(offset, StatisticsMetrics.evidenceRowHeight),
+        child: StatisticsScaledBox(
+          scale: scale,
+          child: _StageRow(
+            key: ValueKey('statistics-evidence-stage-${item.stage.stageId}'),
+            stage: item.stage,
+            studentName: item.studentName,
+          ),
+        ),
+      ),
+    );
+    offset += StatisticsMetrics.evidenceRowPitch;
+  }
+  final rest = stages.length - StatisticsMetrics.evidenceStageRows;
+  if (rest > 0) {
+    children.add(
+      _moreLine(
+        frame,
+        offset,
+        '외 $rest단계',
+        key: 'statistics-evidence-stages-rest',
+      ),
+    );
+    offset += StatisticsMetrics.evidenceStagesMorePitch;
+  }
+  children.add(
+    Positioned.fromRect(
+      rect: frame.row(offset, StatisticsMetrics.evidenceCumulativeHeight),
+      child: StatisticsScaledBox(
+        scale: scale,
+        child: _CumulativeRow(
+          phase: stages.first.stage.phase,
+          shortage: content.stageShortage,
+        ),
+      ),
+    ),
+  );
+  offset +=
+      StatisticsMetrics.evidenceCumulativeHeight +
+      StatisticsMetrics.evidencePlanUsersGap;
+  final students = content.students;
+  children.add(
+    _sectionTitle(
+      frame,
+      offset,
+      '쓰는 학생',
+      key: 'statistics-evidence-users-title',
+      caption: '${students.length}명',
+    ),
+  );
+  offset += StatisticsMetrics.evidencePlanUsersRowGap;
+  const visible = StatisticsMetrics.evidenceVisibleRows;
+  for (final (index, student) in students.take(visible).indexed) {
+    children.add(
+      Positioned.fromRect(
+        rect: frame.row(
+          offset + StatisticsMetrics.evidenceRowPitch * index,
+          StatisticsMetrics.evidenceRowHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: scale,
+          child: StatisticsEvidenceStudentRow.plain(
+            key: ValueKey('statistics-evidence-row-${student.id}'),
+            studentId: student.id,
+            displayName: student.name,
+            level: student.level,
+          ),
+        ),
+      ),
+    );
+  }
+  final restStudents = students.length - visible;
+  if (restStudents > 0) {
+    children.add(
+      _moreLine(
+        frame,
+        offset + StatisticsMetrics.evidenceRowPitch * visible,
+        '외 $restStudents명',
+      ),
+    );
+  }
+  return children;
+}
+
+/// 근거 안 소제목을 배치하는 최소 폭(제목 막대 · 제목 · 캡션).
+const _sectionTitleMinWidth = 160.0;
+
 /// 근거 안 소제목(시안 `.dsp` 16 + 오른쪽 회색 11 캡션): 왼쪽은 머리 가운데 높이의 사선에서 40, 오른쪽은 섹션 오른쪽에서 40.
 Widget _sectionTitle(
   StatisticsEvidenceFrame frame,
@@ -495,17 +682,21 @@ Widget _sectionTitle(
       scale: scale,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: TileTitle(
-          title,
-          key: ValueKey(key),
-          trailing: caption == null
-              ? null
-              : Text(
-                  caption,
-                  key: ValueKey('$key-caption'),
-                  maxLines: 1,
-                  style: _mutedStyle.copyWith(fontSize: AppType.captionSize),
-                ),
+        // 아주 좁은 창에서는 머리를 최소 폭으로 배치하고 오른쪽을 자른다(FE7-g "막히는 단계 · 단계 순서", 행과 같은 규칙).
+        child: StatisticsMinWidth(
+          minWidth: _sectionTitleMinWidth,
+          child: TileTitle(
+            title,
+            key: ValueKey(key),
+            trailing: caption == null
+                ? null
+                : Text(
+                    caption,
+                    key: ValueKey('$key-caption'),
+                    maxLines: 1,
+                    style: _mutedStyle.copyWith(fontSize: AppType.captionSize),
+                  ),
+          ),
         ),
       ),
     ),
@@ -513,7 +704,12 @@ Widget _sectionTitle(
 }
 
 /// "외 n종 · 외 n명"(시안 `.plain` 30 높이, 누르는 동작 없음).
-Widget _moreLine(StatisticsEvidenceFrame frame, double offset, String text) =>
+Widget _moreLine(
+  StatisticsEvidenceFrame frame,
+  double offset,
+  String text, {
+  String key = 'statistics-evidence-rest',
+}) =>
     Positioned.fromRect(
       rect: frame.row(offset, StatisticsMetrics.evidenceMoreHeight),
       child: StatisticsScaledBox(
@@ -527,7 +723,7 @@ Widget _moreLine(StatisticsEvidenceFrame frame, double offset, String text) =>
             alignment: Alignment.centerLeft,
             child: Text(
               text,
-              key: const ValueKey('statistics-evidence-rest'),
+              key: ValueKey(key),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: _mutedStyle,
@@ -687,6 +883,112 @@ class _FactRow extends StatelessWidget {
             style: kitDisplayStyle(
               valueSize,
               color: valueColor ?? AppColors.text,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// 막히는 단계 행(52 높이, 시안 Stats-Plan `.row`): 초상 44×36 · "Pn" 경기천년제목 15 분홍(폭 30) · "<학생> · <단계>" 13 ·
+/// 부족 칩 "−n"(분홍).
+class _StageRow extends StatelessWidget {
+  const _StageRow({super.key, required this.stage, required this.studentName});
+
+  static const portraitSize = Size(44, 36);
+  static const phaseWidth = 30.0;
+
+  final StatisticsBlockingStage stage;
+  final String studentName;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: StatisticsEvidenceRowPainter(
+      DiagonalRowLook.of(DiagonalRowVariant.row),
+    ),
+    child: Padding(
+      padding: EdgeInsets.only(
+        left: diagonalCutDepth(StatisticsMetrics.evidenceRowHeight) + 12,
+        right: 14,
+      ),
+      child: StatisticsMinWidth(
+        minWidth: _rowContentMinWidth,
+        child: Row(
+          children: [
+            PortraitStrip(
+              studentIds: [stage.studentId],
+              maxVisible: 1,
+              portraitSize: portraitSize,
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: phaseWidth,
+              child: Text(
+                'P${stage.phase}',
+                maxLines: 1,
+                style: kitDisplayStyle(
+                  AppType.bodyLargeSize,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '$studentName · ${stage.stageName}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _nameStyle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            BaChip(
+              label: '−${statisticsAmountText(stage.shortage)}',
+              tone: AppTones.pink,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// "Pn부터 누적 부족 −n"(시안 `.plain` 34 높이: 글자 12 회색 + 값 13 굵게 분홍, 양끝, 왼쪽 18).
+class _CumulativeRow extends StatelessWidget {
+  const _CumulativeRow({required this.phase, required this.shortage});
+
+  final int phase;
+  final int shortage;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    key: const ValueKey('statistics-evidence-cumulative'),
+    padding: const EdgeInsets.only(
+      left: StatisticsMetrics.evidenceCumulativeInset,
+      right: 14,
+    ),
+    child: StatisticsMinWidth(
+      minWidth: _rowContentMinWidth,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'P$phase부터 누적 부족',
+              key: const ValueKey('statistics-evidence-cumulative-label'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _mutedStyle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '−${statisticsAmountText(shortage)}',
+            key: const ValueKey('statistics-evidence-cumulative-value'),
+            maxLines: 1,
+            style: _nameStyle.copyWith(
+              fontWeight: AppType.bold,
+              color: AppColors.accent,
             ),
           ),
         ],

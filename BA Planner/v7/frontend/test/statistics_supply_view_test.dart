@@ -382,7 +382,8 @@ void main() {
       [for (final kpi in kpis) kpi.label],
       ['계획 충족률', '부족 재화', '첫 부족', '막힌 학생', '미계획 · 40% 미만'],
     );
-    // 첫 부족 · 막힌 학생(FD-034)은 활성 문서 계산(FE7-g) 전이라 '—'.
+    // 첫 부족 · 막힌 학생(FD-034)은 활성 문서 계산이 있어야 한다(FE7-g). 이 서비스는 활성 계획을 주지 않아(Mock에 없는
+    // 계정 → plan.get 실패) '—'다. 문서 계산이 있는 경우는 `statistics_plan_view_test.dart`.
     expect(
       [for (final kpi in kpis) kpi.value],
       ['72%', '14종', '—', '—', '${_unplannedLow()}명'],
@@ -430,8 +431,12 @@ void main() {
     expect(c2.maxStudents, 8);
     expect(c2.unknownKinds, 1);
     expect(c2.dots.where((dot) => dot.inZone), hasLength(4));
-    // C3 · C4 · C5는 "준비 중".
-    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+    // C4 · C5는 "준비 중", C3(FE7-g)은 활성 계획을 읽지 못한 안내를 타일 안에 둔다.
+    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    expect(
+      _text(tester, 'statistics-tile-C3-empty'),
+      startsWith('활성 계획을 읽지 못했습니다'),
+    );
     expect(_note(tester), statisticsPlanEvidenceEmptyText);
     expect(tester.takeException(), isNull);
   });
@@ -586,7 +591,7 @@ void main() {
     ]);
     await tester.tap(find.byKey(const ValueKey('statistics-topic-plan')));
     await tester.pumpAndSettle();
-    for (final id in ['C1', 'C2']) {
+    for (final id in ['C1', 'C2', 'C3']) {
       expect(
         _text(tester, 'statistics-tile-$id-empty'),
         statisticsSupplyNoPlanText,

@@ -7416,3 +7416,151 @@ FE7-b/c에서 복원(시안 위젯으로):
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_194844\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-g 통계 계획 집계 · 활성 문서 계산 (Lane A, 로컬 Claude Code)
+
+### FE7-g 착수 기록 (2026-10-13, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `cbc63d98bcc279ae9ca6d22c9fe2c45ee3569996`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서에 다른 "FE7-g 착수 기록" 없음(grep 0건).
+- 범위: 통계 `_reload()`가 활성 계획 문서(`loadRepositoryPlan`)와 그 문서 계산(`calculatePlanningDocument`)을 읽는다. 계획 KPI 첫 부족 · 막힌 학생(FD-034), 범위 칩 페이즈 수, C3 페이즈별 누적 부족(재화별 · 필요량 대비 %, FD-033), C1 "페이즈 순", 근거 "막히는 단계 · Pn부터 누적 부족". C4 · C5는 "준비 중"(FD-106). 새 서비스 메서드 · 백엔드 변경 없음.
+- 막힘: 대장 막힘 요약 FE7-g 행 = `—`(막는 `열림` FD 없음). 워커 재량 FD-035 · FD-037 · FD-105는 권장안(FD-037은 FE5-d가 확인한 백엔드 의미 그대로: phase `owned` = 진입 잔량).
+- "활성 계획" 정의: 오케스트레이터 로그 2026-10-13 20:05 · 20:25대로 활성 문서(`plan.get`)다. 계획 충족률 · 부족 재화 · C1 · C2는 FE7-c 식(goals v1 부족 계산) 그대로 둔다.
+- 재사용할 계획 쪽 projection(고치지 않음, 공개 함수 그대로 import): `lib/ui/models/plan_scenario_detail.dart`의 `PlanDetailData.fromProjection`(페이즈별 재화 `phaseResources` · `phaseSummary` · `kpis.firstBottleneck` · `kpis.finishing`) · `PlanDetailStageStates`(FD-034 · 035) · `planDetailFirstBottleneck`, `lib/ui/widgets/plan_scenario_preview.dart`의 `planScenarioBottleneckValue`. 공용 추출 필요 없음 → 계획 화면 파일 변경 0 예정.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7g/pre/<v7 기준 경로>`, 작업 트리와 cmp 일치, 모두 WIP 없음 = `git status --short <경로>` 빈 줄). 줄바꿈은 작업 트리 그대로 유지:
+  - `frontend/lib/ui/pages/statistics_page.dart`(CRLF)
+  - `frontend/lib/ui/statistics/statistics_workspace.dart`(LF) · `statistics_supply_evidence.dart`(LF) · `statistics_topics.dart`(LF)
+  - `frontend/lib/statistics/statistics_supply_projection.dart`(LF, 머리 주석만 예정)
+  - `frontend/lib/ui/studio/statistics_studio_layout.dart`(LF, 요소 좌표만)
+  - `frontend/test/statistics_supply_view_test.dart`(LF) · `statistics_workspace_test.dart`(LF) · `statistics_page_test.dart`(CRLF)
+  - `frontend/test/goldens/fe7a_statistics_golden_test.dart`(LF, fixture 입력만)
+  - `almanac/workflows/frontend-redesign-status.md`(이 문서, LF)
+- 새 파일(예정): `frontend/lib/statistics/statistics_plan_projection.dart`, `frontend/lib/ui/statistics/statistics_plan_charts.dart`(C3 painter), `frontend/test/statistics_plan_fixture.dart`(시안 숫자 문서 · 문서 계산), `frontend/test/statistics_plan_projection_test.dart`, `frontend/test/statistics_plan_view_test.dart`.
+- 고치지 않음: `lib/services/**`(읽기만), Lane B 파일(`student_scan_diagnostic.dart` · `scan_page.dart` · `scanner_service.dart`), 계획 화면 · 모델 파일, 학생 · 인벤토리 · 스캔 · 타이틀 화면, `app_shell.dart` · `app_section.dart`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 · 스캐너 소유 파일.
+
+### FE7-g 종료 기록 (2026-10-13, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계 `_reload()`가 활성 계획 문서(`plan.get`)와 그 문서 계산(`planning.document.calculate`)을 읽는다. 계획 집계에 KPI "첫 부족"(P2 · 재화 이름) · "막힌 학생"(FD-034 m − n), 범위 칩 "페이즈 n", C3 페이즈별 누적 부족 계단선(재화별 · 필요량 대비 %), C1 "페이즈 순", 근거 "막히는 단계 · Pn부터 누적 부족"을 넣었다. C4 · C5는 "준비 중" 그대로(FD-106). 새 서비스 메서드 · 백엔드 변경 없음, 계획 화면 · 모델 파일 변경 0(공용 추출 없이 공개 projection을 그대로 import).
+
+착수 기록 정정: 고친 기존 파일은 착수 목록 그대로 10개 + 이 문서다(키트 · 계획 파일 변경 없음).
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7g/logs/`이고, 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차, projection · C3 · page 뒤) | 5 issues: error 3(`listEquals` import 없음) · info 2(`prefer_collection_literals` · `unnecessary_import`) → 고침 |
+| `flutter analyze`(2 · 3차, 테스트 import 정리 2건 뒤) | info 1씩(`unnecessary_import`, `statistics_page_test.dart` · golden 테스트) → 고침 |
+| `flutter test test/statistics_plan_projection_test.dart`(1차) | +6 −1: 레코드 안 `List` 비교가 동일성 비교 → 키 · 값 따로 비교로 고침(값은 일치) |
+| `flutter test` plan_projection + plan_view(1차) | 컴파일 실패(`statisticsUnplannedLowCount` import 누락) → 고침 |
+| 같은 두 파일(2차) | +12 −4: ① 근거 머리는 `PanelTitle`(테스트 helper가 `Text`로 읽음) ② 800×600에서 "막히는 단계 · 단계 순서" 머리 `TileTitle` Row가 62.8 폭에 7.4px 넘침 → `_sectionTitle`을 `StatisticsMinWidth(160)`로 감쌈(160 이상이면 그대로라 FE7-c 소제목 · 기준 viewport 그림 같음). 넘침 위치는 임시 `FlutterError.onError` 출력으로 찾고 지웠다 |
+| 같은 두 파일(3차) | +15 −1: 머리 묶음은 34 자리의 세로 가운데(FE7-c 소제목과 같다) → top 대신 left · width · 세로 가운데로 비교 |
+| 같은 두 파일(4차) | **+16 −0** |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| 관련 25파일 한 번에(`--file-reporter json`, 아래) | **+248 −0** |
+| 일회성 렌더(임시 `test/zz_fe7g_render_tmp_test.dart`, harness 공개 함수, scratchpad PNG 2장: 계획 집계 · 페이즈 순 + C2 기술 노트 선택) | 배치 · 숫자 시안 자리(아래 golden 예상). 임시 테스트는 지웠다. golden 비교 아님 |
+| `git diff --check`(고친 기존 10파일) · 새 5파일 줄 끝 공백 · 줄바꿈 | 0 · 0. 새 파일 LF · 끝 개행 하나, 기존 파일은 pre와 같은 줄바꿈(`statistics_page.dart` · `statistics_page_test.dart` CRLF, 나머지 LF — `git ls-files --eol` 확인) |
+
+관련 25파일(파일별 통과, 모두 −0): statistics_plan_projection +7(새), statistics_plan_view +9(새), statistics_page +14(+1 새 테스트), statistics_supply_view +11, statistics_supply_projection +8, statistics_workspace +13, statistics_growth_view +12, statistics_growth_projection +11, statistics_projection +7, statistics_app_shell +2, section_template_studio +15, kit/scroll_viewport_fog +6, widget +16, home_app_shell +1, home_page +5, home_connect_fe8e +10, inventory_shell_lazy +1, account_editor_fe8c +9, account_manager_fe8b +6, connected_target_fe8d +8, growth_calculator_view +24, profile_delete_fb2d +17, student_filter_followups +4, student_filter_modal +7, title_page +25.
+
+- 걸리는 기존 테스트 찾기: test/ 전체를 `statistics|Statistics|StatisticsPage|top-tab-statistics|BAPlannerApp|AppShell\(`로 grep했다(통계 페이지가 새로 `loadRepositoryPlan` · `calculatePlanningDocument`를 부르므로 셸을 띄우는 테스트 전부 포함). 공용 projection을 꺼내지 않았고 계획 파일을 고치지 않아 plan_home_detail · plan_scenario_* · planning_page는 돌리지 않았다. `developer_tools_app_test` · `metadata_manager_dto_test` · process E2E 2개(`repository_process_e2e` · `tactical_v2_process_e2e`)는 다른 기능 · E2E라 돌리지 않았다(FE7-a · c와 같은 판단).
+- 빌드 잠금 충돌 없음. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 읽기 경로
+
+`_reload()`: 계정 → **활성 계획 문서**(`RepositoryPlanService.loadRepositoryPlan`, 서비스가 그 인터페이스일 때만) → 계정 상태 → 학생 목록 → 인벤토리 목록 → (목표 있으면) `calculatePlan` · `calculateShortages`(FE7-c 그대로) → **문서 계산**(`PlanningDocumentService.calculatePlanningDocument(current, inventory, document)`, 문서에 단계가 있고 `plan.calculation != null`일 때만 — 계획 홈과 같은 조건, 응답은 `PlanDetailData.checkProjection`) → loading 끝. generation 가드 · "처음 보일 때 읽기"(FE7-a `TickerMode`)는 그대로다(읽기는 모두 같은 `_reload()` 안).
+- 순서 근거: 활성 계획을 계정 상태보다 먼저 읽는다(인벤토리 컨트롤러 · `loadRepositoryPlanSnapshot`과 같은 순서 — 목표 v1만 있는 계정은 첫 `plan.get`이 문서로 옮기며 revision을 올린다). 통계는 저장하지 않으므로 revision 일치 재시도는 두지 않았다(인벤토리 탭과 같다).
+- "활성 계획" = 저장된 활성 문서(오케스트레이터 20:05 · 20:25). 계획 충족률 · 부족 재화 · C1 · C2 값은 FE7-c 식(goals v1 부족 계산) 그대로다 — goals v1은 문서에서 파생(FB-1b, 학생별 마지막 단계)이라 전체 필요량이 같다.
+- 오류: 활성 계획 읽기 · 문서 계산 실패는 공용 `errors`(근거 안내)에 넣지 않고 계획 집계 C3 타일 안 글자로만 보인다("활성 계획을 읽지 못했습니다: …" · "활성 계획을 계산하지 못했습니다: …" · `calculation` 없음 "지금은 활성 계획을 계산할 수 없습니다."). 다른 주제 · C1/C2 근거를 막지 않게 하려는 것이다. 그때 첫 부족 · 막힌 학생 · 페이즈 수 '—', C1 "페이즈 순" 비활성.
+
+#### 공용 projection과 계획 쪽 영향
+
+- 꺼낸 것 없음. `lib/statistics/statistics_plan_projection.dart`(새)가 계획 Detail의 공개 projection을 import해 그대로 쓴다: `PlanDetailData.fromProjection(document, projection)`(비교 없음) → `phaseResources`(페이즈별 재화 진입 · 필요 · 부족, FD-037) · `phaseSummary`(첫 부족 페이즈 · 재화) · `kpis.firstBottleneck`(`planDetailFirstBottleneck`) · `kpis.finishing`(`PlanDetailStageStates.finishingStudents`, FD-034 · 035). 글자 "없음/Pn/—"는 `lib/ui/widgets/plan_scenario_preview.dart`의 `planScenarioBottleneckValue`.
+- 계획 화면 · 모델 파일 변경 0 → 계획 golden 변화 0.
+
+#### 처리한 FD
+
+- **FD-034(확정 (a))**: 막힌 학생 = 문서 계산 단계 학생 m − 끝까지 가는 학생 n(`PlanDetailStageStates`, 계획 Detail과 같은 원천). fixture 9 − 3 = 6명.
+- **FD-033(확정)**: C3는 재화마다 선 하나, 값 = 그 재화 누적 부족 / 그 재화 전체 필요량. 서로 다른 재화 수량을 더하지 않는다. 시안도 재화별 선 + "누적 부족 (재화별 필요량 대비)"라 합산 문제 없음(멈출 일 없었음).
+- **FD-035(워커 재량, 권장안)**: 단계 상태는 `PlanDetailStageStates` 그대로(막힌 학생 계산에만 씀).
+- **FD-037(워커 재량, 권장안)**: phase `owned` = 진입 잔량(백엔드 `calculate_document_projection` 읽어 확인, FE5-d와 같은 결론). 페이즈 부족 = max(0, 필요 − 진입). 그래서 마지막 누적 = max(0, 전체 필요 − 보유) = 그 재화 전체 부족(테스트로 고정).
+- **FD-031(확정 (a))**: 계획 충족률 식 FE7-c 그대로(바꾸지 않음).
+- **FD-105(워커 재량)**: KPI 첫 부족 → C3 줄 스크롤(FE7-c 그대로).
+- **FD-106(확정)**: C4 · C5 "준비 중" 유지. C3는 그래프 타일이 되어 빈 상태 문구를 쓴다(아래 규칙 6).
+- 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **첫 부족 KPI**: 계획 Detail 페이즈별 요약 행 규칙(`phaseSummary`: 처음 모자라는 페이즈, 그 페이즈 충족률 낮은 → 부족량 큰 재화). 값 "Pn" 분홍 · 증감 자리에 재화 이름(`KpiDeltaTone.plan` #f7c9f4, 말줄임 — 시안 "기술 노트"는 짧은 이름, 앱은 백엔드 `display_name` "기술 노트 (최상급)"). 모자라는 재화 없음 "없음", 문서 계산 없음 '—'.
+2. **막힌 학생 KPI**: "n명", 증감 '—'(FE7-h).
+3. **범위 칩**: "활성 계획 · <목표 학생 수(FE7-c)>명 · 페이즈 <단계가 있는 페이즈 수>". 학생 수는 FE7-c 그대로(goals), 페이즈 수만 문서에서.
+4. **C3 그리기**(시안 SVG viewBox 494×207 그대로): x = 단계가 있는 페이즈 P1~Pn 같은 간격(40 → 344.2, 끝 354.2), 값이 바뀌는 페이즈에서 세로로 오르는 계단(시안 path `H … V …`). y축 끝 = 가장 큰 값을 20% 단위로 올림(20~100%, 시안 74% → 80% 축 · 40% 2-4 점선 95.5), 0 = 177. 선 최대 3개: 끝까지 모자라는(보유를 아는) 재화를 첫 부족 페이즈 → 그 페이즈 충족률 낮은 → 누적 부족 큰 순, 첫 부족 재화(KPI)를 맨 앞(분홍 2.4 · 흰 굵은 이름), 나머지 회색 2 · 회색 이름. 첫 선 첫 부족 페이즈에 분홍 점(r6 · #16202c 테두리) + "첫 부족 · Pn". 이름은 선 끝 + 6, 겹치면 12 간격으로 아래로 민다. 누르는 동작 없음. 크레딧도 선 후보(비율이라 단위 문제 없음).
+5. **C1 "페이즈 순"**: 재화의 첫 부족 페이즈(`bottlenecks[].phase_number`) 순 → FE7-c "부족 큰 순" 비교, 문서에서 모자라지 않는 재화는 뒤. 문서 계산이 있을 때만 켜고, 없으면 그 칸만 비활성(FE7-c 그대로). 순서를 바꾸면 C1에서 고른 행만 푼다(그 행이 화면에 없을 수 있다). 순서 선택은 다시 읽어도 남긴다.
+6. **C3 빈 상태(~습니다체)**: 공용 빈 상태(읽는 중 '—' · 목표 없음 "저장된 계획이 없습니다…" · 계획 재화 없음)는 FE7-c와 같다. 그 밖에 문서 계산 없음 '—'(오류면 그 글자), 보유 아는 재화 없음 "보유를 아는 재화가 없습니다. 인벤토리 스캔을 실행하면 나타납니다.", 끝까지 모자라는 재화 없음 "계획 끝까지 모자라는 재화가 없습니다."(새 문구, 시안 없음), 페이즈 계산 줄(`phase_results`)이 빠진 페이즈가 있으면 '—'.
+7. **근거 Stats-Plan 틀**: 계획 집계에서 고른 재화(C1 · C2)가 문서 계산에서 모자라는 단계가 있을 때만. 머리 칩 "첫 부족 Pn"(분홍), 아이콘 행(FE7-c 그대로), "막히는 단계" + 캡션 "단계 순서"(시안 위치 152), 단계 행(196 · 피치 58, 최대 4 + "외 n단계"): 초상 · "Pn"(경기천년제목 15 분홍, 폭 30) · "<학생> · <단계 이름>" · 칩 "−<그 단계 진입 부족>"(분홍, 수량 단위), "Pn부터 누적 부족 −<합>"(= 그 재화 전체 부족). 그 아래 "쓰는 학생 · n명"(시안 "풀리는 방법" 자리, 7행 + "외 n명"). 보유 · 필요 · 부족 세 줄은 시안 Stats-Plan에 없어 이 틀에서 뺐다. 모자라지 않거나(크레딧 등) 문서 계산이 없으면 FE7-c 틀 그대로. 막히는 단계 칩 · 누적은 수량, C3는 % — 시안은 같은 숫자를 썼다(아래 발견 2).
+8. **좁은 창**: 근거 소제목(`_sectionTitle`)은 160 폭 미만에서 최소 폭으로 배치하고 오른쪽을 자른다(행과 같은 규칙).
+
+#### golden 변화 예상
+
+- **`statistics-plan`: 바뀐다.** fixture 입력만 바꿨다(서비스가 활성 문서 · 문서 계산을 시안 숫자 fixture로 준다, 장면 조작 그대로). 장면별 예측(일회성 렌더로 본 모습):
+  - KPI: "첫 부족" '—' → 분홍 "P2" + 분홍빛 "기술 노트 (최상급)", "막힌 학생" '—' → 흰 "6명" + 회색 '—'. 계획 충족률 72% · 14종 · 미계획 26명은 그대로.
+  - 범위 칩: "활성 계획 · 9명 · 페이즈 —" → "… · 페이즈 5".
+  - C1: seg "페이즈 순" 흐림 → 또렷(선택은 "부족 큰 순" 그대로, 행 · 막대 그대로).
+  - C3: "준비 중" → 계단선 그래프(왼쪽 위 "누적 부족 (재화별 필요량 대비)", "40%" 점선 · "0" · P1~P5, 분홍 기술 노트 (최상급) 0 → 18 → 41 → 62 → 74% + P2 분홍 점 + "첫 부족 · P2", 회색 엘리그마 0 → 0 → 12 → 22 → 30%, 회색 설계도 · 시계 T8 0 → 0 → 0 → 9 → 15%, 선 끝 이름 셋). "2차" 칩 그대로.
+  - C2 · C4 · C5 · 근거 빈 상태 · 왼쪽 섹션: 그대로.
+- **`statistics-inventory`: 변화 0.** 같은 서비스가 활성 문서 · 문서 계산을 주지만 인벤토리 주제는 그것을 그리지 않는다(KPI · B1 · B2 · B3 · 근거 빈 상태 · 왼쪽은 FE7-c 그대로). 계획 읽기 오류도 공용 안내에 들어가지 않는다.
+- **`statistics-growth`: 변화 0.** 서비스 그대로(golden Mock 활성 계획 · 문서 계산 대역을 새로 읽지만 학생 성장 주제는 그것을 그리지 않는다).
+- **다른 장면: 변화 0.** 계획 · 키트 · 셸 파일을 고치지 않았다. 통계 탭을 띄우지 않는 장면은 통계 읽기가 일어나지 않는다(처음 보일 때 읽기).
+- commit.json `whole` = `frontend/test/goldens/baseline/statistics-plan.png`(CF가 승인 뒤 갱신한 파일).
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Plan(K · C3) | golden `statistics-plan`(시안 숫자 fixture) → 통계 탭 → 계획 집계 | 범위 칩 "활성 계획 · 9명 · 페이즈 5", KPI 첫 부족 분홍 "P2" + "기술 노트 (최상급)" · 막힌 학생 "6명", C3 계단선 세 줄(분홍이 맨 위 74%, 40% 점선 · P1~P5, 분홍 점 "첫 부족 · P2"), 재화 수량을 더한 선 없음 |
+| Stats-Plan(C1 seg) | C1 "페이즈 순" 누르기 | 행이 기술 노트 (최상급) · 엘리그마 · 설계도 · 시계 T8 · 크레딧 · 네브라 순, "부족 큰 순"으로 돌아가면 크레딧 먼저 |
+| Stats-Plan(근거) | C2 기술 노트 (최상급) 점(충족 80% · 학생 6) 누르기 | 오른쪽 머리 칩 "첫 부족 P2", 부제 "C2에서 고른 병목 · 충족률 80% · 학생 6명", "막히는 단계 · 단계 순서" + 4행(P2 호시노 · 스킬 M −18 · P3 아리스 · EX 5 −23 · P4 히나 · 스킬 9 −21 · P5 카즈사 · 스킬 M −12), "P2부터 누적 부족 −74"(분홍), 그 아래 "쓰는 학생 6명" |
+| Stats-Plan(근거, 부족 없는 재화) | C1 크레딧 행 누르기 | FE7-c 틀 그대로(칩 "−62%", 보유 · 필요 · 부족 세 줄, 쓰는 학생) |
+| (동작) | KPI "첫 부족" 누르기 · 1280×720 · 800×600 | C3 줄로 스크롤, 작은 창 넘침 예외 없음 |
+| Statistics-Proposal | 위 화면 | "단계 누적 → 계단선", 색 역할(강조 분홍 · 나머지 회색), 다른 재화 합산 없음 |
+
+#### 미검증 항목
+
+- golden(`statistics-plan` 변화 · `statistics-growth` · `statistics-inventory` · 다른 장면 변화 0 예측): **미실행**. 일회성 렌더는 배치 확인만이다.
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드 계정의 숫자(문서 계산 resource_key와 부족 계산 resource_key가 같은 공간인지 — C1 "페이즈 순"이 키로 맞춘다, 실제 페이즈 수가 많을 때 P 글자 간격, 크레딧이 C3 선이 되는 경우의 모습): **미실행**. Mock · fixture만 보았다.
+- golden 장면에서 오프스테이지 계획 탭도 fixture 활성 문서 · 문서 계산을 받는다(같은 서비스). 보이지 않지만 그 탭이 예외를 내면 golden 테스트가 실패한다 — 일회성 렌더(같은 서비스 구성)에서 예외 0을 보았다.
+
+#### WIP 보존 확인
+
+- 고친 기존 10파일 + 이 문서는 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다.
+- 작업 트리의 다른 미커밋 변경(Lane B `scanner_service.dart` · `scan_page.dart` 등, 스캐너 WIP 서비스 파일 · 위젯, 백엔드 파일)은 읽지도 고치지도 않았다(`mock_app_service.dart`는 읽기만). git 쓰기는 하지 않았다. 임시 렌더 테스트는 지웠다.
+
+#### 발견 사항
+
+1. **mock 기본 계정의 활성 계획**: 앱 mock 실행에서는 기본 계정에 목표가 없어 계획 집계가 빈 상태다(FE7-c 발견 4와 같다). 시안 숫자를 앱에서 보려면 `lib/services/**` 검수 시나리오가 필요하다 — CF 요청 후보.
+2. **시안 숫자 모순 이어짐**: 시안 C3 기술 노트 (최상급) 74%(근거 −74)는 C1 · C2 96 / 120(80% 충족)과 맞지 않는다. fixture는 C3 · KPI · 근거를 시안대로 맞추고(문서 계산 보유 · 필요 = 26 / 100) 부족 계산 fixture(FE7-c, 96 / 120)는 그대로 둬, 같은 재화의 근거 부제 "충족률 80%"와 "누적 부족 −74"가 한 패널에 함께 보인다. 실제 자료에서는 둘이 같은 계정 · 같은 목표라 맞는다. 시안 학생(리오(무장) · 노아 · 미카)은 성장 fixture 계획 학생에 없어 아리스 · 히나 · 카즈사로 두었다.
+3. **근거 단계 칩 단위**: 시안 "−18 … −74"는 C3 %와 같은 숫자라 단위가 모호하다. 수량(그 단계 진입 부족량)으로 정했다(규칙 7). %가 맞다면 바꾸기 쉽다(합 = 전체 부족이라 % 합은 C3 끝값).
+4. **"풀리는 방법"(what-if)**: 백엔드가 없어 그리지 않았다(FE7-c와 같다). 그 자리에 "쓰는 학생"을 두었다.
+5. **KPI 첫 부족 재화 이름**: 시안은 짧은 이름("기술 노트"), 앱은 `display_name` 전체를 말줄임으로 보인다. 짧은 이름 규칙이 필요하면 별도 결정.
+6. **C3 선 수 3 · 겹침**: 선이 같은 값을 지나면 겹쳐 보이고, "첫 부족 · Pn" 글자가 회색 선과 겹칠 수 있다(시안 좌표 그대로). 이름 글자만 12 간격으로 민다.
+7. **C3 누르기 없음**: 선을 눌러 재화를 고르는 동작은 시안에 없어 두지 않았다(C1 · C2에서 고른다).
+8. **활성 문서 ↔ goals v1 학생 수**: 범위 칩 학생 수는 goals(FE7-c), 막힌 학생의 m은 문서 계산 단계 학생 수다. FB-1b 파생 규칙상 같아야 하지만 다르면 두 숫자가 어긋나 보인다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7g/pre/<경로>`(고친 기존 10파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7g/commit.json`: slice `fe7g`, `status=true`, modified 11(이 문서 포함), added 5, `whole` = `frontend/test/goldens/baseline/statistics-plan.png`.
+- 인계: `debug/frontend_fe7g/output.md`.
+
+#### 다음 행동
+
+- FE7-g 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트에 새 17건(plan_projection 7 · plan_view 9 · statistics_page 1), golden은 `statistics-plan`만 RED(위 장면별 예측), `statistics-growth` · `statistics-inventory` · 다른 장면 변화 0(Lane B 변화는 별도). 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe7g`.
+- 남은 CF 판단: 발견 1(mock 검수 시나리오), 2 · 3(시안 숫자 · 단계 칩 단위), 5(짧은 이름), 8(학생 수 원천 하나로).
+
+### fe7g commit record (2026-10-14 00:57, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_004608\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

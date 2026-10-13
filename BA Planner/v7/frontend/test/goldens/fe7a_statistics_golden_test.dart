@@ -10,6 +10,10 @@
 // - `statistics-inventory`: KPI 72% · 14종 · 6종 · 3 / 6 · 1종 엘레프, B1 78 · 64 · 91 · 52 · 47 · 빗금, B2 · B3 "준비 중".
 // - `statistics-plan`: KPI 72% · 14종 · — · — · 미계획 n명, 범위 칩 "활성 계획 · 9명 · 페이즈 —", C1 불릿 5행(크레딧 ·
 //   엘리그마 · 네브라 · 님루드 · 기술 노트 상급), C2 산점도 + 분홍 구역, C3 · C4 · C5 "준비 중".
+// FE7-g: 인벤토리 · 계획 장면의 서비스가 활성 계획 문서 · 문서 계산도 시안 숫자 fixture(`statistics_plan_fixture.dart`)로
+// 준다(장면 조작은 그대로). `statistics-plan`은 KPI 첫 부족 "P2 · 기술 노트 (최상급)" · 막힌 학생 "6명", 범위 칩
+// "활성 계획 · 9명 · 페이즈 5", C1 seg "페이즈 순"이 또렷해지고, C3이 계단선 세 줄(분홍 기술 노트 · 회색 엘리그마 · 설계도)을
+// 그린다. `statistics-inventory`는 인벤토리 주제라 바뀌지 않는다. `statistics-growth`는 Mock 활성 계획을 읽지만 보이지 않는다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -28,6 +32,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../statistics_growth_fixture.dart';
+import '../statistics_plan_fixture.dart';
 import '../statistics_supply_fixture.dart';
 import 'golden_harness.dart';
 
@@ -63,8 +68,25 @@ class _GrowthGoldenService extends GoldenMockAppService {
   }
 }
 
-/// 성장 fixture 위에 인벤토리 목록 · 계정 인벤토리 · 부족 계산을 인벤토리 · 계획 fixture로 바꿔 끼운다(FE7-c).
+/// 성장 fixture 위에 인벤토리 목록 · 계정 인벤토리 · 부족 계산을 인벤토리 · 계획 fixture로 바꿔 끼운다(FE7-c). 활성 계획 문서 ·
+/// 문서 계산은 계획 집계 fixture다(FE7-g).
 class _SupplyGoldenService extends _GrowthGoldenService {
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    final base = await super.loadRepositoryPlan(profileId);
+    return statisticsPlanFixturePlan(
+      profileId: base.profileId,
+      revision: base.revision,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async => statisticsPlanFixtureProjection();
+
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) async {
     final base = await super.loadRepositoryState(profileId);

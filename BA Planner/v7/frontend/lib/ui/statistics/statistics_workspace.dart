@@ -6,8 +6,9 @@
 //   행 0은 KPI 띠, 그 아래 위젯 타일 줄(80° 평행사변형, 사선 계단은 translate 모드가 행 높이대로 만든다).
 //   학생 성장(FE7-b)은 KPI 5칸 값(증감은 FE7-h 전까지 '—', 누르면 그래프 줄로 스크롤)과 A1 · A2 그래프를 그린다
 //   (`statistics_growth_charts.dart`). 인벤토리 현황 · 계획 집계(FE7-c)는 KPI 5칸 값과 B1 · C1 · C2 그래프를 그린다
-//   (`statistics_supply_charts.dart`, FD-031 · 032 · 034 · 105). 다른 타일은 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자
-//   결정 10-13). 계획이 없으면 그래프 타일 안에 빈 상태 문구다.
+//   (`statistics_supply_charts.dart`, FD-031 · 032 · 034 · 105). 계획 집계는 활성 문서 계산으로 KPI 첫 부족 · 막힌 학생,
+//   범위 칩 페이즈 수, C1 "페이즈 순", C3 페이즈별 누적 부족을 더한다(FE7-g, `statistics_plan_charts.dart`). 다른 타일은
+//   제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면 그래프 타일 안에 빈 상태 문구다.
 //   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
 // - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d 전까지 비활성).
 //   학생 성장에서 A1 구간 · A2 항목을 고르면 그 근거 목록이다(`statistics_growth_evidence.dart`). B1 막대 · C1 행 · C2 점을
@@ -20,6 +21,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
@@ -35,10 +37,12 @@ import '../kit/skew_controls.dart';
 import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
+import '../widgets/plan_scenario_preview.dart' show planScenarioBottleneckValue;
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
 import 'statistics_growth_charts.dart';
 import 'statistics_growth_evidence.dart';
+import 'statistics_plan_charts.dart';
 import 'statistics_source.dart';
 import 'statistics_supply_charts.dart';
 import 'statistics_supply_evidence.dart';
@@ -62,6 +66,9 @@ const statisticsSupplyNoCategoriesText = '카테고리로 나눌 재화가 없�
 
 /// C2 빈 상태: 보유를 아는 계획 재화가 없다.
 const statisticsSupplyNoKnownText = '보유를 아는 재화가 없습니다. 인벤토리 스캔을 실행하면 나타납니다.';
+
+/// C3 빈 상태: 활성 문서 계산에서 끝까지 모자라는 재화가 없다(FE7-g, 시안 없음).
+const statisticsPlanNoShortageText = '계획 끝까지 모자라는 재화가 없습니다.';
 
 /// 아직 그리지 않는 타일(FD-106 사용자 결정 10-13: 자리를 유지하고 "준비 중").
 const statisticsTilePendingText = '준비 중';
@@ -766,6 +773,7 @@ class _WidgetsSection extends StatelessWidget {
                     mode: mode,
                     owned: growth.growth?.ownedCount,
                     planStudents: statisticsPlanStudentCount(data),
+                    phases: supply.planning?.phaseCount,
                   ),
                 ),
                 Positioned.fromRect(
@@ -800,11 +808,15 @@ class _TopicTitle extends StatelessWidget {
     required this.mode,
     required this.owned,
     required this.planStudents,
+    required this.phases,
   });
 
   final StatisticsMode mode;
   final int? owned;
   final int? planStudents;
+
+  /// 활성 계획 문서의 페이즈 수(FE7-g). 문서 계산이 없으면 null.
+  final int? phases;
 
   @override
   // 제목 묶음은 왼쪽, 범위 글자는 오른쪽 끝(시안 사이 빈 span). 둘 다 느슨한 Flexible이라 남는 폭을
@@ -846,7 +858,11 @@ class _TopicTitle extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: BaChip(
                     key: const ValueKey('statistics-scope-label'),
-                    label: mode.scopeFor(owned, planStudents: planStudents),
+                    label: mode.scopeFor(
+                      owned,
+                      planStudents: planStudents,
+                      phases: phases,
+                    ),
                   ),
                 )
               : Text(
@@ -958,6 +974,7 @@ class _TopicViewportState extends State<_TopicViewport> {
               StatisticsMode.plan => statisticsPlanKpis(
                 widget.supply.supply,
                 unplannedLow: statisticsUnplannedLowCount(widget.growth.growth),
+                planning: widget.supply.planning,
               ),
             },
             onPressed: (kpi) => _scrollToRow(targets[kpi], scale),
@@ -1048,23 +1065,38 @@ List<StatisticsKpiValue> statisticsInventoryKpis(StatisticsSupply? supply) {
 }
 
 /// 계획 KPI 5칸(FD-105 · 시안 Stats-Plan 라벨 순서): 계획 충족률(FD-031) · 부족 재화(분홍) · 첫 부족 · 막힌 학생 ·
-/// 미계획 · 40% 미만. 첫 부족(페이즈 · 재화)과 막힌 학생(FD-034 = 계획 학생 m − 끝까지 가는 학생 n, n은 문서 계산
-/// `bottlenecks`의 단계로 정한다)은 활성 문서 계산이 있어야 해 '—'다(FE7-g, `_reload()`는 문서 계산을 읽지 않는다).
+/// 미계획 · 40% 미만. 첫 부족 · 막힌 학생은 활성 문서 계산([planning], FE7-g)에서 온다:
+/// - 첫 부족 = 분홍 "Pn" + 증감 자리에 그 재화 이름(시안 `P2` · `기술 노트`, 계획 색). 모자라는 재화가 없으면 "없음"
+///   (계획 Detail과 같은 글자), 문서 계산이 없으면 '—'.
+/// - 막힌 학생 = 문서 계산 단계 학생 m − 끝까지 가는 학생 n(FD-034 (a)). 증감은 FE7-h라 '—'.
 /// [unplannedLow]는 보유 · 목표 없음 · 육성도 40% 미만 학생 수(성장 자료가 없으면 null).
 List<StatisticsKpiValue> statisticsPlanKpis(
   StatisticsSupply? supply, {
   required int? unplannedLow,
-}) => [
-  supply == null
-      ? _unknownKpi
-      : _plainKpi(statisticsFillText(supply.kpis.fulfillment)),
-  supply == null
-      ? _unknownKpi
-      : _plainKpi(_kinds(supply.kpis.shortageKinds), color: AppColors.accent),
-  _plainKpi('—'),
-  _plainKpi('—'),
-  unplannedLow == null ? _unknownKpi : _plainKpi('$unplannedLow명'),
-];
+  StatisticsPlanning? planning,
+}) {
+  final first = planning?.firstShortage;
+  final phase = planning?.firstShortagePhase;
+  final blocked = planning?.blockedStudents;
+  return [
+    supply == null
+        ? _unknownKpi
+        : _plainKpi(statisticsFillText(supply.kpis.fulfillment)),
+    supply == null
+        ? _unknownKpi
+        : _plainKpi(_kinds(supply.kpis.shortageKinds), color: AppColors.accent),
+    first != null
+        ? (
+            value: 'P${first.phase}',
+            delta: first.tile.name,
+            tone: KpiDeltaTone.plan,
+            color: AppColors.accent,
+          )
+        : _plainKpi(planScenarioBottleneckValue(phase)),
+    _plainKpi(blocked == null ? '—' : '$blocked명'),
+    unplannedLow == null ? _unknownKpi : _plainKpi('$unplannedLow명'),
+  ];
+}
 
 /// 인벤토리 · 계획 그래프 타일의 빈 상태 문구. 그릴 자료가 있으면 null(타일별 빈 상태는 타일이 더 정한다).
 String? statisticsSupplyEmptyText(
@@ -1232,7 +1264,7 @@ class _StatisticsTile extends StatelessWidget {
 
   bool get _isGrowthChart => tile.id == 'A1' || tile.id == 'A2';
   bool get _isSupplyChart =>
-      tile.id == 'B1' || tile.id == 'C1' || tile.id == 'C2';
+      tile.id == 'B1' || tile.id == 'C1' || tile.id == 'C2' || tile.id == 'C3';
 
   @override
   Widget build(BuildContext context) {
@@ -1248,8 +1280,10 @@ class _StatisticsTile extends StatelessWidget {
         tile.id == 'A1' &&
         growth != null &&
         (growth.growth?.ownedCount ?? 0) > 0;
-    // C1 seg: 1차는 "부족 큰 순"만, "페이즈 순"은 페이즈 데이터(FE7-g C3) 전까지 그 칸만 비활성이다.
+    // C1 seg: "부족 큰 순"은 부족 계산이 있으면, "페이즈 순"은 활성 문서 계산(FE7-g)도 있으면 동작한다.
     final orderSeg = tile.id == 'C1' && supply?.supply != null;
+    final phaseOrder = orderSeg && supply?.planning != null;
+    final onC1OrderChanged = supply?.onC1OrderChanged;
     final Widget body;
     if (growth != null && _isGrowthChart) {
       body = _growthBody(growth);
@@ -1275,14 +1309,19 @@ class _StatisticsTile extends StatelessWidget {
           children: [
             _TileHeader(
               tile: tile,
-              selectedSegment: metricSeg ? growth.metric.index : 0,
+              selectedSegment: metricSeg
+                  ? growth.metric.index
+                  : orderSeg
+                  ? supply!.effectiveC1Order.index
+                  : 0,
               onSegmentChanged: metricSeg && onMetricChanged != null
                   ? (index) =>
                         onMetricChanged(StatisticsGrowthMetric.values[index])
                   : orderSeg
-                  ? (_) {}
+                  ? (index) =>
+                        onC1OrderChanged?.call(StatisticsC1Order.values[index])
                   : null,
-              disabledSegments: orderSeg ? const {1} : const {},
+              disabledSegments: orderSeg && !phaseOrder ? const {1} : const {},
             ),
             Expanded(child: body),
           ],
@@ -1363,6 +1402,8 @@ class _StatisticsTile extends StatelessWidget {
     );
   }
 
+  Widget _c3Body(StatisticsSupplyView view) => _c3BodyFor(view, _empty, _chart);
+
   /// B1 · C1 · C2 내용(FE7-c). 계획이 없거나 계획 재화가 없으면 빈 상태 문구, 읽는 중 · 계산 실패면 '—'다(FD-106).
   Widget _supplyBody(StatisticsSupplyView view) {
     final data = view.supply;
@@ -1386,7 +1427,7 @@ class _StatisticsTile extends StatelessWidget {
       case 'C1':
         return _chart(
           StatisticsBulletChart(
-            rows: data.c1Rows,
+            rows: view.c1Rows,
             selectedKey: view.selectedResource(StatisticsResourceSource.c1),
             onResourceSelected: (key) => onSelectionChanged?.call(
               key == null
@@ -1398,6 +1439,8 @@ class _StatisticsTile extends StatelessWidget {
             ),
           ),
         );
+      case 'C3':
+        return _c3Body(view);
       default:
         final points = data.c2Points;
         if (points.isEmpty) return _empty(statisticsSupplyNoKnownText);
@@ -1419,6 +1462,28 @@ class _StatisticsTile extends StatelessWidget {
         );
     }
   }
+}
+
+/// C3 내용(FE7-g). 활성 문서 계산이 없으면 '—'(읽기 오류면 그 글자), 보유를 아는 재화가 없거나 끝까지 모자라는 재화가
+/// 없으면 빈 상태 문구다.
+Widget _c3BodyFor(
+  StatisticsSupplyView view,
+  Widget Function(String text) empty,
+  Widget Function(Widget chart) chart,
+) {
+  final planning = view.planning;
+  if (planning == null || !planning.phasesCalculated) {
+    return empty(view.planningError ?? '—');
+  }
+  if (planning.knownResources == 0) return empty(statisticsSupplyNoKnownText);
+  final lines = planning.c3Lines;
+  if (lines.isEmpty) return empty(statisticsPlanNoShortageText);
+  return chart(
+    StatisticsCumulativeShortageChart(
+      lines: lines,
+      phases: planning.phaseNumbers,
+    ),
+  );
 }
 
 /// 타일 머리(시안 `.dsp` 16px 제목 줄 + 그라데이션 룰). 키트 [TileTitle]은 글자 하나만 받으므로 같은 조각
