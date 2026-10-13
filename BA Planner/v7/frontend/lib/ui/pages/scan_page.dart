@@ -9,6 +9,7 @@ import '../../services/scanner_service.dart';
 import '../../services/student_scan_diagnostic.dart';
 import '../../services/window_dock_service.dart';
 import '../kit/kit_overlay.dart' show KitOverlayEscape;
+import '../scan/connected_target_controller.dart';
 import '../scan/scan_repository_sync.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryLoadErrorText, repositoryProfileWithRevision;
@@ -31,6 +32,7 @@ class ScanPage extends StatefulWidget {
         const NativeStudentScanDiagnosticFileService(),
     this.now = DateTime.now,
     this.active = true,
+    this.connectedTarget,
   });
 
   final AppService service;
@@ -44,6 +46,9 @@ class ScanPage extends StatefulWidget {
 
   /// 스캔 탭이 보이는가. 보일 때만 Esc가 진행 중(일시정지 포함) 스캔을 중지한다(FD-142, fb10a-dart).
   final bool active;
+
+  /// 앱 전역 게임 창 연결(FE8-d). 있으면 대상 창 선택은 이 값을 읽고 쓴다. 없으면 이 화면만의 선택이다.
+  final ConnectedTargetController? connectedTarget;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -137,6 +142,11 @@ class _ScanPageState extends State<ScanPage> {
   void initState() {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
+    final connectedTarget = widget.connectedTarget;
+    if (connectedTarget != null) {
+      connectedTarget.addListener(_connectedTargetChanged);
+      _adoptConnectedTarget();
+    }
     final scanner = _scanner;
     if (scanner != null) {
       _subscription = scanner.scannerEvents.listen(
@@ -152,8 +162,59 @@ class _ScanPageState extends State<ScanPage> {
     KitOverlayEscape.remove(this);
     if (_companionActive) unawaited(widget.windowDockService.restore());
     widget.service.state.removeListener(_connectionChanged);
+    widget.connectedTarget?.removeListener(_connectedTargetChanged);
     unawaited(_subscription?.cancel());
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ScanPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.connectedTarget, widget.connectedTarget)) return;
+    oldWidget.connectedTarget?.removeListener(_connectedTargetChanged);
+    widget.connectedTarget?.addListener(_connectedTargetChanged);
+    if (widget.connectedTarget != null) _adoptConnectedTarget();
+  }
+
+  /// 앱 전역 연결 대상(FE8-d)을 이 화면의 선택으로 받는다. 목록에 없으면 넣고, 같은 id면 새 창 정보로 바꾼다.
+  void _adoptConnectedTarget() {
+    final connected = widget.connectedTarget?.target;
+    _targetId = connected?.id;
+    if (connected == null) return;
+    final index = _targets.indexWhere((item) => item.id == connected.id);
+    if (index < 0) {
+      _targets = [..._targets, connected];
+    } else {
+      _targets = [..._targets]..[index] = connected;
+    }
+  }
+
+  void _connectedTargetChanged() {
+    if (!mounted) return;
+    setState(_adoptConnectedTarget);
+  }
+
+  /// 드롭다운에서 고른 창. 앱 전역 연결이 있으면 그 창에 연결하고, 화면 선택은 리스너가 맞춘다.
+  void _chooseTarget(String? targetId) {
+    final connectedTarget = widget.connectedTarget;
+    final target = _targets.where((item) => item.id == targetId).firstOrNull;
+    if (connectedTarget == null || target == null) {
+      setState(() => _targetId = targetId);
+      return;
+    }
+    connectedTarget.connect(target);
+  }
+
+  /// 최근 기록을 열 때 고를 창. 앱 전역 연결이 있으면 기록의 창이 목록에 있을 때 그 창에 연결하고,
+  /// 없으면 지금 연결을 그대로 둔다(기록의 창이 사라졌다고 지금 연결을 끊지 않는다).
+  String? _recentTargetId(ScannerRecentSummary item) {
+    final target = _targets
+        .where((candidate) => candidate.id == item.targetId)
+        .firstOrNull;
+    final connectedTarget = widget.connectedTarget;
+    if (connectedTarget == null) return target?.id;
+    if (target != null) connectedTarget.connect(target);
+    return connectedTarget.target?.id;
   }
 
   void _connectionChanged() {
@@ -203,6 +264,7 @@ class _ScanPageState extends State<ScanPage> {
     try {
       final targets = await scanner.listScannerTargets();
       if (!mounted) return;
+      widget.connectedTarget?.updateTargets(targets);
       setState(() {
         _targets = targets;
         if (!targets.any((item) => item.id == _targetId)) _targetId = null;
@@ -1126,12 +1188,11 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   void _openRecent(ScannerRecentSummary item) {
+    final recentTargetId = _recentTargetId(item);
     setState(() {
       _session = item.session;
       _kind = item.kind;
-      _targetId = _targets.any((target) => target.id == item.targetId)
-          ? item.targetId
-          : null;
+      _targetId = recentTargetId;
       _stage = _SessionStage.terminal;
       _phase = item.phase;
       _diagnostic = item.diagnostic;
@@ -1323,7 +1384,7 @@ class _ScanPageState extends State<ScanPage> {
                             _stage == _SessionStage.cancelling ||
                             _stage == _SessionStage.starting
                         ? null
-                        : (value) => setState(() => _targetId = value),
+                        : _chooseTarget,
                   ),
                 ),
                 SegmentedButton<String>(

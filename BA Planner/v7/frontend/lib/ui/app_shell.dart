@@ -22,6 +22,8 @@ import 'pages/settings_page.dart';
 import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/tactical_page.dart';
+import 'scan/connected_target_controller.dart';
+import 'scan/header_connection_chip.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/asset_image_grid.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -113,6 +115,10 @@ class _AppShellState extends State<AppShell>
   late bool _planTabActive;
   final ValueNotifier<ScanCompanionState?> _scanCompanion = ValueNotifier(null);
 
+  /// 앱 전역 게임 창 연결(FE8-d, FD-116 (a)). 스캔 화면과 머리글 칩이 같은 값을 쓴다.
+  late final ConnectedTargetController _connectedTarget =
+      ConnectedTargetController.forService(widget.service);
+
   @override
   void initState() {
     super.initState();
@@ -143,6 +149,7 @@ class _AppShellState extends State<AppShell>
     oldWidget.service.state.removeListener(_handleConnectionChanged);
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
+    _connectedTarget.rebindService(widget.service);
     _loadSelectedProfile();
   }
 
@@ -154,6 +161,7 @@ class _AppShellState extends State<AppShell>
     _scanCompanion.dispose();
     _recentStudents.dispose();
     _headerOverride.dispose();
+    _connectedTarget.dispose();
     super.dispose();
   }
 
@@ -309,6 +317,7 @@ class _AppShellState extends State<AppShell>
                                 service: widget.service,
                                 profile: _selectedProfile,
                                 developmentPanelVisible: _showDevelopmentPanel,
+                                connectedTarget: _connectedTarget,
                                 onSelected: _open,
                                 onToggleDevelopmentPanel: () {
                                   setState(() {
@@ -413,6 +422,7 @@ class _AppShellState extends State<AppShell>
                                     _scanCompanion.value = companion;
                                   },
                                   active: _section == AppSection.scan,
+                                  connectedTarget: _connectedTarget,
                                 ),
                                 SettingsPage(
                                   service: widget.service,
@@ -513,6 +523,7 @@ class _CompoundPageHeader extends StatelessWidget {
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
+    required this.connectedTarget,
     required this.onSelected,
     required this.onToggleDevelopmentPanel,
   });
@@ -522,6 +533,7 @@ class _CompoundPageHeader extends StatelessWidget {
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
+  final ConnectedTargetController connectedTarget;
   final ValueChanged<AppSection> onSelected;
   final VoidCallback onToggleDevelopmentPanel;
 
@@ -628,6 +640,10 @@ class _CompoundPageHeader extends StatelessWidget {
                             service: service,
                             profile: profile,
                             developmentPanelVisible: developmentPanelVisible,
+                            connectedTarget: connectedTarget,
+                            // 창 선택 패널(FE8-e) 전에는 스캔 탭의 기존 고르기로 이동한다.
+                            onOpenTargetPicker: () =>
+                                onSelected(AppSection.scan),
                             onToggleDevelopmentPanel: onToggleDevelopmentPanel,
                           ),
                         ),
@@ -869,6 +885,8 @@ class _AppHeader extends StatelessWidget {
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
+    required this.connectedTarget,
+    required this.onOpenTargetPicker,
     required this.onToggleDevelopmentPanel,
   });
 
@@ -877,6 +895,8 @@ class _AppHeader extends StatelessWidget {
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
+  final ConnectedTargetController connectedTarget;
+  final VoidCallback onOpenTargetPicker;
   final VoidCallback onToggleDevelopmentPanel;
 
   @override
@@ -979,7 +999,11 @@ class _AppHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.lg),
                 ],
-                _ConnectionBadge(connection: state.connection),
+                HeaderConnectionChip(
+                  backend: state.connection,
+                  connectedTarget: connectedTarget,
+                  onOpenTargetPicker: onOpenTargetPicker,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Tooltip(
                   message: '개발 상태 패널',
@@ -1018,47 +1042,6 @@ class _HeaderMetric extends StatelessWidget {
         // 지표 숫자는 탭을 오갈 때 자리가 흔들리지 않도록 tabular figures를 쓴다.
         Text(value, style: AppType.tabular(AppType.title)),
       ],
-    );
-  }
-}
-
-class _ConnectionBadge extends StatelessWidget {
-  const _ConnectionBadge({required this.connection});
-
-  final BackendConnection connection;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (connection) {
-      BackendConnection.connected => ('연결됨', AppColors.success),
-      BackendConnection.disconnected => ('연결 안 됨', AppColors.danger),
-      BackendConnection.connecting => ('연결 중', AppColors.warning),
-    };
-
-    return Semantics(
-      label: '백엔드 $label',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.55)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.circle, size: 8, color: color),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: AppType.bodySmall.copyWith(
-                color: color,
-                fontWeight: AppType.semiBold,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

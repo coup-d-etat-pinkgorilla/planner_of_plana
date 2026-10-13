@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**FE8-c 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `cac83222`. 아래 "FE8-c 착수 기록"·"FE8-c 종료 기록". 그 전: FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**FE8-d 코드 작성 완료, CF gate 대기(2026-10-13).** 시작 커밋 `75943ffc`. 아래 "FE8-d 착수 기록"·"FE8-d 종료 기록". 그 전: FE8-c(시작 `cac83222`, 커밋 `d0964853`), FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -2142,7 +2142,7 @@ artboard `Inventory-Tiers.dc.html` → 앱:
 
 ## fb2d-dart 착수 기록 (2026-10-12)
 
-- 상태: 진행 중.
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
 - 범위: FB-2d 프로필 삭제(7경로)의 Dart 연결. 워커 프롬프트 `debug/frontend_redesign_handoff/fb2ddart-worker-prompt-20261012.md`, 목록은 backend 로그 2026-10-12 01:28("CF fb2d-dart 연결 목록"), 사용자 결정은 CF 로그 2026-10-11 20:50(tactical-share 함께 삭제).
   1. wire 변경 0 확인 + 계약 fixture 양성·음성 테스트(기존 strict DTO·client는 그대로).
   2. 계정 삭제 확인 문구에 전술 공유 데이터를 같은 확인 안에 넣는다(새 확인 단계 없음).
@@ -2298,7 +2298,7 @@ FB-2d 프로필 삭제(7경로)의 Dart 연결을 끝냈다. wire·strict DTO·P
 
 ## fb10b-dart 착수 기록 (2026-10-12)
 
-- 상태: 진행 중.
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
 - 범위: FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결. 워커 프롬프트 `debug/frontend_redesign_handoff/fb10bdart-worker-prompt-20261012.md`, 목록은 backend 로그 2026-10-12 08:11·09:10과 `debug/xb_fb10b_product_20261012/artifacts/CF-CONNECTION.md`·`DART-HANDOFF.md`, 사용자 결정은 결정 대장 FD-146(해제 범위 2026-10-12).
   1. 새 읽기 `repository.inventory.review.get`: 별도 strict DTO·client·Process·Mock·protocol validator. 수량 스냅숏과 같은 revision에서 읽고 다르면 다시 읽음. `migration_required`·`corrupt_data`는 오류 그대로.
   2. `repository.inventory.update` optional `applied_resource_keys`(배열, null 금지, 빈 배열 허용, 최대 4096, 별칭 중복 거부). 직접 고치기 저장 = 바꾼 key + 같은 값으로 확인한 key. 재시도는 원 revision·key·scope.
@@ -2856,3 +2856,251 @@ FB-10b 인벤토리 "확인 필요" 영속 표시의 Dart 연결을 끝냈다. �
 - FE8-c 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE7-a)와 이 slice가 모두 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 녹색, golden RED = `account-editor`·`account-picker` 2건) → `failures/` 검토 → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8c`(`section-template-studio.md`는 3-way 병합, WIP hunk와 떨어져 있다).
 - 발견 사항 1·2·3·4·6·7은 CF 판단을 기다린다.
+
+## FE8-d 착수 기록 (2026-10-13)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: 앱 전역 게임 창 연결 상태(`connectedTarget`)와 헤더 칩(FD-116 (a), FD-117, FD-148 중 "백엔드 끊김 > 게임 창 연결"만, FD-115 칩 색). 창 선택 패널·교체 이펙트(FE8-e), 스캔 진행 겹침(FE8-f2), 헤더 지표·초상 모양(FD-115 나머지)은 범위 밖.
+- 막힘 확인: 막힘 요약의 FE8-d 행 FD-116은 확정(2026-10-06). 막는 '열림' FD 없음.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `75943ffcd529d57ce2de7cea703f32f93085ec96`.
+- 고칠 기존 파일과 WIP(`git status --short <경로>`), 착수 사본 `debug/frontend_fe8d/pre/<v7 기준 경로>`:
+
+  | 파일 | WIP | 줄바꿈 | 고칠 곳 |
+  |---|---|---|---|
+  | `frontend/lib/ui/app_shell.dart` | 없음 | LF | 컨트롤러 소유·전달, 헤더 배지 → 새 칩(최소 diff) |
+  | `frontend/lib/ui/pages/scan_page.dart` | **있음**(` M`) | LF | 선택 창을 컨트롤러와 공유(생성자·initState·dispose·목록 새로고침·드롭다운·최근 기록 열기). WIP hunk와 떨어진 줄만 |
+  | `frontend/test/widget_test.dart` | 없음 | CRLF | 헤더 칩 문구 기대(백엔드 "연결됨" → 게임 창 칩) |
+
+- `frontend/lib/ui/app_section.dart`는 고치지 않는다(필요 없음). `frontend/lib/services/scanner_service.dart`(WIP 있음)는 읽기만 한다.
+- 새 파일(예정): `frontend/lib/ui/scan/connected_target_controller.dart`, `frontend/lib/ui/scan/header_connection_chip.dart`, `frontend/test/connected_target_fe8d_test.dart`.
+- WIP가 있는 `scan_page.dart`는 끝 사본도 `debug/frontend_fe8d/post/`에 두고 commit.json에 `post_dir`를 적는다. WIP는 지우거나 정리하지 않는다.
+
+## FE8-d 종료 기록 (2026-10-13, 코드 작성 완료·gate 미실행)
+
+앱 전역 게임 창 연결 상태(`ConnectedTargetController`)와 머리글 연결 칩을 만들었다. 셸이 컨트롤러 하나를 소유하고, 스캔 화면의 대상 창 선택과 머리글 칩이 같은 값을 읽고 쓴다.
+
+### 실행 명령·결과
+
+모두 `frontend` 폴더에서 실행했다. golden·process E2E·전체 gate는 돌리지 않았다.
+
+- `flutter analyze`: **No issues found**(0, info 포함). 마지막 실행은 모든 편집 뒤다.
+- `flutter test test/<파일>.dart`(파일마다 따로, `--reporter expanded`, 로그 `debug/frontend_fe8d/logs/`): 21개 파일 모두 통과, 실패 0.
+
+  | 파일 | 통과 | 실패 |
+  |---|---:|---:|
+  | `connected_target_fe8d_test.dart`(새) | 8 | 0 |
+  | `widget_test.dart`(기대 2줄 수정) | 16 | 0 |
+  | `home_app_shell_test.dart` | 1 | 0 |
+  | `home_page_test.dart` | 5 | 0 |
+  | `scan_page_test.dart` | 17 | 0 |
+  | `scan_page_revision_test.dart` | 14 | 0 |
+  | `scan_page_pause_fb10a_test.dart` | 8 | 0 |
+  | `mock_scanner_service_test.dart` | 4 | 0 |
+  | `scanner_protocol_client_test.dart` | 6 | 0 |
+  | `scanner_target_metadata_fb4_test.dart` | 19 | 0 |
+  | `scanner_pause_fb10a_test.dart` | 39 | 0 |
+  | `account_editor_fe8c_test.dart` | 9 | 0 |
+  | `account_manager_fe8b_test.dart` | 6 | 0 |
+  | `growth_calculator_view_test.dart` | 24 | 0 |
+  | `inventory_shell_lazy_test.dart` | 1 | 0 |
+  | `profile_delete_fb2d_test.dart` | 17 | 0 |
+  | `section_template_studio_test.dart` | 15 | 0 |
+  | `statistics_app_shell_test.dart` | 2 | 0 |
+  | `student_filter_followups_test.dart` | 4 | 0 |
+  | `student_filter_modal_test.dart` | 7 | 0 |
+  | `title_page_test.dart` | 25 | 0 |
+
+  고른 기준: `test/` 중 golden 폴더를 빼고 `BAPlannerApp(`·`AppShell(`·`ScanPage(`·연결 칩 문구를 쓰는 파일 전부, 그리고 대상 목록을 다루는 스캐너 DTO·Mock 테스트. 잠금 충돌은 없었다.
+- fe_commit 병합 모의(읽기 전용, `git merge-file -p`를 표준 출력으로): 고친 기존 파일 3개 모두 HEAD·pre·끝 내용 병합에 충돌이 없다. `widget_test.dart`는 줄바꿈을 맞춘 뒤(fe_commit의 `Norm`과 같음) 충돌이 없다.
+
+### 고친 파일
+
+- **`frontend/lib/ui/scan/connected_target_controller.dart`(새)**: `ConnectedTargetController`(ChangeNotifier).
+  - API:
+    - `target`: 지금 연결된 `ScannerTarget`(FB-4의 client 크기·game 포함)
+    - `connect`, `disconnect`(사용자 해제)
+    - `updateTargets`(새 목록 반영), `refresh`(목록 한 번 읽기)
+    - `lastRelease`: 해제 사유 enum `ConnectedTargetRelease`(user·targetMissing·targetClosed·backendDisconnected). FE8-e 해제 연출용이다.
+  - 백엔드 상태를 듣는다. connected에서 벗어나면(끊김·재시작) 해제한다. 다시 붙어도 연결은 돌아오지 않는다.
+  - 연결된 동안 백엔드가 연결되어 있으면 창 목록을 5초마다 확인한다(`pollInterval`). 미연결이거나 백엔드가 끊겼으면 타이머가 없다. 목록 읽기 실패는 연결을 바꾸지 않는다.
+  - 최소화·미지원은 해제하지 않고 창 정보만 바꾼다. 같은 창·같은 정보면 알리지 않는다.
+  - 셸의 서비스가 바뀌면 `rebindService`로 다시 묶고 해제한다.
+- **`frontend/lib/ui/scan/header_connection_chip.dart`(새)**: 머리글 칩.
+  - `HeaderConnectionChipState.resolve(backend, target)`가 우선순위를 정한다: 백엔드 끊김(빨강 `백엔드 끊김`) > 백엔드 연결 중(주황 `백엔드 연결 중`) > 게임 창 연결됨(녹색) / 연결 안 됨(회색).
+  - 문구 `connectedTargetLabel`: `연결됨 · Blue Archive · 2560×1440`. game을 모르면 이름 없이 크기만(`연결됨 · 1600×900`), 크기를 모르면(둘 중 하나라도) `—`.
+  - 모양은 시안 `.conn`을 따른다:
+    - 여백 6/10(선 1px 포함), 반경 999, 점 8·간격 7, 12px w600
+    - 녹색: #58d6a7, 채움 .12, 선 .55
+    - 회색: 글자 #c3cfdb, 점 #9eb0c2, 채움 .12, 선 .45
+    - 빨강·주황은 녹색과 같은 짜임
+  - 게임 창 칸만 누를 수 있다(`header-connection-chip-button`, `KitPressable`). 백엔드 칸은 복구 배너가 맡는다.
+  - 칩 폭 최대 340, 글자 한 줄·말줄임.
+- **`frontend/lib/ui/app_shell.dart`(+25 −42)**: 아래 "app_shell diff".
+- **`frontend/lib/ui/pages/scan_page.dart`(+65 −4, WIP 위)**: 선택 창을 컨트롤러와 공유한다. 컨트롤러가 없으면(단독 테스트) 예전과 같다.
+  - 생성자에 선택 인자 `connectedTarget`을 더했다.
+  - initState·didUpdateWidget에서 리스너를 붙이고 연결 대상을 받는다(`_adoptConnectedTarget`). `_targetId`를 맞추고, 목록에 없으면 넣고, 같은 id면 새 창 정보로 바꾼다. 스캔 화면이 다시 만들어져도(계정 변경 key) 연결이 그대로 보인다.
+  - 목록 새로고침(`_refreshPreparation`)이 `updateTargets`를 부른다(사라진 창 해제).
+  - 드롭다운 선택은 `_chooseTarget` → `connect`다. 화면 선택은 리스너가 맞춘다.
+  - 최근 기록 열기: 기록의 창이 목록에 있으면 그 창에 연결하고, 없으면 지금 연결을 그대로 둔다(예전: 선택을 비움).
+- **`frontend/test/widget_test.dart`(+4 −2)**: `mock state is reflected without replacing widgets`의 칩 기대를 바꿨다.
+  - 처음: `연결됨`(백엔드) → `연결 안 됨`(게임 창 미연결).
+  - 끊김 뒤: `연결 안 됨` → `백엔드 끊김`.
+  - 테스트 이름과 나머지 기대(`42명`·`9999명`)는 그대로다. 옛 기대는 백엔드 배지 사양이었고, FD-117로 바뀌었다.
+- **`frontend/test/connected_target_fe8d_test.dart`(새, 8건)**:
+  - 칩 상태 3건: 문구(game·크기 모름 4가지), 우선순위·색(시안 값 직접 비교), 좁은 칸에서 한 줄·말줄임.
+  - 컨트롤러 2건:
+    - 전이 전체(아래 표)
+    - 주기 확인: 미연결·백엔드 끊김이면 읽지 않음, 실패는 유지, 사라짐 → 해제 뒤 확인 멈춤
+  - 셸 3건:
+    - 스캔 탭 선택 → 모든 탭 칩(1280×720, 넘침 없음) → 칩을 누르면 스캔 탭
+    - 다른 곳(FE8-e 홈 패널 자리)에서 쓴 값이 스캔 선택·시작 버튼·칩에 보이고, 해제도 같이 보인다
+    - 창 사라짐(주기 확인) → 미연결, 백엔드 끊김 → 빨강·누를 수 없음 → 다시 붙으면 미연결
+- `frontend/lib/ui/app_section.dart`·`home_page.dart`·`lib/services/**`는 고치지 않았다.
+
+### app_shell diff (+25 −42, 이유)
+
+- import 2줄(새 컨트롤러·칩).
+- `_AppShellState`:
+  - `late final _connectedTarget = ConnectedTargetController.forService(widget.service)`(주석 1줄)
+  - dispose 1줄
+  - 서비스 교체(didUpdateWidget) 때 `rebindService` 1줄
+- `ScanPage(... connectedTarget: _connectedTarget)` 1줄.
+- `_CompoundPageHeader`·`_AppHeader`에 `connectedTarget` 인자·필드를 전달한다. `_AppHeader`에는 `onOpenTargetPicker`도 더했다. 칩을 누르면 `onSelected(AppSection.scan)`이다(창 선택 패널 FE8-e 전, 주석 1줄).
+- `_ConnectionBadge(connection: ...)` 한 줄 → `HeaderConnectionChip(...)` 5줄. 쓰이지 않게 된 private `_ConnectionBadge` 클래스 41줄을 지웠다(남기면 analyze `unused_element`).
+- 이유:
+  - FD-117 (a)대로 칩은 같은 자리의 한 칩이고, 백엔드 상태와 게임 창 연결을 함께 봐야 한다.
+  - FD-116 (a)대로 연결 상태는 앱 전역이다. 셸이 소유해야 스캔 화면과 칩이 같은 값을 쓴다.
+  - `app_section.dart`는 고칠 필요가 없었다.
+
+### 연결 상태 전이표 (FD-116 (a))
+
+| 지금 | 사건 | 다음(`lastRelease`) | 칩 |
+|---|---|---|---|
+| 미연결 | 스캔 탭에서 창 고름(또는 `connect`, FE8-e 패널 자리) | 연결됨 | 녹색 `연결됨 · Blue Archive · 2560×1440` |
+| 연결됨 | 같은 창을 다시 고름 / 같은 정보의 목록 | 그대로(알림 없음) | 그대로 |
+| 연결됨 | 목록(5초 주기·스캔 새로고침)에 같은 창, 정보 바뀜(최소화 등) | 연결됨(창 정보 갱신) | 녹색, 크기 모르면 `—` |
+| 연결됨 | 목록에서 사라짐 | 미연결(`targetMissing`) | 회색 `연결 안 됨` |
+| 연결됨 | 목록에서 `closed` | 미연결(`targetClosed`) | 회색 |
+| 연결됨 | 다른 창 고름 | 연결됨(새 창) | 녹색(새 창 정보) |
+| 연결됨 | `disconnect()`(사용자 해제, UI는 FE8-e) | 미연결(`user`) | 회색 |
+| 연결됨 | 백엔드 끊김·연결 중(재시작 포함) | 미연결(`backendDisconnected`) | 빨강 `백엔드 끊김` / 주황 `백엔드 연결 중` |
+| 미연결 | 백엔드 끊김 | 미연결 | 빨강 `백엔드 끊김` |
+| (끊김 뒤) | 백엔드 다시 연결 | 미연결 유지 | 회색 |
+| 연결됨 | 목록 읽기 실패 | 그대로 | 그대로 |
+
+### 처리한 FD
+
+- **FD-116 (a)(확정)**: 앱 전역 connectedTarget만 기억하고 창 목록을 주기적으로 확인한다. 창이 닫히거나 목록에서 사라지면 해제한다.
+  - dock 시점은 바꾸지 않았다(전체 학생 스캔 때만).
+  - 프롬프트의 백엔드 재시작·사용자 해제도 해제 조건으로 넣었다.
+  - FD에 주기 수치가 없어 5초는 워커가 정했다(발견 4).
+- **FD-117(워커 재량) → 권장안 (a)**: 칩은 하나이고 게임 창 연결을 보인다. 백엔드가 끊기면 `백엔드 끊김`(빨강)이 앞선다. `RecoveryBanner`는 그대로다.
+- **FD-148(워커 재량)**: 이번 몫인 "백엔드 끊김 > 게임 창 연결(녹/회)"만 했다. 스캔 진행·일시정지 칸, 탭 점, 토스트는 FE8-f2다.
+- **FD-115(확정) 중 칩 색만**: 미연결 회색. 지표 숫자만·초상 둥근 사각은 하지 않았다(발견 3).
+- FD-140·FD-155는 읽기만 했다(FE8-f3·g1 몫).
+
+### golden 변화 예상
+
+golden mock(`MockAppService`·`GoldenMockAppService`·각 장면 mock)은 백엔드가 connected이고 고른 창이 없다. 그래서 셸 머리글이 보이는 장면은 모두 칩이 녹색 `연결됨`에서 회색 `연결 안 됨`으로 바뀐다. 함께 바뀌는 것:
+
+- 칩 폭: 약 +30px(글자 2자·공백 추가)
+- 칩 높이: 여백 7+1 → 5+1, 4px 낮아짐
+- 점: 아이콘 글리프 → 8px 원
+- 색: 녹 → 회
+
+바뀔 장면(14, `BAPlannerApp` 셸 머리글이 보임):
+
+1. `home` — 칩에 더해, 칩이 넓어진 만큼 초상·`학생`·`인벤토리` 지표가 왼쪽으로 밀린다.
+2. `students-grid`
+3. `students-detail`
+4. `students-grid-name-off`
+5. `students-grid-second-form`
+6. `students-filter-open`(모달 아래 머리글)
+7. `students-calculator`
+8. `students-calculator-bond-popover`
+9. `inventory`
+10. `inventory-all`
+11. `inventory-analysis`
+12. `inventory-analysis-opa`
+13. `inventory-tiers`
+14. `statistics-growth`(Lane A FE7-b가 같은 장면을 바꾸는 중이면 두 변화가 겹친다)
+
+2~14는 머리글 오른쪽 칩 영역만 바뀐다. 제목은 Expanded라 자리가 그대로다.
+
+바뀌지 않을 장면(29):
+- `title`·`account-manager`·`account-editor`·`account-picker`·`account-new`: `TitlePage`만 그린다(셸 없음).
+- `plan-*` 23장: `goldenMaterialHost(PlanningPage)`로 그린다(셸 없음). `plan-bottleneck`·`plan-by-phase`·`plan-overall`·`plan-preset-manager`, `plan-flow-*` 11장, `plan-scenario-*` 8장이다.
+- `scan-student-review`: `ScanStudentReviewWorkspace`만 그린다.
+
+새 golden 장면은 만들지 않았다.
+
+### 미검증 항목
+
+- golden 비교: **미실행**(위 예상 14장).
+- 전체 `fe_gate.ps1`·process E2E·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 게임 창 연결(Windows 창 목록·최소화·닫기·게임 재시작 뒤 해제): **미실행**(사용자 실기). Mock과 가짜 목록으로만 확인했다.
+- 실제 백엔드에서 5초 주기 `scanner.target.list`의 비용과 스캔 중 동시 요청: **미검증**. 프로토콜상 요청 간 순서 제약은 없다(fb10a의 pause도 스캔 중 요청으로 돈다).
+- 2560×1392 기준 viewport의 칩 좌표: 시안 칩은 flex 배치라 절대 좌표가 없다. 여백·크기만 시안 CSS와 맞췄다.
+
+### 검수표 (artboard `Home-Connect-Pick.dc.html` 머리글, `Home-Connect-Effect.dc.html` 칩 전환)
+
+앱에서 여는 방법: mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 2560×1440 모니터 최대화. 첫 화면 타이틀 → 시작. 칩은 머리글 오른쪽, 개발 상태 패널 버튼 왼쪽에 있다.
+
+| # | 확인 포인트 | 코드 |
+|---|---|---|
+| C1 | 홈 머리글 칩이 회색 `연결 안 됨`이다(글자 #c3cfdb, 점 #9eb0c2, 옅은 회색 채움·선) | `HeaderConnectionKind.targetDisconnected` |
+| C2 | `스캔` 탭 → `Game window target`에서 `Mock Blue Archive`를 고르면 칩이 녹색 `연결됨 · Blue Archive · 2560×1440`(#58d6a7)이 된다 | `_chooseTarget` → `connect` |
+| C3 | 다른 탭(홈·학생·인벤토리·통계)으로 가도 칩이 같다 | 셸 소유 컨트롤러 |
+| C4 | 칩(회색이든 녹색이든)을 누르면 `스캔` 탭으로 가고, 드롭다운에 연결된 창이 골라져 있다 | `onOpenTargetPicker` |
+| C5 | 개발 상태 패널 → `백엔드 연결`을 `disconnected`로 바꾸면 칩이 빨강 `백엔드 끊김`이고 누를 수 없다. `connecting`이면 주황 `백엔드 연결 중`이다 | `HeaderConnectionChipState.resolve` |
+| C6 | 다시 `connected`로 바꾸면 칩이 회색 `연결 안 됨`이다(백엔드 끊김이 연결을 해제했다). 스캔 탭 드롭다운도 비어 있다 | `backendDisconnected` |
+| C7 | 창을 작게(예: 1280×720) 해도 칩 글자가 한 줄이고 머리글이 넘치지 않는다 | `HeaderConnectionChip.maxWidth`·말줄임 |
+| C8 (실기) | 실제 백엔드에서 게임 창을 고른 뒤 게임을 끄면 5초 안에 칩이 `연결 안 됨`이 된다. 최소화하면 `연결됨 · Blue Archive · —`다 | 주기 확인 |
+
+### WIP 보존 확인
+
+- `frontend/lib/ui/pages/scan_page.dart`(다른 세션 WIP 있음):
+  - pre 사본과 끝 내용의 차이는 이 slice의 9곳뿐이다: import 1, 생성자 1, 필드 3, initState 5, dispose 1, 새 메서드 묶음 50, 목록 새로고침 1, `_openRecent` 2, 드롭다운 1.
+  - 지운 기존 줄은 `_openRecent`의 3줄(1줄로 바꿈)과 드롭다운 `onChanged` 1줄뿐이다.
+  - WIP hunk와 가장 가까운 곳은 `_openRecent`(WIP 줄과 9줄 떨어짐)와 import(6줄)다. 병합 모의 충돌은 0이다.
+  - LF를 유지했다. 끝 사본은 `debug/frontend_fe8d/post/frontend/lib/ui/pages/scan_page.dart`이고, 현재 파일과 바이트가 같음을 확인했다.
+  - `dart format`은 이 파일 전체에 돌리지 않았다(WIP 줄 1곳이 형식과 다르고, 건드리지 않음). 내 줄만 형식에 맞췄다.
+- `app_shell.dart`: WIP 없음, LF 유지. 기존 형식 차이 1곳(`_TopTab` fontWeight 줄바꿈)은 그대로 두었다.
+- `widget_test.dart`: WIP 없음, CRLF 유지(새 줄도 CRLF).
+- 수정 0: `lib/services/scanner_service.dart`(WIP 있음)를 비롯한 `lib/services/**`, Lane A 파일(`lib/ui/statistics/**`·`statistics_page.dart`·`lib/statistics/**`), `lib/ui/kit/**`, 스캐너 소유 위젯, golden 파일, `frontend/tool/**`, `backend/**`·`contracts/**`.
+
+### 발견 사항
+
+1. 시안 `Home-Connected-Scan`의 **머리글** 칩은 `연결됨 · Blue Archive`(크기 없음)다. `· 2560×1440`은 스캔 팝업 안 칩에만 있다(`Home-Connect-Effect`도 머리글에는 크기가 없다). 워크플로 FE8-d 행과 이번 프롬프트가 머리글에 크기를 넣으라고 해서 그대로 했다. 머리글에서 크기를 뺄지는 CF 판단.
+2. `백엔드 연결 중`(주황)은 시안·FD에 문구가 없다. 옛 배지의 connecting 상태를 이어 백엔드 칸으로 두었다(FD-117 확장, 워커 재량).
+3. FD-115의 나머지(지표 `217`·`1,284` 숫자만, 초상 둥근 사각 62×52 흰 2px)는 하지 않았다. 막는 slice는 FE8-d로 적혀 있지만 이번 프롬프트 범위가 칩뿐이다. `widget_test`는 아직 `42명`을 기대한다. 다른 slice(FE8-e 또는 작은 정리)로 배정이 필요하다.
+4. 주기 확인 간격 5초는 워커가 정했다(FD-116에 수치 없음, `ConnectedTargetController.defaultPollInterval`). 스캔 중에도 확인한다.
+5. 지금 홈에는 창 고르기가 없다(홈 `싯딤의 상자와 연결`은 스캔 탭으로 이동한다). 그래서 홈 화면은 아직 컨트롤러를 받지 않는다. FE8-e가 할 일:
+   - `HomePage`에 셸의 `_connectedTarget`을 넘긴다(창 선택 패널 → `connect`, 메뉴 교체는 `isConnected`, 해제 연출은 `lastRelease`).
+   - 칩을 누르는 동작을 패널 열기로 바꾼다.
+   - 테스트는 같은 컨트롤러에 직접 쓰는 방식으로 "다른 화면이 쓴 값"을 확인했다.
+6. 최소화된 창도 연결로 본다(FD-116은 닫힘·사라짐만 해제). 칩은 크기를 모르니 `연결됨 · Blue Archive · —`가 되고, 최소화라는 표시는 없다. 스캔 시작은 지금처럼 `ready`일 때만 된다.
+7. 최근 스캔 기록을 열면 그 기록의 창에 연결한다. 예전 동작("선택을 기록의 창으로 바꿈")을 전역 연결로 옮긴 것이다. 기록의 창이 목록에 없으면 지금 연결을 그대로 둔다(예전: 선택을 비움).
+8. 설정 탭의 `감지된 대상 N개` 목록은 컨트롤러와 따로 읽는다(연결 상태에는 영향 없음).
+9. 계정을 바꿔도 게임 창 연결은 유지된다(창은 계정과 무관하다고 보았다). 다르게 원하면 CF 판단.
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fe8d/pre/<경로>`(고친 기존 파일 3개).
+- 끝 사본: `debug/frontend_fe8d/post/frontend/lib/ui/pages/scan_page.dart`(WIP 파일만).
+- 테스트 로그: `debug/frontend_fe8d/logs/<파일>.log`(21개, 커밋 대상 아님).
+- `debug/frontend_fe8d/commit.json`:
+  - slice `fe8d`, `status=false`, `post_dir`
+  - modified 3, added 3
+  - `whole` = [이 문서 + 바뀌는 기준 이미지 14장]
+  - message는 ASCII다(근거: FD-116·FD-117·FD-148·FD-115, A §6, fb4-dart).
+- 인계: `debug/frontend_fe8d/output.md`.
+
+### 다음 행동
+
+- FE8-d 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-b)와 이 slice가 모두 멈춘 뒤 gate를 1회 돌린다.
+  - 예상: analyze 0, 일반 테스트 +8(새 파일), golden RED = 위 14장(`statistics-growth`는 Lane A 변화와 겹칠 수 있음).
+  - `failures/`를 isolatedDiff로 한 장씩 대조한다. 칩 영역 밖이 바뀌었으면(`home`의 지표 이동 제외) 이 예측이 틀린 것이다.
+  - 그 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe8d`(`scan_page.dart`는 3-way 병합, 모의 충돌 0).
+- 발견 1·2·3·4·9는 CF 판단을 기다린다. FE8-e는 발견 5를 이어받는다.

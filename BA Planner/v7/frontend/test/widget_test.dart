@@ -551,14 +551,16 @@ void main() {
     final service = MockAppService();
 
     await tester.pumpWidget(BAPlannerApp(service: service));
-    expect(find.text('연결됨'), findsOneWidget);
+    // 머리글 칩은 게임 창 연결이다(FE8-d). 고른 창이 없으면 회색 "연결 안 됨"이다.
+    expect(find.text('연결 안 됨'), findsOneWidget);
     expect(find.text('42명'), findsOneWidget);
 
     service.setConnection(BackendConnection.disconnected);
     service.setLargeDataset(true);
     await tester.pump();
 
-    expect(find.text('연결 안 됨'), findsOneWidget);
+    // 백엔드 끊김이 게임 창 연결보다 앞선다(FD-117 (a)).
+    expect(find.text('백엔드 끊김'), findsOneWidget);
     expect(find.text('9999명'), findsOneWidget);
   });
 
