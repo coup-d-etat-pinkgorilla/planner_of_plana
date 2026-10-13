@@ -323,7 +323,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE7-a 골격 | 3열, 주제 3개 전환, 기준 데이터 자리, 위젯 타일 계단 배치, 근거 패널 틀. 기존 `_reload()` 재사용 | FD-104 |
+| FE7-a 골격 | 3열, 주제 3개 전환, 기준 데이터 자리, 위젯 타일 계단 배치, 근거 패널 틀. 기존 `_reload()` 재사용 | FD-104 — **완료 2026-10-13**: 커밋 `df0c4f39`, gate `20261013_141727`(새 `statistics-growth`). 새 Studio 문서 `statistics_studio_layout.dart`, `ui/statistics/`(topics·source·workspace), 처음 보일 때 읽기(`TickerMode`). 중복 배정 사고(세션 둘) 뒤 세션 A 재개로 마감, 시안 대조 3건 반영. FE7-b 전 결정: FD-106(2·3차 타일 1차 출시 처리) |
 | FE7-b 성장 1차 | 육성도·항목 완성도 projection, KPI(성장), A1 히스토그램, A2 트랙 막대, 구간 선택 → 근거 목록 | FD-028 |
 | FE7-c 인벤토리·계획 1차 | B1(재화별 충족률, `ShortageCategoryStatistics`의 이종 합산 교체), C1 불릿, C2 산점 | FD-031, FD-034 |
 | FE7-d 원본 탭 이동 | `AppShell._open`에 navigation intent(학생 필터·범위, 인벤토리 행, 계획 단계), 대상 탭 수신, "← 통계" 복귀 칩 | FE3-d, FE6-a, FE4-d, FD-028 |
@@ -339,7 +339,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 |---|---|---|
 | FE8-a 타이틀 diff | T1~T11(A 보고서 §2.4): 시작 380, 설정·나가기 크기, 보유율 진행 막대, `보유 217 / 265`, 카드 전체 버튼, 로고 glow, Space 키캡. Studio JSON 재저장 + projection 테스트 | — — **완료 2026-10-10**: 커밋 `815e0589`(Lane B, golden `title` 갱신). T 표 밖 차이(설정·나가기 외곽선, `나가기` 15px, 계정 카드 채움 .9·외곽선, 버튼 반경 8)는 FE8-b로 |
 | FE8-b 계정 관리 목록 + 추가 모달 | 행 그라데이션·진행 막대·`지금` 칩·포그, 추가 = 이름만 받는 모달 | FE2-c — **완료 2026-10-11**: gate `20261011_025111`(golden title·account-manager·-editor·-picker 갱신, `account-new` 추가). FE8-a에서 넘긴 T 표 밖 4건 포함. gate ①에서 목록 ScrollController 이중 연결 오류 1회 수정 |
-| FE8-c 편집기·초상 통합 | 확장 패널(편집기 + 6열 초상), 메타 줄(마지막 스캔은 FB-2 전까지 숨김) | (FB-2) |
+| FE8-c 편집기·초상 통합 | 확장 패널(편집기 + 6열 초상), 메타 줄(마지막 스캔은 FB-2 전까지 숨김) | (FB-2) — **완료 2026-10-13**: 커밋 `d0964853`, gate `20261013_141727`(`account-editor`·`account-picker` 갱신). 부유 편집 패널이 아래로 펼쳐 6열 초상, 메타 줄 마지막 스캔 = summary `last_scan_at`(모든 종류), section-template-studio 계정 절 시안 기준 갱신 |
 | FE8-d 게임 창 연결 상태 | 앱 전역 `connectedTarget`, 헤더 칩(회색 미연결 / 녹색 "연결됨 · Blue Archive · 2560×1440") | FB-4, FD-116 |
 | FE8-e 창 선택 패널 + 교체 이펙트 | 오른쪽 부착 패널, 메뉴 out 180° → 첫 버튼 `스캔` 교체 → in 0° + overshoot + flash(타임라인은 A 보고서 §7.2) | FD-116 |
 | FE8-f1 스캔 세션 컨트롤러 추출 (동작 보존) | `_ScanPageState`의 세션·이벤트 커서·후보·최근·companion·dock 호출을 `ui/scan/scan_session_controller.dart`로, 학생 검토 순수 로직을 `ui/scan/scan_student_review_logic.dart`로 추출. AppShell이 컨트롤러를 소유. 동결 창에서만 | — (`scan_page_test` 회귀 0) |
@@ -410,6 +410,7 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 | fb10a-dart | `ScannerEventKind` paused/resumed·`ScannerSessionControl`·snapshot control_state/reason·pause/resume 메서드·Process/Mock·exhaustive 분기 + 지금 스캔 화면 최소 연결(일시정지·이어서·Esc 중지, FD-142). 본격 화면은 FE8-f2·g2·g3 | XB FB-10a source10 메인 반영 → 같은 CF gate(M2와 함께) → XB 커밋 → CF 커밋. 목록: CF 로그 10-11 18:15 — **완료 2026-10-11**: gate `20261011_220445`(process 57, golden 변화 0), 커밋 `e53fee9e`(XB FB-10a `b76d5591` 뒤, 3-way 병합 충돌 없음). 실제 게임 일시정지(최소화·입력 감지·이어서·Esc)는 사용자 실기 |
 | fb2d-dart | 프로필 삭제(FB-2d 7경로) Dart 연결: wire 변경 0 확인·계약 fixture 테스트, 삭제 확인 문구에 전술 공유 데이터 포함, 삭제 뒤 그 프로필 캐시 전부 비움(다른 프로필 보존), 재시도 = 같은 key + 원 expected_revision, Mock 의미 맞춤, process E2E(7번째 파일) | XB FB-2d 메인 반영 완료 기록 → 같은 소스 CF gate → XB 커밋 → CF 커밋. 목록: backend 로그 10-12 01:28. 배정 2026-10-12(Lane B) — **완료 2026-10-12**: XB FB-2d `64301ab7` → CF fb2ddart `3f42cee3`, 같은 소스 gate `20261012_074656`(process 58, 실제 7경로 삭제 E2E). FB-2d 왕복 완료 |
 | fb10b-dart | 인벤토리 "확인 필요" 영속 표시(FB-10b) Dart 연결: 새 `repository.inventory.review.get` strict DTO·client·Process·Mock, `inventory.update` optional `applied_resource_keys`(직접 고치기 = 바꾼 key + 같은 값 확인 key), 인벤토리 행·상세 표시, Mock 스캐너 commit 의미(FD-146 해제 범위), process E2E(부분 스캔 → 표시 → 확인 → 해제 → replay) | XB FB-10b 메인 반영 9경로(backend 로그 10-12 09:10) → CF fb10b-dart → 같은 소스 CF gate → XB 커밋 → CF 커밋. 목록: XB 08:11·09:10, `debug/xb_fb10b_product_20261012/artifacts/CF-CONNECTION.md`. 배정 2026-10-12(Lane B) — **완료 2026-10-12**: XB FB-10b `404c47de` → CF fb10bdart `b49ce994`, 같은 소스 gate `20261012_211921`(process 59). 수량 없는 표시는 수량 입력·스캔 적용으로만 해제(사용자 결정 21:45). FB-10b 왕복 완료 |
+| xbinvlauncher | `inventory_review_fb10b_process_e2e_test.dart` inline `-c` → XB 공용 `-m tests.inventory_e2e_backend`(CF 직접 소단위) | XB 공용 inventory E2E 3경로(backend 로그 10-13 01:28) — **완료 2026-10-13**: XB `4ae6c44a` → CF `7862cbcc`, 같은 소스 gate `20261013_141727` |
 
 ### FE10 — 마감
 
@@ -554,3 +555,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-12(아침): FE6-d `9dded9dc` · XB FB-2d `64301ab7` → fb2ddart `3f42cee3`(같은 소스 gate `20261012_074656` GREEN, golden 2장 승인). FB-2d 왕복 완료. 사용자 결정: FB-10b 확인 필요 해제 범위 = XB 권장안(FD-146). XB FB-10b 메인 반영(09:10). 배정: Lane A FE5-f(정리, 분할 가능), Lane B fb10b-dart. 다음 후보: 병합 퇴행 규칙 결정 · FE6-f · FE8-c · FE8-f2 · grid 밖 꼭짓점 Studio spec(T2·확장 S2) · 학생 화면 학교 맵 이전 · 헤더 부제 · golden 페이즈 진입값 대역 정리.
 - 2026-10-12(밤): FE5-f1 `e2e8e416` · 옛 기준 PNG 삭제 `b4fc1b6d`(사용자) · XB FB-10b `404c47de` → fb10bdart `b49ce994`(같은 소스 gate `20261012_211921` GREEN, golden 변화 0). FB-10b 왕복 완료. 사용자 결정 3건(PNG 삭제·계획 탭 계정 없음 빈 상태·수량 없는 표시 해제 규칙 유지). 다음 후보: FE5-f2 · XB 공용 인벤토리 E2E 진입점 채택(XB 반영 뒤 CF 테스트 inline `-c` → `-m tests.inventory_e2e_backend`) · 병합 퇴행 규칙 결정 · FE6-f · FE8-c · FE8-f2 · grid 밖 꼭짓점 Studio spec · 시나리오 목록 1280×720 넘침 · idempotency key 패턴 점검.
 - 2026-10-13(새벽): FE5-f2 `2f22859b` · FE6-f `00290cea`(gate `20261013_010336` GREEN, golden 3장 승인). FE5·FE6 완료. 옛 파일 2개 git 삭제는 사용자 커밋, almanac 설계 기록 2개는 폐기 메모 + source 이관(dead_refs 해소). 다음 후보: XB 공용 인벤토리 E2E 진입점 채택(XB 반영 뒤) · FE7(통계) · FE8-c · FE8-f2 · 병합 퇴행 규칙 결정 · `PlanElementBuilder` 위젯 정리 · 시나리오 목록 1280×720 넘침 · grid 밖 꼭짓점 Studio spec · 키트 승격(스파크라인·diverging 막대) · 키트 주석 2곳.
+- 2026-10-13(오후): FE7-a `df0c4f39` · FE8-c `d0964853` · XB 공용 inventory E2E `4ae6c44a` → CF launcher `7862cbcc`(같은 소스 gate `20261013_141727` GREEN, golden 3장 승인). FE7-a 중복 배정 사고는 세션 A 재개로 정리. XB FB-10c(무기 폴백 crop) 메인 반영 허가 → CF fb10c-dart(진단 JSON 이미지 재귀 제거·images_included=false·캐시 정리) 대기. 다음 후보: fb10c-dart · FE7-b(FD-106 결정 먼저) · FE8-d·e(게임 창 연결) · FE8-f2 · 병합 퇴행 규칙 결정 · 작은 정리 묶음.
