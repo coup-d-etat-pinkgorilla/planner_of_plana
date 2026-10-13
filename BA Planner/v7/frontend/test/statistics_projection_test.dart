@@ -338,4 +338,52 @@ void main() {
       expect(projection.affectedStudentCount, 2);
     },
   );
+
+  test(
+    'shortage categories average per-resource fill instead of summing quantities',
+    () {
+      InventoryShortageRow row(
+        String key,
+        String category,
+        int required,
+        int? owned,
+      ) => InventoryShortageRow(
+        resourceKey: key,
+        itemId: key,
+        displayName: key,
+        category: category,
+        requiredAmount: required,
+        owned: owned,
+        shortage: owned == null ? null : (required - owned).clamp(0, required),
+        affectedStudentIds: const ['s0'],
+        resolved: true,
+      );
+      final projection = buildPlanStatistics(1, const {}, InventoryShortageResult([
+        // 기술 노트 두 종: 1/2(50%)와 900/1000(90%). 수량을 더하면 901/1002 = 89.9%지만 FD-032는 70%다.
+        row('note-a', 'tech_notes', 2, 1),
+        row('note-b', 'tech_notes', 1000, 900),
+        row('note-c', 'tech_notes', 10, null),
+        row('bd-a', 'tactical_bd', 10, 20),
+        row('eleph-a', 'student_eleph', 5, null),
+        row('credits', 'credits', 100, 10),
+      ], const []));
+      final categories = {
+        for (final item in projection.shortageCategories) item.category: item,
+      };
+      // 재화(크레딧)는 카테고리 막대가 아니다. 순서는 B1 순서(기술 노트 · 전술 BD · 엘레프).
+      expect(projection.shortageCategories.map((item) => item.category), [
+        'tech_notes',
+        'tactical_bd',
+        'student_eleph',
+      ]);
+      expect(categories['tech_notes']!.fulfillment, closeTo(0.7, 1e-12));
+      expect(categories['tech_notes']!.plannedKinds, 3);
+      expect(categories['tech_notes']!.unknownKinds, 1);
+      // 넘치는 보유는 100%로 자른다.
+      expect(categories['tactical_bd']!.fulfillment, 1);
+      // 모두 모르면 0이 아니라 null이다(FD-033).
+      expect(categories['student_eleph']!.fulfillment, isNull);
+      expect(categories['student_eleph']!.unknownKinds, 1);
+    },
+  );
 }

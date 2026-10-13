@@ -128,7 +128,8 @@ abstract final class StatisticsA2Geometry {
 }
 
 /// 설계 좌표 글자. [anchor]는 SVG처럼 기준선 위 점이고 [align]은 text-anchor(start · middle · end)다.
-void _paintText(
+/// [maxWidth]를 주면 그 폭에서 말줄임한다(FE7-c 재화 이름). 통계 차트 painter 공용(FE7-b · FE7-c).
+void statisticsChartText(
   Canvas canvas,
   String text,
   Offset anchor, {
@@ -137,6 +138,7 @@ void _paintText(
   FontWeight fontWeight = AppType.semiBold,
   Color color = AppColors.text,
   bool display = false,
+  double? maxWidth,
 }) {
   final painter = TextPainter(
     text: TextSpan(
@@ -152,7 +154,8 @@ void _paintText(
     ),
     textDirection: TextDirection.ltr,
     maxLines: 1,
-  )..layout();
+    ellipsis: maxWidth == null ? null : '…',
+  )..layout(maxWidth: maxWidth ?? double.infinity);
   final baseline = painter.computeDistanceToActualBaseline(
     TextBaseline.alphabetic,
   );
@@ -165,8 +168,8 @@ void _paintText(
   painter.dispose();
 }
 
-/// 4-4 · 3-3 점선(시안 stroke-dasharray).
-void _paintDashed(
+/// 4-4 · 3-3 점선(시안 stroke-dasharray). 통계 차트 painter 공용.
+void statisticsChartDashed(
   Canvas canvas,
   Offset from,
   Offset to, {
@@ -242,7 +245,7 @@ class StatisticsGrowthHistogramPainter extends StatChartPainter {
       final height =
           StatisticsA1Geometry.baseline -
           scale.map(counts[selected].toDouble());
-      _paintText(
+      statisticsChartText(
         canvas,
         '${counts[selected]}명',
         Offset(
@@ -261,7 +264,7 @@ class StatisticsGrowthHistogramPainter extends StatChartPainter {
       double lineX(double y) =>
           x + (StatisticsA1Geometry.baseline - y) * _tan10;
       final top = StatisticsA1Geometry.meanLineTop;
-      _paintDashed(
+      statisticsChartDashed(
         canvas,
         Offset(
           lineX(StatisticsA1Geometry.meanLineBottom),
@@ -272,7 +275,7 @@ class StatisticsGrowthHistogramPainter extends StatChartPainter {
         width: 1.4,
         dash: 4,
       );
-      _paintText(
+      statisticsChartText(
         canvas,
         '평균 ${statisticsPercentText(mean, decimals: 1)}',
         Offset(x, StatisticsA1Geometry.labelBaseline),
@@ -283,7 +286,7 @@ class StatisticsGrowthHistogramPainter extends StatChartPainter {
     for (final fraction in const [0.0, 0.4, 1.0]) {
       final x = StatisticsA1Geometry.xOf(fraction);
       if (meanX != null && (x - meanX).abs() < 36) continue;
-      _paintText(
+      statisticsChartText(
         canvas,
         '${(fraction * 100).round()}%',
         Offset(x, StatisticsA1Geometry.labelBaseline),
@@ -291,7 +294,7 @@ class StatisticsGrowthHistogramPainter extends StatChartPainter {
       );
     }
     if (unknownCount > 0) {
-      _paintText(
+      statisticsChartText(
         canvas,
         _unknownText(unknownCount),
         const Offset(StatisticsA1Geometry.axisLineStart, 10),
@@ -329,7 +332,7 @@ class StatisticsItemCompletionPainter extends StatChartPainter {
     final rows = items.length;
     final top = 2.0;
     final bottom = 166.0;
-    _paintDashed(
+    statisticsChartDashed(
       canvas,
       Offset(StatisticsA2Geometry.thresholdX(top), top),
       Offset(StatisticsA2Geometry.thresholdX(bottom), bottom),
@@ -341,7 +344,7 @@ class StatisticsItemCompletionPainter extends StatChartPainter {
       final baseline = StatisticsA2Geometry.baselineOf(index, rows);
       final shift = StatisticsA2Geometry.shiftOf(index, rows);
       final selected = item == selectedItem;
-      _paintText(
+      statisticsChartText(
         canvas,
         item.label,
         Offset(StatisticsA2Geometry.labelLeft - shift, baseline - 3.2),
@@ -372,7 +375,7 @@ class StatisticsItemCompletionPainter extends StatChartPainter {
             ..color = StatChartPalette.highlight,
         );
       }
-      _paintText(
+      statisticsChartText(
         canvas,
         value == null ? '—' : statisticsPercentText(value),
         Offset(StatisticsA2Geometry.valueRight - shift, baseline - 2.7),
@@ -381,7 +384,7 @@ class StatisticsItemCompletionPainter extends StatChartPainter {
         display: true,
       );
     }
-    _paintText(
+    statisticsChartText(
       canvas,
       '${(statisticsGrowthLowThreshold * 100).round()}% 기준',
       StatisticsA2Geometry.thresholdLabel,
@@ -389,7 +392,7 @@ class StatisticsItemCompletionPainter extends StatChartPainter {
       color: StatChartPalette.highlight,
     );
     if (unknownCount > 0) {
-      _paintText(
+      statisticsChartText(
         canvas,
         _unknownText(unknownCount),
         StatisticsA2Geometry.unknownLabel,

@@ -29,11 +29,19 @@ Widget _dimIfDisabled(bool enabled, Widget child) =>
 /// 세그먼트 하나.
 @immutable
 class SkewSegment<T> {
-  const SkewSegment({required this.value, required this.label, this.leading});
+  const SkewSegment({
+    required this.value,
+    required this.label,
+    this.leading,
+    this.enabled = true,
+  });
 
   final T value;
   final String label;
   final Widget? leading;
+
+  /// false면 이 칸만 누를 수 없고 흐리다(세그먼트 전체가 비활성이면 전체만 흐리다, FE7-c 통계 C1 "페이즈 순").
+  final bool enabled;
 }
 
 /// 사선 세그먼트(`.seg`). 고른 값은 핑크 테두리로 보인다.
@@ -77,15 +85,18 @@ class SkewSegmented<T> extends StatelessWidget {
               padding: EdgeInsets.only(
                 right: index == segments.length - 1 ? 0 : spacing,
               ),
-              child: _SkewSegmentButton<T>(
-                segment: segments[index],
-                selected: segments[index].value == selected,
-                onPressed: onChanged == null
-                    ? null
-                    : () => onChanged(segments[index].value),
-                height: height,
-                fontSize: fontSize,
-                horizontalPadding: horizontalPadding,
+              child: _dimIfDisabled(
+                onChanged == null || segments[index].enabled,
+                _SkewSegmentButton<T>(
+                  segment: segments[index],
+                  selected: segments[index].value == selected,
+                  onPressed: onChanged == null || !segments[index].enabled
+                      ? null
+                      : () => onChanged(segments[index].value),
+                  height: height,
+                  fontSize: fontSize,
+                  horizontalPadding: horizontalPadding,
+                ),
               ),
             ),
         ],

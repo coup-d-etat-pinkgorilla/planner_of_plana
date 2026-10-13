@@ -1,12 +1,13 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
-// 통계 탭(FE7-a 골격 · FE7-b 학생 성장, 시안 Stats-Growth · Stats-Inventory · Stats-Plan).
+// 통계 탭(FE7-a 골격 · FE7-b 학생 성장 · FE7-c 인벤토리 현황 · 계획 집계, 시안 Stats-Growth · Stats-Inventory · Stats-Plan).
 //
 // 화면은 `ui/statistics/statistics_workspace.dart`의 3섹션이다. 이 State는 원천 자료 읽기(`_reload()`)와 화면 상태
-// (주제, 학생 성장 A1 seg · 고른 구간 · 항목 · 근거 펼침)를 맡는다. 읽기 순서:
+// (주제, 학생 성장 A1 seg · 고른 구간 · 항목 · 근거 펼침, 인벤토리 · 계획에서 고른 카테고리 · 재화)를 맡는다. 읽기 순서:
 // 계정 → 계정 상태 → 학생 목록 → 인벤토리 목록 → (목표가 있으면) 총 계산 · 부족 계산, generation 가드.
-// 학생 성장 projection(`buildStatisticsGrowth`, FD-028)은 읽은 계정 상태 · 학생 목록에서만 만든다(새 서비스 호출 없음).
-// 다시 읽으면 고른 구간을 지운다(학생 값이 바뀌었을 수 있다).
+// 학생 성장 projection(`buildStatisticsGrowth`, FD-028)은 읽은 계정 상태 · 학생 목록에서, 인벤토리 · 계획 projection
+// (`StatisticsSupply.build`, FD-031 · 032)은 인벤토리 목록 · 계정 인벤토리 · 부족 계산에서만 만든다(새 서비스 호출 없음).
+// 다시 읽으면 고른 구간 · 재화를 지운다(값이 바뀌었을 수 있다).
 // 읽기는 탭이 처음 보일 때 시작한다(FE6-b 인벤토리와 같은 정책). 셸은 모든 탭을 오프스테이지로 짓고, 보이지 않는
 // 탭은 `TickerMode`가 꺼져 있으므로 그것으로 보임을 판단한다(`app_shell.dart`를 고치지 않는다). 숨어 있는 동안
 // 다시 읽기 요청(`reloadToken` · 연결 · 서비스 교체)이 오면 표시만 해 두고, 다시 보일 때 한 번 읽는다.
@@ -15,9 +16,11 @@ import 'package:flutter/material.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_supply_projection.dart';
 import '../app_section.dart';
 import '../statistics/statistics_growth_evidence.dart';
 import '../statistics/statistics_source.dart';
+import '../statistics/statistics_supply_evidence.dart';
 import '../statistics/statistics_topics.dart';
 import '../statistics/statistics_workspace.dart';
 
@@ -66,6 +69,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
   StatisticsGrowth? _growth;
   RepositoryState? _growthState;
   List<StudentCatalogEntry>? _growthStudents;
+
+  /// 인벤토리 · 계획 화면 상태(FE7-c): 고른 카테고리 · 재화.
+  StatisticsSupplySelection? _supplySelection;
+
+  /// 인벤토리 · 계획 projection 캐시(읽은 인벤토리 목록 · 계정 상태 · 부족 계산 · 성장이 같으면 다시 만들지 않는다).
+  StatisticsSupply? _supply;
+  Map<String, StatisticsEvidenceStudent> _supplyStudents = const {};
+  List<InventoryCatalogEntry>? _supplyCatalog;
+  RepositoryState? _supplyState;
+  InventoryShortageResult? _supplyShortages;
+  StatisticsGrowth? _supplyGrowth;
 
   /// 이 탭이 지금 보이는가(`TickerMode`).
   bool _visible = false;
@@ -133,6 +147,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     setState(() {
       _loading = true;
       _growthSelection = null;
+      _supplySelection = null;
       _evidenceExpanded = false;
       _profile = null;
       _state = null;
@@ -255,6 +270,30 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return _growth;
   }
 
+  /// 인벤토리 · 계획 projection(성장 projection 뒤에 만든다 — 미계획 학생 KPI · 근거 학생 이름 · 레벨).
+  StatisticsSupply? _currentSupply(StatisticsGrowth? growth) {
+    if (!identical(_supplyCatalog, _inventory) ||
+        !identical(_supplyState, _state) ||
+        !identical(_supplyShortages, _shortages) ||
+        !identical(_supplyGrowth, growth)) {
+      _supplyCatalog = _inventory;
+      _supplyState = _state;
+      _supplyShortages = _shortages;
+      _supplyGrowth = growth;
+      _supply = StatisticsSupply.build(
+        catalog: _inventory,
+        state: _state,
+        shortages: _shortages,
+        growth: growth,
+      );
+      _supplyStudents = statisticsEvidenceStudents(
+        growth: growth,
+        catalog: _students,
+      );
+    }
+    return _supply;
+  }
+
   void _select(StatisticsGrowthSelection? selection) => setState(() {
     _growthSelection = selection;
     _evidenceExpanded = false;
@@ -283,12 +322,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ?error,
       ],
     );
+    final growth = _loading ? null : _currentGrowth();
     return StatisticsWorkspace(
       key: const ValueKey('statistics-page'),
       mode: _mode,
       data: data,
       growth: StatisticsGrowthView(
-        growth: _loading ? null : _currentGrowth(),
+        growth: growth,
         metric: _growthMetric,
         selection: _growthSelection,
         expanded: _evidenceExpanded,
@@ -300,9 +340,18 @@ class _StatisticsPageState extends State<StatisticsPage> {
         onSelectionChanged: _select,
         onExpand: () => setState(() => _evidenceExpanded = true),
       ),
+      supply: StatisticsSupplyView(
+        supply: _loading ? null : _currentSupply(growth),
+        loading: _loading,
+        selection: _supplySelection,
+        students: _supplyStudents,
+        onSelectionChanged: (selection) =>
+            setState(() => _supplySelection = selection),
+      ),
       onModeChanged: (mode) => setState(() {
         _mode = mode;
         _growthSelection = null;
+        _supplySelection = null;
         _evidenceExpanded = false;
       }),
       onRescan: () => widget.onOpen(AppSection.scan),

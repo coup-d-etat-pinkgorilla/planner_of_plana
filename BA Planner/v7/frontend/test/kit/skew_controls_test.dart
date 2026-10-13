@@ -75,6 +75,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a disabled segment is dimmed alone and ignores taps', (
+    tester,
+  ) async {
+    final changes = <String>[];
+    await pumpKit(
+      tester,
+      SkewSegmented<String>(
+        segments: const [
+          SkewSegment(value: '부족 큰 순', label: '부족 큰 순'),
+          SkewSegment(value: '페이즈 순', label: '페이즈 순', enabled: false),
+        ],
+        selected: '부족 큰 순',
+        onChanged: changes.add,
+      ),
+    );
+    final dimmed = find.ancestor(
+      of: find.text('페이즈 순'),
+      matching: find.byType(Opacity),
+    );
+    expect(dimmed, findsOneWidget);
+    expect(tester.widget<Opacity>(dimmed).opacity, kitDisabledOpacity);
+    expect(
+      find.ancestor(of: find.text('부족 큰 순'), matching: find.byType(Opacity)),
+      findsNothing,
+    );
+    await tester.tap(find.text('페이즈 순'));
+    await tester.pump();
+    expect(changes, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('toggle chip switches, shows the count and the on look', (
     tester,
   ) async {

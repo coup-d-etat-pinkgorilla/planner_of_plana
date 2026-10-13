@@ -2,7 +2,7 @@
 //
 // 높이 70, 바탕 skewX(−10°) r7 #203243 + 안쪽 1px rgba(56,81,107,.8). 라벨 `.ihdr` 9px, 세로 간격 6.
 // - 기본형: 값 경기천년제목 26(시안 w800 → 700, FD-009) + 변화 11px w700(증가 #7fe3bd, 계획 #f7c9f4, 모름 '—' #9eb0c2), 간격 8.
-//   안쪽 10 16 10 22.
+//   안쪽 10 16 10 22. 값 색은 기본 흰색이고 바꿀 수 있다(통계 시안 부족 핑크 · 스캔 없음 회색, FE7-c).
 // - 전후 비교형: 이전값 14px #9eb0c2 → 화살표 13px 핑크 → 예상값 24px #7fe3bd, 간격 6. 안쪽 10 14 10 20.
 import 'package:flutter/material.dart';
 
@@ -35,6 +35,7 @@ class KpiTile extends StatelessWidget {
     required String this.value,
     this.delta,
     this.deltaTone = KpiDeltaTone.gain,
+    this.valueColor = AppColors.text,
   }) : before = null,
        after = null;
 
@@ -46,12 +47,16 @@ class KpiTile extends StatelessWidget {
     required String this.after,
   }) : value = null,
        delta = null,
-       deltaTone = KpiDeltaTone.gain;
+       deltaTone = KpiDeltaTone.gain,
+       valueColor = AppColors.text;
 
   final String label;
   final String? value;
   final String? delta;
   final KpiDeltaTone deltaTone;
+
+  /// 값 색(기본 흰색). 통계 시안은 부족 · 첫 부족을 핑크, 스캔 없음을 회색으로 쓴다(FE7-c).
+  final Color valueColor;
   final String? before;
   final String? after;
 
@@ -110,7 +115,7 @@ class KpiTile extends StatelessWidget {
         Text(
           value ?? '',
           maxLines: 1,
-          style: _number(AppType.displaySmallSize, AppColors.text),
+          style: _number(AppType.displaySmallSize, valueColor),
         ),
         if (delta != null) ...[
           const SizedBox(width: 8),

@@ -2,7 +2,8 @@
 //
 // 주제마다 왼쪽 주제 버튼 글자, 가운데 제목 · (i) 도움말 · 범위 글자, KPI 다섯 칸의 라벨, 위젯 타일 줄, 오른쪽 아래
 // 이동 버튼 글자를 둔다. 타일 폭 · 높이 · 순서는 시안 타일 rect, 차수(1·2·3차)는 Statistics-Proposal 기능 카드 표다.
-// 값: 학생 성장의 KPI · 보유 인원은 FE7-b부터 채운다(`StatisticsGrowthView`). 기준 시각 · 증감 · 다른 주제 값은 아직 '—'다.
+// 값: 학생 성장의 KPI · 보유 인원은 FE7-b부터, 인벤토리 · 계획 KPI · 계획 학생 수는 FE7-c부터 채운다. 기준 시각 · 증감 ·
+// 페이즈 수(활성 문서, FE7-g)는 아직 '—'다.
 import 'package:flutter/foundation.dart';
 
 import '../geometry/diagonal_geometry.dart';
@@ -93,11 +94,12 @@ extension StatisticsModeSpec on StatisticsMode {
   /// 가운데 제목 줄 오른쪽 범위 글자. 계획 집계는 칩이다(시안).
   String get scope => scopeFor(null);
 
-  /// [owned]는 보유 학생 수(학생 성장, FE7-b). 모르면 '—'다.
-  String scopeFor(int? owned) => switch (this) {
+  /// [owned]는 보유 학생 수(학생 성장, FE7-b), [planStudents]는 계획(사용자 목표) 학생 수(계획 집계, FE7-c). 모르면 '—'다.
+  /// 계획 페이즈 수는 활성 문서 계산(FE7-g) 전이라 '—'다.
+  String scopeFor(int? owned, {int? planStudents}) => switch (this) {
     StatisticsMode.students => '보유 ${owned ?? '—'}명 기준 · 지난 스냅샷 대비',
     StatisticsMode.inventory => '활성 계획 기준 · 인벤토리 스캔 —',
-    StatisticsMode.plan => '활성 계획 · —명 · 페이즈 —',
+    StatisticsMode.plan => '활성 계획 · ${planStudents ?? '—'}명 · 페이즈 —',
   };
 
   bool get scopeIsChip => this == StatisticsMode.plan;
@@ -135,6 +137,13 @@ extension StatisticsModeSpec on StatisticsMode {
       '막힌 학생',
       '미계획 · 40% 미만',
     ],
+  };
+
+  /// KPI 칸을 누르면 스크롤할 타일 줄(FD-105: 같은 주제 안 그래프). 성장 · 인벤토리는 모두 첫 줄(A1 · A2 / B1),
+  /// 계획은 계획 충족률 · 부족 재화 → C1, 첫 부족 → C3, 막힌 학생 → C2(첫 줄), 미계획 → C5.
+  List<int> get kpiTargetRows => switch (this) {
+    StatisticsMode.students || StatisticsMode.inventory => const [0, 0, 0, 0, 0],
+    StatisticsMode.plan => const [0, 0, 1, 0, 2],
   };
 
   /// 위젯 타일 줄(시안 순서 · 위치 · 머리 글자 · seg · 차수 칩 유무).

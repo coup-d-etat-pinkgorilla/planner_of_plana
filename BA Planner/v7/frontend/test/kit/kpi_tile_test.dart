@@ -78,6 +78,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('value color defaults to text and can be pink or muted', (
+    tester,
+  ) async {
+    await _pumpKpi(
+      tester,
+      const Row(
+        children: [
+          Expanded(child: KpiTile(label: '전체 충족률', value: '72%')),
+          SizedBox(width: 14),
+          Expanded(
+            child: KpiTile(
+              label: '부족 재화',
+              value: '14종',
+              valueColor: AppColors.accent,
+            ),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: KpiTile(
+              label: '스캔 없음',
+              value: '1종',
+              delta: '엘레프',
+              deltaTone: KpiDeltaTone.unknown,
+              valueColor: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+    expect(_style(tester, '72%').color, AppColors.text);
+    expect(_style(tester, '14종').color, AppColors.accent);
+    expect(_style(tester, '1종').color, AppColors.textMuted);
+    expect(_style(tester, '엘레프').color, AppColors.textMuted);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('comparison form: before 14 → arrow → after 24', (tester) async {
     await _pumpKpi(
       tester,

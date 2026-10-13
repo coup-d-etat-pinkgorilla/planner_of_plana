@@ -217,8 +217,12 @@ class StatisticsEvidenceFrame {
 }
 
 /// [scale]이 1보다 작으면 시안 크기로 배치한 뒤 같은 비율로 줄인다(근거 섹션 요소 공통).
-class _Scaled extends StatelessWidget {
-  const _Scaled({required this.scale, required this.child});
+class StatisticsScaledBox extends StatelessWidget {
+  const StatisticsScaledBox({
+    super.key,
+    required this.scale,
+    required this.child,
+  });
 
   final double scale;
   final Widget child;
@@ -244,8 +248,12 @@ class _Scaled extends StatelessWidget {
 /// 통계 왼쪽 섹션 행과 같은 규칙).
 const _rowContentMinWidth = 240.0;
 
-class _MinWidth extends StatelessWidget {
-  const _MinWidth({required this.minWidth, required this.child});
+class StatisticsMinWidth extends StatelessWidget {
+  const StatisticsMinWidth({
+    super.key,
+    required this.minWidth,
+    required this.child,
+  });
 
   final double minWidth;
   final Widget child;
@@ -314,7 +322,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
                 StatisticsMetrics.evidenceRowPitch * index,
             StatisticsMetrics.evidenceRowHeight,
           ),
-          child: _Scaled(
+          child: StatisticsScaledBox(
             scale: scale,
             child: StatisticsEvidenceStudentRow(
               key: ValueKey('statistics-evidence-row-${student.studentId}'),
@@ -334,7 +342,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
                 StatisticsMetrics.evidenceRowPitch * visible,
             StatisticsMetrics.evidenceMoreHeight,
           ),
-          child: _Scaled(
+          child: StatisticsScaledBox(
             scale: scale,
             child: _MoreButton(rest: rest, onPressed: onExpand),
           ),
@@ -357,7 +365,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
         frame.right - StatisticsMetrics.evidenceTitleRight - titleLeft,
       ),
       height: titleHeight,
-      child: _Scaled(
+      child: StatisticsScaledBox(
         scale: scale,
         child: Align(
           alignment: Alignment.centerLeft,
@@ -377,7 +385,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
               StatisticsMetrics.evidenceSummaryPitch * index,
           StatisticsMetrics.evidenceSummaryHeight,
         ),
-        child: _Scaled(
+        child: StatisticsScaledBox(
           scale: scale,
           child: _SummaryRow(
             rowKey: 'statistics-evidence-summary-$key',
@@ -404,8 +412,8 @@ Path statisticsEvidenceRowPath(Size size, {double radius = AppRadii.row}) =>
       corner: DiagonalCornerStyle.quadratic,
     );
 
-class _EvidenceRowPainter extends CustomPainter {
-  const _EvidenceRowPainter(this.look);
+class StatisticsEvidenceRowPainter extends CustomPainter {
+  const StatisticsEvidenceRowPainter(this.look);
 
   final DiagonalRowLook look;
 
@@ -430,47 +438,62 @@ class _EvidenceRowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_EvidenceRowPainter oldDelegate) =>
+  bool shouldRepaint(StatisticsEvidenceRowPainter oldDelegate) =>
       oldDelegate.look != look;
 }
 
 /// 근거 학생 행(52 높이): 초상 44×36 · 이름 13px · "Lv.n" 12px · 칩. 간격 10, 안쪽 사선 깊이 + 12 · 14.
+/// 성장 근거(FE7-b)는 학생 육성 값에서, 재화 근거(FE7-c)는 id · 이름 · 레벨로 만든다([StatisticsEvidenceStudentRow.plain]).
 class StatisticsEvidenceStudentRow extends StatelessWidget {
-  const StatisticsEvidenceStudentRow({
+  StatisticsEvidenceStudentRow({
     super.key,
-    required this.student,
+    required StatisticsStudentGrowth student,
     required this.chip,
+  }) : studentId = student.studentId,
+       displayName = student.displayName,
+       level = student.level;
+
+  const StatisticsEvidenceStudentRow.plain({
+    super.key,
+    required this.studentId,
+    required this.displayName,
+    required this.level,
+    this.chip,
   });
 
   static const portraitSize = Size(44, 36);
 
-  final StatisticsStudentGrowth student;
+  final String studentId;
+  final String displayName;
+
+  /// 레벨. 모르면(보유하지 않았거나 값 없음) null → "Lv.—".
+  final int? level;
   final (String, AppTone)? chip;
 
   @override
   Widget build(BuildContext context) {
     final chip = this.chip;
-    final level = student.level;
+    final level = this.level;
     return CustomPaint(
-      painter: _EvidenceRowPainter(DiagonalRowLook.of(DiagonalRowVariant.row)),
+      painter: StatisticsEvidenceRowPainter(DiagonalRowLook.of(DiagonalRowVariant.row)),
       child: Padding(
         padding: EdgeInsets.only(
           left: diagonalCutDepth(StatisticsMetrics.evidenceRowHeight) + 12,
           right: 14,
         ),
-        child: _MinWidth(
+        child: StatisticsMinWidth(
           minWidth: _rowContentMinWidth,
           child: Row(
             children: [
               PortraitStrip(
-                studentIds: [student.studentId],
+                studentIds: [studentId],
                 maxVisible: 1,
                 portraitSize: portraitSize,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  student.displayName,
+                  displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -557,7 +580,7 @@ class _SummaryRow extends StatelessWidget {
       left: diagonalCutDepth(StatisticsMetrics.evidenceSummaryHeight) + 12,
       right: 14,
     ),
-    child: _MinWidth(
+    child: StatisticsMinWidth(
       minWidth: _rowContentMinWidth,
       child: Row(
         children: [
@@ -671,7 +694,7 @@ class _EvidenceListState extends State<_EvidenceList> {
                     top: top,
                     width: math.max(0.0, right - left),
                     height: rowHeight,
-                    child: _Scaled(
+                    child: StatisticsScaledBox(
                       scale: scale,
                       child: StatisticsEvidenceStudentRow(
                         student: student,

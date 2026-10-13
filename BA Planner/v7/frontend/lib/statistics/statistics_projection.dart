@@ -2,6 +2,9 @@
 
 import '../services/app_service.dart';
 import '../services/repository_service.dart';
+import '../ui/inventory/inventory_analysis.dart' show InventoryCoverage;
+import '../ui/inventory/inventory_view_model.dart' show InventoryBoard;
+import 'statistics_supply_projection.dart';
 
 class StatisticsRow {
   StatisticsRow({
@@ -318,16 +321,18 @@ class GrossMaterialRow {
   final int value;
 }
 
+/// 카테고리별 충족률(FD-031 (a) · FD-032, FE7-c): 그 카테고리 계획 재화별 min(보유, 필요)/필요의 단순 평균.
+/// 서로 다른 재화의 수량을 더하지 않는다(FD-033 — 옛 필요 · 보유 · 부족 수량 합산을 교체했다). 보유를 모르는 재화는
+/// 평균에서 빼고 [unknownKinds]로 센다. 식은 통계 B1과 같은 함수(`statisticsCategoryFills`)다.
 class ShortageCategoryStatistics {
-  const ShortageCategoryStatistics(
-    this.category,
-    this.required,
-    this.knownOwned,
-    this.positiveShortage,
-    this.unknownCount,
-  );
+  const ShortageCategoryStatistics(this.category, this.coverage);
   final String category;
-  final int required, knownOwned, positiveShortage, unknownCount;
+  final InventoryCoverage coverage;
+
+  /// 충족률(0~1). 계획 재화를 모두 모르면 null.
+  double? get fulfillment => coverage.fulfillment;
+  int get plannedKinds => coverage.plannedKinds;
+  int get unknownKinds => coverage.unknownKinds;
 }
 
 class PlanStatistics {
@@ -400,31 +405,17 @@ PlanStatistics buildPlanStatistics(
           final value = b.shortage!.compareTo(a.shortage!);
           return value != 0 ? value : a.resourceKey.compareTo(b.resourceKey);
         });
-  final categoryRows = <String, List<InventoryShortageRow>>{};
-  for (final row in rows)
-    categoryRows.putIfAbsent(row.category, () => []).add(row);
-  final categories =
-      categoryRows.entries
-          .map(
-            (entry) => ShortageCategoryStatistics(
-              entry.key,
-              entry.value.fold(0, (sum, row) => sum + row.requiredAmount),
-              entry.value
-                  .where((row) => row.owned != null)
-                  .fold(0, (sum, row) => sum + row.owned!),
-              entry.value
-                  .where((row) => row.shortage != null && row.shortage! > 0)
-                  .fold(0, (sum, row) => sum + row.shortage!),
-              entry.value
-                  .where((row) => row.owned == null || row.shortage == null)
-                  .length,
-            ),
-          )
-          .toList()
-        ..sort((a, b) {
-          final value = b.positiveShortage.compareTo(a.positiveShortage);
-          return value != 0 ? value : a.category.compareTo(b.category);
-        });
+  // 부족 행의 보유(`owned`)로 재화별 충족률을 만든다(카탈로그 없이 행만, 인벤토리 화면과 같은 함수).
+  final categories = [
+    for (final fill in statisticsCategoryFills(
+      InventoryBoard.build(
+        catalog: const [],
+        inventory: null,
+        shortages: shortages,
+      ).items,
+    ))
+      ShortageCategoryStatistics(fill.category, fill.coverage),
+  ];
   return PlanStatistics(
     savedGoalCount: goalCount,
     grossScalars: {

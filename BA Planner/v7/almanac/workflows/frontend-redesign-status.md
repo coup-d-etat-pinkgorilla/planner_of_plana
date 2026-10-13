@@ -7249,3 +7249,170 @@ FE7-b/c에서 복원(시안 위젯으로):
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_172627\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-c 통계 인벤토리 현황 · 계획 집계 1차 (Lane A, 로컬 Claude Code)
+
+### FE7-c 착수 기록 (2026-10-13, Lane A)
+
+- 상태: 진행 중. 시작 SHA = `c2ceb57ebc1429372b53fd6c260b02d9a2bf06ca`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서에 다른 "FE7-c 착수 기록" 없음(grep 0건).
+- 범위: 인벤토리 KPI 5 · B1 재화별 · 카테고리별 충족률(FD-031/032 식, `ShortageCategoryStatistics` 이종 합산 교체), 계획 KPI 5 · C1 필요량 vs 보유 불릿(부족 큰 순만) · C2 충족률 × 영향 학생 수 산점도, B1 막대 · C1 행 · C2 점 → 근거 목록. B2 · B3 · C3 · C4 · C5는 "준비 중"(FD-106 사용자 결정 10-13). 새 백엔드 · 새 서비스 메서드 없음.
+- 막힘: 대장 막힘 요약 FE7-c 행 = FD-031(확정 2026-10-06) · FD-034(확정 2026-10-06). 막는 `열림` FD 없음. 워커 재량 FD-032 · FD-035 · FD-105는 권장안으로 처리한다.
+- `ShortageCategoryStatistics` 사용처(`grep -rn` lib · test): `lib/statistics/statistics_projection.dart`(정의 · `PlanStatistics.shortageCategories` · `buildPlanStatistics`)뿐. 화면 사용처 0(FE7-a가 옛 화면을 지움), `test/statistics_projection_test.dart`는 `buildPlanStatistics`를 부르지만 `shortageCategories`를 단언하지 않는다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7c/pre/<v7 기준 경로>`, 작업 트리와 cmp 일치, 모두 WIP 없음 = `git status --short <경로>` 빈 줄). 줄바꿈은 작업 트리 그대로 유지(`git ls-files --eol`):
+  - `frontend/lib/statistics/statistics_projection.dart`(CRLF)
+  - `frontend/lib/ui/statistics/statistics_workspace.dart`(LF) · `statistics_topics.dart`(LF) · `statistics_growth_charts.dart`(LF, 글자 · 점선 helper 공개만) · `statistics_growth_evidence.dart`(CRLF, 근거 행 재사용)
+  - `frontend/lib/ui/pages/statistics_page.dart`(CRLF)
+  - `frontend/lib/ui/studio/statistics_studio_layout.dart`(LF, 요소 좌표만)
+  - `frontend/test/statistics_projection_test.dart`(CRLF) · `statistics_workspace_test.dart`(LF) · `statistics_page_test.dart`(CRLF)
+  - `frontend/test/goldens/fe7a_statistics_golden_test.dart`(LF, 장면 2장 추가)
+  - `almanac/workflows/frontend-redesign-status.md`(이 문서, LF)
+- 새 파일(예정): `frontend/lib/statistics/statistics_supply_projection.dart`(인벤토리 · 계획 projection), `frontend/lib/ui/statistics/statistics_supply_charts.dart`(B1 · C1 · C2 painter), `frontend/lib/ui/statistics/statistics_supply_evidence.dart`(선택 · 근거 내용), `frontend/test/statistics_supply_fixture.dart`(시안 숫자 fixture), `frontend/test/statistics_supply_projection_test.dart`, `frontend/test/statistics_supply_view_test.dart`.
+- 읽기 · 재사용만: `lib/ui/inventory/inventory_view_model.dart`(`InventoryBoard` · `InventoryItemView.fulfillment` · `kpis` · `inventoryCategoryLabel`), `lib/ui/inventory/inventory_analysis.dart`(`inventoryCoverageOf`). 고치지 않음: `lib/ui/inventory/**`, `app_shell.dart` · `app_section.dart` · 홈 · 머리글 칩 · `lib/ui/scan/**`(Lane B FE8-e), `lib/services/**`, 학생 · 계획 · 스캔 · 타이틀 화면, golden harness, `frontend/tool/**`, backend · contracts, 택틱 · 스캐너 소유 파일.
+
+### FE7-c 종료 기록 (2026-10-13, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계 "인벤토리 현황"에 KPI 5칸 값 · B1 카테고리별 충족률, "계획 집계"에 KPI 5칸 값 · 범위 칩 학생 수 · C1 필요량 vs 보유 불릿 · C2 병목 매트릭스를 넣었다. B1 막대 · C1 행 · C2 점을 고르면 오른쪽 근거(재화 · 학생)가 보인다. B2 · B3 · C3 · C4 · C5는 "준비 중" 그대로다(FD-106 사용자 결정 10-13). 원본 탭 이동(아래 두 버튼)은 FE7-d라 비활성 그대로다. 새 서비스 메서드 · 백엔드 변경 없음.
+
+착수 기록 정정: `frontend/test/statistics_page_test.dart`는 고치지 않았다(사본을 지웠다, 작업 트리 = HEAD). 키트 최소 변경 2파일(`kpi_tile.dart` · `skew_controls.dart`)과 그 테스트 2파일을 더 고쳤다(착수 사본 있음, WIP 없음, LF).
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7c/logs/`이고, 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(1차, 키트 · projection 뒤) | 6 issues: `app_shell.dart` 4건(error 1 `onOpenTargetPicker` · warning 2 · info 1 — Lane B FE8-e 작업 중 파일, 이 slice 밖) + 내 info 2건(`use_key_in_widget_constructors`, 공개로 바꾼 `StatisticsScaledBox` · `StatisticsMinWidth`) → 내 2건 고침 |
+| `flutter test` projection · kpi_tile · skew_controls | **+19 −0** |
+| `flutter test test/statistics_supply_projection_test.dart test/statistics_projection_test.dart` | **+15 −0**(첫 실행) |
+| `flutter test test/statistics_supply_view_test.dart`(1차) | +8 −3: ① 테스트 기대를 시안 반올림 값(보유 막대 58.9)으로 적음 → 계산값 59.4 ± 시안 0.6으로 고침 ② 첫 학생 행 id를 잘못 고름(크레딧 영향 학생은 계획 학생 5번째부터) ③ 1280×720에서 KPI 0 · 4 목표가 모두 스크롤 끝이라 구별 안 됨 → 2560×700에서 확인 |
+| 같은 파일(2차) | +10 −1: KPI 띠도 함께 스크롤되어 두 번째 KPI를 누르지 못함 → 누르기 전에 맨 위로 |
+| 같은 파일(3차) | **+11 −0** |
+| `flutter analyze`(전체, Lane B가 `app_shell.dart`를 고친 뒤) | **No issues found** |
+| `flutter test test/statistics_workspace_test.dart`(인벤토리 · 계획 기대 추가 뒤) | **+13 −0** |
+| 일회성 렌더(임시 `test/zz_fe7c_render_tmp_test.dart`, harness 공개 함수, scratchpad PNG 5장: 인벤토리 · B1 기술 노트 선택 · 계획 · C1 크레딧 선택 · 계획 1280×720) | 배치 · 숫자 시안 자리(아래 golden 예상). 임시 테스트는 지웠다. golden 비교 아님 |
+| 관련 39파일 한 번에(`--reporter json`, 아래) | **+354 −0** |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| `git diff --check`(고친 기존 14파일) · 새 6파일 줄 끝 공백 · 줄바꿈 | 0 · 0. 새 파일 LF · 끝 개행 하나, 기존 파일은 pre와 같은 줄바꿈(`statistics_projection.dart` · `statistics_page.dart` · `statistics_growth_evidence.dart` · `statistics_projection_test.dart` CRLF, 나머지 LF) |
+
+관련 39파일(파일별 통과 · 실패, 모두 −0): statistics_supply_projection +8(새), statistics_supply_view +11(새), statistics_growth_projection +11, statistics_growth_view +12, statistics_workspace +13, statistics_page +13, statistics_app_shell +2, statistics_projection +7, inventory_view_model +13, inventory_analysis +16, inventory_analysis_page +8, inventory_controller +13, inventory_history +33, inventory_history_page +11, inventory_opa +9, inventory_opa_page +6, inventory_tiers +9, inventory_tiers_page +7, inventory_shell_lazy +1, school_labels +3, home_page +5, home_app_shell +1, widget_test +16, section_template_studio +15, plan_flow +15, plan_flow_goal_step +23, kit/kpi_tile +4, kit/skew_controls +8, kit/stat_chart +7, kit/scroll_viewport_fog +6, kit/diagonal_scroll_viewport +5, kit/diagonal_scrollbar +8, kit/diagonal_row +6, kit/titles +4, kit/skew_bar +8, kit/item_icon_tile +7, kit/ui_kit_gallery_data +2, kit/ui_kit_gallery_controls +2, kit/ui_kit_gallery +6.
+
+- 걸리는 기존 테스트 찾기: test/ 전체를 `SkewSegmented|SkewSegment(|KpiTile|statistics|Statistics|InventoryBoard|inventoryCoverageOf|inventory_view_model|inventory_analysis.dart|statisticsChartText|StatisticsEvidenceStudentRow|top-tab-statistics`로 grep했다. 재사용 함수(`InventoryBoard` · `inventoryCoverageOf`)를 쓰는 inventory_* 전부, 키트 차트 · 사용처(stat_chart · item_icon_tile · gallery), 셸 테스트(widget · home)를 함께 돌렸다. `developer_tools_app_test` · `metadata_manager_dto_test` · process E2E 2개의 "statistics"는 다른 기능이라 돌리지 않았다(FE7-a와 같은 판단).
+- 빌드 잠금 충돌 없음. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음.
+- 실행하지 않음: golden(`test/goldens/**`, 새 장면 2장 포함), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 고친 파일
+
+- **`lib/statistics/statistics_supply_projection.dart`(새, 순수 함수)**: `StatisticsSupply.build(catalog, state, shortages, growth)` → 인벤토리 화면의 `InventoryBoard`(재화별 충족률 · KPI)를 그대로 쓰고, `statisticsCategoryFills`(B1, 재화 제외, 시안 순서) · `c1Rows` · `c2Points` · `c2MaxStudents` · `unknownLabels` · `metCategoryCount` · `planStudentCount`, `statisticsUnplannedLowCount`, 글자 함수 `statisticsFillText` · `statisticsAmountText`, 상수(60% 기준 · C2 구역 50% · 3명 · 미계획 40%).
+- **`lib/statistics/statistics_projection.dart`(CRLF)**: `ShortageCategoryStatistics` 교체(아래).
+- **`lib/ui/statistics/statistics_supply_charts.dart`(새)**: B1 · C1 · C2 painter와 위젯, 설계 좌표 `StatisticsB1Geometry` · `StatisticsC1Geometry` · `StatisticsC2Geometry`(시안 SVG 좌표), 누르면 hit test → 고르기.
+- **`lib/ui/statistics/statistics_supply_evidence.dart`(새)**: 선택 모델(`StatisticsCategorySelection` · `StatisticsResourceSelection` + 출처 C1/C2), 화면 상태 `StatisticsSupplyView`, 근거 내용(카테고리: 재화 행 7 + "외 n종" + 카테고리 요약 / 재화: 아이콘 행 · 보유 · 필요 · 부족 · 쓰는 학생 10 + "외 n명").
+- **`lib/ui/statistics/statistics_workspace.dart`**: KPI 칸 값(주제별) · 값 색 · 누르면 주제별 목표 줄로 스크롤(`_scrollToRow`), B1 · C1 · C2 타일 내용과 빈 상태, C1 seg(부족 큰 순 동작 · 페이즈 순 그 칸만 비활성), 계획 범위 칩 학생 수, 근거 섹션이 성장 · 재화 근거를 모두 그림, 주제별 근거 빈 상태 문구. 성장 쪽은 구조만 옮겼고 그림은 같다.
+- **`lib/ui/statistics/statistics_topics.dart`**: `scopeFor(owned, planStudents:)`, `kpiTargetRows`, 머리 주석.
+- **`lib/ui/statistics/statistics_growth_charts.dart`**: 글자 · 점선 helper를 공개(`statisticsChartText` · `statisticsChartDashed`, 이름만), 글자에 `maxWidth`(말줄임, 기본 null = 이전과 같음).
+- **`lib/ui/statistics/statistics_growth_evidence.dart`(CRLF)**: `_Scaled` · `_MinWidth` · `_EvidenceRowPainter`를 공개 이름으로(동작 같음), `StatisticsEvidenceStudentRow.plain`(id · 이름 · 레벨로 만드는 생성자) 추가.
+- **`lib/ui/pages/statistics_page.dart`(CRLF)**: 인벤토리 · 계획 고르기 상태, projection 캐시(인벤토리 목록 · 계정 상태 · 부족 계산 · 성장이 같으면 다시 만들지 않음), 다시 읽기 · 주제 전환 때 선택 지움. `_reload()` 읽기 순서 · 서비스 호출은 그대로.
+- **`lib/ui/studio/statistics_studio_layout.dart`(요소 좌표만)**: 재화 근거 아이콘 행 · 보유/필요/부족 줄 · 쓰는 학생 머리 · 학생 행.
+- **키트 최소(`lib/ui/kit/`)**: `KpiTile.valueColor`(기본 `AppColors.text` — 기존 사용처 그림 같음), `SkewSegment.enabled`(기본 true — `_dimIfDisabled(true, …)`는 자식 그대로라 기존 사용처 위젯 트리 같음).
+- 테스트: `test/statistics_supply_projection_test.dart`(새 8), `test/statistics_supply_view_test.dart`(새 11), `test/statistics_supply_fixture.dart`(새, 시안 숫자), `test/statistics_projection_test.dart`(FD-032 테스트 1건 추가), `test/statistics_workspace_test.dart`(인벤토리 · 계획 "준비 중" 2 · 3, B1 · C1 · C2 '—', 근거 빈 상태), `test/kit/kpi_tile_test.dart`(값 색 1건), `test/kit/skew_controls_test.dart`(한 칸 비활성 1건), `test/goldens/fe7a_statistics_golden_test.dart`(장면 2장 추가, 기존 장면 코드 그대로). 지운 테스트 없음.
+
+#### 식(코드 위치 · 테스트)
+
+- **재화별 충족률(FD-031 (a) · FD-032)**: `InventoryItemView.fulfillment` = min(보유, 필요)/필요(`lib/ui/inventory/inventory_view_model.dart`, FE6 그대로 재사용). 보유는 계정 인벤토리 수량 → 없으면 부족 행 `owned`, 모르면 null.
+- **카테고리 충족률(B1)**: `statisticsCategoryFills`(`statistics_supply_projection.dart`) → 카테고리별 `inventoryCoverageOf`(`lib/ui/inventory/inventory_analysis.dart`, FE6-c 그대로) = 보유를 아는 계획 재화 충족률의 단순 평균, 모름은 빼고 `unknownKinds`. 재화(크레딧 · 엘리그마)는 카테고리 막대에 넣지 않는다.
+- **전체 · 계획 충족률 · 부족 · 과잉 · 스캔 없음 KPI**: `InventoryBoard.kpis`(FE6-a 그대로: 충족률은 크레딧 포함 평균, 부족 · 과잉은 재화 제외, 과잉 = 보유 ≥ 필요 × 1.5 FD-040). 인벤토리 탭 KPI와 같은 숫자다.
+- 테스트: `statistics_supply_projection_test.dart` "fixture reproduces …"(72% · 14 · 6 · 1 · B1 78/64/91/52/47/— · 3 / 6), "fill rates reuse the inventory screen functions"(통계 값 = `InventoryBoard.kpis` · `inventoryCoverageOf`), "category fill is the plain mean …"(1/2 + 900/1000 → 70%, 수량 합산 89.9%가 아님, 넘침 100%, 모두 모름 null), `statistics_projection_test.dart` "shortage categories average per-resource fill …".
+
+#### `ShortageCategoryStatistics` 교체 결과
+
+- 사용처(grep): `lib/statistics/statistics_projection.dart` 한 곳(정의 · `PlanStatistics.shortageCategories` · `buildPlanStatistics`). 화면 사용처 0, 테스트는 값을 단언하지 않았다.
+- 옛 필드 `required` · `knownOwned` · `positiveShortage` · `unknownCount`(카테고리 안 서로 다른 재화 수량 합, FD-033 위반)를 지우고 `ShortageCategoryStatistics(category, coverage)` → `fulfillment` · `plannedKinds` · `unknownKinds`로 바꿨다. 계산은 부족 행으로 `InventoryBoard.build(catalog: [], …)`를 만든 뒤 B1과 같은 `statisticsCategoryFills`다(재화 제외, 시안 순서). 옛 정렬(부족 수량 합 큰 순)도 없어졌다.
+
+#### 처리한 FD
+
+- **FD-031(확정 (a))**: 위 식. 전체 · 계획 충족률은 크레딧 포함.
+- **FD-032(워커 재량, 권장안)**: 재화별 min/필요, 카테고리 = 단순 평균, 스캔 없음 = 모름(빗금 + "모름 · 스캔 없음" · "보유 모름 n종 제외"). `ShortageCategoryStatistics` 수량 합산 교체.
+- **FD-033(확정)**: 서로 다른 재화 수량을 더하지 않는다. C1은 행마다 자기 필요량을 100%(눈금)로, 모름은 '—' · 빗금.
+- **FD-034(확정 (a))**: 막힌 학생 = m − n은 문서 계산 `bottlenecks`(단계 id)가 있어야 한다. `_reload()`는 `calculatePlan` · `calculateShortages`만 읽으므로(프롬프트: 새 서비스 읽기 금지) KPI "막힌 학생"과 "첫 부족"은 '—'로 두었다(발견 사항 1). m(계획 학생 수)은 범위 칩 "활성 계획 · 9명 · 페이즈 —"에 쓴다.
+- **FD-035(워커 재량)**: 단계 상태를 그리는 곳이 이번에 없다(C3 · 근거 "막히는 단계"는 FE7-g).
+- **FD-105(워커 재량, 권장안)**: 주제별 5칸, 시안 라벨 그대로, 누르면 같은 주제 그래프 줄로 스크롤(인벤토리 → B1 줄, 계획 → 충족률 · 부족 · 막힌 학생 C1/C2 줄 · 첫 부족 C3 줄 · 미계획 C5 줄). 증감은 FE7-h라 '—'.
+- **FD-106(확정 2026-10-13, 사용자 결정)**: B2 · B3 · C3 · C4 · C5 "준비 중" 자리 유지. 데이터가 모자란 타일은 그 타일 안 빈 상태 문구(아래 규칙 6). "스캔을 더 실행하면 변화가 나타납니다."는 FE7-h 몫이라 넣지 않았다.
+- 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **B1 순서 · 라벨**: 시안 순서 장비 설계도 · 기술 노트 · 활동 보고서 · 전술 BD · 오파츠 · 엘레프, 그 뒤 선물 · 교본, 모르는 category 이름순. 라벨은 인벤토리 종류 버튼(FD-095)이고 BD만 시안대로 "전술 BD". 행 피치 = (163 − 23)/(행 − 1)(6행 28, A2와 같은 방식).
+2. **B1 색 · 충족 카테고리**: 60% 미만 분홍 · 이상 파랑. 충족 카테고리 = 60% 기준 이상(시안 78 · 64 · 91 · 52 · 47 · 모름 → "3 / 6"과 맞는 유일한 기준), 분모 = 계획 재화가 있는 B1 카테고리 수(모름 카테고리 포함).
+3. **스캔 없음 KPI**: 값 = 보유를 모르는 계획 재화 종 수(회색), 증감 자리 = 그 카테고리 이름(하나면 이름, 여럿이면 "<첫째> 외 n").
+4. **C1 "부족 큰 순"**: 보유 / 필요(넘치면 1보다 큼) 작은 순 → 영향 학생 많은 순 → 카탈로그 순서, 보유 모름은 뒤, 5행. 크레딧 · 엘리그마 포함. 막대 = 보유(필요량 157.9 = 트랙 80.7%, 넘치면 트랙 끝), 빗금 = 보유 끝 → 눈금, 오른쪽 "보유 / 필요"(모자라면 분홍). 수량 글자는 백만 이상 "98.4M", 아래는 정수 그대로(시안 "1020 / 2245"). 보유 모름 행은 눈금까지 빗금 + "— / 필요" 회색. 눈금 선은 시안 좌표대로 (x, 밑변 − 18) → (x + 2, 밑변 + 2).
+5. **C1 seg**: "부족 큰 순" 선택 · 동작, "페이즈 순"은 그 칸만 비활성(키트 `SkewSegment.enabled`). 근거: 페이즈 순서는 활성 문서 계산(`phase_results`)이 필요해 FE7-g(C3)와 같이 붙인다. 자료가 없으면 seg 전체 비활성 자리(FE7-a 그대로).
+6. **빈 상태 문구(~습니다체, 시안 없음)**: 목표 없음 "저장된 계획이 없습니다. 계획에 목표를 저장하면 나타납니다."(B1 · C1 · C2), 계획 재화 없음 "계획에 필요한 재화가 없습니다.", B1에 재화만 있음 "카테고리로 나눌 재화가 없습니다. 크레딧 · 엘리그마는 C1에서 봅니다.", C2 보유 아는 재화 없음 "보유를 아는 재화가 없습니다. 인벤토리 스캔을 실행하면 나타납니다.", 읽는 중 · 계산 실패 '—'(오류는 근거 패널 안내 줄). 근거 빈 상태: 인벤토리 "B1 막대를 고르면 근거가 보입니다.", 계획 "C1 행이나 C2 점을 고르면 근거가 보입니다."(성장은 FE7-a 문구 그대로).
+7. **C2**: 가로 = 충족률, 세로 = 영향 학생 수(`affectedStudentIds.length`), 세로 최대 = 가장 많은 학생 수 + 1(최소 4). "먼저 볼 병목" 구역 = 충족률 50% 미만 · 학생 3명 이상(시안 구역 (41,10)–(241.8,131.2), 축 최대 8과 정확히 맞음). 구역 안 점은 회색 이름, 고른 점은 분홍 큰 점 + 흰 굵은 이름. 보유 모름 재화는 점이 없고 오른쪽 위 "보유 모름 n종 제외". 누르면 가장 가까운 점(설계 좌표 12 안).
+8. **미계획 · 40% 미만**: 보유 · 목표 없음 · 육성도(FD-028)를 아는 학생 중 40% 미만(모름은 셈하지 않음).
+9. **근거 패널**: 카테고리(B1) = 머리 "<카테고리>" + 충족률 칩(60% 미만 분홍 · 모름 회색), 부제 "B1에서 고른 카테고리 · 충족률 낮은 순", 재화 행 7(아이콘 · 이름 · "보유 n / 필요 m" · 칩) + "외 n종", "카테고리 요약"(계획 재화 · 부족 · 스캔 없음 종 수). 재화(C1 · C2) = 시안 Stats-Inventory 근거 틀: 머리 "<재화>" + 칩(필요량 대비 "−n%" 분홍 · 넘침 "+n%" · 같음 "충족" · 모름), 아이콘 행(부제 "C1에서 고른 행 · 필요량 대비" / "C2에서 고른 병목 · 충족률 n% · 학생 n명" — 시안 문구), 보유 · 필요 (활성 계획) · 부족(분홍) 줄, "쓰는 학생 · n명" + 학생 행 10(초상 · 이름 · Lv, 부족 계산의 학생 순서) + "외 n명". 고르기는 하나(B1 · C1 · C2 중), 같은 것을 다시 누르면 푼다, 다시 읽기 · 주제 전환 때 지운다.
+10. **빼고 근거를 적은 것**: 시안 Stats-Plan 오른쪽 "막히는 단계 · P2부터 누적 부족" · 머리 칩 "첫 부족 P2"(C3 문서 계산 데이터 → FE7-g), "풀리는 방법"(what-if, 백엔드 없음), Stats-Inventory "쓰는 학생 · 필요량 순"의 학생별 필요량 · 단계("P2 · 스킬 M 96", 문서 계산 `stage_results` → FE7-g; 지금은 학생 수만, 캡션 "n명"), "최근 변화"(이력 → FE7-h). 원본 탭 이동 버튼은 FE7-d라 비활성 그대로.
+
+#### golden 변화 예상
+
+- **`statistics-growth`: 변화 0.** 성장 쪽 변경은 이름 공개 · 구조 이동뿐이다: KPI 칸은 전에도 누를 수 있었고(같은 `KitPressable`), `KpiTile.valueColor` 기본 흰색, 차트 글자 `maxWidth` 기본 null(같은 layout), 타일 내용 위젯 트리 같음, 근거 빈 상태 문구 같음. 장면 코드 · fixture 서비스 그대로.
+- **다른 기존 장면: 변화 0.** 키트 변경은 기본값이 이전과 같고(`SkewSegment.enabled` true면 위젯 트리가 같다), 인벤토리 · 계획 · 셸 파일은 고치지 않았다. Lane B 헤더 · 홈 변화는 이 slice와 무관(같은 gate에서 함께 보일 수 있음). 바뀌는 기존 기준 이미지가 없어 commit.json에 `whole`을 두지 않았다.
+- **새 장면 `statistics-inventory`**(기준 이미지 없음 → RED, CF가 만든다). 기대 모습(일회성 렌더로 본 배치):
+  - 왼쪽: "인벤토리 현황" 주제 선택(핑크), 필터 부제 "인벤토리 · 계획 집계는 항상 전체", 기준 데이터 '—'.
+  - 가운데 제목 "인벤토리 현황" + (i), 오른쪽 "활성 계획 기준 · 인벤토리 스캔 —". KPI 5칸: "72%" —, 분홍 "14종" —, "6종" —, "3 / 6" —, 회색 "1종" + 회색 "엘레프".
+  - B1(1차 칩): 6행 사선 계단, 장비 설계도 78%(파랑) · 기술 노트 64%(파랑) · 활동 보고서 91%(파랑) · 전술 BD 52%(분홍) · 오파츠 47%(분홍) · 엘레프(회색 라벨, 트랙 빗금 + "모름 · 스캔 없음" + '—'), 60% 분홍 점선 + "60% 기준". B2(seg 흐림) · B3(seg + 3차 칩) "준비 중". 콘텐츠 830이라 스크롤바 썸 없음.
+  - 오른쪽: "근거 확인" + "B1 막대를 고르면 근거가 보입니다.", 아래 흐린 버튼 둘.
+- **새 장면 `statistics-plan`**(기준 이미지 없음 → RED). 기대 모습:
+  - KPI: "72%" —, 분홍 "14종" —, "—" —, "—" —, "26명" —(성장 fixture의 미계획 · 40% 미만 수, 시안 14명과 다름 — 발견 사항 3). 범위 칩 "활성 계획 · 9명 · 페이즈 —".
+  - C1: seg "부족 큰 순"(분홍 테두리, 또렷) · "페이즈 순"(흐림). 5행: 크레딧 98.4M / 261.5M · 엘리그마 1020 / 2245 · 네브라 디스크 T4 23 / 50 · 님루드 렌즈 T3 24 / 50 · 기술 노트 (상급) 12 / 25(모두 분홍 글자), 파랑 보유 막대 + 회색 빗금 + 흰 눈금, 아래 "빗금 = 모자란 양" · "필요량 = 눈금 (행마다 자기 단위)".
+  - C2(1차 칩): 축 · "학생" · "0" · "0%" · "충족률 →", 왼쪽 위 분홍 점선 구역 + "먼저 볼 병목", 구역 안 이름(크레딧 · 네브라 디스크 T4 · 엘리그마 · 님루드 렌즈 T3), 오른쪽 끝(충족 100%) 세로 점 줄, 오른쪽 위 "보유 모름 1종 제외".
+  - C3 · C4(2차) · C5(3차) "준비 중", 오른쪽 공용 스크롤바 썸. 오른쪽 근거 "C1 행이나 C2 점을 고르면 근거가 보입니다.".
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Inventory(K · B1) | golden `statistics-inventory`(시안 숫자 fixture). 앱 mock 기본 계정은 목표가 없어 B1에 "저장된 계획이 없습니다…"만 보인다(발견 사항 4) | KPI 72% · 14종(분홍) · 6종 · 3 / 6 · 1종 엘레프(회색), B1 6행 계단 · 60% 점선 기울기 · 60% 미만 분홍 · 엘레프 빗금 "모름 · 스캔 없음" |
+| Stats-Inventory(B1 선택) | 통계 탭 → 인벤토리 현황 → B1 "기술 노트" 막대 누르기 | 막대 분홍 테두리 · 라벨 분홍, 오른쪽 "기술 노트" + "64%", 부제 "B1에서 고른 카테고리 · 충족률 낮은 순", 재화 행(상급 48% → 최상급 80%), "카테고리 요약" 2종 · 2종 · 0종, 다시 누르면 빈 상태 |
+| Stats-Plan(K · C1 · C2) | golden `statistics-plan` → 통계 탭 → 계획 집계 | 범위 칩 "활성 계획 · 9명 · 페이즈 —", KPI 첫 부족 · 막힌 학생 '—', C1 불릿(눈금 = 필요량, 빗금 = 모자란 양, 행마다 자기 단위), C2 분홍 구역 · 구역 안 이름 |
+| Stats-Plan(C1 · C2 선택) | C1 크레딧 행 · C2 네브라 점 누르기 | 오른쪽 "크레딧" + "−62%", 아이콘 행 + "C1에서 고른 행 · 필요량 대비", 보유 98.4M · 필요 261.5M · 부족 163.1M(분홍), "쓰는 학생 7명" + 초상 행 / C2를 고르면 C1 선택이 풀리고 "C2에서 고른 병목 · 충족률 46% · 학생 6명" |
+| (동작) | KPI 누르기 · 주제 전환 · 1280×720 | 계획 KPI "첫 부족" → C3 줄, "미계획" → C5 줄로 스크롤, 주제를 바꾸면 선택이 풀림, "페이즈 순"만 흐리고 눌리지 않음, 작은 창 예외 없음 |
+| Statistics-Proposal | 위 화면 | B1 공통 트랙 · C1 불릿 · C2 산점도 + 분홍 구역, 색 역할(크기 파랑 · 강조 분홍 · 모름 회색 빗금), 다른 재화 수량 합산 없음 |
+
+#### 미검증 항목
+
+- golden(새 장면 `statistics-inventory` · `statistics-plan`, `statistics-growth` · 다른 장면 변화 0 예측): **미실행**. 일회성 렌더는 배치 확인만이다.
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드 계정의 숫자(부족 행 category 값 · 크레딧 행 포함 여부 · 영향 학생 수 분포): **미실행**. Mock · fixture만 보았다.
+- 실제 창에서 KPI 스크롤 애니메이션 · C2 점 겹침 정도 · 실제 글꼴의 C1 라벨 말줄임.
+
+#### WIP 보존 확인
+
+- 고친 기존 14파일(이 문서 포함 15)은 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다(`statistics_growth_evidence.dart`는 `sed -i`가 CRLF를 LF로 바꾼 것을 바로 CRLF로 되돌렸다, 최종 pre와 같은 CRLF).
+- 작업 트리의 다른 미커밋 변경(Lane B `app_shell.dart` · `lib/ui/scan/header_connection_chip.dart` · `lib/ui/home/` 등, 스캐너 · 백엔드 파일)은 읽지도 고치지도 않았다. git 쓰기는 하지 않았다. 임시 렌더 테스트는 지웠다.
+
+#### 발견 사항
+
+1. **FD-034 · 첫 부족은 지금 `_reload()` 자료로 계산할 수 없다**: 막힌 학생(m − n)과 첫 부족(페이즈 · 재화)은 문서 계산(`calculatePlanningDocument`의 `bottlenecks` · `phase_results`)이 있어야 한다. 통계는 목표 v1 평면 계획으로 `calculatePlan` · `calculateShortages`만 읽는다. 새 서비스 메서드는 필요 없고(인벤토리 탭이 이미 `loadRepositoryPlan` + `calculatePlanningDocument`를 읽는다), FE7-g에서 `_reload()`에 그 두 읽기를 더하면 막힌 학생 · 첫 부족 · 페이즈 수 · C1 페이즈 순 · 근거 "막히는 단계"가 함께 풀린다. 그때 "활성 계획"을 목표 v1이 아니라 활성 문서로 볼지(인벤토리 탭과 같게) CF 결정이 필요하다.
+2. **시안 숫자 모순**: C1 3~5행(기술 노트 (최상급) 96/120 = 80% · 설계도 시계 T8 52/60 · 상급 활동 보고서 384/300)은 B1 오파츠 47% · 전술 BD 52%가 있는 한 "부족 큰 순" 위 다섯이 될 수 없다. C2 기술 노트 (최상급) 24%는 C1 96/120(80%)과, 근거 "필요 254 · 부족 158"(Stats-Inventory)과도 맞지 않는다. fixture는 KPI · B1 · C1 첫 두 행을 맞췄다.
+3. **미계획 · 40% 미만**: 성장 fixture(시안 Stats-Growth 숫자)에서는 26명이다(시안 Stats-Plan 14명). 두 시안 fixture를 함께 맞추려면 성장 fixture를 바꿔야 해(FE7-b golden에 닿음) 그대로 두었다.
+4. **mock 기본 계정**: 목표가 없어 인벤토리 · 계획 주제가 빈 상태다. 시안 숫자를 앱 mock 실행에서 보려면 `lib/services/**` 변경(검수 시나리오)이 필요하다 — FE7-b 발견 4와 같은 CF 요청 후보.
+5. **C2 점 겹침**: 충족 100% 재화가 오른쪽 끝 한 줄에 겹치고(fixture 9점), 같은 (충족률, 학생 수) 재화는 한 점으로 보인다. 시안에 겹침 규칙이 없다(지터 · 묶음 표시는 후속 판단).
+6. **근거 "외 n명 · 외 n종"은 누르는 동작이 없다**: 성장 근거의 "모두 보기" 펼침(FE7-b)과 같은 동작을 붙일지 FE7-d와 함께 판단.
+7. **KPI 타일 높이 70(키트) vs 시안 84**(FE7-a 발견 4)는 그대로다. 값 색은 키트에 선택 인자를 더해 시안 색(부족 분홍 · 스캔 없음 회색)을 썼다.
+8. 근거 아이콘 행 오른쪽은 시안 폭(362.7, 섹션 오른쪽에서 44)을 상수로 두었다. 다른 근거 요소(40 · 22)와 규칙이 다르다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7c/pre/<경로>`(고친 기존 14파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7c/commit.json`: slice `fe7c`, `status=true`, modified 15(이 문서 포함), added 6, `whole` 없음(바뀌는 기존 기준 이미지 없음 — 새 장면 이미지 `statistics-inventory.png` · `statistics-plan.png`는 CF가 넣는다).
+- 인계: `debug/frontend_fe7c/output.md`.
+
+#### 다음 행동
+
+- FE7-c 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate 1회. 예상: analyze 0, 일반 테스트에 새 19건(projection 8 · view 11) + projection 1 · kpi_tile 1 · skew_controls 1, golden은 새 장면 `statistics-inventory` · `statistics-plan`만 RED(기준 없음, 위 기대 모습), `statistics-growth` · 다른 장면 변화 0(Lane B 변화는 별도). 승인 뒤 `-UpdateGoldens` · 재비교 · `fe_commit.ps1 -Slice fe7c`.
+- 남은 CF 판단: 발견 1(FE7-g 활성 문서 읽기 · "활성 계획" 정의), 2 · 3(시안 숫자), 4(mock 검수 시나리오), 5 · 6(C2 겹침 · 근거 펼침).
+
+### fe7c commit record (2026-10-13 20:00, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261013_194844\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

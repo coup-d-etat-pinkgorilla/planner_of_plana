@@ -196,6 +196,24 @@ abstract final class StatisticsMetrics {
   static const evidenceSummaryHeight = 48.0;
   static const evidenceSummaryPitch = 52.0;
 
+  /// 재화 근거(FE7-c, 시안 Stats-Inventory 오른쪽): 아이콘 행 (2153.3, 283.2, 362.7×70) — 위 74, 높이 70, 왼쪽은 행 아래
+  /// 높이의 사선에서 50, 오른쪽은 섹션 오른쪽에서 44.
+  static const evidenceHeaderTop = 74.0;
+  static const evidenceHeaderHeight = 70.0;
+  static const evidenceHeaderInset = 50.0;
+  static const evidenceHeaderRight = 44.0;
+
+  /// 보유 · 필요 · 부족 줄(시안 `.plain` (2116.2, 363.2, 421.8×52) …): 위 154, 피치 56, 높이 52. 왼쪽 · 오른쪽은 근거 행 규칙.
+  static const evidenceFactTop = 154.0;
+  static const evidenceFactPitch = 56.0;
+  static const evidenceFactHeight = 52.0;
+
+  /// "쓰는 학생" 머리(시안 (2107.4, 539.2, 412.6×34)): 위 330(요약 머리와 같은 왼쪽 규칙). 학생 행(시안 (2077.5, 583.2,
+  /// 460.5×52) …): 위 374, 피치 58, 10행까지 + "외 n명".
+  static const evidenceUsersTitleTop = 330.0;
+  static const evidenceUsersTop = 374.0;
+  static const evidenceUserRows = 10;
+
   /// 낮은 창에서 세로 값을 줄이는 비율(0.4~1).
   static double scaleFor(double sectionHeight) =>
       (sectionHeight / referenceHeight).clamp(0.4, 1.0).toDouble();

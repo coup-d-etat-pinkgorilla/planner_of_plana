@@ -269,6 +269,13 @@ void main() {
     _expectRect(tester, 'statistics-tile-B2', 1240.8, 393.2, 758.6, 313);
     _expectRect(tester, 'statistics-tile-B3', 485.2, 728.2, 1455.2, 351);
     expect(find.text('인벤토리 · 계획 집계는 항상 전체'), findsOneWidget);
+    // FE7-c: B1은 그래프 자리(계정 상태 · 부족 계산이 없으면 '—'), B2 · B3은 "준비 중"(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('statistics-tile-B1-empty'))).data,
+      '—',
+    );
+    expect(find.text(statisticsInventoryEvidenceEmptyText), findsOneWidget);
 
     await tester.pumpWidget(_host(StatisticsMode.plan));
     await tester.pumpAndSettle();
@@ -278,6 +285,15 @@ void main() {
     _expectRect(tester, 'statistics-tile-C4', 1220.8, 773.2, 711.6, 327);
     _expectRect(tester, 'statistics-tile-C5', 422.4, 1122.2, 1448.5, 313);
     expect(find.text('활성 계획 · —명 · 페이즈 —'), findsOneWidget);
+    // FE7-c: C1 · C2는 그래프 자리, C3 · C4 · C5는 "준비 중".
+    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+    for (final id in ['C1', 'C2']) {
+      expect(
+        tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,
+        '—',
+      );
+    }
+    expect(find.text(statisticsPlanEvidenceEmptyText), findsOneWidget);
   });
 
   testWidgets('scrolling slides rows along the rail and topics keep their own scroll', (
