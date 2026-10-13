@@ -106,20 +106,8 @@ $global:LASTEXITCODE = 0
         # closure, so an indirect import of the developer entrypoint is rejected.
         lib = ROOT / 'frontend/lib'
         package = re.search(r'^name:\s*(\S+)', (ROOT / 'frontend/pubspec.yaml').read_text(encoding='utf-8'), re.M).group(1)
-        visited, pending = set(), [lib / 'main.dart']
-        while pending:
-            source = pending.pop().resolve()
-            if source in visited:
-                continue
-            self.assertTrue(source.is_relative_to(lib.resolve()), str(source))
-            self.assertTrue(source.is_file(), str(source))
-            visited.add(source)
-            for directive in re.findall(r"(?:import|export)\s+([^;]+);", source.read_text(encoding='utf-8')):
-                for uri in re.findall(r"['\"]([^'\"]+)['\"]", directive):
-                    if uri.startswith(f'package:{package}/'):
-                        pending.append(lib / uri.split('/', 1)[1])
-                    elif ':' not in uri:
-                        pending.append(source.parent / uri)
+        from tests.dart_import_closure import dart_local_source_closure
+        visited = dart_local_source_closure(lib, package)
         self.assertNotIn((lib / 'developer_tools_main.dart').resolve(), visited)
         self.assertFalse(any('developer_tools' in p.relative_to(lib.resolve()).parts for p in visited))
 
