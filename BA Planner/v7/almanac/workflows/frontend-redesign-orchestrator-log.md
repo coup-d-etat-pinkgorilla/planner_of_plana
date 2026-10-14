@@ -2751,3 +2751,8 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - 커밋: **tidy1 `7bd7530d`**(33파일) → **fe7h `ff5924c6`**(17파일).
 - 사용자 결정 후보 2건: ① **스냅샷 묶음 규칙**(FE7-h 발견 2: 저장은 종류별 세션이라 왼쪽 "12회" vs 시안 "스냅샷 6회", B3 seg "스냅샷 6회") ② **스캐너 frontend WIP 처리**(XB 08:32 권고: 기능부 보존, FB-6 뒤 backend 기능부 paired → CF 기능부 커밋 → FE8-f1, 시각 부분은 CF FE8-g2 판단).
 - 다음: fb6-dart 배정(+ allowlist 8).
+
+## 2026-10-14 10:05 — 사용자 결정 2건(모두 권장안)
+
+- **FD-175 신설·확정**: 통계·이력 "스냅샷 n회" = 가까운 시각의 scan 세션(학생·인벤토리 모든 profile)을 한 "스캔 자리"로 묶음(기본: 앞 세션 끝에서 2시간 안), A6·B3 점은 묶음별 마지막 상태. 구현은 FE7-h 후속 소단위(`StatisticsHistory.snapshotTimes`와 FE6-f·계정 메타의 같은 개념).
+- **스캐너 frontend WIP 보존 승인**: XB 08:32 권고 순서(FB-6 왕복 → XB O1·R6e backend 기능부 선택·전체 Python·frontend 기능부 hunk 목록 → 같은 소스 gate → XB 커밋 → CF `scanwip-func` 커밋, 시각 hunk는 FE8-g2로 → FE8-f1). backend 로그 10:05 회신.
