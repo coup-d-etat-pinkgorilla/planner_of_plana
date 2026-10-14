@@ -22,11 +22,20 @@
 // `ui/navigation/app_navigation_intent.dart`). 고른 것이 없거나 넘길 대상이 없으면 버튼은 비활성이다. 넘어간 탭의
 // "← 통계" 칩으로 돌아오면([StatisticsPage.returnToken]) 평소처럼 다시 읽고, 다시 읽은 뒤에도 근거가 있는 고른 것 ·
 // 펼침을 되살린다(주제 · 스크롤은 다시 읽어도 그대로다).
+// FE7-h: 읽기가 끝나면(보드를 먼저 그린 뒤) 이력을 읽는다 — events 전부(cursor 끝까지) · scan_latest(보유 학생 · 카탈로그
+// 재화, 256개씩). 이력 revision이 계정 상태와 다르면 섞지 않고 A6 · B3에 안내한다. 탭이 다시 보이면(숨어 있는 동안 다시
+// 읽기 요청이 없었어도) summary revision만 보고, 계정 상태와 다르면 다시 읽는다(FE6-f 인벤토리 탭과 같은 방식 — 다른 탭의
+// 저장 · 스캔 commit). "지금"은 서비스 시계(`services/app_clock.dart` `AppClockSource`, 검수 fixture 고정 시각)이고 없으면
+// 기기 시계다.
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
+import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_history_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../app_section.dart';
@@ -35,15 +44,27 @@ import '../inventory/inventory_analysis.dart'
         inventoryOopartCategory,
         inventoryTacticalBdCategory,
         inventoryTechNotesCategory;
+import '../inventory/inventory_history.dart'
+    show
+        inventoryDaysAgo,
+        inventoryHistoryPageLimit,
+        inventoryLastScanAt,
+        inventoryScanLatestChunk;
+import '../inventory/inventory_view_model.dart' show InventoryBoard;
 import '../models/plan_scenario_detail.dart' show PlanDetailData;
 import '../navigation/app_navigation_intent.dart';
 import '../statistics/statistics_growth_evidence.dart';
+import '../statistics/statistics_history_charts.dart';
 import '../statistics/statistics_source.dart';
 import '../statistics/statistics_supply_evidence.dart';
 import '../statistics/statistics_topics.dart';
 import '../statistics/statistics_workspace.dart';
+import '../widgets/account_section_cluster.dart' show accountLastScanText;
 
 export '../statistics/statistics_topics.dart' show StatisticsMode;
+
+/// 이력 events를 끝까지 읽을 때의 쪽 수 상한(200 × 50 = FB-2 보존 상한 10,000건, FE6-f와 같다).
+const _historyMaxPages = 50;
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({
@@ -127,6 +148,29 @@ class _StatisticsPageState extends State<StatisticsPage> {
   RepositoryPlanState? _planningPlan;
   Map<String, dynamic>? _planningProjection;
 
+  /// 이력(FE7-h). 읽기 실패 · 상태와 맞지 않음은 [_historyError] 글자다.
+  StatisticsHistory? _history;
+  String? _historyError;
+  bool _historyLoading = false;
+
+  /// B3 seg(FD-110). 다시 읽어도 남긴다(보기 선택).
+  StatisticsB3Range _b3Range = StatisticsB3Range.recent;
+
+  /// 이력 projection 캐시(읽은 이력 · 성장 · 보드 · seg가 같으면 다시 만들지 않는다).
+  StatisticsHistoryView? _historyView;
+  StatisticsHistory? _historyViewSource;
+  StatisticsGrowth? _historyViewGrowth;
+  StatisticsSupply? _historyViewSupply;
+  InventoryBoard? _historyBoard;
+  StatisticsB3Range? _historyViewRange;
+  bool _historyViewLoading = false;
+  String? _historyViewError;
+
+  /// 계획이 없을 때 B3 보드(카탈로그 · 계정 인벤토리만, 부족 계산 없음).
+  InventoryBoard? _plainBoard;
+  List<InventoryCatalogEntry>? _plainBoardCatalog;
+  RepositoryState? _plainBoardState;
+
   /// 이 탭이 지금 보이는가(`TickerMode`).
   bool _visible = false;
 
@@ -145,8 +189,40 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final visible = TickerMode.valuesOf(context).enabled;
     if (visible == _visible) return;
     _visible = visible;
-    if (visible && _stale) _reload();
+    if (visible && _stale) {
+      _reload();
+    } else if (visible) {
+      _refreshIfChanged();
+    }
   }
+
+  /// 다시 보일 때: 이력 요약의 revision이 읽은 계정 상태와 다르면(다른 탭의 저장 · 스캔 commit) 다시 읽는다.
+  Future<void> _refreshIfChanged() async {
+    final repository = _repository;
+    final profile = _profile;
+    final state = _state;
+    if (repository == null || profile == null || state == null || _loading) {
+      return;
+    }
+    final generation = _generation;
+    try {
+      final summary = await repository.loadRepositoryHistorySummary([
+        profile.id,
+      ]);
+      if (!mounted || generation != _generation || !_visible) return;
+      for (final item in summary.profiles) {
+        if (item.profileId == profile.id && item.revision != state.revision) {
+          _reload();
+          return;
+        }
+      }
+    } catch (_) {
+      // 읽지 못하면 다음에 다시 보일 때 본다.
+    }
+  }
+
+  /// 서비스 시계(검수 fixture), 없으면 기기 시계.
+  DateTime _now() => appClockNow(widget.service);
 
   @override
   void didUpdateWidget(StatisticsPage old) {
@@ -215,6 +291,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
       _plan = null;
       _planProjection = null;
       _planError = null;
+      _history = null;
+      _historyError = null;
+      _historyLoading = false;
       _profileError = _stateError = _studentError = _inventoryError =
           _grossError = _shortageError = null;
     });
@@ -335,6 +414,174 @@ class _StatisticsPageState extends State<StatisticsPage> {
         _loading = false;
         if (restore != null) _restoreSelection(restore);
       });
+    if (!mounted || generation != _generation) return;
+    await _loadHistory(generation, profile);
+  }
+
+  /// 이력(FE7-h): events 전부(같은 anchor, cursor 끝까지), 보유 학생 · 카탈로그 재화의 scan_latest(256개씩).
+  Future<void> _loadHistory(int generation, RepositoryProfile profile) async {
+    final repository = _repository;
+    final state = _state;
+    if (repository == null || state == null) return;
+    setState(() => _historyLoading = true);
+    StatisticsHistory? history;
+    String? error;
+    try {
+      final now = _now();
+      final pages = <RepositoryHistoryEventsResult>[];
+      var request = RepositoryHistoryEventsRequest(
+        profileId: profile.id,
+        limit: inventoryHistoryPageLimit,
+      );
+      while (true) {
+        final page = await repository.loadRepositoryHistoryEvents(request);
+        if (!mounted || generation != _generation) return;
+        pages.add(page);
+        final cursor = page.nextCursor;
+        if (cursor == null) break;
+        if (pages.length >= _historyMaxPages) {
+          throw StateError('history_too_large');
+        }
+        request = request.withCursor(cursor);
+      }
+      if (pages.first.revision != state.revision) {
+        error = statisticsHistoryMismatchText;
+      } else {
+        Future<List<RepositoryHistoryScanLatestResult>> latest(
+          List<String> ids, {
+          required bool students,
+        }) async {
+          final results = <RepositoryHistoryScanLatestResult>[];
+          for (
+            var start = 0;
+            start < ids.length;
+            start += inventoryScanLatestChunk
+          ) {
+            final chunk = ids.sublist(
+              start,
+              math.min(ids.length, start + inventoryScanLatestChunk),
+            );
+            results.add(
+              await repository.loadRepositoryHistoryScanLatest(
+                RepositoryHistoryScanLatestRequest(
+                  profileId: profile.id,
+                  studentIds: students ? chunk : null,
+                  resourceKeys: students ? null : chunk,
+                ),
+              ),
+            );
+            if (!mounted || generation != _generation) return const [];
+          }
+          return results;
+        }
+
+        final studentScans = await latest([
+          for (final student in state.students) student.studentId,
+        ], students: true);
+        if (!mounted || generation != _generation) return;
+        final inventoryScans = await latest(
+          {
+            for (final item in _inventory ?? const <InventoryCatalogEntry>[])
+              historyCanonicalResourceKey(item.resourceKey),
+          }.toList(),
+          students: false,
+        );
+        if (!mounted || generation != _generation) return;
+        history = StatisticsHistory.build(
+          StatisticsHistoryInput(
+            now: now,
+            state: state,
+            pages: pages,
+            students: _students,
+            lastStudentScanAt: statisticsLastStudentScanAt(studentScans),
+            lastInventoryScanAt: inventoryLastScanAt(inventoryScans),
+          ),
+        );
+      }
+    } catch (failure) {
+      error = '변화 기록을 읽지 못했습니다: $failure';
+    }
+    if (mounted && generation == _generation)
+      setState(() {
+        _history = history;
+        _historyError = error;
+        _historyLoading = false;
+      });
+  }
+
+  /// B3 보드: 계획이 있으면 인벤토리 · 계획 projection의 보드, 없으면 카탈로그 · 계정 인벤토리만으로 만든다.
+  InventoryBoard? _b3Board(StatisticsSupply? supply) {
+    if (supply != null) return supply.board;
+    final catalog = _inventory;
+    final state = _state;
+    if (catalog == null || state == null) return null;
+    if (!identical(_plainBoardCatalog, catalog) ||
+        !identical(_plainBoardState, state)) {
+      _plainBoardCatalog = catalog;
+      _plainBoardState = state;
+      _plainBoard = InventoryBoard.build(
+        catalog: catalog,
+        inventory: state.inventory,
+        shortages: null,
+      );
+    }
+    return _plainBoard;
+  }
+
+  /// 이력 화면 값(FE7-h). [growth] · [supply]는 지금 읽은 projection이다.
+  StatisticsHistoryView _currentHistoryView(
+    StatisticsGrowth? growth,
+    StatisticsSupply? supply,
+  ) {
+    final loading = _loading || _historyLoading;
+    final history = loading ? null : _history;
+    final board = loading ? null : _b3Board(supply);
+    final cached = _historyView;
+    if (cached != null &&
+        identical(_historyViewSource, history) &&
+        identical(_historyViewGrowth, growth) &&
+        identical(_historyViewSupply, supply) &&
+        identical(_historyBoard, board) &&
+        _historyViewRange == _b3Range &&
+        _historyViewLoading == loading &&
+        _historyViewError == _historyError) {
+      return cached;
+    }
+    _historyViewSource = history;
+    _historyViewGrowth = growth;
+    _historyViewSupply = supply;
+    _historyBoard = board;
+    _historyViewRange = _b3Range;
+    _historyViewLoading = loading;
+    _historyViewError = _historyError;
+    final student = history?.lastStudentScanAt;
+    final inventory = history?.lastInventoryScanAt;
+    return _historyView = StatisticsHistoryView(
+      loading: loading,
+      error: loading ? null : _historyError,
+      history: history,
+      studentScan: history == null || student == null
+          ? '—'
+          : accountLastScanText(student.toIso8601String(), history.now),
+      inventoryScan: history == null || inventory == null
+          ? '—'
+          : accountLastScanText(inventory.toIso8601String(), history.now),
+      inventoryScanDays: history == null || inventory == null
+          ? null
+          : inventoryDaysAgo(inventory, history.now),
+      growthDeltas: statisticsGrowthDeltas(history, growth),
+      supplyDeltas: statisticsSupplyDeltas(
+        history,
+        supply,
+        catalog: _inventory,
+        state: _state,
+        shortages: _shortages,
+      ),
+      growthTrend: statisticsGrowthTrend(history),
+      resourceTrends: statisticsResourceTrends(history, board, _b3Range),
+      b3Range: _b3Range,
+      onB3RangeChanged: (range) => setState(() => _b3Range = range),
+    );
   }
 
   /// "← 통계"로 돌아와 다시 읽은 뒤: 고른 구간 · 재화가 아직 근거를 가지면 되살린다(FE7-d). setState 안에서 부른다.
@@ -619,6 +866,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       data: data,
       growth: growthView,
       supply: supplyView,
+      history: _currentHistoryView(growth, supplyView.supply),
       evidenceActions: _evidenceActions(growthView, supplyView),
       onModeChanged: (mode) => setState(() {
         _mode = mode;

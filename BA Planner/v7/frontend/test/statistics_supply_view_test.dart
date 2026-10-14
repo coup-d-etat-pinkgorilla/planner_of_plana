@@ -311,8 +311,8 @@ void main() {
       StatisticsSupplyFixtureExpected.b1Percents,
     );
     expect(painter.selectedCategory, isNull);
-    // 그리지 않는 타일(B2 · B3)은 "준비 중" 자리(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    // 그리지 않는 타일(B2)은 "준비 중" 자리(FD-106 사용자 결정 10-13). B3은 FE7-h 그래프 자리다(이력 없음 '—').
+    expect(find.text(statisticsTilePendingText), findsNWidgets(1));
     expect(_note(tester), statisticsInventoryEvidenceEmptyText);
     expect(tester.takeException(), isNull);
   });

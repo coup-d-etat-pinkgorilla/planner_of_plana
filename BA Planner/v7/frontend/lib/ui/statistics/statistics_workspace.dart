@@ -1,14 +1,17 @@
 // 통계 탭 3섹션 골격(FE7-a, 시안 Stats-Growth · Stats-Inventory · Stats-Plan, F 보고서 §2).
 //
 // - 왼쪽 주제 · 범위: "통계" 제목, 주제 버튼 3개(선택 핑크), 필터 버튼(FE7-e 전까지 비활성) + 보조 문구,
-//   기준 데이터 3행(값 '—'), 아래 "다시 스캔"(FD-125: 스캔 탭으로).
+//   기준 데이터 3행(FE7-h 이력: 학생 스캔 · 인벤토리 시각, 스냅샷 n회 · 기간, 모르면 '—'), 아래 "다시 스캔"(FD-125: 스캔 탭으로).
 // - 가운데 KPI + 위젯: 제목 줄(제목 · (i) · 범위) + 공용 사선 스크롤 viewport(translate 모드, 공용 스크롤바 · 포그 C).
 //   행 0은 KPI 띠, 그 아래 위젯 타일 줄(80° 평행사변형, 사선 계단은 translate 모드가 행 높이대로 만든다).
-//   학생 성장(FE7-b)은 KPI 5칸 값(증감은 FE7-h 전까지 '—', 누르면 그래프 줄로 스크롤)과 A1 · A2 그래프를 그린다
+//   학생 성장(FE7-b)은 KPI 5칸 값(누르면 그래프 줄로 스크롤)과 A1 · A2 그래프를 그린다
 //   (`statistics_growth_charts.dart`). 인벤토리 현황 · 계획 집계(FE7-c)는 KPI 5칸 값과 B1 · C1 · C2 그래프를 그린다
 //   (`statistics_supply_charts.dart`, FD-031 · 032 · 034 · 105). 계획 집계는 활성 문서 계산으로 KPI 첫 부족 · 막힌 학생,
-//   범위 칩 페이즈 수, C1 "페이즈 순", C3 페이즈별 누적 부족을 더한다(FE7-g, `statistics_plan_charts.dart`). 다른 타일은
-//   제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면 그래프 타일 안에 빈 상태 문구다.
+//   범위 칩 페이즈 수, C1 "페이즈 순", C3 페이즈별 누적 부족을 더한다(FE7-g, `statistics_plan_charts.dart`). FE7-h는 이력으로
+//   KPI 증감("지난 스냅샷 대비", 모르면 회색 '—'), A6 성장 추이 · B3 주요 재화 변화(seg 동작)를 그린다
+//   (`statistics_history_charts.dart`). 스냅샷이 2회 미만이면 그 타일 안에 확정 4 문구고(FD-106), 그 줄 타일이 모두 그래프가
+//   없으면 줄을 시안대로 낮춘다(FD-109). 다른 타일은 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면
+//   그래프 타일 안에 빈 상태 문구다.
 //   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
 // - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d: 고른 구간 · 재화가 있으면
 //   원본 탭으로 넘긴다, 버튼 글자 · 동작은 [StatisticsWorkspace.evidenceActions]).
@@ -22,9 +25,11 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_history_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../inventory/inventory_history.dart' show inventorySignedCount;
 import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
@@ -43,6 +48,7 @@ import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
 import 'statistics_growth_charts.dart';
 import 'statistics_growth_evidence.dart';
+import 'statistics_history_charts.dart';
 import 'statistics_plan_charts.dart';
 import 'statistics_source.dart';
 import 'statistics_supply_charts.dart';
@@ -173,6 +179,7 @@ class StatisticsWorkspace extends StatelessWidget {
     required this.onRescan,
     this.growth = const StatisticsGrowthView(growth: null),
     this.supply = const StatisticsSupplyView(supply: null),
+    this.history = const StatisticsHistoryView(),
     this.evidenceActions,
   });
 
@@ -186,6 +193,9 @@ class StatisticsWorkspace extends StatelessWidget {
 
   /// 인벤토리 · 계획 projection과 고른 카테고리 · 재화(FE7-c).
   final StatisticsSupplyView supply;
+
+  /// 이력 projection(기준 데이터 · KPI 증감 · A6 · B3, FE7-h).
+  final StatisticsHistoryView history;
   final ValueChanged<StatisticsMode> onModeChanged;
 
   /// 왼쪽 "다시 스캔"(FD-125 권장안 중 지금 되는 부분: 스캔 탭을 연다).
@@ -208,6 +218,7 @@ class StatisticsWorkspace extends StatelessWidget {
               data: data,
               growth: growth,
               supply: supply,
+              history: history,
             ),
           ),
           Positioned.fill(
@@ -215,6 +226,7 @@ class StatisticsWorkspace extends StatelessWidget {
               size: size,
               mode: mode,
               owned: growth.growth?.ownedCount,
+              history: history,
               onModeChanged: onModeChanged,
               onRescan: onRescan,
             ),
@@ -396,6 +408,7 @@ class _ScopeSection extends StatelessWidget {
     required this.size,
     required this.mode,
     required this.owned,
+    required this.history,
     required this.onModeChanged,
     required this.onRescan,
   });
@@ -405,6 +418,9 @@ class _ScopeSection extends StatelessWidget {
 
   /// 보유 학생 수(필터 부제). 모르면 null.
   final int? owned;
+
+  /// 기준 데이터 값(FE7-h).
+  final StatisticsHistoryView history;
   final ValueChanged<StatisticsMode> onModeChanged;
   final VoidCallback onRescan;
 
@@ -511,12 +527,13 @@ class _ScopeSection extends StatelessWidget {
         _captionStyle,
       ),
     ]);
-    const baseRows = [
-      ('student-scan', '학생 스캔'),
-      ('inventory-scan', '인벤토리'),
-      ('snapshots', '스냅샷'),
+    // 시안 칩 색: 학생 스캔 ok · 인벤토리 wn · 스냅샷 gy(값을 모르면 회색 '—').
+    final baseRows = [
+      ('student-scan', '학생 스캔', history.studentScan, AppTones.ok),
+      ('inventory-scan', '인벤토리', history.inventoryScan, AppTones.warn),
+      ('snapshots', '스냅샷', history.snapshots, AppTones.gray),
     ];
-    for (final (index, (key, label)) in baseRows.indexed) {
+    for (final (index, (key, label, value, tone)) in baseRows.indexed) {
       children.add(
         Positioned.fromRect(
           rect: row(
@@ -525,7 +542,13 @@ class _ScopeSection extends StatelessWidget {
             StatisticsMetrics.scopeRightMargin,
           ),
           child: scaled(
-            _BaseDataRow(key: ValueKey('statistics-base-$key'), label: label),
+            _BaseDataRow(
+              key: ValueKey('statistics-base-$key'),
+              valueKey: 'statistics-base-$key-value',
+              label: label,
+              value: value,
+              tone: value == '—' ? AppTones.gray : tone,
+            ),
           ),
         ),
       );
@@ -696,11 +719,20 @@ class _FilterButton extends StatelessWidget {
   );
 }
 
-/// 기준 데이터 한 행. 시각 · 횟수는 이력 연동(FE7-h) 전이라 '—'다.
+/// 기준 데이터 한 행(FE7-h): 라벨 + 오른쪽 칩(값, 모르면 회색 '—'). 칩은 좁으면 줄인다.
 class _BaseDataRow extends StatelessWidget {
-  const _BaseDataRow({super.key, required this.label});
+  const _BaseDataRow({
+    super.key,
+    required this.valueKey,
+    required this.label,
+    required this.value,
+    required this.tone,
+  });
 
+  final String valueKey;
   final String label;
+  final String value;
+  final AppTone tone;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -722,7 +754,21 @@ class _BaseDataRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          const BaChip(label: '—', tone: AppTones.gray),
+          Expanded(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: BaChip(
+                  key: ValueKey(valueKey),
+                  label: value,
+                  tone: tone,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     ),
@@ -738,6 +784,7 @@ class _WidgetsSection extends StatelessWidget {
     required this.data,
     required this.growth,
     required this.supply,
+    required this.history,
   });
 
   final Size size;
@@ -745,6 +792,7 @@ class _WidgetsSection extends StatelessWidget {
   final StatisticsSourceData data;
   final StatisticsGrowthView growth;
   final StatisticsSupplyView supply;
+  final StatisticsHistoryView history;
 
   @override
   Widget build(BuildContext context) {
@@ -780,6 +828,7 @@ class _WidgetsSection extends StatelessWidget {
                     owned: growth.growth?.ownedCount,
                     planStudents: statisticsPlanStudentCount(data),
                     phases: supply.planning?.phaseCount,
+                    inventoryScan: history.inventoryScanAgo,
                   ),
                 ),
                 Positioned.fromRect(
@@ -791,6 +840,7 @@ class _WidgetsSection extends StatelessWidget {
                     data: data,
                     growth: growth,
                     supply: supply,
+                    history: history,
                   ),
                 ),
               ],
@@ -815,6 +865,7 @@ class _TopicTitle extends StatelessWidget {
     required this.owned,
     required this.planStudents,
     required this.phases,
+    required this.inventoryScan,
   });
 
   final StatisticsMode mode;
@@ -823,6 +874,9 @@ class _TopicTitle extends StatelessWidget {
 
   /// 활성 계획 문서의 페이즈 수(FE7-g). 문서 계산이 없으면 null.
   final int? phases;
+
+  /// 마지막 인벤토리 스캔(`3일 전`, FE7-h). 모르면 '—'.
+  final String inventoryScan;
 
   @override
   // 제목 묶음은 왼쪽, 범위 글자는 오른쪽 끝(시안 사이 빈 span). 둘 다 느슨한 Flexible이라 남는 폭을
@@ -872,7 +926,7 @@ class _TopicTitle extends StatelessWidget {
                   ),
                 )
               : Text(
-                  mode.scopeFor(owned),
+                  mode.scopeFor(owned, inventoryScan: inventoryScan),
                   key: const ValueKey('statistics-scope-label'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -893,6 +947,7 @@ class _TopicViewport extends StatefulWidget {
     required this.data,
     required this.growth,
     required this.supply,
+    required this.history,
   });
 
   final StatisticsMode mode;
@@ -900,6 +955,7 @@ class _TopicViewport extends StatefulWidget {
   final StatisticsSourceData data;
   final StatisticsGrowthView growth;
   final StatisticsSupplyView supply;
+  final StatisticsHistoryView history;
 
   @override
   State<_TopicViewport> createState() => _TopicViewportState();
@@ -925,7 +981,9 @@ class _TopicViewportState extends State<_TopicViewport> {
         StatisticsMetrics.rowGap;
     final rows = widget.mode.rows;
     for (var index = 0; index < row && index < rows.length; index++) {
-      offset += rows[index].height * scale + StatisticsMetrics.rowGap;
+      offset +=
+          statisticsRowHeight(rows[index], widget.history) * scale +
+          StatisticsMetrics.rowGap;
     }
     _controller.animateTo(
       offset
@@ -950,7 +1008,7 @@ class _TopicViewportState extends State<_TopicViewport> {
     double heightOf(int index) {
       if (index == 0) return StatisticsMetrics.kpiHeight;
       if (index > rows.length) return spacer;
-      return rows[index - 1].height * scale;
+      return statisticsRowHeight(rows[index - 1], widget.history) * scale;
     }
 
     final growth = mode == StatisticsMode.students ? widget.growth : null;
@@ -973,14 +1031,17 @@ class _TopicViewportState extends State<_TopicViewport> {
             values: switch (mode) {
               StatisticsMode.students => statisticsGrowthKpis(
                 widget.growth.growth,
+                widget.history.growthDeltas,
               ),
               StatisticsMode.inventory => statisticsInventoryKpis(
                 widget.supply.supply,
+                widget.history.supplyDeltas,
               ),
               StatisticsMode.plan => statisticsPlanKpis(
                 widget.supply.supply,
                 unplannedLow: statisticsUnplannedLowCount(widget.growth.growth),
                 planning: widget.supply.planning,
+                deltas: widget.history.supplyDeltas,
               ),
             },
             onPressed: (kpi) => _scrollToRow(targets[kpi], scale),
@@ -990,6 +1051,7 @@ class _TopicViewportState extends State<_TopicViewport> {
         return _TileRow(
           row: rows[index - 1],
           height: heightOf(index),
+          history: widget.history,
           growth: growth,
           supply: supply,
           supplyEmpty: supply == null
@@ -1016,29 +1078,44 @@ const StatisticsKpiValue _unknownKpi = (
   color: null,
 );
 
-/// 값 + 증감 '—'(지난 스냅샷 대비 증감은 이력 연동 FE7-h 전이라 회색 '—').
+/// 값 + 증감 '—'(지난 스냅샷 대비로 비교할 수 없는 칸, 회색 '—' — 시안 Stats-Growth-Filter의 스냅샷 1회 표기).
 StatisticsKpiValue _plainKpi(String value, {Color? color}) =>
     (value: value, delta: '—', tone: KpiDeltaTone.unknown, color: color);
 
+/// 값 + 지난 스냅샷 대비 증감(FE7-h). 증감을 모르면 회색 '—', 알면 시안처럼 증가 · 감소 모두 초록이다.
+StatisticsKpiValue _deltaKpi(String value, String? delta, {Color? color}) =>
+    delta == null
+    ? _plainKpi(value, color: color)
+    : (value: value, delta: delta, tone: KpiDeltaTone.gain, color: color);
+
+String? _signed(int? value) =>
+    value == null ? null : inventorySignedCount(value);
+
 /// 성장 KPI 5칸(FD-105 · 시안 Stats-Growth 라벨 순서): 보유 학생 · 평균 육성도 · 최대 레벨 · 완전 육성 · 계획 등록.
-/// 지난 스냅샷 대비 증감은 이력 연동(FE7-h) 전이라 '—'다(시안 Stats-Growth-Filter의 스냅샷 1회 표기, 회색).
-/// 보유 학생 칸만 "/ 학생 목록 수 · —"다. 자료를 못 읽었으면 값도 '—'다.
-List<StatisticsKpiValue> statisticsGrowthKpis(StatisticsGrowth? growth) {
+/// 증감은 지난 학생 스냅샷 대비(FE7-h, [deltas])다. 학생 스냅샷이 2회 미만이면 '—'(시안 Stats-Growth-Filter, 회색).
+/// 보유 학생 칸은 "/ 학생 목록 수 · 증감"이다. 계획 등록은 목표 이력이 없어(FB-2는 학생 · 인벤토리만 남긴다) 늘 '—'다.
+/// 자료를 못 읽었으면 값도 '—'다.
+List<StatisticsKpiValue> statisticsGrowthKpis(
+  StatisticsGrowth? growth, [
+  StatisticsGrowthDeltas deltas = StatisticsGrowthDeltas.unknown,
+]) {
   if (growth == null) return List.filled(5, _unknownKpi);
   String count(int? value) => value == null ? '—' : '$value명';
   final average = growth.averageGrowth;
+  final tenths = deltas.averageTenths;
   return [
     (
       value: '${growth.ownedCount}',
-      delta: '/ ${growth.catalogCount ?? '—'} · —',
+      delta: '/ ${growth.catalogCount ?? '—'} · ${_signed(deltas.owned) ?? '—'}',
       tone: KpiDeltaTone.gain,
       color: null,
     ),
-    _plainKpi(
+    _deltaKpi(
       average == null ? '—' : statisticsPercentText(average, decimals: 1),
+      tenths == null ? null : statisticsSignedTenths(tenths),
     ),
-    _plainKpi(count(growth.maxLevelCount)),
-    _plainKpi(count(growth.fullGrowthCount)),
+    _deltaKpi(count(growth.maxLevelCount), _signed(deltas.maxLevel)),
+    _deltaKpi(count(growth.fullGrowthCount), _signed(deltas.fullGrowth)),
     _plainKpi(count(growth.plannedCount)),
   ];
 }
@@ -1047,16 +1124,27 @@ String _kinds(int? value) => value == null ? '—' : '$value종';
 
 /// 인벤토리 KPI 5칸(FD-105 · 시안 Stats-Inventory 라벨 순서): 전체 충족률(FD-031) · 부족 재화(분홍) · 과잉 재화(FD-040) ·
 /// 충족 카테고리(B1 60% 기준 이상 / B1 카테고리 수) · 스캔 없음(회색, 증감 자리에 모르는 카테고리 이름).
+/// 증감은 재화별 지난 스캔 대비(FE7-h, [deltas], FE6-f 규칙)이고 모르면 '—'다. 스캔 없음 칸의 증감 자리는 카테고리 이름이다.
 /// 부족 계산이 없으면(목표 없음 · 읽는 중 · 실패) 모두 '—'다.
-List<StatisticsKpiValue> statisticsInventoryKpis(StatisticsSupply? supply) {
+List<StatisticsKpiValue> statisticsInventoryKpis(
+  StatisticsSupply? supply, [
+  StatisticsSupplyDeltas deltas = StatisticsSupplyDeltas.unknown,
+]) {
   if (supply == null) return List.filled(5, _unknownKpi);
   final kpis = supply.kpis;
   final labels = supply.unknownLabels;
   return [
-    _plainKpi(statisticsFillText(kpis.fulfillment)),
-    _plainKpi(_kinds(kpis.shortageKinds), color: AppColors.accent),
-    _plainKpi(_kinds(kpis.excessKinds)),
-    _plainKpi('${supply.metCategoryCount} / ${supply.categories.length}'),
+    _deltaKpi(statisticsFillText(kpis.fulfillment), _signed(deltas.fulfillment)),
+    _deltaKpi(
+      _kinds(kpis.shortageKinds),
+      _signed(deltas.shortageKinds),
+      color: AppColors.accent,
+    ),
+    _deltaKpi(_kinds(kpis.excessKinds), _signed(deltas.excessKinds)),
+    _deltaKpi(
+      '${supply.metCategoryCount} / ${supply.categories.length}',
+      _signed(deltas.metCategories),
+    ),
     (
       value: _kinds(kpis.unknownKinds),
       delta: switch (labels.length) {
@@ -1074,12 +1162,14 @@ List<StatisticsKpiValue> statisticsInventoryKpis(StatisticsSupply? supply) {
 /// 미계획 · 40% 미만. 첫 부족 · 막힌 학생은 활성 문서 계산([planning], FE7-g)에서 온다:
 /// - 첫 부족 = 분홍 "Pn" + 증감 자리에 그 재화 이름(시안 `P2` · `기술 노트`, 계획 색). 모자라는 재화가 없으면 "없음"
 ///   (계획 Detail과 같은 글자), 문서 계산이 없으면 '—'.
-/// - 막힌 학생 = 문서 계산 단계 학생 m − 끝까지 가는 학생 n(FD-034 (a)). 증감은 FE7-h라 '—'.
+/// - 막힌 학생 = 문서 계산 단계 학생 m − 끝까지 가는 학생 n(FD-034 (a)). 증감은 '—'다: 지난 스냅샷 시점 문서 계산이 없다.
+/// 계획 충족률 · 부족 재화 증감은 인벤토리 주제와 같은 값([deltas], FE7-h)이다. 미계획 학생은 목표 이력이 없어 '—'다.
 /// [unplannedLow]는 보유 · 목표 없음 · 육성도 40% 미만 학생 수(성장 자료가 없으면 null).
 List<StatisticsKpiValue> statisticsPlanKpis(
   StatisticsSupply? supply, {
   required int? unplannedLow,
   StatisticsPlanning? planning,
+  StatisticsSupplyDeltas deltas = StatisticsSupplyDeltas.unknown,
 }) {
   final first = planning?.firstShortage;
   final phase = planning?.firstShortagePhase;
@@ -1087,10 +1177,17 @@ List<StatisticsKpiValue> statisticsPlanKpis(
   return [
     supply == null
         ? _unknownKpi
-        : _plainKpi(statisticsFillText(supply.kpis.fulfillment)),
+        : _deltaKpi(
+            statisticsFillText(supply.kpis.fulfillment),
+            _signed(deltas.fulfillment),
+          ),
     supply == null
         ? _unknownKpi
-        : _plainKpi(_kinds(supply.kpis.shortageKinds), color: AppColors.accent),
+        : _deltaKpi(
+            _kinds(supply.kpis.shortageKinds),
+            _signed(deltas.shortageKinds),
+            color: AppColors.accent,
+          ),
     first != null
         ? (
             value: 'P${first.phase}',
@@ -1117,6 +1214,22 @@ String? statisticsSupplyEmptyText(
   if (supply.planned.isEmpty) return statisticsSupplyNoNeedsText;
   return null;
 }
+
+/// 타일 줄 높이(기준 viewport). 줄에 짧은 높이가 있고(FD-109) 줄의 타일이 모두 그래프 없이 빈 상태 · "준비 중"이면 그
+/// 높이다. 지금 그런 줄은 A4 · A6뿐이다: A4는 "준비 중"(FE7-f 전), A6은 스냅샷 2회 미만 문구일 때(시안 Stats-Growth-Filter).
+double statisticsRowHeight(StatisticsTileRow row, StatisticsHistoryView history) {
+  final short = row.shortHeight;
+  if (short == null) return row.height;
+  final empty = row.tiles.every(
+    (tile) => tile.id == 'A6'
+        ? history.growthTrendShort
+        : !_chartTileIds.contains(tile.id),
+  );
+  return empty ? short : row.height;
+}
+
+/// 그래프를 그리는 타일(나머지는 "준비 중").
+const _chartTileIds = {'A1', 'A2', 'A6', 'B1', 'B3', 'C1', 'C2', 'C3'};
 
 /// KPI 띠: 다섯 칸. [onPressed]가 있으면 칸을 누를 수 있다(누른 칸 순번).
 class _KpiBand extends StatelessWidget {
@@ -1199,6 +1312,7 @@ class _TileRow extends StatelessWidget {
   const _TileRow({
     required this.row,
     required this.height,
+    required this.history,
     this.growth,
     this.supply,
     this.supplyEmpty,
@@ -1206,6 +1320,7 @@ class _TileRow extends StatelessWidget {
 
   final StatisticsTileRow row;
   final double height;
+  final StatisticsHistoryView history;
 
   /// 학생 성장 주제일 때만 있다.
   final StatisticsGrowthView? growth;
@@ -1235,6 +1350,7 @@ class _TileRow extends StatelessWidget {
                 key: ValueKey('statistics-tile-${tile.id}'),
                 tile: tile,
                 height: height,
+                history: history,
                 growth: growth,
                 supply: supply,
                 supplyEmpty: supplyEmpty,
@@ -1246,13 +1362,14 @@ class _TileRow extends StatelessWidget {
   );
 }
 
-/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2(FE7-b), 인벤토리의 B1 ·
-/// 계획의 C1 · C2(FE7-c)는 그래프, 나머지는 "준비 중"이다.
+/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2(FE7-b) · A6(FE7-h), 인벤토리의
+/// B1(FE7-c) · B3(FE7-h), 계획의 C1 · C2(FE7-c) · C3(FE7-g)는 그래프, 나머지는 "준비 중"이다.
 class _StatisticsTile extends StatelessWidget {
   const _StatisticsTile({
     super.key,
     required this.tile,
     required this.height,
+    required this.history,
     this.growth,
     this.supply,
     this.supplyEmpty,
@@ -1260,6 +1377,9 @@ class _StatisticsTile extends StatelessWidget {
 
   final StatisticsTileSpec tile;
   final double height;
+
+  /// 이력(A6 · B3, FE7-h).
+  final StatisticsHistoryView history;
 
   /// 학생 성장 주제일 때만 있다.
   final StatisticsGrowthView? growth;
@@ -1290,8 +1410,19 @@ class _StatisticsTile extends StatelessWidget {
     final orderSeg = tile.id == 'C1' && supply?.supply != null;
     final phaseOrder = orderSeg && supply?.planning != null;
     final onC1OrderChanged = supply?.onC1OrderChanged;
+    // B3 seg(스냅샷 6회 · 4주 · 전체, FD-110)는 이력을 읽었을 때 동작한다.
+    final onB3RangeChanged = history.onB3RangeChanged;
+    final rangeSeg =
+        tile.id == 'B3' &&
+        supply != null &&
+        history.resourceTrends != null &&
+        onB3RangeChanged != null;
     final Widget body;
-    if (growth != null && _isGrowthChart) {
+    if (growth != null && tile.id == 'A6') {
+      body = _a6Body();
+    } else if (supply != null && tile.id == 'B3') {
+      body = _b3Body();
+    } else if (growth != null && _isGrowthChart) {
       body = _growthBody(growth);
     } else if (supply != null && _isSupplyChart) {
       body = _supplyBody(supply);
@@ -1319,6 +1450,8 @@ class _StatisticsTile extends StatelessWidget {
                   ? growth.metric.index
                   : orderSeg
                   ? supply!.effectiveC1Order.index
+                  : rangeSeg
+                  ? history.b3Range.index
                   : 0,
               onSegmentChanged: metricSeg && onMetricChanged != null
                   ? (index) =>
@@ -1326,6 +1459,8 @@ class _StatisticsTile extends StatelessWidget {
                   : orderSeg
                   ? (index) =>
                         onC1OrderChanged?.call(StatisticsC1Order.values[index])
+                  : rangeSeg
+                  ? (index) => onB3RangeChanged(StatisticsB3Range.values[index])
                   : null,
               disabledSegments: orderSeg && !phaseOrder ? const {1} : const {},
             ),
@@ -1353,6 +1488,37 @@ class _StatisticsTile extends StatelessWidget {
     padding: const EdgeInsets.only(top: StatisticsMetrics.tileChartGap),
     child: chart,
   );
+
+  /// 스냅샷 2회 미만(확정 4 · FD-106): 그래프 자리를 채운 둥근 상자.
+  Widget _short(String note) => _chart(
+    StatisticsHistoryShortState(
+      key: ValueKey('statistics-tile-${tile.id}-short'),
+      note: note,
+    ),
+  );
+
+  /// A6 내용(FE7-h). 읽는 중 · 성장 자료 없음 '—', 읽기 실패는 그 글자, 학생 스냅샷 2회 미만은 확정 4 문구다.
+  Widget _a6Body() {
+    final error = history.error;
+    if (error != null) return _empty(error);
+    final trend = history.growthTrend;
+    if (history.loading || trend == null || growth?.growth == null) {
+      return _empty('—');
+    }
+    if (!trend.drawable) return _short(trend.note);
+    return _chart(StatisticsGrowthTrendChart(trend: trend));
+  }
+
+  /// B3 내용(FE7-h). 계획이 없어도 재화(크레딧 · 엘리그마) 변화는 그린다. 아는 수량 점이 2개 이상인 재화가 없으면 확정 4
+  /// 문구다.
+  Widget _b3Body() {
+    final error = history.error;
+    if (error != null) return _empty(error);
+    final trends = history.resourceTrends;
+    if (history.loading || trends == null) return _empty('—');
+    if (!trends.drawable) return _short(trends.note);
+    return _chart(StatisticsResourceTrendChart(trends: trends));
+  }
 
   /// A1 · A2 내용. 자료가 없으면 '—', 보유 학생 0이나 값을 아는 학생 0이면 빈 상태 문구다(FD-106 · 시안식).
   Widget _growthBody(StatisticsGrowthView view) {

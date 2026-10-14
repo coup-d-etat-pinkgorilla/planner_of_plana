@@ -245,9 +245,10 @@ void main() {
     _expectRect(tester, 'statistics-tile-A3', 421.5, 1127.2, 741.9, 313);
     _expectRect(tester, 'statistics-tile-A5', 1128.2, 1127.2, 741.9, 313);
     expect(find.text('육성도 분포'), findsOneWidget);
-    // FE7-b: A1 · A2는 그래프 자리(자료를 못 읽었으면 '—'), 나머지 4장은 "준비 중"(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(4));
-    for (final id in ['A1', 'A2']) {
+    // FE7-b: A1 · A2는 그래프 자리(자료를 못 읽었으면 '—'), FE7-h: A6도 그래프 자리(이력이 없으면 '—'), 나머지 3장은
+    // "준비 중"(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+    for (final id in ['A1', 'A2', 'A6']) {
       expect(
         tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,
         '—',
@@ -269,8 +270,13 @@ void main() {
     _expectRect(tester, 'statistics-tile-B2', 1240.8, 393.2, 758.6, 313);
     _expectRect(tester, 'statistics-tile-B3', 485.2, 728.2, 1455.2, 351);
     expect(find.text('인벤토리 · 계획 집계는 항상 전체'), findsOneWidget);
-    // FE7-c: B1은 그래프 자리(계정 상태 · 부족 계산이 없으면 '—'), B2 · B3은 "준비 중"(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    // FE7-c: B1은 그래프 자리(계정 상태 · 부족 계산이 없으면 '—'), FE7-h: B3도 그래프 자리(이력이 없으면 '—'), B2는
+    // "준비 중"(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsNWidgets(1));
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('statistics-tile-B3-empty'))).data,
+      '—',
+    );
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('statistics-tile-B1-empty'))).data,
       '—',

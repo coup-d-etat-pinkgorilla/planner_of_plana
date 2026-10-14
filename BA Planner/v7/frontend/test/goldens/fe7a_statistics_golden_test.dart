@@ -14,6 +14,10 @@
 // 준다(장면 조작은 그대로). `statistics-plan`은 KPI 첫 부족 "P2 · 기술 노트 (최상급)" · 막힌 학생 "6명", 범위 칩
 // "활성 계획 · 9명 · 페이즈 5", C1 seg "페이즈 순"이 또렷해지고, C3이 계단선 세 줄(분홍 기술 노트 · 회색 엘리그마 · 설계도)을
 // 그린다. `statistics-inventory`는 인벤토리 주제라 바뀌지 않는다. `statistics-growth`는 Mock 활성 계획을 읽지만 보이지 않는다.
+// FE7-h: 두 서비스가 스캔 이력 fixture(`statistics_history_fixture.dart`: 학생 스캔 6회 · 인벤토리 스캔 6회, 지금 = 지역
+// 2026-10-06 12:00 `AppClockSource`)를 FB-2 질의로 답한다(장면 조작은 그대로). 성장 장면의 계정 인벤토리도 인벤토리 · 계획
+// fixture 수량이다(이력이 그 수량으로 끝나야 한다 — 성장 주제에는 보이지 않는다). 기준 데이터 "어제 21:40" · "3일 전" ·
+// "12회 · 9/02 ~ 10/05", KPI 증감(성장 +2 · +1.2 · +4 · +1, 인벤토리 · 계획 +6 · −2 …), A6 꺾은선 · B3 작은 배수가 채워진다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -24,6 +28,7 @@ library;
 import 'dart:convert';
 
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/statistics/statistics_workspace.dart';
@@ -32,23 +37,63 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../statistics_growth_fixture.dart';
+import '../statistics_history_fixture.dart';
 import '../statistics_plan_fixture.dart';
 import '../statistics_supply_fixture.dart';
 import 'golden_harness.dart';
 
-/// golden Mock 위에 학생 성장 fixture(계정 상태 학생 · 목표, 학생 목록)만 바꿔 끼운다. 인벤토리는 Mock 그대로다.
-class _GrowthGoldenService extends GoldenMockAppService {
+/// golden Mock 위에 학생 성장 fixture(계정 상태 학생 · 목표, 학생 목록)를 바꿔 끼운다. FE7-h: 계정 인벤토리는 인벤토리 ·
+/// 계획 fixture 수량이고(이력이 그 수량으로 끝난다), 스캔 이력 · 시계도 fixture다.
+class _GrowthGoldenService extends GoldenMockAppService
+    implements AppClockSource {
   List<StudentCatalogEntry>? _catalog;
+  final Map<String, RepositoryCurrentHistory> _histories = {};
+
+  @override
+  DateTime get clockNow => statisticsHistoryFixtureNow;
+
+  RepositoryCurrentHistory _historyOf(String profileId) => _histories
+      .putIfAbsent(
+        profileId,
+        () => statisticsHistoryFixtureHistory(profileId: profileId),
+      );
 
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) async {
     final base = await super.loadRepositoryState(profileId);
-    return statisticsGrowthFixtureState(
-      profileId: base.profileId,
-      revision: base.revision,
-      inventory: base.inventory.toWire(),
-    );
+    return statisticsHistoryFixtureState(profileId: base.profileId);
   }
+
+  @override
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  ) async => RepositoryHistorySummaryResult.fromWire({
+    'profiles': [
+      for (final id in profileIds)
+        _historyOf(
+          id,
+        ).summarize(id, statisticsHistoryFixtureRevision).toWire(),
+    ],
+  });
+
+  @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async => repositoryHistoryEvents(
+    await loadRepositoryState(request.profileId),
+    _historyOf(request.profileId),
+    request,
+  );
+
+  @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async => repositoryHistoryScanLatest(
+    request.profileId,
+    statisticsHistoryFixtureRevision,
+    _historyOf(request.profileId),
+    request,
+  );
 
   @override
   Future<List<StudentCatalogEntry>> listStudents() async {
@@ -92,7 +137,7 @@ class _SupplyGoldenService extends _GrowthGoldenService {
     final base = await super.loadRepositoryState(profileId);
     return statisticsSupplyFixtureState(
       profileId: base.profileId,
-      revision: base.revision,
+      revision: statisticsHistoryFixtureRevision,
     );
   }
 

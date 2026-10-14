@@ -178,8 +178,8 @@ void main() {
       }
       expect(find.text('보유 128명 기준 · 지난 스냅샷 대비'), findsOneWidget);
       expect(find.text('없음 · 보유 128명 전체'), findsOneWidget);
-      // 그리지 않는 타일은 "준비 중" 자리를 유지한다(FD-106 사용자 결정 10-13).
-      expect(find.text(statisticsTilePendingText), findsNWidgets(4));
+      // 그리지 않는 타일은 "준비 중" 자리를 유지한다(FD-106 사용자 결정 10-13). A6은 FE7-h 그래프 자리다(이력 없음 '—').
+      expect(find.text(statisticsTilePendingText), findsNWidgets(3));
       expect(tester.takeException(), isNull);
     },
   );

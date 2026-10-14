@@ -7704,3 +7704,244 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`, 기준 viewport �
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_023144\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-h 통계 이력 연동 (Lane A, 로컬 Claude Code)
+
+### FE7-h 착수 기록 (2026-10-14, Lane A)
+
+- 상태: 진행 중.
+- 범위: 통계와 스캔 이력(FB-2) 연결. 새 백엔드 · 서비스 변경 없음.
+  1. 왼쪽 기준 데이터(학생 스캔 · 인벤토리 · 스냅샷 n회 · 기간).
+  2. KPI 증감(성장 · 인벤토리 · 계획 주제의 '—' 자리, "지난 스냅샷 대비", 1회면 '—').
+  3. A6 성장 추이(스냅샷 시점 학생 상태로 FD-028 평균 육성도를 다시 계산).
+  4. B3 주요 재화 변화(seg 스냅샷 6회 / 4주 / 전체, FE6-f 함수 재사용).
+  5. `_reload()`에 이력 읽기를 더한다. 처음 보일 때 읽기는 그대로, 다시 보일 때 revision이 바뀌었으면 다시 읽기.
+  - A3 · A4 · A5 · B2 · C4 · C5는 "준비 중" 유지(FD-106).
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `3995e1008cbff348b2afc4064d38159d39ed52a6`.
+- 막힘: 대장 막힘 요약 FE7-h 행 = FD-041 · FD-096, 둘 다 확정. 막는 `열림` FD 없음. 워커 재량 FD-042 · FD-110은 권장안대로 처리한다.
+- 쓸 history 메서드와 응답 필드(`RepositoryService`, 읽기만):
+  - `loadRepositoryHistoryEvents(RepositoryHistoryEventsRequest(profileId, limit: 200))`, `nextCursor`가 있으면 `withCursor`로 끝까지 읽는다(최대 50쪽, FE6-f와 같은 상한).
+    - 쓰는 필드: `revision` · `coverage`(origin · baseline_at · first_retained_at · timestamps_monotonic) · `scan_points[]`(session_id · sequence · recorded_at).
+    - `events[]`에서는 sequence · recorded_at · source · scan_context.session_id · applied_scope(student_ids · resource_keys) · student_changes(before/after 확정 학생) · inventory_changes(before/after 수량)를 쓴다.
+  - `loadRepositoryHistoryScanLatest(RepositoryHistoryScanLatestRequest(profileId, …))`, 256개씩 나눠 보낸다.
+    - `studentIds:` 보유 학생 → `by_student_id[].latest_scan.recorded_at`(학생 스캔 시각).
+    - `resourceKeys:` 카탈로그 정규 key → `by_resource_key[].latest_scan.recorded_at`(인벤토리 스캔 시각, FE6-f `inventoryLastScanAt`).
+  - `loadRepositoryHistorySummary([profileId])`: `revision`만 본다. 탭이 다시 보일 때 저장소가 바뀌었는지 확인한다.
+  - `repository.history.diff`는 쓰지 않는다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe7h/pre/<v7 기준 경로>`, 사본과 작업 트리 `cmp` 일치):
+  - `frontend/lib/ui/pages/statistics_page.dart`(CRLF)
+  - `frontend/lib/ui/statistics/statistics_workspace.dart` · `statistics_topics.dart`
+  - `frontend/lib/ui/studio/statistics_studio_layout.dart`(요소 좌표가 필요할 때만)
+  - `frontend/test/goldens/fe7a_statistics_golden_test.dart`(fixture 입력만)
+  - `frontend/test/statistics_workspace_test.dart` · `statistics_page_test.dart`(CRLF) · `statistics_app_shell_test.dart`(CRLF): 바뀐 동작에 걸리는 기대만
+  - 이 문서
+- 새 파일(예정):
+  - `frontend/lib/statistics/statistics_history_projection.dart`(순수 계산, FE6-f `inventory_history.dart` import)
+  - `frontend/lib/ui/statistics/statistics_history_charts.dart`(A6 · B3 painter)
+  - `frontend/test/statistics_history_fixture.dart` · `statistics_history_projection_test.dart` · `statistics_history_view_test.dart`
+- WIP: 위 기존 파일 9개 모두 `git status --short <경로>`가 비어 있다(미커밋 변경 없음). 그래서 post 사본은 두지 않는다. 줄바꿈은 `git ls-files --eol` 기준 위에 적은 CRLF 3개 외 LF.
+
+### FE7-h 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+통계와 FB-2 스캔 이력을 연결했다. 왼쪽 기준 데이터, KPI 증감, A6 성장 추이, B3 주요 재화 변화를 그린다. 스냅샷이 2회 미만이면 시안 문구가 보인다. 새 백엔드 · 서비스 변경은 없다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7h/logs/`에 있다. 실패 줄(`[E]`·`EXCEPTION`·`Some tests failed`·`error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/ui/statistics lib/statistics`(workspace 편집 뒤) | No issues found |
+| `flutter analyze lib`(page 편집 뒤) | 오류 1 · 경고 1. 착수 때 있던 `InventoryClockSource`를 Lane B tidy1이 작업 중에 `lib/services/app_clock.dart`(`AppClockSource` · `appClockNow`)로 옮겼다 → `appClockNow`로 바꿈(발견 1) |
+| `flutter analyze lib`(다시) | 오류 2. 내 치환 스크립트가 빈 치환 블록을 잘못 처리해 `>>>>` 줄이 남았다 → 지움 |
+| `flutter test test/statistics_history_projection_test.dart`(새, 1차) | 컴파일 실패(`RepositoryState.toWire` 없음, 테스트 도우미 문제) → 도우미 `_restate` |
+| 같은 파일(2차) | +11 −4. 테스트 쪽 문제 2가지였다. ① 지역 시각과 UTC `DateTime` 비교 ② 덧붙인 스캔 · 수동 수정 시각이 기존 마지막 기록보다 앞서 시계 되돌림이 되어 projection이 `null`을 낸 것(올바른 동작) → 테스트 시각을 고침 |
+| 같은 파일(3차) | **+15 −0** |
+| 기존 통계 7파일(1차) | +67 −7. 고친 내용은 아래 3갈래다. 1) "준비 중" 개수 기대 4곳(A6 · B3가 그래프 자리가 됨): 기대를 고침. 2) A6 빈 상태가 1280×720 · 1440×900에서 0.9 · 25px 넘침: 구현을 고침(글자 묶음을 `FittedBox`로 줄인다). 3) `statistics_page_test` "hidden page": 테스트 서비스가 상태는 revision 4, Mock 이력 요약은 다른 revision으로 답했다. 그래서 다시 보일 때 revision 확인이 다시 읽기를 불렀다. 기대(바뀐 것이 없으면 다시 읽지 않는다)가 맞으므로 테스트 서비스가 자기 상태 revision으로 이력을 답하게 고쳤다 |
+| 같은 5파일(2차) | **+52 −0** |
+| `flutter test test/statistics_history_view_test.dart`(새) | **+14 −0**(첫 실행) |
+| 관련 24파일 한 번에(`--file-reporter json`, 아래) | **+254 −0** |
+| `flutter analyze`(최종, frontend 전체) | **No issues found**(info 포함 0) |
+| `git diff --check`(고친 기존 8파일) · 새 5파일 검사 | 0. 새 파일은 LF · 줄 끝 공백 0 · 끝 개행 하나. 기존 파일 줄바꿈은 pre와 같다(`statistics_page.dart` · `statistics_page_test.dart` · `statistics_growth_view_test.dart` CRLF, 나머지 LF) |
+
+최종 24파일의 파일별 결과:
+
+- 통계: statistics_history_projection +15(새), statistics_history_view +14(새), statistics_page +14, statistics_workspace +13, statistics_growth_view +12, statistics_supply_view +11, statistics_growth_projection +11, statistics_plan_view +9, statistics_supply_projection +8, statistics_plan_projection +7, statistics_projection +7, statistics_app_shell +2
+- 인벤토리 이력 재사용: inventory_history +33, inventory_history_page +11, inventory_analysis_page +8, inventory_shell_lazy +1
+- 셸 · 이동 · 그 밖: widget_test +16, app_navigation_fe7d +13, developer_tools_app +12, app_navigation_tidy1 +11(Lane B 새 파일), mock_design_review_scenario +11, home_page +5, kit/scroll_viewport_fog +6, kit/kpi_tile +4
+
+- 걸리는 테스트는 grep으로 찾았다. 찾은 말은 `statistics|Statistics|scopeFor|StatisticsTileRow|statisticsGrowthKpis|statisticsInventoryKpis|statisticsPlanKpis|inventory_history|top-tab-statistics|design_review|MockDesignReview`이다.
+  - goldens를 빼고 걸린 파일은 모두 실행했다.
+  - 뺀 3파일(`repository_process_e2e` · `tactical_v2_process_e2e` · `metadata_manager_dto`)은 "statistics" 낱말만 걸렸다. 앞의 둘은 process E2E다.
+  - `kit/kpi_tile_test` · `inventory_shell_lazy_test`는 더해서 돌렸다.
+- 일회성 렌더: golden 테스트 파일을 복사한 임시 테스트 `test/zz_fe7h_render_tmp_test.dart`로 확인했다. harness 공개 함수와 `RenderRepaintBoundary.toImage`만 썼다.
+  - `statistics-growth` · `statistics-inventory` · `statistics-plan`과 스냅샷 1회 장면을 scratchpad PNG로 한 번씩 보았다. golden 비교는 아니다.
+  - 기준 데이터 칩이 줄 오른쪽 끝이 아니라 라벨 옆에 붙어 있었다(`Flexible` 배치). `Expanded` + 오른쪽 정렬로 고쳤다.
+  - 임시 테스트는 실행 뒤 지웠다.
+- 검수 시나리오 확인: 임시 테스트 `test/zz_fe7h_mockdemo_tmp_test.dart`로 `MockDesignReviewScenario` 통계 값을 출력했다. 값은 아래 검수표에 있다. 실행 뒤 지웠다.
+- 빌드 잠금(`build/` · `.dart_tool/`) 충돌은 없었다. `pubspec.lock` · `pubspec.yaml`은 바뀌지 않았다.
+- `dart format`은 새 파일에만 돌렸다. `statistics_topics.dart`에 한 번 잘못 돌려 손대지 않은 줄 4곳이 다시 감싸졌다. pre 사본에서 되살린 뒤 내 줄만 다시 넣었다. diff에는 이 slice 줄만 있다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 읽기 경로
+
+- `_reload()`는 FE7-g 그대로 읽는다. 순서는 계정 → 활성 계획 → 상태 → 학생 → 인벤토리 → 계산 → 문서 계산이다. `loading` 끝(보드를 먼저 그림) 뒤에 같은 generation으로 `_loadHistory`를 부른다.
+  1. `repository.history.events`: from_at 없이 남은 이력 전부를 읽는다. limit 200, cursor 끝까지, 최대 50쪽(FE6-f 상한).
+  2. 첫 쪽 revision이 읽은 계정 상태 revision과 다르면 섞지 않는다. A6 · B3에 FE6-f와 같은 문구를 보인다.
+  3. `scan_latest`: 보유 학생 id(`by_student_id`), 카탈로그 정규 key(`by_resource_key`)를 각각 256개씩 보낸다.
+- 다시 보일 때(숨어 있는 동안 요청이 없었어도) `repository.history.summary`의 revision만 본다. 읽은 상태와 다르면 `_reload()`를 부른다(FE6-f 방식). "처음 보일 때 읽기"와 셸 reloadToken은 그대로다.
+- "지금"은 `appClockNow(service)`다(Lane B tidy1이 만든 `lib/services/app_clock.dart`, 발견 1). 검수 fixture · 테스트는 고정 시각, 실제 서비스는 기기 시계다.
+- 쓰지 않음: `repository.history.diff`. 스냅샷마다 diff를 부르는 대신 events를 한 번 읽어 거꾸로 되돌린다.
+
+#### A6 지표 결론(시점별 학생 상태)
+
+- **가능하다.** FB-2 events의 `student_changes`는 before · after 확정 학생 전체(`ConfirmedStudentState`)를 담는다.
+  - 지금 확정 학생에서 늦은 적용부터 before로 되돌리면 학생 스냅샷마다 그 세션 끝 학생 상태가 정확히 나온다. FE6-f가 인벤토리 수량을 되돌리는 것과 같다.
+  - 그 상태로 FE7-b 성장 projection(`statisticsStudentGrowth`, FD-028 · 애장품 없는 학생 6항목)을 그대로 다시 센다. 그래서 A6 점 · 성장 KPI 증감은 지금 KPI와 같은 식이다.
+  - 마지막 스냅샷 = 지금 상태(수동 수정이 없으면)를 테스트로 고정했다.
+- 한계:
+  - 남은(보존) 이력 밖 시점은 모른다. 다만 그 앞에는 스냅샷 점도 없다.
+  - 시계가 되돌려진 기록이 있으면 A6 · 증감을 그리지 않는다(FE6-f 규칙).
+  - 학생 목록(애장품 여부)은 지금 것을 쓴다(정적 메타).
+
+#### 재사용한 FE6-f 함수(`lib/ui/inventory/inventory_history.dart`, import만 · 옮기지 않음)
+
+- 색인: `InventoryHistory.build` · `InventoryHistoryInput` · `InventoryHistoryEvent.fromEvent` · `InventoryScanPoint.fromPoint` · `InventoryHistoryCoverage.fromQuery` · `inventoryHistoryCurrent` · `track` · `current`.
+  - 남은 이력 전부 색인(B3)과 지금 − 28일 색인(KPI)을 따로 만든다. 28일 색인은 인벤토리 탭과 같은 "지난 스캔"이다.
+- KPI: `inventoryKpiDeltas`(부족 · 과잉 종 수 증감, 인벤토리 탭과 같은 값), `inventoryLastScanAt`, `inventoryDaysAgo`, `inventorySignedCount`.
+- 상수: `inventoryHistoryWindow` · `inventoryHistoryPageLimit` · `inventoryScanLatestChunk`.
+- FE6-c `inventoryCoverageOf` · `InventoryBoard`(지난 스캔 보드의 충족률), FE7-c `statisticsCategoryFills`(충족 카테고리).
+- FE8-c `accountLastScanText`(`ui/widgets/account_section_cluster.dart`): 기준 데이터 "어제 21:40" · "3일 전".
+- 쓰지 않은 것과 이유:
+  - `inventorySparkline`: 읽는 기간이 4주로 묶이고 "n주 전" 라벨이 붙는다. B3 seg "스냅샷 6회 · 전체"를 낼 수 없다. B3는 같은 `track`과 같은 "지금 점" 규칙(수동 수정 뒤 속 빈 점)을 직접 쓴다. 순변화 = 첫 점 → 끝 점으로 스파크라인과 같다.
+  - `inventoryNetChanges`: S5 기간 시작 수량 기준이라 B3 점 범위와 다르다.
+  - `inventoryTrend` · `inventoryForecasts`: B3 시안 패널에 예측 문구 자리가 없다(아래 FD-042).
+  - 요청(인벤토리 쪽, 이번에 고치지 않음): 점 범위를 받는 스파크라인(`inventorySparkline(history, key, points:)`)이 있으면 B3와 상세 스파크라인이 한 함수를 쓸 수 있다. 키트 승격(FE6-f 발견 6) 때 함께 보면 된다.
+
+#### 처리한 FD
+
+- **FD-041(확정)**: "스냅샷 n회"는 scan 세션이다(오케스트레이터 2026-10-09 표시 단위 결정). 수동 수정은 지금 값에 들어가고, 비교 기준은 scan 점이다.
+  - 학생 KPI는 마지막 바로 앞 학생 스냅샷과 비교한다.
+  - 재화 KPI는 FE6-f 재화별 "지난 스캔"과 비교한다.
+- **FD-042(워커 재량, 권장안)**: 예측은 3점 이상 최소제곱이다. 다만 이번 화면에는 예측을 둘 자리가 없다. B3 시안 패널은 이름 · 필요 · 선 · 지금 값 · 순변화뿐이다. 시안의 예측 자리는 Stats-Inventory 근거 "최근 변화 · 이 속도면 P2 이전에 소진"이다(발견 4).
+- **FD-096(확정 (c))**: 크레딧 · 엘리그마는 스캔 이력 점이 있을 때만 B3 패널이다. 스캔이 없으면 패널에서 빠진다(수동 입력 없음).
+- **FD-106(확정)**: A3 · A4 · A5 · B2 · C4 · C5는 "준비 중" 그대로다. A6 · B3는 데이터가 모자라면 시안 문구 "스캔을 더 실행하면 변화가 나타납니다." + "스냅샷 n회 · M/dd HH:mm"이다(0회는 "스냅샷 0회").
+- **FD-109(확정, FD-001 적용)**: A4 · A6 줄의 두 타일이 모두 그래프가 없으면(A4 "준비 중" + A6 문구) 줄 높이를 368 → 328로 낮춘다. 시안 Stats-Growth-Filter와 같다. `StatisticsTileRow.shortHeight`로 둔다. A4가 그래프가 되면(FE7-f) 줄은 다시 368이다.
+- **FD-110(워커 재량, 권장안)**: B3 seg "스냅샷 6회" = 재화마다 최근 6점, "4주" = 지금 − 28일, "전체" = 남은 이력 전부. seg는 이력을 읽으면 동작하고 다시 읽어도 남는다.
+- **FD-033(확정)**: B3는 패널마다 축이 따로다. 서로 다른 재화를 더하지 않는다. 패널 고르기도 수량이 아니라 |순변화| / 필요량으로 비교한다.
+- 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **기준 데이터**: 시안 칩 색은 행마다 고정이다(학생 스캔 ok · 인벤토리 wn · 스냅샷 gy). 모르면 회색 '—'다.
+   - 학생 스캔 = `scan_latest` by_student_id(보유 학생) 최댓값이다. 인벤토리 = by_resource_key(카탈로그) 최댓값이다(FE6-f). 둘 다 scan 종류 원문을 보지 않는다.
+   - 글자는 FE8-c 규칙을 쓴다: 오늘 · 어제 HH:mm · n일 전.
+   - 스냅샷 = 남은 이력의 모든 세션 수 · 첫 ~ 마지막 날짜(`M/dd`)다. 1회면 "1회 · M/dd", 기록이 없으면 '—'다.
+2. **성장 KPI 증감**: 지난 학생 스냅샷 대비다.
+   - 보유 학생 "/ 170 · ±n", 평균 육성도는 한 자리 글자끼리의 차(`+1.2`), 최대 레벨 · 완전 육성은 ±n이다.
+   - 계획 등록 증감은 '—'다. 목표는 이력에 없다(FB-2는 학생 · 인벤토리 bucket만 남긴다).
+   - 아는 증감은 시안처럼 증가 · 감소 모두 초록(`KpiDeltaTone.gain`)이다. 모르면 회색 '—'다.
+3. **인벤토리 · 계획 KPI 증감**: 재화마다 지금 − 28일 안의 마지막 바로 앞 스캔 점을 쓰고, 지금 보유와 둘 다 아는 재화만 그 점 수량으로 바꾼 "지난 스캔" 보드를 같은 식으로 다시 센다.
+   - 전체 · 계획 충족률은 정수 글자끼리의 차, 충족 카테고리는 60% 기준 개수 차다.
+   - 부족 · 과잉 종 수는 `inventoryKpiDeltas`다.
+   - 필요량은 지금 계획이다. 바꾼 재화가 없으면 '—'다.
+   - 계획 주제의 막힌 학생은 '—'다(지난 시점 문서 계산이 없다). 미계획 · 40% 미만도 '—'다(목표 이력 없음). 첫 부족 · 스캔 없음 칸의 둘째 글자는 FE7-g · FE7-c 그대로다.
+4. **인벤토리 범위 글자**: "인벤토리 스캔 n일 전 · 오늘"이다(FE6-f 인벤토리 탭 "마지막 스캔"과 같은 날 수).
+5. **A6**:
+   - 점 = 최근 학생 스냅샷 6개(B3 "스냅샷 6회"와 같은 수), 같은 간격, 날짜 `M/dd`. 바닥 = 가장 낮은 값을 내린 정수 − 2이고, 가장 높은 값이 시안 y 55.4다. 시안 58.1 · 63.4 → 바닥 56 · 점선 60이 같게 나온다. 점선 · 글자 = 가장 높은 값 아래 5의 배수다.
+   - 강조 = 마지막 스냅샷에서 14일 안 첫 스냅샷부터다. 그 안이 마지막 하나뿐이면 바로 앞부터다(시안 9/22 → 10/05). 분홍 바탕 · 두 끝 분홍 점 · "M/dd → M/dd ±x.x%p"이고, 끝 점 위에 값 글자를 둔다.
+   - 누르는 동작은 없다. 시안 오른쪽 "오른 학생 순위"는 넣지 않았다(발견 5).
+6. **B3**:
+   - 패널 = 재화(크레딧 · 엘리그마, 카탈로그 순서) 다음에 계획이 쓰는 재화 중 |순변화| / 필요량이 큰 것으로 3개까지다. 아는 수량 점이 2개 미만인 재화는 뺀다.
+   - 패널 그림: 값 범위(가장 작은 ~ 큰 값)를 y 51.1 ~ 169.6에 둔다. 필요량이 범위 안이면 점선 + "필요", 밖이면 "필요 n ↑/↓"다. 아래 왼쪽에 순변화(감소 분홍 · 증가 초록 · 0 회색), 아래 오른쪽에 끝 값을 둔다(백만 이상은 "98.4M").
+   - 계획이 없어도 재화 패널은 그린다(필요 글자 없음).
+7. **스냅샷 2회 미만 문구 자리**: 그래프 자리를 채운 둥근 상자(시안 r10 · 채움 · 안쪽 1px)다. 작은 창에서는 글자 묶음을 줄인다. 읽는 중 · 성장 자료 없음은 '—', 읽기 실패는 "변화 기록을 읽지 못했습니다: …"다.
+8. **시계 되돌림**: KPI 증감 '—', A6 · B3 '—'다(FE6-f와 같다).
+
+#### golden 변화 예상(장면별)
+
+- **`statistics-growth`(바뀜)**:
+  1. 왼쪽 기준 데이터 칩 3개: '—' → "어제 21:40"(초록) · "3일 전"(노랑) · "12회 · 9/02 ~ 10/05"(회색). 칩은 줄 오른쪽 끝 그대로다.
+  2. KPI 증감: 보유 학생 "/ 170 · —" → "/ 170 · +2", 평균 육성도 '—' → "+1.2", 최대 레벨 '—' → "+4", 완전 육성 '—' → "+1"(초록). 계획 등록 '—' 그대로. KPI 값(128 · 63.4% · 64명 · 8명 · 9명)은 그대로다.
+  3. A6: "준비 중" → 꺾은선. 점 6개(9/02 · 9/08 · 9/15 · 9/22 · 9/29 · 10/05, 58.1 → 63.4%), 9/22 ~ 10/05 분홍 바탕 · 분홍 점 2개 · "9/22 → 10/05 +2.0%p", "63.4%", 축 56 · 점선 60.
+  4. 타일 줄 높이 · 다른 타일 · 근거 패널 변화 0. fixture 입력이 바뀌어 계정 인벤토리가 인벤토리 · 계획 fixture 수량이 되었지만 성장 주제에는 보이지 않는다.
+- **`statistics-inventory`(바뀜)**:
+  1. 기준 데이터 칩 3개(위와 같다).
+  2. 범위 글자 "활성 계획 기준 · 인벤토리 스캔 —" → "… 3일 전".
+  3. KPI 증감: '—' → "+6" · "−2" · "+1" · "+1"(초록). 스캔 없음 칸 "엘레프" 그대로.
+  4. B3: "준비 중" → 작은 배수 3장. 크레딧 142.0M → 98.4M, "필요 261.5M ↑", 분홍 "−43.6M". 엘리그마 760 → 1020, "필요 2245 ↑", 초록 "+260". 상급 활동 보고서 180 → 384, 필요 300 점선, 초록 "+204". 오른쪽 아래 "패널마다 축이 따로 · 단위를 섞지 않음".
+  5. B3 seg가 흐린 자리에서 동작 seg로 바뀐다("스냅샷 6회" 선택). "3차" 칩은 그대로다.
+  6. B1 · B2 · 근거 변화 0.
+- **`statistics-plan`(바뀜)**:
+  1. 기준 데이터 칩 3개.
+  2. KPI 증감: 계획 충족률 '—' → "+6", 부족 재화 '—' → "−2". 첫 부족 · 막힌 학생 '—' · 미계획 '—'는 그대로다. 범위 칩 · C1 · C2 · C3 · 근거 변화 0.
+- **다른 장면: 변화 0.**
+  - 통계 탭은 오프스테이지에서 아무것도 읽지 않는다(셸 지연 테스트).
+  - 바꾼 공용 코드는 통계 파일뿐이다(키트 · 셸 · 인벤토리 변경 0).
+  - `statistics_topics.dart`의 범위 글자 기본값은 '—' 그대로다.
+- 바뀌는 기준 이미지 3개는 commit.json `whole`에 파일 단위로 넣었다. 일회성 렌더에서 세 장면 모두 시안 자리에 들어왔고 넘침이 없었다.
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth(A6 · 기준 데이터 · KPI 증감) | golden `statistics-growth` · `test/statistics_history_view_test.dart` fixture. 앱 mock 검수 시나리오(`--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`)는 학생 스캔이 1회뿐이라 아래 Stats-Growth-Filter 상태다 | 칩 "어제 21:40" · "3일 전" · 스냅샷 칩 / KPI "+2 · +1.2 · +4 · +1"(초록), 계획 등록 '—' / A6 점 6개 · 분홍 강조 · "9/22 → 10/05 +2.0%p" · "63.4%" · 56 · 60 |
+| Stats-Growth-Filter(스냅샷 1회 문구 · 낮은 줄) | 검수 시나리오 → 통계(학생 성장). 값: 칩 "어제 21:40" · "3일 전" · "31회 · 9/04 ~ 10/04"(재화 세션이 프로필마다 따로라 많다 — 발견 2). fixture: `statistics_history_view_test` "one snapshot" | A6 둥근 상자 · 스캔 아이콘 · "스캔을 더 실행하면 변화가 나타납니다." · "스냅샷 1회 · 10/04 21:40"(시나리오), KPI 증감 '—'(회색), A4 · A6 줄 328 |
+| Stats-Inventory(B3 · KPI 증감 · 범위) | golden `statistics-inventory` / 검수 시나리오 → 인벤토리 현황 | 범위 "… 인벤토리 스캔 3일 전" / KPI "+6 · −2 · +1 · +1"(fixture). 시나리오 값은 "−26 · +3 · −1 · −2"다. 그중 부족 · 과잉 "+3 · −1"은 인벤토리 탭 KPI와 같은 값이다 / B3 3장 · 패널마다 축 · 필요 표시 · seg 4주 · 전체로 점 수가 바뀌는가 |
+| Stats-Plan(KPI 증감) | golden `statistics-plan` | 계획 충족률 "+6" · 부족 재화 "−2", 막힌 학생 · 미계획 '—' |
+| (공통) | 다른 탭에서 저장 · 스캔 뒤 통계 탭으로 | 다시 보일 때 숫자가 바뀌는가(revision이 같으면 다시 읽지 않는다) / 1280×720에서 예외 없음 |
+
+#### 미검증 항목
+
+- golden 비교: **미실행**. `statistics-growth` · `statistics-inventory` · `statistics-plan`은 바뀌고 다른 장면은 변화 0으로 예상한다. CF가 `fe_gate.ps1` · `failures/` 검토 · `-UpdateGoldens`를 한다.
+- 전체 `fe_gate.ps1`(그 밖의 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드에서 통계 이력 읽기: **미실행**. 확인할 것은 남은 이력 전부 events 쪽 수 · 속도(학생 스캔 이벤트는 확정 학생 전체 before/after를 담아 크다), scan_latest 학생 · 재화 묶음 수다. 서비스 계층은 FB-2 process E2E가 이미 통과한 것이고 화면 연결은 Mock 순수 질의 함수로만 보았다.
+- 섹션 안 새 요소 ±2px: A6 · B3는 시안 SVG 좌표를 그대로 옮긴 painter이고 `StatChartFrame` 균일 배율이다. 위젯 테스트는 값 · 점 수 · 줄 높이(368 · 328)만 보았다. 화면 좌표는 재지 않았다.
+- legacy · compacted 계정, 시계 되돌림 계정의 안내: 단위 테스트로만 보았다.
+
+#### WIP 보존 확인
+
+- 고친 기존 파일 8개는 고치기 전에 WIP가 없었다(`git status --short` 빈 줄). 그중 `statistics_growth_view_test.dart` · `statistics_supply_view_test.dart`는 착수 목록에 없었고, 고치기 전에 같은 확인을 하고 pre 사본을 두었다.
+- post 사본 · `post_dir`는 두지 않았다. pre 사본과 비교한 diff에는 이 slice 줄만 있다(`diff --strip-trailing-cr` 확인).
+- 착수 때 사본을 둔 `statistics_studio_layout.dart` · `statistics_app_shell_test.dart`는 결국 고치지 않아 사본을 지웠다(`cmp` 일치 확인 뒤).
+- 작업 트리의 다른 미커밋 변경은 고치지 않았다. Lane B tidy1(`app_shell` · `navigation` · 인벤토리 · 키트 주석 · `services/app_clock.dart` · 검수 시나리오 등), 스캐너 WIP, 서비스 WIP가 그렇다. git 쓰기는 하지 않았다.
+
+#### 발견 사항
+
+1. **tidy1 의존(커밋 순서)**: 통계 페이지가 Lane B tidy1의 새 파일 `lib/services/app_clock.dart`(`appClockNow` · `AppClockSource`)를 import한다. 착수 때는 `InventoryClockSource`(인벤토리 컨트롤러)였는데 작업 중 tidy1이 옮겼다.
+   - fe7h를 tidy1보다 먼저 커밋하면 컴파일되지 않는다. tidy1 → fe7h 순서이거나 같은 gate 안이어야 한다.
+   - golden 테스트 fixture 서비스도 `AppClockSource`를 구현한다.
+2. **스냅샷 = scan 세션의 뜻(FE6-f 발견 5와 같은 문제)**: 시안 "스냅샷 6회 · 9/02 ~ 10/05"는 학생 · 인벤토리를 한 번에 찍은 스냅샷 6번으로 그렸다. 실제 저장은 종류(학생 · 인벤토리)마다, 인벤토리는 스캔 프로필마다 세션이 따로다.
+   - fixture는 학생 6 + 인벤토리 6 = "12회"다. 검수 시나리오는 프로필별 세션이라 "31회"다.
+   - A6(학생 스냅샷)과 B3(재화 점)은 각자 자기 세션만 세어 시안과 같은 6점이다.
+   - "스캔 자리" 묶음 규칙 FD가 필요하다(CF 판단). 정해지면 `StatisticsHistory.snapshotTimes` 하나만 바꾸면 된다.
+3. **시안 숫자 불일치**: A6 9/29 점(시안 62.0%)은 KPI 평균 육성도 "+1.2"(63.4 − 62.2)와 맞지 않는다. fixture는 KPI를 따라 62.2다.
+   - 시안 학생 스캔 "어제 21:40"과 A6 마지막 "10/05"를 함께 맞추려고 fixture "지금"을 10/06 12:00으로 두었다. 인벤토리 KPI(FE6-a)의 시안 날짜 10/05와는 하루 다르다.
+4. **FD-042 예측 자리**: 시안 예측 문구는 Stats-Inventory 근거 "최근 변화 · 스캔 6회 / 지난 스캔 대비 −30 / 이 속도면 P2 이전에 소진"에 있다. 그런데 B2 선택(FE7-f)이 그 근거를 연다.
+   - "P2 이전에 소진"은 페이즈에 시간축이 없어 정의가 없다. FE6-f의 "n주 뒤 소진 예상"으로 바꿀지 결정이 필요하다.
+   - 이번에는 넣지 않았다. 재화 근거 틀(C1 · C2 선택)에 "최근 변화" 3줄을 더하는 것은 FE7-f B2 또는 별도 slice 후보다.
+5. **A6 구간 선택**: 시안 Statistics-Proposal A6 "두 스냅샷 사이 학생별 증감(오른쪽 '오른 학생 순위')"는 데이터가 된다(학생 스냅샷 상태가 있다). 다만 시안 근거 틀 · 고르는 동작 규칙이 없어 넣지 않았다. 후속 slice 후보다.
+6. **검수 시나리오 학생 이력**: 검수 시나리오(`mock_design_review_scenario.dart`, `lib/services` 기존 파일이라 읽기만)는 학생 스캔이 1회라 A6가 문구 상태다. A6 꺾은선을 앱에서 보려면 시나리오에 학생 스냅샷 이력을 더해야 한다. 이번 fixture 생성 규칙을 `design_review/`로 옮기면 된다(CF 요청 후보, Lane B tidy1이 같은 파일을 고치는 중이라 이번에 손대지 않았다).
+7. **학생 이벤트 크기**: 남은 이력 전부를 읽는다. 학생 스캔 commit마다 확정 학생 전체 before/after가 실려, 실제 계정에서 쪽 수가 클 수 있다(상한 50쪽 = 10,000건). 느리면 학생 bucket만 걸러 읽는 질의(`student_ids` 필터)나 summary 기반 스냅샷 목록이 필요하다(XB 몫, 측정 뒤 판단).
+8. 워커 재량 FD는 FD-042 · FD-110 둘이다(권장안). 막는 `열림` FD는 없었다.
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7h/pre/<경로>`(고친 기존 파일 8개 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7h/commit.json`: slice `fe7h`, `status=true`, modified 9(이 문서 포함), added 5.
+  - `whole` = `frontend/test/goldens/baseline/statistics-growth.png` · `statistics-inventory.png` · `statistics-plan.png`(바뀌는 기존 기준 이미지).
+- 인계: `debug/frontend_fe7h/output.md`.
+
+#### 다음 행동
+
+- FE7-h 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다(tidy1과 같은 gate, 발견 1).
+  - 예상: analyze 0, 일반 테스트 새 29건(projection 15 + view 14) 포함 녹색.
+  - golden은 `statistics-growth` · `statistics-inventory` · `statistics-plan` RED(위 장면별 예측), 다른 장면 변화 0.
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe7h`(tidy1 뒤).
+- 발견 2(스냅샷 묶음 FD) · 4(예측 자리 · "P2 이전에 소진" 뜻) · 5(A6 구간 근거) · 6(검수 시나리오 학생 이력) · 7(이력 읽기 크기)은 CF 판단을 기다린다.
+
+### fe7h commit record (2026-10-14 09:50, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_094253\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

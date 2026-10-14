@@ -357,6 +357,10 @@ class _StatisticsService extends MockAppService {
   bool studentFailure, noProfile = false;
   final List<Future<RepositoryState>> stateLoads;
   int _stateIndex = 0;
+
+  /// 마지막으로 준 계정 상태(FE7-h: 이력 질의 revision을 이 상태와 맞춘다 — 기록 없는 계정).
+  RepositoryState? _served;
+  RepositoryState get _current => _served ?? snapshot;
   List<Map<String, dynamic>> lastCurrent = const [];
   Map<String, dynamic> lastPlan = const {}, lastInventory = const {};
   @override
@@ -376,9 +380,36 @@ class _StatisticsService extends MockAppService {
 
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) {
-    if (_stateIndex < stateLoads.length) return stateLoads[_stateIndex++];
-    return Future.value(snapshot);
+    final load = _stateIndex < stateLoads.length
+        ? stateLoads[_stateIndex++]
+        : Future.value(snapshot);
+    return load.then((value) => _served = value);
   }
+
+  @override
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  ) async => RepositoryHistorySummaryResult.fromWire({
+    'profiles': [
+      for (final id in profileIds)
+        RepositoryHistorySummary.unrecorded(id, _current.revision).toWire(),
+    ],
+  });
+
+  @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async => repositoryHistoryEvents(_current, null, request);
+
+  @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async => repositoryHistoryScanLatest(
+    request.profileId,
+    _current.revision,
+    null,
+    request,
+  );
 
   @override
   Future<List<StudentCatalogEntry>> listStudents() {

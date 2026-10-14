@@ -3,7 +3,7 @@
 // 주제마다 왼쪽 주제 버튼 글자, 가운데 제목 · (i) 도움말 · 범위 글자, KPI 다섯 칸의 라벨, 위젯 타일 줄, 오른쪽 아래
 // 이동 버튼 글자를 둔다. 타일 폭 · 높이 · 순서는 시안 타일 rect, 차수(1·2·3차)는 Statistics-Proposal 기능 카드 표다.
 // 값: 학생 성장의 KPI · 보유 인원은 FE7-b부터, 인벤토리 · 계획 KPI · 계획 학생 수는 FE7-c부터, 계획 페이즈 수(활성 문서
-// 계산)는 FE7-g부터 채운다. 기준 시각 · 증감은 아직 '—'다.
+// 계산)는 FE7-g부터, 인벤토리 스캔 시각 · 증감은 FE7-h(이력)부터 채운다.
 import 'package:flutter/foundation.dart';
 
 import '../geometry/diagonal_geometry.dart';
@@ -44,11 +44,15 @@ class StatisticsTileSpec {
 /// 위젯 타일 한 줄. 같은 줄 타일은 높이가 같다(시안).
 @immutable
 class StatisticsTileRow {
-  const StatisticsTileRow(this.height, this.tiles);
+  const StatisticsTileRow(this.height, this.tiles, {this.shortHeight});
 
   /// 기준 viewport의 시안 높이. 다른 창 크기에서는 [statisticsTileScale]을 곱한다.
   final double height;
   final List<StatisticsTileSpec> tiles;
+
+  /// 줄의 타일이 모두 그래프 없이 빈 상태 · "준비 중"일 때의 높이(FD-109 확정: 빈 카드는 시안대로 낮게, Stats-Growth-Filter
+  /// A4 · A6 368 → 328). 없으면 늘 [height]다.
+  final double? shortHeight;
 }
 
 /// 오른쪽 아래 이동 버튼 글자(행동 + 목적지 설명)와 누르면 할 일(FE7-d 원본 탭 이동). [onPressed]가 없으면 비활성이다.
@@ -96,14 +100,19 @@ extension StatisticsModeSpec on StatisticsMode {
   String get scope => scopeFor(null);
 
   /// [owned]는 보유 학생 수(학생 성장, FE7-b), [planStudents]는 계획(사용자 목표) 학생 수(계획 집계, FE7-c), [phases]는
-  /// 활성 계획 문서의 페이즈 수(단계가 있는 페이즈, FE7-g). 모르면 '—'다.
-  String scopeFor(int? owned, {int? planStudents, int? phases}) =>
-      switch (this) {
-        StatisticsMode.students => '보유 ${owned ?? '—'}명 기준 · 지난 스냅샷 대비',
-        StatisticsMode.inventory => '활성 계획 기준 · 인벤토리 스캔 —',
-        StatisticsMode.plan =>
-          '활성 계획 · ${planStudents ?? '—'}명 · 페이즈 ${phases ?? '—'}',
-      };
+  /// 활성 계획 문서의 페이즈 수(단계가 있는 페이즈, FE7-g), [inventoryScan]은 마지막 인벤토리 스캔(`3일 전`, FE7-h). 모르면
+  /// '—'다.
+  String scopeFor(
+    int? owned, {
+    int? planStudents,
+    int? phases,
+    String inventoryScan = '—',
+  }) => switch (this) {
+    StatisticsMode.students => '보유 ${owned ?? '—'}명 기준 · 지난 스냅샷 대비',
+    StatisticsMode.inventory => '활성 계획 기준 · 인벤토리 스캔 $inventoryScan',
+    StatisticsMode.plan =>
+      '활성 계획 · ${planStudents ?? '—'}명 · 페이즈 ${phases ?? '—'}',
+  };
 
   bool get scopeIsChip => this == StatisticsMode.plan;
 
@@ -163,17 +172,21 @@ extension StatisticsModeSpec on StatisticsMode {
         ),
         StatisticsTileSpec('A2', '항목별 완성도', 1, 695.5),
       ]),
-      StatisticsTileRow(368, [
-        StatisticsTileSpec(
-          'A4',
-          '학교 비교',
-          2,
-          751.6,
-          segments: ['학교', '역할'],
-          showsOrderChip: false,
-        ),
-        StatisticsTileSpec('A6', '성장 추이', 2, 751.6),
-      ]),
+      StatisticsTileRow(
+        368,
+        [
+          StatisticsTileSpec(
+            'A4',
+            '학교 비교',
+            2,
+            751.6,
+            segments: ['학교', '역할'],
+            showsOrderChip: false,
+          ),
+          StatisticsTileSpec('A6', '성장 추이', 2, 751.6),
+        ],
+        shortHeight: 328,
+      ),
       StatisticsTileRow(313, [
         StatisticsTileSpec('A3', '성작 · 전용무기', 2, 741.9),
         StatisticsTileSpec('A5', '스킬 · 장비 매트릭스', 3, 741.9),
