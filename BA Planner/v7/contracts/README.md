@@ -1252,3 +1252,50 @@ there is no in-place import writer. Internal unattributed writes do not clear fl
 
 Shared policy fixture: fixtures/inventory_review_fb10b_v1.json. This slice does
 not freeze the entire FB10 format or establish native/currency/crop behavior.
+
+
+## FB-6a tactical v2 writes and explicit v7-v1 migration
+
+Six new methods: tactical.v2.match.upsert/delete, jokbo.upsert/delete,
+legacy.preview/commit. They share the existing v2 file/revision/idempotency with
+lobby commit/link. Their exact payloads are in tactical-protocol-v2.schema.json.
+Manual match input includes attempt_count (explicit positive integer), zoned
+occurred_at and occurred_precision (instant/date/unknown); provider audit fields
+are backend-owned. Date precision means KST midnight representation, not a known
+battle time. Match read fields are additive/optional for old v2 records; missing
+attempt count means unknown, never one. V7-v1 imports explicitly store null count
+and date/unknown precision. Jokbo name is optional in old records and required in
+new edit input. Preserve existing read provenance, counts and notes in clients.
+
+One record is one entered outcome with an explicitly reported count, not N
+fabricated prior outcomes. No new adoption, opponent whole-population winrate or
+P13 per-attempt/share semantics are defined here. Private legacy_v1 marker is
+stored only in v2, never in public state. No new profile-deletion owned path.
+
+Legacy preview/commit operate on existing owned tactical/{profile_id}.json under
+root→v1→v2 locks. Commit checks source revision and byte fingerprint; unresolved
+conversion issues reject the entire mutation. Stable namespaced IDs preserve
+v2 existing records. Unknown old catalog IDs are surfaced for resolution in v1,
+not silently omitted. V1 bytes are never rewritten or deleted. A single atomic
+v2 replacement records converted rows and the migration marker; then v1 new
+mutations fail tactical_v1_read_only. Old exact idempotent v1 retries retain their
+original receipt; reads stay available. The migration's original retry key also
+returns its original response before revision checking.
+
+Automatic lineage- IDs derive from ordered attack/defense identities, preserving
+wildcard/unknown/empty distinctions and edited names. Metadata/observed source
+changes do not fragment pair identity. A reserved derived pair cannot be changed
+under the same ID; copy to a new manual template ID to alter composition. Matches
+and imported jokbo aggregate wins/losses are not double counted. Editing templates
+does not rewrite observations. Unknown/wildcard partial defense never fabricates
+a full confirmed snapshot. Linked match identity/signature changes require explicit
+unlink first; delete clears its lobby link and match-scoped snapshots atomically.
+
+Fixture: fixtures/tactical_fb6_writes_v2.json. New contracts require same-source
+CF fb6-dart gate and paired commits before frontend adoption.
+
+Before new v2 match/jokbo upserts, existing v1 rows require explicit migration
+(legacy_migration_required). If v1 has no rows, the first manual v2 write records
+the empty legacy migration marker in the same atomic replacement, disabling
+future v1 writes. legacy.preview also returns v1_writes_disabled so the client
+can avoid proposing another migration after the sole v2 write store is active.

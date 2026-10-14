@@ -255,6 +255,9 @@ class TacticalStore:
                 if not isinstance(cached, dict) or cached.get("fingerprint") != fingerprint:
                     raise RepositoryError("idempotency_conflict", "idempotency key was used for another tactical mutation")
                 return cached["response"]
+            from core.tactical_fb6_store import v1_read_only
+            if v1_read_only(self.root, profile_id):
+                raise RepositoryError("tactical_v1_read_only", "legacy tactical writes are disabled after v2 migration")
             if value["revision"] != expected_revision:
                 raise RepositoryError("revision_conflict", "expected tactical revision is stale",
                                       details={"current_revision": value["revision"]})

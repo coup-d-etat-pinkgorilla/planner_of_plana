@@ -19,6 +19,12 @@ from core.repository_participant_lock import ParticipantLease, acquire_participa
 
 
 METHODS = frozenset({
+    "tactical.v2.match.upsert",
+    "tactical.v2.match.delete",
+    "tactical.v2.jokbo.upsert",
+    "tactical.v2.jokbo.delete",
+    "tactical.v2.legacy.preview",
+    "tactical.v2.legacy.commit",
     "tactical.v2.state.get",
     "tactical.v2.import.preview",
     "tactical.v2.import.commit",
@@ -442,6 +448,10 @@ class TacticalV2Store:
         legacy = {"version", "profile_id", "revision", "matches", "jokbo", "opponents", "snapshots", "import_batches", "idempotency"}
         p9_shape = legacy | {"lobby_scans", "lobby_candidates"}
         required = p9_shape | {"predictions"}
+        if isinstance(value, dict) and "legacy_v1" in value:
+            from core.tactical_fb6_store import validate_marker
+            validate_marker(value["legacy_v1"])
+            required = required | {"legacy_v1"}
         if isinstance(value, dict) and set(value) == legacy:
             value["lobby_scans"] = []
             value["lobby_candidates"] = []
@@ -971,6 +981,13 @@ class TacticalProtocolV2:
         return {"protocol": 1, "id": request["id"], "type": "response", "method": request["method"], "payload": payload}
 
     def _dispatch(self, method: str, payload: object) -> dict[str, Any]:
+        if method in {
+            "tactical.v2.match.upsert", "tactical.v2.match.delete",
+            "tactical.v2.jokbo.upsert", "tactical.v2.jokbo.delete",
+            "tactical.v2.legacy.preview", "tactical.v2.legacy.commit",
+        }:
+            from core.tactical_fb6_store import dispatch
+            return dispatch(self.store, method, payload)
         if method == "tactical.v2.state.get":
             data = _exact(payload, {"profile_id"}, "payload")
             return self.store.state(_text(data["profile_id"], "profile_id", required=True))
