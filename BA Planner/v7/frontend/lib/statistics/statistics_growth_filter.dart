@@ -9,8 +9,9 @@
 // - 대상 = 후보 중 지금 값으로 적용 필터에 맞는 학생. 학생 성장(A1~A6 · KPI · 근거)만 대상으로 다시 세고, 인벤토리 · 계획은 늘
 //   전체 성장을 쓴다(시안 "학생 성장에만 적용"). A6 · KPI 증감은 지금 정한 대상 학생을 지난 스냅샷에서도 센다
 //   (`StatisticsHistory.studentSnapshotsFor`).
-// - A4 빈 상태(시안 Stats-Growth-Filter): 대상 학생의 학교가 하나 이하면 비교하지 않는다(A4 seg 기본 "학교"). A4 그래프와
-//   "역할" seg는 FE7-f다.
+// - A4 빈 상태(시안 Stats-Growth-Filter): 대상 학생의 학교가 하나 이하면 비교하지 않는다(A4 seg 기본 "학교"). FE7-f부터
+//   화면은 고른 seg(학교 · 역할)의 값 수로 판정한다(`StatisticsGroupComparison.valueCount`, FE7-e 발견 3). [singleGroup]은
+//   학교 seg 값이다.
 import 'package:flutter/foundation.dart';
 
 import '../services/app_service.dart';

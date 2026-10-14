@@ -178,8 +178,9 @@ void main() {
       }
       expect(find.text('보유 128명 기준 · 지난 스냅샷 대비'), findsOneWidget);
       expect(find.text('없음 · 보유 128명 전체'), findsOneWidget);
-      // 그리지 않는 타일은 "준비 중" 자리를 유지한다(FD-106 사용자 결정 10-13). A6은 FE7-h 그래프 자리다(이력 없음 '—').
-      expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+      // 그리지 않는 타일은 "준비 중" 자리를 유지한다(FD-106 사용자 결정 10-13). A6은 FE7-h, A3 · A4는 FE7-f 그래프
+      // 자리다. 남은 것은 A5(FE7-i)뿐이다.
+      expect(find.text(statisticsTilePendingText), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -214,7 +215,9 @@ void main() {
     final a4 = tester.widget<SkewSegmented<int>>(
       find.byKey(const ValueKey('statistics-tile-A4-seg')),
     );
-    expect(a4.onChanged, isNull);
+    // FE7-f: A4 seg(학교 · 역할)도 성장 자료가 있으면 동작한다.
+    expect(a4.onChanged, isNotNull);
+    expect(a4.selected, 0);
   });
 
   testWidgets('selecting the 60~70% bin lists its students like the artboard', (
@@ -407,7 +410,8 @@ void main() {
     tester,
   ) async {
     await _pump(tester, empty: true);
-    expect(find.text(statisticsGrowthNoStudentsText), findsNWidgets(2));
+    // A1 · A2 · A3 · A4(FE7-f)가 같은 빈 상태다.
+    expect(find.text(statisticsGrowthNoStudentsText), findsNWidgets(4));
     final value = tester.widget<KpiTile>(
       find.descendant(
         of: find.byKey(const ValueKey('statistics-kpi-growth-1')),

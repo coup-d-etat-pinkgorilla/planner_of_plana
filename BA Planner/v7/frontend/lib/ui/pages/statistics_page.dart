@@ -32,6 +32,12 @@
 // 그대로). 모달 머리 "학생 탭 필터 불러오기"는 셸이 넘긴 학생 탭 필터의 적용 값을 초안에 한 번 복사한다(연결 아님). 걸린
 // 필터는 학생 성장(A1~A6 · KPI · 근거)에만 쓰고(`statistics/statistics_growth_filter.dart`), 인벤토리 · 계획은 늘 전체
 // 성장이다. 필터를 바꾸면 고른 구간을 지운다(대상이 바뀌었다). 탭을 떠나면 열린 모달은 닫고 초안을 버린다.
+// FE7-f: 2차 타일 A3 · A4(`statistics/statistics_breakdown_projection.dart`, 학생 성장 — 필터 대상 학생) · B2(인벤토리,
+// `statisticsB2Rows`) · C4(계획, `statistics/statistics_goal_projection.dart` — 전체)를 만든다. A4 seg · B2 seg는 보기
+// 선택이라 다시 읽어도 남긴다(C1 순서와 같다). B2 근거의 "쓰는 학생 · 필요량 순"은 활성 문서 계산의 단계별 사용
+// (`inventoryStageUses`, 인벤토리 상세와 같은 함수), "최근 변화"는 이력의 지금 − 28일 색인이다. 이동: A3 · A4 근거는
+// 학생 성장 버튼 그대로(학생 탭 임시 목록 · 계획 1단계), B2 행은 인벤토리 그 행(+ 티어 표가 있는 카테고리면 티어별
+// 충족률), C4 학생은 "계획 만들기 2 · 목표 정하기"(`PlanNavigationIntent.goals`, 활성 계획 편집 흐름 2단계에서 그 학생).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -39,6 +45,8 @@ import 'package:flutter/material.dart';
 import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../../statistics/statistics_breakdown_projection.dart';
+import '../../statistics/statistics_goal_projection.dart';
 import '../../statistics/statistics_growth_filter.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart';
@@ -56,7 +64,8 @@ import '../inventory/inventory_history.dart'
         inventoryHistoryPageLimit,
         inventoryLastScanAt,
         inventoryScanLatestChunk;
-import '../inventory/inventory_view_model.dart' show InventoryBoard;
+import '../inventory/inventory_view_model.dart'
+    show InventoryBoard, InventoryStageUse, inventoryStageUses;
 import '../kit/ba_modal.dart';
 import '../kit/buttons.dart';
 import '../models/plan_scenario_detail.dart' show PlanDetailData;
@@ -77,6 +86,9 @@ export '../statistics/statistics_topics.dart' show StatisticsMode;
 
 /// 이력 events를 끝까지 읽을 때의 쪽 수 상한(200 × 50 = FB-2 보존 상한 10,000건, FE6-f와 같다).
 const _historyMaxPages = 50;
+
+/// C4 학생 근거 primary 버튼(Statistics-Proposal C4 "행 → 계획 만들기 2 · 목표 정하기", FE7-f).
+const statisticsGoalActionLabel = '계획 만들기 2 · 목표 정하기';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({
@@ -158,6 +170,24 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   /// C1 순서(FE7-g). 다시 읽어도 남긴다.
   StatisticsC1Order _c1Order = StatisticsC1Order.shortage;
+
+  /// A4 · B2 seg(FE7-f). 다시 읽어도 남긴다(보기 선택).
+  StatisticsA4Group _a4Group = StatisticsA4Group.school;
+  StatisticsB2Order _b2Order = StatisticsB2Order.shortage;
+
+  /// A3 · A4 projection 캐시(성장 · 학생 목록이 같으면 다시 만들지 않는다, FE7-f).
+  StatisticsGrowthBreakdown? _breakdown;
+  StatisticsGrowth? _breakdownGrowth;
+  List<StudentCatalogEntry>? _breakdownStudents;
+
+  /// C4 projection 캐시(계정 상태 · 학생 목록이 같으면 다시 만들지 않는다, FE7-f).
+  StatisticsGoalProgressSet? _goals;
+  RepositoryState? _goalsState;
+  List<StudentCatalogEntry>? _goalsStudents;
+
+  /// B2 근거 단계별 사용 캐시(문서 계산이 같으면 다시 만들지 않는다, FE7-f).
+  Map<String, List<InventoryStageUse>>? _stageUses;
+  Map<String, dynamic>? _stageUsesProjection;
 
   /// 문서 계산 projection 캐시(읽은 문서 · 문서 계산이 같으면 다시 만들지 않는다).
   StatisticsPlanning? _planning;
@@ -709,11 +739,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
   ) {
     final growth = _currentGrowth();
     final growthSelection = saved.growth;
+    final scoped = _currentScope(growth)?.growth ?? growth;
     if (growthSelection != null &&
         (StatisticsGrowthView(
-              growth: _currentScope(growth)?.growth ?? growth,
+              growth: scoped,
               metric: _growthMetric,
               selection: growthSelection,
+              breakdown: _currentBreakdown(scoped),
+              a4Group: _a4Group,
             ).evidence?.students.isNotEmpty ??
             false)) {
       _growthSelection = growthSelection;
@@ -775,6 +808,43 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return _planning;
   }
 
+  /// A3 · A4 projection([growth]는 통계 필터 대상 학생의 성장, FE7-f).
+  StatisticsGrowthBreakdown? _currentBreakdown(StatisticsGrowth? growth) {
+    if (growth == null) return null;
+    if (!identical(_breakdownGrowth, growth) ||
+        !identical(_breakdownStudents, _students)) {
+      _breakdownGrowth = growth;
+      _breakdownStudents = _students;
+      _breakdown = StatisticsGrowthBreakdown.of(growth, _students);
+    }
+    return _breakdown;
+  }
+
+  /// C4 projection(계정 상태 · 학생 목록, 통계 필터와 상관없다 — FD-104).
+  StatisticsGoalProgressSet? _currentGoals() {
+    final state = _state;
+    if (state == null) return null;
+    if (!identical(_goalsState, state) ||
+        !identical(_goalsStudents, _students)) {
+      _goalsState = state;
+      _goalsStudents = _students;
+      _goals = StatisticsGoalProgressSet.of(state: state, catalog: _students);
+    }
+    return _goals;
+  }
+
+  /// B2 근거 "필요량 순"의 단계별 사용(활성 문서 계산이 없으면 null).
+  Map<String, List<InventoryStageUse>>? _currentStageUses() {
+    final projection = _planProjection;
+    final plan = _plan;
+    if (projection == null || plan == null) return null;
+    if (!identical(_stageUsesProjection, projection)) {
+      _stageUsesProjection = projection;
+      _stageUses = inventoryStageUses(projection, plan.document);
+    }
+    return _stageUses;
+  }
+
   StatisticsGrowth? _currentGrowth() {
     if (!identical(_growthState, _state) ||
         !identical(_growthStudents, _students)) {
@@ -831,6 +901,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
     onExpand: () => setState(() => _supplyExpanded = true),
     planning: _loading ? null : _currentPlanning(),
     planningError: _planError,
+    goals: _loading ? null : _currentGoals(),
+    stageUses: _loading ? null : _currentStageUses(),
+    recent: _loading || _historyLoading ? null : _history?.inventoryWindow,
+    b2Order: _b2Order,
+    onB2OrderChanged: (order) => setState(() {
+      _b2Order = order;
+      // 고른 B2 행은 순서가 바뀌면 화면에 없을 수 있다(C1과 같다).
+      if (_supplySelection case StatisticsResourceSelection(
+        source: StatisticsResourceSource.b2,
+      )) {
+        _supplySelection = null;
+        _supplyExpanded = false;
+      }
+    }),
     c1Order: _c1Order,
     onC1OrderChanged: (order) => setState(() {
       _c1Order = order;
@@ -893,8 +977,25 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
         );
       case StatisticsMode.inventory:
-        final category = supplyView.selectedCategory;
         final evidence = supplyView.evidence;
+        // B2 행(FE7-f): 그 재화 행, 티어 표가 있는 카테고리면 티어별 충족률.
+        if (evidence?.resource case final resource?) {
+          return (
+            _tierCategories.contains(resource.item.category)
+                ? StatisticsEvidenceAction(
+                    secondary.label,
+                    secondary.detail,
+                    () => navigate(InventoryNavigationIntent.tiers()),
+                  )
+                : secondary,
+            StatisticsEvidenceAction(
+              primary.label,
+              primary.detail,
+              () => navigate(InventoryNavigationIntent.row(resource.key)),
+            ),
+          );
+        }
+        final category = supplyView.selectedCategory;
         if (category == null || evidence == null) return defaults;
         final first = evidence.resources?.firstOrNull;
         return (
@@ -915,6 +1016,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
         );
       case StatisticsMode.plan:
         final evidence = supplyView.evidence;
+        // C4 학생(FE7-f): "계획 만들기 2 · 목표 정하기" → 활성 계획 편집 흐름 2단계에서 그 학생.
+        if (evidence?.goal case final goal?) {
+          return (
+            secondary,
+            StatisticsEvidenceAction(
+              statisticsGoalActionLabel,
+              '${goal.displayName} 목표 고치기',
+              () => navigate(PlanNavigationIntent.goals(goal.studentId)),
+            ),
+          );
+        }
         final resource = evidence?.resource;
         if (evidence == null || resource == null) return defaults;
         final stage = evidence.stages.firstOrNull?.stage;
@@ -970,6 +1082,18 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final scope = _currentScope(growth);
     final growthView = StatisticsGrowthView(
       growth: scope?.growth ?? growth,
+      breakdown: _currentBreakdown(scope?.growth ?? growth),
+      a4Group: _a4Group,
+      onA4GroupChanged: (group) => setState(() {
+        _a4Group = group;
+        // 다른 seg의 점을 고른 채면 푼다.
+        if (_growthSelection case StatisticsGrowthGroupSelection(
+          group: final selected,
+        ) when selected.group != group) {
+          _growthSelection = null;
+          _evidenceExpanded = false;
+        }
+      }),
       metric: _growthMetric,
       selection: _growthSelection,
       expanded: _evidenceExpanded,

@@ -9,8 +9,9 @@
 // 대상별 payload:
 // - 학생: 학생 ID 목록(근거 순서)과 칩 글자. 학생 탭 필터 상태에 덮어쓰지 않고 이동용 임시 목록으로 연다(FD-104).
 // - 인벤토리: 재화 행(resource_key, 목록 모드 · 그 재화 상세) 또는 티어별 충족률 보기.
-// - 계획: 계획 만들기 1단계에 미리 고를 학생, 또는 페이즈 편집 흐름 3단계(단계 순서)에서 고를 단계, 또는 활성 계획
-//   Detail 홈 "전체" 탭에서 고를 재화(tidy1, 인벤토리 "계획에서 보기"), 또는 그대로 열기(payload 없음).
+// - 계획: 계획 만들기 1단계에 미리 고를 학생, 또는 페이즈 편집 흐름 3단계(단계 순서)에서 고를 단계, 또는 페이즈 편집
+//   흐름 2단계(목표 정하기)에서 열 학생(FE7-f 통계 C4), 또는 활성 계획 Detail 홈 "전체" 탭에서 고를 재화(tidy1, 인벤토리
+//   "계획에서 보기"), 또는 그대로 열기(payload 없음).
 import 'package:flutter/foundation.dart';
 
 import '../app_section.dart';
@@ -83,6 +84,10 @@ enum PlanNavigationTarget {
   /// 페이즈 편집(활성 계획) 흐름 3단계(단계 순서), [PlanNavigationIntent.stageId] 카드를 고른다.
   order,
 
+  /// 페이즈 편집(활성 계획) 흐름 2단계(목표 정하기)에서 [PlanNavigationIntent.studentIds]의 첫 학생 목표를 연다
+  /// (FE7-f 통계 C4 "계획 만들기 2 · 목표 정하기").
+  goals,
+
   /// 활성 계획 Detail 홈 S3 "전체" 탭에서 [PlanNavigationIntent.resourceKey]를 고른다(S2에 그 재화를 쓰는 단계가 강조된다).
   resource,
 
@@ -100,6 +105,12 @@ final class PlanNavigationIntent extends AppNavigationIntent {
   PlanNavigationIntent.order(String this.stageId, {super.origin})
     : target = PlanNavigationTarget.order,
       studentIds = const [],
+      resourceKey = null;
+
+  PlanNavigationIntent.goals(String studentId, {super.origin})
+    : target = PlanNavigationTarget.goals,
+      studentIds = List.unmodifiable([studentId]),
+      stageId = null,
       resourceKey = null;
 
   PlanNavigationIntent.resource(String this.resourceKey, {super.origin})

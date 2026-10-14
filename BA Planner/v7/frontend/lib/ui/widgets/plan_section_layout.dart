@@ -66,6 +66,9 @@ const planNavigationUnavailableMessage = '계획 만들기를 열 수 없어 통
 /// 통계 "계획 만들기 3 · 단계 순서"를 눌렀는데 진행 중인 계획 만들기가 있을 때(초안을 버리지 않는다, FE7-d).
 const planNavigationFlowOpenMessage = '진행 중인 계획 만들기가 있어 단계 순서를 새로 열지 않았습니다.';
 
+/// 통계 C4 → "목표 정하기"(FE7-f): 이미 열린 흐름이 있어 활성 계획 편집 흐름을 새로 열지 않았다.
+const planNavigationGoalsFlowOpenMessage = '진행 중인 계획 만들기가 있어 목표 정하기를 새로 열지 않았습니다.';
+
 /// 통계 "이 구간 학생을 계획에 추가"를 진행 중인 초안에 더했을 때(FE7-d).
 String planNavigationAppendedMessage(int count) =>
     '만들던 초안에 통계에서 고른 학생 $count명을 더했습니다.';
@@ -511,6 +514,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             );
           case PlanNavigationTarget.order:
             _showMessage(planNavigationFlowOpenMessage);
+          case PlanNavigationTarget.goals:
+            _showMessage(planNavigationGoalsFlowOpenMessage);
           case PlanNavigationTarget.resource || PlanNavigationTarget.home:
             return; // 위에서 흐름 없이 처리했다.
         }
@@ -543,7 +548,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// [_consumeNavigation]: 흐름 상태(학생 고르기는 시나리오 저장소, 단계 순서는 활성 계획을 다시 읽어서)를 읽어 연다. 열 수
   /// 없으면 알리고 계획 홈을 다시 들인다.
   Future<void> _openNavigationFlow(PlanNavigationIntent intent) async {
-    final order = intent.target == PlanNavigationTarget.order;
+    // 단계 순서 · 목표 정하기(FE7-f)는 둘 다 활성 계획을 다시 읽은 페이즈 편집 초안이다.
+    final order =
+        intent.target == PlanNavigationTarget.order ||
+        intent.target == PlanNavigationTarget.goals;
     final service = widget.service;
     PlanFlowContext? flowContext;
     if (order
@@ -587,6 +595,11 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           activePlanRevision: plan.revision,
           initialOrderStageId: intent.stageId,
         );
+        // 목표 정하기(FE7-f): 계산기 넘기기와 같은 길로 그 학생을 2단계에서 연다(목표 없이 넘기므로 단계를 만들지 않는다).
+        if (intent.target == PlanNavigationTarget.goals &&
+            intent.studentIds.isNotEmpty) {
+          flow.receiveHandoff(flowContext.seedFor(intent.studentIds.first));
+        }
       } else {
         flow = PlanFlowController(
           purpose: PlanFlowPurpose.newScenario,

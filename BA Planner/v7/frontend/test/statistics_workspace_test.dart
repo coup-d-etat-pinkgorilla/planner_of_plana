@@ -245,9 +245,9 @@ void main() {
     _expectRect(tester, 'statistics-tile-A3', 421.5, 1127.2, 741.9, 313);
     _expectRect(tester, 'statistics-tile-A5', 1128.2, 1127.2, 741.9, 313);
     expect(find.text('육성도 분포'), findsOneWidget);
-    // FE7-b: A1 · A2는 그래프 자리(자료를 못 읽었으면 '—'), FE7-h: A6도 그래프 자리(이력이 없으면 '—'), 나머지 3장은
-    // "준비 중"(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+    // FE7-b: A1 · A2는 그래프 자리(자료를 못 읽었으면 '—'), FE7-h: A6, FE7-f: A3 · A4도 그래프 자리(자료가 없으면 '—'),
+    // A5만 "준비 중"(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsOneWidget);
     for (final id in ['A1', 'A2', 'A6']) {
       expect(
         tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,
@@ -270,9 +270,9 @@ void main() {
     _expectRect(tester, 'statistics-tile-B2', 1240.8, 393.2, 758.6, 313);
     _expectRect(tester, 'statistics-tile-B3', 485.2, 728.2, 1455.2, 351);
     expect(find.text('인벤토리 · 계획 집계는 항상 전체'), findsOneWidget);
-    // FE7-c: B1은 그래프 자리(계정 상태 · 부족 계산이 없으면 '—'), FE7-h: B3도 그래프 자리(이력이 없으면 '—'), B2는
-    // "준비 중"(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(1));
+    // FE7-c: B1은 그래프 자리(계정 상태 · 부족 계산이 없으면 '—'), FE7-h: B3, FE7-f: B2도 그래프 자리라 "준비 중"이
+    // 없다.
+    expect(find.text(statisticsTilePendingText), findsNothing);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('statistics-tile-B3-empty'))).data,
       '—',
@@ -291,8 +291,8 @@ void main() {
     _expectRect(tester, 'statistics-tile-C4', 1220.8, 773.2, 711.6, 327);
     _expectRect(tester, 'statistics-tile-C5', 422.4, 1122.2, 1448.5, 313);
     expect(find.text('활성 계획 · —명 · 페이즈 —'), findsOneWidget);
-    // FE7-c: C1 · C2는 그래프 자리, FE7-g: C3도 그래프 자리(문서 계산이 없으면 '—'), C4 · C5는 "준비 중".
-    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    // FE7-c: C1 · C2는 그래프 자리, FE7-g: C3, FE7-f: C4도 그래프 자리(자료가 없으면 '—'), C5만 "준비 중".
+    expect(find.text(statisticsTilePendingText), findsOneWidget);
     for (final id in ['C1', 'C2', 'C3']) {
       expect(
         tester.widget<Text>(find.byKey(ValueKey('statistics-tile-$id-empty'))).data,

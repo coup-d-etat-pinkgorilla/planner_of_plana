@@ -311,8 +311,8 @@ void main() {
       StatisticsSupplyFixtureExpected.b1Percents,
     );
     expect(painter.selectedCategory, isNull);
-    // 그리지 않는 타일(B2)은 "준비 중" 자리(FD-106 사용자 결정 10-13). B3은 FE7-h 그래프 자리다(이력 없음 '—').
-    expect(find.text(statisticsTilePendingText), findsNWidgets(1));
+    // B2(FE7-f) · B3(FE7-h)도 그래프 자리라 인벤토리 주제에 "준비 중"이 없다(FD-106 사용자 결정 10-13).
+    expect(find.text(statisticsTilePendingText), findsNothing);
     expect(_note(tester), statisticsInventoryEvidenceEmptyText);
     expect(tester.takeException(), isNull);
   });
@@ -431,8 +431,8 @@ void main() {
     expect(c2.maxStudents, 8);
     expect(c2.unknownKinds, 1);
     expect(c2.dots.where((dot) => dot.inZone), hasLength(4));
-    // C4 · C5는 "준비 중", C3(FE7-g)은 활성 계획을 읽지 못한 안내를 타일 안에 둔다.
-    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    // C5만 "준비 중"(C4는 FE7-f 그래프), C3(FE7-g)은 활성 계획을 읽지 못한 안내를 타일 안에 둔다.
+    expect(find.text(statisticsTilePendingText), findsOneWidget);
     expect(
       _text(tester, 'statistics-tile-C3-empty'),
       startsWith('활성 계획을 읽지 못했습니다'),

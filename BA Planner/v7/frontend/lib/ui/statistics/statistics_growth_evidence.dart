@@ -6,6 +6,9 @@
 // 부제 "A2에서 고른 항목 · 낮은 학생 순", 행 칩 = 그 항목 완성도, 요약 "항목 요약": 평균 레벨 · 평균 완성도 · 계획 등록).
 // "모두 보기"를 누르면 행 자리와 그 버튼 자리를 합친 곳에서 모든 학생을 세로로 스크롤한다(공용 스크롤바 · 포그).
 // 행 모양은 시안 `.row`(왼쪽 변 80° · 오른쪽 변 수직, 바탕 · 테두리는 키트 [DiagonalRowLook] `.row`)다.
+// FE7-f: A3 단계(성작 ★n · 전용무기 단계)와 A4 점(학교 · 역할)을 고르면 같은 틀이다. 머리는 "성작 ★3" · "<학교>",
+// 부제 "A3에서 고른 단계 · 낮은 항목 순" · "A4에서 고른 학교 · 낮은 항목 순", 행 칩은 A1과 같은 "낮음" 칩, 요약은 A3
+// "단계 요약"(A1 구간 요약과 같은 세 줄) · A4 "학교 요약"(보유율 n% · 보유 / 학생 목록, 평균 육성도, 계획 등록)이다.
 // 원본 탭 이동(아래 버튼 · 학생 탭 임시 목록)은 FE7-d(`statistics_page.dart`)다. 펼친 목록 · "모두 보기" 버튼은 재화 근거
 // "외 n종 · 외 n명"(FE7-d)도 같이 쓴다([statisticsEvidenceList] · [StatisticsEvidenceMoreButton]).
 import 'dart:math' as math;
@@ -13,6 +16,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../statistics/statistics_breakdown_projection.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
@@ -23,6 +27,7 @@ import '../kit/portrait_strip.dart';
 import '../kit/scroll_viewport_fog.dart';
 import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
+import 'statistics_breakdown_charts.dart' show statisticsGroupLabel;
 
 /// 성장 주제에서 고른 것.
 @immutable
@@ -61,6 +66,34 @@ final class StatisticsGrowthItemSelection extends StatisticsGrowthSelection {
   int get hashCode => item.hashCode;
 }
 
+/// A3 단계(FE7-f).
+final class StatisticsGrowthStarSelection extends StatisticsGrowthSelection {
+  const StatisticsGrowthStarSelection(this.step);
+
+  final StatisticsStarStep step;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatisticsGrowthStarSelection && other.step == step;
+
+  @override
+  int get hashCode => step.hashCode;
+}
+
+/// A4 점(학교 · 역할, FE7-f).
+final class StatisticsGrowthGroupSelection extends StatisticsGrowthSelection {
+  const StatisticsGrowthGroupSelection(this.group);
+
+  final StatisticsGroupSelection group;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatisticsGrowthGroupSelection && other.group == group;
+
+  @override
+  int get hashCode => group.hashCode;
+}
+
 /// 성장 주제 화면 상태(페이지가 들고 있다)와 바꾸는 콜백.
 @immutable
 class StatisticsGrowthView {
@@ -72,10 +105,20 @@ class StatisticsGrowthView {
     this.onMetricChanged,
     this.onSelectionChanged,
     this.onExpand,
+    this.breakdown,
+    this.a4Group = StatisticsA4Group.school,
+    this.onA4GroupChanged,
   });
 
   /// 읽지 못했으면 null(KPI · 그래프 '—').
   final StatisticsGrowth? growth;
+
+  /// A3 · A4 값([growth]와 같은 학생, FE7-f). 없으면 두 타일이 '—'다.
+  final StatisticsGrowthBreakdown? breakdown;
+
+  /// A4 seg와 바꾸는 콜백(FE7-f).
+  final StatisticsA4Group a4Group;
+  final ValueChanged<StatisticsA4Group>? onA4GroupChanged;
 
   /// A1 seg.
   final StatisticsGrowthMetric metric;
@@ -94,26 +137,44 @@ class StatisticsGrowthView {
     if (growth == null || selection == null) return null;
     switch (selection) {
       case StatisticsGrowthBinSelection(:final metric, :final bin):
-        final students = growth.binStudents(metric, bin);
-        final summary = StatisticsGrowthSummary.of(students);
-        final lowest = summary.lowestItem;
-        return StatisticsGrowthEvidenceContent(
+        return _rangeEvidence(
           title: '${metric.label} ${statisticsGrowthBinLabel(bin)}',
           subtitle: 'A1에서 고른 구간 · 낮은 항목 순',
-          students: students,
-          chipOf: (student) {
-            final flag = student.flag;
-            return flag == null ? null : (flag.label, AppTones.warn);
-          },
+          students: growth.binStudents(metric, bin),
           summaryTitle: '구간 요약',
+        );
+      case StatisticsGrowthStarSelection(:final step):
+        final students = breakdown?.stars.of(step.kind)[step.index];
+        if (students == null) return null;
+        return _rangeEvidence(
+          title: step.kind.titleOf(step.index),
+          subtitle: 'A3에서 고른 단계 · 낮은 항목 순',
+          students: students,
+          summaryTitle: '단계 요약',
+        );
+      case StatisticsGrowthGroupSelection(:final group):
+        final point = breakdown?.comparison(group.group)[group.value];
+        if (point == null) return null;
+        final summary = StatisticsGrowthSummary.of(point.students);
+        final ratio = point.ownedRatio;
+        final average = point.averageGrowth;
+        return StatisticsGrowthEvidenceContent(
+          title: statisticsGroupLabel(group.group, group.value),
+          subtitle: 'A4에서 고른 ${group.group.label} · 낮은 항목 순',
+          students: point.students,
+          chipOf: _flagChip,
+          summaryTitle: '${group.group.label} 요약',
           summary: [
-            ('level', '평균 레벨', _levelText(summary.averageLevel)),
             (
-              'lowest',
-              '가장 낮은 항목',
-              lowest == null
-                  ? '—'
-                  : '${lowest.item.label} ${statisticsPercentText(lowest.value)}',
+              'ratio',
+              '보유율',
+              '${ratio == null ? '—' : statisticsPercentText(ratio)} · '
+                  '${point.ownedCount} / ${point.catalogCount}명',
+            ),
+            (
+              'growth',
+              '평균 육성도',
+              average == null ? '—' : statisticsPercentText(average),
             ),
             ('planned', '계획 등록', '${summary.plannedCount}명'),
           ],
@@ -149,6 +210,41 @@ class StatisticsGrowthView {
         );
     }
   }
+}
+
+/// A1 구간 · A3 단계 근거: "낮음" 칩 + 요약(평균 레벨 · 가장 낮은 항목 · 계획 등록).
+StatisticsGrowthEvidenceContent _rangeEvidence({
+  required String title,
+  required String subtitle,
+  required List<StatisticsStudentGrowth> students,
+  required String summaryTitle,
+}) {
+  final summary = StatisticsGrowthSummary.of(students);
+  final lowest = summary.lowestItem;
+  return StatisticsGrowthEvidenceContent(
+    title: title,
+    subtitle: subtitle,
+    students: students,
+    chipOf: _flagChip,
+    summaryTitle: summaryTitle,
+    summary: [
+      ('level', '평균 레벨', _levelText(summary.averageLevel)),
+      (
+        'lowest',
+        '가장 낮은 항목',
+        lowest == null
+            ? '—'
+            : '${lowest.item.label} ${statisticsPercentText(lowest.value)}',
+      ),
+      ('planned', '계획 등록', '${summary.plannedCount}명'),
+    ],
+  );
+}
+
+/// 근거 행 "낮음" 칩(FD-029).
+(String, AppTone)? _flagChip(StatisticsStudentGrowth student) {
+  final flag = student.flag;
+  return flag == null ? null : (flag.label, AppTones.warn);
 }
 
 String _levelText(double? value) => value == null ? '—' : '${value.round()}';

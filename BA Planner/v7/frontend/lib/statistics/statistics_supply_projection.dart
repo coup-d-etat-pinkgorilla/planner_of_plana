@@ -13,6 +13,10 @@
 // - C1 "부족 큰 순": 보유 / 필요(넘치면 1보다 큼) 작은 순 → 영향 학생 많은 순 → 카탈로그 순서, 보유 모름은 뒤. 다섯 행.
 // - C2: 보유를 아는 계획 재화마다 (충족률, 영향 학생 수 = `affectedStudentIds.length`). 세로축 최대 = 가장 많은 학생 수 + 1
 //   (최소 4). "먼저 볼 병목" 구역 = 충족률 50% 미만 · 학생 3명 이상(시안 구역 (41, 10)–(241.8, 131.2), 축 최대 8).
+// - B2 부족 · 과잉(FE7-f): 보유를 아는 계획 재화 중 모자라는 것(보유 < 필요)과 과잉(FD-040, 인벤토리 탭과 같은
+//   `InventoryItemView.excess` — 보유 ≥ 필요 × 1.5)만 행이다. 값 = (보유 − 필요) / 필요(재화마다 따로, FD-033). 넉넉하지만
+//   과잉이 아닌 재화(1~1.5배)와 보유를 모르는 재화는 행이 없다. "부족 순" = 값 작은 순, "과잉 순" = 값 큰 순(같으면 영향
+//   학생 많은 순 → 카탈로그 순서), 여섯 행.
 // - 계획 KPI: 첫 부족 · 막힌 학생(FD-034) · C1 "페이즈 순"은 활성 문서 계산이 있어야 해 `statistics_plan_projection.dart`
 //   (FE7-g)가 만든다. 미계획 · 40% 미만 = 보유했지만 목표가 없고 육성도(FD-028)를 아는 학생 중 40% 미만.
 import 'dart:math' as math;
@@ -53,6 +57,9 @@ const statisticsC2ZoneFill = 0.5;
 
 /// C2 "먼저 볼 병목" 구역: 영향 학생 이 수 이상.
 const statisticsC2ZoneStudents = 3;
+
+/// B2 행 수(시안 여섯 행).
+const statisticsB2RowCount = 6;
 
 /// 미계획 학생 KPI의 육성도 기준(시안 "미계획 · 40% 미만").
 const statisticsUnplannedLowGrowth = 0.4;
@@ -261,6 +268,51 @@ class StatisticsSupply {
     }
     return null;
   }
+}
+
+/// B2 seg(시안 "부족 순 · 과잉 순").
+enum StatisticsB2Order {
+  shortage('부족 순'),
+  excess('과잉 순');
+
+  const StatisticsB2Order(this.label);
+
+  final String label;
+}
+
+/// B2 행 하나.
+@immutable
+class StatisticsBalanceRow {
+  const StatisticsBalanceRow({required this.view, required this.ratio});
+
+  final InventoryItemView view;
+
+  /// (보유 − 필요) / 필요. 모자라면 −1 이상 0 미만, 과잉(FD-040)이면 0.5 이상.
+  final double ratio;
+
+  bool get excess => ratio > 0;
+}
+
+/// B2 행([order] 순, 최대 [statisticsB2RowCount]). 부족 = 보유를 알고 모자람, 과잉 = 인벤토리 탭과 같은 FD-040 판정.
+List<StatisticsBalanceRow> statisticsB2Rows(
+  StatisticsSupply supply,
+  StatisticsB2Order order,
+) {
+  final rows = [
+    for (final view in supply.planned)
+      if (view.knownShortage || view.excess)
+        if (statisticsSupplyRatio(view) case final ratio?)
+          StatisticsBalanceRow(view: view, ratio: ratio - 1),
+  ];
+  rows.sort((a, b) {
+    final value = order == StatisticsB2Order.shortage
+        ? a.ratio.compareTo(b.ratio)
+        : b.ratio.compareTo(a.ratio);
+    if (value != 0) return value;
+    final students = b.view.studentCount.compareTo(a.view.studentCount);
+    return students != 0 ? students : a.view.order.compareTo(b.view.order);
+  });
+  return rows.take(statisticsB2RowCount).toList(growable: false);
 }
 
 /// 미계획 · 육성도 40% 미만 학생 수(보유 · 목표 없음 · 육성도를 아는 학생). 성장 자료가 없으면 null.

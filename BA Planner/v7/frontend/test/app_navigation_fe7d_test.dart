@@ -6,6 +6,7 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
+import 'package:ba_planner_v7/statistics/statistics_goal_projection.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/inventory/inventory_analysis.dart';
 import 'package:ba_planner_v7/ui/inventory/inventory_controller.dart';
@@ -17,6 +18,7 @@ import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/navigation/app_navigation_intent.dart';
 import 'package:ba_planner_v7/ui/pages/inventory_page.dart';
 import 'package:ba_planner_v7/ui/pages/statistics_page.dart';
+import 'package:ba_planner_v7/ui/statistics/statistics_balance_charts.dart';
 import 'package:ba_planner_v7/ui/statistics/statistics_growth_charts.dart';
 import 'package:ba_planner_v7/ui/statistics/statistics_supply_charts.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
@@ -641,6 +643,45 @@ void main() {
       find.byKey(ValueKey('statistics-evidence-stage-$stage')),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shell: C4 "계획 만들기 2 · 목표 정하기" opens goals on the student', (
+    tester,
+  ) async {
+    // FE7-f: 통계 C4 행 → 활성 계획 편집 흐름 2단계(목표 정하기)에서 그 학생(계산기 넘기기와 같은 초점).
+    await tester.binding.setSurfaceSize(const Size(2560, 1392));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _StatisticsService(supply: true);
+    addTearDown(service.dispose);
+    await tester.pumpWidget(BAPlannerApp(service: service));
+    await tester.pumpAndSettle();
+    await _tapKey(tester, 'top-tab-statistics');
+    await _tapKey(tester, 'statistics-topic-plan');
+    final first = StatisticsGoalProgressSet.of(
+      state: statisticsSupplyFixtureState(),
+      catalog: statisticsGrowthFixtureCatalog(),
+    ).rows.first;
+    await tester.tapAt(
+      _chartPoint(
+        tester,
+        'statistics-c4-chart',
+        statisticsC4ViewBox,
+        Offset(200, StatisticsC4Geometry.yOf(0)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(statisticsGoalActionLabel), findsOneWidget);
+    await _tapKey(tester, 'statistics-evidence-primary');
+
+    final workspace = tester.widget<PlanFlowWorkspace>(
+      find.byType(PlanFlowWorkspace),
+    );
+    expect(workspace.flow.purpose, PlanFlowPurpose.editActivePlan);
+    expect(workspace.flow.step, PlanFlowStep.goals);
+    expect(workspace.flow.goalFocusStudentId, first.studentId);
+    expect(workspace.flow.goalSeed?.studentId, first.studentId);
+    expect(_inside('page-header-return-chip', '← 통계'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -265,7 +265,8 @@ void main() {
       tester.getSize(find.byKey(const ValueKey('statistics-tile-A6'))).height,
       closeTo(368, 0.5),
     );
-    expect(find.text(statisticsTilePendingText), findsNWidgets(3));
+    // A5만 "준비 중"이다(A3 · A4는 FE7-f 그래프).
+    expect(find.text(statisticsTilePendingText), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -301,7 +302,8 @@ void main() {
       300,
     ]);
     expect(painter.panels.first.points, hasLength(6));
-    expect(find.text(statisticsTilePendingText), findsOneWidget);
+    // B2도 FE7-f 그래프라 인벤토리 주제에 "준비 중"이 없다.
+    expect(find.text(statisticsTilePendingText), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

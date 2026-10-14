@@ -263,8 +263,8 @@ void main() {
     final tile = tester.getRect(find.byKey(const ValueKey('statistics-tile-C3')));
     expect(chart.top, greaterThan(tile.top));
     expect(chart.bottom, lessThan(tile.bottom));
-    // C4 · C5만 "준비 중"(FD-106).
-    expect(find.text(statisticsTilePendingText), findsNWidgets(2));
+    // C5만 "준비 중"(FD-106, C4는 FE7-f 그래프).
+    expect(find.text(statisticsTilePendingText), findsOneWidget);
     expect(_note(tester), statisticsPlanEvidenceEmptyText);
     expect(tester.takeException(), isNull);
   });

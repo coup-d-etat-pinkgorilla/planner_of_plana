@@ -12,7 +12,9 @@
 //   범위 칩 페이즈 수, C1 "페이즈 순", C3 페이즈별 누적 부족을 더한다(FE7-g, `statistics_plan_charts.dart`). FE7-h는 이력으로
 //   KPI 증감("지난 스냅샷 대비", 모르면 회색 '—'), A6 성장 추이 · B3 주요 재화 변화(seg 동작)를 그린다
 //   (`statistics_history_charts.dart`). 스냅샷이 2회 미만이면 그 타일 안에 확정 4 문구고(FD-106), 그 줄 타일이 모두 그래프가
-//   없으면 줄을 시안대로 낮춘다(FD-109). 다른 타일은 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면
+//   없으면 줄을 시안대로 낮춘다(FD-109). FE7-f는 2차 타일 A3 · A4(`statistics_breakdown_charts.dart`, A4 seg 학교 · 역할,
+//   통계 필터로 고른 seg 값이 하나 이하면 빈 상태 — FE7-e 발견 3) · B2 · C4(`statistics_balance_charts.dart`, B2 seg 부족 순 ·
+//   과잉 순)를 그린다. 나머지(A5 · C5)는 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면
 //   그래프 타일 안에 빈 상태 문구다.
 //   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
 // - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d: 고른 구간 · 재화가 있으면
@@ -26,6 +28,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../statistics/statistics_breakdown_projection.dart';
 import '../../statistics/statistics_growth_filter.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart';
@@ -49,6 +52,8 @@ import '../studio/statistics_studio_layout.dart';
 import '../widgets/plan_scenario_preview.dart' show planScenarioBottleneckValue;
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
+import 'statistics_balance_charts.dart';
+import 'statistics_breakdown_charts.dart';
 import 'statistics_growth_charts.dart';
 import 'statistics_growth_evidence.dart';
 import 'statistics_history_charts.dart';
@@ -62,9 +67,9 @@ import 'statistics_topics.dart';
 /// 근거 패널 빈 상태(구간을 아직 고르지 않음).
 const statisticsEvidenceEmptyText = '구간을 고르면 근거가 보입니다.';
 
-/// 인벤토리 현황 · 계획 집계 근거 패널 빈 상태(FE7-c, 시안 없음 — 고르는 그래프 이름을 쓴다).
-const statisticsInventoryEvidenceEmptyText = 'B1 막대를 고르면 근거가 보입니다.';
-const statisticsPlanEvidenceEmptyText = 'C1 행이나 C2 점을 고르면 근거가 보입니다.';
+/// 인벤토리 현황 · 계획 집계 근거 패널 빈 상태(FE7-c, 시안 없음 — 고르는 그래프 이름을 쓴다. FE7-f: B2 · C4를 더함).
+const statisticsInventoryEvidenceEmptyText = 'B1 막대나 B2 행을 고르면 근거가 보입니다.';
+const statisticsPlanEvidenceEmptyText = 'C1 행 · C2 점 · C4 행을 고르면 근거가 보입니다.';
 
 /// B1 · C1 · C2 빈 상태: 저장된 계획(사용자 목표)이 없다(시안에 없는 문구, FE7-c가 정함).
 const statisticsSupplyNoPlanText = '저장된 계획이 없습니다. 계획에 목표를 저장하면 나타납니다.';
@@ -1156,7 +1161,12 @@ class _TopicViewportState extends State<_TopicViewport> {
     final rows = widget.mode.rows;
     for (var index = 0; index < row && index < rows.length; index++) {
       offset +=
-          statisticsRowHeight(rows[index], widget.history) * scale +
+          statisticsRowHeight(
+            rows[index],
+            widget.history,
+            a4Chart: _a4Chart,
+          ) *
+              scale +
           StatisticsMetrics.rowGap;
     }
     _controller.animateTo(
@@ -1168,12 +1178,30 @@ class _TopicViewportState extends State<_TopicViewport> {
     );
   }
 
+  /// A4가 비교할 고른 seg 값이 하나 이하다(통계 필터가 걸렸을 때, 시안 Stats-Growth-Filter 빈 상태, FE7-e 발견 3).
+  bool get _a4Single {
+    final filter = widget.filter;
+    final breakdown = widget.growth.breakdown;
+    if (filter == null || !filter.filtered || breakdown == null) return false;
+    return breakdown.comparison(widget.growth.a4Group).valueCount <= 1;
+  }
+
+  /// A4가 산점도를 그린다(FD-109 줄 높이 판정).
+  bool get _a4Chart {
+    final breakdown = widget.growth.breakdown;
+    return widget.mode == StatisticsMode.students &&
+        breakdown != null &&
+        !_a4Single &&
+        breakdown.comparison(widget.growth.a4Group).points.isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     final mode = widget.mode;
     final geometry = widget.geometry;
     final rows = mode.rows;
     final scale = statisticsTileScale(geometry.rect.width);
+    final a4Chart = _a4Chart;
     // 행: KPI 띠, 타일 줄들, 마지막 줄 아래 여백을 시안(32)에 맞추는 빈 행.
     final spacer =
         StatisticsMetrics.contentBottom -
@@ -1182,7 +1210,12 @@ class _TopicViewportState extends State<_TopicViewport> {
     double heightOf(int index) {
       if (index == 0) return StatisticsMetrics.kpiHeight;
       if (index > rows.length) return spacer;
-      return statisticsRowHeight(rows[index - 1], widget.history) * scale;
+      return statisticsRowHeight(
+            rows[index - 1],
+            widget.history,
+            a4Chart: a4Chart,
+          ) *
+          scale;
     }
 
     final growth = mode == StatisticsMode.students ? widget.growth : null;
@@ -1235,7 +1268,9 @@ class _TopicViewportState extends State<_TopicViewport> {
           supplyEmpty: supply == null
               ? null
               : statisticsSupplyEmptyText(widget.data, supply),
-          singleGroup: growth != null && (widget.filter?.singleGroup ?? false),
+          singleGroup: growth != null && _a4Single,
+          goals: mode == StatisticsMode.plan ? widget.supply : null,
+          loading: widget.data.loading,
         );
       },
     );
@@ -1427,20 +1462,41 @@ String? statisticsSupplyEmptyText(
 }
 
 /// 타일 줄 높이(기준 viewport). 줄에 짧은 높이가 있고(FD-109) 줄의 타일이 모두 그래프 없이 빈 상태 · "준비 중"이면 그
-/// 높이다. 지금 그런 줄은 A4 · A6뿐이다: A4는 "준비 중"(FE7-f 전), A6은 스냅샷 2회 미만 문구일 때(시안 Stats-Growth-Filter).
-double statisticsRowHeight(StatisticsTileRow row, StatisticsHistoryView history) {
+/// 높이다. 지금 그런 줄은 A4 · A6뿐이다: A4는 산점도를 그리지 않을 때([a4Chart]가 false — 통계 필터로 고른 seg 값이 하나
+/// 이하인 빈 상태 · 읽는 중 · 점 없음, FE7-f), A6은 스냅샷 2회 미만 문구일 때(시안 Stats-Growth-Filter). A4가 그래프면
+/// 줄은 다시 368이다(FD-109).
+double statisticsRowHeight(
+  StatisticsTileRow row,
+  StatisticsHistoryView history, {
+  bool a4Chart = true,
+}) {
   final short = row.shortHeight;
   if (short == null) return row.height;
   final empty = row.tiles.every(
-    (tile) => tile.id == 'A6'
-        ? history.growthTrendShort
-        : !_chartTileIds.contains(tile.id),
+    (tile) => switch (tile.id) {
+      'A6' => history.growthTrendShort,
+      'A4' => !a4Chart,
+      _ => !_chartTileIds.contains(tile.id),
+    },
   );
   return empty ? short : row.height;
 }
 
-/// 그래프를 그리는 타일(나머지는 "준비 중").
-const _chartTileIds = {'A1', 'A2', 'A6', 'B1', 'B3', 'C1', 'C2', 'C3'};
+/// 그래프를 그리는 타일(나머지 A5 · C5는 "준비 중", FE7-i).
+const _chartTileIds = {
+  'A1',
+  'A2',
+  'A3',
+  'A4',
+  'A6',
+  'B1',
+  'B2',
+  'B3',
+  'C1',
+  'C2',
+  'C3',
+  'C4',
+};
 
 /// KPI 띠: 다섯 칸. [onPressed]가 있으면 칸을 누를 수 있다(누른 칸 순번).
 class _KpiBand extends StatelessWidget {
@@ -1536,14 +1592,22 @@ class _TileRow extends StatelessWidget {
     this.supply,
     this.supplyEmpty,
     this.singleGroup = false,
+    this.goals,
+    this.loading = false,
   });
 
   final StatisticsTileRow row;
   final double height;
   final StatisticsHistoryView history;
 
-  /// 통계 필터로 A4가 비교할 학교가 하나뿐이다(FE7-e).
+  /// 통계 필터로 A4가 비교할 고른 seg 값이 하나뿐이다(FE7-e · FE7-f).
   final bool singleGroup;
+
+  /// 계획 집계 C4(FE7-f): 부족 계산과 상관없이 그린다(학생 목표만 쓴다). 계획 주제가 아니면 null.
+  final StatisticsSupplyView? goals;
+
+  /// 원천 자료를 읽는 중이다(C4 '—').
+  final bool loading;
 
   /// 학생 성장 주제일 때만 있다.
   final StatisticsGrowthView? growth;
@@ -1578,6 +1642,8 @@ class _TileRow extends StatelessWidget {
                 supply: supply,
                 supplyEmpty: supplyEmpty,
                 singleGroup: singleGroup,
+                goals: goals,
+                loading: loading,
               ),
             ),
         ],
@@ -1586,8 +1652,9 @@ class _TileRow extends StatelessWidget {
   );
 }
 
-/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2(FE7-b) · A6(FE7-h), 인벤토리의
-/// B1(FE7-c) · B3(FE7-h), 계획의 C1 · C2(FE7-c) · C3(FE7-g)는 그래프, 나머지는 "준비 중"이다.
+/// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2(FE7-b) · A3 · A4(FE7-f) ·
+/// A6(FE7-h), 인벤토리의 B1(FE7-c) · B2(FE7-f) · B3(FE7-h), 계획의 C1 · C2(FE7-c) · C3(FE7-g) · C4(FE7-f)는 그래프, 나머지는
+/// "준비 중"이다.
 class _StatisticsTile extends StatelessWidget {
   const _StatisticsTile({
     super.key,
@@ -1598,13 +1665,19 @@ class _StatisticsTile extends StatelessWidget {
     this.supply,
     this.supplyEmpty,
     this.singleGroup = false,
+    this.goals,
+    this.loading = false,
   });
 
   final StatisticsTileSpec tile;
   final double height;
 
-  /// 통계 필터로 비교할 학교가 하나뿐이다(A4 빈 상태, FE7-e).
+  /// 통계 필터로 비교할 고른 seg 값이 하나뿐이다(A4 빈 상태, FE7-e · FE7-f).
   final bool singleGroup;
+
+  /// 계획 집계 C4(FE7-f).
+  final StatisticsSupplyView? goals;
+  final bool loading;
 
   /// 이력(A6 · B3, FE7-h).
   final StatisticsHistoryView history;
@@ -1645,6 +1718,16 @@ class _StatisticsTile extends StatelessWidget {
         supply != null &&
         history.resourceTrends != null &&
         onB3RangeChanged != null;
+    // A4 seg(학교 · 역할)는 성장 자료가 있으면 동작한다(FE7-f). 빈 상태에서도 바꿔 볼 수 있다(역할은 여럿일 수 있다).
+    final onA4GroupChanged = growth?.onA4GroupChanged;
+    final groupSeg =
+        tile.id == 'A4' &&
+        growth?.breakdown != null &&
+        onA4GroupChanged != null;
+    // B2 seg(부족 순 · 과잉 순)는 부족 계산이 있으면 동작한다(FE7-f).
+    final onB2OrderChanged = supply?.onB2OrderChanged;
+    final balanceSeg =
+        tile.id == 'B2' && supply?.supply != null && onB2OrderChanged != null;
     final Widget body;
     if (growth != null && tile.id == 'A4' && singleGroup) {
       body = _chart(
@@ -1652,6 +1735,12 @@ class _StatisticsTile extends StatelessWidget {
           key: ValueKey('statistics-tile-A4-single'),
         ),
       );
+    } else if (growth != null && (tile.id == 'A3' || tile.id == 'A4')) {
+      body = _breakdownBody(growth);
+    } else if (tile.id == 'C4' && goals != null) {
+      body = _goalBody(goals!);
+    } else if (supply != null && tile.id == 'B2') {
+      body = _balanceBody(supply);
     } else if (growth != null && tile.id == 'A6') {
       body = _a6Body();
     } else if (supply != null && tile.id == 'B3') {
@@ -1686,6 +1775,10 @@ class _StatisticsTile extends StatelessWidget {
                   ? supply!.effectiveC1Order.index
                   : rangeSeg
                   ? history.b3Range.index
+                  : groupSeg
+                  ? growth!.a4Group.index
+                  : balanceSeg
+                  ? supply!.b2Order.index
                   : 0,
               onSegmentChanged: metricSeg && onMetricChanged != null
                   ? (index) =>
@@ -1695,6 +1788,11 @@ class _StatisticsTile extends StatelessWidget {
                         onC1OrderChanged?.call(StatisticsC1Order.values[index])
                   : rangeSeg
                   ? (index) => onB3RangeChanged(StatisticsB3Range.values[index])
+                  : groupSeg
+                  ? (index) => onA4GroupChanged(StatisticsA4Group.values[index])
+                  : balanceSeg
+                  ? (index) =>
+                        onB2OrderChanged(StatisticsB2Order.values[index])
                   : null,
               disabledSegments: orderSeg && !phaseOrder ? const {1} : const {},
             ),
@@ -1809,6 +1907,109 @@ class _StatisticsTile extends StatelessWidget {
   }
 
   Widget _c3Body(StatisticsSupplyView view) => _c3BodyFor(view, _empty, _chart);
+
+  /// A3 · A4 내용(FE7-f). 자료가 없으면 '—', 보유 학생 0이면 A1과 같은 빈 상태, 값을 아는 학생이 없으면 그 문구다.
+  Widget _breakdownBody(StatisticsGrowthView view) {
+    final data = view.growth;
+    final breakdown = view.breakdown;
+    if (data == null || breakdown == null) return _empty('—');
+    if (data.ownedCount == 0) return _empty(statisticsGrowthNoStudentsText);
+    final selection = view.selection;
+    final onSelectionChanged = view.onSelectionChanged;
+    if (tile.id == 'A3') {
+      final stars = breakdown.stars;
+      if (stars.isEmpty) {
+        return _empty(
+          statisticsGrowthNoKnownText(
+            StatisticsStarKind.star.label,
+            data.ownedCount,
+          ),
+        );
+      }
+      return _chart(
+        StatisticsStarDistributionChart(
+          data: stars,
+          selected: switch (selection) {
+            StatisticsGrowthStarSelection(:final step) => step,
+            _ => null,
+          },
+          onStepSelected: (step) => onSelectionChanged?.call(
+            step == null ? null : StatisticsGrowthStarSelection(step),
+          ),
+        ),
+      );
+    }
+    final group = view.a4Group;
+    final comparison = breakdown.comparison(group);
+    if (comparison.points.isEmpty) {
+      // 그룹 값(학교 · 역할)을 아는 학생이 없으면 그 이름, 있지만 육성도를 모르면 육성도다.
+      return _empty(
+        statisticsGrowthNoKnownText(
+          comparison.groups.isEmpty
+              ? group.label
+              : StatisticsGrowthMetric.growth.label,
+          data.ownedCount,
+        ),
+      );
+    }
+    return _chart(
+      StatisticsGroupComparisonChart(
+        comparison: comparison,
+        selected: switch (selection) {
+          StatisticsGrowthGroupSelection(:final group)
+              when group.group == comparison.group =>
+            group.value,
+          _ => null,
+        },
+        onGroupSelected: (value) => onSelectionChanged?.call(
+          value == null
+              ? null
+              : StatisticsGrowthGroupSelection(
+                  StatisticsGroupSelection(group, value),
+                ),
+        ),
+      ),
+    );
+  }
+
+  /// B2 내용(FE7-f). 계획이 없거나 계획 재화가 없으면 공통 빈 상태, 모자라거나 과잉인 재화가 없으면 그 문구다.
+  Widget _balanceBody(StatisticsSupplyView view) {
+    final data = view.supply;
+    final common = supplyEmpty;
+    if (data == null || common != null) return _empty(common ?? '—');
+    final rows = view.b2Rows;
+    if (rows.isEmpty) return _empty(statisticsB2NoRowsText);
+    final onSelectionChanged = view.onSelectionChanged;
+    return _chart(
+      StatisticsBalanceChart(
+        rows: rows,
+        unknownKinds: data.planned.where((item) => item.owned == null).length,
+        selectedKey: view.selectedResource(StatisticsResourceSource.b2),
+        onResourceSelected: (key) => onSelectionChanged?.call(
+          key == null
+              ? null
+              : StatisticsResourceSelection(key, StatisticsResourceSource.b2),
+        ),
+      ),
+    );
+  }
+
+  /// C4 내용(FE7-f). 읽는 중 '—', 활성 계획 학생이 없으면 계획 없음 문구다(부족 계산과 상관없다).
+  Widget _goalBody(StatisticsSupplyView view) {
+    final goals = view.goals;
+    if (loading || goals == null) return _empty('—');
+    if (goals.rows.isEmpty) return _empty(statisticsSupplyNoPlanText);
+    final onSelectionChanged = view.onSelectionChanged;
+    return _chart(
+      StatisticsGoalProgressChart(
+        rows: goals.visible,
+        selectedId: view.selectedGoal,
+        onStudentSelected: (id) => onSelectionChanged?.call(
+          id == null ? null : StatisticsGoalSelection(id),
+        ),
+      ),
+    );
+  }
 
   /// B1 · C1 · C2 내용(FE7-c). 계획이 없거나 계획 재화가 없으면 빈 상태 문구, 읽는 중 · 계산 실패면 '—'다(FD-106).
   Widget _supplyBody(StatisticsSupplyView view) {

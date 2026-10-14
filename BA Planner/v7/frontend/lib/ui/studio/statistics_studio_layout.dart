@@ -220,6 +220,15 @@ abstract final class StatisticsMetrics {
   static const evidenceUsersTop = 374.0;
   static const evidenceUserRows = 10;
 
+  /// B2 재화 근거(FE7-f, 시안 Stats-Inventory 오른쪽): "쓰는 학생" 행은 4행까지(시안 (2077.5, 583.2) … (2046.8, 757.2)),
+  /// "최근 변화" 머리(시안 (2057.3, 823.2, 462.7×34)) 위 614, 줄(시안 `.plain` (2029.5, 867.2, 508.5×40) · (2021.7, 911.2))
+  /// 위 658 · 피치 44 · 높이 40. 학생이 넘쳐 "외 n명"이 생기면 그 자리(30 + 6)만큼 내린다.
+  static const evidenceBalanceUserRows = 4;
+  static const evidenceRecentTitleTop = 614.0;
+  static const evidenceRecentTop = 658.0;
+  static const evidenceRecentPitch = 44.0;
+  static const evidenceRecentHeight = 40.0;
+
   /// 계획 집계 재화 근거(FE7-g, 시안 Stats-Plan 오른쪽): "막히는 단계" 머리(시안 (2138.8, 361.2, 381.2×34)) 위 152,
   /// 단계 행(시안 `.row` (2108.8, 405.2, 429.2×52) …) 위 196 · 피치 58 · 4행까지(넘치면 "외 n단계" 30 + 6).
   static const evidenceStagesTitleTop = 152.0;

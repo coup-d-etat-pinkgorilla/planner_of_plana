@@ -85,6 +85,11 @@ class StatisticsStudentGrowth {
     required this.planned,
     required Map<StatisticsGrowthItem, double> items,
     required Set<StatisticsGrowthItem> unknownItems,
+    this.studentStar,
+    this.weaponStar,
+    this.school,
+    this.role,
+    this.combatClass,
   }) : items = Map.unmodifiable(items),
        unknownItems = Set.unmodifiable(unknownItems);
 
@@ -102,6 +107,17 @@ class StatisticsStudentGrowth {
 
   /// 모르는 항목.
   final Set<StatisticsGrowthItem> unknownItems;
+
+  /// 성급(★1~5, A3 · FE7-f). 모르면 null.
+  final int? studentStar;
+
+  /// 전용무기 ★(0 = 없음 · 1~4, A3 · FE7-f). 모르면 null.
+  final int? weaponStar;
+
+  /// 학생 목록의 학교 · 역할 · 편성 코드 값(A3 · A4, FE7-f). 학생 목록에 없거나 값이 없으면 null.
+  final String? school;
+  final String? role;
+  final String? combatClass;
 
   /// 육성도(0~1). 모르는 항목이 있으면 null.
   double? get growth {
@@ -292,12 +308,7 @@ class StatisticsGrowth {
     int bin,
   ) {
     final result = [...histogram(metric).bins[bin]];
-    result.sort((a, b) {
-      final low = (a.lowestTrainable ?? 2).compareTo(b.lowestTrainable ?? 2);
-      if (low != 0) return low;
-      final growth = (a.growth ?? 2).compareTo(b.growth ?? 2);
-      return growth != 0 ? growth : a.studentId.compareTo(b.studentId);
-    });
+    result.sort(statisticsCompareLowItem);
     return result;
   }
 
@@ -348,6 +359,17 @@ class StatisticsGrowthSummary {
 }
 
 const _epsilon = 1e-9;
+
+/// 근거 "낮은 항목 순"(A1 구간 · A3 단계 · A4 그룹): 칩 항목 중 가장 낮은 완성도 → 육성도 → id. 모르는 값은 뒤다.
+int statisticsCompareLowItem(
+  StatisticsStudentGrowth a,
+  StatisticsStudentGrowth b,
+) {
+  final low = (a.lowestTrainable ?? 2).compareTo(b.lowestTrainable ?? 2);
+  if (low != 0) return low;
+  final growth = (a.growth ?? 2).compareTo(b.growth ?? 2);
+  return growth != 0 ? growth : a.studentId.compareTo(b.studentId);
+}
 
 /// 0~1 값의 10% 구간 번호(0~9, 100%는 9).
 int statisticsGrowthBinOf(double value) => math.min(
@@ -417,8 +439,21 @@ StatisticsStudentGrowth statisticsStudentGrowth(
   ConfirmedStudentState student, {
   StudentCatalogEntry? catalog,
   bool planned = false,
+}) => statisticsGrowthOfValues(
+  student.studentId,
+  student.values,
+  catalog: catalog,
+  planned: planned,
+);
+
+/// 값 맵(확정 학생 `values`와 같은 키) 하나의 항목 완성도. C4 목표 육성도(FE7-f)도 목표를 덮어쓴 값 맵으로 같은 식을 쓴다
+/// (FD-028 "목표값에도 같은 공식").
+StatisticsStudentGrowth statisticsGrowthOfValues(
+  String studentId,
+  Map<String, dynamic> values, {
+  StudentCatalogEntry? catalog,
+  bool planned = false,
 }) {
-  final values = student.values;
   final items = <StatisticsGrowthItem, double>{};
   final unknown = <StatisticsGrowthItem>{};
   void put(StatisticsGrowthItem item, double? value) {
@@ -470,13 +505,20 @@ StatisticsStudentGrowth statisticsStudentGrowth(
     statisticsGrowthCompletion('weapon_star', values['weapon_star']),
   );
   final level = values['level'];
+  final star = values['student_star'];
+  final weapon = values['weapon_star'];
   return StatisticsStudentGrowth(
-    studentId: student.studentId,
-    displayName: catalog?.displayName ?? student.studentId,
+    studentId: studentId,
+    displayName: catalog?.displayName ?? studentId,
     level: level is int ? level : null,
     planned: planned,
     items: items,
     unknownItems: unknown,
+    studentStar: star is int ? star : null,
+    weaponStar: weapon is int ? weapon : null,
+    school: catalog?.school,
+    role: catalog?.role,
+    combatClass: catalog?.combatClass,
   );
 }
 

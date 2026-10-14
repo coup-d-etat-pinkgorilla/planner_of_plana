@@ -18,6 +18,16 @@
 // - "외 n종 · 외 n명"(FE7-d, FE7-c 발견 6): 성장 근거 "모두 보기"와 같은 버튼이고, 누르면 그 행 자리와 버튼 자리를 합친 곳에서
 //   모든 재화 · 학생을 세로로 스크롤한다(통계 안 펼침, 다른 탭으로 가지 않는다). 다른 것을 고르면 접힌다. "외 n단계"는
 //   그대로 글자다.
+// - B2 행(FE7-f, 시안 Stats-Inventory 근거 틀 "B2에서 고른 행 · 필요량 대비"): 머리 칩은 C1과 같은 필요량 대비
+//   (−n% 분홍 · +n% 회색), 보유 · 필요(활성 계획) · 부족 세 줄, "쓰는 학생 · 필요량 순" 4행(초상 · 이름 · "Pn · <첫 단계>" ·
+//   필요량, 활성 문서 계산의 단계별 필요량을 학생마다 더함 — 인벤토리 상세와 같은 `inventoryStageUses`) + "외 n명", "최근
+//   변화 · 스캔 n회" 두 줄: "지난 스캔 대비 ±n"(FE6-f 규칙 3 — 그 재화의 마지막 바로 앞 스캔 점 → 지금 보유, 인벤토리 탭
+//   KPI와 같은 지금 − 28일 색인), "이 속도면 n주 뒤 소진 예상"(FE6-f 상세 스파크라인과 같은 함수 · 조건, FD-042 — 조건이
+//   안 되면 줄을 숨긴다. 시안 "P2 이전에 소진"은 페이즈에 시간축이 없어 쓰지 않는다, CF 2026-10-14). 문서 계산이 없으면
+//   학생 행은 FE7-c처럼 이름 · Lv이고 캡션은 "n명"이다.
+// - C4 행(FE7-f): 머리 "<학생>" + 남은 폭 칩("남은 35%p" 분홍, 모르면 '—'), 초상 행(부제 "C4에서 고른 학생 · 현재 →
+//   목표"), 현재 · 목표 육성도 · 남은 폭 세 줄, "항목별 · 현재 → 목표" 항목 행(FD-028 7항목, 애장품 없는 학생은 6). 모르는
+//   값은 '—'다.
 // 원본 탭 이동(아래 두 버튼)은 FE7-d(`statistics_page.dart`)다.
 import 'dart:math' as math;
 
@@ -25,10 +35,15 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../statistics/statistics_goal_projection.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_history_projection.dart'
+    show statisticsSignedAmount;
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../inventory/inventory_history.dart'
+    show InventoryHistory, InventorySparkNote, inventorySparkline;
 import '../inventory/inventory_view_model.dart';
 import '../kit/ba_chip.dart';
 import '../kit/diagonal_row.dart';
@@ -39,8 +54,9 @@ import '../models/planning_resource_assets.dart';
 import '../studio/statistics_studio_layout.dart';
 import 'statistics_growth_evidence.dart';
 
-/// C1 · C2 중 어디서 골랐는가.
+/// B2 · C1 · C2 중 어디서 골랐는가.
 enum StatisticsResourceSource {
+  b2('B2에서 고른 행'),
   c1('C1에서 고른 행'),
   c2('C2에서 고른 병목');
 
@@ -86,6 +102,20 @@ final class StatisticsResourceSelection extends StatisticsSupplySelection {
   int get hashCode => Object.hash(resourceKey, source);
 }
 
+/// C4 학생(FE7-f).
+final class StatisticsGoalSelection extends StatisticsSupplySelection {
+  const StatisticsGoalSelection(this.studentId);
+
+  final String studentId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatisticsGoalSelection && other.studentId == studentId;
+
+  @override
+  int get hashCode => studentId.hashCode;
+}
+
 /// 근거 학생 한 명(이름 · 레벨). 학생 목록에 없으면 이름 = id, 보유하지 않았으면 레벨 null.
 typedef StatisticsEvidenceStudent = ({String id, String name, int? level});
 
@@ -122,7 +152,25 @@ class StatisticsSupplyView {
     this.onC1OrderChanged,
     this.expanded = false,
     this.onExpand,
+    this.b2Order = StatisticsB2Order.shortage,
+    this.onB2OrderChanged,
+    this.goals,
+    this.stageUses,
+    this.recent,
   });
+
+  /// B2 seg(FE7-f)와 바꾸는 콜백.
+  final StatisticsB2Order b2Order;
+  final ValueChanged<StatisticsB2Order>? onB2OrderChanged;
+
+  /// C4 학생별 목표 진행(FE7-f). 계정 상태를 못 읽었으면 null.
+  final StatisticsGoalProgressSet? goals;
+
+  /// 활성 문서 계산의 재화별 사용 단계(B2 근거 "필요량 순", 인벤토리 `inventoryStageUses`). 없으면 null.
+  final Map<String, List<InventoryStageUse>>? stageUses;
+
+  /// B2 근거 "최근 변화"의 이력 색인(지금 − 28일, 인벤토리 탭 KPI와 같은 색인). 읽는 중 · 실패면 null.
+  final InventoryHistory? recent;
 
   /// 부족 계산이 없으면(목표 없음 · 계산 실패 · 읽는 중) null.
   final StatisticsSupply? supply;
@@ -161,6 +209,17 @@ class StatisticsSupplyView {
         : supply.c1Rows;
   }
 
+  /// B2 행(고른 순서, 최대 여섯). 부족 계산이 없으면 빈 목록.
+  List<StatisticsBalanceRow> get b2Rows {
+    final supply = this.supply;
+    return supply == null ? const [] : statisticsB2Rows(supply, b2Order);
+  }
+
+  String? get selectedGoal => switch (selection) {
+    StatisticsGoalSelection(:final studentId) => studentId,
+    _ => null,
+  };
+
   String? get selectedCategory => switch (selection) {
     StatisticsCategorySelection(:final category) => category,
     _ => null,
@@ -178,8 +237,14 @@ class StatisticsSupplyView {
   StatisticsSupplyEvidenceContent? get evidence {
     final supply = this.supply;
     final selection = this.selection;
+    if (selection case StatisticsGoalSelection(:final studentId)) {
+      final row = goals?[studentId];
+      return row == null ? null : _goalEvidence(row);
+    }
     if (supply == null || selection == null) return null;
     switch (selection) {
+      case StatisticsGoalSelection():
+        return null;
       case StatisticsCategorySelection(:final category):
         final fill = supply.category(category);
         if (fill == null) return null;
@@ -217,6 +282,7 @@ class StatisticsSupplyView {
         final ids = view.shortage?.affectedStudentIds ?? const <String>[];
         final fulfillment = view.fulfillment;
         final subtitle = switch (source) {
+          StatisticsResourceSource.b2 ||
           StatisticsResourceSource.c1 => '${source.label} · 필요량 대비',
           StatisticsResourceSource.c2 =>
             '${source.label} · 충족률 ${statisticsFillText(fulfillment)} · '
@@ -225,6 +291,9 @@ class StatisticsSupplyView {
         final users = [
           for (final id in ids) students[id] ?? (id: id, name: id, level: null),
         ];
+        if (source == StatisticsResourceSource.b2) {
+          return _balanceEvidence(view, subtitle, users);
+        }
         // 활성 문서 계산에서 이 재화가 모자라는 단계가 있으면 시안 Stats-Plan 근거 틀(FE7-g).
         final stages = planning?.blockingStages(resourceKey) ?? const [];
         if (stages.isNotEmpty) {
@@ -247,31 +316,161 @@ class StatisticsSupplyView {
             ],
           );
         }
-        final shortage = view.shortageAmount;
         return StatisticsSupplyEvidenceContent.resource(
           title: view.item.displayName,
           chip: _ratioChip(statisticsSupplyRatio(view)),
           subtitle: subtitle,
           resource: view,
-          facts: [
-            ('owned', '보유', statisticsAmountText(view.owned), null),
-            (
-              'required',
-              '필요 (활성 계획)',
-              statisticsAmountText(view.requiredAmount),
-              null,
-            ),
-            (
-              'shortage',
-              '부족',
-              statisticsAmountText(shortage),
-              (shortage ?? 0) > 0 ? AppColors.accent : null,
-            ),
-          ],
+          facts: _resourceFacts(view),
           students: users,
         );
     }
   }
+
+  /// B2 행 근거(FE7-f): FE7-c 틀 + 필요량 순 학생 + 최근 변화.
+  StatisticsSupplyEvidenceContent _balanceEvidence(
+    InventoryItemView view,
+    String subtitle,
+    List<StatisticsEvidenceStudent> users,
+  ) {
+    // 문서 계산이 있으면 "필요량 순"이다(이 재화를 쓰는 단계가 없으면 영향 학생만, 필요량 '—').
+    final uses = stageUses;
+    return StatisticsSupplyEvidenceContent.resource(
+      title: view.item.displayName,
+      chip: _ratioChip(statisticsSupplyRatio(view)),
+      subtitle: subtitle,
+      resource: view,
+      facts: _resourceFacts(view),
+      students: users,
+      users: uses == null
+          ? null
+          : statisticsResourceUsers(
+              uses[view.key] ?? const [],
+              users,
+              students,
+            ),
+      recent: statisticsRecentChange(recent, view),
+    );
+  }
+
+  /// C4 학생 근거(FE7-f).
+  StatisticsSupplyEvidenceContent _goalEvidence(StatisticsGoalProgress row) {
+    final remaining = row.remaining;
+    return StatisticsSupplyEvidenceContent.goal(
+      title: row.displayName,
+      chip: remaining == null
+          ? ('—', AppTones.gray)
+          : ('남은 ${statisticsPercentPoints(remaining)}', AppTones.pink),
+      subtitle: 'C4에서 고른 학생 · 현재 → 목표',
+      goal: row,
+    );
+  }
+}
+
+/// 보유 · 필요(활성 계획) · 부족 세 줄(FE7-c 재화 근거).
+List<(String, String, String, Color?)> _resourceFacts(InventoryItemView view) {
+  final shortage = view.shortageAmount;
+  return [
+    ('owned', '보유', statisticsAmountText(view.owned), null),
+    (
+      'required',
+      '필요 (활성 계획)',
+      statisticsAmountText(view.requiredAmount),
+      null,
+    ),
+    (
+      'shortage',
+      '부족',
+      statisticsAmountText(shortage),
+      (shortage ?? 0) > 0 ? AppColors.accent : null,
+    ),
+  ];
+}
+
+/// 퍼센트포인트 글자("35%p", 반올림 정수).
+String statisticsPercentPoints(double fraction) =>
+    '${(fraction * 100).round()}%p';
+
+/// B2 근거 "쓰는 학생 · 필요량 순" 한 행: 학생 · 첫 단계 글자("P2 · 스킬 M") · 이 재화 필요량(학생의 단계 합). 문서
+/// 계산에 단계가 없는 학생은 글자 · 필요량이 null이다.
+typedef StatisticsResourceUser = ({
+  StatisticsEvidenceStudent student,
+  String? detail,
+  int? amount,
+});
+
+/// 재화 [uses](활성 문서 계산 단계별 사용)로 학생별 필요량을 더해 많은 순(→ 첫 페이즈 → id)으로 놓는다. 부족 계산의 영향
+/// 학생([affected]) 중 문서에 단계가 없는 학생은 뒤에 붙인다(필요량 '—'). 학생 이름 · 레벨은 [students]에서 찾는다.
+List<StatisticsResourceUser> statisticsResourceUsers(
+  List<InventoryStageUse> uses,
+  List<StatisticsEvidenceStudent> affected,
+  Map<String, StatisticsEvidenceStudent> students,
+) {
+  final totals = <String, int>{};
+  final first = <String, InventoryStageUse>{};
+  for (final use in uses) {
+    totals[use.studentId] = (totals[use.studentId] ?? 0) + use.requiredAmount;
+    first.putIfAbsent(use.studentId, () => use);
+  }
+  final ordered = totals.keys.toList()
+    ..sort((a, b) {
+      final amount = totals[b]!.compareTo(totals[a]!);
+      if (amount != 0) return amount;
+      final phase = first[a]!.phaseNumber.compareTo(first[b]!.phaseNumber);
+      return phase != 0 ? phase : a.compareTo(b);
+    });
+  return [
+    for (final id in ordered)
+      (
+        student: students[id] ?? (id: id, name: id, level: null),
+        detail: 'P${first[id]!.phaseNumber} · ${first[id]!.stageName}',
+        amount: totals[id],
+      ),
+    for (final student in affected)
+      if (!totals.containsKey(student.id))
+        (student: student, detail: null, amount: null),
+  ];
+}
+
+/// B2 근거 "최근 변화"(FE7-f). 모르는 값은 null('—').
+@immutable
+class StatisticsRecentChange {
+  const StatisticsRecentChange({
+    this.scanCount,
+    this.sinceLastScan,
+    this.depletionWeeks,
+  });
+
+  /// 읽는 기간(4주) 안에서 이 재화를 본 스캔 수(묶음, FD-175). 이력을 못 읽었으면 null.
+  final int? scanCount;
+
+  /// 지난 스캔(마지막 바로 앞 스캔 점) → 지금 보유 차. 비교할 수 없으면 null.
+  final int? sinceLastScan;
+
+  /// FE6-f "n주 뒤 소진 예상"의 n. 조건이 안 되면 null(줄을 숨긴다, FD-042).
+  final int? depletionWeeks;
+}
+
+/// [history](지금 − 28일 색인)로 [view] 재화의 최근 변화를 센다. 인벤토리 탭과 같은 함수다: 소진 예상은
+/// [inventorySparkline], 지난 스캔은 KPI 규칙(마지막 바로 앞 스캔 점, 시계 되돌림이면 비교하지 않음).
+StatisticsRecentChange statisticsRecentChange(
+  InventoryHistory? history,
+  InventoryItemView view,
+) {
+  if (history == null) return const StatisticsRecentChange();
+  final spark = inventorySparkline(history, view.key);
+  final track = history.track(view.key);
+  final base = history.timestampsMonotonic && track.length >= 2
+      ? track[track.length - 2].value.known
+      : null;
+  final now = view.owned;
+  return StatisticsRecentChange(
+    scanCount: spark.scanCount,
+    sinceLastScan: base == null || now == null ? null : now - base,
+    depletionWeeks: spark.note == InventorySparkNote.depletion
+        ? spark.noteValue
+        : null,
+  );
 }
 
 /// 근거 "막히는 단계" 한 행(단계 + 학생 이름).
@@ -309,7 +508,10 @@ class StatisticsSupplyEvidenceContent {
   }) : resource = null,
        facts = const [],
        students = const [],
-       stages = const [];
+       stages = const [],
+       users = null,
+       recent = null,
+       goal = null;
 
   const StatisticsSupplyEvidenceContent.resource({
     required this.title,
@@ -319,8 +521,25 @@ class StatisticsSupplyEvidenceContent {
     required this.facts,
     required this.students,
     this.stages = const [],
+    this.users,
+    this.recent,
   }) : resources = null,
-       summary = null;
+       summary = null,
+       goal = null;
+
+  const StatisticsSupplyEvidenceContent.goal({
+    required this.title,
+    required this.chip,
+    required this.subtitle,
+    required StatisticsGoalProgress this.goal,
+  }) : resources = null,
+       summary = null,
+       resource = null,
+       facts = const [],
+       students = const [],
+       stages = const [],
+       users = null,
+       recent = null;
 
   final String title;
   final (String, AppTone) chip;
@@ -338,12 +557,20 @@ class StatisticsSupplyEvidenceContent {
   /// 계획 집계 재화의 막히는 단계(FE7-g, 문서 순서). 비어 있으면 FE7-c 틀이다.
   final List<StatisticsEvidenceStage> stages;
 
+  /// B2: 필요량 순 학생(활성 문서 계산이 없으면 null — [students] 이름 · Lv 행)과 최근 변화(FE7-f). [recent]가 있으면 B2
+  /// 틀이다(학생 4행 + 최근 변화).
+  final List<StatisticsResourceUser>? users;
+  final StatisticsRecentChange? recent;
+
+  /// C4 학생(FE7-f).
+  final StatisticsGoalProgress? goal;
+
   /// 막히는 단계 부족량 합(= 그 재화의 전체 부족량).
   int get stageShortage =>
       stages.fold<int>(0, (sum, item) => sum + item.stage.shortage);
 
-  /// 부제가 아이콘 행 안에 있는가(재화). 그때 근거 섹션의 부제 줄은 비운다.
-  bool get subtitleInHeader => resource != null;
+  /// 부제가 아이콘 · 초상 행 안에 있는가(재화 · C4 학생). 그때 근거 섹션의 부제 줄은 비운다.
+  bool get subtitleInHeader => resource != null || goal != null;
 }
 
 const _mutedStyle = TextStyle(
@@ -389,6 +616,8 @@ List<Widget> statisticsSupplyEvidenceChildren({
   VoidCallback? onExpand,
 }) {
   final resource = content.resource;
+  final goal = content.goal;
+  if (goal != null) return _goalChildren(frame, content, goal);
   return resource == null
       ? _categoryChildren(frame, content, expanded, onExpand)
       : _resourceChildren(frame, content, resource, expanded, onExpand);
@@ -569,26 +798,206 @@ List<Widget> _resourceChildren(
     );
   }
   final students = content.students;
+  final users = content.users;
+  final recent = content.recent;
   children.add(
     _sectionTitle(
       frame,
       StatisticsMetrics.evidenceUsersTitleTop,
       '쓰는 학생',
       key: 'statistics-evidence-users-title',
-      caption: '${students.length}명',
+      caption: users != null ? '필요량 순' : '${students.length}명',
     ),
   );
+  final visible = recent == null
+      ? StatisticsMetrics.evidenceUserRows
+      : StatisticsMetrics.evidenceBalanceUserRows;
   children.addAll(
-    _studentRows(
-      frame: frame,
-      top: StatisticsMetrics.evidenceUsersTop,
-      visible: StatisticsMetrics.evidenceUserRows,
-      content: content,
-      expanded: expanded,
-      onExpand: onExpand,
-    ),
+    users == null
+        ? _studentRows(
+            frame: frame,
+            top: StatisticsMetrics.evidenceUsersTop,
+            visible: visible,
+            content: content,
+            expanded: expanded,
+            onExpand: onExpand,
+          )
+        : _evidenceRows(
+            frame: frame,
+            top: StatisticsMetrics.evidenceUsersTop,
+            count: users.length,
+            visible: visible,
+            restText: (rest) => '외 $rest명',
+            listKey: 'statistics-evidence-list-${content.title}',
+            expanded: expanded,
+            onExpand: onExpand,
+            rowKey: (index) => ValueKey(
+              'statistics-evidence-row-${users[index].student.id}',
+            ),
+            itemBuilder: (index) => _UserRow(user: users[index]),
+          ),
   );
+  if (recent != null) {
+    final count = users?.length ?? students.length;
+    final shift = count > visible
+        ? StatisticsMetrics.evidenceStagesMorePitch
+        : 0.0;
+    children.addAll(_recentChildren(frame, recent, shift));
+  }
   return children;
+}
+
+/// B2 근거 "최근 변화"(시안 머리 (2057.3, 823.2) · 줄 (2029.5, 867.2) · (2021.7, 911.2) 40 높이). [shift]는 "외 n명"
+/// 자리만큼 내린다.
+List<Widget> _recentChildren(
+  StatisticsEvidenceFrame frame,
+  StatisticsRecentChange recent,
+  double shift,
+) {
+  final scale = frame.scale;
+  final scans = recent.scanCount;
+  final delta = recent.sinceLastScan;
+  final weeks = recent.depletionWeeks;
+  final lines = <(String, String, String, Color?)>[
+    (
+      'since',
+      '지난 스캔 대비',
+      delta == null ? '—' : statisticsSignedAmount(delta),
+      (delta ?? 0) < 0 ? AppColors.accent : null,
+    ),
+    if (weeks != null) ('forecast', '이 속도면', '$weeks주 뒤 소진 예상', null),
+  ];
+  return [
+    _sectionTitle(
+      frame,
+      StatisticsMetrics.evidenceRecentTitleTop + shift,
+      '최근 변화',
+      key: 'statistics-evidence-recent-title',
+      caption: '스캔 ${scans ?? '—'}회',
+    ),
+    for (final (index, (key, label, value, color)) in lines.indexed)
+      Positioned.fromRect(
+        rect: frame.row(
+          StatisticsMetrics.evidenceRecentTop +
+              shift +
+              StatisticsMetrics.evidenceRecentPitch * index,
+          StatisticsMetrics.evidenceRecentHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: scale,
+          child: _FactRow(
+            rowKey: 'statistics-evidence-recent-$key',
+            label: label,
+            value: value,
+            valueColor: color,
+            height: StatisticsMetrics.evidenceRecentHeight,
+            labelSize: AppType.bodySize,
+            valueSize: AppType.bodySize,
+            plainValue: true,
+          ),
+        ),
+      ),
+  ];
+}
+
+/// C4 학생 근거: 초상 행 · 현재 / 목표 / 남은 폭 세 줄 · "항목별 · 현재 → 목표" 항목 행.
+List<Widget> _goalChildren(
+  StatisticsEvidenceFrame frame,
+  StatisticsSupplyEvidenceContent content,
+  StatisticsGoalProgress goal,
+) {
+  final scale = frame.scale;
+  final headerTop = frame.top + StatisticsMetrics.evidenceHeaderTop * scale;
+  final headerHeight = StatisticsMetrics.evidenceHeaderHeight * scale;
+  final headerLeft =
+      frame.leftEdge(headerTop + headerHeight) +
+      StatisticsMetrics.evidenceHeaderInset;
+  String percent(double? value) =>
+      value == null ? '—' : statisticsPercentText(value);
+  final remaining = goal.remaining;
+  final facts = <(String, String, String, Color?)>[
+    ('current', '현재 육성도', percent(goal.currentGrowth), null),
+    ('target', '목표 육성도', percent(goal.targetGrowth), null),
+    (
+      'remaining',
+      '남은 폭',
+      remaining == null ? '—' : statisticsPercentPoints(remaining),
+      (remaining ?? 0) > 0 ? AppColors.accent : null,
+    ),
+  ];
+  final items = [
+    for (final item in StatisticsGrowthItem.values)
+      if (goal.current.items.containsKey(item) ||
+          goal.current.unknownItems.contains(item))
+        (
+          item: item,
+          current: goal.current.items[item],
+          target: goal.target.items[item],
+        ),
+  ];
+  return [
+    Positioned(
+      left: headerLeft,
+      top: headerTop,
+      width: math.max(
+        0.0,
+        frame.right - StatisticsMetrics.evidenceHeaderRight - headerLeft,
+      ),
+      height: headerHeight,
+      child: StatisticsScaledBox(
+        scale: scale,
+        child: _StudentHeader(
+          studentId: goal.studentId,
+          name: goal.displayName,
+          subtitle: content.subtitle,
+        ),
+      ),
+    ),
+    for (final (index, (key, label, value, color)) in facts.indexed)
+      Positioned.fromRect(
+        rect: frame.row(
+          StatisticsMetrics.evidenceFactTop +
+              StatisticsMetrics.evidenceFactPitch * index,
+          StatisticsMetrics.evidenceFactHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: scale,
+          child: _FactRow(
+            rowKey: 'statistics-evidence-fact-$key',
+            label: label,
+            value: value,
+            valueColor: color,
+            height: StatisticsMetrics.evidenceFactHeight,
+            labelSize: AppType.bodySize,
+            valueSize: AppType.displaySmallSize,
+          ),
+        ),
+      ),
+    _sectionTitle(
+      frame,
+      StatisticsMetrics.evidenceUsersTitleTop,
+      '항목별',
+      key: 'statistics-evidence-items-title',
+      caption: '현재 → 목표',
+    ),
+    for (final (index, row) in items.indexed)
+      Positioned.fromRect(
+        key: ValueKey('statistics-evidence-item-${row.item.name}'),
+        rect: frame.row(
+          StatisticsMetrics.evidenceUsersTop +
+              StatisticsMetrics.evidenceRowPitch * index,
+          StatisticsMetrics.evidenceRowHeight,
+        ),
+        child: StatisticsScaledBox(
+          scale: scale,
+          child: _GoalItemRow(
+            label: row.item.label,
+            current: row.current,
+            target: row.target,
+          ),
+        ),
+      ),
+  ];
 }
 
 /// "쓰는 학생" 행(초상 · 이름 · Lv) + "외 n명" 모두 보기.
@@ -833,6 +1242,182 @@ class _ResourceHeader extends StatelessWidget {
   );
 }
 
+/// 학생 초상 행(시안 재화 아이콘 행과 같은 자리 · 크기: 초상 79×64 + 이름 14 굵게 + 부제 12 회색, 간격 12, C4 근거).
+class _StudentHeader extends StatelessWidget {
+  const _StudentHeader({
+    required this.studentId,
+    required this.name,
+    required this.subtitle,
+  });
+
+  static const portraitSize = Size(79, 64);
+
+  final String studentId;
+  final String name;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => StatisticsMinWidth(
+    minWidth: _rowContentMinWidth,
+    child: Row(
+      key: const ValueKey('statistics-evidence-header'),
+      children: [
+        PortraitStrip(
+          studentIds: [studentId],
+          maxVisible: 1,
+          portraitSize: portraitSize,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _nameStyle.copyWith(
+                  fontSize: AppType.bodyPlusSize,
+                  fontWeight: AppType.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                key: const ValueKey('statistics-evidence-header-subtitle'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: _mutedStyle.copyWith(fontSize: AppType.bodySmallSize),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// B2 "쓰는 학생 · 필요량 순" 행(52 높이, 시안 `.row`): 초상 44×36 · 이름 13 굵게 + "P2 · 스킬 M" 11.5 회색 · 필요량 13
+/// 굵게.
+class _UserRow extends StatelessWidget {
+  const _UserRow({required this.user});
+
+  static const portraitSize = Size(44, 36);
+
+  final StatisticsResourceUser user;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    painter: StatisticsEvidenceRowPainter(
+      DiagonalRowLook.of(DiagonalRowVariant.row),
+    ),
+    child: Padding(
+      padding: EdgeInsets.only(
+        left: diagonalCutDepth(StatisticsMetrics.evidenceRowHeight) + 12,
+        right: 14,
+      ),
+      child: StatisticsMinWidth(
+        minWidth: _rowContentMinWidth,
+        child: Row(
+          children: [
+            PortraitStrip(
+              studentIds: [user.student.id],
+              maxVisible: 1,
+              portraitSize: portraitSize,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.student.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _nameStyle.copyWith(fontWeight: AppType.bold),
+                  ),
+                  Text(
+                    user.detail ?? '—',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _mutedStyle.copyWith(
+                      fontSize: AppType.captionPlusSize,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              statisticsAmountText(user.amount),
+              maxLines: 1,
+              style: _nameStyle.copyWith(fontWeight: AppType.bold),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// C4 항목 행(52 높이, 시안 `.row` 바탕): 항목 이름 13 · "40% → 100%"(올릴 항목은 분홍).
+class _GoalItemRow extends StatelessWidget {
+  const _GoalItemRow({
+    required this.label,
+    required this.current,
+    required this.target,
+  });
+
+  final String label;
+  final double? current;
+  final double? target;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = current, goal = target;
+    String percent(double? value) =>
+        value == null ? '—' : statisticsPercentText(value);
+    final rising = now != null && goal != null && goal - now > 1e-9;
+    return CustomPaint(
+      painter: StatisticsEvidenceRowPainter(
+        DiagonalRowLook.of(DiagonalRowVariant.row),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: diagonalCutDepth(StatisticsMetrics.evidenceRowHeight) + 12,
+          right: 14,
+        ),
+        child: StatisticsMinWidth(
+          minWidth: _rowContentMinWidth,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _nameStyle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                '${percent(now)} → ${percent(goal)}',
+                maxLines: 1,
+                style: _nameStyle.copyWith(
+                  fontWeight: AppType.bold,
+                  color: rising ? AppColors.accent : AppColors.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 재화 행(52 높이, 시안 `.row`): 아이콘 44×36 · 이름 13 · "보유 n / 필요 m" 11.5 회색 · 충족률 칩.
 class _ResourceRow extends StatelessWidget {
   const _ResourceRow({required this.view});
@@ -902,7 +1487,11 @@ class _FactRow extends StatelessWidget {
     required this.labelSize,
     required this.valueSize,
     this.valueColor,
+    this.plainValue = false,
   });
+
+  /// 값을 본문 굵은 글자로 쓴다(시안 "최근 변화" `b` 13). 아니면 경기천년제목이다.
+  final bool plainValue;
 
   final String rowKey;
   final String label;
@@ -933,10 +1522,16 @@ class _FactRow extends StatelessWidget {
             value,
             key: ValueKey('$rowKey-value'),
             maxLines: 1,
-            style: kitDisplayStyle(
-              valueSize,
-              color: valueColor ?? AppColors.text,
-            ),
+            style: plainValue
+                ? _nameStyle.copyWith(
+                    fontSize: valueSize,
+                    fontWeight: AppType.bold,
+                    color: valueColor ?? AppColors.text,
+                  )
+                : kitDisplayStyle(
+                    valueSize,
+                    color: valueColor ?? AppColors.text,
+                  ),
           ),
         ],
       ),

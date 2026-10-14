@@ -8131,3 +8131,252 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`, 기준 viewport �
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_125829\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-f 통계 2차 타일 A3 · A4 · B2 · C4 (Lane A, 로컬 Claude Code)
+
+### FE7-f 착수 기록 (2026-10-14, Lane A)
+
+- 상태: **진행 중**. 시작 SHA `ebc84ee463767b4d726120c8f16af7b14b34bb6d`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 "FE7-f 착수 기록"은 없었다.
+- 범위: A3 성작 · 전용무기 분포, A4 학교 · 역할 비교(산점도 · hover 팝오버 · seg), B2 부족 · 과잉(발산 막대 · 근거 "최근 변화"), C4 학생별 목표 진행(덤벨). A5 · C5는 FE7-i라 "준비 중" 그대로.
+- 막는 `열림` FD 없음(막힘 요약 FE7-f = FD-028, 확정).
+- 사용자 결정(착수 질문, 2026-10-14): C4 → "계획 만들기 2 · 목표 정하기"는 intent + 계획 수신부 최소 추가(`PlanNavigationIntent.goals`, `plan_section_layout.dart`가 활성 계획 편집 흐름을 2단계로 연다). 계획 파일은 최소 diff · 이유를 종료 기록에 적는다.
+- 고칠 기존 파일(모두 `git status --short` 빈 줄 = 기존 미커밋 변경 없음, 사본 `debug/frontend_fe7f/pre/<경로>`):
+  - `frontend/lib/statistics/statistics_growth_projection.dart` · `statistics_growth_filter.dart` · `statistics_supply_projection.dart`
+  - `frontend/lib/ui/statistics/statistics_workspace.dart` · `statistics_topics.dart` · `statistics_growth_evidence.dart` · `statistics_supply_evidence.dart`
+  - `frontend/lib/ui/pages/statistics_page.dart`, `frontend/lib/ui/studio/statistics_studio_layout.dart`(요소 좌표만)
+  - `frontend/lib/ui/navigation/app_navigation_intent.dart` · `frontend/lib/ui/widgets/plan_section_layout.dart`(C4 이동, 위 사용자 결정)
+  - 테스트: `frontend/test/statistics_growth_view_test.dart` · `statistics_supply_view_test.dart` · `statistics_plan_view_test.dart` · `statistics_filter_test.dart` · `app_navigation_fe7d_test.dart` · `statistics_workspace_test.dart` · `statistics_page_test.dart` · `test/goldens/fe7a_statistics_golden_test.dart`(fixture 입력 · 주석만)
+  - 이 문서
+- 새 파일(예정): `frontend/lib/statistics/statistics_breakdown_projection.dart`(A3 · A4) · `statistics_goal_projection.dart`(C4), `frontend/lib/ui/statistics/statistics_breakdown_charts.dart`(A3 · A4) · `statistics_balance_charts.dart`(B2 · C4), 테스트 `frontend/test/statistics_second_tiles_test.dart`.
+
+### FE7-f 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+"준비 중"이던 A3 · A4 · B2 · C4를 그래프로 바꿨다. 각 타일은 고른 것 → 근거 → 원본 탭 이동까지 동작한다. A5 · C5는 FE7-i라 "준비 중" 그대로다. 새 서비스 메서드 · 백엔드 · 계약 · 키트 변경은 없다.
+
+착수 기록 정정:
+- 고치지 않은 4파일은 사본을 지웠다(작업 트리 = HEAD): `statistics_topics.dart` · `test/statistics_filter_test.dart` · `test/statistics_page_test.dart` · `test/goldens/fe7a_statistics_golden_test.dart`. golden fixture 입력도 바꾸지 않았다.
+- `test/statistics_history_view_test.dart`는 착수 목록에 없었다. 고치기 전에 WIP가 없음을 확인하고 pre 사본을 두었다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7f/logs/`에 있다. 로그는 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/statistics`(B2 행 함수 뒤) | error 2 · warning 1(if-case 패턴을 `&&`와 섞음) → 중첩 `if`로 고침 → No issues |
+| `flutter analyze lib/statistics lib/ui/statistics lib/ui/studio`(차트 · 근거 · workspace 뒤) | No issues found |
+| `flutter analyze lib`(page · intent · plan 수신부 뒤) | No issues found |
+| 통계 17파일(`test/statistics_*_test.dart`, 1차) | 대부분 실패. 원인은 A3 projection의 `List.unmodifiable` 타입 추론(`List<dynamic>`)이었다 → 타입 인자를 붙여 고침 |
+| 같은 17파일(2차) | +124 −10. 실패 10건은 모두 FE7-f로 바뀐 동작의 기대값이었다("준비 중" 개수, A4 seg 비활성, 보유 0 빈 상태 개수). 6파일의 기대를 고침(아래) |
+| 같은 17파일(3차) | **+134 −0** |
+| `flutter test test/statistics_second_tiles_test.dart`(새, 1차) | +11 −1. 크레딧 근거에 "필요량 순"이 없었다. 문서 계산은 있지만 그 재화의 단계 사용이 없는 경우다 → 문서 계산이 있으면 늘 "필요량 순" 틀을 쓰게 고침(영향 학생 필요량은 '—') |
+| 같은 파일(2차) | **+15 −0** |
+| `flutter test test/app_navigation_fe7d_test.dart`(셸 C4 → 계획 2단계 테스트 추가) | **+14 −0** |
+| 일회성 렌더(임시 `test/zz_fe7f_render_tmp_test.dart`, 실행 뒤 지움) | +5 −0 · +2 −0, 예외 0. golden 테스트 사본에 `RenderRepaintBoundary.toImage`를 더해 scratchpad에 PNG 6장을 남겼다. 다섯 장면과, 성장 장면을 아래로 스크롤한 A3 · A4를 보았다. golden 비교는 아니다 |
+| `flutter analyze`(frontend 전체, 최종) | **No issues found**(info 포함 0) |
+| 관련 57파일 한 번에(`--file-reporter json`, 아래) | **+634 −0** |
+| `git diff --check`(고친 · 새 파일) · 줄바꿈 바이트 검사 | 오류 0. 기존 파일은 pre와 같은 줄바꿈이다: `statistics_growth_projection.dart` · `statistics_growth_evidence.dart` · `statistics_page.dart` · `plan_section_layout.dart` · `statistics_growth_view_test.dart`는 CRLF, 나머지는 LF. 새 파일은 LF · 줄 끝 공백 0 · 끝 개행 하나 |
+
+관련 57파일(파일별, 모두 −0): account_editor_fe8c +9, account_manager_fe8b +6, app_navigation_fe7d +14, app_navigation_tidy1 +11, connected_target_fe8d +8, diagonal_geometry +5, diagonal_scroll_viewport +5, diagonal_scrollbar +8, growth_calculator_view +24, home_app_shell +1, home_connect_fe8e +10, inventory_analysis_page +8, inventory_history +33, inventory_history_page +11, inventory_shell_lazy +1, item_icon_tile +7, mock_design_review_scenario +11, plan_detail_tabs +8, plan_flow +15, plan_flow_authoring +18, plan_flow_goal_step +23, plan_flow_handoff +23, plan_flow_order_step +19, plan_flow_presets +13, plan_flow_save +15, plan_flow_student_step +8, plan_home_detail +9, plan_preset_manager +5, plan_scenario_compare +7, plan_scenario_comparison +2, plan_scenario_detail +12, plan_scenario_list +10, plan_scenario_preview +9, planning_page +17, profile_delete_fb2d +17, section_surface +5, section_template_studio +15, skew_bar +8, statistics_app_shell +2, statistics_filter +9, statistics_growth_projection +11, statistics_growth_view +12, statistics_history_projection +17, statistics_history_view +14, statistics_page +14, statistics_plan_projection +7, statistics_plan_view +9, statistics_projection +7, statistics_second_tiles +15(새), statistics_supply_projection +8, statistics_supply_view +11, statistics_workspace +13, student_filter_followups +4, student_filter_modal +7, tidy1_followups +3, title_page +25, widget +16.
+
+- 걸리는 테스트 찾기: test/ 전체를 `StatisticsPage|statistics_|PlanSectionLayout(|PlanningPage(|BAPlannerApp(|AppShell(|PlanNavigationIntent|PlanFlowController(|plan_section_layout|StudentFilterModal|inventory_history|app_navigation`로 grep했다.
+  - goldens · process E2E · 스캐너(`scan_*` · `scanner_*` · `mock_scanner_service`) · `metadata_manager_dto` · `tactical_lobby`는 뺐다. 이 slice와 무관하거나 다른 레인 작업 중이다.
+- 고친 기존 테스트 기대(모두 FE7-f로 바뀐 동작):
+  - "준비 중" 개수: 성장 3 → 1(A5), 인벤토리 1 → 0, 계획 2 → 1(C5). 해당 파일은 growth_view · workspace · history_view · plan_view · supply_view다.
+  - A4 seg `onChanged`: null → 동작(growth_view).
+  - 보유 0 빈 상태 문구 개수: 2 → 4(A1 · A2 · A3 · A4, growth_view).
+- 빌드 잠금(`build/` · `.dart_tool/`) 충돌은 없었다.
+- `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml`은 바뀌지 않았다.
+- `dart format`은 새 파일에만 돌렸다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 타일별 projection 함수 · 정의
+
+| 타일 | 함수(파일) | 정의 |
+|---|---|---|
+| A3 | `StatisticsStarDistribution.of`(`lib/statistics/statistics_breakdown_projection.dart`) | 대상 학생을 `student_star` 1~5 단계와 `weapon_star` 0(없음)~4 단계로 나눈다. 단계 안은 낮은 항목 순이다. 편성(`striker` · `special`)마다 ★1~5 인원을 세어 100% 누적으로 그린다. 값을 모르는 학생은 막대에서 빼고 "n명 모름"으로 센다 |
+| A4 | `StatisticsGroupComparison.of`(같은 파일) | 그룹(학교 · 역할 코드 값)마다 점 하나다. **보유율 = 그 그룹 대상(보유) 학생 / 학생 목록의 그 그룹 학생 수**이고, 분모는 필터와 상관없는 학생 목록 전체다. 평균 육성도 = 그 그룹에서 육성도를 아는 학생의 평균(FD-028). 평균선 = 점을 찍은 그룹 전체의 Σ보유 / Σ학생 목록, 그리고 아는 학생 전체의 평균 육성도(필터가 없으면 KPI와 같다). 협업 학교(Sakugawa · Tokiwadai)는 학생 탭 칩처럼 그룹으로 세지 않는다. 빈 상태 = 통계 필터가 걸렸고 `valueCount`(대상 학생의 고른 seg 값 수)가 1 이하 |
+| B2 | `statisticsB2Rows`(`lib/statistics/statistics_supply_projection.dart`) | 보유를 아는 계획 재화 중 부족(보유 < 필요)과 과잉만 행이다. **과잉은 인벤토리 탭과 같은 `InventoryItemView.excess`** 판정이다(보유 ≥ 필요 × 1.5, FD-040, 새로 만들지 않음). 값 = (보유 − 필요) / 필요이고 재화마다 따로 센다(FD-033). 1~1.5배인 재화와 보유 모름 재화는 행이 없다. "부족 순"은 값 작은 순, "과잉 순"은 값 큰 순이다(같으면 영향 학생 많은 순 → 카탈로그 순). 6행 |
+| B2 근거 | `statisticsResourceUsers` · `statisticsRecentChange`(`lib/ui/statistics/statistics_supply_evidence.dart`) | 쓰는 학생 = 인벤토리 `inventoryStageUses`(활성 문서 계산)로 학생별 필요량을 더해 큰 순. 글자는 첫 단계 "Pn · <단계>". 최근 변화는 지금 − 28일 색인(`StatisticsHistory.inventoryWindow`, 인벤토리 탭 KPI와 같은 색인)으로 센다. "지난 스캔 대비" = 지금 보유 − 그 재화의 마지막 바로 앞 스캔 점(FE6-f 규칙 3). "이 속도면"은 `inventorySparkline`이 `depletion`일 때만 "n주 뒤 소진 예상"이다(FE6-f 상세와 같은 함수 · 조건, FD-042) |
+| C4 | `StatisticsGoalProgressSet.of` · `statisticsGoalTargetValues`(`lib/statistics/statistics_goal_projection.dart`) | 행 = 계정 상태 `goals` 학생(범위 칩 "활성 계획 · n명"과 같은 집합). 현재 = FD-028 식(`statisticsGrowthOfValues`, 성장 projection과 같은 함수). 목표 = 같은 식을, 목표로 덮어쓴 값 맵에 쓴다. 목표 키가 있는 항목은 max(현재, 목표), 없는 항목은 현재 값이다. **남은 폭 = 목표 − 현재(%p)**. 순서는 남은 폭 큰 순 → 현재 낮은 순 → id이고, 모르는 행(미보유 · 값 모름)은 뒤에 '—'로 둔다. 5행 |
+
+- 성장 projection에 원값 필드(성작 · 전용무기 · 학교 · 역할 · 편성)를 더했다. 생성자 새 매개변수는 모두 선택이다.
+- `statisticsStudentGrowth`는 값 맵 함수 `statisticsGrowthOfValues`를 부르도록 나눴다(계산 변화 0).
+- 낮은 항목 비교는 `statisticsCompareLowItem`으로 꺼냈다. A1 `binStudents`도 이 함수를 쓴다(순서 변화 0).
+
+#### C4 이동 — intent · 계획 수신부 diff와 이유(사용자 결정 2026-10-14)
+
+- `app_navigation_intent.dart` +13 −2:
+  - `PlanNavigationTarget.goals`와 `PlanNavigationIntent.goals(studentId)`를 더했다. payload는 `studentIds` 한 명이다.
+  - 머리 주석을 고쳤다.
+- `plan_section_layout.dart` +14 −1:
+  - 이미 흐름이 열려 있으면 order처럼 알리기만 한다. 새 문구는 `planNavigationGoalsFlowOpenMessage`("진행 중인 계획 만들기가 있어 목표 정하기를 새로 열지 않았습니다.")다.
+  - 그렇지 않으면 `_openNavigationFlow`가 order와 같은 길로 연다(활성 계획을 다시 읽은 페이즈 편집 초안).
+  - 연 뒤 기존 계산기 넘기기 API `flow.receiveHandoff(context.seedFor(id))`(목표 없는 seed)로 그 학생을 2단계에 띄운다.
+  - `PlanFlowController`(모델)는 고치지 않았다.
+- 이유:
+  - 2단계에서 특정 학생을 여는 수신부가 없었다.
+  - 계획 화면 동작은 이 slice의 금지 범위라 착수 때 사용자에게 물었고, 답은 "intent+수신부 최소 추가"였다.
+  - 의도가 없으면 계획 화면 동작은 그대로다(계획 테스트 18파일 녹색).
+
+#### 처리한 FD
+
+- **FD-028(확정)**: A3 · A4 · C4가 같은 식을 쓴다. C4 목표에도 같은 함수를 쓴다("목표값에도 같은 공식"). 모르는 값은 '—'이고 추정하지 않는다.
+- **FD-040(워커 재량, 권장안)**: 과잉 판정은 인벤토리 탭과 같은 `InventoryItemView.excess`다(인벤토리 파일은 읽기만). 과잉 종 수가 KPI "과잉 재화"와 같음을 테스트로 고정했다.
+- **FD-042(워커 재량, 권장안 + CF 결정 2026-10-14)**: 시안 "이 속도면 P2 이전에 소진" 대신 FE6-f "n주 뒤 소진 예상"이다. 같은 함수 · 같은 조건(3점 이상 최소제곱 · 4주 안)이고, 조건이 안 되면 줄을 숨긴다.
+- **FD-109(확정)**: A4가 산점도면 A4 · A6 줄은 368이다. A4가 그래프가 아니고(필터 빈 상태 · 점 없음 · 읽는 중) A6도 짧은 문구면 328이다(`statisticsRowHeight(..., a4Chart:)`).
+- **FD-033 · FD-106 · FD-104 · FD-175 · FD-108**:
+  - FD-033: 재화마다 따로 센다.
+  - FD-106: A5 · C5는 "준비 중" 그대로다.
+  - FD-104: A3 · A4는 통계 필터 대상 학생, B2 · C4는 전체다.
+  - FD-175: "스캔 n회"는 묶음 색인으로 센다.
+  - FD-108: C4 이동도 같은 intent 모델이다.
+- 막는 `열림` FD 없음.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **A3 단계 고르기**:
+   - 0명 단계는 고르지 않는다. 누적 막대는 누르지 않는다.
+   - 근거 머리는 "성작 ★n" · "전용무기 없음/★n", 부제는 "A3에서 고른 단계 · 낮은 항목 순"이다.
+   - 요약은 "단계 요약"이다(A1 구간 요약과 같은 세 줄).
+2. **A3 "학생 탭에서 보기"**: 학생 목록(임시 목록)만 넘긴다.
+   - 학생 필터에 "성급" 범위가 있지만, FE7-d 이동은 학생 필터 상태에 쓰지 않는다(FD-104 · FE7-d 규칙 3).
+   - 버튼 둘째 줄은 "필터: 성작 ★n"이다.
+3. **A4 강조(분홍)**:
+   - 고른 점이 있으면 그 점이다.
+   - 없으면 평균 육성도 아래 점 중 대상 학생이 가장 많은 점이다(시안 질문 "많이 모였지만 덜 키운").
+   - 회색 이름은 보유율이 가장 높은 점과 낮은 점에 단다. 오른쪽 자리가 모자라면 왼쪽에 쓴다.
+4. **A4 축**: 값 범위를 10 단위로 내림 · 올림한다(0~100, 같으면 10을 벌린다). 시안처럼 최소값만 글자로 쓴다.
+5. **A4 hover 팝오버**:
+   - 문구 형식은 시안 그대로다. 이름, "보유 n명 · 보유율 n% · 평균 육성도 n%", 초상 6장 + "…+n", "누르면 오른쪽 목록 · 학생 탭(학교|역할 필터)으로 이어집니다" 순이다.
+   - 위치는 점 왼쪽 12 · 위 −18이다. 왼쪽이 화면 밖이면 오른쪽에 띄우고, 그래도 넘치면 화면 안으로 민다(가장자리 8).
+   - 키보드 포커스로도 뜬다. 점을 누르면 고르고, 팝오버 자체는 누르기를 받지 않는다(`IgnorePointer`).
+6. **A4 seg 바꾸기**: 다른 seg의 점을 고른 채면 푼다. seg 값은 다시 읽어도 남긴다(보기 선택).
+7. **B2 축척**:
+   - 시안 1.735/%이고 두 쪽이 같은 축척이다. 가장 큰 부족 막대가 이름 자리를 덮으면 축척을 줄인다.
+   - 과잉 막대는 오른쪽 자리에서 자르고, 글자는 실제 값이다.
+   - 행이 없으면 "모자라거나 넘치는 재화가 없습니다."(새 문구)다. 보유 모름 재화는 "보유 모름 n종 제외"로 적는다.
+8. **B2 seg 바꾸기**: 고른 B2 행을 푼다(C1 순서와 같다). seg 값은 다시 읽어도 남긴다.
+9. **B2 근거 학생**:
+   - 문서 계산이 있으면 "필요량 순" 4행 + "외 n명"이다(모두 보기 = FE7-d 펼침). 그 재화를 쓰는 단계가 없는 영향 학생은 뒤에 두고 필요량은 '—'다.
+   - 문서 계산이 없으면 FE7-c처럼 이름 · Lv 행이고 캡션은 "n명"이다.
+   - "외 n명"이 있으면 "최근 변화"를 그만큼(36) 내린다.
+   - "지난 스캔 대비"는 감소면 분홍이고, 백만 이상은 "−5.6M"으로 쓴다.
+10. **B2 이동**:
+    - primary는 인벤토리의 그 행이다.
+    - ghost "티어별 충족률"은 그 재화 카테고리가 노트 · BD · 오파츠일 때만 켜진다(B1 규칙과 같다).
+11. **C4**:
+    - 5행만 그린다. 활성 계획 학생이 더 많아도 "외 n명"은 없다(시안 없음).
+    - 고른 행은 B2와 같은 분홍 띠다.
+    - 근거는 초상 행, 현재 · 목표 육성도, 남은 폭, "항목별 · 현재 → 목표" 항목 행 순이다(올릴 항목은 분홍).
+    - primary는 "계획 만들기 2 · 목표 정하기" · "<학생> 목표 고치기"이고, ghost는 비활성이다.
+    - C4는 부족 계산이 실패해도 목표만 있으면 그린다.
+12. **근거 빈 상태 문구**(FE7-c가 정한 글자, 시안 없음): "B1 막대나 B2 행을 고르면 근거가 보입니다." · "C1 행 · C2 점 · C4 행을 고르면 근거가 보입니다."
+13. **A4 점 없음**: 그룹 값을 아는 학생이 없으면 "<학교|역할> 값을 아는 학생이 없습니다…"다. 그룹은 있지만 육성도를 모르면 육성도 문구다(A1과 같은 문구 함수).
+
+#### golden 변화 예상(장면별)
+
+- **`statistics-growth`(바뀜)**:
+  - A4: "준비 중" → 학교 산점도.
+    - 점은 보유 학교 수만큼이다.
+    - 평균 점선 두 줄과 "평균" 글자가 있다.
+    - 강조점은 분홍 "백귀야행"이고, 회색 이름은 "SRT" · "아비도스"다.
+    - 축 글자는 "육성도" · "20" · "10%" · "보유율 →"다(일회성 렌더 기준).
+  - A4 seg: 흐린 자리 → 동작 seg("학교" 선택 모양).
+  - A3: "준비 중" → 성작 8 · 36 · 38 · 8 · 38, 전용무기 103 · 2 · 12 · 0 · 11 막대. 아래에 스트라이커 · 스페셜 누적 막대와 범례가 있고, 누적 막대는 viewport 아래 포그에 걸친다.
+  - KPI · A1 · A2 · A6 · 근거 · 줄 높이는 변화 0(A4 · A6 줄은 이미 368).
+- **`statistics-inventory`(바뀜)**:
+  - B2: "준비 중" → 발산 막대 6행. 크레딧 −62% · 엘리그마 −55% · 네브라 디스크 T4 −54% · 님루드 렌즈 T3 −52% · 기술 노트 (상급) −52% · 전술 교육 BD (최상급) −50%다. 아래에 "← 부족 · 과잉 →" · "필요량 대비 %" · "보유 모름 1종 제외"가 있다.
+  - B2 seg: 동작 seg("부족 순" 선택).
+  - 근거 빈 문구: "B1 막대나 B2 행을 고르면 근거가 보입니다."
+  - KPI · B1 · B3 변화 0.
+- **`statistics-plan`(바뀜)**:
+  - C4: "준비 중" → 덤벨 5행. 일회성 렌더 값은 호시노 10 → 20% · 아카네 40 → 46% · 아루 40 → 45% · 에이미 70 → 70% · 히나 70 → 70%다. 25 · 50 · 75% 점선과 범례 "현재 · 목표 · 남은 폭이 큰 순"이 있다. fixture 목표가 `target_level 90`뿐이라 남은 폭이 작다.
+  - 근거 빈 문구: "C1 행 · C2 점 · C4 행을 고르면 근거가 보입니다."
+  - KPI · C1~C3 변화 0.
+- **`statistics-growth-filter`(바뀜)**:
+  - A3: 대상 18명 막대(성작 0 · 6 · 7 · 1 · 4, 전용무기 15 · 1 · 1 · 0 · 1).
+  - A4: 빈 상태 두 줄은 그대로다(학교 seg, 밀레니엄 하나). seg만 흐린 자리에서 동작 seg로 바뀐다.
+  - 줄 높이는 368 그대로다(A6 꺾은선).
+- **`statistics-filter-open`(바뀜)**: 배경 성장 장면의 A3 · A4가 위처럼 바뀐다(스크림 아래). 모달 변화 0.
+- **다른 장면: 변화 0.**
+  - 계획 장면: goals 의도가 없으면 수신부 동작이 같다.
+  - 학생 · 인벤토리 · 셸 · 홈 · 타이틀 · 스캔 장면: 바뀐 파일을 쓰지 않거나 같은 값이다.
+  - 키트 · harness · golden 테스트 파일 변경 0.
+- commit.json `whole` = 위 기존 기준 이미지 5장(파일 단위). 새 장면은 없다.
+- A4 hover 팝오버 · B2 · C4 근거는 위젯 테스트(`statistics_second_tiles_test.dart`)로만 확인했다.
+
+#### 검수표(타일 → 근거 → 원본 탭)
+
+mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 viewport를 최대화해 본다. 시안 숫자는 golden fixture에 있다. 검수 시나리오는 `--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`.
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth A3 | 통계 → 학생 성장 → 아래로 스크롤 | "2차" 칩 · "성작" · "전용무기" 두 묶음(같은 축척) · 막대 위 인원 · "★1"…"없음 · 1…4" · 스트라이커/스페셜 누적(어두움 → 밝음) · 범례 |
+| → 근거 → 학생 탭 | 막대 누르기 → ghost | 근거 "성작 ★n · n명" · "A3에서 고른 단계 · 낮은 항목 순" · "단계 요약" → 학생 탭 임시 목록 "통계: 성작 ★n · n명" · "← 통계" |
+| Stats-Growth A4 | 같은 화면 | 산점도 · 평균 점선 두 줄 · 분홍 강조 · seg "학교/역할" |
+| → hover 팝오버 | 점 위에 마우스 | 시안 `.spop` 형식(이름 · 보유 · 보유율 · 평균 육성도 · 초상 6 + "…+n" · 안내), 점 왼쪽 · 화면 안(1280×720에서도) |
+| → 근거 → 학생 탭 | 점 누르기 → ghost | 근거 "<학교> · n명" · "학교 요약"(보유율 "n% · 보유 / 학생 목록명", 평균 육성도, 계획 등록) → 학생 탭 임시 목록 |
+| Stats-Growth-Filter A4 | 필터 밀레니엄 적용 → A4 seg "역할" | 학교 seg는 빈 상태 두 줄, 역할 seg는 산점도(역할이 둘 이상), 줄 368 |
+| Stats-Inventory B2 | 통계 → 인벤토리 현황 | 6행 발산 막대 · seg "부족 순/과잉 순"(과잉 순은 목걸이 +125%부터) |
+| → 근거 → 인벤토리 | 행 누르기 → primary | 근거 "<재화> · −n%" · "B2에서 고른 행 · 필요량 대비" · 보유/필요/부족 · "쓰는 학생 · 필요량 순"(Pn · 단계 · 필요량) · "최근 변화 · 스캔 n회" · "지난 스캔 대비 ±n" · (소진 조건이면) "이 속도면 n주 뒤 소진 예상" → 인벤토리 그 행 |
+| Stats-Plan C4 | 통계 → 계획 집계 | 덤벨 5행(현재 ● → 목표 ○) · "40 → 85%" 형식 · "남은 폭이 큰 순" |
+| → 근거 → 계획 2단계 | 행 누르기 → primary | 근거 "<학생> · 남은 n%p" · "C4에서 고른 학생 · 현재 → 목표" · 항목 행 → 계획 탭 페이즈 편집 흐름 2단계에서 그 학생 목표 · "← 통계"(흐름이 이미 열려 있으면 알림만) |
+
+#### 미검증 항목
+
+- golden 비교 · 갱신: **미실행**(CF `fe_gate.ps1` · `failures/` 검토 · `-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 새 요소 ±2px: 차트는 시안 SVG 좌표를 그대로 옮긴 painter에 `StatChartFrame` 균일 배율을 썼다. 위젯 테스트는 값 · 행 · 존재만 보았고, 좌표는 재지 않았다(일회성 렌더로 자리만 확인).
+- 실제 백엔드 계정: **미실행**(Mock · fixture만). 볼 것은 학교 수 · 보유율 분포, 실제 활성 문서의 단계 사용(B2 "필요량 순"), 실제 이력의 소진 예측 줄이다.
+- 실제 창에서 hover 팝오버가 다른 섹션 위로 뜨는 모습과 스크롤 중 팝오버: **미실행**(위젯 테스트 hover만).
+
+#### WIP 보존 확인
+
+- 고친 기존 16파일과 이 문서는 착수 때 `git status --short`가 빈 줄(WIP 없음)이었다. post 사본 · `post_dir`는 없다.
+- pre 사본과 비교한 diff에는 이 slice 줄만 있다. 고치지 않은 4파일은 `cmp` 일치를 확인한 뒤 사본을 지웠다.
+- 읽기만 한 파일:
+  - `lib/services/**`(Lane B 전술 · 서비스 WIP · design_review fixture)
+  - `lib/ui/inventory/**`(`InventoryItemView.excess` · `inventoryStageUses` · `inventorySparkline` · `InventoryHistory`는 import만)
+  - `lib/ui/models/**`(`PlanFlowController.receiveHandoff`는 호출만)
+  - 키트 · 셸 · harness · golden 테스트 파일, 스캐너 WIP 파일
+- 작업 트리의 Lane B 새 파일(`test/tactical_*`)은 건드리지 않았다. git 쓰기는 하지 않았다.
+
+#### 키트 승격 후보(이번에는 statistics 안에 둠)
+
+1. 발산 막대(`StatisticsBalancePainter`): 가운데 축 · 두 색 · 막대 끝 값. 인벤토리 분석 S5 순증감 막대와 같은 문법이다.
+2. 산점도 hover 점 + 팝오버(`StatisticsGroupDot` · `_GroupPopoverLayout`): 키트 `KitOverlayAnchor`는 누르기가 "고정"이라, 누르기가 "고르기"인 차트 점과 맞지 않아 따로 두었다. 키트에 "누르기 콜백 + hover 열림" 변형이 생기면 합칠 수 있다.
+3. 덤벨(`StatisticsGoalProgressPainter`)과 100% 누적 막대(A3): 차트 원자 후보다.
+
+#### 발견 사항
+
+1. **시안 B2 과잉 값이 FD-040과 맞지 않는다**: 시안 "님루드 렌즈 +22%" · "상급 활동 보고서 +38%"는 1.5배 미만이라 FD-040으로는 과잉이 아니다. 지시대로 인벤토리 탭과 같은 판정을 썼으므로 과잉 행은 늘 +50% 이상이다. 시안 숫자에 맞추려면 FD-040을 바꿔야 한다(CF 판단).
+2. **C4 fixture**: 목표 fixture가 `target_level 90`뿐이라 남은 폭이 작고(0~10%p), 학생도 시안(리오(무장) · 노아 …)과 다르다. 다른 장면을 깨지 않으려고 fixture는 그대로 두었다. 목표 fixture는 `lib/services/design_review/` 소유(Lane B)다.
+3. **A4 보유율 100% 몰림**: golden 학생 목록이 fixture 170명뿐이라 여러 학교가 보유율 100%다. 그래서 오른쪽 끝 점들이 "평균" 글자를 일부 가린다(시안도 같은 자리). 실제 학생 목록에서는 덜하다.
+4. **"P2 이전에 소진"**: CF 결정대로 "n주 뒤 소진 예상"으로 바꿨다. 페이즈에 시간축이 생기면 다시 볼 수 있다.
+5. **B2 근거 "스캔 n회"**: 4주 색인 기준이라 fixture는 "스캔 5회"다(시안 "스캔 6회"). 인벤토리 탭 상세와 같은 값이다.
+6. **FD-109 테스트의 뜻**: `statistics_history_view_test` "one snapshot … lower row"가 328인 이유가 바뀌었다. 단위 테스트 학생 목록에 학교가 없어 A4가 빈 상태 문구가 되기 때문이고, 필터 빈 상태와 같은 규칙으로 판정된다. 시안 Stats-Growth-Filter 상황(필터로 학교 하나)은 새 테스트가 본다.
+7. **C4 "외 n명" · A3 누적 막대 누르기**: 시안에 없어 넣지 않았다. 필요하면 FE7-i 이후 판단.
+8. **팝오버 초상 수**: 시안은 학교마다 2~6장으로 다르다(placeholder). 6장 + "…+n"(키트 `PortraitStrip`)으로 정했다.
+9. 막는 `열림` FD는 없었다. 워커 재량 FD는 FD-040 · FD-042(권장안)다.
+
+#### 사본 · commit.json
+
+- 착수 사본은 `debug/frontend_fe7f/pre/<경로>`에 있다(고친 기존 16파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7f/commit.json`: slice `fe7f`, `status=true`, modified 17(이 문서 포함), added 5.
+  - `whole` = `statistics-growth.png` · `statistics-inventory.png` · `statistics-plan.png` · `statistics-growth-filter.png` · `statistics-filter-open.png`(파일 단위).
+- 인계: `debug/frontend_fe7f/output.md`.
+
+#### 다음 행동
+
+- FE7-f 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다.
+  - 예상: analyze 0, 일반 테스트는 새 16건(second_tiles 15 + fe7d 셸 1)을 포함해 녹색.
+  - golden은 위 5장 RED, 다른 장면 변화 0.
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe7f`.
+- 발견 1(FD-040 vs 시안) · 2(C4 fixture) · 7(C4 외 n명)은 CF 판단을 기다린다.
+
+### fe7f commit record (2026-10-14 16:51, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_164359\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
