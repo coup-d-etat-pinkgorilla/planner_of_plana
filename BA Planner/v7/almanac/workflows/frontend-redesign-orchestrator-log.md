@@ -2628,3 +2628,126 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 
 - XB: test-only `3b65c3ea`(release 검사 Dart 지시문 해석), 기준팩 `1ee862ae`(사용자 결정 A — 현재 설치 클라이언트 기준 새 개발팩 manifest·README), FB-10c `3d9f56ce`(학생 폴백 crop, HEAD scanner_matchers projection). CF **fb10cdart `16606c58`**(5파일). gate `20261014_080053`. scan_page 스캐너 WIP 보존.
 - backend 로그 08:25: 동결 해제, FB-6 window 요청(source9 → 경로·SHA·최종 Dart 목록 → CF fb6-dart), 스캐너 frontend WIP 유효성 판단 요청(FE8-f1 전).
+
+## 2026-10-14 08:35 — 배정(Lane A FE7-h · Lane B tidy1)
+
+- 사용자 "다음 작업". 시작 SHA `3995e100`. XB FB-6 반영은 backend/contracts만이라 겹치지 않음(같은 소스 gate 때만 CF 워커 정지).
+  · Lane A **FE7-h** 통계 이력 — `debug/frontend_redesign_handoff/fe7h-worker-prompt-20261014.md`. 기준 데이터(학생·인벤토리 스캔 시각·스냅샷 횟수), KPI 증감(지난 scan 스냅샷 대비, 1회면 '—'), A6 성장 추이·B3 주요 재화 변화(FE6-f 순수 함수 재사용, 2회 미만은 FD-106 시안 문구 + 스냅샷 시각). 통계 장면 3장 갱신 예상. 키트 승격은 하지 않음.
+  · Lane B **tidy1** 작은 정리 6건 — `debug/frontend_redesign_handoff/tidy1-worker-prompt-20261014.md`. ① FD-108 남은 탭 이동 intent화(인벤토리 "계획에서 보기", 계산기 링크는 연결만·숨김 유지) ② 인벤토리 목록·학생 목록 모드 reveal ③ 키트·코드 주석 3곳 ④ 시나리오 목록 1280×720 넘침 ⑤ 시계 interface를 lib/ui 밖으로(services → ui import 해소) ⑥ idempotency key `microsecondsSinceEpoch` 점검. golden 전 장면 변화 0 목표. 이번 라운드 `app_shell.dart`·`lib/ui/navigation/**`는 Lane B, 키트는 주석만.
+
+
+## 2026-10-14 08:26 — 반영 완료·최종 Dart 목록(XB→CF): **FB6 source9 메인 반영 완료**
+
+- CF08:25 paired/동결 해제·FB6window에 따라 **exact9 원본바이트만** 백업 후 메인에 반영했다. 기존4 백업/신규5, protected4109→4114. 다른core/기존인식WIP/CF프론트/tool/기준팩변경0, indexempty/새commit·push0. FB10c paired **16606c58** 수신·왕복완료 기록.
+- 현재 메인 전술 **62/4.821s OK**(기존38+신규24), skip/exclusion/골든/timeout 변경0. source9는 독립native기준팩 합본1263GREEN을 통과한 것과 같고 기존RED는 보존했다. 현재 release 회귀11+actualCFfront까지 합친 새 표준전체 **1274 예상**은 이NEWtask에서 진행하며 그 결과 전 새 커밋0이다. **debug/xb_fb6_main_overlay_20261014/artifacts/**의 backup9/measured9/mainbefore·after/overlay/focus receipts가 실제 근거다.
+- **CF 다음 행동**: 반영기록을 받았으므로 요청한 **fb6-dart(DTO/strict validator/Mock v2/process E2E; 화면은 FE9-b)** 배정을 열어달라. 아래 최종 목록과 메인schema/fixture를 사용한다. 같은source gate는 CF workers 종료/새whole 결과 뒤 → XB exact9 커밋 → CF fb6paired 순서, 그뒤 FB7. CF프론트 전용slice 진행 가능. **backend/contracts/frontend/tool 추가변경 동결**; currentgate080053는 FB6이전이므로 재사용0이다.
+
+| 메인 실측 경로 | Bytes | SHA256 |
+|---|---:|---|
+| `backend/core/tactical_fb6.py` | 6798 | `f51c3033d7eff25689c39e6926a05aa899c453f6dac83e6d9b246b43a9e7ab59` |
+| `backend/core/tactical_fb6_store.py` | 20538 | `e99f2b03a5f7e0c24ef19434ce44afa76cfb867240f5e723b0c8508be1a4d0df` |
+| `backend/core/tactical_store.py` | 16790 | `9773a7567577cfecdcaf5879b93f09550e17acefe50c2943eaef733b7037b208` |
+| `backend/core/tactical_v2.py` | 57676 | `1ae8b4fd123f630750b6e87468884fe26a552c77cca45c9fa74d083d2f411a36` |
+| `backend/tests/test_tactical_fb6_primitives.py` | 6166 | `d6e2386bab64d1997e6c24b285a484e622237ec15450370910a2de6ceb84ffb2` |
+| `backend/tests/test_tactical_fb6_writes.py` | 14447 | `e32f2b1f5cf229a9640c623531e360196c6432ad79a4146cc987285d4ab1f0dc` |
+| `contracts/README.md` | 90625 | `2f5b642543e8a4963f5ef2b2c72a56fb6a844316a35131638826bf744dd0e56e` |
+| `contracts/fixtures/tactical_fb6_writes_v2.json` | 39342 | `946f9312f477160046516ec76ec29ddc62c7ce95bfd574a8d8836cfddb9c6f10` |
+| `contracts/tactical-protocol-v2.schema.json` | 88241 | `8a0be074e56a60220c7fa8deef76c7d86be0001535b313a7f7a09fe2e9d1eb51` |
+
+- **18:42 대비 변경: 없음.** source9/fixtures/키·메서드 그대로다. 새 공개 메서드6 = `tactical.v2.match.upsert`, `tactical.v2.match.delete`, `tactical.v2.jokbo.upsert`, `tactical.v2.jokbo.delete`, `tactical.v2.legacy.preview`, `tactical.v2.legacy.commit`.
+- **match 입력13**: version/match_id/kind/occurred_at/occurred_precision/season/opponent_identity_id/opponent_display_name/result/attack_deck/defense_deck/notes/attempt_count. **jokbo 입력6**: version/jokbo_id/name/attack_deck/defense_deck/notes. read DTO의 backend-owned audit/created/import/source 필드를 upsert에 되보내지 않는다. mutation에는 기존 profile_id/expected_revision/idempotency_key; legacy commit에는 source_revision/source_fingerprint도 사용한다. 정확 request nesting/required/nullable는 반영된 schema/fixture를 기준으로 한다.
+- **read strict DTO**: TacticalMatchV2 optional `attempt_count:int>=1|null`, `occurred_precision:date|instant|unknown`; 구v2 absent는 unknown. TacticalJokboV2 optional `name:string`. old DTO 키 + 이 additive optional 키만 허용하고 다른 unknown 키는 계속 거부한다. deck wildcard/source/identity/snapshot/date/provenance 보존, public state top-level 추가0/private legacy_v1 노출0.
+- **정확 success**: match.upsert={revision,match,jokbo_ids}; match.delete={revision,match_id}; jokbo.upsert={revision,jokbo}; jokbo.delete={revision,jokbo_id}; legacy.preview={source_revision,source_fingerprint,match_count,jokbo_count,issues,v1_writes_disabled}; legacy.commit={revision,imported_matches,imported_jokbo,v1_writes_disabled}; issue={record_kind,record_id,code,message}. Typed methods/results, strict request/success, ProcessAppService, Mock v2, fixture/restart·retry·revision·migration E2E가 fb6-dart 소비 범위다.
+- **행동/에러**: v1 rows가 있으면 v2 새쓰기 `legacy_migration_required`; preview→source revision/fingerprint 확인→단일 v2 atomic write+private marker로 이관. 빈 v1는 첫v2save의 같은 write에서 claim. 이후 새v1쓰기는 read-only, 기존exact v1 retry/read는 보존한다. N시도는 N개의 outcome/공유 per-attempt로 확장하지 않으며 undefined 채택률/방어30일/모집단통계는 이번범위 밖이다. ordered attack/defense pair의 stable lineage ID에 이름/메모 보존, 부분deck을 fullsnapshot으로 승격하지 않는다.
+
+
+## 2026-10-14 08:27 — Dart 목록 명확화(XB→CF): legacy commit 요청키는 expected_source_revision/expected_fingerprint
+
+- 방금 FB6 반영 완료의 legacy commit 설명에서 preview 응답 필드명과 요청 필드명을 혼용한 부분을 정정한다. 실제 source9/schema/18:42 계약은 변경되지 않았다. **preview 응답 source_revision + source_fingerprint → legacy.commit 요청 expected_source_revision + expected_fingerprint**다. 여기에 profile_id/expected_revision/idempotency_key를 넣는다. preview 요청은 profile_id만이다.
+- 정확6 request payload required/properties를 메인 schema에서 추출한 **debug/xb_fb6_main_overlay_20261014/artifacts/wire-request6.json**과 수정한 DART-CONNECTION.md를 사용한다. 원 게시/문자열은 before-key-clarification 사본과 로그에 보존했다. 새 method/DTO/프로덕션 수정0, 메인 전술62 PASS 유지, 전체1274/CF gate 전 commit0.
+
+
+## 2026-10-14 08:30 — 진행(XB→CF): FB6 현재입력 표준전체1274 시작
+
+- source9 메인반영/현재전술62 PASS 뒤 **새 canonical working-v7 6336 inputs**를 현재 backend/contracts/tool4114·actualfrontend lib/test/assets/pubspec와 일치시켜 표준 **py -3.11 -m unittest discover -s tests -v**를 시작했다. 입력 intake drift0, 원봉인사본 수정/실행0, source9 변경0, exclusion/skip/golden/timeout 완화0. 새source추가/커밋0이다.
+- CF fb6-dart 준비는 반영완료 실측표/최종목록/wire-request6.json으로 진행할 수 있다. 같은sourcegate/커밋 전 이전체 결과를 회신한다. legacy commit 요청키 명확화는 앞항목대로 expected_source_revision/expected_fingerprint이며 실제 schema/18:42소스 unchanged다. backend/contracts/tool은 고정하고 CF frontend전용slice 진행은 허용한다.
+
+
+## 2026-10-14 08:32 — 回신·판단(XB→CF): 오래 남은 scanner frontend WIP는 **기능부 보존**, 단독 전체커밋/통삭제 비권장
+
+- CF08:25 요청을 읽고 실제 HEAD **3995e1008cbff348b2afc4064d38159d39ed52a6** 대비 scanner 프론트 **tracked dirty13 + untracked2**를 read-only로 수신했다. **유효한 기능 작업이다. 통째로 버리지 말아달라.** scan_page198추가/47삭제 안에는 재고 profile선택→미식별slot조회·identity지정/세션은행 vs 영구승인 선택·revision갱신이 있으며, 학생 review는 수정/화면확인한 필드만 confirmed_fields로 전달·invalid숫자 제출차단·revision변경 시 draft/확인상태를 비운다. 단순 오래된 deadcode가 아니다.
+- **구체적 보존 묶음**: (A) 학생 O1 confirmation = scanner_service/ProcessAppService/Mock + scan_student_review_workspace/scan_page와 confirmedFields 회귀·process E2E. 수정하지 않은 다른 값을 영구학습하지 않는 안전 의미가 있다. (B) 재고 R6e identity = ScannerUnresolvedSlots/assignment DTO·strict response validator·client2메서드·Mock/scan_page/profile선택 + **미추적 scan_inventory_identity_review.dart·그 test**와 service/page/widget tests. 조회revision일치·assign expected_candidate_revision·session/generation·profile scoped identity·persist=false/true 차이를 FE8-f1 controller 추출에서도 유지해야 한다.
+- **단독 whole WIP 커밋은 아직 부적절**: 현재 **committed HEAD scanner protocol에는 confirmed_fields와 scanner.review.unresolved_slots/assign_identity가 없다**. 현재 working backend/schema에는 있다. 바뀐 scanner_process_e2e launcher `tests.scanner_o1_e2e_backend`도 **working에만 있고 HEAD에는 없다**. 따라서 프론트만 먼저 묶어 release/깨끗한 checkout 동작 완료로 계산하면 안 된다. `scanner-WIP-backend-contract-proof.json`에 HEAD/working SHA와 method AST/pins를 기록했다. 기존 CF080053 GREEN은 **current working WIP와 함께 실행한 증거**이며 committed HEAD-only 지원 증거가 아니다.
+- **제안 순서**: 지금 FB6 source9 paired를 먼저 완료한다. 그다음 O1/R6e 기능부의 backend/contracts/fixture exact선택→새canonical전체/CF같은sourcegate→XB별도커밋→CF 기능부커밋으로 현재 동작을 먼저 기준점에 남긴 뒤 FE8-f1 controller 추출을 한다. 기존 callback signature/API·정수입력차단·candidate revision/세션generation·identity cache/계정전환·student private crop lifetime을 보존하고 stale reply/close/reset race 검증을 유지한다. 이번세션 그 source를 main에 추가하거나 staging하지 않았다.
+- **CF 시각/설계 부분**: scan_companion_dock/대응test의 live values·순차animation 제거/identity-only 표시, scan_page progress표시 변화, result report너비·행/portrait 레이아웃은 위 transport기능과 섞여 있다. 이는 CF FE8-g2 bounded/시안 판단 범위이며 XB가 이전UI로 되돌리거나 폐기를 승인하지 않는다. 아직 설계중인 live5/earlycandidate를 구현완료로 계산하지 말고 CF선택대로 별도slice로 정리한다. 안전기능 보존과 시각 refactor를 hunk별로 분리할 가치가 있다.
+- **판정 한계/증거**: 본회신은 현재diff+백엔드계약/기존 GREEN을 읽은 유효성·커밋순서 판단, 새 Flutter실행/별도HEAD-only全gate 또는 사용자 삭제승인 아님. **debug/xb_fb6_main_overlay_20261014/artifacts/scanner-WIP-intake.json**, scanner-WIP-diffs13, backend-contract-proof 실제파일. frontend source편집·폐기·commit/push0/계약추가변경0이다.
+
+
+## 2026-10-14 08:36 — FB6 Dart 소비 보강(XB→CF): tactical 오류 allowlist 추가8 필요
+
+- source9/6메서드/18:42 계약변경은 없다. 현재 **PlanningProtocolClient._methodErrorCodes['tactical']**와 source9의 실제 RepositoryError 코드를 대조하니 새 정상 domain error8이 기존 allowlist 밖이다: **import_review_required, import_source_changed, legacy_already_migrated, legacy_migration_required, lineage_conflict, migration_conflict, opponent_alias_required, tactical_v1_read_only**. 공통 root `_validErrorPayload`가 tactical.*를 이 집합으로 검사하므로, v2 message validator의 generic error object만 늘려서는 부족하다.
+- **fb6-dart 범위에 PlanningProtocolClient tactical allowlist 이8을 포함**해달라. protocol invalid/fatal로 처리하지 말고 기존 typed backend error로 소비한다. 새6 request/success/optional DTO/Mock과 함께 synthetic process fixture에서 legacy_migration_required→preview→source 변경 import_source_changed→retry/readonly-v1/lineage·identity conflict를 확인하면 된다. 실제 사용자 profile 이관/삭제를 실행하지 않는다.
+- 근거 **debug/xb_fb6_main_overlay_20261014/artifacts/CF-tactical-error-allowlist-delta.json**, FB6-error-code-intake 및 반영된 schema/fixture. 오류의 source 이름을 새로 만든 것이 아니라 기존 source9에서 추출했다. frontend/source9 수정0/추가commit0. whole1274 진행/CF새gate→XB9→CFpaired 순서 그대로다.
+
+
+## 2026-10-14 08:43 — FB6 JSONL 근거 보강(XB→CF): 새6메서드/17 RPC/재시작/30 wire 스키마 PASS
+
+- 현재 mainsource9를 **guarded real ApplicationProtocol JSONL fixture**로 실행해 새6메서드 모두 포함 **17 RPC PASS**. legacy rows→v2 새쓰기 migration_required→preview/commit→새v1 readonly·기존exact retry 보존→manual match/jokbo upsert/delete→process재시작→원migration/upsert retry가 삭제된record를 다시 만들지 않음을 확인했다. legacy attempt_count=null/date precision, private legacy_v1 public 미노출도 확인했다. actual tactical v1/v2 **request+response30 스키마 PASS**, registry local-only/remote조회0.
+- 첫 inventory전용 fixture가 전술요청을 **unknown_method("outside inventory test fixture")**로 거부한 harness실패는 process-smoke-failure.json에 보존했다. backendsource를 바꾸지 않고 새 **fb6_rpc_fixture_backend.py + process_smoke_v2.py**로 실행했다. 사용자 profile/game/scanner/nativebinding/배포·원source 변경0, synthetic Temp prefix **ba_planner_fb6_rpc_**만 허용/cleanup. whole1274는 계속 진행 중이며 이추가smoke를 전체gate로 대체하지 않는다.
+- CF fb6-dart processfixture 참고: **debug/xb_fb6_main_overlay_20261014/artifacts/fb6_rpc_fixture_backend.py**는 새CFtask artifacts로 같은 바이트를 복사해 launch할 수 있다(명시 storage env/Temp prefix 동일). 실제 engine은 메인 ApplicationProtocol이며 scanner는 bind하지 않는다. transcript/receipt/wire-schema-check 실제근거. Typed Dart 연결/오류 allowlist8/newsame-sourcegate는 CF에 남아 있고 **XB FB6commit0/push0/mainbackend/contracts/tool 동결**이다.
+
+
+## 2026-10-14 09:01 — 全gate RED 알림(XB→CF): 표준1274 errors2·기존 backend process 시작/종료10s 초과
+
+- 새 canonical 표준전체 **1274/1716.936s, FAILED(errors=2)**. 오류는 기존 test_scanner_stdio_transport.test_real_process_serves_asset_readiness_and_windows_target_list 및 test_stdio_protocol_server.test_real_module_process_round_trip, 모두 core.backend_process.communicate **timeout=10**이다. 전술62/guardedJSONL17RPC/wire30은 PASS 그대로지만 전체GREEN으로 대체하지 않는다. 원log/receipt/native44/refs4/protected4114를 보존했고 skip/exclusion/golden/timeout 완화0이다.
+- 진행 중 업데이트에서 tail만 확인해 ERROR 누적을 놓친 점을 정정한다. 현재 전체 gate RED다. 같은 10s 조건의 프로세스 시작/종료 검사를 NEW 진단사본에서 분리 확인한다. source9/메인backend/contracts/tool 수정0·커밋0·push0, 원RED를 새PASS로 덮어쓰지 않는다.
+- CF fb6-dart 준비는 계약키/trace를 참고해 진행할 수 있으나 **whole RED 해결 전 XBcommit0**. CF같은sourcegate가 먼저 끝나도 동일하다. 실제 에러 상세 **debug/xb_fb6_main_overlay_20261014/artifacts/whole-red-analysis.json**. 공개prod개선이 필요하면 격리후보/새scope를 먼저 조율하며 현재window에 임의로 끼우지 않는다.
+
+
+## 2026-10-14 09:07 — 진단·재검증 시작(XB→CF): 동일10s process2 PASS·새 표준whole1274 retry
+
+- 원RED의 프로세스2검사를 NEW byte-identical사본에서 **2/13.322s OK**, 각 **communicate timeout=10 그대로** 확인했다. 원전체1274/1716.936s/errors2는 그대로 RED이며 분리PASS2로 승격하지 않는다. 현재관측CPU46%/해당backend잔여process0이며 원오류의원인을CPU부하로단정하지 않는다.
+- 지금 **debug/xb_fb6_process_startup_diag_20261014/artifacts/working-v7**에서 currentmain4114·latestactualCFfront를 새intake로 반영해 표준whole **1274 retry**를 실행한다. 코드/테스트/timeout/골든/skip/exclusion 변경0, 원사본/RED 덮어쓰기0. 시험기간 CF의 Flutter whole gate/무거운 test 동시실행을 가능하면 피하도록 조율해달라(프론트 source준비는 계속 가능). 결과 전 커밋0/메인backend/contracts/tool동결·push0이다.
+- harness 결과판독은 **exitcode+실제unittestfooter**로 한다. metadata CLI의 bufferedJSON이footer뒤에있을수있어 마지막문자열만보거나 이름에skipped가있는test를skip수로잡지않는다. 이정정은생산/test조건완화가아니며 원 실제errors2판정은변함없다. focused2-receipt/retry-start/inputpins가이NEWtask에있다.
+
+
+## XB 보고 — 2026-10-14 09:08: FB6 exact9 반영 완료·wholeRED2보존/동일10s 진단PASS·표준재검증 진행
+
+- CF fb10cdart16606c58 paired/동결 해제를수신했고 FB6source9 exact원byte만 메인에반영/경로·SHA·Dart최종6메서드/optional키를 CF에게시했다. currentmain전술62/4.821PASS/guardedJSONL17RPC·새6·이관readonly/restart/actualwire30schemaPASS, main4114·인식/CFWIP/native44/refs4보존·FB6commit/push0이다.
+- 최초현재입력whole **1274/1716.936s FAILED(errors2)**. 기존 real backend_process 테스트2가각communicate10s를넘겼고원log/receipt를보존했다. 초기에tail만본진행요약이ERROR누적을놓친것을09:01에정정했다. 같은source新사본/같은10s의 **2/13.322s OK**는원전체RED를GREEN으로바꾸지않는다.
+- 현재 **debug/xb_fb6_process_startup_diag_20261014/artifacts/working-v7**에서 source/test/timeout/골든/제외변경0의 표준whole1274를재실행중이다. 실제최신CFfrontend를새intake로확인했다. CFheavyFluttergate동시실행은가능하면피하도록로그로조율요청했고원인CPU단정/OS·프로세스종료0이다. Source9/headerfrontend소비allowlist8/legacyexpected 요청키명확화/wire-schema·fixture인계는그대로다.
+- CF오래된scannerfrontend WIP tracked13+untracked2는유효O1/R6e기능부라보존을권고했다. HEAD-onlybackend계약/fixture가부족하여별도paired필요, transport안전과시각bounded수정은CFhunk별구분권고/폐기승인0이다. actualdiff/AST/pins/회신은 **debug/xb_fb6_main_overlay_20261014/artifacts/scanner-WIP-assessment.md**다.
+- 전체GREEN 해결→CFfb6-dart/new같은sourcegate→XBexact9→CFpaired→FB7. 지금메인backend/contracts/frontend/tool 추가변경동결·새FB6commit/push0. CMstore/lock/pipeline/연구/game원본/keys/Viewer/Arena/새holdout/userprofile/OS/골든쓰기0, fullFB10/native/M3/M4/O3/전체P0-P6완료미선언. 최종output은아직작성하지않았고원RED/재검증을실제artifact로모아뒤에봉인한다.
+
+
+## 2026-10-14 09:35 — 표준전체 재검증 완료(XB→CF): unchanged **1274/1621.648s OK**
+
+- 원 whole1274/1716.936s **errors2 RED**는 원log/receipt 그대로다. 같은10s 신규사본 focused2/13.322s PASS 뒤 **코드/테스트/timeout/골든/skip/exclusion 변경0**으로 표준whole를 다시 실행했고 **1274/1621.648s OK**, errors/failures/skips0이다. retry input **6344**/unexpectedsourcechanges0/main4114/nativecatalog+bundle44/refs4보존. timeout을 늘려 통과시키지 않았고 부하를 확정원인으로 단정하지 않는다.
+- 실제 retry log **222320B/SHAea66d06e8e5b48220471b31818541d461bcc3aea85902d555446c00e981a390e**, **debug/xb_fb6_process_startup_diag_20261014/artifacts/python-full-retry-receipt.json**. 전체판독은exitcode+실제unittestfooter다(부가metadataCLI JSON이footer뒤에올수있음). 이판독정정은원errors2를숨기지않는다. 현재frontend intake drift0·Python의존drift0는 final-front-scope에구분했고 변화시currentmainfocus20으로 관련의존을확인했다.
+- **CF 다음**: 앞서게시한 source9 SHA/최종6메서드·optional키·legacycommit expected_source_revision/expected_fingerprint·root tactical error allowlist8/guardedfixture로 fb6-dart를완료하고 **새 같은source fe_gate**를 회신해달라. 기존080053재사용0. 새GREEN→XBexact9별도commit→CFpaired→FB7. 지금FB6commit/push0/backend/contracts/frontend/toolsource추가동결이다.
+
+
+## XB 보고 — 2026-10-14 09:35: FB6 source9 반영·원RED보존/표준1274 재검증GREEN·CF fb6-dart 대기
+
+- **완료**: CF16606c58 fb10cdart paired/동결 해제·FB10c왕복 완료 수신. 이어 CF08:25 source9 window에 따라 exact9원byte/기존4백업+신규5만 메인반영/실측SHA·최종Dart목록게시, 보호4109→4114. 다른인식/CFWIP/기준팩/frontendtool보존, HEAD **3995e1008cbff348b2afc4064d38159d39ed52a6**·empty index·FB6commit/push0.
+- **FB6 근거**: main전술62/4.821s PASS; guarded realApplication JSONL 새6메서드17RPC/이관→v1readonly·기존retry/재시작·삭제후retry부활0/unknownattempt/date/private marker규칙 PASS; actualv1/v2 wire30schema PASS. 첫inventoryfixture의전술 unknown_method거부는harnessfailure로보존하고새전술fixture로통과했다.
+- **전체게이트 구분**: 첫canonical whole **1274/1716.936s errors2 RED**(기존core.backend_process communicate10s 두검사)를보존. 진행요약이ERROR누적을놓친점09:01정정. 같은입력·같은10s新사본 **focused2/13.322PASS**만으로RED승격하지않고, fresh/latestfrontintake의표준전체를재실행해 **1274/1621.648s OK**, input6344, error/fail/skip/exclusion/golden/timeout완화0·unexpectedsourcechanges0·4114/native44/refs4보존. 원인부하단정0/OS·프로세스종료0. Canonical실행이며wholemain/wholeselectedHEAD라고확장하지않는다. Currentfront 전체drift0/Python의존drift0 적용범위는receipt로분리했다.
+- **CF 인계**: source9/18:42 계약은동일, legacypreview 응답 source_revision/source_fingerprint와 commit요청 **expected_source_revision/expected_fingerprint** 혼용문구만명확화했다. request6 exactschema JSON/최종DTO/success목록·root tactical error allowlist8 필요·새CFtask 복사용 guardedfixture/trace를게시했다. CF fb6-dart/strict/Mock/process E2E→**새same-sourceGREEN→XBexact9→CFpaired→FB7**, 기존080053 재사용0·그전backend/contracts/frontend/toolsource동결.
+- **별도 회신**: scanner frontend tracked13+untracked2는유효O1confirmation/R6eidentity기능이라보존권고. committedHEAD에는관련method/confirmed_fields/fixture가없고working에만있음을AST/pins로확인했다. 단독프론트whole커밋/통삭제 대신후속backend기능부paired→CF기능부→FE8-f1추출제안, 시각bounded부분은CF판단/폐기승인0. 원diff13/2pins/assessment/역할의존을 실제파일로인계했다.
+- **범위/다음**: source9원본9의HEAD일치·normalexact9stage 계획은읽기전용준비, actualstaging0. sharedstore/lock/pipeline/연구/게임원본·keys/Viewer/Arena/새holdout/userprofile/OS/골든/프론트source쓰기0. Live5/earlystreamdraft·공용cropfixture2/fullFB10/FD145/currency/M2native/M3/M4/O3/전체P0-P6 완료미선언. 같은XB/CF/CM 보고·P0-P6/post상태 갱신·최종Almanac/diff/index 뒤 두taskoutput을마지막봉인한다.
+
+
+## 2026-10-14 09:36 — 인계(XB): FB6source9 main/원RED + 동일조건 표준재검증GREEN 두 task 봉인
+
+- **debug/xb_fb6_main_overlay_20261014/output.md 1171554B/SHA494dc5fe1b53cf4f06ec47d84ef67c65c349a8507f365fac0c0e619047b7ecaf**, actual6418 artifacts: exact9 반영/backup/SHA/main4114·전술62·JSONL17/wire30·최종Dart/오류8/WIP회신·원wholeRED2 증거.
+- **debug/xb_fb6_process_startup_diag_20261014/output.md 1165717B/SHAf4e0772f59c07e9b47ec5aff29fed4d6a4c40045d6022675dddb1cad5dc5d8c5**, actual6374 artifacts: 동일10s focused2/13.322 PASS·source/test/timeout/skip/exclusion/golden변경0 새standard **1274/1621.648s OK**/rawlog/input/native/CFscope/finalgates. 원RED보존/waiver0이다.
+- 최종Almanac45/diff/index PASS/4114·기존WIP보존/FB6commit·push0. 다음은 **CF fb6-dart/new같은sourceGREEN→XBexact9→CFpaired→FB7**. 그전backend/contracts/frontend/toolsourcefreeze/old080053재사용0. ScannerWIP기능부보존·working-onlybackend의존/후속paired 권고도로그에회신완료했다.
+
+## 2026-10-14 09:55 — tidy1·FE7-h 검토·gate·커밋, XB FB-6 반영·스캐너 WIP 판단 수신
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe7h 15행, tidy1 31행 — 두 번째 표(pre 사본)를 파서가 잘못 읽은 27건은 본 표와 실제 일치), 겹침 0(단 FE7-h가 tidy1의 새 `app_clock.dart`를 import → 커밋 순서 tidy1 → fe7h), 범위 밖 변경 0. XB FB-6 source9 9/9 일치.
+- XB가 09:07 표준 1274 재실행 중 "CF Flutter gate 동시 실행 자제" 요청 → CF는 XB 프로세스가 끝나기를 기다린 뒤(09:35) gate 시작.
+- gate ① `20261014_093501`: 테스트 391 + 390 + 676 + 289, process 60 PASS, golden RED 6 = 통계 3(예측) + **시나리오 목록 3**(tidy1 "변화 0" 예측과 다름). 차이 확인: "오래된 시나리오 없음" 글자 상자 위치 동일(x 1611–1705, y 106–115), 274px 글자 가장자리 안티앨리어싱만(tidy1이 행을 Flexible·말줄임으로 바꾼 영향) → 시각 변화 없음, 승인. 통계 3장 검토(성장: 기준 데이터 어제 21:40·3일 전·12회, KPI 증감, A6 58→63.4%; 인벤토리: KPI 증감, B3 재화별 패널 3) → 승인. tidy1 commit.json `whole`에 시나리오 목록 3장 추가(CF). ② `20261014_094253` **GREEN**(golden 45).
+- 커밋: **tidy1 `7bd7530d`**(33파일) → **fe7h `ff5924c6`**(17파일).
+- 사용자 결정 후보 2건: ① **스냅샷 묶음 규칙**(FE7-h 발견 2: 저장은 종류별 세션이라 왼쪽 "12회" vs 시안 "스냅샷 6회", B3 seg "스냅샷 6회") ② **스캐너 frontend WIP 처리**(XB 08:32 권고: 기능부 보존, FB-6 뒤 backend 기능부 paired → CF 기능부 커밋 → FE8-f1, 시각 부분은 CF FE8-g2 판단).
+- 다음: fb6-dart 배정(+ allowlist 8).

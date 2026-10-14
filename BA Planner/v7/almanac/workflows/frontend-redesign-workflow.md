@@ -330,7 +330,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE7-e 통계 전용 필터 | 필터 모달 재사용, 통계 필터 상태 분리 + 학생 탭 필터 불러오기, A1~A6에만 적용 | FE3-d, FD-074, FD-104 |
 | FE7-f 2차 | A3·A4·B2·C4 | FD-028 |
 | FE7-g C3 계단선 | 활성 계획 문서 계산(phase_results·bottlenecks) → 페이즈별 누적 부족 | FB-1 — **완료 2026-10-14**: 커밋 `5990875c`, gate `20261014_004608`(`statistics-plan` 갱신). 통계가 활성 문서 계산을 읽음(FE7-c 발견 1 해소), KPI 첫 부족·막힌 학생, C3 재화별 계단선, C1 페이즈 순, 근거 막히는 단계 |
-| FE7-h 이력 연동 | A6·B3·KPI 증감·스냅샷 1회 문구 | FB-2, FD-041, FD-096 |
+| FE7-h 이력 연동 | A6·B3·KPI 증감·스냅샷 1회 문구 | FB-2, FD-041, FD-096 — **완료 2026-10-14**: 커밋 `ff5924c6`, gate `20261014_094253`(통계 3장 갱신). 기준 데이터·KPI 증감·A6(이력 student_changes 되돌리기로 시점별 육성도)·B3(재화별 패널, FE6-f 함수 재사용). 남은 결정: 스냅샷 묶음 규칙(학생·인벤토리 세션 따로 → "12회" vs 시안 "6회") |
 | FE7-i 3차 | A5·C5 | FD-028 |
 
 ### FE8 — 타이틀·홈·스캔 (Lane B)
@@ -562,3 +562,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-14(새벽): FE7-g `5990875c`(같은 소스 gate `20261014_004608` GREEN, golden 1장 승인). fb10c-dart 코드 완료·DryRun 통과 — XB FB-10c selected4 커밋 판단 대기(Python RED 1은 설치 클라이언트 입력 문제, 사용자 결정 A 진행 중). 다음 후보: FE8-f1(스캔 세션 컨트롤러 추출 — fb10cdart 커밋 뒤 scan_page 겹침 해소) · FE7-d(원본 탭 이동) · FE7-e(통계 필터) · FE7-h(이력) · Mock 검수 시나리오(통계·계정 메타 시안 숫자) · 작은 정리 묶음.
 - 2026-10-14(새벽 2): FE7-d `dd17e1f0` · mockdemo `0dd0b368`(`--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review` 검수 시나리오, golden 변화 0, gate `20261014_023144` GREEN). XB 기준팩 exact20 메인 반영 허가(backend 로그 02:45) → 같은 소스 gate → XB 기준팩·FB-10c 커밋 → CF fb10cdart. 다음 후보: FE8-f1(fb10cdart 커밋 뒤) · FE7-h · FE7-e · 작은 정리 묶음(키트 주석·intent 확장 FD-108·인벤토리 행 reveal).
 - 2026-10-14(아침): XB release 검사 test-only `3b65c3ea`(Dart 주석을 import로 오인하던 regex 교체) · 기준팩 `1ee862ae`(결정 A 새 개발팩) · FB-10c `3d9f56ce` → CF fb10cdart `16606c58`(gate `20261014_080053` GREEN). FB-10c 왕복 완료, 동결 해제. 다음: XB FB-6 window(source9) → CF fb6-dart. CF 후보: FE7-h · 작은 정리 묶음 · FE8-f1(scan_page 스캐너 WIP 처리 결정 뒤).
+- 2026-10-14(오전): tidy1 `7bd7530d`(FD-108 탭 이동 intent·목록 reveal·주석·1280×720 넘침·`lib/services/app_clock.dart`·idempotency key 순번 10곳) → FE7-h `ff5924c6`(gate `20261014_094253` GREEN, golden 6장 승인 — 시나리오 목록 3장은 글자 가장자리 안티앨리어싱만). XB FB-6 source9 메인 반영(08:26)·표준 1274 재검증 GREEN(09:35) → CF fb6-dart 대기. 다음: fb6-dart(+ tactical 오류 allowlist 8) · 스냅샷 묶음 규칙 결정 · 스캐너 frontend WIP 처리(XB 권고: 기능부 보존, FB-6 뒤 backend 기능부 paired → CF 기능부 커밋 → FE8-f1).
