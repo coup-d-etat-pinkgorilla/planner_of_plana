@@ -7945,3 +7945,189 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`, 기준 viewport �
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_094253\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-e 통계 전용 필터 + FD-175 스냅샷 묶음 (Lane A, 로컬 Claude Code)
+
+### FE7-e 착수 기록 (2026-10-14, Lane A)
+
+- 상태: **진행 중**. 시작 SHA `5b1d8d159173515c8faf0d965e7210ad35ef200c`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 "FE7-e 착수 기록"은 없었다.
+- 범위: A. FD-175 스냅샷 묶음(기준 데이터 "n회 · 기간", A6 · B3 점, KPI "지난 스냅샷 대비"). B. FE7-e 통계 전용 필터(FD-104, 학생 성장 A1~A6에만).
+- 막는 `열림` FD 없음(막힘 요약 FE7-e = FD-074 · FD-104, 둘 다 확정).
+- 고칠 기존 파일(모두 `git status --short` 빈 줄 = 기존 미커밋 변경 없음, 사본 `debug/frontend_fe7e/pre/<경로>`):
+  - `frontend/lib/statistics/statistics_history_projection.dart`
+  - `frontend/lib/ui/pages/statistics_page.dart`
+  - `frontend/lib/ui/statistics/statistics_workspace.dart` · `statistics_topics.dart` · `statistics_history_charts.dart`
+  - `frontend/lib/ui/studio/statistics_studio_layout.dart`(요소 좌표만)
+  - `frontend/lib/ui/widgets/student_filter_modal.dart`(머리 제목 · 보조 문구 · 추가 버튼 선택 매개변수만, 기본값 = 지금 동작)
+  - `frontend/lib/ui/pages/student_page.dart` · `frontend/lib/ui/app_shell.dart`(학생 탭 필터 상태를 셸이 주입 — 통계 "학생 탭 필터 불러오기"가 읽을 길. 동작 변화 0, 최소 diff)
+  - 테스트: `frontend/test/statistics_history_fixture.dart` · `statistics_history_projection_test.dart` · `statistics_history_view_test.dart` · `statistics_page_test.dart` · `statistics_workspace_test.dart` · `test/goldens/fe7a_statistics_golden_test.dart`
+  - 이 문서
+- 새 파일(예정): `frontend/lib/statistics/statistics_growth_filter.dart`, `frontend/test/statistics_filter_test.dart`.
+
+### FE7-e 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+두 가지를 했다. A. 통계 "스냅샷"을 FD-175 묶음(2시간 안 scan 세션)으로 센다. B. 왼쪽 "필터"가 통계 전용 필터 모달을 연다(FD-104, 학생 성장에만 적용). 새 서비스 메서드 · 백엔드 · 키트 변경은 없다.
+
+착수 기록 정정: `statistics_topics.dart` · `statistics_history_charts.dart` · `test/statistics_history_view_test.dart` · `test/statistics_workspace_test.dart`는 고치지 않았다(사본을 지웠다, 작업 트리 = HEAD). 새 파일은 `lib/statistics/statistics_growth_filter.dart` · `lib/ui/statistics/statistics_filter_view.dart` · `test/statistics_filter_test.dart` 셋이다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7e/logs/`이고, 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/statistics`(묶음 뒤) | info 1(`prefer_initializing_formals`, `_growthOf`) → `this._growthOf` 매개변수로 고침 → No issues |
+| `flutter test test/statistics_history_projection_test.dart`(기대 고친 뒤 + FD-175 테스트 2건) | **+17 −0**(첫 실행) |
+| `flutter analyze lib/statistics`(필터 projection 새 파일) | info 1(`use_null_aware_elements`) → `?a4Group.read(candidate)`로 고침 |
+| `flutter analyze lib`(모달 · 학생 페이지 · 셸 · 워크스페이스 · 페이지 뒤) | **No issues found** |
+| 통계 13파일(`test/statistics_*_test.dart`, 새 필터 테스트 전) | **+125 −0** |
+| `flutter test test/statistics_filter_test.dart`(1차) | +7 −2: 1280×720 · 800×600에서 모달 머리 Row 넘침(157 · 508px). 통계 머리에 보조 문구 · "학생 탭 필터 불러오기"가 더해져 고정 폭이 띠보다 넓었다 → 띠 안쪽 폭 1000 미만이면 보조 문구를 빼고 추가 버튼을 줄인다(학생 머리는 둘 다 없어 그대로) |
+| 같은 파일(2차) | +7 −2: 1280×720은 통과. 800×600은 공용 모달 자체(머리 기본 항목 119px · 키트 `RangeSliderRow` 6.3px × 12행)가 넘친다. 학생 탭 모달도 같은 크기에서 같다(발견 2) → 테스트를 "모달은 1280×720, 적용한 화면은 1440×900 · 800×600"으로 바꿈 |
+| 같은 파일(3차) | **+9 −0** |
+| `flutter analyze`(frontend 전체, 계획 KPI 누수 수정 · 테스트 정리 뒤) | **No issues found** |
+| 관련 39파일 한 번에(`--file-reporter json`, 아래) | **+479 −0** |
+| 일회성 렌더(임시 `test/zz_fe7e_render_tmp_test.dart` = golden 테스트 사본 + `RenderRepaintBoundary.toImage`, scratchpad PNG 5장, 실행 뒤 지움) | +5 −0, 예외 0. 새 두 장면 배치 확인(golden 비교 아님) |
+| `flutter analyze`(최종) | **No issues found**(info 포함 0) |
+| `git diff --check`(frontend · 이 문서) · 줄바꿈 | 0. 기존 파일은 pre와 같은 줄바꿈(`statistics_page.dart` · `statistics_page_test.dart` CRLF, 나머지 LF), 새 파일 LF · 줄 끝 공백 0 · 끝 개행 하나 |
+
+관련 39파일(파일별, 모두 −0): statistics_filter +9(새), statistics_history_projection +17, statistics_history_view +14, statistics_page +14, statistics_workspace +13, statistics_growth_view +12, statistics_growth_projection +11, statistics_supply_view +11, statistics_plan_view +9, statistics_supply_projection +8, statistics_plan_projection +7, statistics_projection +7, statistics_app_shell +2, student_filter_modal +7, student_filter_selection +15, student_filter_followups +4, student_page +9, student_search_section +13, student_bond_gauge +12, student_studio_layout +45, plan_flow_student_step +8, kit/ba_modal_a11y +4, app_navigation_fe7d +13, app_navigation_tidy1 +11, inventory_history +33, inventory_history_page +11, inventory_shell_lazy +1, mock_design_review_scenario +11, widget +16, home_app_shell +1, home_connect_fe8e +10, account_editor_fe8c +9, account_manager_fe8b +6, connected_target_fe8d +8, growth_calculator_view +24, profile_delete_fb2d +17, planning_page +17, section_template_studio +15, title_page +25.
+
+- 걸리는 테스트 찾기: test/ 전체를 `StatisticsPage|StudentPage\(|BAPlannerApp\(|AppShell\(|StudentFilterModal|StudentFilterController|statistics_|StatisticsHistory|student_filter_modal|statisticsGrowth|StatisticsWorkspace`로 grep했다(goldens 제외 33파일). `metadata_manager_dto_test`는 "statistics" 낱말만 걸려 뺐다. 공용 모달을 쓰는 `plan_flow_student_step` · `kit/ba_modal_a11y` · `student_filter_selection`, 재화 색인을 쓰는 `inventory_history` · `inventory_history_page`, 셸을 띄우는 `student_studio_layout` · `planning_page`를 더했다.
+- 빌드 잠금(`build/` · `.dart_tool/`) 충돌 없음. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음. `dart format`은 새 파일에만 돌렸다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### A. FD-175 스냅샷 묶음
+
+- 함수 · 상수: `lib/statistics/statistics_history_projection.dart`
+  - `statisticsSnapshotGap = Duration(hours: 2)`(근거 주석 FD-175, 사용자 결정 2026-10-14 · 바꾸려면 FD 갱신).
+  - `statisticsSnapshotGroups(points, starts:, gap:)` → `StatisticsSnapshotGroup`(세션 id 목록 · 끝 순번 · 끝 시각 · 이름 = 마지막 세션 id).
+- 규칙: 학생 · 인벤토리 모든 profile의 scan 세션 끝 점(FB-2c `scan_points`)을 순번(= 기록 순서)대로 놓는다. 세션 시작(그 세션 첫 commit 시각, 모르면 끝 시각)이 바로 앞 세션 끝에서 2시간 이하이면 앞 묶음에 넣는다. 앞 세션 기준으로 이어지므로 1시간 반마다 스캔하면 한 묶음이 길어질 수 있다(FD 문구 "앞 세션 끝에서" 그대로).
+- 쓰는 곳:
+  - 기준 데이터 "스냅샷 n회 · 기간" = 묶음 수 · 첫 ~ 마지막 묶음 끝 날짜(`snapshotTimes`).
+  - A6 점 · 성장 KPI "지난 스냅샷 대비" = 학생 세션이 든 묶음의 끝 학생 상태(`studentSnapshots`, 시각 = 묶음 끝).
+  - B3 점 · 인벤토리 · 계획 KPI "지난 스냅샷 대비" = 그 재화가 scope에 든 세션이 있는 묶음의 끝 수량. FE6-f 색인 함수(`InventoryHistory.build`)는 그대로 쓰고, 넘기는 입력만 묶음으로 바꾼다(scan 적용의 세션 자리 = 묶음 이름, 점 = 묶음 끝 하나). 인벤토리 파일은 고치지 않았다.
+  - B3 · A6 안내 "스냅샷 n회 · 시각"도 묶음 수 · 묶음 끝 시각이다.
+- 인벤토리 탭의 재화별 "지난 스캔"(FE6-f 규칙 3)은 바꾸지 않았다. 판단: 재화별 비교가 맞다. 인벤토리 탭은 재화마다 마지막 바로 앞 스캔 점을 쓴다. 이 값은 한 묶음 안에서 같은 재화를 두 번 스캔했을 때만 통계 KPI와 다르다. 그때 탭은 "방금 전 스캔 대비", 통계는 "지난 스냅샷(자리) 대비"다. 둘 다 뜻이 맞아 권장안은 그대로 두기다.
+- 계정 메타 "스냅샷": 지금 화면(FE8-c `account_section_cluster.dart`)에는 마지막 스캔 시각만 있고 스냅샷 횟수 글자가 없다. 권장안: 생기면 같은 `statisticsSnapshotGroups`를 쓴다(Lane B 파일이라 고치지 않음).
+- 테스트(`statistics_history_projection_test.dart`):
+  - 기존 기대 3곳을 고쳤다. 스냅샷 12 → 7, 학생 스냅샷 시각 = 묶음 끝, "B3 최근 6점" 테스트의 추가 스캔 간격 1분 → 2시간 1분(묶이지 않게).
+  - 새 2건. ① 경계: 정확히 2시간이면 같은 묶음, 2시간 1분이면 새 묶음, 시작 시각 기준 연쇄. ② profile 둘을 10분 사이로 스캔하면 스냅샷 +1 · 재화 점 1개(묶음 끝 수량), KPI 4주 색인 기준도 묶음 점.
+- fixture 값: 학생 21:40 + 인벤토리 21:50(9/02 ~ 9/29)은 한 묶음이다. 10/03 인벤토리와 10/05 학생은 따로다. 그래서 "12회" → **"7회 · 9/02 ~ 10/05"**이고, A6 · B3는 6점 그대로다. 시안 "6회"는 인벤토리 "3일 전"과 함께 맞출 수 없다(발견 1).
+
+#### B. 통계 필터 상태 구조(학생 필터와 분리)
+
+- 상태: `_StatisticsPageState._filter = StudentFilterController()`. 통계 페이지가 소유하는 통계 전용 객체이고 학생 탭 객체와 다르다.
+  - 공용 모달(`StudentFilterModal`)에는 이 객체의 초안 · 적용을 넣는다. FE3-d 상태 주입 구조 그대로다(FD-104 (a)).
+  - 수명: 앱 실행 동안이다. 계정을 바꾸면 통계 페이지가 새로 만들어지며 함께 비워진다(셸 `statistics-$_profileGeneration` key).
+- 학생 탭 필터: 셸이 학생 탭 `StudentFilterController` 하나를 만들어 학생 페이지(`filterController`)에 넘긴다. 통계 페이지(`studentFilter`)는 같은 객체를 읽기만 한다.
+  - 계정을 바꾸면 셸이 비운다(`discardDraft` + `applied = empty`). 학생 페이지가 새로 만들던 것과 같은 결과라 학생 탭 동작은 바뀌지 않는다.
+  - 셸 diff +12(import 2 · 필드 · dispose · 계정 전환 3줄 · 매개변수 2). 학생 페이지 diff +9 −2(선택 매개변수, `late final _filter = widget.filterController ?? 자기 것`, 자기 것만 dispose).
+  - 학생 페이지를 고친 이유: 학생 탭 필터의 적용 값은 그 페이지 State 안에만 있었다. 통계가 읽을 길이 없었다.
+- "학생 탭 필터 불러오기": 학생 탭 적용 값을 통계 초안에 한 번 복사한다(`updateDraft`). 적용은 "적용"을 눌러야 한다. 연결이 아니라서 학생 탭 필터가 나중에 바뀌어도 통계 필터는 그대로다(테스트).
+- 통계 → 학생 탭 이동(FE7-d)은 그대로 학생 필터에 쓰지 않는다. 넘기는 학생은 이미 대상 학생뿐이다. 버튼 둘째 줄 · 학생 탭 칩 글자에는 필터 칩 이름을 잇는다(시안 "필터: 육성도 60~70% · 밀레니엄 · 스트라이커").
+- 모달 쪽 변경(`student_filter_modal.dart` +58 −3):
+  - 선택 매개변수 3개: `title`(기본 '필터') · `caption` · `headerAction`. 기본값이면 지금과 같다.
+  - 띠 안쪽 폭이 1000 미만이고 보조 문구 · 추가 버튼이 있을 때만 압축 배치를 쓴다.
+  - 학생 · 계획 1단계 머리는 바뀌지 않는다(`'필터'` 글자 위젯만 const가 아니게 됐다).
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. **후보 = 보유 학생**(학생 목록에 있는 확정 학생)이다.
+   - 모달 머리 "n / m명" · 왼쪽 "n / m명" · KPI "대상 학생 n / m"의 m은 보유 학생 수다(시안 "31 / 128").
+   - 학생 목록에 없는 보유 학생은 필터가 걸리면 대상에서 빠진다.
+   - 칩 옆 학교 인원도 보유 기준이다. 보유 학생이 없는 학교는 칩이 없다.
+2. **대상의 시간축**: 대상 = 지금 값으로 맞는 학생이다. A6 · 성장 KPI 증감은 그 학생들을 지난 스냅샷에서도 센다(그때 보유한 대상만, `StatisticsHistory.studentSnapshotsFor`). 지난 시점 값으로 필터를 다시 걸지 않는다.
+3. **KPI 첫 칸**: 필터가 걸리면 "대상 학생" · 값 n · 둘째 글자 "/ m"(초록, 증감 없음 — 시안). 나머지 네 칸은 대상 학생 값 · 증감이다. 계획 등록은 FE7-h처럼 '—'다.
+4. **적용 범위**: 학생 성장(A1 · A2 · A6 · KPI · 근거 · 범위 글자)만 대상 학생이다.
+   - 인벤토리 · 계획은 전체 성장을 쓴다. 계획 KPI "미계획 · 40% 미만"이 전체 성장을 읽도록 고쳤다(처음 구현에서 필터된 성장이 새던 것을 테스트로 잡았다).
+   - 근거 학생 이름 · 레벨(재화 근거)도 전체 성장이다.
+5. **왼쪽 버튼**:
+   - 학생 성장에서만 누를 수 있다(읽는 중에는 비활성).
+   - 걸리면 분홍 선택 버튼 · "필터 · n"(n = 칩 수, FE3-d 15:51 결정 1) · "n / m명" · 분홍 깔때기 · 연필(#f7c9f4, 시안 path)이다.
+   - 버튼 아래 (20, 400) 적용 칩 줄(분홍 칩 × + 회색 "초기화")이 들어가고, 보조 문구 · 기준 데이터가 36 내려간다(시안 611.2 → 647.2 · 667.2 → 703.2 · 693.2 → 729.2).
+   - 칩 줄은 한 줄이고 넘치는 칩은 자른다("초기화"는 늘 보인다). "초기화"는 통계 필터를 모두 푼다(학생 탭 S4 "모두 지우기"와 달리 보유 · 서버도 푼다).
+   - 인벤토리 · 계획에서는 FE7-a 그대로 비활성 "필터 · 인벤토리 · 계획 집계는 항상 전체"다. 칩 줄 · 내려감도 없다.
+6. **가운데 머리**: 걸리면 범위 자리가 분홍 칩 "필터: 칩1 · 칩2 …" + 사이 10 + 12px "n명 기준"이다(좁으면 함께 줄인다).
+7. **A4 빈 상태**: 필터가 걸리고 대상 학생의 학교가 하나 이하이면 "준비 중" 대신 시안 문구 두 줄이다(seg 기본 "학교"). "역할" seg와 A4 그래프는 FE7-f다(발견 3). 둥근 상자 모양은 A6 문구 상자와 같다. 줄 높이는 FD-109 그대로다(A4는 그래프가 아니므로 A6도 문구면 328).
+8. **필터를 바꾸면**(적용 · 칩 × · 초기화) 고른 구간 · 근거 펼침을 지운다. 주제를 바꿔도 필터는 남는다.
+9. **모달 닫기**: × · Esc · 스크림 · 탭 떠남은 초안을 버린다(학생 탭과 같다). 배지 자리 (18, 226)는 학생 S1 자리라 그리지 않는다.
+10. **"학생 탭 필터 불러오기" 아이콘**: 시안 path(겹친 사각형)와 같은 뜻의 `Icons.copy_rounded`를 쓴다. 셸이 학생 필터를 넘기지 않으면(단독 테스트) 비활성이다.
+
+#### 처리한 FD
+
+- **FD-104(확정 (a))**: 통계 전용 필터 상태(학생 탭과 다른 객체, 서로 덮어쓰지 않음) + 모달 "학생 탭 필터 불러오기"(복사) + 학생 성장에만 적용 + 버튼 비활성 해제(학생 성장).
+- **FD-175(확정 (a))**: 위 A.
+- **FD-074(확정 (b))**: 통계 모달도 필터 프리셋 칩을 숨긴다(공용 모달 그대로).
+- **FD-109(확정)**: A4 빈 상태 + A6 문구일 때 줄 328 그대로.
+- **FD-063(워커 재량)**: 통계 모달에 육성도 행을 넣지 않았다. 시안 Stats-Filter-Open의 성장 범위는 학생 탭과 같은 행뿐이다. FE7-d 근거(통계 구간 반열림 [60, 70) vs 정수 범위)도 그대로다.
+- FD-041 · FD-106: 이력 · "준비 중" 규칙은 FE7-h 그대로다(스냅샷 단위만 FD-175로 바뀜). 막는 `열림` FD 없음.
+
+#### golden 변화 예상(장면별)
+
+- **`statistics-growth`(바뀜)**:
+  - 기준 데이터 스냅샷 칩 "12회 · 9/02 ~ 10/05" → "7회 · 9/02 ~ 10/05".
+  - 왼쪽 필터 버튼의 흐림(.45)이 풀린다. 글자 '필터' · 부제는 또렷해지고, 깔때기 · 꺾쇠는 회색 그대로다.
+  - KPI 값 · 증감 · A6(점 6개 · 날짜 · 강조 9/22 → 10/05 +2.0%p) · A1 · A2 · 근거 변화 0.
+- **`statistics-inventory`(바뀜)**: 스냅샷 칩 글자만 바뀐다. B3 점 · 값 · KPI 증감 · 필터 버튼(비활성 그대로) 변화 0.
+- **`statistics-plan`(바뀜)**: 스냅샷 칩 글자만 바뀐다.
+- **새 `statistics-filter-open`**(시안 Stats-Filter-Open):
+  - 배경: 성장 장면 + 필터 스크림.
+  - 머리: "통계 필터" · 두 줄 "학생 성장(A)에만 적용 / 학생 탭 필터와 따로 저장" · "18 / 128명" · 분홍 칩 "밀레니엄" "스트라이커" · "학생 탭 필터 불러오기" · "초기화" · "적용" · ×.
+  - 속성 패널: 학교 줄 칩 옆 보유 인원, 밀레니엄 · 스트라이커 선택. 성장 범위 패널은 전체 기본값이다.
+  - 배경 왼쪽 버튼은 "필터 · 없음 · 보유 128명 전체" 그대로다(적용 전).
+  - 이 fixture는 밀레니엄 보유 31명 중 스트라이커가 18명이라 시안 "31"과 다르다.
+- **새 `statistics-growth-filter`**(시안 Stats-Growth-Filter, 위에서 "적용"):
+  - 왼쪽: 분홍 "필터 · 2" · "18 / 128명" · 연필, 칩 줄 "밀레니엄 × · 스트라이커 × · 초기화", 보조 문구 · 기준 데이터가 36 아래.
+  - 머리: 분홍 칩 "필터: 밀레니엄 · 스트라이커" · "18명 기준".
+  - KPI: "대상 학생 18 / 128" · 평균 육성도 62.0% · 대상 학생 기준 증감.
+  - 타일: A1 · A2는 18명 값이다. A4는 빈 상태 두 줄이다. A6는 18명 꺾은선이다(fixture가 스냅샷 6회 — 시안은 1회 문구). A3 · A5는 "준비 중"이다.
+  - 일회성 렌더에서 넘침 0이었다.
+- **다른 장면: 변화 0.** 학생 장면(`students-*`, `students-filter-open` 포함)과 계획 1단계 필터 장면은 모달 머리 기본값이 같고, 학생 필터 객체를 셸이 넘겨도 처음 값은 같다. 통계 외 장면에는 FD-175가 닿지 않는다(인벤토리 파일 변경 0).
+- commit.json `whole` = 위 기존 3장(파일 단위). 새 2장은 CF가 `-UpdateGoldens`로 만든다.
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Filter-Open | 통계 → 학생 성장 → 왼쪽 "필터"(golden `statistics-filter-open`, 앱 mock 검수 시나리오도 같은 길) | 머리 "통계 필터" · 두 줄 보조 문구 · "n / 보유명" · "학생 탭 필터 불러오기"(학생 탭에서 필터를 건 뒤 누르면 칩이 그대로 복사됨) · 프리셋 칩 없음 · 배지 없음 / 배경 왼쪽 버튼은 적용 전 "없음" |
+| → 필터 · 불러오기 | 칩을 고르거나 "학생 탭 필터 불러오기" | 머리 수가 바뀐다. 학생 탭 필터는 바뀌지 않는다. × · Esc · 스크림은 초안을 버린다 |
+| → 적용 → Stats-Growth-Filter | "적용"(golden `statistics-growth-filter`) | 왼쪽 분홍 "필터 · n" · "n / m명" · 칩 줄 · 보조 문구 36 아래 / 머리 칩 "필터: …" · "n명 기준" / KPI "대상 학생 n / m" / A4 빈 상태(학교 하나일 때) / 학생 탭으로 가도 학생 필터 그대로 |
+| (적용 뒤) 인벤토리 · 계획 | 주제 버튼 | 버튼 비활성 "항상 전체", 칩 줄 없음, KPI · 그래프 값이 필터 전과 같다 |
+| (공통) 스냅샷 | 기준 데이터 · A6 · B3 | "n회"가 2시간 안 세션 묶음 수다(golden fixture "7회") / 1280×720에서 모달 · 적용 화면 넘침 없음 |
+
+#### 미검증 항목
+
+- golden 비교 · 새 두 장면 생성: **미실행**(CF `fe_gate.ps1` · `failures/` 검토 · `-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- mock 검수 시나리오(`design-review`)의 묶음 뒤 스냅샷 수(전에 "31회"): **미실행**(값을 출력해 보지 않았다).
+- 실제 백엔드 이력에서 세션 시작(첫 commit 시각)과 끝 점 순번 순서: **미실행**(Mock 순수 질의 함수로만 보았다).
+- 새 요소 ±2px(칩 줄 (20, 400) · 머리 칩 · A4 상자): 위젯 테스트는 값 · 존재만 보았다. 좌표는 재지 않았고 일회성 렌더로 자리만 봤다.
+
+#### WIP 보존 확인
+
+- 고친 기존 파일 11개 + 이 문서는 착수 때 `git status --short` 빈 줄(WIP 없음)이었다. post 사본 · `post_dir`은 없다.
+- pre 사본과 비교한 diff에는 이 slice 줄만 있다. 착수 목록 중 고치지 않은 4파일은 사본을 지웠다.
+- Lane B(fb6-dart) 파일(`lib/services/**`)과 스캐너 WIP 파일은 읽기만 했다.
+
+#### 발견 사항
+
+1. **시안 "스냅샷 6회"와 fixture "7회"**: 시안은 인벤토리 "3일 전"(10/03)과 학생 "어제"(10/05)를 함께 그렸다. 그래서 2시간 묶음으로는 6회가 될 수 없다(10/03 · 10/05가 따로). 시안 숫자에 맞추려면 fixture에서 인벤토리 하나를 학생 날짜로 옮겨야 하는데, 그러면 "3일 전"이 깨진다. CF 판단.
+2. **공용 필터 모달 800×600 넘침(기존, 학생 탭도 같음)**: 머리 기본 항목(필터 · 결과 수 · 구분선 · 초기화 · 적용 · ×)이 띠보다 119px 넓다. 키트 `RangeSliderRow`(range_controls.dart 131행 Row)도 행마다 6.3px 넘친다. 1280×720은 괜찮다. 키트 · 공용 모달 정리 후보다(이번에 고치지 않음).
+3. **A4 빈 상태 판정**: 지금은 seg 기본 "학교"로만 본다(학교 하나 이하). FE7-f에서 A4 그래프 · "역할" seg를 만들 때 고른 seg의 값 수로 바꿔야 한다. 시안 문구는 "학교 · 역할이 하나뿐"이다.
+4. **시안 Stats-Growth-Filter의 A5 숫자가 필터 전과 같다**(F §3.2 모순). A5는 FE7-i다. 그때 대상 학생으로 세면 된다(`StatisticsGrowthScope.growth`).
+5. **계정 메타 "스냅샷"**: 화면에 횟수 글자가 없다. 생기면 `statisticsSnapshotGroups`를 같이 쓰기를 권한다(Lane B).
+6. **연속 스캔 묶음 길이**: "앞 세션 끝에서 2시간"이라 2시간 안 간격으로 계속 스캔하면 묶음이 끝없이 길어진다(예: 하루 종일 1시간마다). 실사용에서 문제가 되면 "묶음 첫 세션에서 n시간" 상한을 FD-175에 더할지 결정이 필요하다.
+
+#### 다음 행동
+
+- FE7-e 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다(Lane B fb6-dart와 같은 gate).
+  - 예상: analyze 0, 일반 테스트 새 9건(statistics_filter) + FD-175 2건 포함 녹색.
+  - golden은 `statistics-growth` · `statistics-inventory` · `statistics-plan` RED, 새 `statistics-filter-open` · `statistics-growth-filter`는 기준 없음. 다른 장면 변화 0.
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe7e`.
+- 발견 1(시안 6회) · 2(모달 800×600) · 3(A4 seg) · 6(묶음 상한)은 CF 판단을 기다린다.
+
+### fe7e commit record (2026-10-14 13:06, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_125829\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

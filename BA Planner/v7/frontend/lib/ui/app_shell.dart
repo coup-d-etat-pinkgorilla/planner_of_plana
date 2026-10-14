@@ -12,6 +12,8 @@ import 'kit/ba_chip.dart';
 import 'kit/ba_modal.dart';
 import 'kit/kit_pressable.dart';
 import 'models/recent_students.dart';
+import 'models/student_filter_controller.dart';
+import 'models/student_filter_selection.dart';
 import 'navigation/app_navigation_intent.dart';
 import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
@@ -121,6 +123,10 @@ class _AppShellState extends State<AppShell>
   /// 최근 본 학생(FD-061): 앱 실행 동안만, 학생 탭과 계획 만들기 1단계(FE4-b)가 함께 쓴다.
   final RecentStudents _recentStudents = RecentStudents();
 
+  /// 학생 탭 필터(FE3-d). 학생 탭이 쓰고, 통계 "학생 탭 필터 불러오기"(FE7-e)는 적용 값을 읽기만 한다. 계정을 바꾸면 비운다
+  /// (학생 탭이 새로 만들던 것과 같다).
+  final StudentFilterController _studentFilter = StudentFilterController();
+
   /// 탭 안 모드(학생 탭 성장 계산기)가 머리말 제목·복귀 칩을 바꾼다(FE3-f2a, FD-161).
   final PageHeaderOverrideController _headerOverride =
       PageHeaderOverrideController();
@@ -172,6 +178,7 @@ class _AppShellState extends State<AppShell>
     _homeEntranceController.dispose();
     _scanCompanion.dispose();
     _recentStudents.dispose();
+    _studentFilter.dispose();
     _headerOverride.dispose();
     _connectedTarget.dispose();
     super.dispose();
@@ -299,6 +306,9 @@ class _AppShellState extends State<AppShell>
   void _profileChanged() {
     // 최근 본 학생은 그 계정의 보유·육성 맥락이라 계정을 바꾸면 비운다(오케스트레이터 2026-10-07 13:49).
     _recentStudents.clear();
+    _studentFilter
+      ..discardDraft()
+      ..applied = StudentFilterSelection.empty;
     setState(() {
       _profileGeneration += 1;
       _homeReloadToken += 1;
@@ -423,6 +433,7 @@ class _AppShellState extends State<AppShell>
                                   active: _studentTabActive,
                                   recentStudents: _recentStudents,
                                   headerOverride: _headerOverride,
+                                  filterController: _studentFilter,
                                   navigation: switch (_navigation) {
                                     final StudentsNavigationIntent intent =>
                                       intent,
@@ -472,6 +483,7 @@ class _AppShellState extends State<AppShell>
                                   onNavigate: _navigate,
                                   reloadToken: _statisticsReloadToken,
                                   returnToken: _statisticsReturnToken,
+                                  studentFilter: _studentFilter,
                                 ),
                                 ScanPage(
                                   key: ValueKey('scan-$_profileGeneration'),

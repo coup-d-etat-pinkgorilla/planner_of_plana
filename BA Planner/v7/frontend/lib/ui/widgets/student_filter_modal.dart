@@ -197,6 +197,9 @@ class StudentFilterModal extends StatelessWidget {
     required this.onClose,
     this.countedGroups = studentFilterCountedGroups,
     this.showCountBadge = true,
+    this.title = '필터',
+    this.caption,
+    this.headerAction,
   });
 
   /// 초안.
@@ -222,6 +225,15 @@ class StudentFilterModal extends StatelessWidget {
   /// 화면(계획 만들기 1단계, 버튼은 B 오른쪽 위)은 끈다(FE4-c 확인: 시안 Flow-1-Students-Filter에 떠 있는 배지 없음).
   final bool showCountBadge;
 
+  /// 머리 제목(통계는 "통계 필터", 시안 Stats-Filter-Open).
+  final String title;
+
+  /// 제목 옆 작은 보조 문구(두 줄까지, 11.5px muted). 없으면 제목 바로 뒤가 결과 수다.
+  final String? caption;
+
+  /// 적용 칩과 "초기화" 사이 버튼(통계 "학생 탭 필터 불러오기"). 없으면 그리지 않는다.
+  final Widget? headerAction;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -234,6 +246,9 @@ class StudentFilterModal extends StatelessWidget {
               rect: layout.header,
               child: _FilterHeader(
                 key: const ValueKey('student-filter-modal-header'),
+                title: title,
+                caption: caption,
+                action: headerAction,
                 chips: chips,
                 matching: selection.countMatching(candidates, groups),
                 totalCount: totalCount,
@@ -558,6 +573,9 @@ class StudentFilterCountBadge extends StatelessWidget {
 class _FilterHeader extends StatelessWidget {
   const _FilterHeader({
     super.key,
+    required this.title,
+    required this.caption,
+    required this.action,
     required this.chips,
     required this.matching,
     required this.totalCount,
@@ -567,6 +585,9 @@ class _FilterHeader extends StatelessWidget {
     required this.onClose,
   });
 
+  final String title;
+  final String? caption;
+  final Widget? action;
   final List<StudentFilterChipItem> chips;
   final int matching;
   final int totalCount;
@@ -580,6 +601,10 @@ class _FilterHeader extends StatelessWidget {
   static const stripRightInset = 36.5;
   static const stripHeight = 64.0;
 
+  /// 띠 안쪽 폭이 이보다 좁으면 보조 문구를 빼고 추가 버튼을 줄인다(통계 필터 머리, 1280×720 등 — 학생 탭 머리는 둘 다 없어
+  /// 바뀌지 않는다).
+  static const compactWidth = 1000.0;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -591,6 +616,7 @@ class _FilterHeader extends StatelessWidget {
         stripHeight,
       );
       final stripPad = diagonalCutDepth(stripHeight) + 10;
+      final compact = strip.width - 2 * stripPad < compactWidth;
       return SectionSurface(
         clipper: const _ParallelogramClipper(radius: 14),
         fill: studentFilterPanelFill,
@@ -617,9 +643,9 @@ class _FilterHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      '필터',
-                      style: TextStyle(
+                    Text(
+                      title,
+                      style: const TextStyle(
                         fontFamily: AppFonts.display,
                         fontFamilyFallback: AppFonts.fallback,
                         fontSize: 22,
@@ -628,6 +654,23 @@ class _FilterHeader extends StatelessWidget {
                         color: AppColors.text,
                       ),
                     ),
+                    // 시안 Stats-Filter-Open: 제목 · 보조 문구 사이 14, 보조 문구 · 결과 수 사이 20.
+                    if (caption case final caption? when !compact) ...[
+                      const SizedBox(width: 14),
+                      Text(
+                        caption,
+                        key: const ValueKey('student-filter-modal-caption'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppFonts.body,
+                          fontFamilyFallback: AppFonts.fallback,
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 20),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -691,6 +734,18 @@ class _FilterHeader extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (action case final action?) ...[
+                      const SizedBox(width: 10),
+                      if (compact)
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: action,
+                          ),
+                        )
+                      else
+                        action,
+                    ],
                     // 필터 프리셋 칩은 숨긴다(FD-074 (b): 영속 저장 범위 밖).
                     const SizedBox(width: 10),
                     TonalButton(

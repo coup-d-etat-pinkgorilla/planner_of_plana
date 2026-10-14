@@ -94,6 +94,12 @@ abstract final class StatisticsMetrics {
   static const filterNoteTop = 402.0;
   static const filterNoteLeft = 22.0;
   static const filterNoteHeight = 34.0;
+
+  /// 통계 필터가 걸렸을 때(시안 Stats-Growth-Filter, FE7-e): 버튼 아래 적용 칩 줄(609.2 − 209.2)이 들어가고, 그 아래
+  /// 보조 문구 · 기준 데이터가 [filterAppliedShift]만큼 내려간다(611.2 → 647.2, 667.2 → 703.2, 693.2 → 729.2).
+  static const filterChipsTop = 400.0;
+  static const filterChipsHeight = 26.0;
+  static const filterAppliedShift = 36.0;
   static const baseCaptionTop = 458.0;
   static const baseTop = 484.0;
   static const baseHeight = 44.0;

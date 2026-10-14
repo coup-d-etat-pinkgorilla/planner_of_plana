@@ -220,13 +220,20 @@ void main() {
     expect(service.grossCalls, 0);
   });
 
-  testWidgets('filter and evidence actions are placeholders; rescan opens scan', (
+  testWidgets('filter opens on growth only; evidence actions are placeholders; rescan opens scan', (
     tester,
   ) async {
     final opened = <AppSection>[];
     final service = _StatisticsService(repositoryState());
     addTearDown(service.dispose);
     await tester.pumpWidget(_subject(service, onOpen: opened.add));
+    await tester.pumpAndSettle();
+    // FE7-e: 통계 전용 필터는 학생 성장에서만 누를 수 있다(인벤토리 · 계획은 "항상 전체").
+    expect(_railButton(tester, 'statistics-filter').onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('statistics-topic-inventory')));
+    await tester.pumpAndSettle();
+    expect(_railButton(tester, 'statistics-filter').onPressed, isNull);
+    await tester.tap(find.byKey(const ValueKey('statistics-topic-plan')));
     await tester.pumpAndSettle();
     expect(_railButton(tester, 'statistics-filter').onPressed, isNull);
     expect(

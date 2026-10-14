@@ -27,6 +27,11 @@
 // 읽기 요청이 없었어도) summary revision만 보고, 계정 상태와 다르면 다시 읽는다(FE6-f 인벤토리 탭과 같은 방식 — 다른 탭의
 // 저장 · 스캔 commit). "지금"은 서비스 시계(`services/app_clock.dart` `AppClockSource`, 검수 fixture 고정 시각)이고 없으면
 // 기기 시계다.
+// FE7-e: 왼쪽 "필터"가 통계 전용 필터 모달(FE3-d 공용 모달, 통계 전용 [StudentFilterController] 주입)을 연다. 이 상태는
+// 학생 탭 필터와 다른 객체라 서로 덮어쓰지 않는다(FD-104 (a) — 통계 → 학생 탭 이동도 학생 필터에 쓰지 않는 FE7-d 규칙
+// 그대로). 모달 머리 "학생 탭 필터 불러오기"는 셸이 넘긴 학생 탭 필터의 적용 값을 초안에 한 번 복사한다(연결 아님). 걸린
+// 필터는 학생 성장(A1~A6 · KPI · 근거)에만 쓰고(`statistics/statistics_growth_filter.dart`), 인벤토리 · 계획은 늘 전체
+// 성장이다. 필터를 바꾸면 고른 구간을 지운다(대상이 바뀌었다). 탭을 떠나면 열린 모달은 닫고 초안을 버린다.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -34,6 +39,7 @@ import 'package:flutter/material.dart';
 import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../../statistics/statistics_growth_filter.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
@@ -51,8 +57,13 @@ import '../inventory/inventory_history.dart'
         inventoryLastScanAt,
         inventoryScanLatestChunk;
 import '../inventory/inventory_view_model.dart' show InventoryBoard;
+import '../kit/ba_modal.dart';
+import '../kit/buttons.dart';
 import '../models/plan_scenario_detail.dart' show PlanDetailData;
+import '../models/student_filter_controller.dart';
+import '../models/student_filter_selection.dart';
 import '../navigation/app_navigation_intent.dart';
+import '../statistics/statistics_filter_view.dart';
 import '../statistics/statistics_growth_evidence.dart';
 import '../statistics/statistics_history_charts.dart';
 import '../statistics/statistics_source.dart';
@@ -60,6 +71,7 @@ import '../statistics/statistics_supply_evidence.dart';
 import '../statistics/statistics_topics.dart';
 import '../statistics/statistics_workspace.dart';
 import '../widgets/account_section_cluster.dart' show accountLastScanText;
+import '../widgets/student_filter_modal.dart';
 
 export '../statistics/statistics_topics.dart' show StatisticsMode;
 
@@ -74,6 +86,7 @@ class StatisticsPage extends StatefulWidget {
     this.onNavigate,
     this.reloadToken = 0,
     this.returnToken = 0,
+    this.studentFilter,
   });
   final AppService service;
   final ValueChanged<AppSection> onOpen;
@@ -84,6 +97,9 @@ class StatisticsPage extends StatefulWidget {
 
   /// 넘어간 탭의 "← 통계" 칩으로 돌아올 때마다 바뀐다(다음 다시 읽기에서 고른 것을 되살린다).
   final int returnToken;
+
+  /// 학생 탭 필터(FE7-e "학생 탭 필터 불러오기"가 적용 값을 읽기만 한다). 없으면 그 버튼은 비활성이다.
+  final StudentFilterController? studentFilter;
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
@@ -171,6 +187,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
   List<InventoryCatalogEntry>? _plainBoardCatalog;
   RepositoryState? _plainBoardState;
 
+  /// 통계 전용 필터(FE7-e, FD-104): 학생 탭 필터와 다른 객체다. 모달은 이 객체를 주입받는다.
+  final StudentFilterController _filter = StudentFilterController();
+  final BaModalController _filterModal = BaModalController();
+
+  /// 필터 후보(보유 학생) 캐시(읽은 계정 상태 · 학생 목록이 같으면 다시 만들지 않는다).
+  List<StudentFilterCandidate> _candidates = const [];
+  RepositoryState? _candidatesState;
+  List<StudentCatalogEntry>? _candidatesStudents;
+
+  /// 학생 성장 범위 캐시(성장 · 적용 필터 · 후보가 같으면 다시 만들지 않는다).
+  StatisticsGrowthScope? _scope;
+  StatisticsGrowth? _scopeGrowth;
+  StudentFilterSelection? _scopeSelection;
+  List<StudentFilterCandidate>? _scopeCandidates;
+
   /// 이 탭이 지금 보이는가(`TickerMode`).
   bool _visible = false;
 
@@ -181,6 +212,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void initState() {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
+    _filter.addListener(_filterChanged);
+    _filterModal.addListener(_filterModalChanged);
   }
 
   @override
@@ -189,6 +222,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final visible = TickerMode.valuesOf(context).enabled;
     if (visible == _visible) return;
     _visible = visible;
+    if (!visible && _filterModal.isOpen) {
+      // 탭을 떠나면 열린 필터 모달을 닫는다(초안은 버린다, 학생 탭과 같다).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _filterModal.close();
+      });
+    }
     if (visible && _stale) {
       _reload();
     } else if (visible) {
@@ -241,7 +280,79 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void dispose() {
     _generation++;
     widget.service.state.removeListener(_connectionChanged);
+    _filter.removeListener(_filterChanged);
+    _filter.dispose();
+    _filterModal.removeListener(_filterModalChanged);
+    _filterModal.dispose();
     super.dispose();
+  }
+
+  void _filterChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 닫히면(닫기 · Esc · 스크림 · 탭 떠남) 적용하지 않은 초안을 버린다.
+  void _filterModalChanged() {
+    if (!_filterModal.isOpen) _filter.discardDraft();
+  }
+
+  void _openFilter() {
+    if (_filterModal.isOpen) return;
+    _filter.beginEdit();
+    _filterModal.open();
+  }
+
+  /// 적용 필터가 바뀌면 고른 구간 · 근거 펼침을 지운다(대상 학생이 바뀌었다).
+  void _changeFilter(VoidCallback change) => setState(() {
+    change();
+    _growthSelection = null;
+    _evidenceExpanded = false;
+  });
+
+  void _applyFilter() {
+    _changeFilter(_filter.applyDraft);
+    _filterModal.close();
+  }
+
+  /// "학생 탭 필터 불러오기": 학생 탭의 적용 값을 초안에 한 번 복사한다(연결 아님, FD-104).
+  void _importStudentFilter() {
+    final source = widget.studentFilter;
+    if (source != null) _filter.updateDraft(source.applied);
+  }
+
+  /// 필터 후보(보유 학생, 지금 값).
+  List<StudentFilterCandidate> _currentCandidates() {
+    if (!identical(_candidatesState, _state) ||
+        !identical(_candidatesStudents, _students)) {
+      _candidatesState = _state;
+      _candidatesStudents = _students;
+      _candidates = statisticsFilterCandidates(
+        state: _state,
+        catalog: _students,
+      );
+    }
+    return _candidates;
+  }
+
+  /// 학생 성장 범위(통계 필터를 건 성장). 성장 자료가 없으면 null.
+  StatisticsGrowthScope? _currentScope(StatisticsGrowth? growth) {
+    if (growth == null) return null;
+    final candidates = _currentCandidates();
+    final selection = _filter.applied;
+    if (!identical(_scopeGrowth, growth) ||
+        _scopeSelection != selection ||
+        !identical(_scopeCandidates, candidates)) {
+      _scopeGrowth = growth;
+      _scopeSelection = selection;
+      _scopeCandidates = candidates;
+      _scope = StatisticsGrowthScope.filtered(
+        growth,
+        selection: selection,
+        candidates: candidates,
+        groups: _filter.groups,
+      );
+    }
+    return _scope;
   }
 
   void _connectionChanged() {
@@ -528,11 +639,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return _plainBoard;
   }
 
-  /// 이력 화면 값(FE7-h). [growth] · [supply]는 지금 읽은 projection이다.
+  /// 이력 화면 값(FE7-h). [growth] · [supply]는 지금 읽은 projection이다. [growth]는 통계 필터가 걸렸으면 대상 학생만의
+  /// 성장이고, [targets]는 그 학생 id다(FE7-e: A6 · 성장 KPI 증감도 대상 학생만 센다).
   StatisticsHistoryView _currentHistoryView(
     StatisticsGrowth? growth,
-    StatisticsSupply? supply,
-  ) {
+    StatisticsSupply? supply, {
+    Set<String>? targets,
+  }) {
     final loading = _loading || _historyLoading;
     final history = loading ? null : _history;
     final board = loading ? null : _b3Board(supply);
@@ -569,7 +682,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
       inventoryScanDays: history == null || inventory == null
           ? null
           : inventoryDaysAgo(inventory, history.now),
-      growthDeltas: statisticsGrowthDeltas(history, growth),
+      growthDeltas: statisticsGrowthDeltas(history, growth, targets: targets),
       supplyDeltas: statisticsSupplyDeltas(
         history,
         supply,
@@ -577,7 +690,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         state: _state,
         shortages: _shortages,
       ),
-      growthTrend: statisticsGrowthTrend(history),
+      growthTrend: statisticsGrowthTrend(history, targets: targets),
       resourceTrends: statisticsResourceTrends(history, board, _b3Range),
       b3Range: _b3Range,
       onB3RangeChanged: (range) => setState(() => _b3Range = range),
@@ -598,7 +711,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final growthSelection = saved.growth;
     if (growthSelection != null &&
         (StatisticsGrowthView(
-              growth: growth,
+              growth: _currentScope(growth)?.growth ?? growth,
               metric: _growthMetric,
               selection: growthSelection,
             ).evidence?.students.isNotEmpty ??
@@ -739,10 +852,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
   ///   "인벤토리 · 부족 위험에서 보기" → 그 카테고리 근거 첫 행(충족률 가장 낮은 재화).
   /// - 계획 집계(C1 · C2 재화): "인벤토리 · 부족 위험에서 보기" → 그 재화 행, "계획 만들기 3 · 단계 순서 · Pn 선택 ·
   ///   순서 바꾸기" → 페이즈 편집 흐름 3단계에서 그 재화의 첫 막히는 단계 카드(활성 문서 계산에 막히는 단계가 있을 때만).
+  /// FE7-e: 통계 필터가 걸려 있으면 학생 성장 버튼 둘째 줄 · 학생 탭 칩 글자에 필터 칩 이름을 잇는다(시안 Stats-Growth-Filter
+  /// "필터: 육성도 60~70% · 밀레니엄 · 스트라이커"). 넘기는 학생은 이미 대상 학생뿐이다.
   (StatisticsEvidenceAction, StatisticsEvidenceAction) _evidenceActions(
     StatisticsGrowthView growthView,
-    StatisticsSupplyView supplyView,
-  ) {
+    StatisticsSupplyView supplyView, {
+    StatisticsGrowthScope? scope,
+  }) {
     final defaults = _mode.evidenceActions;
     final (secondary, primary) = defaults;
     final navigate = widget.onNavigate;
@@ -754,7 +870,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
         final ids = [
           for (final student in evidence.students) student.studentId,
         ];
-        final title = evidence.title;
+        final title = [
+          evidence.title,
+          if (scope != null && scope.filtered)
+            for (final chip in scope.chips) chip.label,
+        ].join(' · ');
         return (
           StatisticsEvidenceAction(
             secondary.label,
@@ -846,8 +966,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
       ],
     );
     final growth = _loading ? null : _currentGrowth();
+    // FE7-e: 학생 성장(A1~A6 · KPI · 근거)은 통계 필터 대상 학생만, 인벤토리 · 계획은 전체 성장이다.
+    final scope = _currentScope(growth);
     final growthView = StatisticsGrowthView(
-      growth: growth,
+      growth: scope?.growth ?? growth,
       metric: _growthMetric,
       selection: _growthSelection,
       expanded: _evidenceExpanded,
@@ -860,22 +982,72 @@ class _StatisticsPageState extends State<StatisticsPage> {
       onExpand: () => setState(() => _evidenceExpanded = true),
     );
     final supplyView = _supplyView(growth, _supplySelection);
-    return StatisticsWorkspace(
-      key: const ValueKey('statistics-page'),
-      mode: _mode,
-      data: data,
-      growth: growthView,
-      supply: supplyView,
-      history: _currentHistoryView(growth, supplyView.supply),
-      evidenceActions: _evidenceActions(growthView, supplyView),
-      onModeChanged: (mode) => setState(() {
-        _mode = mode;
-        _growthSelection = null;
-        _supplySelection = null;
-        _evidenceExpanded = false;
-        _supplyExpanded = false;
-      }),
-      onRescan: () => widget.onOpen(AppSection.scan),
+    return BaModal(
+      controller: _filterModal,
+      scrim: BaScrim.filter,
+      label: '통계 필터',
+      builder: (context) => ListenableBuilder(
+        listenable: _filter,
+        builder: (context, _) => _filterModalContent(),
+      ),
+      child: StatisticsWorkspace(
+        key: const ValueKey('statistics-page'),
+        mode: _mode,
+        data: data,
+        growth: growthView,
+        supply: supplyView,
+        history: _currentHistoryView(
+          scope?.growth ?? growth,
+          supplyView.supply,
+          targets: scope?.targets,
+        ),
+        filter: StatisticsFilterView(
+          scope: scope,
+          onOpen: scope == null ? null : _openFilter,
+          onRemove: (chip) => _changeFilter(() => _filter.removeApplied(chip)),
+          onClear: () => _changeFilter(
+            () => _filter.applied = StudentFilterSelection.empty,
+          ),
+        ),
+        evidenceActions: _evidenceActions(growthView, supplyView, scope: scope),
+        onModeChanged: (mode) => setState(() {
+          _mode = mode;
+          _growthSelection = null;
+          _supplySelection = null;
+          _evidenceExpanded = false;
+          _supplyExpanded = false;
+        }),
+        onRescan: () => widget.onOpen(AppSection.scan),
+      ),
+    );
+  }
+
+  /// 통계 필터 모달 내용(시안 Stats-Filter-Open): 공용 모달에 통계 전용 상태를 넣는다. 머리는 "통계 필터" · "학생 성장(A)에만
+  /// 적용 / 학생 탭 필터와 따로 저장" · "n / 보유명" · 적용 칩 · "학생 탭 필터 불러오기"다. 배지 자리 (18, 226)는 학생 탭
+  /// S1 버튼 자리라 그리지 않는다(통계 필터 버튼은 왼쪽 섹션 (14, 551)이고 그 버튼이 개수를 보인다).
+  Widget _filterModalContent() {
+    final candidates = _currentCandidates();
+    final source = widget.studentFilter;
+    return StudentFilterModal(
+      key: const ValueKey('statistics-filter-modal'),
+      selection: _filter.draft ?? _filter.applied,
+      onChanged: _filter.updateDraft,
+      candidates: candidates,
+      groups: _filter.groups,
+      totalCount: _state?.students.length ?? candidates.length,
+      onApply: _applyFilter,
+      onReset: _filter.resetDraft,
+      onClose: _filterModal.close,
+      showCountBadge: false,
+      title: '통계 필터',
+      caption: '학생 성장(A)에만 적용\n학생 탭 필터와 따로 저장',
+      headerAction: TonalButton(
+        key: const ValueKey('statistics-filter-import'),
+        label: '학생 탭 필터 불러오기',
+        icon: Icons.copy_rounded,
+        horizontalPadding: 14,
+        onPressed: source == null ? null : _importStudentFilter,
+      ),
     );
   }
 }

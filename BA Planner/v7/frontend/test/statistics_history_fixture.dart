@@ -9,8 +9,9 @@
 // - 인벤토리 스캔 세션 6개(지역 21:50): 9/02 · 9/08 · 9/15 · 9/22 · 9/29 · 10/03. 세션마다 수량을 아는 재화 전부를 본다.
 //   B3: 크레딧 142.0M → 98.4M(−43.6M) · 엘리그마 760 → 1020(+260) · 상급 활동 보고서 180 → 384(+204, 필요 300 점선).
 //   KPI(지난 스캔 = 9/29): 전체 충족률 +6 · 부족 재화 −2 · 과잉 재화 +1 · 충족 카테고리 +1(시안).
-// - 스냅샷은 scan 세션이라 기준 데이터는 "12회 · 9/02 ~ 10/05"다(시안 6회 — 시안은 학생 · 인벤토리를 한 번에 찍은 것으로
-//   그렸다. status FE7-h 발견 사항).
+// - 스냅샷은 2시간 안 scan 세션 묶음(FD-175)이라 기준 데이터는 "7회 · 9/02 ~ 10/05"다: 9/02 ~ 9/29는 학생 21:40 + 인벤토리
+//   21:50이 한 묶음(5회), 10/03 인벤토리 · 10/05 학생이 따로다(시안 "6회"는 인벤토리 "3일 전"과 함께 맞출 수 없다 — status FE7-e
+//   발견 사항). A6 · B3 점은 묶음별 마지막 상태라 6점 그대로다.
 // 학생 과거 값은 지금 값에서 정해진 순서로 스킬을 한 칸씩 내려 목표 평균(한 자리)에 맞춘다(FD-028 식, 성장 projection으로 잰다).
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
@@ -270,7 +271,7 @@ RepositoryCurrentHistory statisticsHistoryFixtureHistory({
 abstract final class StatisticsHistoryFixtureExpected {
   static const studentScan = '어제 21:40';
   static const inventoryScan = '3일 전';
-  static const snapshots = '12회 · 9/02 ~ 10/05';
+  static const snapshots = '7회 · 9/02 ~ 10/05';
   static const growthDeltas = ['/ 170 · +2', '+1.2', '+4', '+1', '—'];
   static const inventoryDeltas = ['+6', '−2', '+1', '+1'];
   static const a6Labels = ['9/02', '9/08', '9/15', '9/22', '9/29', '10/05'];

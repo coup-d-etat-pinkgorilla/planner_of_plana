@@ -18,6 +18,14 @@
 // 2026-10-06 12:00 `AppClockSource`)를 FB-2 질의로 답한다(장면 조작은 그대로). 성장 장면의 계정 인벤토리도 인벤토리 · 계획
 // fixture 수량이다(이력이 그 수량으로 끝나야 한다 — 성장 주제에는 보이지 않는다). 기준 데이터 "어제 21:40" · "3일 전" ·
 // "12회 · 9/02 ~ 10/05", KPI 증감(성장 +2 · +1.2 · +4 · +1, 인벤토리 · 계획 +6 · −2 …), A6 꺾은선 · B3 작은 배수가 채워진다.
+// FE7-e: 스냅샷은 2시간 안 scan 세션 묶음(FD-175)이라 기준 데이터 스냅샷 칩이 "7회 · 9/02 ~ 10/05"다(세 장면). 학생 성장의
+// 필터 버튼이 눌리는 버튼이 된다(흐림 해제). 새 장면 2장(같은 성장 fixture, 장면 조작만 더함):
+// - `statistics-filter-open`(시안 Stats-Filter-Open): 왼쪽 "필터" → 통계 필터 모달에서 학교 "밀레니엄" · 편성 "스트라이커"를
+//   고른 적용 전 상태. 머리 "통계 필터" · "학생 성장(A)에만 적용 / 학생 탭 필터와 따로 저장" · "18 / 128명" · 칩 2 · "학생 탭
+//   필터 불러오기", 배경 왼쪽 버튼은 "필터 · 없음 · 보유 128명 전체" 그대로.
+// - `statistics-growth-filter`(시안 Stats-Growth-Filter): 위에서 "적용". 왼쪽 분홍 "필터 · 2 · 18 / 128명" + 적용 칩 줄,
+//   머리 칩 "필터: 밀레니엄 · 스트라이커" · "18명 기준", KPI "대상 학생 18 / 128", A4 빈 상태(학교 하나), A1 · A2 · A6는 대상
+//   학생 18명 값이다(이 fixture는 스냅샷 6회라 A6는 꺾은선이다 — 시안은 1회 문구).
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -177,6 +185,27 @@ Future<void> _openTopic(
   await pumpUntilFound(tester, find.text(waitFor));
 }
 
+/// 앱 셸 → 통계 탭(학생 성장) → 왼쪽 "필터" → 학교 "밀레니엄" · 편성 "스트라이커"(적용 전).
+Future<void> _openFilter(WidgetTester tester) async {
+  setGoldenViewport(tester);
+  final service = _GrowthGoldenService();
+  addTearDown(service.dispose);
+  await tester.pumpWidget(goldenBoundary(BAPlannerApp(service: service)));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('top-tab-statistics')));
+  await tester.pumpAndSettle();
+  await pumpUntilFound(tester, find.text(statisticsEvidenceEmptyText));
+  await tester.tap(find.byKey(const ValueKey('statistics-filter')));
+  await tester.pumpAndSettle();
+  for (final chip in const [
+    'student-filter-chip-school-Millennium',
+    'student-filter-chip-combat_class-striker',
+  ]) {
+    await tester.tap(find.byKey(ValueKey(chip)));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   setUpAll(loadGoldenFonts);
 
@@ -209,5 +238,22 @@ void main() {
     expect(find.byKey(const ValueKey('statistics-c1-chart')), findsOneWidget);
     expect(find.byKey(const ValueKey('statistics-c2-chart')), findsOneWidget);
     await expectGoldenScene(tester, 'statistics-plan');
+  }, variant: goldenPlatform);
+
+  testWidgets('statistics-filter-open', (tester) async {
+    await _openFilter(tester);
+    expect(find.byKey(const ValueKey('statistics-filter-modal')), findsOneWidget);
+    expect(find.text('통계 필터'), findsOneWidget);
+    await expectGoldenScene(tester, 'statistics-filter-open');
+  }, variant: goldenPlatform);
+
+  testWidgets('statistics-growth-filter', (tester) async {
+    await _openFilter(tester);
+    await tester.tap(find.byKey(const ValueKey('student-filter-apply')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('statistics-filter-modal')), findsNothing);
+    expect(find.byKey(const ValueKey('statistics-filter-chips')), findsOneWidget);
+    expect(find.byKey(const ValueKey('statistics-tile-A4-single')), findsOneWidget);
+    await expectGoldenScene(tester, 'statistics-growth-filter');
   }, variant: goldenPlatform);
 }

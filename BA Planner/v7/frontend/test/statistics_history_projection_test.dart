@@ -130,7 +130,8 @@ void main() {
     'base data: student / inventory scan time, snapshot count and range',
     () {
       final built = _build(state, history);
-      expect(built.snapshotTimes, hasLength(12));
+      // FD-175: 9/02 ~ 9/29는 학생 21:40 + 인벤토리 21:50이 한 묶음, 10/03 인벤토리 · 10/05 학생은 따로다(세션 12개 → 7회).
+      expect(built.snapshotTimes, hasLength(7));
       expect(
         statisticsSnapshotRangeText(built.snapshotTimes),
         StatisticsHistoryFixtureExpected.snapshots,
@@ -157,8 +158,10 @@ void main() {
   test('student snapshots are re-derived states with the FD-028 average', () {
     final built = _build(state, history);
     final snapshots = built.studentSnapshots;
+    // 학생 스냅샷 시각 = 묶음 끝(FD-175): 9/02 ~ 9/29는 같은 묶음의 인벤토리 21:50, 10/05는 학생 21:40.
     expect(snapshots.map((item) => item.at), [
-      for (final at in statisticsHistoryStudentScans) at.toUtc(),
+      for (final at in statisticsHistoryInventoryScans.take(5)) at.toUtc(),
+      statisticsHistoryStudentScans.last.toUtc(),
     ]);
     expect([
       for (final item in snapshots) (item.averageGrowth! * 1000).round(),
@@ -252,7 +255,7 @@ void main() {
   });
 
   test('B3 keeps at most the 6 most recent points per resource', () {
-    // 같은 재화를 7번 더 스캔한다(점 13개 → 최근 6개).
+    // 같은 재화를 7번 더 스캔한다(점 13개 → 최근 6개). 묶이지 않게 앞 스캔에서 2시간 1분씩 띄운다(FD-175).
     var history2 = history;
     var before = state;
     for (var index = 0; index < 7; index++) {
@@ -266,7 +269,7 @@ void main() {
       history2 = history2.appendScan(
         before,
         after,
-        DateTime(2026, 10, 6, 8, index),
+        DateTime(2026, 10, 5, 23, 42).add(Duration(minutes: 121 * index)),
         rawScanKind: 'inventory',
         rawInventoryScanProfile: 'currencies',
         scanContext: {
@@ -440,5 +443,118 @@ void main() {
       StatisticsGrowthFixtureExpected.averageGrowthText,
     );
     expect(state.profileId, _profile);
+  });
+
+  group('FD-175 snapshot groups', () {
+    InventoryScanPoint point(String id, int sequence, DateTime at) =>
+        InventoryScanPoint(sessionId: id, sequence: sequence, recordedAt: at);
+
+    test('a session starting within 2 hours of the previous end joins it', () {
+      expect(statisticsSnapshotGap, const Duration(hours: 2));
+      final t = DateTime(2026, 10, 1, 20);
+      final groups = statisticsSnapshotGroups(
+        [
+          point('a', 1, t),
+          // 시작을 모르면 끝 시각: a 끝에서 정확히 2시간 → 같은 묶음.
+          point('b', 2, t.add(const Duration(hours: 2))),
+          // b 끝에서 2시간 1분 → 새 묶음.
+          point('c', 3, t.add(const Duration(hours: 4, minutes: 1))),
+          // d는 c 끝에서 59분 뒤에 시작했다(끝은 그보다 늦다) → c와 같은 묶음(앞 세션 끝 기준으로 이어진다).
+          point('d', 4, t.add(const Duration(hours: 9))),
+        ],
+        starts: {'d': t.add(const Duration(hours: 5))},
+      );
+      expect([for (final group in groups) group.sessionIds], [
+        ['a', 'b'],
+        ['c', 'd'],
+      ]);
+      expect(groups.last.endAt, t.add(const Duration(hours: 9)));
+      expect(groups.last.endSequence, 4);
+      expect(groups.last.key, 'd');
+      expect(statisticsSnapshotGroups(const []), isEmpty);
+    });
+
+    test(
+      'two inventory profiles in one sitting are one snapshot, one point',
+      () {
+        // 지금 fixture 뒤 10/06 08:00 · 08:10에 profile 둘을 차례로 스캔한다. 두 번째 세션이 상급 활동 보고서를 다시 본다.
+        RepositoryState next(
+          RepositoryState before,
+          Map<String, String> quantities,
+        ) => _restate(
+          before,
+          before.revision + 1,
+          entries: [
+            for (final entry in before.inventory.entries)
+              quantities.containsKey(entry['key'])
+                  ? {...entry, 'quantity': quantities[entry['key']]}
+                  : entry,
+          ],
+        );
+        RepositoryCurrentHistory scan(
+          RepositoryCurrentHistory base,
+          RepositoryState before,
+          RepositoryState after,
+          DateTime at,
+          String session,
+          List<String> keys,
+        ) => base.appendScan(
+          before,
+          after,
+          at,
+          rawScanKind: 'inventory',
+          rawInventoryScanProfile: 'profile-$session',
+          scanContext: {
+            'session_id': session,
+            'generation': 1,
+            'candidate_id': '$session-candidate',
+            'candidate_revision': 0,
+          },
+          studentIds: const [],
+          resourceKeys: keys,
+        );
+        final first = next(state, {
+          'credits': '98400100',
+          'Item_Icon_ExpItem_2': '100',
+        });
+        final second = next(first, {'Item_Icon_ExpItem_2': '390'});
+        var history2 = scan(
+          history,
+          state,
+          first,
+          DateTime(2026, 10, 6, 8),
+          'sitting-1',
+          const ['credits', 'Item_Icon_ExpItem_2'],
+        );
+        history2 = scan(
+          history2,
+          first,
+          second,
+          DateTime(2026, 10, 6, 8, 10),
+          'sitting-2',
+          const ['Item_Icon_ExpItem_2'],
+        );
+        final built = _build(second, history2);
+        // 세션 2개가 늘었지만 스냅샷은 1회만 는다(7 → 8).
+        expect(built.snapshotTimes, hasLength(8));
+        expect(built.snapshotTimes.last, DateTime(2026, 10, 6, 8, 10).toUtc());
+        expect(built.inventorySnapshotTimes, hasLength(7));
+        // 재화 점은 묶음 끝 수량 하나: 상급 활동 보고서는 100(첫 세션)이 아니라 390이다.
+        final report = built.inventory.track('Item_Icon_ExpItem_2');
+        expect(report, hasLength(7));
+        expect(report[report.length - 2].value.known, 384);
+        expect(report.last.value.known, 390);
+        // KPI "지난 스냅샷 대비"의 기준(4주 색인)도 묶음 점이다.
+        final window = built.inventoryWindow.track('Item_Icon_ExpItem_2');
+        expect(window[window.length - 2].value.known, 384);
+        final credits = statisticsResourceTrends(
+          built,
+          _supply(second).board,
+          StatisticsB3Range.all,
+        )!.panels.first;
+        expect(credits.points, hasLength(7));
+        expect(credits.points.last.value, 98400100);
+      },
+    );
   });
 }

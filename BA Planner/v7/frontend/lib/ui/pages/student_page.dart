@@ -47,6 +47,7 @@ class StudentPage extends StatefulWidget {
     this.headerOverride,
     this.navigation,
     this.onNavigate,
+    this.filterController,
   });
 
   final AppService service;
@@ -73,6 +74,10 @@ class StudentPage extends StatefulWidget {
   /// 다른 탭으로 가는 이동 의도(tidy1, FD-108). 앱 셸이 넘긴다. 지금은 계산기 "인벤토리 · 부족 위험에서 보기" 연결만
   /// 준비한다(버튼은 FD-173 (c) 그대로 숨김, [GrowthCalculatorModeData.onOpenInventory]).
   final ValueChanged<AppNavigationIntent>? onNavigate;
+
+  /// 학생 탭 필터 상태. 앱 셸이 넘기면 그 객체를 쓴다(FE7-e: 통계 "학생 탭 필터 불러오기"가 적용 값을 읽기만 한다). 없으면
+  /// 페이지가 만든다.
+  final StudentFilterController? filterController;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -108,7 +113,9 @@ class _StudentPageState extends State<StudentPage> {
       RecentGrowthCalculations();
 
   /// S4·S1 배지·필터 모달이 함께 쓰는 필터 상태(FE3-c, FE3-d2). 성장 범위 조건도 여기 있다.
-  final StudentFilterController _filter = StudentFilterController();
+  late final StudentFilterController _filter =
+      widget.filterController ?? (_ownFilter = StudentFilterController());
+  StudentFilterController? _ownFilter;
   RecentStudents? _ownRecent;
 
   /// 마지막으로 적용한 이동 의도 id와 그 임시 목록(FE7-d).
@@ -396,7 +403,7 @@ class _StudentPageState extends State<StudentPage> {
     _recentCalculations.dispose();
     widget.service.state.removeListener(_connectionChanged);
     _filter.removeListener(_stateChanged);
-    _filter.dispose();
+    _ownFilter?.dispose();
     _recent.removeListener(_stateChanged);
     _ownRecent?.dispose();
     _search.dispose();

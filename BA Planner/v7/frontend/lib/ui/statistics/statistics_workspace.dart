@@ -1,6 +1,8 @@
 // 통계 탭 3섹션 골격(FE7-a, 시안 Stats-Growth · Stats-Inventory · Stats-Plan, F 보고서 §2).
 //
-// - 왼쪽 주제 · 범위: "통계" 제목, 주제 버튼 3개(선택 핑크), 필터 버튼(FE7-e 전까지 비활성) + 보조 문구,
+// - 왼쪽 주제 · 범위: "통계" 제목, 주제 버튼 3개(선택 핑크), 필터 버튼 + 보조 문구(FE7-e: 학생 성장에서 통계 전용 필터
+//   모달을 연다. 걸리면 버튼이 분홍 "필터 · n" · "대상 / 보유명"이고 아래에 적용 칩 줄이 들어가 보조 문구 · 기준 데이터가
+//   내려간다(시안 Stats-Growth-Filter). 인벤토리 · 계획에서는 비활성 "항상 전체"다),
 //   기준 데이터 3행(FE7-h 이력: 학생 스캔 · 인벤토리 시각, 스냅샷 n회 · 기간, 모르면 '—'), 아래 "다시 스캔"(FD-125: 스캔 탭으로).
 // - 가운데 KPI + 위젯: 제목 줄(제목 · (i) · 범위) + 공용 사선 스크롤 viewport(translate 모드, 공용 스크롤바 · 포그 C).
 //   행 0은 KPI 띠, 그 아래 위젯 타일 줄(80° 평행사변형, 사선 계단은 translate 모드가 행 높이대로 만든다).
@@ -24,6 +26,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../statistics/statistics_growth_filter.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
@@ -50,6 +53,7 @@ import 'statistics_growth_charts.dart';
 import 'statistics_growth_evidence.dart';
 import 'statistics_history_charts.dart';
 import 'statistics_plan_charts.dart';
+import 'statistics_filter_view.dart';
 import 'statistics_source.dart';
 import 'statistics_supply_charts.dart';
 import 'statistics_supply_evidence.dart';
@@ -180,6 +184,7 @@ class StatisticsWorkspace extends StatelessWidget {
     this.growth = const StatisticsGrowthView(growth: null),
     this.supply = const StatisticsSupplyView(supply: null),
     this.history = const StatisticsHistoryView(),
+    this.filter = const StatisticsFilterView(),
     this.evidenceActions,
   });
 
@@ -196,6 +201,9 @@ class StatisticsWorkspace extends StatelessWidget {
 
   /// 이력 projection(기준 데이터 · KPI 증감 · A6 · B3, FE7-h).
   final StatisticsHistoryView history;
+
+  /// 통계 전용 필터(FE7-e). [growth]는 이미 대상 학생만의 성장이다(필터가 걸렸으면).
+  final StatisticsFilterView filter;
   final ValueChanged<StatisticsMode> onModeChanged;
 
   /// 왼쪽 "다시 스캔"(FD-125 권장안 중 지금 되는 부분: 스캔 탭을 연다).
@@ -219,14 +227,16 @@ class StatisticsWorkspace extends StatelessWidget {
               growth: growth,
               supply: supply,
               history: history,
+              filter: filter,
             ),
           ),
           Positioned.fill(
             child: _ScopeSection(
               size: size,
               mode: mode,
-              owned: growth.growth?.ownedCount,
+              owned: filter.scope?.ownedCount ?? growth.growth?.ownedCount,
               history: history,
+              filter: filter,
               onModeChanged: onModeChanged,
               onRescan: onRescan,
             ),
@@ -409,6 +419,7 @@ class _ScopeSection extends StatelessWidget {
     required this.mode,
     required this.owned,
     required this.history,
+    required this.filter,
     required this.onModeChanged,
     required this.onRescan,
   });
@@ -421,6 +432,9 @@ class _ScopeSection extends StatelessWidget {
 
   /// 기준 데이터 값(FE7-h).
   final StatisticsHistoryView history;
+
+  /// 통계 전용 필터(FE7-e).
+  final StatisticsFilterView filter;
   final ValueChanged<StatisticsMode> onModeChanged;
   final VoidCallback onRescan;
 
@@ -467,6 +481,10 @@ class _ScopeSection extends StatelessWidget {
       );
     }
 
+    // 통계 필터(FE7-e)는 학생 성장에서만 누를 수 있다. 걸려 있으면 버튼 아래 적용 칩 줄이 들어가고 그 아래가 내려간다.
+    final growthTopic = mode == StatisticsMode.students;
+    final applied = growthTopic && filter.applied ? filter.scope : null;
+    final shift = applied == null ? 0.0 : StatisticsMetrics.filterAppliedShift;
     final children = <Widget>[
       text(
         StatisticsMetrics.scopeTitleTop,
@@ -510,10 +528,39 @@ class _ScopeSection extends StatelessWidget {
           StatisticsMetrics.filterHeight,
           StatisticsMetrics.scopeRightMargin,
         ),
-        child: scaled(_FilterButton(note: mode.filterNoteFor(owned))),
+        child: scaled(
+          _FilterButton(
+            title: applied == null ? '필터' : '필터 · ${applied.chips.length}',
+            note: applied?.countText ?? mode.filterNoteFor(owned),
+            applied: applied != null,
+            onPressed: growthTopic ? filter.onOpen : null,
+          ),
+        ),
       ),
+      if (applied != null)
+        Positioned(
+          left: StatisticsMetrics.scopeTextLeft,
+          top: top + StatisticsMetrics.filterChipsTop * scale,
+          width: math.max(
+            0.0,
+            railRight(top + StatisticsMetrics.filterChipsTop * scale) -
+                StatisticsMetrics.scopeTextLeft -
+                StatisticsMetrics.scopeRightMargin,
+          ),
+          height: StatisticsMetrics.filterChipsHeight * scale,
+          child: scaled(
+            Align(
+              alignment: Alignment.centerLeft,
+              child: StatisticsFilterChipRow(
+                chips: applied.chips,
+                onRemove: filter.onRemove,
+                onClear: filter.onClear,
+              ),
+            ),
+          ),
+        ),
       text(
-        StatisticsMetrics.filterNoteTop,
+        StatisticsMetrics.filterNoteTop + shift,
         StatisticsMetrics.filterNoteHeight,
         '학생 탭 필터와 따로 저장됩니다.\n'
             "팝업에서 '학생 탭 필터 불러오기'로 가져올 수 있습니다.",
@@ -521,7 +568,7 @@ class _ScopeSection extends StatelessWidget {
         left: StatisticsMetrics.filterNoteLeft,
       ),
       text(
-        StatisticsMetrics.baseCaptionTop,
+        StatisticsMetrics.baseCaptionTop + shift,
         StatisticsMetrics.captionHeight,
         '기준 데이터',
         _captionStyle,
@@ -537,7 +584,9 @@ class _ScopeSection extends StatelessWidget {
       children.add(
         Positioned.fromRect(
           rect: row(
-            StatisticsMetrics.baseTop + StatisticsMetrics.basePitch * index,
+            StatisticsMetrics.baseTop +
+                shift +
+                StatisticsMetrics.basePitch * index,
             StatisticsMetrics.baseHeight,
             StatisticsMetrics.scopeRightMargin,
           ),
@@ -665,25 +714,39 @@ class _TopicButton extends StatelessWidget {
   );
 }
 
-/// 필터 버튼 자리. 통계 전용 필터(FD-104)는 FE7-e라 지금은 누를 수 없다.
+/// 통계 전용 필터 버튼(FD-104, FE7-e). 학생 성장에서만 누를 수 있다(인벤토리 · 계획은 비활성 "항상 전체").
+/// 걸려 있으면 시안 Stats-Growth-Filter처럼 분홍 선택 버튼 · 분홍 깔때기 · 연필(다시 고치기)이다.
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.note});
+  const _FilterButton({
+    required this.title,
+    required this.note,
+    required this.applied,
+    required this.onPressed,
+  });
 
+  final String title;
   final String note;
+  final bool applied;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => RailButton(
     key: const ValueKey('statistics-filter'),
-    variant: RailButtonVariant.ghost,
+    variant: applied
+        ? RailButtonVariant.selectedPink
+        : RailButtonVariant.ghost,
     height: StatisticsMetrics.filterHeight,
     semanticLabel: '필터',
-    onPressed: null,
+    onPressed: onPressed,
     child: Row(
       children: [
-        const SizedBox.square(
+        SizedBox.square(
           dimension: 16,
           child: CustomPaint(
-            painter: KitGlyphPainter(glyph: KitGlyph.filter, color: _mutedColor),
+            painter: KitGlyphPainter(
+              glyph: KitGlyph.filter,
+              color: applied ? AppColors.accent : _mutedColor,
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -692,10 +755,12 @@ class _FilterButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '필터',
+              Text(
+                title,
+                key: const ValueKey('statistics-filter-title'),
                 maxLines: 1,
-                style: TextStyle(
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
                   fontSize: AppType.bodyPlusSize,
                   fontWeight: AppType.bold,
                 ),
@@ -713,7 +778,14 @@ class _FilterButton extends StatelessWidget {
             ],
           ),
         ),
-        const _Chevron(color: _mutedColor),
+        if (applied)
+          const Icon(
+            Icons.edit_outlined,
+            size: 15,
+            color: AppColors.accentText,
+          )
+        else
+          const _Chevron(color: _mutedColor),
       ],
     ),
   );
@@ -785,6 +857,7 @@ class _WidgetsSection extends StatelessWidget {
     required this.growth,
     required this.supply,
     required this.history,
+    required this.filter,
   });
 
   final Size size;
@@ -793,10 +866,15 @@ class _WidgetsSection extends StatelessWidget {
   final StatisticsGrowthView growth;
   final StatisticsSupplyView supply;
   final StatisticsHistoryView history;
+  final StatisticsFilterView filter;
 
   @override
   Widget build(BuildContext context) {
     final points = statisticsSectionPolygon(size, statisticsWidgetsSectionId);
+    // 통계 필터는 학생 성장에만 걸린다(FD-104).
+    final scope = mode == StatisticsMode.students && filter.applied
+        ? filter.scope
+        : null;
     final top = points[0].dy;
     final titleLeft = points[0].dx + StatisticsMetrics.titleLeftInset;
     final titleRight = points[1].dx - StatisticsMetrics.titleRightInset;
@@ -829,6 +907,7 @@ class _WidgetsSection extends StatelessWidget {
                     planStudents: statisticsPlanStudentCount(data),
                     phases: supply.planning?.phaseCount,
                     inventoryScan: history.inventoryScanAgo,
+                    filter: scope,
                   ),
                 ),
                 Positioned.fromRect(
@@ -841,6 +920,8 @@ class _WidgetsSection extends StatelessWidget {
                     growth: growth,
                     supply: supply,
                     history: history,
+                    filter: scope,
+                    wholeGrowth: filter.scope?.all,
                   ),
                 ),
               ],
@@ -866,11 +947,15 @@ class _TopicTitle extends StatelessWidget {
     required this.planStudents,
     required this.phases,
     required this.inventoryScan,
+    this.filter,
   });
 
   final StatisticsMode mode;
   final int? owned;
   final int? planStudents;
+
+  /// 학생 성장에 걸린 통계 필터(FE7-e). 있으면 범위 자리가 "필터: …" 분홍 칩 + "n명 기준"이다(시안 Stats-Growth-Filter).
+  final StatisticsGrowthScope? filter;
 
   /// 활성 계획 문서의 페이즈 수(FE7-g). 문서 계산이 없으면 null.
   final int? phases;
@@ -912,7 +997,9 @@ class _TopicTitle extends StatelessWidget {
         child: Align(
           widthFactor: 1,
           alignment: Alignment.centerRight,
-          child: mode.scopeIsChip
+          child: filter != null
+              ? _FilterScope(scope: filter!)
+              : mode.scopeIsChip
               ? FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
@@ -938,6 +1025,85 @@ class _TopicTitle extends StatelessWidget {
   );
 }
 
+/// 가운데 범위 자리의 통계 필터(시안 Stats-Growth-Filter: 분홍 칩 "필터: 밀레니엄 · 스트라이커" · 사이 10 · 12px "31명 기준").
+/// 좁으면 칩을 줄인다.
+class _FilterScope extends StatelessWidget {
+  const _FilterScope({required this.scope});
+
+  final StatisticsGrowthScope scope;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerRight,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BaChip(
+          key: const ValueKey('statistics-scope-filter'),
+          label: scope.chipText,
+          tone: AppTones.pink,
+        ),
+        const SizedBox(width: 10),
+        Text(
+          scope.scopeText,
+          key: const ValueKey('statistics-scope-label'),
+          maxLines: 1,
+          style: _mutedStyle.copyWith(fontSize: 12, height: 1.2),
+        ),
+      ],
+    ),
+  );
+}
+
+/// A4 빈 상태(시안 Stats-Growth-Filter): 그래프 자리를 채운 둥근 상자(r10, rgba(16,24,35,.45) + 안쪽 1px
+/// rgba(56,81,107,.5)) 가운데 굵은 14px 문구 · 12px 회색 안내, 사이 10. 타일이 낮으면 글자 묶음을 줄인다.
+class StatisticsSingleGroupState extends StatelessWidget {
+  const StatisticsSingleGroupState({super.key});
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: const Color.fromRGBO(16, 24, 35, 0.45),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color.fromRGBO(56, 81, 107, 0.5)),
+    ),
+    child: const Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                statisticsA4SingleGroupText,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.25,
+                  fontWeight: AppType.bold,
+                  color: AppColors.text,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                statisticsA4SingleGroupNote,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.25,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 //// 주제 하나의 KPI 띠 + 위젯 타일 세로 스크롤(공용 viewport, translate 모드).
 class _TopicViewport extends StatefulWidget {
   const _TopicViewport({
@@ -948,6 +1114,8 @@ class _TopicViewport extends StatefulWidget {
     required this.growth,
     required this.supply,
     required this.history,
+    this.filter,
+    this.wholeGrowth,
   });
 
   final StatisticsMode mode;
@@ -956,6 +1124,12 @@ class _TopicViewport extends StatefulWidget {
   final StatisticsGrowthView growth;
   final StatisticsSupplyView supply;
   final StatisticsHistoryView history;
+
+  /// 학생 성장에 걸린 통계 필터(FE7-e). 없으면 필터 없음.
+  final StatisticsGrowthScope? filter;
+
+  /// 필터를 걸지 않은 전체 성장(계획 KPI 미계획 · 40% 미만, FD-104: 계획 집계는 항상 전체). 없으면 [growth]의 성장이다.
+  final StatisticsGrowth? wholeGrowth;
 
   @override
   State<_TopicViewport> createState() => _TopicViewportState();
@@ -1028,10 +1202,12 @@ class _TopicViewportState extends State<_TopicViewport> {
         if (index == 0) {
           return _KpiBand(
             mode: mode,
+            labels: statisticsKpiLabels(mode, widget.filter),
             values: switch (mode) {
-              StatisticsMode.students => statisticsGrowthKpis(
+              StatisticsMode.students => statisticsFilteredGrowthKpis(
                 widget.growth.growth,
                 widget.history.growthDeltas,
+                widget.filter,
               ),
               StatisticsMode.inventory => statisticsInventoryKpis(
                 widget.supply.supply,
@@ -1039,7 +1215,9 @@ class _TopicViewportState extends State<_TopicViewport> {
               ),
               StatisticsMode.plan => statisticsPlanKpis(
                 widget.supply.supply,
-                unplannedLow: statisticsUnplannedLowCount(widget.growth.growth),
+                unplannedLow: statisticsUnplannedLowCount(
+                  widget.wholeGrowth ?? widget.growth.growth,
+                ),
                 planning: widget.supply.planning,
                 deltas: widget.history.supplyDeltas,
               ),
@@ -1057,6 +1235,7 @@ class _TopicViewportState extends State<_TopicViewport> {
           supplyEmpty: supply == null
               ? null
               : statisticsSupplyEmptyText(widget.data, supply),
+          singleGroup: growth != null && (widget.filter?.singleGroup ?? false),
         );
       },
     );
@@ -1117,6 +1296,38 @@ List<StatisticsKpiValue> statisticsGrowthKpis(
     _deltaKpi(count(growth.maxLevelCount), _signed(deltas.maxLevel)),
     _deltaKpi(count(growth.fullGrowthCount), _signed(deltas.fullGrowth)),
     _plainKpi(count(growth.plannedCount)),
+  ];
+}
+
+/// KPI 라벨. 학생 성장에 통계 필터가 걸리면 첫 칸은 "대상 학생"이다(시안 Stats-Growth-Filter).
+List<String> statisticsKpiLabels(
+  StatisticsMode mode,
+  StatisticsGrowthScope? filter,
+) {
+  final labels = mode.kpiLabels;
+  if (mode != StatisticsMode.students || filter == null || !filter.filtered) {
+    return labels;
+  }
+  return ['대상 학생', ...labels.skip(1)];
+}
+
+/// 통계 필터가 걸린 성장 KPI(FE7-e, 시안 Stats-Growth-Filter): 첫 칸은 "대상 학생 n / m"(m = 보유 학생, 증감 없음)이고,
+/// 나머지는 대상 학생만의 값 · 증감([growth] · [deltas]가 이미 대상 학생 것)이다. 필터가 없으면 [statisticsGrowthKpis]다.
+List<StatisticsKpiValue> statisticsFilteredGrowthKpis(
+  StatisticsGrowth? growth,
+  StatisticsGrowthDeltas deltas,
+  StatisticsGrowthScope? filter,
+) {
+  final values = statisticsGrowthKpis(growth, deltas);
+  if (growth == null || filter == null || !filter.filtered) return values;
+  return [
+    (
+      value: '${growth.ownedCount}',
+      delta: '/ ${filter.ownedCount}',
+      tone: KpiDeltaTone.gain,
+      color: null,
+    ),
+    ...values.skip(1),
   ];
 }
 
@@ -1233,15 +1444,23 @@ const _chartTileIds = {'A1', 'A2', 'A6', 'B1', 'B3', 'C1', 'C2', 'C3'};
 
 /// KPI 띠: 다섯 칸. [onPressed]가 있으면 칸을 누를 수 있다(누른 칸 순번).
 class _KpiBand extends StatelessWidget {
-  const _KpiBand({required this.mode, this.values, this.onPressed});
+  const _KpiBand({
+    required this.mode,
+    this.labels,
+    this.values,
+    this.onPressed,
+  });
 
   final StatisticsMode mode;
+
+  /// 라벨(없으면 주제 기본 라벨).
+  final List<String>? labels;
   final List<StatisticsKpiValue>? values;
   final ValueChanged<int>? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final labels = mode.kpiLabels;
+    final labels = this.labels ?? mode.kpiLabels;
     final values = this.values;
     final onPressed = this.onPressed;
     return Padding(
@@ -1316,11 +1535,15 @@ class _TileRow extends StatelessWidget {
     this.growth,
     this.supply,
     this.supplyEmpty,
+    this.singleGroup = false,
   });
 
   final StatisticsTileRow row;
   final double height;
   final StatisticsHistoryView history;
+
+  /// 통계 필터로 A4가 비교할 학교가 하나뿐이다(FE7-e).
+  final bool singleGroup;
 
   /// 학생 성장 주제일 때만 있다.
   final StatisticsGrowthView? growth;
@@ -1354,6 +1577,7 @@ class _TileRow extends StatelessWidget {
                 growth: growth,
                 supply: supply,
                 supplyEmpty: supplyEmpty,
+                singleGroup: singleGroup,
               ),
             ),
         ],
@@ -1373,10 +1597,14 @@ class _StatisticsTile extends StatelessWidget {
     this.growth,
     this.supply,
     this.supplyEmpty,
+    this.singleGroup = false,
   });
 
   final StatisticsTileSpec tile;
   final double height;
+
+  /// 통계 필터로 비교할 학교가 하나뿐이다(A4 빈 상태, FE7-e).
+  final bool singleGroup;
 
   /// 이력(A6 · B3, FE7-h).
   final StatisticsHistoryView history;
@@ -1418,7 +1646,13 @@ class _StatisticsTile extends StatelessWidget {
         history.resourceTrends != null &&
         onB3RangeChanged != null;
     final Widget body;
-    if (growth != null && tile.id == 'A6') {
+    if (growth != null && tile.id == 'A4' && singleGroup) {
+      body = _chart(
+        const StatisticsSingleGroupState(
+          key: ValueKey('statistics-tile-A4-single'),
+        ),
+      );
+    } else if (growth != null && tile.id == 'A6') {
       body = _a6Body();
     } else if (supply != null && tile.id == 'B3') {
       body = _b3Body();

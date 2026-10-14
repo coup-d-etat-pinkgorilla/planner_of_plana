@@ -1,16 +1,19 @@
-// 통계 이력 projection(FE7-h, FD-041 · FD-042 · FD-106 · FD-110, F 보고서 §1.6 확정 4 · §2.2 기준 데이터 · §5 A6 · B3 · K 증감).
-// 위젯과 서비스 호출이 없는 순수 계산이다. 입력은 `_reload()`가 읽은 지금 계정 상태 · 학생 목록 · 인벤토리 목록과 FB-2 이력
-// (`repository.history.events` 전체 쪽 · `scan_latest`)뿐이다.
+// 통계 이력 projection(FE7-h, FD-041 · FD-042 · FD-106 · FD-110 · FD-175, F 보고서 §1.6 확정 4 · §2.2 기준 데이터 · §5 A6 · B3 ·
+// K 증감). 위젯과 서비스 호출이 없는 순수 계산이다. 입력은 `_reload()`가 읽은 지금 계정 상태 · 학생 목록 · 인벤토리 목록과 FB-2
+// 이력(`repository.history.events` 전체 쪽 · `scan_latest`)뿐이다.
 //
-// - 스냅샷 = scan 세션(오케스트레이터 2026-10-09 결정: "스냅샷 n회" · 추세 점 · A6는 `scan_context.session_id` 단위, 같은
-//   세션의 여러 commit은 그 세션 마지막 적용 상태 1점). 기준 데이터 "스냅샷 n회 · 기간"은 남아 있는(보존) 이력의 모든 세션이다.
-//   scan 종류 원문(`scan_kind`)에는 기대지 않는다. 학생 스냅샷은 승인 scope에 학생이 든 세션, 재화 점은 FE6-f처럼 scope에
-//   그 재화가 든 세션이다.
-// - 시점별 학생 상태: 지금 확정 학생에서 이력의 `student_changes`(before)를 거꾸로 되돌려 학생 스냅샷마다 그 세션 끝 상태를
+// - 스냅샷 = 가까운 scan 세션 묶음(FD-175, 사용자 결정 2026-10-14): 학생 · 인벤토리 모든 profile의 scan 세션(같은 세션의 여러
+//   commit은 그 세션 끝 1점)을 시각순으로 놓고, 앞 세션 끝에서 [statisticsSnapshotGap] 안에 시작한 세션을 같은 스냅샷으로
+//   묶는다([statisticsSnapshotGroups]). 기준 데이터 "스냅샷 n회 · 기간"은 남아 있는(보존) 이력의 모든 묶음이다. scan 종류
+//   원문(`scan_kind`)에는 기대지 않는다. 학생 스냅샷은 승인 scope에 학생이 든 세션이 있는 묶음, 재화 점은 scope에 그 재화가 든
+//   세션이 있는 묶음이고(FE6-f 규칙 2를 묶음에 적용), 값은 묶음 끝 상태다.
+// - 시점별 학생 상태: 지금 확정 학생에서 이력의 `student_changes`(before)를 거꾸로 되돌려 학생 스냅샷마다 그 묶음 끝 상태를
 //   얻는다(FE6-f가 인벤토리 수량을 되돌리는 것과 같은 방식). 그 상태로 FE7-b 성장 projection(FD-028)을 그대로 다시 센다.
+//   통계 필터(FE7-e)가 걸리면 대상 학생만 다시 센다([StatisticsHistory.studentSnapshotsFor]).
 // - "지난 스냅샷 대비"(FD-041): 수동 수정도 지금 값에 들어가고, 비교 기준은 scan 점이다.
 //   - 학생(성장 KPI): 마지막 학생 스냅샷 바로 앞 학생 스냅샷의 학생 상태. 학생 스냅샷이 2개 미만이면 '—'.
-//   - 재화(인벤토리 · 계획 KPI): FE6-f 규칙 그대로 재화마다 마지막 바로 앞 스캔 점(지금 − 28일 안), [inventoryKpiDeltas]를 쓴다.
+//   - 재화(인벤토리 · 계획 KPI): 재화마다 마지막 바로 앞 스냅샷(묶음) 점(지금 − 28일 안), [inventoryKpiDeltas]를 쓴다. FE6-f
+//     인벤토리 탭의 재화별 "지난 스캔"(세션 단위)과는 한 묶음 안에서 같은 재화를 두 번 스캔했을 때만 다르다.
 //     충족률 · 충족 카테고리는 그 점 수량으로 바꾼 보드를 같은 식(FD-031 · 032)으로 다시 센다. 비교 못 하는 재화는 지금 값
 //     그대로다(FE6-f "변화 없음"과 같은 수). 필요량은 지금 계획이다(이력은 지난 계획을 남기지 않는다).
 //   - 목표(계획 등록 · 미계획 학생)와 문서 계산(막힌 학생)은 이력에 없어 '—'다.
@@ -29,6 +32,9 @@ import '../ui/inventory/inventory_history.dart';
 import '../ui/inventory/inventory_view_model.dart';
 import 'statistics_growth_projection.dart';
 import 'statistics_supply_projection.dart';
+
+/// 스냅샷 묶음 간격(FD-175, 사용자 결정 2026-10-14: 앞 세션 끝에서 2시간 안. 바꾸려면 FD-175를 갱신한다).
+const statisticsSnapshotGap = Duration(hours: 2);
 
 /// A6 점 수 · B3 "스냅샷 6회"(FD-110 권장안: 최근 6회).
 const statisticsHistoryRecentSnapshots = 6;
@@ -68,9 +74,12 @@ class StatisticsStudentSnapshot {
     required this.averageGrowth,
     required this.maxLevelCount,
     required this.fullGrowthCount,
+    this.states = const {},
   });
 
   final DateTime at;
+
+  /// 묶음의 마지막 세션 id(FD-175).
   final String sessionId;
   final int ownedCount;
 
@@ -79,11 +88,15 @@ class StatisticsStudentSnapshot {
   final int? maxLevelCount;
   final int? fullGrowthCount;
 
+  /// 묶음 끝 확정 학생(id → 상태). 통계 필터 대상만 다시 셀 때 쓴다(FE7-e).
+  final Map<String, ConfirmedStudentState> states;
+
   /// 성장 projection 값으로 만든다.
   factory StatisticsStudentSnapshot.of(
     StatisticsGrowth growth, {
     required DateTime at,
     required String sessionId,
+    Map<String, ConfirmedStudentState> states = const {},
   }) => StatisticsStudentSnapshot(
     at: at,
     sessionId: sessionId,
@@ -91,7 +104,67 @@ class StatisticsStudentSnapshot {
     averageGrowth: growth.averageGrowth,
     maxLevelCount: growth.maxLevelCount,
     fullGrowthCount: growth.fullGrowthCount,
+    states: states,
   );
+}
+
+/// 스냅샷 묶음 하나(FD-175): 가까운 scan 세션들.
+@immutable
+class StatisticsSnapshotGroup {
+  const StatisticsSnapshotGroup({
+    required this.sessionIds,
+    required this.endSequence,
+    required this.endAt,
+  });
+
+  /// 묶인 세션(시각순).
+  final List<String> sessionIds;
+
+  /// 마지막 세션 끝 점의 이력 순번.
+  final int endSequence;
+
+  /// 마지막 세션 끝 시각(스냅샷 시각).
+  final DateTime endAt;
+
+  /// 묶음 이름(마지막 세션 id). 재화 색인의 점 세션 자리에 쓴다.
+  String get key => sessionIds.last;
+}
+
+/// scan 세션 끝 점([points])을 스냅샷으로 묶는다(FD-175). 순번(= 기록 순서)대로 놓고, 세션 시작([starts], 그 세션 첫
+/// commit 시각, 모르면 끝 시각)이 바로 앞 세션 끝에서 [gap] 안이면 앞 묶음에 넣는다. 오래된 묶음부터.
+List<StatisticsSnapshotGroup> statisticsSnapshotGroups(
+  Iterable<InventoryScanPoint> points, {
+  Map<String, DateTime> starts = const {},
+  Duration gap = statisticsSnapshotGap,
+}) {
+  final ordered = [...points]..sort((a, b) => a.sequence.compareTo(b.sequence));
+  final groups = <StatisticsSnapshotGroup>[];
+  var sessions = <String>[];
+  InventoryScanPoint? previous;
+  void close() {
+    final last = previous;
+    if (last == null) return;
+    groups.add(
+      StatisticsSnapshotGroup(
+        sessionIds: List.unmodifiable(sessions),
+        endSequence: last.sequence,
+        endAt: last.recordedAt,
+      ),
+    );
+  }
+
+  for (final point in ordered) {
+    final last = previous;
+    final start = starts[point.sessionId] ?? point.recordedAt;
+    if (last != null && start.difference(last.recordedAt) > gap) {
+      close();
+      sessions = <String>[];
+    }
+    sessions.add(point.sessionId);
+    previous = point;
+  }
+  close();
+  return groups;
 }
 
 /// 이력 집계 입력.
@@ -132,6 +205,7 @@ class StatisticsHistory {
     required this.snapshotTimes,
     required this.studentSnapshots,
     required this.inventorySnapshotTimes,
+    required this._growthOf,
     required this.inventory,
     required this.inventoryWindow,
     required this.lastStudentScanAt,
@@ -149,13 +223,23 @@ class StatisticsHistory {
     ]..sort((a, b) => a.sequence.compareTo(b.sequence));
     final studentSessions = <String>{};
     final inventorySessions = <String>{};
+    final starts = <String, DateTime>{};
     for (final event in events) {
       final session = event.scanSessionId;
       if (event.source != 'scan' || session == null) continue;
       if (event.appliedStudentIds.isNotEmpty) studentSessions.add(session);
       if (event.appliedResourceKeys.isNotEmpty) inventorySessions.add(session);
+      final at = DateTime.parse(event.recordedAt);
+      final start = starts[session];
+      if (start == null || at.isBefore(start)) starts[session] = at;
     }
-    final pointBySequence = {for (final point in points) point.sequence: point};
+    // FD-175: 가까운 세션을 한 스냅샷으로 묶는다. 학생 · 재화 점은 묶음 끝에 하나다.
+    final groups = statisticsSnapshotGroups(points, starts: starts);
+    final groupByEnd = {for (final group in groups) group.endSequence: group};
+    final groupBySession = {
+      for (final group in groups)
+        for (final session in group.sessionIds) session: group,
+    };
     final catalog = {
       for (final entry in input.students ?? const <StudentCatalogEntry>[])
         entry.studentId: entry,
@@ -173,19 +257,20 @@ class StatisticsHistory {
               ),
           ],
         );
-    // 지금 학생에서 거꾸로 되돌린다(늦은 적용부터).
+    // 지금 학생에서 거꾸로 되돌린다(늦은 적용부터). 학생 세션이 든 묶음의 끝에서 그때 상태를 센다.
     final students = {
       for (final student in input.state.students) student.studentId: student,
     };
     final snapshots = <StatisticsStudentSnapshot>[];
     for (final event in events) {
-      final point = pointBySequence[event.sequence];
-      if (point != null && studentSessions.contains(point.sessionId)) {
+      final group = groupByEnd[event.sequence];
+      if (group != null && group.sessionIds.any(studentSessions.contains)) {
         snapshots.add(
           StatisticsStudentSnapshot.of(
             growthOf(students),
-            at: point.recordedAt,
-            sessionId: point.sessionId,
+            at: group.endAt,
+            sessionId: group.key,
+            states: Map.unmodifiable(students),
           ),
         );
       }
@@ -202,8 +287,19 @@ class StatisticsHistory {
     final coverage = first == null
         ? InventoryHistoryCoverage.unrecorded
         : InventoryHistoryCoverage.fromQuery(first.coverage);
+    // 재화 색인(FE6-f 함수)에는 묶음을 세션 하나로 넘긴다: scan 적용의 세션 자리를 묶음 이름으로 바꾸고, 점은 묶음 끝 하나다.
+    // 그러면 재화 점 = 그 재화가 scope에 든 세션이 있는 묶음, 값 = 묶음 끝 수량이다.
     final allEvents = [
-      for (final event in events) InventoryHistoryEvent.fromEvent(event),
+      for (final event in events)
+        _grouped(InventoryHistoryEvent.fromEvent(event), groupBySession),
+    ];
+    final groupPoints = [
+      for (final group in groups)
+        InventoryScanPoint(
+          sessionId: group.key,
+          sequence: group.endSequence,
+          recordedAt: group.endAt,
+        ),
     ];
     final current = inventoryHistoryCurrent(input.state.inventory);
     final boundary = input.now.subtract(inventoryHistoryWindow);
@@ -211,18 +307,19 @@ class StatisticsHistory {
     return StatisticsHistory._(
       now: input.now,
       timestampsMonotonic: coverage.timestampsMonotonic,
-      snapshotTimes: [for (final point in points) point.recordedAt],
+      snapshotTimes: [for (final group in groups) group.endAt],
       studentSnapshots: List.unmodifiable(snapshots.reversed),
       inventorySnapshotTimes: [
-        for (final point in points)
-          if (inventorySessions.contains(point.sessionId)) point.recordedAt,
+        for (final group in groups)
+          if (group.sessionIds.any(inventorySessions.contains)) group.endAt,
       ],
+      growthOf: growthOf,
       inventory: InventoryHistory.build(
         InventoryHistoryInput(
           now: input.now,
           current: current,
           events: allEvents,
-          scanPoints: points,
+          scanPoints: groupPoints,
           coverage: coverage,
           lastScanAt: input.lastInventoryScanAt,
         ),
@@ -237,7 +334,7 @@ class StatisticsHistory {
               if (inWindow(event.recordedAt)) event,
           ],
           scanPoints: [
-            for (final point in points)
+            for (final point in groupPoints)
               if (inWindow(point.recordedAt)) point,
           ],
           coverage: coverage,
@@ -254,14 +351,39 @@ class StatisticsHistory {
   /// 시계가 되돌려진 기록이 없다(증감 · 추이를 낼 수 있다).
   final bool timestampsMonotonic;
 
-  /// 남은 이력의 모든 스냅샷(scan 세션 끝) 시각, 오래된 것부터.
+  /// 남은 이력의 모든 스냅샷(FD-175 묶음 끝) 시각, 오래된 것부터.
   final List<DateTime> snapshotTimes;
 
-  /// 학생 스냅샷(학생을 적용한 세션), 오래된 것부터.
+  /// 학생 스냅샷(학생을 적용한 세션이 든 묶음), 오래된 것부터.
   final List<StatisticsStudentSnapshot> studentSnapshots;
 
-  /// 재화를 적용한 세션 끝 시각, 오래된 것부터.
+  /// 재화를 적용한 세션이 든 묶음 끝 시각, 오래된 것부터.
   final List<DateTime> inventorySnapshotTimes;
+
+  final StatisticsGrowth Function(Map<String, ConfirmedStudentState>)
+  _growthOf;
+  Set<String>? _targets;
+  List<StatisticsStudentSnapshot>? _targetSnapshots;
+
+  /// 통계 필터 대상([targets], 학생 id)만 다시 센 학생 스냅샷(FE7-e). 대상은 지금 정한 학생 집합이고, 스냅샷마다 그때 보유한
+  /// 대상만 센다. null이면 [studentSnapshots]다. 같은 집합(동일 객체)이면 다시 세지 않는다.
+  List<StatisticsStudentSnapshot> studentSnapshotsFor(Set<String>? targets) {
+    if (targets == null) return studentSnapshots;
+    final cached = _targetSnapshots;
+    if (cached != null && identical(_targets, targets)) return cached;
+    _targets = targets;
+    return _targetSnapshots = List.unmodifiable([
+      for (final snapshot in studentSnapshots)
+        StatisticsStudentSnapshot.of(
+          _growthOf({
+            for (final entry in snapshot.states.entries)
+              if (targets.contains(entry.key)) entry.key: entry.value,
+          }),
+          at: snapshot.at,
+          sessionId: snapshot.sessionId,
+        ),
+    ]);
+  }
 
   /// 남은 이력 전부로 만든 재화 색인(B3).
   final InventoryHistory inventory;
@@ -270,6 +392,23 @@ class StatisticsHistory {
   final InventoryHistory inventoryWindow;
   final DateTime? lastStudentScanAt;
   final DateTime? lastInventoryScanAt;
+}
+
+/// scan 적용의 세션 자리를 그 세션의 묶음 이름으로 바꾼다(FD-175). 묶음이 없는 세션(끝 점이 없음)은 그대로다.
+InventoryHistoryEvent _grouped(
+  InventoryHistoryEvent event,
+  Map<String, StatisticsSnapshotGroup> groups,
+) {
+  final group = groups[event.sessionId];
+  if (group == null || group.key == event.sessionId) return event;
+  return InventoryHistoryEvent(
+    sequence: event.sequence,
+    recordedAt: event.recordedAt,
+    source: event.source,
+    sessionId: group.key,
+    resourceKeys: event.resourceKeys,
+    changes: event.changes,
+  );
 }
 
 /// scan_latest 결과들에서 학생을 적용한 가장 최근 scan 시각. 없으면 null.
@@ -364,14 +503,16 @@ class StatisticsGrowthDeltas {
 }
 
 /// 지금 성장([growth], 수동 수정 포함)과 마지막 바로 앞 학생 스냅샷을 비교한다. 학생 스냅샷 2개 미만 · 시계 되돌림이면 모름.
+/// 통계 필터(FE7-e)가 걸리면 [growth]는 대상 학생만의 성장이고 [targets]는 그 학생 id다(스냅샷도 대상만 센다).
 StatisticsGrowthDeltas statisticsGrowthDeltas(
   StatisticsHistory? history,
-  StatisticsGrowth? growth,
-) {
+  StatisticsGrowth? growth, {
+  Set<String>? targets,
+}) {
   if (history == null || growth == null || !history.timestampsMonotonic) {
     return StatisticsGrowthDeltas.unknown;
   }
-  final snapshots = history.studentSnapshots;
+  final snapshots = history.studentSnapshotsFor(targets);
   if (snapshots.length < 2) return StatisticsGrowthDeltas.unknown;
   final base = snapshots[snapshots.length - 2];
   int? diff(int? now, int? then) =>
@@ -522,10 +663,13 @@ class StatisticsGrowthTrend {
 /// A6: 최근 학생 스냅샷의 평균 육성도. 시계 되돌림이면 null(그리지 않는다).
 ///
 /// 강조 구간은 마지막 스냅샷에서 [statisticsGrowthTrendHighlight] 안의 첫 스냅샷부터 마지막까지다. 그 안에 마지막 하나뿐이면
-/// 바로 앞 스냅샷부터다.
-StatisticsGrowthTrend? statisticsGrowthTrend(StatisticsHistory? history) {
+/// 바로 앞 스냅샷부터다. 통계 필터(FE7-e)가 걸리면 [targets] 학생만 센다.
+StatisticsGrowthTrend? statisticsGrowthTrend(
+  StatisticsHistory? history, {
+  Set<String>? targets,
+}) {
   if (history == null || !history.timestampsMonotonic) return null;
-  final all = history.studentSnapshots;
+  final all = history.studentSnapshotsFor(targets);
   final points = all.length > statisticsHistoryRecentSnapshots
       ? all.sublist(all.length - statisticsHistoryRecentSnapshots)
       : all;
