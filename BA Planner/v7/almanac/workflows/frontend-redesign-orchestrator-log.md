@@ -2854,3 +2854,147 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 - gate ① `20261014_163643`: analyze 0, 392 + 390 + 680 + 325, process 87, golden RED 5 = 예측 그대로(성장 A3·A4, 인벤토리 B2, 계획 C4, 필터 장면 2장 배경). 검토 → 승인. ② `-UpdateGoldens` `20261014_164359` **GREEN**(golden 47).
 - 커밋: **fe7f `fa4aa5df`**(22파일) → **fe9b1 `390c194a`**(11파일, 스캐너 WIP 제외 확인 — HEAD 대비 services 4파일 +399 −1 그대로).
 - CF 판단: FE7-f 발견 1(시안 B2 과잉 +22%·+38%는 FD-040 1.5배 미만) → **FD-040 유지**(앱 전체 한 규칙, 시안 숫자는 자리 표시) · 발견 2(C4 fixture 목표가 레벨뿐) → 작은 fixture 정리 후보 · 발견 7(C4 외 n명) → FE7-i 이후. FE9-b1 발견 1 → XB 요청(schema 원소 타입, backend 로그 16:55) · 2(족보 승패 = v6 가져오기 집계 vs 기록 집계) → FE9-d·e에서 결정 · 4(idempotency 순번 static 공유 — tidy1 State별 순번에도 이론상 같은 충돌) → 작은 정리 후보 · 5(이관 안내 seed) → FE9-a.
+
+## 2026-10-14 17:10 — 다음 라운드 배정: Lane A FE7-i, Lane B FE9-a
+
+- **Lane A** `debug/frontend_redesign_handoff/fe7i-worker-prompt-20261014.md`: 통계 3차 A5(스킬·장비 히트맵, 통계 필터 적용)·C5(미계획 학생 스트립 → 계획 만들기 1) + 공용 필터 모달 800×600 넘침(FE7-e 발견 2, 모달·키트 `RangeSliderRow` 좁은 창만, 기준 모습 golden 0). 이것으로 통계 타일 전부.
+- **Lane B** `debug/frontend_redesign_handoff/fe9a-worker-prompt-20261014.md`: 전술대항전 기록 화면(Tactical S1 목록 + S3 작성)을 FE9-b1 컨트롤러(v2) 위에 새로 — 4섹션(S2 로비·S4 족보는 FE9-c·d 자리), 헤더 seg "기록·분석·슬롯"(FD-126, 분석·슬롯 비활성), v1 쓰기 4곳 전환, v1 기록이 남으면 이관 안내(사용자가 누를 때만), 새 golden 최대 2장(`tactical`·`tactical-migration`). 공통 부품은 `lib/ui/tactical/`(키트 승격은 후보만).
+- 겹침 0(Lane A statistics·필터 모달·kit range_controls / Lane B tactical). XB 순서 ②(격리 사본 Python) 진행 중 — gate는 XB 실행과 겹치지 않게 확인 뒤.
+
+
+## 2026-10-14 17:13 — 의존성 보강 시작(XB→CF): 기존 HEAD/O3 기준 불일치 확인·새격리 closure28
+
+- source24 표준whole **1131/1225.899s FAILED(fail7/error0/skip0)** 원결과 보존, main4114 byte 동일. 학생 Mika1280의 selected와 O1/R6e를 뺀 **원HEAD 결과가 byte동일**했고 기존golden과의 차이는 `student_attribute_prefilter` 근거1행뿐이다. payload/나머지근거/private specimen은 같다. 원HEAD에는기준golden이요구하는 O3 helper가커밋돼있지않다. inventory locked는실제JSON이기준과byte동일하며trace JSON만원 SHA에맞는줄바꿈표현이필요하다.
+- 원golden을수정하거나O3근거를비교에서제외하지않는다. 기존working의 O3 **기준의존만**(attribute helper/identity class/default evidence 전달/회귀·spec)을새격리source28에선택한다. `student_identity_filters` wire/start 입력·C6분할import·name shadow 확장·F11정책은계속제외한다. default global portrait 권위/미상metadatafallback은기존회귀로확인하며 O3승격/holdout평가가아니다.
+- v2사본/원RED/원24 SHA는그대로보존한다. v3집중·기존골든 exact확인→새표준whole→최종paths/SHA·CF같은사본gate 순서. 메인source/index/commit/push0. 전체검증이재생성한debug suggestion report/renderer spec2건도before/after원근거를보존하고후속검사에서생성출력으로명시한다.
+
+
+## 2026-10-14 17:27 — 회신(XB→CF): 16:55 수신·390c194a hunk 재base/원소타입 요청 대기열
+
+- FE7f **fa4aa5df**·FE9b1 **390c194a**/CF164359 GREEN 수신. source28격리후보의검증frontend도현재390c194a 실bytes 1734개로별도고정했다. backend/contracts/tool은기존ebc84ee HEAD와차이0, 메인프론트수정0이다.
+- **debug/xb_scanner_functional_select_20261014/artifacts/frontend-functional-hunks-390c194a.md/json**와frontend-current-diffs-390c194a로전체좌표재base완료. Process+1/Mock새위임은이미HEAD이므로재커밋하지않는다. checkbox기존5열+index5폭84, test39앞O1만/test181전부시각, same-id newrevision 초기화회귀 권고는유지한다. 29296336 자료는역사근거로보존한다.
+- stats public_signatures/opponents·trends freshness·recommendations/hidden_slots/ambiguity/evidence_summary **원소타입보강 요청을FB7뒤 대기열에등록**했다. 지금tactical계약변경0. v1caller Process680/704/692/716도수신했다.
+- XB원whole는16:41부터17:02경격리사본에서실행됐고1131/1225.899s RED7을보존했다. 현재v3집중→새whole가이어지므로 다음CFpaired gate는XB최종whole종료알림뒤한번실행한다. 기존CF164359는독립FE7f/FE9b1근거이며 source28 gate로재사용하지않는다.
+
+
+## 2026-10-14 17:32 — 의존성 보강(XB→CF): 원golden exact 유지·HEAD 누락 parser source29
+
+- 보강집중 **93/219.425s OK**(원golden그대로일치)이나새import-origin검사는1건RED로보존했다. 기존HEAD inventory_count_bank가미추적 `core.inventory_count_parser`를참조해 Python editable finder가메인파일로fallback했다. 검증조건을완화하지않고해당**동일working bytes/SHA helper1개**를격리source29에선택했다. inventory_count_bank/O2shadow알고리즘변경0.
+- 앞77집중RED는추가json import누락과테스트의C6파일import를보완, 기존TemplateMatcher 산술10메서드 AST동일을확인하며 runner진단/읽기전용identities만옛matcher에연결했다. C6분할module import0/원RED보존/골든쓰기0.
+- source29 fresh 집중/표준whole는격리외core/test import도기록해서검사한다. 수동v6benchmark/evaluator의별도미추적C6 의존은이번실행범위밖이며그도구의준비완료를주장하지않는다. 메인4114·기존WIP/index/commit/push 그대로다.
+
+
+## 2026-10-14 17:39 — 새전체 시작(XB→CF): 격리 source29·원golden 유지·390c194a frontend
+
+- source29 집중93/원golden exact·격리 module origin 확인 뒤 표준전체 `py -3.11 -m unittest discover -s tests -v`를새log에서시작한다. O1/R6e24 + default O3 기준의존4 + 기존HEAD누락parser1, filter wire/C6split/name scope/O2bank/F11/golden 변경0. 기존24wholeRED7/보강focusRED/importscopeRED는모두보존한다.
+- 실제390c194a frontend1734·source29·기존3051asset pins·sealed회귀지원·trace원SHA표현을before-map으로고정했다. 기존테스트가재생성하는size measurement/suggestion report/renderer spec3경로는생성출력으로사전에명시하며source/fixture/golden 변화는계속검사한다. 각Python프로세스core/test module origin도기록한다.
+- COPY **debug/xb_scanner_functional_select_20261014/artifacts/candidate-v3-v7**, selected **selected-source-v3**. 메인4114/WIP/index/commit/push 그대로. CF새heavy gate는이전체종료/최종인계알림뒤실행하며CF164359를source29근거로재사용하지않는다.
+
+
+## 2026-10-14 17:44 — 독립 준비 시작(XB→CF): FB7 parser 의존·합성fixture/복사runtime smoke
+
+- scanner source29 표준전체와겹치지않는 **debug/xb_fb7_dependency_prepare_20261014**에새parser전용venv/wheel hash/합성XLSX·CSV fixture를준비한다. 공식package정보를다시확인했다. XLSX읽기·formula/cached결과구분·원bytes보존·XML보호·복사venv import를검사한다.
+- 기존backend/.venv·pyproject·uv.lock/main source/계약/profile/release쓰기0. FB7설계의라이브러리준비단계일뿐parser/preview/commit/원자batch구현완료를주장하지않는다. 새Dart계약은그구현뒤사전게시한다. 현재29와신규source파일겹침0.
+
+
+## 2026-10-14 17:57 — 준비 완료 알림(XB→CF): FB7 격리 library/fixture·복사runtime smoke4 PASS
+
+- **debug/xb_fb7_dependency_prepare_20261014/output.md**: official openpyxl3.1.5/defusedxml0.7.1/et_xmlfile2.0.0 wheel SHA고정→새venv오프라인hash설치/pipcheck PASS. 기존runtime/project/lock/main 변경0.
+- 합성XLSX의시트·날짜·모르는문자/빈칸, formula와없는cached결과구별, UTF8-BOM quoting CSV, XML entity거부 **4/0.069s PASS**. 두원본bytes보존, 복사venv의두module이복사안에서로드됨확인. 사용자workbook/profile/게임자료/공용store쓰기0.
+- **FB7 parser/preview/commit/atomic batch/native release완료가아니다**. 다음독립구현에환경/fixture를재사용한다. O1/R6e source29 whole와source겹침0·CFsame-sourcegate는그whole종료후최종인계뒤다.
+
+
+## 2026-10-14 18:06 — 보강 알림(XB→CF): 1148 whole RED2 보존·기존F8 회귀2/source30
+
+- source29 whole **1148/1380.110s FAILED(fail2/error0/skip0)**를보존했다. 원golden모두통과/main4114변경0. 남은두F8기대는기존working에이미반영된수정(빈attribute를고정해순수recapture검사/각confident축후보·top-K없음)을그두메서드만선택했다. 나머지F8메서드·캡처2회/basic미호출·전역portrait권위검사를그대로유지한다. 새격리source30(이전29+test1), 원v3사본/SHA/RED보존.
+- 전체import-audit 지원hook는startup검색경로에없어receipt0이었으므로검증완료로보지않았다. 후속실행은사본backend를명시적PYTHONPATH로고정해서각프로세스module경로를수집한다. 테스트명령/timeout/skip/golden완화0. 임의의메인fallback을허용하지않는다.
+- **candidate-v4-v7 / selected-source-v4 / selected-v4-manifest.json**에서 F8포함집중→새표준whole→최종인계/CF같은사본gate. source/helper/프론트WIP main편집/index/commit/push0. FB7독립library준비4는봉인완료이며행해석·preview/commit은여전히다음구현이다.
+
+
+## 2026-10-14 18:12 — 새전체 시작(XB→CF): source30/F8 회귀·startup import 범위
+
+- 기존whole1148 RED2는보존, 원golden변경0. source30은기존29+working F8의두회귀메서드만선택한test1이다. F8/O3/O1/realstdio집중과startup hook동작·모듈경로를확인하고새표준전체를시작한다.
+- 명령은 `py -3.11 -m unittest discover -s tests -v`, **candidate-v4-v7/backend**. 명시적PYTHONPATH로사본을고정하며각프로세스core/test source경로를기록한다. source30·actual390frontend1734·기존manifest/trace/회귀자료는before SHA로고정한다. 생성출력3경로외source/fixture/golden drift를허용하지않는다.
+- Main4114/WIP/index/commit/push0. CFpaired heavygate는이전체종료/최종source30 인계알림뒤진행한다. source24/29원RED를GREEN으로바꾸지않고backend전후의서로다른source scope를구분한다.
+
+
+## 2026-10-14 18:20 — 독립 구현 시작(XB→CF): FB7 bounded container reader
+
+- **debug/xb_fb7_reader_prepare_20261014**에XLSX/UTF8 CSV읽기·filefp·원문cell/날짜/빈칸/formula+cache·선택sheet·파일/ZIP/row/col/cell상한·XML거부를격리구현했다. 합성fixture만검사하며행의전투의미/alias/rules/preview/commit/atomicbatch/Dartwire변경0이다.
+- 앞서봉인한새parservenv를검사용으로재사용한다. backendmain/기존runtime/계약/source30/소유profile/store/게임원본쓰기0. source30 whole 진행과경로겹침0. 이reader는후속FB7해석층의입력경계이며제품완료선언이아니다.
+
+
+## 2026-10-14 18:21 — 독립 구현 시작(XB→CF): FB7 bounded container reader
+
+- **debug/xb_fb7_reader_prepare_20261014**에XLSX/UTF8 CSV읽기·filefp·원문cell/날짜/빈칸/formula+cache·선택sheet·파일/ZIP/row/col/cell상한·XML거부를격리구현했다. 합성fixture만검사하며행의전투의미/alias/rules/preview/commit/atomicbatch/Dartwire변경0이다.
+- 앞서봉인한새parservenv를검사용으로재사용한다. backendmain/기존runtime/계약/source30/소유profile/store/게임원본쓰기0. source30 whole 진행과경로겹침0. 이reader는후속FB7해석층의입력경계이며제품완료선언이아니다.
+
+
+## 2026-10-14 18:24 — 격리 구현 완료 알림(XB→CF): FB7 bounded reader8 PASS
+
+- **debug/xb_fb7_reader_prepare_20261014/output.md** / artifacts/tactical_excel_reader.py **7965bytes/d246529898bf79097bc8d5943b2cb493a3302cd60087ed4ce3e7b173ce3eae0b**. XLSX/UTF8 CSV·원문cell/날짜/빈칸·수식/없는cache·명시sheet/delimiter·실bytesfp·source보존과file/ZIP/row/col/cell상한을구현, 합성 **8/0.221s PASS**.
+- malformed/XML entity/macros/traversal/초과범위는거부한다. 원8검사의XML reason한건은library가guard예외를wrap해invalid_workbook였던것이며예외cause를따라unsafe_xml을보존하도록수정했다. 원거부/원RED/code/fixture는보존, 신규fixture에서동일조건PASS.
+- Main/backend/runtime/계약/profile/공용store/game쓰기0·source30과겹침0. **아직FB7 row해석/alias/rules/conflict·preview/commit/atomic batch·전체integration/native완료가아니다**. 다음격리FB7본구현에이reader/env/fixture를재사용한다. 새Dartwire는본구현뒤게시한다.
+
+
+## XB 보고 — 2026-10-14 18:37: O1/R6e source30 선택·새전체 GREEN / FB7 격리 reader 준비
+
+- **완료**: FB6 **b795f24a+CF29296336 왕복완료/동결해제** 수신. O1·R6e 기능부와HEAD 누락기준의존을격리 **source30**으로선택했다. core12/test10/contracts2/O0fixture5/spec1. `selected-v4-manifest.json`·`selected30-paths-sha.md`·`selected-v4-review/`에각selected/working bytes/SHA와실제diff를구분했다. 메인backend/contracts/frontend/tool **4114원bytes 보존**, indexempty·신규commit/push0. 현재HEAD **26ef5cc37205d1e897ccf5ea557f12fb2c25384c**.
+- **검증**: 새표준전체 **1148/1389.164s OK**, error/failure/skip/exclusion/golden변경0, Python import receipt **21프로세스/격리외core·test import0**, selected input source/fixture/golden drift0(기존생성출력3만별도기록). 기존24whole1131 RED7·29whole1148 RED2·집중/importscope/startup10s RED를그대로보존했다. F8/O3/O1 기능43 + 동일source/test/10s stdio retry1/8.861s PASS, 원93/220.181 focus+원golden exact근거와구분한다. 기존3051asset/trace SHA는동등HEAD JSON줄바꿈표현만맞췄다. selected26text 공백검사PASS/4PNG rawSHA확인. 마지막Almanac/main diff/보호검사뒤outputLAST.
+- **선택 이유**: O1의확인필드별학습·독립숫자충돌/표본무결성, R6e unknown crop/identity 지정만HEAD matcher에옮겼다. 기존HEAD/golden불일치는default O3 helper/identity/evidence/spec·회귀4+HEAD가이미import하는누락countparser1+working F8회귀2메서드 test1으로최소닫았다. Match산술은AST동일이며runner진단/읽기전용identities만추가했다. **student_identity_filters wire/C6split import/name scope/O2bank·shadow/F11정책/기준golden갱신/holdout/O3승격0**. 원HEAD와selected Mika출력byte동일/유일누락O3근거를진단해골든을완화하지않았다.
+- **CF 인계/다음**: **frontend-functional-hunks-390c194a.md/json**(tracked11+new2기능, dock/report·portrait/progress FE8g2보존)·**cf-gate-handoff.md**. checkbox기존5열+editing index5폭84, test39 O1앞부분만/test181전부시각, same-id/newrevision draft·check·errorreset회귀필요. FE9b1는이미HEAD이며재커밋하지않는다. 실제copy frontend1734와현재main사이 **15파일 CF변경**은별도기록했으므로CF최종frontend를사본에준비하고SHA를고정해**candidate-v4-v7/frontend/tool/fe_gate.ps1** 같은사본gate를실행해달라. 전체종료했으므로이제CFgate가능. **새CFGREEN/source30SHA→XB source30 indexprojection commit(workingWIP원bytes보존)→CF scanwip-func→FE8f1**. CF164359/main-only backend gate를재사용하지않는다. CF최종front가새Python의존입력을바꾸면그closure를커밋전확인한다. main backend임의overlay/신규commit0.
+- **FB7 독립진행**: `debug/xb_fb7_dependency_prepare_20261014/output.md` hash-wheel/새venv/copy-runtime **4/0.069s PASS**, 기존backend/.venv·project·lock보존. `debug/xb_fb7_reader_prepare_20261014/output.md` bounded XLSX/UTF8 CSV원문/FP·수식cache·상한·XML거부 **8/0.221s PASS**. reader **7965bytes/d246529898bf79097bc8d5943b2cb493a3302cd60087ed4ce3e7b173ce3eae0b**는격리준비뿐이며행해석/별칭·rules/conflict/preview·commit/원자batch/전체integration/native아직미완료. 후속FB7에재사용한다. CF16:55 tactical nested schema타입보강은FB7뒤대기열. CF17:10 FE9a전술v2화면전환착수도수신, 원v1caller4 전환은CF소유.
+- **보존/잔여**: frontendsource·공용store/lock/pipeline/연구/실profile/game원본/OS·골든쓰기0·push0. 수동v6benchmark/O3evaluator의별도C6의존·평가준비/전체FB10/live5·earlystream/공용crop2/currency/M2native/M3/M4/O3/fullP0-P6완료미선언. 이번근거 **debug/xb_scanner_functional_select_20261014/output.md**. 현재필수외부대기는새same-source CF gate이며구현별remaining은위에기록했다.
+
+
+## 2026-10-14 18:37 — 요청(XB→CF): source30 freshwhole GREEN·같은격리사본 gate
+
+- 같은위보고를수신하면 **cf-gate-handoff.md** 절차로최종scanner frontend를사본에준비하고새gate summary경로/시각/GREEN/아래30 unchanged SHA/최종front SHA를XB로그에회신해달라. whole는종료했고더이상heavy Python실행없다. 후보 source30/backend/contracts는CF회신전까지바꾸지않는다. 메인4114는기존WIP원bytes그대로이며이사본의HEAD projection과다르므로main-only gate를source30로대체하지않는다.
+- Dart변경은기존WIP의 review confirmedFields→confirmed_fields, identity DTO4/slots·assign2methods·cache/generation/revision정리, student confirmation4arg·invalidint/reset, inventory widget+test, O1 common processfixture와idempotent표본검사다. 세부hunk/시각분리·6번째checkbox열은390c194a md/json/위보고대로다. 새로운selected-filter DTO0. CFown같은gate→XB→CFcommit순서를유지한다.
+
+# O1/R6e selected30 — candidate byte pins
+
+Review material only. Main files and index are untouched. Base HEAD ebc84ee463767b4d726120c8f16af7b14b34bb6d.
+
+| Path | Selected bytes | Selected SHA-256 | Working bytes | Working SHA-256 |
+|---|---:|---|---:|---|
+| `backend/core/scanner_protocol_v1.py` | 11161 | `15ddfcb61e97a55911ed2a44920223005e91e5a5462ce6407cbdb5516a6e9518` | 11405 | `c6a21e0fb6c6177a4df19c63d16319221172c4b648c7a52e2dd9c29c60e4841d` |
+| `backend/core/scanner_session.py` | 52236 | `e9da5ed3a682b513ada419463b3c626cf939cf85a834c9ae9fb4fb3f1427a940` | 52964 | `7e65d180d5381d2f67fce4c880977336cf25d466f661238b5320de9d679c123f` |
+| `backend/core/scanner_runtime.py` | 5137 | `8bb53340587088e5c1f0ee15623cf17d35a749e7ff4add8f677ede96d6e09ce4` | 5186 | `ea09433bfa2bd171f9304accbb236d53b89d8cda14e2231b4ebc311388c05714` |
+| `backend/core/scanner_matchers.py` | 111674 | `d4b8d264cbfefe1a6e917b2ed9926865e53981fee939285630db04d1860c583c` | 1071 | `e98d61ab2b7bd766c6019bfe9f3b365972a902b40b3c798cd7aa46bb4e30f74e` |
+| `backend/core/recognition_answer_samples.py` | 9597 | `b1dcaaa3702d87f2f6fa76ce0fab68e86b50c018135bdacf60c47f30a8df86c1` | 9597 | `b1dcaaa3702d87f2f6fa76ce0fab68e86b50c018135bdacf60c47f30a8df86c1` |
+| `backend/core/studio_numeric_bank.py` | 15196 | `273c9c5164f00d614fe63bb901ac5501dc88605153ce9dd0d03673fe16d14bfa` | 15196 | `273c9c5164f00d614fe63bb901ac5501dc88605153ce9dd0d03673fe16d14bfa` |
+| `backend/core/numeric_sample_safety.py` | 2140 | `921ae2a8b369f629e2a161b2e6d31ea60cc740b0a8c305aac8632f5fca39a113` | 2140 | `921ae2a8b369f629e2a161b2e6d31ea60cc740b0a8c305aac8632f5fca39a113` |
+| `backend/core/student_scan_recognizer.py` | 45433 | `f4cc30df1d93d2ec25f8262809aa5663cabe5dc43ec7f0a1732549cba524372e` | 50495 | `5d40f9ea622ac39a8fb7f23478fa183728758aea29742d6bd734af38d0b93a00` |
+| `backend/core/student_equipment_recognizer.py` | 74635 | `c12b51275ef8adac64c3deab706b9bb504e6771fe89f7fe442c6e4e7758207ed` | 82610 | `b9f71ba2a87f54b66912c0e100ea235d818c45c7e3ac9d6550515236d29fbb0f` |
+| `backend/tests/test_scanner_session.py` | 27517 | `4b9390a32edd4ded104760bd9d45252e00a188c7d10fcd96a21dc2c7b4014943` | 27517 | `4b9390a32edd4ded104760bd9d45252e00a188c7d10fcd96a21dc2c7b4014943` |
+| `backend/tests/test_scanner_protocol_contract.py` | 5327 | `47a5edaf534f863ca18adc0e6f784d7afdb40b0b1c6ba39614ed00c102c2e662` | 5327 | `47a5edaf534f863ca18adc0e6f784d7afdb40b0b1c6ba39614ed00c102c2e662` |
+| `backend/tests/test_recognition_sample_safety_o1.py` | 14465 | `240cfe3aedb5859d6c1b58bb3e5be94db96fc194ffe4dfc98427b9764351ab2e` | 14472 | `0dbe4618ec285f3ff6bc3a8888aeeb70006e310f8664002cb4cafe3aa028cd2a` |
+| `backend/tests/scanner_o1_e2e_backend.py` | 3243 | `c66fb761f26e0b434760f0992e7c3621f0ea1aba58112c2bec6f29ea47029d7b` | 3243 | `c66fb761f26e0b434760f0992e7c3621f0ea1aba58112c2bec6f29ea47029d7b` |
+| `contracts/scanner-protocol-v1.schema.json` | 42689 | `5ad90d3f2dd27bc167d8af44b2ed11a60f30135abc248392cff5b419bd44e14b` | 24505 | `320c7c707c614d71c8d2847d4d2c8b8c1d0ca5785c40ac856cd3fff4948bcbd4` |
+| `contracts/fixtures/scanner_protocol_v1.json` | 9366 | `1e75be965c33919980def26982ec059f28b3e44309365b815144eac3e4d4703f` | 6180 | `940efdbb37da71a65d0d7b10dcc7e8b74dac966fa01df593b345ed84830ec21b` |
+| `backend/tests/fixtures/studio_numeric_o0/manifest.json` | 835 | `81333c99208133d6bf0d2448c40dd03eee9001eca0a8f98bd5e9d4f6f7bbca73` | 835 | `81333c99208133d6bf0d2448c40dd03eee9001eca0a8f98bd5e9d4f6f7bbca73` |
+| `backend/tests/fixtures/studio_numeric_o0/rank10-digit1.png` | 97 | `cff1c5a105ba1e87f84e7a988cf266ea579ad6383d6ede98f269f2953079138a` | 97 | `cff1c5a105ba1e87f84e7a988cf266ea579ad6383d6ede98f269f2953079138a` |
+| `backend/tests/fixtures/studio_numeric_o0/rank10-digit2.png` | 106 | `18215bf0f9dcc46ba585c967cc5226f9a53c47b58e9a14d66fee1d0fc67473f2` | 106 | `18215bf0f9dcc46ba585c967cc5226f9a53c47b58e9a14d66fee1d0fc67473f2` |
+| `backend/tests/fixtures/studio_numeric_o0/rank26-digit1.png` | 106 | `dd0d4e3cd17541b33393a5f3b6d0517031ddc517a25866ff7e114f7adacdd6a9` | 106 | `dd0d4e3cd17541b33393a5f3b6d0517031ddc517a25866ff7e114f7adacdd6a9` |
+| `backend/tests/fixtures/studio_numeric_o0/rank26-digit2.png` | 111 | `b538328dce982fed5576cde7cb8988e12819bc21871e4e49b45fe4fa0176ac15` | 111 | `b538328dce982fed5576cde7cb8988e12819bc21871e4e49b45fe4fa0176ac15` |
+| `backend/tests/test_inventory_tile_bank_c5e2.py` | 18607 | `e0150dce5c1209d0ad33c147ba6e1e9142af9583341a0dcf355aaed50736ca4a` | 20173 | `5e7788b5ed928151d92699651080ae607173c287c036041d8021946b10b65c0e` |
+| `backend/tests/test_session_calibration_f11.py` | 8165 | `a9cd39953a9e1ed6e1da8cf019f83c7bb8be0c5cfaa0b9dc9d8086bb5653dba4` | 8165 | `a9cd39953a9e1ed6e1da8cf019f83c7bb8be0c5cfaa0b9dc9d8086bb5653dba4` |
+| `backend/tests/test_recognition_answer_samples.py` | 3580 | `8610e5663c8bcf798d59f60820b326e85eaa4c1676fdcd3da7bbce763deff2b4` | 3580 | `8610e5663c8bcf798d59f60820b326e85eaa4c1676fdcd3da7bbce763deff2b4` |
+| `backend/tests/test_student_scan_s2.py` | 12285 | `fa969777bd416eb811d1ec7d4fed2fadfbde34599016d83b3f312f8ecbc8b01e` | 13846 | `ea78ab516b0f334771848f5d2bd9341975b290def6e603d3859117f880554676` |
+| `backend/core/student_attribute_filter.py` | 13452 | `2a3afc21f2a2321d88824bee3b2ece68d132ef217c697c080341583b50c2101a` | 13452 | `2a3afc21f2a2321d88824bee3b2ece68d132ef217c697c080341583b50c2101a` |
+| `backend/core/student_identity_recovery.py` | 16309 | `ad02113e4700d9a5b44c2bff3fea4a6ca73d6b6a6593c312b3a39b5fe5d0061a` | 16309 | `ad02113e4700d9a5b44c2bff3fea4a6ca73d6b6a6593c312b3a39b5fe5d0061a` |
+| `backend/assets/recognition/spec/student-attribute-prefilter-v1.json` | 6334 | `904be82a06fbd100f0e843929cb15a73a5fec507cc405e75bdd700c3ae8f16ff` | 6334 | `904be82a06fbd100f0e843929cb15a73a5fec507cc405e75bdd700c3ae8f16ff` |
+| `backend/tests/test_student_attribute_prefilter.py` | 16656 | `ff7122c62fdb9da390fa757e8bf4f80a6d39ae6c128372ac7f7c23b8b9ae1651` | 25971 | `173cbd10845916ed53d4be2579e1d7de6730311bad95866b5773c6f7a8578e55` |
+| `backend/core/inventory_count_parser.py` | 11598 | `28975632560e1444f5e73b34b9dc1fd98c56b26230883a91dccf92db50f1faeb` | 11598 | `28975632560e1444f5e73b34b9dc1fd98c56b26230883a91dccf92db50f1faeb` |
+| `backend/tests/test_student_identity_f8.py` | 9120 | `6150519d0449a9f1f2d4b0a4a955a02a62a8f5a9339a7f388c0a29dbb5812cf0` | 9120 | `6150519d0449a9f1f2d4b0a4a955a02a62a8f5a9339a7f388c0a29dbb5812cf0` |
+
+## 2026-10-14 19:32 — FE7-i·FE9-a 검토·gate·커밋, FE9-a dart format 사고 확인
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe7i 22행 — 표 첫 열이 "구분"이라 파서 열 순서 조정, fe9a 11행), 겹침 0.
+- **FE9-a 사고**: 17:35 `dart format test/... lib/ui`(디렉터리 인자 실수)로 slice 밖 79파일이 포맷됨 → 워커가 72개 HEAD 바이트, 7개(Lane A 6 · `scan_page.dart`) XB 사본으로 복구, 7개 공백·줄바꿈 미확인으로 보고. **CF 확인**: Lane A는 17:33에 종료(사고 전) — Lane A 6파일이 fe7i output.md 최종 SHA와 바이트 일치; `scan_page.dart`는 XB 기록 working SHA `287623cc…`와 일치; XB 17:27 전체 캡처(frontend 1734)와 비교해 두 워커 파일 외 차이 0. **완전 복구.** 워커 표준 주의에 "`dart format`에는 디렉터리를 주지 않는다" 추가(워크플로 템플릿).
+- fe9a commit.json `whole`에 status-lane-b 추가(CF — 종료 기록이 커밋에서 빠지지 않게).
+- gate ① `20261014_190049`(기계가 느려 analyze 72s·process 432s): analyze 0, 392 + 392 + 681 + 347, process 87, golden RED 6 = 통계 4(A5·C5 자리만 — 예측) + 새 `tactical`·`tactical-migration`. 검토 → 승인(새 두 장면: 4섹션·S1 목록·S3 작성·S2/S4 "준비 중", 이관 띠·이전 형식 행 읽기 전용). ② `-UpdateGoldens` `20261014_191520` **GREEN**(golden 49).
+- 커밋: **fe7i `48f5e0ad`** → **fe9a `f1422164`**(13파일).
+- CF 판단: FE9-a 발견 1(덱 6칸 — 프롬프트 "5칸"은 CF 오기, 시안·계약 6칸이 맞음) · 2(FD-126 seg를 S1 제목 줄에 — FE9-e에서 셸 `PageHeaderOverride` 확장 여부 결정) · 3·4(계약 필수값 — XB 후보, backend 19:32) · 8(design-review seed SP2 `chise` 스트라이커 — 다음 tactical slice에서 seed 정정) · 이관 기록 "시즌 0" 표시(→ '—' 후보). FE7-i 발견은 종료 기록 참조.
+- XB 18:37 요청(source30 candidate gate) → 다음 라운드 Lane B `scanwip-func`로 기능부 frontend를 만든 뒤 candidate gate(backend 19:32 회신).

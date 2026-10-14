@@ -331,7 +331,7 @@ FE0 ─(체크포인트 C 커밋)→ FE1 → FE2(a→b→c→d)
 | FE7-f 2차 | A3·A4·B2·C4 | FD-028 — 배정 2026-10-14(Lane A). B2 근거 예측 문구 = FE6-f "n주 뒤 소진 예상"(FD-042, CF) — **완료 2026-10-14**: 커밋 `fa4aa5df`, gate `20261014_164359`(통계 5장 갱신). A3 단계 막대·A4 산점도(빈 상태 = 고른 seg 값 수)·B2 발산 막대(FD-040 인벤토리와 같은 함수 — 시안 과잉 숫자와 다름, FD-040 유지)·C4 덤벨(→ 계획 목표 정하기 intent `goals`) |
 | FE7-g C3 계단선 | 활성 계획 문서 계산(phase_results·bottlenecks) → 페이즈별 누적 부족 | FB-1 — **완료 2026-10-14**: 커밋 `5990875c`, gate `20261014_004608`(`statistics-plan` 갱신). 통계가 활성 문서 계산을 읽음(FE7-c 발견 1 해소), KPI 첫 부족·막힌 학생, C3 재화별 계단선, C1 페이즈 순, 근거 막히는 단계 |
 | FE7-h 이력 연동 | A6·B3·KPI 증감·스냅샷 1회 문구 | FB-2, FD-041, FD-096 — **완료 2026-10-14**: 커밋 `ff5924c6`, gate `20261014_094253`(통계 3장 갱신). 기준 데이터·KPI 증감·A6(이력 student_changes 되돌리기로 시점별 육성도)·B3(재화별 패널, FE6-f 함수 재사용). 남은 결정이던 스냅샷 묶음 규칙은 FD-175로 확정·FE7-e에서 구현 |
-| FE7-i 3차 | A5·C5 | FD-028 |
+| FE7-i 3차 | A5·C5 | FD-028 — 배정 2026-10-14(Lane A), 공용 필터 모달 800×600 넘침(FE7-e 발견 2) 함께 — **완료 2026-10-14**: 커밋 `48f5e0ad`, gate `20261014_191520`(통계 4장 갱신). 통계 타일 전부 그려짐 |
 
 ### FE8 — 타이틀·홈·스캔 (Lane B)
 
@@ -377,7 +377,7 @@ FE8-f1~f3은 이 조건 없이 진행한다. 형식이 요청서와 다르게 �
 
 | slice | 범위 | 선행 |
 |---|---|---|
-| FE9-a 기록 화면 v1 이식 | 4섹션 배치, 목록·필터·작성·저장·복제. 기존 `_reload/_mutation` 재사용, `_DeckEditor`·AlertDialog 폐기, 하위 화면 전환 UI | FD-126 |
+| FE9-a 기록 화면 v1 이식 | 4섹션 배치, 목록·필터·작성·저장·복제. 기존 `_reload/_mutation` 재사용, `_DeckEditor`·AlertDialog 폐기, 하위 화면 전환 UI | FD-126 — **범위 변경 2026-10-14(CF)**: v1 이식 대신 FE9-b1 컨트롤러(v2) 위에 새 화면, v1 쓰기 4곳 전환·이관 안내 포함. 배정 2026-10-14(Lane B) — **완료 2026-10-14**: 커밋 `f1422164`, gate `20261014_191520`(새 `tactical`·`tactical-migration`). 4섹션(S2·S4 "준비 중"), seg는 S1 제목 줄(FD-126 — 셸 머리말 자리는 FE9-e 판단), 덱 6칸, 이관은 띠 "가져오기"로만 |
 | FE9-b v2 데이터 계층 | `TacticalEvidenceService` 소비, 버려지던 wire 필드 Dart DTO 확장, mock v2 | FB-6, FD-128 — **순서 변경 2026-10-14(CF)**: FB-6 완료로 FE9-a보다 먼저. **FE9-b1**(read DTO 확장·좁은 읽기 interface Process+Mock·`lib/tactical/tactical_records_controller.dart`·design-review seed, 화면 0) 배정 2026-10-14(Lane B). **FE9-b1 완료 2026-10-14**: 커밋 `390c194a`, gate `20261014_164359`(golden 변화 0). `TacticalEvidenceReadService`(Process·Mock), `TacticalRecordsController`. FE9-a는 이 컨트롤러 위에 새 화면(v1 caller 4곳 전환 포함) |
 | FE9-c 로비 스캔 섹션 | 스캔 → 후보 → `commitTacticalLobby` → 카드 선택 → 자동 채움 → 저장 시 링크. `app_shell._handoffCandidate` 인계 수정 | FD-127 |
 | FE9-d 시그니처 족보 패널 | stats/recommend/freshness, 드래그로 공격 덱 복사 | FD-127 |
@@ -484,6 +484,7 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
   서로 다른 key를 준다. 리스트 항목 안에서 ScrollController를 읽을 때는 그 항목의 Scrollable position을 쓴다.
 - 고정 높이 카드·그리드는 폭이 줄면 넘친다. 텍스트에 maxLines·ellipsis를 둔다.
 - 앱 문구는 ~습니다체, PowerShell 도구 파일은 ASCII만, Markdown·소스 끝은 개행 하나(git diff --check).
+- `dart format`에는 디렉터리를 주지 않는다 — 이 slice가 고친 파일 경로만 하나씩 준다(2026-10-14 FE9-a 사고: `lib/ui` 전체 포맷으로 다른 레인 파일 79개가 바뀜).
 
 [종료]
 - debug/frontend_<slice>/commit.json: slice, message(줄 배열, 근거 경로 포함), modified, added, <post_dir>, status(Lane A true / Lane B·백엔드 false),
@@ -569,3 +570,5 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-14(14:52): XB FB-6 `b795f24a` → CF fb6dart `29296336`, **FB-6 왕복 완료·동결 해제**(스캐너 WIP는 작업 트리에 그대로). 다음: XB 순서 ②(O1·R6e 기능부 선택·새 HEAD 기준 frontend hunk 목록) → CF `scanwip-func` → FE8-f1 · FB-7 · FE7-f · FE9-b(v1 caller 4곳 전환).
 - 2026-10-14(15:05): 배정 Lane A FE7-f(A3·A4·B2·C4), Lane B FE9-b1(전술 v2 데이터 계층 — FE9-a보다 먼저로 순서 변경). XB 순서 ②(스캐너 기능부) 진행 중.
 - 2026-10-14(16:55): FE7-f `fa4aa5df` · FE9-b1 `390c194a`(gate `20261014_164359` GREEN, 통계 golden 5장 승인). XB 순서 ② 진행 중(HEAD `390c194a` 기준 hunk 재맞춤 알림). 다음 후보: FE9-a(새 기록 화면, 컨트롤러 위, v1 caller 4곳 전환) · FE7-i(A5·C5) · 작은 정리(필터 모달 800×600 넘침·idempotency 순번 공용화·C4 목표 fixture) · `scanwip-func`(XB 인계 뒤) → FE8-f1.
+- 2026-10-14(17:10): 배정 Lane A FE7-i(A5·C5 + 필터 모달 800×600), Lane B FE9-a(전술 기록 화면 v2). XB 순서 ② 진행 중.
+- 2026-10-14(19:32): FE7-i `48f5e0ad` · FE9-a `f1422164`(gate `20261014_191520` GREEN, golden 49). FE9-a `dart format` 사고는 완전 복구 확인. 다음: Lane B `scanwip-func`(XB source30 candidate gate용 기능부 frontend) → candidate gate → XB commit → CF commit → FE8-f1 · Lane A 후보: FE9-c/d 공통 부품 키트 승격·작은 정리(idempotency 순번 공용화·C4 목표 fixture·이관 "시즌 0"·seed SP2).
