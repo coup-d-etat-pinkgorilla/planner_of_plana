@@ -2998,3 +2998,17 @@ Review material only. Main files and index are untouched. Base HEAD ebc84ee46376
 - 커밋: **fe7i `48f5e0ad`** → **fe9a `f1422164`**(13파일).
 - CF 판단: FE9-a 발견 1(덱 6칸 — 프롬프트 "5칸"은 CF 오기, 시안·계약 6칸이 맞음) · 2(FD-126 seg를 S1 제목 줄에 — FE9-e에서 셸 `PageHeaderOverride` 확장 여부 결정) · 3·4(계약 필수값 — XB 후보, backend 19:32) · 8(design-review seed SP2 `chise` 스트라이커 — 다음 tactical slice에서 seed 정정) · 이관 기록 "시즌 0" 표시(→ '—' 후보). FE7-i 발견은 종료 기록 참조.
 - XB 18:37 요청(source30 candidate gate) → 다음 라운드 Lane B `scanwip-func`로 기능부 frontend를 만든 뒤 candidate gate(backend 19:32 회신).
+
+## 2026-10-14 19:45 — 다음 라운드 배정: Lane A tidy2, Lane B scanwip-func
+
+- **Lane B** `debug/frontend_redesign_handoff/scanwipfunc-worker-prompt-20261014.md`: 스캐너 WIP 15파일에서 XB 390c194a 목록의 FUNCTIONAL hunk만 담은 post(pre = HEAD 바이트 → 커밋 결과 = post)를 만들고, 섞인 hunk는 XB 16:11 정정대로 쪼갬(checkbox = 기존 5열 + 편집 중 index5 84, test39 앞부분, test181 제외). same-id 새 revision reset 회귀 테스트를 post와 메인 WIP test 파일에 같이 추가(메인 쓰기는 이것뿐). 검증 "작업 트리 − post = VISUAL hunk". `candidate-v4-v7/frontend`를 HEAD tracked frontend + post로 맞추고(backend·contracts 동결) 사본에서 analyze·스캐너 테스트. `dart format`·`git archive` 금지. 끝나면 CF가 candidate `fe_gate.ps1` → XB 회신 → XB source30 커밋 → CF 커밋 → FE8-f1.
+- **Lane A** `debug/frontend_redesign_handoff/tidy2-worker-prompt-20261014.md`: 섹션 틀(`_ScaledBox`/`_Scaled`·`_SectionFrame` 사본) 키트 승격, idempotency 순번 공용 생성기(스캐너 WIP 파일 제외), 전술 이관 기록 "시즌 0" → '—', design-review seed SP2 정정, C4 목표 fixture 보강. 스캐너 WIP 15파일 금지.
+- 겹침 0(Lane B 스캐너 15파일·debug 사본 / Lane A 키트·통계·전술·design_review 비스캐너).
+
+## 2026-10-14 23:00 — tidy2 커밋, scanwip-func 검토·candidate gate, XB 회신
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(tidy2 24행, scanwipfunc 21행 — 경로 뒤 설명이 붙은 2행은 수동 확인). 겹침 0.
+- **scanwip-func 독립 확인**: 메인 WIP 14파일 = XB 17:27 캡처 SHA, 바뀐 것은 회귀 테스트를 더한 `scan_student_review_workspace_test.dart` 하나; pre 13 = HEAD 블롭(줄바꿈 제외 일치). 워커 검증 "작업 트리 − post = VISUAL hunk" 표 확인.
+- 메인 gate ① `20261014_220829`: 382 + 391 + 659 + 393, process 87, golden RED 2 = 예측 그대로(`tactical` seed SP2 3칸·`statistics-plan` C4 덤벨). 승인 → ② `-UpdateGoldens` `20261014_222332` **GREEN** → **tidy2 `4e2b5b6c`**. tidy2 항목 3 "시즌 0"은 CF 오독(기준 이미지는 "시즌 9", 축소 이미지를 잘못 읽음) — 코드 변경 없음, '—' 동작은 테스트로 고정.
+- **candidate gate** `candidate-v4-v7/debug/frontend_gate/20261014_223800`: 스캐너 범위 전부 PASS(process 87 포함). 비스캐너 예외 3: ① `plan_element_builder`·`plan_preset_manager` 테스트가 미추적 `release/` Studio json에 기댐 → candidate에 3파일 복사 뒤 재실행 +52 ② `scan-student-review` golden — 기준 이미지가 시각 WIP 포함(메인 GREEN 유지, 기준 이미지 그대로, FE8-g2에서 갱신) ③ candidate almanac 사본 오래됨. source30 30/30·candidate frontend pins 43/43 그대로. CF가 candidate의 옛 임시 테스트 2개(`zz_fe7i_*`) 삭제. backend 로그 23:00으로 회신, XB source30 커밋 대기.
+- 후속 chip: 테스트가 미추적 `release/` 파일에 기대는 문제(새 세션 후보).
