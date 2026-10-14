@@ -316,14 +316,26 @@ List<StatisticsBalanceRow> statisticsB2Rows(
 }
 
 /// 미계획 · 육성도 40% 미만 학생 수(보유 · 목표 없음 · 육성도를 아는 학생). 성장 자료가 없으면 null.
-int? statisticsUnplannedLowCount(StatisticsGrowth? growth) {
-  if (growth == null) return null;
-  return growth.students.where((student) {
-    final value = student.growth;
-    return !student.planned &&
-        value != null &&
-        value < statisticsUnplannedLowGrowth;
-  }).length;
+/// C5 머리 문구 · 근거(FE7-i)와 같은 [statisticsUnplannedLowStudents]다.
+int? statisticsUnplannedLowCount(StatisticsGrowth? growth) =>
+    growth == null ? null : statisticsUnplannedLowStudents(growth).length;
+
+/// 미계획 · 육성도 40% 미만 학생, 육성도 낮은 순 → id(KPI "미계획 · 40% 미만" · C5 고른 구간, FE7-i).
+List<StatisticsStudentGrowth> statisticsUnplannedLowStudents(
+  StatisticsGrowth growth,
+) {
+  final result = [
+    for (final student in growth.students)
+      if (!student.planned &&
+          student.growth != null &&
+          student.growth! < statisticsUnplannedLowGrowth)
+        student,
+  ];
+  result.sort((a, b) {
+    final value = a.growth!.compareTo(b.growth!);
+    return value != 0 ? value : a.studentId.compareTo(b.studentId);
+  });
+  return result;
 }
 
 /// 충족률 글자(반올림 정수 %). 모르면 '—'.

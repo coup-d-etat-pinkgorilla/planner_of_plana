@@ -8380,3 +8380,260 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 view
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_164359\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-i 통계 3차 타일 A5 · C5 + 공용 필터 모달 좁은 창 (Lane A, 로컬 Claude Code)
+
+### FE7-i 착수 기록 (2026-10-14, Lane A)
+
+- 상태: **진행 중**. 시작 SHA `26ef5cc37205d1e897ccf5ea557f12fb2c25384c`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 "FE7-i 착수 기록"은 없었다.
+- 범위: A5 스킬 · 장비 매트릭스(학생 성장, 통계 필터 대상 학생), C5 미계획 학생(계획 집계, 전폭 스트립), 공용 필터 모달 800×600 넘침(FE7-e 발견 2 — 머리 · 키트 `RangeSliderRow`, 좁은 창에서만).
+- 막는 `열림` FD 없음(막힘 요약 FE7-i = FD-028, 확정).
+- 고칠 기존 파일(모두 `git status --short` 빈 줄 = 기존 미커밋 변경 없음, 사본 `debug/frontend_fe7i/pre/<경로>`):
+  - `frontend/lib/statistics/statistics_growth_projection.dart`(CRLF) · `statistics_breakdown_projection.dart`
+  - `frontend/lib/ui/statistics/statistics_workspace.dart` · `statistics_growth_evidence.dart`(CRLF) · `statistics_supply_evidence.dart` · `statistics_topics.dart`
+  - `frontend/lib/ui/pages/statistics_page.dart`(CRLF), `frontend/lib/ui/studio/statistics_studio_layout.dart`(요소 좌표만)
+  - `frontend/lib/ui/widgets/student_filter_modal.dart` · `frontend/lib/ui/kit/range_controls.dart`(좁은 창만)
+  - 테스트: `frontend/test/statistics_growth_view_test.dart`(CRLF) · `statistics_plan_view_test.dart` · `statistics_workspace_test.dart` · `statistics_history_view_test.dart` · `statistics_supply_view_test.dart` · `statistics_filter_test.dart` · `student_filter_modal_test.dart` · `test/goldens/fe7a_statistics_golden_test.dart`(fixture 입력 · 주석만)
+  - 이 문서
+- 새 파일(예정): `frontend/lib/statistics/statistics_matrix_projection.dart`(A5 · C5), `frontend/lib/ui/statistics/statistics_matrix_charts.dart`(A5 · C5 painter), 테스트 `frontend/test/statistics_third_tiles_test.dart`.
+
+### FE7-i 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+"준비 중"이던 A5 · C5를 그래프로 바꿨다. 이로써 통계 타일이 모두 그려진다. 각 타일은 고른 것 → 근거 → 원본 탭 이동까지 동작한다. 공용 필터 모달(학생 탭 · 통계 · 계획 1단계)은 800×600에서 넘침이 0이다. 새 서비스 메서드 · intent 종류 · 백엔드 · 계약 변경은 없다. 키트 변경은 `range_controls.dart`의 좁은 창 분기 하나다.
+
+착수 기록 정정:
+- 고치지 않은 2파일은 사본을 지웠다(작업 트리 = HEAD): `statistics_topics.dart` · `statistics_studio_layout.dart`. 차수 칩 · 제목 · 타일 자리는 이미 시안 그대로였다.
+- 착수 목록에 없던 2파일을 고쳤다. 고치기 전에 WIP가 없음을 확인하고 pre 사본을 두었다.
+  - `frontend/lib/statistics/statistics_supply_projection.dart`: KPI "미계획 · 40% 미만"과 C5가 같은 함수를 쓰게 했다.
+  - `frontend/test/kit/range_controls_test.dart`: 좁은 행 테스트 2건을 더했다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7i/logs/`에 있다. 로그는 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| 일회성 측정(임시 `test/zz_fe7i_measure_tmp_test.dart`, 실행 뒤 지움) | 고치기 전: 범위 행 폭은 2560 = 929.5 · 1280×720 = 420.5 · 800×600 = 229.7이다. 800×600에서 넘침은 학생 탭 모달 12건(행마다 6.3px), 통계 모달 13건(머리 40px + 행)이었다. 고친 뒤: 넘침 0. 2560 · 1280에서 머리 칩 자리 폭이 고치기 전과 같다(학생 1300.2 · 362.1, 통계 860.5 · 155.9) |
+| `flutter analyze`(모달 · 키트 2파일) | No issues found |
+| `flutter analyze lib/statistics`(1차) | error 6 등 8건. `statistics_supply_projection.dart`의 바꿀 자리를 찾는 문자열이 클래스 필드 주석과 겹쳐 엉뚱한 자리를 바꿨다 → pre 사본으로 되돌리고 다시 고침 → No issues |
+| `flutter analyze lib/ui/statistics` · `lib` | No issues found |
+| 통계 14파일(`test/statistics_*_test.dart`, 1차) | +90 −6. 컴파일 오류였다(테스트가 지운 `statisticsTilePendingText`를 씀) → 5파일의 "준비 중" 기대를 고침 |
+| 같은 14파일(2차) | +148 −1. growth_view "보유 0 빈 상태 문구 4개"는 이제 A5까지 5개다(FE7-i로 바뀐 동작) → 기대를 고침 → 그 파일 **+12 −0** |
+| `flutter test test/statistics_third_tiles_test.dart`(새, 1차) | +9 −1. 테스트 기대가 틀렸다: 점 순서는 성장 학생 순이고, 테스트가 직접 만든 성장은 정렬되지 않았다 → 기대 · 주석을 고침 |
+| 같은 파일(2차) | **+10 −0** |
+| `flutter test test/kit/range_controls_test.dart` | **+14 −0**(새 2건 포함) |
+| `flutter test test/student_filter_modal_test.dart` | **+8 −0**(새 800×600 1건 포함) |
+| `flutter test test/statistics_filter_test.dart` | **+10 −0**(새 800×600 1건 포함) |
+| 일회성 렌더(임시 `test/zz_fe7i_render_tmp_test.dart`, 실행 뒤 지움) | +7 −0, 예외 0. golden 테스트 사본에 `RenderRepaintBoundary.toImage`를 더해 scratchpad에 PNG 7장을 남겼다. 다섯 장면과, 아래로 스크롤해 A5 칸 · C5 구간을 고른 두 장면을 보았다. golden 비교는 아니다 |
+| `flutter analyze`(frontend 전체, 최종) | **No issues found**(info 포함 0). 테스트 파일에서 쓰지 않게 된 import 1건(`statistics_history_view_test.dart`)을 지운 뒤다 |
+| 관련 46파일 한 번에(`--file-reporter json`, 아래) | **+517 −0** |
+| `git diff --check`(frontend · 이 문서) · 줄바꿈 바이트 검사 | 오류 0. 기존 파일은 pre와 같은 줄바꿈이다: `statistics_growth_projection.dart` · `statistics_growth_evidence.dart` · `statistics_page.dart` · `statistics_growth_view_test.dart`는 CRLF(모든 줄), 나머지는 LF. 새 파일은 LF · 줄 끝 공백 0 · 끝 개행 하나 |
+
+관련 46파일(파일별, 모두 −0): account_editor_fe8c +9, account_manager_fe8b +6, app_navigation_fe7d +14, app_navigation_tidy1 +11, connected_target_fe8d +8, growth_calculator_view +24, home_app_shell +1, home_connect_fe8e +10, inventory_shell_lazy +1, mock_design_review_scenario +11, plan_flow +15, plan_flow_presets +13, plan_flow_student_step +8, planning_page +17, profile_delete_fb2d +17, kit/range_controls +14, section_template_studio +15, statistics_app_shell +2, statistics_filter +10, statistics_growth_projection +11, statistics_growth_view +12, statistics_history_projection +17, statistics_history_view +14, statistics_page +14, statistics_plan_projection +7, statistics_plan_view +9, statistics_projection +7, statistics_second_tiles +15, statistics_supply_projection +8, statistics_supply_view +11, statistics_third_tiles +10(새), statistics_workspace +13, student_bond_gauge +12, student_filter_followups +4, student_filter_modal +8, student_filter_selection +15, student_page +9, student_search_section +13, student_studio_layout +45, title_page +25, kit/ui_kit_gallery +6, kit/ui_kit_gallery_controls +2, kit/ui_kit_gallery_data +2, kit/ui_kit_gallery_overlays +4, kit/ui_kit_gallery_range +2, widget +16.
+
+- 걸리는 테스트 찾기: test/ 전체를 `StatisticsPage|statistics_|StudentFilterModal|student_filter_modal|RangeSliderRow|RangeRowFrame|range_controls|BAPlannerApp\(|AppShell\(|StudentSectionLayout|PlanFlowStudentStep|plan_flow_student_step|statisticsUnplannedLow|StatisticsStudentGrowth|app_navigation|ui_kit_gallery|StudentPage\(`로 grep했다.
+  - `RangeSliderRow` 사용처 전부가 들어간다: 키트 갤러리, 학생 탭 모달, 통계 모달, 계획 1단계(`plan_flow_student_step`).
+  - goldens · process E2E · 스캐너(`scan_*` · `scanner_*` · `mock_scanner_service`) · `metadata_manager_dto` · `tactical_*`(Lane B 작업 중)는 뺐다.
+- 고친 기존 테스트 기대(모두 FE7-i로 바뀐 동작):
+  - "준비 중" 개수: 성장 1 → 0, 계획 1 → 0. 5파일(growth_view · history_view · plan_view · supply_view · workspace)은 이제 글자 `'준비 중'`이 없음을 본다(상수는 지웠다).
+  - 자료 없음 '—' 타일 목록에 A5 · C5를 더했다(workspace).
+  - 보유 0 빈 상태 문구 개수 4 → 5(A5, growth_view).
+- `dart format`은 새 파일에만 남겼다. 기존 테스트 2파일(`student_filter_modal_test.dart` · `kit/range_controls_test.dart`)에 실수로 돌려 다른 줄까지 바뀐 것을 알아챘다. pre 사본에서 다시 시작해 이 slice 줄만 넣었다(pre 대비 지운 줄은 `_pumpLayout` 크기 매개변수 3줄뿐).
+- 빌드 잠금(`build/` · `.dart_tool/`) 충돌은 없었다. `flutter analyze`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml`은 바뀌지 않았다.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### A5 칸 정의(`lib/statistics/statistics_matrix_projection.dart` `StatisticsSkillMatrix`)
+
+- **칸 값 = 그 칸 학생 수**(비율 아님). 시안 숫자로 판단했다: 시안 다섯 행의 합이 모두 128(= 보유 학생)이다(EX 12+30+41+45, 일반 8+22+38+27+33 …). 학생 하나는 행마다 한 칸에만 든다.
+- 행과 값:
+
+| 행(시안 글자) | 값 | 1–3 | 4–6 | 7–8 | 9 | M |
+|---|---|---|---|---|---|---|
+| EX | `ex_skill`(1~5) | 1~3 | 4 | 빗금 | 빗금 | 5 |
+| 일반 | `skill1`(1~10) | 1~3 | 4~6 | 7~8 | 9 | 10 |
+| 강화 | `skill2`(0~10) | 0~3(0 = 미개방) | 4~6 | 7~8 | 9 | 10 |
+| 서브 | `skill3`(0~10) | 0~3(0 = 미개방) | 4~6 | 7~8 | 9 | 10 |
+| 장비 | 장비 3칸 티어 중 가장 낮은 칸(T0~T10) | T0~T3 | T4~T6 | T7~T8 | T9 | T10 |
+
+- 빗금(해당 없음)은 EX의 7–8 · 9 칸이다. 시안은 EX "9" 칸 하나만 빗금이고 7–8 칸에 41을 적었다(placeholder — EX는 최대 5라 7–8이 될 수 없다). 그래서 정의대로 둘 다 빗금으로 했다(발견 1).
+- 장비 값은 학생 탭 필터 "장비 티어 3칸 중 가장 낮은 칸"과 같다. 칸이 하나라도 모름이면 그 학생은 장비 행에서 빠진다.
+- 행 값을 모르는 학생은 그 행에서만 빠진다(0으로 채우지 않음). 하나라도 모르는 학생 수를 왼쪽 아래 "n명 모름"으로 쓴다.
+- 대상 학생: 통계 필터가 걸리면 대상 학생만 센다(FE7-e 발견 4 · F §3.2 모순 메모 — 시안 Stats-Growth-Filter의 A5 숫자는 필터 전과 같은 placeholder다). `StatisticsGrowthBreakdown.matrix`가 A3 · A4와 같은 대상 성장으로 만든다.
+- 색: #71c7f4 α = 0.06 + 0.84 × 인원 / 가장 많은 칸. 시안 α 21개가 이 식과 ±0.01 안에서 맞는다(예 45 → .90, 30 → .62, 6 → .17). α가 0.6 이상이면 숫자는 #0c2233, 그 아래는 흰색이다(시안 28 → 흰색 · 29 → 어두움). 0명 칸은 α .06 바탕에 "0"이다.
+- 좌표: 시안 polygon · text를 그대로 옮겼다. 칸 밑변 71.1 · 높이 26 · 열 피치 75.1 · 행 피치 30이다. 행마다 30 × tan 10° 왼쪽으로 옮기고, 행 글자는 칸 왼쪽에서 10이다. 범례는 (464, 194) "빗금 = 해당 없음 (EX 최대 5)"다.
+- 고르기: 칸을 누르면 고르고, 같은 칸을 다시 누르면 푼다. 0명 칸 · 빗금 칸은 고르지 않는다. 고른 칸은 분홍 테두리 2이고 바탕 농도는 그대로다(값 표현을 지키려고 A1처럼 분홍으로 채우지 않았다).
+- 근거:
+  - 머리는 "<행> <칸>"이다(예 "EX 스킬 1–3", "강화 스킬 0–3", "장비 T7–8"). 칩은 인원이다.
+  - 부제는 "A5에서 고른 칸 · 낮은 항목 순"이다. 행 칩은 A1과 같은 "낮음" 칩이다.
+  - 요약은 "칸 요약"(평균 레벨 · 가장 낮은 항목 · 계획 등록)이다.
+
+#### C5 구간 정의(`StatisticsUnplannedStrip` · `statisticsUnplannedLowStudents`)
+
+- 행: 시안 그대로 편성 "스트라이커" · "스페셜"이다. 프롬프트의 "역할별"은 시안 행 글자를 따랐다(발견 2).
+- 점: 편성과 육성도(FD-028)를 아는 보유 학생 하나에 점 하나다. 가로 = 육성도(0% 84 → 100% 1019.3)다. 세로 = 행 바닥선 − 20 ± 11이고, 학생 id의 FNV-1a 해시로 정한 고정 흩뿌림이다(기기 · 실행마다 같다).
+- 색:
+  - 계획 있음 = 파랑 #71c7f4. 사용자 목표가 있는 보유 학생이다(KPI "계획 등록" · C4와 같은 집합).
+  - 미계획 = 회색 #5d7184.
+  - 고른 구간(미계획 · 육성도 40% 미만) = 분홍.
+- 고른 구간 = **[0, 40%)의 미계획 학생**이다. 시안은 이 구간을 분홍 점선 상자로 늘 그리고, 아래 "미계획 · 40% 미만 n명"을 적는다.
+  - n과 근거 학생은 KPI "미계획 · 40% 미만"과 **같은 함수**다(`statisticsUnplannedLowStudents`). `statisticsUnplannedLowCount`는 이제 이 목록의 길이다.
+  - 편성을 몰라 점이 없는 학생도 n과 근거에는 든다(KPI와 같아야 한다).
+- 고르기: 상자(또는 그 아래 구간 글자)를 누르면 고르고, 상자 테두리가 실선이 된다. 다시 누르면 푼다. 구간 학생이 0명이면 고르지 않는다. 구간은 하나다(다른 구간 고르기는 시안에 없다 — 발견 3).
+- 근거:
+  - 성장 근거와 같은 틀이다. 머리 "미계획 · 40% 미만" + 분홍 인원 칩, 부제 "C5에서 고른 구간 · 육성도 낮은 순"이다.
+  - 행 7개 + "나머지 n명 모두 보기"가 있다(펼치기 = FE7-d 펼침).
+  - "구간 요약"은 평균 레벨 · 가장 낮은 항목 · 평균 육성도다. 계획 등록은 늘 0명이라 평균 육성도로 바꿨다.
+- 대상: 늘 전체 성장이다(FD-104 — 계획 집계는 필터와 상관없다, 테스트로 고정).
+- 빈 상태:
+  - 읽는 중이면 '—'다.
+  - 보유 0명이면 A1 문구다.
+  - 점이 없으면 육성도 문구다.
+  - 목표가 없어도 그린다(모든 점이 회색).
+
+#### 원본 탭 이동
+
+- A5 칸 → 학생 성장 버튼 그대로다.
+  - ghost "학생 탭에서 보기 · 필터: <칸 머리>" → 학생 탭 임시 목록 "통계: <칸 머리> · n명"이다.
+  - primary "이 구간 학생을 계획에 추가" → 계획 만들기 1단계, 미리 선택이다.
+  - **스킬 · 레벨 조건은 학생 필터에 싣지 않았다.** 학생 필터에는 스킬 범위 행이 있다. 하지만 FE7-d 규칙 3 · FD-104는 "통계 → 학생 탭 이동은 학생 필터 상태에 쓰지 않는다"이다. 그리고 장비 행 · 강화 0(미개방)은 필터 행과 구간 글자가 꼭 맞지 않는다. 그래서 학생 목록만 넘기고 조건은 칩 글자로 보인다(A3와 같은 규칙).
+- C5 구간 → primary "계획 만들기 1 · 학생 고르기" · "미리 선택 · n명" → `PlanNavigationIntent.students(구간 학생)`이다(FE7-d 기존 경로, intent 변경 없음). ghost는 C4처럼 Stats-Plan 기본 글자 비활성이다.
+- "← 통계" 복귀: 다시 읽은 뒤 C5 구간에 학생이 있으면 고른 것 · 펼침을 되살린다(`_restoreSelection`). A5 칸은 기존 성장 복귀 규칙을 그대로 따른다.
+
+#### 공용 필터 모달 넘침 수정(FE7-e 발견 2)
+
+- 머리(`student_filter_modal.dart` `_FilterHeader`):
+  - **조건**: 띠 안쪽 폭 < `tightWidth` 640일 때만 바꾼다. 측정 근거는 1280×720 띠 안쪽이 약 900 이상, 800×600이 약 420이라는 것이다.
+  - 그때 제목 뒤 간격을 20 → 10, 구분선 양쪽을 18 → 8로 줄인다.
+  - 오른쪽 버튼 묶음("학생 탭 필터 불러오기" · 초기화 · 적용)은 한 `Flexible(flex 3)` + `FittedBox.scaleDown`(키 `student-filter-modal-tight`)으로 함께 줄인다. 칩 자리(`Expanded`)는 flex 1 그대로다.
+  - 그보다 넓으면 위젯 구조 · 간격이 전과 같다(FE7-e 압축 머리 그대로).
+- 범위 행(키트 `range_controls.dart` `RangeRowFrame`):
+  - 행 안쪽 폭 < 118 × 2 + `rangeRowMinTrackWidth` 48(= 284)일 때만 이름 · 값 칸을 (폭 − 48) / 2로 함께 줄인다. 글자는 이미 말줄임 · `Flexible`이다.
+  - 284 이상이면 두 칸은 118 그대로다.
+  - 측정 폭: 2560 = 929.5, 1280×720 = 420.5, 갤러리 견본 = 752.3. 그래서 기준 · 1280 · 갤러리 모습은 같다. 800×600 = 229.7이다.
+- 기준 모습 그대로의 근거:
+  - 측정 테스트에서 2560 · 1280의 머리 칩 자리 폭이 고치기 전과 같다.
+  - 기존 배치 테스트(`student_filter_modal_test` "배치가 시안 좌표와 같다(2560×1392)", `kit/range_controls_test` "이름·값 칸 118")가 녹색이다.
+  - 새 테스트가 2560 · 1280에서 줄임 묶음이 없음을 본다.
+- 새 테스트:
+  - `student_filter_modal_test` "800×600: header and range rows do not overflow": 학생 탭 모달이다. 2560 · 1280은 줄임 없음이다. 800×600은 넘침 0 · 적용 버튼이 화면 안 · 눌러서 적용된다.
+  - `statistics_filter_test` "statistics modal fits 800×600 (FE7-i)": 통계 모달이다. 칩 둘을 고르고 · 불러오기 버튼이 화면 안 · 적용된다.
+  - `kit/range_controls_test` 좁은 행 2건이다.
+- 계획 1단계 필터: 같은 공용 모달 · 키트라 같은 조건이다. `plan_flow_student_step` +8로 돌렸다.
+
+#### 처리한 FD
+
+- **FD-028(확정)**: A5 정렬 · 근거 · C5 가로축이 같은 육성도 식이다. C5 "40% 미만"도 같은 육성도다. 모르는 값은 빼고 "n명 모름"이다.
+- **FD-104(확정 (a))**: A5는 통계 필터 대상 학생, C5는 늘 전체다. 학생 탭 이동은 학생 필터에 쓰지 않는다.
+- **FD-106(확정 2026-10-13)**:
+  - 통계에 "준비 중" 타일이 없어졌다.
+  - 문구 상수 `statisticsTilePendingText`와 분기를 지웠다. grep으로 통계 밖 사용처가 없음을 확인했다. 남는 분기(그릴 타일이 아닌 경우)는 '—' 빈 상태다.
+  - 테스트는 글자 '준비 중'이 없음을 본다.
+- **FD-033 · FD-109**:
+  - FD-033: 모름 ≠ 0이다. A5 빗금은 "해당 없음"이고 모름이 아니다. 모름은 행에서 빠진다.
+  - FD-109: C5 · A5 줄은 짧은 높이가 없다. 줄 높이 변화는 0이다.
+- 막는 `열림` FD는 없었다. 워커 재량 FD도 없었다.
+
+#### 정한 규칙(시안 · 대장에 없는 것)
+
+1. A5 칸 정의 · 빗금 · 색 식은 위 표와 같다.
+2. A5 고른 칸은 분홍 테두리이고 바탕 농도를 지킨다.
+3. A5 "n명 모름" 자리는 (0, 194) 왼쪽 아래다(시안에 자리 없음).
+4. C5 행은 시안 편성 행이다. 점 세로 흩뿌림은 학생 id 고정 해시이고, 그리는 순서는 회색 → 파랑 → 분홍이다.
+5. C5 고른 상태 상자는 실선 1.5 · 바탕 α .16이다(시안은 고르지 않은 점선 상태만 있다).
+6. C5 근거 요약은 "계획 등록" 대신 "평균 육성도"다.
+7. C5 primary 둘째 줄은 "미리 선택 · n명"이다(시안 Proposal "(미리 선택)").
+8. C5 "n명 모름"(편성 · 육성도 모름)은 (1019.3, 166) 오른쪽 끝이다.
+9. 필터 모달은 띠 안쪽 640 미만에서 줄이고, 범위 행은 가운데 48을 남기지 못할 때만 줄인다.
+
+#### golden 변화 예상(장면별)
+
+fixture 값(단위 계산 · 일회성 렌더 기준):
+- 성장 보유 128명: EX 33 · 36 · 빗금 · 빗금 · 59 / 일반 7 · 11 · 10 · 42 · 58 / 강화 9 · 41 · 27 · 41 · 10 / 서브 15 · 47 · 28 · 25 · 13 / 장비 8 · 36 · 40 · 19 · 25, 모름 0이다. 가장 많은 칸은 59다.
+- 필터 대상(밀레니엄 · 스트라이커 18명): EX 5 · 6 · 빗금 · 빗금 · 7 / 일반 0 · 2 · 1 · 6 · 9 / 강화 1 · 6 · 5 · 4 · 2 / 서브 2 · 8 · 4 · 2 · 2 / 장비 0 · 6 · 7 · 2 · 3이다.
+- C5: 점 128개다(스트라이커 83 · 스페셜 45, 계획 있음 9 · 분홍 26). "미계획 · 40% 미만 26명"은 KPI 다섯째 칸 26명과 같다.
+- 시안 숫자(EX 12/30/41/45 …, "14명")와 다른 이유: fixture는 FE7-b 성장 fixture(`lib/services/design_review/` 소유)이고 억지로 맞추지 않았다(발견 4).
+
+장면별:
+- **`statistics-growth`(바뀜)**: A5 "준비 중" → 매트릭스다. A5 줄은 viewport 아래 포그에 걸쳐 머리 · 열 글자 · 첫 행 일부만 보인다(A3과 같은 줄). KPI · A1 · A2 · A3 · A4 · A6 · 근거 · 줄 높이 변화는 0이다.
+- **`statistics-plan`(바뀜)**: C5 "준비 중" → 스트립이다. C5 줄은 포그 아래에 걸쳐 머리 · 점선 상자 위쪽 · 스트라이커 점 일부만 보인다. KPI · C1~C4 · 근거 빈 문구 변화는 0이다.
+- **`statistics-growth-filter`(바뀜)**: A5 "준비 중" → 대상 18명 매트릭스다(위 값). 줄 368 · A4 빈 상태 · 나머지 변화는 0이다.
+- **`statistics-filter-open`(바뀜)**: 스크림 아래 배경의 A5만 바뀐다(보유 128명 매트릭스). 모달은 2560 기준이라 줄임이 없다 → 모달 변화 0.
+- **`statistics-inventory`: 변화 0**이다(B 타일만 있다. 바뀐 파일이 인벤토리 주제 그림에 닿지 않는다).
+- **다른 장면: 변화 0.**
+  - 학생 장면(`students-filter-open` 포함)과 계획 1단계 필터 장면: 2560 기준 viewport라 모달 머리 줄임 · 범위 행 줄임 조건이 걸리지 않는다(측정 폭 929.5 ≫ 284, 띠 안쪽 ≫ 640).
+  - 키트 갤러리 장면: 범위 견본 행 752.3 > 284라 같다.
+  - golden harness · golden 테스트 장면 조작 변경은 0이다(주석만).
+- commit.json `whole` = 위 기존 기준 이미지 4장(파일 단위)이다. 새 장면은 없다.
+
+#### 검수표(타일 → 근거 → 원본 탭)
+
+mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 viewport를 최대화해 본다. 시안 숫자는 golden fixture에 있다. 검수 시나리오는 `--dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`.
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Stats-Growth A5 | 통계 → 학생 성장 → 아래로 스크롤 | "3차" 회색 칩 · "A5 스킬 · 장비 매트릭스" · 열 "1–3 4–6 7–8 9 M" · 행 EX/일반/강화/서브/장비 사선 계단 · 단일 색조(많을수록 짙음, 짙은 칸 숫자 어두움) · EX 7–8 · 9 빗금 · 범례 "빗금 = 해당 없음 (EX 최대 5)" · 행 합 = 보유 |
+| → 근거 → 학생 탭 | 칸 누르기 → ghost | 분홍 테두리 칸, 근거 "<행> <칸> · n명" · "A5에서 고른 칸 · 낮은 항목 순" · "칸 요약" → 학생 탭 임시 목록 "통계: EX 스킬 1–3 · n명" · "← 통계" / 빗금 · 0명 칸은 반응 없음 |
+| Stats-Growth-Filter A5 | 필터 밀레니엄 · 스트라이커 적용 → 아래로 스크롤 | A5가 대상 18명 수로 바뀐다(행 합 = 18) |
+| Stats-Plan C5 | 통계 → 계획 집계 → 아래로 스크롤 | 전폭 · "3차" · 스트라이커/스페셜 두 줄 점 · 파랑(계획 있음) · 회색(계획 없음) · 분홍(미계획 40% 미만) · 0~40% 분홍 점선 상자 · "미계획 · 40% 미만 n명" = KPI 다섯째 칸 · 0% · 40% · 100% · 범례 |
+| → 근거 → 계획 1단계 | 상자 누르기 → primary | 실선 상자, 근거 "미계획 · 40% 미만 · n명" · "C5에서 고른 구간 · 육성도 낮은 순" · "구간 요약"(평균 레벨 · 가장 낮은 항목 · 평균 육성도) → "계획 만들기 1 · 학생 고르기 · 미리 선택 · n명" → 계획 탭 새 시나리오 1단계에 n명 미리 선택 · "← 통계" |
+| (필터 무시) | 통계 필터 적용 뒤 계획 집계 | C5 점 · n이 필터 전과 같다 |
+| 필터 모달 800×600 | 창을 800×600으로 줄이고 학생 탭 S1 "필터" / 통계 왼쪽 "필터" / 계획 1단계 필터 | 넘침 표시 없음 · 오른쪽 버튼 묶음이 작게 · 범위 행 이름 · 값 칸이 좁게(말줄임) · 적용 동작 / 1280×720 · 최대화에서는 전과 같은 모습 |
+
+#### 미검증 항목
+
+- golden 비교 · 갱신: **미실행**(CF `fe_gate.ps1` · `failures/` 검토 · `-UpdateGoldens`).
+- 전체 `fe_gate.ps1`(나머지 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 새 요소 ±2px: 차트는 시안 SVG 좌표를 그대로 옮긴 painter에 `StatChartFrame` 균일 배율을 썼다. 위젯 테스트는 값 · 칸 · 누르기만 보았고 좌표는 재지 않았다(일회성 렌더로 자리만 확인).
+- 실제 백엔드 계정: **미실행**(Mock · fixture만). 볼 것은 강화 · 서브 0(미개방) 비율, 장비 칸 모름 학생 수, 편성 값 없는 학생, C5 점 겹침(같은 육성도 값이 많으면 세로 흩뿌림만으로 겹칠 수 있다)이다.
+- 실제 창 800×600에서 모달 모습(줄인 버튼 크기 체감): **미실행**(위젯 테스트 · 측정만).
+
+#### WIP 보존 확인
+
+- 고친 기존 19파일(이 문서 포함)은 착수 때 · 고치기 전에 `git status --short`가 빈 줄(WIP 없음)이었다. post 사본 · `post_dir`은 없다.
+- pre 사본과 비교한 diff에는 이 slice 줄만 있다. 고치지 않은 2파일은 `cmp` 일치를 확인한 뒤 사본을 지웠다.
+- 읽기만 한 파일:
+  - `lib/services/**`(성장 fixture `design_review/statistics_growth_data.dart` 포함)
+  - `lib/ui/navigation/app_navigation_intent.dart`(intent 변경 없음)
+  - 학생 · 계획 · 인벤토리 화면 파일
+  - golden harness · 스캐너 WIP 파일
+- 작업 트리의 Lane B 파일(`lib/ui/tactical/` · `lib/ui/studio/tactical_studio_layout.dart` · `test/tactical_*`)은 건드리지 않았다. git 쓰기는 하지 않았다. 임시 측정 · 렌더 · 수치 테스트 3개는 지웠다.
+
+#### 키트 승격 후보(이번에는 statistics 안에 둠)
+
+1. 히트맵 칸(`StatisticsSkillMatrixPainter`): 80° 칸 · 단일 색조 α 식 · 빗금 · 짙은 칸 글자색 전환이다. 다른 교차표가 생기면 차트 원자 후보다.
+2. 스트립 점(`StatisticsUnplannedStripPainter`): 고정 해시 흩뿌림 · 구간 점선 상자다. A4 · C2 점 문법과 같은 계열이다.
+3. 키트 `RangeRowFrame` 좁은 창 분기는 이미 키트 안이다(이번 변경).
+
+#### 발견 사항
+
+1. **시안 A5 EX 빗금 자리**: 시안은 EX "9" 칸만 빗금이고 "7–8"에 41이 있다. EX 최대 5라 7–8도 해당 없음이 맞아 둘 다 빗금으로 했다. 시안 survey(F §3.1)의 "EX 행 M 칸 빗금"도 실제 시안(9 칸)과 다르다. CF 확인 후보.
+2. **C5 "역할별" vs 시안 "편성"**: Proposal · 프롬프트는 "역할별 점 분포"인데 시안 행은 스트라이커 · 스페셜(편성)이다. 시안 글자를 따랐다. 역할(탱커 · 딜러 …) 행이 필요하면 seg를 더하는 결정이 필요하다.
+3. **C5 구간 고르기는 하나**: 시안 · Proposal에 구간을 바꾸는 조작이 없어 "미계획 · 40% 미만" 구간 하나만 고른다. 다른 육성도 구간(예 10% 단위)을 고르게 할지는 CF 판단이다.
+4. **시안 숫자와 fixture**:
+   - A5 시안 숫자(EX 12 · 30 · 41 · 45 …)와 C5 "14명"(분홍 점은 9개라 시안 안에서도 맞지 않는다)은 placeholder다.
+   - fixture는 성장 fixture(Lane B 소유 `design_review`)라 A5 · C5가 그 학생 값에서 나온다(C5 26명).
+   - 성장 fixture의 육성도 값이 구간마다 몰려 있어 C5 점이 세로줄로 겹친다(시안처럼 흩어진 모습이 아님). 검수 fixture를 바꾸려면 서비스 쪽 변경이 필요하다.
+5. **800×600 모달 버튼 크기**: 통계 모달은 오른쪽 버튼 묶음(불러오기 · 초기화 · 적용)이 남는 자리에 맞춰 크게 줄어든다(눌리고 화면 안이다). 더 나은 좁은 배치(두 줄 머리 · 아이콘 버튼)는 시안이 없어 넣지 않았다.
+6. **A5 장비 · 강화/서브 0과 학생 필터 행**: 학생 필터 스킬 범위는 1~M, 장비 티어는 T0~T10이다. A5 첫 칸에 강화 · 서브 0(미개방)을 넣었으므로, 나중에 칸 조건을 학생 필터에 싣는다면 "0~3"을 그대로 옮길 수 있는지 필터 범위 최소값을 함께 봐야 한다.
+7. 막는 `열림` FD는 없었다. 워커 재량 FD도 없었다.
+
+#### 사본 · commit.json
+
+- 착수 사본은 `debug/frontend_fe7i/pre/<경로>`에 있다(고친 기존 18파일 + 이 문서). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7i/commit.json`: slice `fe7i`, `status=true`, modified 19(이 문서 포함), added 3.
+  - `whole` = `statistics-growth.png` · `statistics-plan.png` · `statistics-growth-filter.png` · `statistics-filter-open.png`(파일 단위).
+- 인계: `debug/frontend_fe7i/output.md`.
+
+#### 다음 행동
+
+- FE7-i 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다.
+  - 예상: analyze 0, 일반 테스트는 새 14건(third_tiles 10 · 모달 2 · 키트 2)을 포함해 녹색.
+  - golden은 위 4장 RED, 다른 장면 변화 0.
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe7i`.
+- 발견 1(EX 빗금) · 2(편성 vs 역할) · 3(C5 구간 하나) · 4(검수 fixture)는 CF 판단을 기다린다.
+
+### fe7i commit record (2026-10-14 19:30, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_191520\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -312,7 +312,7 @@ void main() {
     );
     expect(painter.selectedCategory, isNull);
     // B2(FE7-f) · B3(FE7-h)도 그래프 자리라 인벤토리 주제에 "준비 중"이 없다(FD-106 사용자 결정 10-13).
-    expect(find.text(statisticsTilePendingText), findsNothing);
+    expect(find.text('준비 중'), findsNothing);
     expect(_note(tester), statisticsInventoryEvidenceEmptyText);
     expect(tester.takeException(), isNull);
   });
@@ -431,8 +431,8 @@ void main() {
     expect(c2.maxStudents, 8);
     expect(c2.unknownKinds, 1);
     expect(c2.dots.where((dot) => dot.inZone), hasLength(4));
-    // C5만 "준비 중"(C4는 FE7-f 그래프), C3(FE7-g)은 활성 계획을 읽지 못한 안내를 타일 안에 둔다.
-    expect(find.text(statisticsTilePendingText), findsOneWidget);
+    // "준비 중" 타일은 없다(C4는 FE7-f, C5는 FE7-i 그래프), C3(FE7-g)은 활성 계획을 읽지 못한 안내를 타일 안에 둔다.
+    expect(find.text('준비 중'), findsNothing);
     expect(
       _text(tester, 'statistics-tile-C3-empty'),
       startsWith('활성 계획을 읽지 못했습니다'),

@@ -90,6 +90,11 @@ class StatisticsStudentGrowth {
     this.school,
     this.role,
     this.combatClass,
+    this.exSkill,
+    this.skill1,
+    this.skill2,
+    this.skill3,
+    this.lowestEquipmentTier,
   }) : items = Map.unmodifiable(items),
        unknownItems = Set.unmodifiable(unknownItems);
 
@@ -118,6 +123,14 @@ class StatisticsStudentGrowth {
   final String? school;
   final String? role;
   final String? combatClass;
+
+  /// A5 원값(FE7-i): EX · 일반(skill1) · 강화(skill2) · 서브(skill3) 레벨, 장비 3칸 티어 중 가장 낮은 칸. 모르면 null
+  /// (장비는 한 칸이라도 모르면 null).
+  final int? exSkill;
+  final int? skill1;
+  final int? skill2;
+  final int? skill3;
+  final int? lowestEquipmentTier;
 
   /// 육성도(0~1). 모르는 항목이 있으면 null.
   double? get growth {
@@ -507,6 +520,11 @@ StatisticsStudentGrowth statisticsGrowthOfValues(
   final level = values['level'];
   final star = values['student_star'];
   final weapon = values['weapon_star'];
+  int? whole(String key) => values[key] is int ? values[key] as int : null;
+  final tiers = [
+    for (var slot = 1; slot <= 3; slot++)
+      statisticsGrowthEquipmentTier(values['equip$slot']),
+  ];
   return StatisticsStudentGrowth(
     studentId: studentId,
     displayName: catalog?.displayName ?? studentId,
@@ -519,6 +537,13 @@ StatisticsStudentGrowth statisticsGrowthOfValues(
     school: catalog?.school,
     role: catalog?.role,
     combatClass: catalog?.combatClass,
+    exSkill: whole('ex_skill'),
+    skill1: whole('skill1'),
+    skill2: whole('skill2'),
+    skill3: whole('skill3'),
+    lowestEquipmentTier: tiers.contains(null)
+        ? null
+        : tiers.whereType<int>().reduce(math.min),
   );
 }
 

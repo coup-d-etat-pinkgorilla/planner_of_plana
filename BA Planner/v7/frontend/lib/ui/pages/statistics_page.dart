@@ -38,6 +38,9 @@
 // (`inventoryStageUses`, 인벤토리 상세와 같은 함수), "최근 변화"는 이력의 지금 − 28일 색인이다. 이동: A3 · A4 근거는
 // 학생 성장 버튼 그대로(학생 탭 임시 목록 · 계획 1단계), B2 행은 인벤토리 그 행(+ 티어 표가 있는 카테고리면 티어별
 // 충족률), C4 학생은 "계획 만들기 2 · 목표 정하기"(`PlanNavigationIntent.goals`, 활성 계획 편집 흐름 2단계에서 그 학생).
+// FE7-i: 3차 타일 A5(`StatisticsGrowthBreakdown.matrix`, 학생 성장 — 필터 대상 학생) · C5(`StatisticsUnplannedStrip`, 계획 —
+// 전체 성장)를 만든다. A5 칸 근거는 학생 성장 버튼 그대로(학생 탭 임시 목록 · 계획 1단계), C5 구간은 "계획 만들기 1 · 학생
+// 고르기"(`PlanNavigationIntent.students`, 미리 선택 — FE7-d 기존 경로)다.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -50,6 +53,7 @@ import '../../statistics/statistics_goal_projection.dart';
 import '../../statistics/statistics_growth_filter.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart';
+import '../../statistics/statistics_matrix_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../app_section.dart';
@@ -89,6 +93,9 @@ const _historyMaxPages = 50;
 
 /// C4 학생 근거 primary 버튼(Statistics-Proposal C4 "행 → 계획 만들기 2 · 목표 정하기", FE7-f).
 const statisticsGoalActionLabel = '계획 만들기 2 · 목표 정하기';
+
+/// C5 구간 근거 primary 버튼(Statistics-Proposal C5 "구간 → 계획 만들기 1 · 학생 고르기 (미리 선택)", FE7-i).
+const statisticsUnplannedActionLabel = '계획 만들기 1 · 학생 고르기';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({
@@ -184,6 +191,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
   StatisticsGoalProgressSet? _goals;
   RepositoryState? _goalsState;
   List<StudentCatalogEntry>? _goalsStudents;
+
+  /// C5 projection 캐시(전체 성장이 같으면 다시 만들지 않는다, FE7-i).
+  StatisticsUnplannedStrip? _unplanned;
+  StatisticsGrowth? _unplannedGrowth;
 
   /// B2 근거 단계별 사용 캐시(문서 계산이 같으면 다시 만들지 않는다, FE7-f).
   Map<String, List<InventoryStageUse>>? _stageUses;
@@ -753,8 +764,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
       _evidenceExpanded = saved.expanded;
     }
     final supplySelection = saved.supply;
+    final supplyView = supplySelection == null
+        ? null
+        : _supplyView(growth, supplySelection);
     if (supplySelection != null &&
-        _supplyView(growth, supplySelection).evidence != null) {
+        (supplyView?.evidence != null ||
+            (supplyView?.unplannedEvidence?.students.isNotEmpty ?? false))) {
       _supplySelection = supplySelection;
       _supplyExpanded = saved.supplyExpanded;
     }
@@ -833,6 +848,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return _goals;
   }
 
+  /// C5 projection(전체 성장, 통계 필터와 상관없다 — FD-104).
+  StatisticsUnplannedStrip? _currentUnplanned(StatisticsGrowth? growth) {
+    if (growth == null) return null;
+    if (!identical(_unplannedGrowth, growth)) {
+      _unplannedGrowth = growth;
+      _unplanned = StatisticsUnplannedStrip.of(growth);
+    }
+    return _unplanned;
+  }
+
   /// B2 근거 "필요량 순"의 단계별 사용(활성 문서 계산이 없으면 null).
   Map<String, List<InventoryStageUse>>? _currentStageUses() {
     final projection = _planProjection;
@@ -902,6 +927,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     planning: _loading ? null : _currentPlanning(),
     planningError: _planError,
     goals: _loading ? null : _currentGoals(),
+    unplanned: _loading ? null : _currentUnplanned(growth),
     stageUses: _loading ? null : _currentStageUses(),
     recent: _loading || _historyLoading ? null : _history?.inventoryWindow,
     b2Order: _b2Order,
@@ -1015,6 +1041,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 ),
         );
       case StatisticsMode.plan:
+        // C5 구간(FE7-i): "계획 만들기 1 · 학생 고르기" → 새 시나리오 1단계에 구간 학생을 미리 고른다(FE7-d 기존 경로).
+        final unplanned = supplyView.unplannedEvidence;
+        if (unplanned != null) {
+          if (unplanned.students.isEmpty) return defaults;
+          final ids = [
+            for (final student in unplanned.students) student.studentId,
+          ];
+          return (
+            secondary,
+            StatisticsEvidenceAction(
+              statisticsUnplannedActionLabel,
+              '미리 선택 · ${ids.length}명',
+              () => navigate(PlanNavigationIntent.students(ids)),
+            ),
+          );
+        }
         final evidence = supplyView.evidence;
         // C4 학생(FE7-f): "계획 만들기 2 · 목표 정하기" → 활성 계획 편집 흐름 2단계에서 그 학생.
         if (evidence?.goal case final goal?) {

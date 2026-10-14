@@ -36,6 +36,10 @@ const rangeRowHeight = 44.0;
 /// 범위 행 왼쪽 이름 칸·오른쪽 값 칸 폭.
 const rangeRowLabelWidth = 118.0;
 
+/// 이름 칸 · 값 칸이 이 폭(가운데 조작 최소 폭)을 남기지 못할 만큼 행이 좁으면(800×600 필터 모달, FE7-i) 두 칸을
+/// 같은 비율로 줄인다. 그보다 넓으면 두 칸은 [rangeRowLabelWidth] 그대로다(기준 viewport · 1280×720 모습 그대로).
+const rangeRowMinTrackWidth = 48.0;
+
 /// 슬라이더·성급 막대 좌우 안쪽 여백.
 const rangeTrackInset = 10.0;
 
@@ -127,11 +131,52 @@ class RangeRowFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!framed) {
+      return SizedBox(
+        height: height,
+        child: LayoutBuilder(
+          builder: (context, constraints) =>
+              _row(_sideWidth(constraints.maxWidth)),
+        ),
+      );
+    }
+    return Container(
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: narrowed ? rangeRowNarrowedFill : rangeRowIdleFill,
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
+      ),
+      // 시안 `box-shadow: inset 0 0 0 1.5px`처럼 자리를 차지하지 않게 테두리는 위에 그린다.
+      // (decoration의 border는 Container 안쪽 여백에 더해져 좁힌 행만 내용 폭이 3px 줄었다.)
+      foregroundDecoration: narrowed
+          ? BoxDecoration(
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
+              border: Border.all(color: AppColors.accent, width: 1.5),
+            )
+          : null,
+      child: LayoutBuilder(
+        builder: (context, constraints) =>
+            _row(_sideWidth(constraints.maxWidth)),
+      ),
+    );
+  }
+
+  /// 이름 칸 · 값 칸 폭: 보통 [rangeRowLabelWidth], 행이 좁으면 가운데 [rangeRowMinTrackWidth]를 남기도록 함께 줄인다.
+  static double _sideWidth(double width) {
+    if (!width.isFinite ||
+        width >= 2 * rangeRowLabelWidth + rangeRowMinTrackWidth) {
+      return rangeRowLabelWidth;
+    }
+    return math.max(0.0, (width - rangeRowMinTrackWidth) / 2);
+  }
+
+  Widget _row(double side) {
     final caption = this.caption;
-    final row = Row(
+    return Row(
       children: [
         SizedBox(
-          width: rangeRowLabelWidth,
+          width: side,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,26 +215,8 @@ class RangeRowFrame extends StatelessWidget {
           ),
         ),
         Expanded(child: child),
-        SizedBox(width: rangeRowLabelWidth, child: value),
+        SizedBox(width: side, child: value),
       ],
-    );
-    if (!framed) return SizedBox(height: height, child: row);
-    return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: narrowed ? rangeRowNarrowedFill : rangeRowIdleFill,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
-      ),
-      // 시안 `box-shadow: inset 0 0 0 1.5px`처럼 자리를 차지하지 않게 테두리는 위에 그린다.
-      // (decoration의 border는 Container 안쪽 여백에 더해져 좁힌 행만 내용 폭이 3px 줄었다.)
-      foregroundDecoration: narrowed
-          ? BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(6)),
-              border: Border.all(color: AppColors.accent, width: 1.5),
-            )
-          : null,
-      child: row,
     );
   }
 }

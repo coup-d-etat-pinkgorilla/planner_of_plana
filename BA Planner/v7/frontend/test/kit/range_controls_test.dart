@@ -432,4 +432,52 @@ void main() {
     expect(rangeValueAt(-20, 500, 0, 10), 0);
     expect(rangePlainValue(7), '7');
   });
+
+  // FE7-i(FE7-e 발견 2): 800×600 필터 모달의 행 안쪽 폭은 약 230이라 이름 · 값 칸(118 × 2)이 넘쳤다. 가운데 48을 남기지
+  // 못할 만큼 좁을 때만 두 칸을 같이 줄인다. 그보다 넓으면 지금 모양 그대로다.
+  group('RangeSliderRow narrow', () {
+    Future<void> pumpWidth(WidgetTester tester, double width) => pumpKit(
+      tester,
+      SizedBox(
+        width: width,
+        child: RangeSliderRow(
+          key: const ValueKey('slider'),
+          label: '전용무기 레벨',
+          caption: '0 ~ 60',
+          min: 0,
+          max: 60,
+          low: 30,
+          high: 60,
+          onChanged: (_, _) {},
+        ),
+      ),
+    );
+
+    testWidgets(
+      'the label and value columns stay 118 while the track keeps 48',
+      (tester) async {
+        await pumpWidth(tester, 28 + 236 + rangeRowMinTrackWidth);
+        final row = tester.getRect(find.byKey(const ValueKey('slider')));
+        final track = _track(tester);
+        expect(track.left - row.left, closeTo(14 + 118, 0.01));
+        expect(track.width, closeTo(rangeRowMinTrackWidth, 0.01));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a narrower row shrinks both columns without overflow', (
+      tester,
+    ) async {
+      const width = 257.7; // 800×600 모달 행(안쪽 229.7)
+      await pumpWidth(tester, width);
+      final row = tester.getRect(find.byKey(const ValueKey('slider')));
+      final track = _track(tester);
+      const side = (width - 28 - rangeRowMinTrackWidth) / 2;
+      expect(track.left - row.left, closeTo(14 + side, 0.01));
+      expect(track.width, closeTo(rangeRowMinTrackWidth, 0.01));
+      expect(tester.takeException(), isNull);
+      await pumpWidth(tester, 120);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

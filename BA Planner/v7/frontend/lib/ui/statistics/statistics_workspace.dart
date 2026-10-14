@@ -14,13 +14,15 @@
 //   (`statistics_history_charts.dart`). 스냅샷이 2회 미만이면 그 타일 안에 확정 4 문구고(FD-106), 그 줄 타일이 모두 그래프가
 //   없으면 줄을 시안대로 낮춘다(FD-109). FE7-f는 2차 타일 A3 · A4(`statistics_breakdown_charts.dart`, A4 seg 학교 · 역할,
 //   통계 필터로 고른 seg 값이 하나 이하면 빈 상태 — FE7-e 발견 3) · B2 · C4(`statistics_balance_charts.dart`, B2 seg 부족 순 ·
-//   과잉 순)를 그린다. 나머지(A5 · C5)는 제목 + 차수 칩 + "준비 중"이다(FD-106 사용자 결정 10-13). 계획이 없으면
-//   그래프 타일 안에 빈 상태 문구다.
+//   과잉 순)를 그린다. FE7-i는 3차 타일 A5(스킬 · 장비 매트릭스, 통계 필터 대상 학생) · C5(미계획 학생 스트립, 전체)를
+//   그린다(`statistics_matrix_charts.dart`). 이로써 "준비 중" 타일은 없다(FD-106). 계획이 없으면 그래프 타일 안에 빈
+//   상태 문구다(C5는 목표가 없어도 모든 점을 회색으로 그린다).
 //   주제를 바꾸면 제목 줄과 viewport를 주제별 key로 바꿔 끼운다(같은 자리 다른 내용 — 스크롤 위치를 넘기지 않는다).
 // - 오른쪽 근거: "근거 확인" 제목, 읽기 상태 안내 또는 빈 상태 문구, 아래 이동 버튼 2개(FE7-d: 고른 구간 · 재화가 있으면
 //   원본 탭으로 넘긴다, 버튼 글자 · 동작은 [StatisticsWorkspace.evidenceActions]).
 //   학생 성장에서 A1 구간 · A2 항목을 고르면 그 근거 목록이다(`statistics_growth_evidence.dart`). B1 막대 · C1 행 · C2 점을
-//   고르면 재화 · 학생 근거다(`statistics_supply_evidence.dart`).
+//   고르면 재화 · 학생 근거다(`statistics_supply_evidence.dart`). A5 칸은 성장 근거, C5 구간은 계획 주제에서 성장 근거와
+//   같은 틀이다(FE7-i).
 // 좌표는 `statistics_studio_layout.dart`의 Studio 문서와 [StatisticsMetrics]다. 창이 낮으면 왼쪽 · 오른쪽 섹션 요소는
 // 세로 비율대로 함께 줄고(계획 만들기 A 레일 규칙), 가운데 타일은 viewport 폭 비율로 높이가 바뀐다(타일 모양 유지).
 import 'dart:math' as math;
@@ -57,6 +59,7 @@ import 'statistics_breakdown_charts.dart';
 import 'statistics_growth_charts.dart';
 import 'statistics_growth_evidence.dart';
 import 'statistics_history_charts.dart';
+import 'statistics_matrix_charts.dart';
 import 'statistics_plan_charts.dart';
 import 'statistics_filter_view.dart';
 import 'statistics_source.dart';
@@ -85,9 +88,6 @@ const statisticsSupplyNoKnownText = '보유를 아는 재화가 없습니다. �
 
 /// C3 빈 상태: 활성 문서 계산에서 끝까지 모자라는 재화가 없다(FE7-g, 시안 없음).
 const statisticsPlanNoShortageText = '계획 끝까지 모자라는 재화가 없습니다.';
-
-/// 아직 그리지 않는 타일(FD-106 사용자 결정 10-13: 자리를 유지하고 "준비 중").
-const statisticsTilePendingText = '준비 중';
 
 /// A1 · A2 빈 상태: 보유 학생이 없다(시안에 없는 문구, FE7-b가 정함).
 const statisticsGrowthNoStudentsText = '보유 학생이 없습니다. 학생 스캔을 실행하면 나타납니다.';
@@ -1482,12 +1482,13 @@ double statisticsRowHeight(
   return empty ? short : row.height;
 }
 
-/// 그래프를 그리는 타일(나머지 A5 · C5는 "준비 중", FE7-i).
+/// 그래프를 그리는 타일(FE7-i부터 모든 타일).
 const _chartTileIds = {
   'A1',
   'A2',
   'A3',
   'A4',
+  'A5',
   'A6',
   'B1',
   'B2',
@@ -1496,6 +1497,7 @@ const _chartTileIds = {
   'C2',
   'C3',
   'C4',
+  'C5',
 };
 
 /// KPI 띠: 다섯 칸. [onPressed]가 있으면 칸을 누를 수 있다(누른 칸 순번).
@@ -1653,8 +1655,8 @@ class _TileRow extends StatelessWidget {
 }
 
 /// 위젯 타일(키트 [WidgetTile]): 머리(ID · 제목 · seg · 차수 칩) + 내용. 학생 성장의 A1 · A2(FE7-b) · A3 · A4(FE7-f) ·
-/// A6(FE7-h), 인벤토리의 B1(FE7-c) · B2(FE7-f) · B3(FE7-h), 계획의 C1 · C2(FE7-c) · C3(FE7-g) · C4(FE7-f)는 그래프, 나머지는
-/// "준비 중"이다.
+/// A5(FE7-i) · A6(FE7-h), 인벤토리의 B1(FE7-c) · B2(FE7-f) · B3(FE7-h), 계획의 C1 · C2(FE7-c) · C3(FE7-g) · C4(FE7-f) ·
+/// C5(FE7-i)는 그래프다.
 class _StatisticsTile extends StatelessWidget {
   const _StatisticsTile({
     super.key,
@@ -1735,10 +1737,14 @@ class _StatisticsTile extends StatelessWidget {
           key: ValueKey('statistics-tile-A4-single'),
         ),
       );
+    } else if (growth != null && tile.id == 'A5') {
+      body = _matrixBody(growth);
     } else if (growth != null && (tile.id == 'A3' || tile.id == 'A4')) {
       body = _breakdownBody(growth);
     } else if (tile.id == 'C4' && goals != null) {
       body = _goalBody(goals!);
+    } else if (tile.id == 'C5' && goals != null) {
+      body = _unplannedBody(goals!);
     } else if (supply != null && tile.id == 'B2') {
       body = _balanceBody(supply);
     } else if (growth != null && tile.id == 'A6') {
@@ -1750,9 +1756,7 @@ class _StatisticsTile extends StatelessWidget {
     } else if (supply != null && _isSupplyChart) {
       body = _supplyBody(supply);
     } else {
-      body = const Center(
-        child: Text(statisticsTilePendingText, maxLines: 1, style: _mutedStyle),
-      );
+      body = _empty('—');
     }
     return WidgetTile(
       padding: EdgeInsets.fromLTRB(
@@ -1967,6 +1971,55 @@ class _StatisticsTile extends StatelessWidget {
               : StatisticsGrowthGroupSelection(
                   StatisticsGroupSelection(group, value),
                 ),
+        ),
+      ),
+    );
+  }
+
+  /// A5 내용(FE7-i). 자료가 없으면 '—', 보유 학생 0이면 A1과 같은 빈 상태, 스킬 · 장비 값을 아는 학생이 없으면 그
+  /// 문구다.
+  Widget _matrixBody(StatisticsGrowthView view) {
+    final data = view.growth;
+    final matrix = view.breakdown?.matrix;
+    if (data == null || matrix == null) return _empty('—');
+    if (data.ownedCount == 0) return _empty(statisticsGrowthNoStudentsText);
+    if (!matrix.hasValues) {
+      return _empty(statisticsGrowthNoKnownText('스킬 · 장비', data.ownedCount));
+    }
+    final onSelectionChanged = view.onSelectionChanged;
+    return _chart(
+      StatisticsSkillMatrixChart(
+        matrix: matrix,
+        selected: switch (view.selection) {
+          StatisticsGrowthMatrixSelection(:final cell) => cell,
+          _ => null,
+        },
+        onCellSelected: (cell) => onSelectionChanged?.call(
+          cell == null ? null : StatisticsGrowthMatrixSelection(cell),
+        ),
+      ),
+    );
+  }
+
+  /// C5 내용(FE7-i). 읽는 중 · 성장 자료 없음 '—', 보유 학생 0이면 A1과 같은 빈 상태, 편성 · 육성도를 아는 학생이 없으면
+  /// 육성도 문구다. 계획(목표)이 없어도 그린다(모든 점이 미계획).
+  Widget _unplannedBody(StatisticsSupplyView view) {
+    final strip = view.unplanned;
+    if (loading || strip == null) return _empty('—');
+    final owned = strip.dots.length + strip.unknownCount;
+    if (owned == 0) return _empty(statisticsGrowthNoStudentsText);
+    if (strip.dots.isEmpty) {
+      return _empty(
+        statisticsGrowthNoKnownText(StatisticsGrowthMetric.growth.label, owned),
+      );
+    }
+    final onSelectionChanged = view.onSelectionChanged;
+    return _chart(
+      StatisticsUnplannedStripChart(
+        strip: strip,
+        selected: view.unplannedSelected,
+        onBandSelected: (selected) => onSelectionChanged?.call(
+          selected ? const StatisticsUnplannedSelection() : null,
         ),
       ),
     );
@@ -2250,9 +2303,13 @@ class _EvidenceSection extends StatelessWidget {
     final notice = data.notice;
     // 학생 성장에서 구간 · 항목을 고르면 머리 · 부제 · 근거 목록(FE7-b), 인벤토리 · 계획에서 막대 · 행 · 점을 고르면 재화 ·
     // 학생 근거(FE7-c). 읽기 상태 안내가 있으면 안내가 먼저다.
+    // C5 구간(FE7-i)은 계획 주제에서도 성장 근거 틀이다.
+    final unplannedEvidence = mode == StatisticsMode.plan && notice == null
+        ? supply.unplannedEvidence
+        : null;
     final growthEvidence = mode == StatisticsMode.students && notice == null
         ? growth.evidence
-        : null;
+        : unplannedEvidence;
     final supplyEvidence = mode != StatisticsMode.students && notice == null
         ? supply.evidence
         : null;
@@ -2367,8 +2424,12 @@ class _EvidenceSection extends StatelessWidget {
           ...statisticsGrowthEvidenceChildren(
             frame: frame,
             content: growthEvidence,
-            expanded: growth.expanded,
-            onExpand: growth.onExpand,
+            expanded: unplannedEvidence != null
+                ? supply.expanded
+                : growth.expanded,
+            onExpand: unplannedEvidence != null
+                ? supply.onExpand
+                : growth.onExpand,
           ),
         if (supplyEvidence != null)
           ...statisticsSupplyEvidenceChildren(

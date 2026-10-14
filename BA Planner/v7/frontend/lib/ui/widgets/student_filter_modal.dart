@@ -605,6 +605,10 @@ class _FilterHeader extends StatelessWidget {
   /// 바뀌지 않는다).
   static const compactWidth = 1000.0;
 
+  /// 띠 안쪽 폭이 이보다 좁으면(800×600 등, FE7-e 발견 2) 간격을 줄이고 오른쪽 버튼 묶음(추가 버튼 · 초기화 · 적용)을
+  /// 남는 자리에 맞춰 함께 줄인다. 기준 viewport · 1280×720은 이보다 넓어 모습이 같다.
+  static const tightWidth = 640.0;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -617,6 +621,36 @@ class _FilterHeader extends StatelessWidget {
       );
       final stripPad = diagonalCutDepth(stripHeight) + 10;
       final compact = strip.width - 2 * stripPad < compactWidth;
+      final tight = strip.width - 2 * stripPad < tightWidth;
+      final buttons = <Widget>[
+        if (action case final action?) ...[
+          const SizedBox(width: 10),
+          if (compact && !tight)
+            Flexible(
+              child: FittedBox(fit: BoxFit.scaleDown, child: action),
+            )
+          else
+            action,
+        ],
+        // 필터 프리셋 칩은 숨긴다(FD-074 (b): 영속 저장 범위 밖).
+        const SizedBox(width: 10),
+        TonalButton(
+          key: const ValueKey('student-filter-reset'),
+          label: '초기화',
+          icon: Icons.restart_alt_rounded,
+          horizontalPadding: 14,
+          onPressed: onReset,
+        ),
+        const SizedBox(width: 10),
+        TonalButton(
+          key: const ValueKey('student-filter-apply'),
+          label: '적용',
+          icon: Icons.check_rounded,
+          variant: TonalButtonVariant.primary,
+          horizontalPadding: 18,
+          onPressed: onApply,
+        ),
+      ];
       return SectionSurface(
         clipper: const _ParallelogramClipper(radius: 14),
         fill: studentFilterPanelFill,
@@ -671,7 +705,7 @@ class _FilterHeader extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(width: 20),
+                    SizedBox(width: tight ? 10 : 20),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -701,7 +735,7 @@ class _FilterHeader extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 18),
+                    SizedBox(width: tight ? 8 : 18),
                     SizedBox(
                       width: 1,
                       height: 30,
@@ -709,7 +743,7 @@ class _FilterHeader extends StatelessWidget {
                         color: AppColors.textMuted.withValues(alpha: 0.25),
                       ),
                     ),
-                    const SizedBox(width: 18),
+                    SizedBox(width: tight ? 8 : 18),
                     Expanded(
                       child: ClipRect(
                         child: SingleChildScrollView(
@@ -734,36 +768,21 @@ class _FilterHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (action case final action?) ...[
-                      const SizedBox(width: 10),
-                      if (compact)
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: action,
+                    if (tight)
+                      Flexible(
+                        flex: 3,
+                        child: FittedBox(
+                          key: const ValueKey('student-filter-modal-tight'),
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: buttons,
                           ),
-                        )
-                      else
-                        action,
-                    ],
-                    // 필터 프리셋 칩은 숨긴다(FD-074 (b): 영속 저장 범위 밖).
-                    const SizedBox(width: 10),
-                    TonalButton(
-                      key: const ValueKey('student-filter-reset'),
-                      label: '초기화',
-                      icon: Icons.restart_alt_rounded,
-                      horizontalPadding: 14,
-                      onPressed: onReset,
-                    ),
-                    const SizedBox(width: 10),
-                    TonalButton(
-                      key: const ValueKey('student-filter-apply'),
-                      label: '적용',
-                      icon: Icons.check_rounded,
-                      variant: TonalButtonVariant.primary,
-                      horizontalPadding: 18,
-                      onPressed: onApply,
-                    ),
+                        ),
+                      )
+                    else
+                      ...buttons,
                     const SizedBox(width: 10),
                     KitPressable(
                       key: const ValueKey('student-filter-close'),

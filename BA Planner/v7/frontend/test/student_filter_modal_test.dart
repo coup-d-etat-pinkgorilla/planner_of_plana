@@ -61,8 +61,9 @@ Future<StudentFilterController> _pumpLayout(
   WidgetTester tester, {
   List<StudentCatalogEntry>? students,
   ValueChanged<int>? onOpenFilter,
+  Size size = const Size(2560, 1392),
 }) async {
-  tester.view.physicalSize = const Size(2560, 1392);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final search = TextEditingController();
@@ -77,8 +78,8 @@ Future<StudentFilterController> _pumpLayout(
         body: Align(
           alignment: Alignment.bottomLeft,
           child: SizedBox(
-            width: 2560,
-            height: 1208,
+            width: size.width,
+            height: size.height - 184,
             child: StudentSectionLayout(
               students: students ?? _students,
               ownedIds: const {'aru', 'noa', 'jp'},
@@ -467,5 +468,48 @@ void main() {
     expect(tester.takeException(), isNull);
     // 의미 구조 핸들은 테스트 본문 끝에서 닫는다. addTearDown은 끝 검사보다 늦게 돈다.
     semantics.dispose();
+  });
+
+  // FE7-i(FE7-e 발견 2): 800×600에서 모달 머리 · 범위 행이 넘치지 않는다. 좁은 창에서만 머리 간격을 줄이고 오른쪽 버튼
+  // 묶음을 함께 줄이며(키 `student-filter-modal-tight`), 범위 행은 이름 · 값 칸을 줄인다. 기준 viewport · 1280×720은
+  // 그대로다(줄임 묶음 없음).
+  testWidgets('800×600: header and range rows do not overflow', (tester) async {
+    for (final size in const [Size(2560, 1392), Size(1280, 720)]) {
+      await _pumpLayout(tester, size: size);
+      await _openWithS1(tester);
+      expect(
+        find.byKey(const ValueKey('student-filter-modal-tight')),
+        findsNothing,
+        reason: '$size',
+      );
+      expect(tester.takeException(), isNull, reason: '$size');
+      await tester.tap(find.byKey(const ValueKey('student-filter-close')));
+      await _frames(tester);
+    }
+    final filter = await _pumpLayout(tester, size: const Size(800, 600));
+    filter.toggleCatalog('school', 'Gehenna');
+    filter.toggleCatalog('school', 'Millennium');
+    await tester.pump();
+    await _openWithS1(tester);
+    expect(
+      find.byKey(const ValueKey('student-filter-modal-tight')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    // 줄인 버튼도 화면 안에 있고 누를 수 있다.
+    final apply = tester.getRect(
+      find.byKey(const ValueKey('student-filter-apply')),
+    );
+    expect(apply.right, lessThanOrEqualTo(800));
+    expect(apply.left, greaterThanOrEqualTo(0));
+    await tester.tap(
+      find.byKey(const ValueKey('student-filter-chip-school-Trinity')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('student-filter-apply')));
+    await _frames(tester);
+    expect(find.byKey(_modal), findsNothing);
+    expect(filter.applied.isSelected('school', 'Trinity'), isTrue);
+    expect(tester.takeException(), isNull);
   });
 }

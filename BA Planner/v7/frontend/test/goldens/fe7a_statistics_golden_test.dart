@@ -4,7 +4,7 @@
 // 앱 셸 → 통계 탭(기본 주제 "학생 성장"). Mock 기본 계정의 계정 상태 · 학생 목록을 시안 숫자 fixture
 // (`statistics_growth_fixture.dart`: 보유 128 / 170, 60~70% 구간 22명, 평균 63.4%, 최대 레벨 64명, 계획 등록 9명)로
 // 바꿔 사용자가 캔버스와 같은 숫자로 비교하게 한다. 구간을 고르지 않은 상태라 근거 패널은 빈 상태 문구다.
-// 기준 데이터 · 증감은 '—', A3 · A4 · A5 · A6은 "준비 중"이다(FD-106 사용자 결정 10-13).
+// 기준 데이터 · 증감은 '—', A3 · A4 · A5 · A6은 "준비 중"이다(FD-106 사용자 결정 10-13 — FE7-f · FE7-h · FE7-i가 채웠다).
 // FE7-c: 같은 계정 위에 인벤토리 목록 · 계정 인벤토리 · 부족 계산을 시안 숫자 fixture(`statistics_supply_fixture.dart`)로
 // 바꾼 두 장면을 더한다. 장면 조작은 같고(앱 셸 → 통계 탭) 주제 버튼만 누른다. 고른 것이 없어 근거 패널은 빈 상태 문구다.
 // - `statistics-inventory`: KPI 72% · 14종 · 6종 · 3 / 6 · 1종 엘레프, B1 78 · 64 · 91 · 52 · 47 · 빗금, B2 · B3 "준비 중".
@@ -26,6 +26,9 @@
 // - `statistics-growth-filter`(시안 Stats-Growth-Filter): 위에서 "적용". 왼쪽 분홍 "필터 · 2 · 18 / 128명" + 적용 칩 줄,
 //   머리 칩 "필터: 밀레니엄 · 스트라이커" · "18명 기준", KPI "대상 학생 18 / 128", A4 빈 상태(학교 하나), A1 · A2 · A6는 대상
 //   학생 18명 값이다(이 fixture는 스냅샷 6회라 A6는 꺾은선이다 — 시안은 1회 문구).
+// FE7-i: 3차 타일 A5 · C5가 그려진다(fixture 입력 · 장면 조작 그대로, "준비 중" 타일 없음). `statistics-growth` ·
+// `statistics-filter-open` 배경의 A5는 보유 128명 매트릭스, `statistics-growth-filter`의 A5는 대상 18명 매트릭스,
+// `statistics-plan`의 C5는 편성별 점 스트립 + "미계획 · 40% 미만 n명"(KPI와 같은 수)이다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens

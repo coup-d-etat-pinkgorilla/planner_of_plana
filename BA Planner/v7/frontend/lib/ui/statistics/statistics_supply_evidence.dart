@@ -28,6 +28,8 @@
 // - C4 행(FE7-f): 머리 "<학생>" + 남은 폭 칩("남은 35%p" 분홍, 모르면 '—'), 초상 행(부제 "C4에서 고른 학생 · 현재 →
 //   목표"), 현재 · 목표 육성도 · 남은 폭 세 줄, "항목별 · 현재 → 목표" 항목 행(FD-028 7항목, 애장품 없는 학생은 6). 모르는
 //   값은 '—'다.
+// - C5 구간(FE7-i, 미계획 · 40% 미만): 학생 성장 근거와 같은 틀([statisticsUnplannedEvidence], 초상 · 이름 · Lv · "낮음"
+//   칩 + "나머지 n명 모두 보기" + "구간 요약")이다. [StatisticsSupplyView.unplannedEvidence]가 내고 재화 근거는 없다.
 // 원본 탭 이동(아래 두 버튼)은 FE7-d(`statistics_page.dart`)다.
 import 'dart:math' as math;
 
@@ -39,6 +41,7 @@ import '../../statistics/statistics_goal_projection.dart';
 import '../../statistics/statistics_growth_projection.dart';
 import '../../statistics/statistics_history_projection.dart'
     show statisticsSignedAmount;
+import '../../statistics/statistics_matrix_projection.dart';
 import '../../statistics/statistics_plan_projection.dart';
 import '../../statistics/statistics_supply_projection.dart';
 import '../geometry/diagonal_geometry.dart';
@@ -116,6 +119,17 @@ final class StatisticsGoalSelection extends StatisticsSupplySelection {
   int get hashCode => studentId.hashCode;
 }
 
+/// C5 고른 구간(미계획 · 40% 미만, FE7-i). 구간이 하나라 값이 없다.
+final class StatisticsUnplannedSelection extends StatisticsSupplySelection {
+  const StatisticsUnplannedSelection();
+
+  @override
+  bool operator ==(Object other) => other is StatisticsUnplannedSelection;
+
+  @override
+  int get hashCode => (StatisticsUnplannedSelection).hashCode;
+}
+
 /// 근거 학생 한 명(이름 · 레벨). 학생 목록에 없으면 이름 = id, 보유하지 않았으면 레벨 null.
 typedef StatisticsEvidenceStudent = ({String id, String name, int? level});
 
@@ -157,7 +171,21 @@ class StatisticsSupplyView {
     this.goals,
     this.stageUses,
     this.recent,
+    this.unplanned,
   });
+
+  /// C5 미계획 학생(FE7-i, 전체 성장 — FD-104). 성장을 못 읽었으면 null.
+  final StatisticsUnplannedStrip? unplanned;
+
+  /// C5 구간을 골랐는가.
+  bool get unplannedSelected => selection is StatisticsUnplannedSelection;
+
+  /// C5 구간 근거(학생 성장 근거와 같은 틀). 고르지 않았거나 자료가 없으면 null.
+  StatisticsGrowthEvidenceContent? get unplannedEvidence {
+    final strip = unplanned;
+    if (!unplannedSelected || strip == null) return null;
+    return statisticsUnplannedEvidence(strip.low);
+  }
 
   /// B2 seg(FE7-f)와 바꾸는 콜백.
   final StatisticsB2Order b2Order;
@@ -243,7 +271,7 @@ class StatisticsSupplyView {
     }
     if (supply == null || selection == null) return null;
     switch (selection) {
-      case StatisticsGoalSelection():
+      case StatisticsGoalSelection() || StatisticsUnplannedSelection():
         return null;
       case StatisticsCategorySelection(:final category):
         final fill = supply.category(category);

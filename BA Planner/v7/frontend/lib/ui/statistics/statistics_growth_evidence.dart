@@ -9,6 +9,8 @@
 // FE7-f: A3 단계(성작 ★n · 전용무기 단계)와 A4 점(학교 · 역할)을 고르면 같은 틀이다. 머리는 "성작 ★3" · "<학교>",
 // 부제 "A3에서 고른 단계 · 낮은 항목 순" · "A4에서 고른 학교 · 낮은 항목 순", 행 칩은 A1과 같은 "낮음" 칩, 요약은 A3
 // "단계 요약"(A1 구간 요약과 같은 세 줄) · A4 "학교 요약"(보유율 n% · 보유 / 학생 목록, 평균 육성도, 계획 등록)이다.
+// FE7-i: A5 칸(행 · 레벨 구간)을 고르면 같은 틀이다. 머리 "EX 스킬 1–3" · "장비 T7–8", 부제 "A5에서 고른 칸 · 낮은
+// 항목 순", 요약 "칸 요약"(A1 구간 요약과 같은 세 줄).
 // 원본 탭 이동(아래 버튼 · 학생 탭 임시 목록)은 FE7-d(`statistics_page.dart`)다. 펼친 목록 · "모두 보기" 버튼은 재화 근거
 // "외 n종 · 외 n명"(FE7-d)도 같이 쓴다([statisticsEvidenceList] · [StatisticsEvidenceMoreButton]).
 import 'dart:math' as math;
@@ -18,6 +20,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../statistics/statistics_breakdown_projection.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_matrix_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
 import '../kit/diagonal_row.dart';
@@ -94,6 +97,20 @@ final class StatisticsGrowthGroupSelection extends StatisticsGrowthSelection {
   int get hashCode => group.hashCode;
 }
 
+/// A5 칸(스킬 · 장비 레벨 구간, FE7-i).
+final class StatisticsGrowthMatrixSelection extends StatisticsGrowthSelection {
+  const StatisticsGrowthMatrixSelection(this.cell);
+
+  final StatisticsMatrixCell cell;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatisticsGrowthMatrixSelection && other.cell == cell;
+
+  @override
+  int get hashCode => cell.hashCode;
+}
+
 /// 성장 주제 화면 상태(페이지가 들고 있다)와 바꾸는 콜백.
 @immutable
 class StatisticsGrowthView {
@@ -151,6 +168,15 @@ class StatisticsGrowthView {
           subtitle: 'A3에서 고른 단계 · 낮은 항목 순',
           students: students,
           summaryTitle: '단계 요약',
+        );
+      case StatisticsGrowthMatrixSelection(:final cell):
+        final matrix = breakdown?.matrix;
+        if (matrix == null || !cell.row.appliesTo(cell.column)) return null;
+        return _rangeEvidence(
+          title: cell.title,
+          subtitle: 'A5에서 고른 칸 · 낮은 항목 순',
+          students: matrix[cell],
+          summaryTitle: '칸 요약',
         );
       case StatisticsGrowthGroupSelection(:final group):
         final point = breakdown?.comparison(group.group)[group.value];
@@ -237,6 +263,46 @@ StatisticsGrowthEvidenceContent _rangeEvidence({
             : '${lowest.item.label} ${statisticsPercentText(lowest.value)}',
       ),
       ('planned', '계획 등록', '${summary.plannedCount}명'),
+    ],
+  );
+}
+
+/// C5 고른 구간(미계획 · 40% 미만, FE7-i) 근거: 머리 "미계획 · 40% 미만", 부제 "C5에서 고른 구간 · 육성도 낮은 순",
+/// 행 칩은 A1과 같은 "낮음" 칩, 요약 "구간 요약"은 평균 레벨 · 가장 낮은 항목 · 평균 육성도다(계획 등록은 늘 0명이라 뺀다).
+/// [students]는 이미 육성도 낮은 순이다.
+StatisticsGrowthEvidenceContent statisticsUnplannedEvidence(
+  List<StatisticsStudentGrowth> students,
+) {
+  final summary = StatisticsGrowthSummary.of(students);
+  final lowest = summary.lowestItem;
+  final known = [
+    for (final student in students) ?student.growth,
+  ];
+  return StatisticsGrowthEvidenceContent(
+    title: '미계획 · 40% 미만',
+    subtitle: 'C5에서 고른 구간 · 육성도 낮은 순',
+    students: students,
+    chipOf: _flagChip,
+    summaryTitle: '구간 요약',
+    summary: [
+      ('level', '평균 레벨', _levelText(summary.averageLevel)),
+      (
+        'lowest',
+        '가장 낮은 항목',
+        lowest == null
+            ? '—'
+            : '${lowest.item.label} ${statisticsPercentText(lowest.value)}',
+      ),
+      (
+        'growth',
+        '평균 육성도',
+        known.isEmpty
+            ? '—'
+            : statisticsPercentText(
+                known.fold<double>(0, (sum, value) => sum + value) /
+                    known.length,
+              ),
+      ),
     ],
   );
 }

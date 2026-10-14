@@ -503,8 +503,8 @@ void main() {
       );
     });
 
-    // 모달은 1280×720까지 넘침 없이 연다(800×600은 공용 모달 자체가 좁다 — status FE7-e 발견 사항). 적용한 화면은
-    // 1280×720 · 1440×900 · 800×600에서 넘침이 없다.
+    // 모달은 1280×720까지 넘침 없이 연다(800×600은 아래 FE7-i 테스트). 적용한 화면은 1280×720 · 1440×900 · 800×600에서
+    // 넘침이 없다.
     testWidgets('applied filter fits 1280×720 (modal) and smaller windows', (
       tester,
     ) async {
@@ -536,6 +536,41 @@ void main() {
         expect(tester.takeException(), isNull, reason: '$size');
       }
     });
+  });
+
+  // FE7-i(FE7-e 발견 2): 통계 모달도 800×600에서 머리(보조 문구 · "학생 탭 필터 불러오기" 포함) · 범위 행이 넘치지 않는다.
+  // 좁은 창에서만 오른쪽 버튼 묶음을 줄인다(1280×720은 FE7-e 압축 머리 그대로).
+  testWidgets('statistics modal fits 800×600 (FE7-i)', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _FilterService();
+    addTearDown(service.dispose);
+    final studentFilter = StudentFilterController();
+    addTearDown(studentFilter.dispose);
+    await tester.pumpWidget(_subject(service, studentFilter: studentFilter));
+    await tester.pumpAndSettle();
+    await _openModal(tester);
+    expect(
+      find.byKey(const ValueKey('statistics-filter-modal')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('student-filter-modal-tight')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await _tap(tester, 'student-filter-chip-school-Millennium');
+    await _tap(tester, 'student-filter-chip-combat_class-striker');
+    expect(tester.takeException(), isNull);
+    final import = tester.getRect(
+      find.byKey(const ValueKey('statistics-filter-import')),
+    );
+    expect(import.left, greaterThanOrEqualTo(0));
+    expect(import.right, lessThanOrEqualTo(800));
+    await _tap(tester, 'student-filter-apply');
+    await tester.pumpAndSettle();
+    expect(_workspace(tester).filter.applied, isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

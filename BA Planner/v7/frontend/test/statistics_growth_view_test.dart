@@ -178,9 +178,8 @@ void main() {
       }
       expect(find.text('보유 128명 기준 · 지난 스냅샷 대비'), findsOneWidget);
       expect(find.text('없음 · 보유 128명 전체'), findsOneWidget);
-      // 그리지 않는 타일은 "준비 중" 자리를 유지한다(FD-106 사용자 결정 10-13). A6은 FE7-h, A3 · A4는 FE7-f 그래프
-      // 자리다. 남은 것은 A5(FE7-i)뿐이다.
-      expect(find.text(statisticsTilePendingText), findsOneWidget);
+      // FE7-i: A5까지 그래프라 "준비 중" 타일은 없다(FD-106). A6은 FE7-h, A3 · A4는 FE7-f, A5는 FE7-i 그래프 자리다.
+      expect(find.text('준비 중'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -410,8 +409,8 @@ void main() {
     tester,
   ) async {
     await _pump(tester, empty: true);
-    // A1 · A2 · A3 · A4(FE7-f)가 같은 빈 상태다.
-    expect(find.text(statisticsGrowthNoStudentsText), findsNWidgets(4));
+    // A1 · A2 · A3 · A4(FE7-f) · A5(FE7-i)가 같은 빈 상태다.
+    expect(find.text(statisticsGrowthNoStudentsText), findsNWidgets(5));
     final value = tester.widget<KpiTile>(
       find.descendant(
         of: find.byKey(const ValueKey('statistics-kpi-growth-1')),

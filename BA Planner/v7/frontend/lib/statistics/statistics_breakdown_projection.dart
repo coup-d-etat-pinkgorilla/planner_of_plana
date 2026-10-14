@@ -12,10 +12,12 @@
 //     없으면 평균 육성도는 KPI "평균 육성도"와 같다.
 //   - 학교의 협업 값(Sakugawa · Tokiwadai)은 학생 탭 필터 칩과 같이 그룹으로 세지 않는다.
 //   - 빈 상태(시안 Stats-Growth-Filter, FE7-e 발견 3): 통계 필터가 걸렸고 대상 학생의 고른 seg 값이 하나 이하.
+// FE7-i: A5 스킬 · 장비 매트릭스(`statistics_matrix_projection.dart`)도 같은 학생으로 함께 만든다([StatisticsGrowthBreakdown.matrix]).
 import 'package:flutter/foundation.dart';
 
 import '../services/app_service.dart';
 import 'statistics_growth_projection.dart';
+import 'statistics_matrix_projection.dart';
 
 /// A3 단계 종류.
 enum StatisticsStarKind {
@@ -364,6 +366,7 @@ class StatisticsGroupSelection {
 class StatisticsGrowthBreakdown {
   StatisticsGrowthBreakdown._({
     required this.stars,
+    required this.matrix,
     required Map<StatisticsA4Group, StatisticsGroupComparison> comparisons,
   }) : _comparisons = Map.unmodifiable(comparisons);
 
@@ -372,6 +375,7 @@ class StatisticsGrowthBreakdown {
     List<StudentCatalogEntry>? catalog,
   ) => StatisticsGrowthBreakdown._(
     stars: StatisticsStarDistribution.of(growth),
+    matrix: StatisticsSkillMatrix.of(growth),
     comparisons: {
       for (final group in StatisticsA4Group.values)
         group: StatisticsGroupComparison.of(growth, catalog, group),
@@ -379,6 +383,9 @@ class StatisticsGrowthBreakdown {
   );
 
   final StatisticsStarDistribution stars;
+
+  /// A5 스킬 · 장비 매트릭스(같은 학생, FE7-i).
+  final StatisticsSkillMatrix matrix;
   final Map<StatisticsA4Group, StatisticsGroupComparison> _comparisons;
 
   StatisticsGroupComparison comparison(StatisticsA4Group group) =>
