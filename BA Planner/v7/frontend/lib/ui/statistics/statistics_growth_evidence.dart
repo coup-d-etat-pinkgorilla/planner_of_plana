@@ -28,6 +28,7 @@ import '../kit/diagonal_scrollbar.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/portrait_strip.dart';
 import '../kit/scroll_viewport_fog.dart';
+import '../kit/section_frame.dart';
 import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
 import 'statistics_breakdown_charts.dart' show statisticsGroupLabel;
@@ -379,34 +380,6 @@ class StatisticsEvidenceFrame {
   }
 }
 
-/// [scale]이 1보다 작으면 시안 크기로 배치한 뒤 같은 비율로 줄인다(근거 섹션 요소 공통).
-class StatisticsScaledBox extends StatelessWidget {
-  const StatisticsScaledBox({
-    super.key,
-    required this.scale,
-    required this.child,
-  });
-
-  final double scale;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (scale >= 1) return child;
-    return LayoutBuilder(
-      builder: (context, constraints) => FittedBox(
-        fit: BoxFit.fill,
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: constraints.maxWidth / scale,
-          height: constraints.maxHeight / scale,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 /// 아주 좁은 창에서 행 내용을 배치하는 최소 폭(초상 · 이름 · Lv · 칩). 더 좁으면 오른쪽을 자른다(넘침 예외 대신,
 /// 통계 왼쪽 섹션 행과 같은 규칙).
 const _rowContentMinWidth = 240.0;
@@ -483,7 +456,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
                 StatisticsMetrics.evidenceRowPitch * index,
             StatisticsMetrics.evidenceRowHeight,
           ),
-          child: StatisticsScaledBox(
+          child: SectionScaledBox(
             scale: scale,
             child: StatisticsEvidenceStudentRow(
               key: ValueKey('statistics-evidence-row-${student.studentId}'),
@@ -503,7 +476,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
                 StatisticsMetrics.evidenceRowPitch * visible,
             StatisticsMetrics.evidenceMoreHeight,
           ),
-          child: StatisticsScaledBox(
+          child: SectionScaledBox(
             scale: scale,
             child: StatisticsEvidenceMoreButton(
               key: const ValueKey('statistics-evidence-more'),
@@ -530,7 +503,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
         frame.right - StatisticsMetrics.evidenceTitleRight - titleLeft,
       ),
       height: titleHeight,
-      child: StatisticsScaledBox(
+      child: SectionScaledBox(
         scale: scale,
         child: Align(
           alignment: Alignment.centerLeft,
@@ -550,7 +523,7 @@ List<Widget> statisticsGrowthEvidenceChildren({
               StatisticsMetrics.evidenceSummaryPitch * index,
           StatisticsMetrics.evidenceSummaryHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _SummaryRow(
             rowKey: 'statistics-evidence-summary-$key',
@@ -894,7 +867,7 @@ class _EvidenceListState extends State<_EvidenceList> {
                     top: top,
                     width: math.max(0.0, right - left),
                     height: rowHeight,
-                    child: StatisticsScaledBox(
+                    child: SectionScaledBox(
                       scale: scale,
                       child: widget.itemBuilder(index),
                     ),

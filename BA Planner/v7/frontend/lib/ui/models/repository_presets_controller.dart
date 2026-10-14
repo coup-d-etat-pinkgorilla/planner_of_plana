@@ -14,6 +14,7 @@
 //   ([planElementPresetFromRepository]).
 import 'package:flutter/foundation.dart';
 
+import '../../services/idempotency_keys.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendRemoteException;
 import '../../services/repository_service.dart';
@@ -97,7 +98,6 @@ class RepositoryPresetsController extends ChangeNotifier {
   _Edit? _pendingEdit;
   _Edit? _conflicted;
   int _loadNumber = 0;
-  int _keyNumber = 0;
   bool _disposed = false;
 
   bool get available => service is RepositoryPresetsService;
@@ -420,7 +420,7 @@ class RepositoryPresetsController extends ChangeNotifier {
   }
 
   String _newKey() =>
-      'presets-$profileId-${_clock().microsecondsSinceEpoch}-${++_keyNumber}';
+      newIdempotencyKey('presets-$profileId', now: _clock());
 
   String _newId(String prefix, Set<String> used) {
     var number = _clock().microsecondsSinceEpoch;

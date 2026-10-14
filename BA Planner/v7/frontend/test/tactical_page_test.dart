@@ -323,6 +323,8 @@ void main() {
           findsOneWidget,
         );
         expect(_text(tester, 'tactical-editor-header'), '새 공격 기록');
+        // tidy2: 시즌을 모르면(기록 없음 → 새 초안 시즌 '') 시즌 칩은 '—'다.
+        expect(find.text('시즌 —'), findsOneWidget);
         expect(
           _text(tester, 'tactical-editor-status'),
           tacticalNeedOpponentHint,
@@ -632,6 +634,41 @@ void main() {
   });
 
   group('v1 migration', () {
+    testWidgets('a legacy record without a season shows the season chip as —', (
+      tester,
+    ) async {
+      // tidy2(FE9-a "시즌 0" 후보): v1 기록의 시즌이 비어 있으면(이관 기록도 v1 시즌을 그대로 옮긴다) '—'다.
+      final service = MockAppService(fullStudentCatalog: true);
+      addTearDown(service.dispose);
+      await service.saveTacticalMatch(
+        _profileId,
+        TacticalMatch(
+          id: 'legacy-no-season',
+          kind: 'attack',
+          occurredOn: '2026-07-23',
+          season: '',
+          opponent: '옛 상대',
+          result: 'win',
+          attackDeck: TacticalDeck(
+            strikers: const ['aru', null, null, null],
+            specials: const ['ayane', null],
+          ),
+          defenseDeck: TacticalDeck.empty(),
+          notes: '',
+        ),
+        0,
+        'legacy-no-season-seed',
+      );
+      await _pump(tester, service);
+      expect(
+        _text(tester, 'tactical-editor-header'),
+        '공격 기록 · 2026-07-23',
+      );
+      expect(find.text('시즌 —'), findsOneWidget);
+      expect(find.textContaining('시즌 0'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('legacy records stay read-only until 가져오기', (tester) async {
       final service = _RecordingService();
       addTearDown(service.dispose);

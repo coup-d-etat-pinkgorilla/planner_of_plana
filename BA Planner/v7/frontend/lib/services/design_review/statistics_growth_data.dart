@@ -220,12 +220,64 @@ List<Map<String, dynamic>> statisticsGrowthFixtureStudentsWire() => [
     },
 ];
 
+/// 계획 학생별 목표(레벨 90 위에 더하는 키). tidy2(FE7-f 발견 2): 레벨 목표만으로는 C4 남은 폭이 0~10%p라 시안 C4처럼
+/// 스킬 · 장비 · 성작 목표를 더해 덤벨이 보이게 했다(C4 위 다섯 행: 아카네 40 → 88% · 아루 40 → 77% · 호시노 10 → 40% ·
+/// 에이미 70 → 86% · 코유키 80 → 90%). 목표 값은 C4(목표 육성도)만 읽는다 — 다른 통계는 계획 학생 id만 쓰고, 부족 · 계획
+/// 계산은 검수 fixture가 따로 준다.
+const statisticsGrowthFixtureGoalTargets = <String, Map<String, int>>{
+  'akane': {
+    'target_ex_skill': 5,
+    'target_skill1': 10,
+    'target_skill2': 10,
+    'target_skill3': 10,
+    'target_equip1_tier': 8,
+    'target_equip2_tier': 8,
+    'target_equip3_tier': 8,
+    'target_star': 5,
+    'target_weapon_star': 2,
+  },
+  'aru': {
+    'target_ex_skill': 5,
+    'target_skill1': 10,
+    'target_skill2': 10,
+    'target_skill3': 10,
+    'target_equip1_tier': 9,
+    'target_equip2_tier': 9,
+    'target_equip3_tier': 9,
+    'target_equip4_tier': 2,
+    'target_star': 3,
+  },
+  'hoshino': {
+    'target_ex_skill': 3,
+    'target_skill1': 7,
+    'target_skill2': 7,
+    'target_skill3': 7,
+    'target_equip1_tier': 6,
+    'target_equip2_tier': 6,
+    'target_equip3_tier': 6,
+  },
+  'eimi': {
+    'target_ex_skill': 5,
+    'target_skill2': 10,
+    'target_skill3': 10,
+    'target_star': 5,
+    'target_weapon_star': 1,
+  },
+  'hina': {'target_ex_skill': 5, 'target_star': 4},
+  'koyuki': {'target_star': 5, 'target_weapon_star': 2},
+  'aris': {'target_weapon_star': 2},
+};
+
 /// 사용자 목표 wire(계정 상태 `goals`).
 Map<String, dynamic> statisticsGrowthFixtureGoalsWire() => {
   'version': 1,
   'goals': [
     for (final id in statisticsGrowthFixturePlannedIds)
-      {'student_id': id, 'target_level': 90},
+      {
+        'student_id': id,
+        'target_level': 90,
+        ...?statisticsGrowthFixtureGoalTargets[id],
+      },
   ],
 };
 

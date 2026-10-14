@@ -52,6 +52,7 @@ import '../kit/ba_chip.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/item_icon_tile.dart';
 import '../kit/portrait_strip.dart';
+import '../kit/section_frame.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/statistics_studio_layout.dart';
@@ -690,7 +691,7 @@ List<Widget> _evidenceRows({
           top + StatisticsMetrics.evidenceRowPitch * index,
           StatisticsMetrics.evidenceRowHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: frame.scale,
           child: itemBuilder(index),
         ),
@@ -701,7 +702,7 @@ List<Widget> _evidenceRows({
           top + StatisticsMetrics.evidenceRowPitch * visible,
           StatisticsMetrics.evidenceMoreHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: frame.scale,
           child: StatisticsEvidenceMoreButton(
             key: const ValueKey('statistics-evidence-rest'),
@@ -751,7 +752,7 @@ List<Widget> _categoryChildren(
               StatisticsMetrics.evidenceSummaryPitch * index,
           StatisticsMetrics.evidenceSummaryHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _FactRow(
             rowKey: 'statistics-evidence-summary-$key',
@@ -790,7 +791,7 @@ List<Widget> _resourceChildren(
         frame.right - StatisticsMetrics.evidenceHeaderRight - headerLeft,
       ),
       height: headerHeight,
-      child: StatisticsScaledBox(
+      child: SectionScaledBox(
         scale: scale,
         child: _ResourceHeader(view: resource, subtitle: content.subtitle),
       ),
@@ -810,7 +811,7 @@ List<Widget> _resourceChildren(
               StatisticsMetrics.evidenceFactPitch * index,
           StatisticsMetrics.evidenceFactHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _FactRow(
             rowKey: 'statistics-evidence-fact-$key',
@@ -911,7 +912,7 @@ List<Widget> _recentChildren(
               StatisticsMetrics.evidenceRecentPitch * index,
           StatisticsMetrics.evidenceRecentHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _FactRow(
             rowKey: 'statistics-evidence-recent-$key',
@@ -972,7 +973,7 @@ List<Widget> _goalChildren(
         frame.right - StatisticsMetrics.evidenceHeaderRight - headerLeft,
       ),
       height: headerHeight,
-      child: StatisticsScaledBox(
+      child: SectionScaledBox(
         scale: scale,
         child: _StudentHeader(
           studentId: goal.studentId,
@@ -988,7 +989,7 @@ List<Widget> _goalChildren(
               StatisticsMetrics.evidenceFactPitch * index,
           StatisticsMetrics.evidenceFactHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _FactRow(
             rowKey: 'statistics-evidence-fact-$key',
@@ -1016,7 +1017,7 @@ List<Widget> _goalChildren(
               StatisticsMetrics.evidenceRowPitch * index,
           StatisticsMetrics.evidenceRowHeight,
         ),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _GoalItemRow(
             label: row.item.label,
@@ -1080,7 +1081,7 @@ List<Widget> _stageChildren(
     children.add(
       Positioned.fromRect(
         rect: frame.row(offset, StatisticsMetrics.evidenceRowHeight),
-        child: StatisticsScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: _StageRow(
             key: ValueKey('statistics-evidence-stage-${item.stage.stageId}'),
@@ -1107,7 +1108,7 @@ List<Widget> _stageChildren(
   children.add(
     Positioned.fromRect(
       rect: frame.row(offset, StatisticsMetrics.evidenceCumulativeHeight),
-      child: StatisticsScaledBox(
+      child: SectionScaledBox(
         scale: scale,
         child: _CumulativeRow(
           phase: stages.first.stage.phase,
@@ -1168,7 +1169,7 @@ Widget _sectionTitle(
       frame.right - StatisticsMetrics.evidenceTitleRight - left,
     ),
     height: height,
-    child: StatisticsScaledBox(
+    child: SectionScaledBox(
       scale: scale,
       child: Align(
         alignment: Alignment.centerLeft,
@@ -1202,7 +1203,7 @@ Widget _moreLine(
 }) =>
     Positioned.fromRect(
       rect: frame.row(offset, StatisticsMetrics.evidenceMoreHeight),
-      child: StatisticsScaledBox(
+      child: SectionScaledBox(
         scale: frame.scale,
         child: Padding(
           padding: EdgeInsets.only(

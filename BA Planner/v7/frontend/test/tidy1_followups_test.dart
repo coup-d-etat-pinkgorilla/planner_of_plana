@@ -190,8 +190,10 @@ void main() {
         for (final key in service.keys)
           int.parse(pattern.firstMatch(key)!.group(2)!),
       ];
+      // tidy2: 순번은 앱 공용 생성기 하나라(프로세스 전체) 1부터가 아니라 앞 key 다음 번호로 이어진다.
       expect(numbers, [
-        for (var index = 1; index <= numbers.length; index++) index,
+        for (var index = 0; index < numbers.length; index++)
+          numbers.first + index,
       ]);
       expect(tester.takeException(), isNull);
     });

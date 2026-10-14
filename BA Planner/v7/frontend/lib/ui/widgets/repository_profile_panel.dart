@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 
 class RepositoryProfilePanel extends StatefulWidget {
@@ -21,8 +22,6 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
   List<RepositoryProfile> _profiles = const [];
   bool _loading = false;
   String? _error;
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
@@ -89,7 +88,7 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
   }
 
   String _key(String action) =>
-      '$action-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}';
+      newIdempotencyKey(action);
 
   Future<void> _create() async {
     final name = await _ask('프로필 만들기');

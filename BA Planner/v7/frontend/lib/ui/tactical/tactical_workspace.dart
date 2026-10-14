@@ -23,11 +23,10 @@ import '../kit/diagonal_scroll_viewport.dart';
 import '../kit/info_popover.dart';
 import '../kit/kit_glyph.dart';
 import '../kit/kit_pressable.dart';
+import '../kit/section_frame.dart';
 import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/skew_controls.dart';
 import '../studio/tactical_studio_layout.dart';
-import '../widgets/section_surface.dart';
-import '../widgets/section_template_surface.dart';
 import 'tactical_deck_widgets.dart';
 import 'tactical_records_view.dart';
 
@@ -222,8 +221,11 @@ class TacticalWorkspace extends StatelessWidget {
       math.max(listLeft, listRight),
       math.max(listTop, listBottom),
     );
-    return _SectionFrame(
-      sectionId: tacticalRecordsSectionId,
+    return SectionFrame(
+      section: tacticalSection(tacticalRecordsSectionId),
+      surfaceKey: const ValueKey(
+        'tactical-section-$tacticalRecordsSectionId',
+      ),
       children: [
         _placed(
           'tactical-slot-records-title',
@@ -354,7 +356,7 @@ class TacticalWorkspace extends StatelessWidget {
       final onRetry = this.onRetry;
       return Align(
         alignment: const Alignment(0, -0.6),
-        child: _Scaled(
+        child: SectionScaledBox(
           scale: scale,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -392,7 +394,7 @@ class TacticalWorkspace extends StatelessWidget {
       scrollbarReserve: TacticalMetrics.rowScrollbarReserve * scale,
       itemBuilder: (context, index) {
         final row = rows[index];
-        return _Scaled(
+        return SectionScaledBox(
           scale: scale,
           child: DiagonalRow(
             key: ValueKey('tactical-record-${row.key}'),
@@ -415,8 +417,9 @@ class TacticalWorkspace extends StatelessWidget {
 
   Widget _lobbySection(Size size, double scale) {
     final edges = _SectionEdges.of(size, tacticalLobbySectionId);
-    return _SectionFrame(
-      sectionId: tacticalLobbySectionId,
+    return SectionFrame(
+      section: tacticalSection(tacticalLobbySectionId),
+      surfaceKey: const ValueKey('tactical-section-$tacticalLobbySectionId'),
       children: [
         _placed(
           'tactical-slot-lobby-title',
@@ -452,8 +455,9 @@ class TacticalWorkspace extends StatelessWidget {
 
   Widget _jokboSection(Size size, double scale) {
     final edges = _SectionEdges.of(size, tacticalJokboSectionId);
-    return _SectionFrame(
-      sectionId: tacticalJokboSectionId,
+    return SectionFrame(
+      section: tacticalSection(tacticalJokboSectionId),
+      surfaceKey: const ValueKey('tactical-section-$tacticalJokboSectionId'),
       children: [
         _placed(
           'tactical-slot-jokbo-title',
@@ -500,8 +504,9 @@ class TacticalWorkspace extends StatelessWidget {
         : '상대 공격 덱 · 공개 슬롯 + 지난 기록';
     final myCaption = draft.attack ? '내 공격 덱 · 위치 포함' : '내 방어 덱 · 위치 포함';
     final season = draft.season.trim();
-    return _SectionFrame(
-      sectionId: tacticalEditorSectionId,
+    return SectionFrame(
+      section: tacticalSection(tacticalEditorSectionId),
+      surfaceKey: const ValueKey('tactical-section-$tacticalEditorSectionId'),
       children: [
         _placed(
           'tactical-slot-editor-header',
@@ -857,7 +862,7 @@ Widget _placed(String key, Rect rect, double scale, Widget child) =>
     Positioned.fromRect(
       key: ValueKey(key),
       rect: rect,
-      child: _Scaled(scale: scale, child: child),
+      child: SectionScaledBox(scale: scale, child: child),
     );
 
 /// 섹션 변(콘텐츠 캔버스 좌표).
@@ -905,93 +910,6 @@ double _edgeX(Offset a, Offset b, double y) {
   if (span == 0) return a.dx;
   final t = ((y - a.dy) / span).clamp(0.0, 1.0).toDouble();
   return a.dx + (b.dx - a.dx) * t;
-}
-
-class _SectionPainter extends CustomPainter {
-  const _SectionPainter(this.sectionId);
-
-  final String sectionId;
-
-  @override
-  void paint(Canvas canvas, Size size) => paintSectionSurface(
-    canvas,
-    buildSectionCanvasElementPath(size, tacticalSection(sectionId)),
-  );
-
-  @override
-  bool shouldRepaint(_SectionPainter oldDelegate) =>
-      oldDelegate.sectionId != sectionId;
-}
-
-class _SectionClipper extends CustomClipper<Path> {
-  const _SectionClipper(this.sectionId);
-
-  final String sectionId;
-
-  @override
-  Path getClip(Size size) =>
-      buildSectionCanvasElementPath(size, tacticalSection(sectionId));
-
-  @override
-  bool shouldReclip(_SectionClipper oldClipper) =>
-      oldClipper.sectionId != sectionId;
-}
-
-/// 섹션 표면 + 섹션 모양으로 자른 내용(통계 섹션과 같은 구성).
-class _SectionFrame extends StatelessWidget {
-  const _SectionFrame({required this.sectionId, required this.children});
-
-  final String sectionId;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned.fill(
-        child: IgnorePointer(
-          child: CustomPaint(
-            key: ValueKey('tactical-section-$sectionId'),
-            painter: _SectionPainter(sectionId),
-          ),
-        ),
-      ),
-      Positioned.fill(
-        child: ClipPath(
-          clipper: _SectionClipper(sectionId),
-          child: Stack(clipBehavior: Clip.none, children: children),
-        ),
-      ),
-    ],
-  );
-}
-
-/// [scale]이 1보다 작으면 [child]를 시안 크기(자리 ÷ scale)로 배치한 뒤 같은 비율로 줄인다.
-class _Scaled extends StatelessWidget {
-  const _Scaled({required this.scale, required this.child});
-
-  final double scale;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (scale >= 1) return child;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
-          return child;
-        }
-        return FittedBox(
-          fit: BoxFit.fill,
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: constraints.maxWidth / scale,
-            height: constraints.maxHeight / scale,
-            child: child,
-          ),
-        );
-      },
-    );
-  }
 }
 
 /// 하위 화면 seg(FD-126 (a)): 기록(지금) · 분석(FE9-e) · 슬롯(FE9-g). 꺼진 칸은 "준비 중" 툴팁.

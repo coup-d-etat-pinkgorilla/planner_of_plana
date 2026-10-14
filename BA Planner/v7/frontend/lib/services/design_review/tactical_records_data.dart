@@ -3,6 +3,8 @@
 // 계정에 v1 기록이 없으므로 첫 v2 기록 저장이 같은 쓰기에서 v2를 유일한 저장소로 만든다(이관 미리보기
 // `v1_writes_disabled` = true). 기록은 시각 정밀도 세 가지(instant · date · unknown)와 시도 횟수 1 · 2 · 3, 모름 칸 · 빈칸이
 // 든 부분 방어 덱을 모두 보인다. 공격 기록 3개는 편성 두 쌍이라 자동 족보(`lineage-`)가 2개 생긴다.
+// 스페셜 칸(SP1 · SP2)에는 카탈로그 `combat_class`가 special인 학생만 둔다(tidy2: SP2 `chise`(스트라이커) → 공격 덱 A `hanae`,
+// 게헨나 방어 덱 `ako` — 기본 Mock · 검수 시나리오 모두 보유 학생, FE9-a 발견 8).
 import '../tactical_v2_service.dart';
 
 const designReviewTacticalOpponentA = 'dr-opponent-gehenna';
@@ -35,7 +37,7 @@ TacticalDeckV2 _deck(List<String?> strikers, List<String?> specials) {
 
 final _gehennaDefense = _deck(
   ['hina', 'iori', 'aru', 'haruka'],
-  ['hibiki', 'chise'],
+  ['hibiki', 'ako'],
 );
 final _abydosDefense = _deck(
   ['aru', 'haruna', null, null],
@@ -43,7 +45,7 @@ final _abydosDefense = _deck(
 );
 final _attackA = _deck(
   ['hoshino', 'izuna', 'mika', 'kayoko'],
-  ['ayane', 'chise'],
+  ['ayane', 'hanae'],
 );
 final _attackB = _deck(
   ['haruna', 'mutsuki', 'hoshino', 'izuna'],

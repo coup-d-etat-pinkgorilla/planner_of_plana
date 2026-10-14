@@ -451,6 +451,23 @@ void main() {
         ];
         expect(known, [...known]..sort((a, b) => b.compareTo(a)));
         expect(fixture.visible, hasLength(statisticsC4RowCount));
+        // tidy2(FE7-f 발견 2): 학생별 목표(스킬 · 장비 · 성작)로 위 다섯 행의 남은 폭이 보인다(시안 "40 → 85%"처럼).
+        expect(
+          [for (final r in fixture.visible) StatisticsC4Row.of(r).text],
+          ['40 → 88%', '40 → 77%', '10 → 40%', '70 → 86%', '80 → 90%'],
+        );
+        expect(
+          [for (final r in fixture.visible) r.studentId],
+          ['akane', 'aru', 'hoshino', 'eimi', 'koyuki'],
+        );
+        for (final r in fixture.visible) {
+          expect(r.remaining, greaterThan(0.10), reason: r.studentId);
+        }
+        // 계획 학생 집합(다른 통계가 읽는 것)은 그대로다.
+        expect(
+          {for (final goal in statisticsGrowthFixtureState().goals) goal.studentId},
+          statisticsGrowthFixturePlannedIds.toSet(),
+        );
       },
     );
 

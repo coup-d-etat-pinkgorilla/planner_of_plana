@@ -13,6 +13,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../services/idempotency_keys.dart';
 import '../services/planning_protocol_client.dart' show BackendRemoteException;
 import '../services/tactical_v2_service.dart';
 
@@ -172,8 +173,6 @@ class TacticalRecordsController extends ChangeNotifier {
   TacticalRecordsError? _error;
   int _generation = 0;
 
-  /// key 순번은 프로세스 전체에서 하나다(같은 시각에 만든 두 컨트롤러가 같은 key를 만들지 않게).
-  static int _keySequence = 0;
   _Pending? _pending;
   bool _disposed = false;
 
@@ -339,8 +338,7 @@ class TacticalRecordsController extends ChangeNotifier {
     if (pending != null && pending.fingerprint == fingerprint) {
       return pending.key;
     }
-    final key =
-        'tactical-$action-${_now().microsecondsSinceEpoch}-${++_keySequence}';
+    final key = newIdempotencyKey('tactical-$action', now: _now());
     _pending = (fingerprint: fingerprint, key: key);
     return key;
   }

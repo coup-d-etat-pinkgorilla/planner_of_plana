@@ -8642,3 +8642,149 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 view
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_191520\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## tidy2 작은 후속 5건 (Lane A, 로컬 Claude Code)
+
+### tidy2 착수 기록 (2026-10-14, Lane A)
+
+- 상태: **코드 완료(아래 tidy2 종료 기록), CF gate 미실행**. 시작 SHA = `d2765e0a0ef6a9c9704d6ebb651420236c9c3239`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서 끝에 다른 "tidy2 착수 기록" 없음(grep 0건).
+- 막는 `열림` FD 없음(결정 대장 "slice별 막힘 요약": 열림 0건, tidy2 행 없음). 관련 확정 FD: FD-028(C4 목표에도 같은 식).
+- 사용자 결정(착수 전 질문, 2026-10-14):
+  - 항목 3: **코드 변경 없음 · 기록만**. 현재 코드는 빈 시즌이면 이미 "시즌 —"이고, `tactical-migration` golden은 fixture 시즌 '9'라 "시즌 9"다(기준 이미지 확대 확인). '0'을 만드는 곳이 프론트 · 백엔드 이관(`tactical_fb6_store.py`는 v1 `season`을 그대로 옮김) 어디에도 없다.
+  - 항목 4: 공격 덱 A SP2와 게헨나 방어 덱 SP2의 `chise`(스트라이커)를 **둘 다** 스페셜 학생으로 고친다.
+- 항목별 고칠 파일(모두 `frontend/` 아래):
+  1. 섹션 틀 키트 승격: 새 `lib/ui/kit/section_frame.dart` · 새 `test/kit/section_frame_test.dart`, 사용처 `lib/ui/statistics/statistics_workspace.dart`(`_SectionFrame` · `_ScaledBox`) · `lib/ui/statistics/statistics_growth_evidence.dart`(`StatisticsScaledBox` — 같은 틀 네 번째 사본) · `lib/ui/statistics/statistics_supply_evidence.dart`(`StatisticsScaledBox` 사용처) · `lib/ui/tactical/tactical_workspace.dart`(`_SectionFrame` · `_Scaled`).
+  2. idempotency 순번 공용화: 새 `lib/services/idempotency_keys.dart` · 새 `test/idempotency_keys_test.dart`, 사용처 `lib/ui/inventory/inventory_controller.dart` · `lib/ui/models/repository_presets_controller.dart` · `lib/ui/models/plan_flow_save.dart` · `lib/ui/widgets/account_section_cluster.dart` · `lib/ui/pages/settings_page.dart` · `lib/ui/widgets/repository_profile_panel.dart` · `lib/ui/widgets/plan_scenario_list.dart` · `lib/ui/widgets/plan_section_layout.dart` · `lib/tactical/tactical_records_controller.dart`, 테스트 `test/tidy1_followups_test.dart` · `test/tactical_records_controller_test.dart`(필요할 때만). 스캐너 WIP(`scan_page.dart` 등)는 표에만.
+  3. 시즌 칩: 코드 변경 없음. 빈 시즌 → '—' 고정 테스트를 `test/tactical_page_test.dart`에 더한다.
+  4. seed 정정: `lib/services/design_review/tactical_records_data.dart`.
+  5. C4 목표 fixture: `lib/services/design_review/statistics_growth_data.dart`, 테스트 `test/statistics_second_tiles_test.dart` · `test/app_navigation_fe7d_test.dart`(C4 기대가 바뀌면).
+  - 이 문서 `almanac/workflows/frontend-redesign-status.md`.
+- 파일별 기존 미커밋 변경(WIP): 위 기존 21파일(이 문서 포함) 모두 `git status --short <경로>` 빈 줄 — **WIP 없음**. post 사본 · `post_dir`는 두지 않는다.
+- 줄바꿈(`git ls-files --eol`): `settings_page.dart` · `statistics_growth_evidence.dart` · `plan_section_layout.dart` · `repository_profile_panel.dart`는 작업 트리 CRLF, 나머지 LF. 그대로 유지한다.
+- 착수 사본: `debug/frontend_tidy2/pre/<v7 기준 경로>`(21파일). 고치지 않고 끝난 파일은 종료 때 cmp 일치를 확인하고 목록에서 뺀다.
+
+### tidy2 종료 기록 (2026-10-14, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+작은 후속 5건 중 4건을 고쳤고 항목 3은 사용자 결정대로 코드 변경 없이 기록만 했다. HEAD는 착수 때와 같다(`d2765e0a`). 새 서비스 메서드 · 백엔드 · 계약 · golden harness 변경은 없다.
+
+#### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+로그는 `debug/frontend_tidy2/logs/`이고 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)과 json 요약만 확인했다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/ui/kit/section_frame.dart lib/ui/statistics lib/ui/tactical`(항목 1 뒤) | ① warning 4(`unused_import` — 통계 · 전술의 `section_surface.dart` · `section_template_surface.dart`, 승격 뒤 잔여) → 지움 → ② **No issues found** |
+| `flutter test test/kit/section_frame_test.dart` | **+5 −0** |
+| `flutter analyze`(전체, 항목 2 뒤) | ① error 1(`plan_flow_save.dart` — 지운 `stamp`를 시나리오 초안 id가 쓰고 있었다) → 같은 시계 한 번 읽기로 되돌림 → ② **No issues found(0)** |
+| `flutter test test/idempotency_keys_test.dart test/tidy1_followups_test.dart test/tactical_records_controller_test.dart` | **+21 −0**(4 · 3 · 14) |
+| `flutter test test/tactical_page_test.dart`(항목 3 테스트 추가 뒤) | **+20 −0**(19 → 20) |
+| `flutter test test/design_review_tactical_seed_test.dart test/mock_design_review_scenario_test.dart test/tactical_page_test.dart test/tactical_page_revision_test.dart test/tidy1_followups_test.dart`(항목 4 뒤) | **+41 −0**(2 · 11 · 20 · 5 · 3) |
+| `flutter analyze lib/services/design_review`(항목 5 뒤) | No issues found |
+| 관련 일반 118파일 한 번에(`-r json`, `logs/related_1.json` · `related_1_summary.txt`) | **+1346 −0**(118파일 모두 −0) |
+| process 묶음 분류 2파일 `--concurrency=1`(가짜 프로세스): `tactical_fe9b1_read_test` · `tactical_fb6_dart_test` | **+12 −0** · **+14 −0** |
+| `flutter analyze`(최종, 전체) | **No issues found(0, info 포함)** |
+| `git diff --check -- frontend/lib frontend/test` | exit 0 |
+
+- 관련 일반 118파일은 grep으로 골랐다(kit/* · statistics_* · tactical_* · inventory_* · plan* · account_* · settings* · repository_* · mock_design_review · app_navigation_* · widget · home_* · profile_* · tidy1 · idempotency · design_review · student_filter_* · connected_target · title_page · developer_tools · section_*). `ProcessAppService` 문자열이 있는 18파일은 뺐다.
+  - 파일별 수치는 `logs/related_1_summary.txt`다. 주요 파일: kit/section_frame +5, idempotency_keys +4, design_review_tactical_seed +2, statistics_second_tiles +15, statistics_workspace +13, statistics_page +14, statistics_plan_view +9, statistics_supply_view +11, app_navigation_fe7d +14, app_navigation_tidy1 +11, tidy1_followups +3, tactical_page +20, tactical_page_revision +5, tactical_records_controller +14, mock_design_review_scenario +11, inventory_controller +13, plan_flow_save +15, plan_scenario_list +10, settings_page +10, account_manager_fe8b +6, account_editor_fe8c +9, widget +16.
+- 잠금 충돌 0(재시도 없음). `pubspec.yaml` · `pubspec.lock` 변경 0(`flutter analyze`의 "Got dependencies!" 뒤에도 `git status` 빈 줄).
+
+#### 항목별 결과
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 1 섹션 틀 키트 승격 | **완료(동작 변화 0)** | 새 `lib/ui/kit/section_frame.dart`: `SectionFrame`(표면 `SectionSurfacePainter` + `SectionShapeClipper`로 자른 `Stack`, 표면 key는 인자) · `SectionScaledBox`(배율 상자). 그리는 위젯 트리(Stack → Positioned.fill → IgnorePointer → CustomPaint(key) / ClipPath → Stack(Clip.none))와 배율 식은 사본 그대로다. 다시 그리기 판정은 사본의 "섹션 id 비교"와 같은 결과이고(문서 element는 id마다 한 인스턴스), `copyWith`로 rect · spec만 바꾼 element도 다시 그린다. 배율 상자는 전술 사본의 "자리가 무한이면 그대로" 분기를 가진다. 통계 사본은 무한 자리에서 예외였고 그런 사용처가 없어 보이는 변화가 없다 |
+| 2 idempotency 순번 공용화 | **완료(key 모양 그대로)** | 새 `lib/services/idempotency_keys.dart`: `newIdempotencyKey(prefix, {now})` = `<prefix>-<µs>-<순번>`, 순번은 프로세스 전체 하나(`nextIdempotencySequence`). 사용처 9파일 14곳을 바꾸고 인스턴스 순번 필드 10개(전술 static 포함)를 지웠다. 주입 시계(`_clock` · `_now`)는 그대로 넘긴다. 아래 표 |
+| 3 이관 기록 "시즌 0" | **보류 — 코드 변경 없음(사용자 결정)** | 전제가 맞지 않았다. S3 시즌 칩은 이미 빈 시즌이면 "시즌 —"이고(`tactical_workspace.dart` `season.isEmpty ? '—'`), `tactical-migration` golden은 fixture 시즌 '9'라 "시즌 9"다(기준 이미지 확대 확인). v1 → v2 이관은 Mock(`mock_tactical_v2_writes.dart` `'season': source.season`) · 백엔드(`tactical_fb6_store.py` `'season': source['season']`) 모두 v1 시즌 문자열을 그대로 옮겨 '0'을 만들지 않는다. CF가 "9"를 "0"으로 읽은 것으로 추정한다. 동작은 테스트로 고정했다(기본 Mock 새 초안 "시즌 —", 시즌 없는 v1 기록 "시즌 —" · "시즌 0" 없음). 숨김 대신 '—'로 둔 근거: 워크플로 불변식 "모르는 값은 '—'", 칩 자리가 늘 같아 머리 줄이 흔들리지 않는다 |
+| 4 design-review seed 정정 | **완료** | `tactical_records_data.dart`: 공격 덱 A SP2 `chise` → `hanae`, 게헨나 방어 덱 SP2 `chise` → `ako`(사용자 결정: 둘 다). 둘 다 카탈로그 `combat_class` special이다. 기본 Mock 보유 목록(`mockOwnedStudentIds`)과 검수 시나리오 학생 목록 170명 · 보유 128명 안에 있다(`serina`는 시나리오 목록 밖이라 뺐다). 새 테스트가 seed 모든 칸의 역할과 내 덱 스페셜 보유를 검사한다 |
+| 5 C4 목표 fixture | **완료(다른 통계 값 변화 0)** | `statistics_growth_data.dart`: 계획 9명 목표에 `statisticsGrowthFixtureGoalTargets`(스킬 · 장비 티어 · 성작 · 전용무기 · 애장품)를 더했다. C4 위 다섯 행은 아카네 40 → 88% · 아루 40 → 77% · 호시노 10 → 40% · 에이미 70 → 86% · 코유키 80 → 90%(남은 48 · 37 · 30 · 17 · 11%p)다. 히나 7 · 아리스 4 · 아이리 · 카즈사 0은 아래 행이다. 값은 FD-028 식을 옮긴 계산으로 고르고 테스트로 고정했다(옛 fixture로 계산한 호시노 10 → 20 · 아카네 40 → 46 · 아루 40 → 45가 FE7-f 기록과 같아 식을 확인했다). 다른 값이 그대로인 근거는 아래 golden 절 |
+
+#### 섹션 틀 사용처 표
+
+| 파일 | 전(사본) | 후(키트) |
+|---|---|---|
+| `lib/ui/statistics/statistics_workspace.dart` | `_SectionFrame`(3곳: scope · widgets · evidence, 표면 key `statistics-*-surface`) + `_SectionPainter` · `_SectionClipper`, `_ScaledBox`(6곳) | `SectionFrame(section: statisticsSection(id), surfaceKey: const ValueKey('statistics-*-surface'))` · `SectionScaledBox` |
+| `lib/ui/statistics/statistics_growth_evidence.dart` | 공개 `StatisticsScaledBox`(정의 + 5곳) — 네 번째 사본 | 정의를 지우고 `SectionScaledBox` 5곳 |
+| `lib/ui/statistics/statistics_supply_evidence.dart` | `StatisticsScaledBox` 13곳 | `SectionScaledBox` 13곳 |
+| `lib/ui/tactical/tactical_workspace.dart` | `_SectionFrame`(4곳: records · lobby · jokbo · editor, 표면 key `tactical-section-<id>`) + `_SectionPainter` · `_SectionClipper`, `_Scaled`(3곳) | `SectionFrame(section: tacticalSection(id), surfaceKey: const ValueKey('tactical-section-<id>'))` · `SectionScaledBox` |
+| 같은 틀이 아닌 것(그대로) | 인벤토리 `_Fit`(최소 크기 자르기) · `_InventorySurfacesPainter`(여러 섹션 한 painter) · `_AnalysisHighlightPainter`(외곽선), 통계 `_MinBox` · `StatisticsMinWidth`(최소 폭 자르기), 계획 화면들의 섹션 path 함수 | — |
+
+- 전술 공통 부품(`TacticalDeckSlotRow` · `TacticalMiniDeck` · `TacticalAttemptStepper` · `TacticalFilterChip` · `TacticalSlotPortrait`)은 옮기지 않았다(지시). FE9-c · d가 쓰는 모양이 정해진 뒤의 키트 후보로 남긴다.
+- UI Kit 갤러리에는 올리지 않았다. 화면 틀이고(섹션 표면은 FE1-c 이후 갤러리에 있다), 갤러리 페이지를 바꾸면 갤러리 테스트 범위가 늘어난다. 필요하면 CF 판단(발견 3).
+
+#### idempotency 사용처 표(`microsecondsSinceEpoch` · `idempotencyKey` grep, `lib/**`)
+
+| 위치 | key 모양 | 전 순번 | 처리 |
+|---|---|---|---|
+| `ui/inventory/inventory_controller.dart` 저장 | `inventory-save-<µs>-<n>` | 인스턴스 `_saveSequence` | **바꿈** |
+| `ui/models/repository_presets_controller.dart` `_newKey` | `presets-<profile>-<µs>-<n>`(주입 시계) | 인스턴스 `_keyNumber` | **바꿈** |
+| `ui/models/plan_flow_save.dart` `_buildRequest` | `plan-flow-save-<target>-<µs>-<n>`(주입 시계, 시나리오 초안 id와 같은 µs) | 인스턴스 `_keySequence` | **바꿈** |
+| `ui/widgets/account_section_cluster.dart` 만들기 · 고치기 · 고르기 · 지우기(4곳) | `account-<동작>[-<id>]-<µs>-<n>` | State `_keySequence` | **바꿈** |
+| `ui/pages/settings_page.dart` 프로필 만들기 | `settings-create-<µs>-<n>` | State `_keySequence` | **바꿈** |
+| `ui/widgets/repository_profile_panel.dart` 만들기 · 고르기 · 이름 바꾸기 | `<action>-<µs>-<n>` | State `_keySequence` | **바꿈** |
+| `ui/widgets/plan_scenario_list.dart` 복제 · 이름 · 삭제 · 적용 | `scenario-<action>-<id>-<µs>-<n>` | State `_keySequence` | **바꿈** |
+| `ui/widgets/plan_section_layout.dart` 시나리오 편입 · 비교 화면 복제(2 State) | `plan-incorporate-<id>-<µs>-<n>` · `scenario-duplicate-<µs>-<n>` | State `_keySequence` × 2 | **바꿈** |
+| `tactical/tactical_records_controller.dart` `_keyFor` | `tactical-<동작>-<µs>-<n>`(주입 시계, 재시도는 같은 key 그대로) | 프로세스 static `_keySequence` | **바꿈** |
+| `ui/pages/scan_page.dart` 스캔 적용 | `<stamp36>-<n>`(`_applyIntentSequence`) | State | **스캐너 WIP라 남김(표에만)** |
+| `ui/inventory/inventory_controller.dart` 후보 반영 · `ui/pages/student_page.dart` 후보 반영 | `inventory-candidate-<id>-<rev>` · `candidate-<id>-<rev>` | 없음(같은 후보 재시도 = 같은 key가 의도) | 그대로 |
+| `services/mock_design_review_scenario.dart` seed | 고정 문자열 | — | 그대로(seed) |
+| `ui/pages/tactical_page.dart` 기록 · 상대 id(`_idSequence`), `plan_flow_draft.dart` · `student_page.dart` 넘기기 id, `plan_preset_manager.dart` 프리셋 id | key 아님 | — | 그대로(tidy1 발견 5와 같음) |
+| 스캐너 WIP 서비스(`mock_app_service.dart` · `process_app_service.dart` · `planning_protocol_client.dart` · `scanner_service.dart`) | key를 만들지 않음(받기만) | — | 고치지 않음 |
+
+- 테스트 기대: key 모양을 검사하는 테스트(`tactical_records_controller_test` 정규식 · `tidy1_followups_test` 정규식)는 그대로 통과했다.
+- `tidy1_followups_test` ⑥의 기대는 "끝 순번이 1, 2, …"에서 "앞 번호 다음으로 이어짐"으로 바꿨다. 공용 순번은 같은 isolate의 앞 테스트가 key를 만들면 1부터가 아니다. 지금은 우연히 1부터라 통과했지만 순서에 기대는 기대였다.
+
+#### golden 변화 예상(golden 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `tactical` | **변화** | design-review seed를 쓴다. 바뀌는 곳: S1 행 1 · 2(공격 덱 A · 게헨나 방어 상대) 미니 덱 SP2 칸, 행 4(방어 · 내 덱 = 게헨나 방어) SP2 칸, S3 상대 덱 SP2 "치세" → "아코" 초상 · 이름, 내 덱 SP2 "치세" → "하나에" 초상 · 이름. 행 3 · 범례 · 머리 · 시즌 칩 · 자동 연결 문구는 그대로다(칸이 빈칸이 되지 않아 범례 글자가 같고, 공격 편성 두 쌍이 그대로라 자동 족보 2개) |
+| `statistics-plan` | **변화** | C4 덤벨 5행: 행 순서 · 이름(아카네 · 아루 · 호시노 · 에이미 · 코유키) · 현재 ● → 목표 ○ 길이 · 오른쪽 글자 "40 → 88%" … "80 → 90%". 범위 칩 "활성 계획 · 9명"은 그대로(학생 집합 같음) |
+| `tactical-migration` | 변화 0 | 항목 3 코드 변경 없음. v1 기록 덱은 golden 테스트 자체 값이다(seed 아님). 섹션 틀은 같은 위젯 트리다 |
+| `statistics-growth` · `statistics-growth-filter` · `statistics-filter-open` · `statistics-inventory` | 변화 0 | 목표 값을 읽는 것은 C4(`StatisticsGoalProgressSet`)뿐이다. 다른 통계는 `state.goals`의 학생 id만 쓴다(`statistics_growth_projection` 계획 표시 · `statistics_history_projection` · `statistics_projection` · `statistics_supply_projection` 계획 학생 수 · workspace 범위 칩). 통계 페이지가 목표로 부르는 `calculatePlan`(Mock 합계식)의 `gross`는 `StatisticsSourceData`에 담기기만 하고 그리는 곳이 없다(grep). 부족 계산 · 활성 계획 문서 계산은 golden 서비스가 fixture로 돌려준다(목표와 무관). 섹션 틀은 같은 위젯 트리 · 같은 key · 같은 배율 식이다 |
+| 나머지 42장(계정 · 홈 · 인벤토리 · 계획 · 학생 · 스캔 · 타이틀) | 변화 0 | 섹션 틀 사용처는 통계 · 전술뿐이다. idempotency key는 그리는 값이 아니다. 두 fixture 파일을 쓰는 golden 테스트는 통계 · 전술 두 파일뿐이다(grep: `test/goldens/*.dart`) |
+
+#### 미검증(미실행)
+
+- golden 비교 · 전체 `fe_gate.ps1` · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 Python을 띄우는 process 묶음 16파일(`repository_presets_process_e2e` · `inventory_*_process_e2e` · `planning_*_process_e2e` · `repository_*_process_e2e` · `tactical_*_process_e2e` · `profile_delete_fb2d_process_e2e` · `planning_protocol_client_test`): **미실행**. 백엔드는 key를 불투명 문자열로 보고 모양이 같아 영향 없음을 예상한다.
+- 스캐너 테스트 · 위 목록 밖 Flutter 테스트: **미실행**(스캐너 파일 수정 0).
+- 실제 앱 창에서 통계 C4 · 전술 seed 모습: **미실행**(위젯 테스트 · 계산만).
+- Windows release 빌드: **미실행**.
+
+#### WIP 보존 확인
+
+- 고친 기존 19파일(이 문서 포함)은 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 없다.
+- pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다. CRLF 4파일은 고친 뒤에도 모든 줄 CRLF, 끝 개행 하나다.
+- 사본을 만들었지만 고치지 않은 2파일(`test/tactical_records_controller_test.dart` · `test/app_navigation_fe7d_test.dart`)은 pre와 cmp 일치다. 파일 삭제 금지라 사본은 남겼다. 삭제 후보: `debug/frontend_tidy2/pre/frontend/test/tactical_records_controller_test.dart` · `debug/frontend_tidy2/pre/frontend/test/app_navigation_fe7d_test.dart`.
+- 편집 0회: 스캐너 WIP 15파일(`scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · `scan_inventory_identity_review.dart` · `mock_app_service.dart` · `process_app_service.dart` · `planning_protocol_client.dart` · `scanner_service.dart` · 스캐너 테스트), golden harness · golden 테스트, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일, `app_shell.dart`.
+- `dart format`은 실행하지 않았다. git 쓰기 0회, 파일 삭제 0회.
+
+#### 발견 사항
+
+1. **"시즌 0"은 오독으로 보인다**(항목 3): 기준 이미지의 칩은 "시즌 9"다. v1 원본 데이터에 실제로 "0" 시즌이 저장된 계정이 있다면 데이터 문제이고, 지금은 그대로 "시즌 0"으로 보인다. '0'을 '모름'으로 볼지는 CF · XB 판단이다.
+2. **seed 내 덱의 `mika`**: 공격 덱 A 3번 `mika`는 검수 시나리오(성장 fixture)의 미보유 42명 안이고 기본 Mock 보유 목록에도 없다. 피커는 보유 학생만 고르므로 그 칸을 다시 고를 수 없다(되보내기는 된다). 이번 범위(SP2)가 아니라 고치지 않았다. seed를 보유 학생으로 맞출지 CF 판단.
+3. **UI Kit 갤러리**: `SectionFrame` · `SectionScaledBox`는 갤러리에 올리지 않았다(위 근거). FE2 규칙상 갤러리 항목이 필요하면 다음 키트 slice에서.
+4. **`StatisticsScaledBox`(공개 이름) 제거**: lib · test 어디에도 남은 참조가 없다(grep 0). 다른 레인 미커밋 작업이 이 이름을 쓰면 컴파일이 깨진다. 착수 · 종료 시점 작업 트리에는 없었다.
+5. **C4 목표 fixture와 검수 시나리오**: 같은 목표 wire를 검수 시나리오 Mock(`mock_design_review_scenario.dart`)도 쓰므로 앱 검수 화면의 C4도 같은 덤벨이 된다. 시나리오의 부족 · 문서 계산은 fixture라 다른 값은 그대로다.
+6. 막는 `열림` FD 없음. 워커 재량 FD 처리 없음(FD-028은 확정 — C4 목표에 같은 식, FD-086은 이번 화면과 무관).
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_tidy2/pre/<경로>`(21파일 = 고친 19 + 안 고친 2). WIP가 없어 post 사본은 없다.
+- `debug/frontend_tidy2/commit.json`: slice `tidy2`, `status=true`, modified 19(이 문서 포함), added 5, `whole` = `frontend/test/goldens/baseline/tactical.png` · `frontend/test/goldens/baseline/statistics-plan.png`(파일 단위).
+- 인계: `debug/frontend_tidy2/output.md`.
+
+#### 다음 행동
+
+- tidy2 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다.
+  - 예상: analyze 0, 일반 테스트 녹색. 새 테스트 11건(kit/section_frame 5 · idempotency_keys 4 · design_review_tactical_seed 2)과 고친 테스트(tactical_page 시즌 칩 1건 추가 · statistics_second_tiles C4 기대 추가 · tidy1_followups 순번 기대)를 포함한다.
+  - golden은 `tactical` · `statistics-plan` 2장 RED, 다른 47장 변화 0이다. 특히 `tactical-migration`은 변화 0이다(프롬프트 예상과 다름 — 항목 3).
+  - 승인 뒤 `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice tidy2`.
+- 발견 1(시즌 '0' 데이터) · 2(seed `mika` 미보유) · 3(갤러리)은 CF 판단을 기다린다.
+
+### tidy2 commit record (2026-10-14 22:37, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_222332\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
@@ -269,9 +270,6 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
 
   /// 활성 계획을 읽기 전에 받은 "계획에서 보기" 재화(tidy1). 읽은 뒤 Detail 홈 "전체" 탭에서 고른다.
   String? _pendingHomeResource;
-
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
 
   /// 넘어온 학생(FE4-g)으로 흐름을 여는 중(흐름 상태를 읽는 동안). 이 동안 계획 홈 섹션을 들이지 않는다.
   bool _handoffPending = false;
@@ -1603,7 +1601,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         authoring: authoring,
         expectedRevision: plan.revision,
         idempotencyKey:
-            'plan-incorporate-${scenario.id}-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+            newIdempotencyKey('plan-incorporate-${scenario.id}'),
       );
     } on Object catch (error) {
       if (!mounted) return;
@@ -1970,8 +1968,6 @@ class _PlanScenarioComparisonSectionState
   _PlanComparisonTarget? _targetB;
   PlanningScenarioComparisonResult? _comparison;
   bool _working = false;
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
   Map<String, StudentCatalogEntry> _comparisonStudents = {};
 
   /// 시나리오 목록에서 두 대상을 골라 열었으면(FE5-a) 첫 읽기 뒤 한 번만 바로 비교한다.
@@ -2094,7 +2090,7 @@ class _PlanScenarioComparisonSectionState
         expectedRevision: list.revision,
         expectedScenarioRevision: scenario.revision,
         idempotencyKey:
-            'scenario-duplicate-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+            newIdempotencyKey('scenario-duplicate'),
       );
       await _load();
       if (!mounted) return;

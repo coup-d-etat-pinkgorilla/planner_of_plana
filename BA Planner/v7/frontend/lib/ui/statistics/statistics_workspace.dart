@@ -47,13 +47,12 @@ import '../kit/kit_glyph.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/kpi_tile.dart';
 import '../kit/scroll_viewport_fog.dart';
+import '../kit/section_frame.dart';
 import '../kit/skew_controls.dart';
 import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
 import '../widgets/plan_scenario_preview.dart' show planScenarioBottleneckValue;
-import '../widgets/section_surface.dart';
-import '../widgets/section_template_surface.dart';
 import 'statistics_balance_charts.dart';
 import 'statistics_breakdown_charts.dart';
 import 'statistics_growth_charts.dart';
@@ -262,93 +261,6 @@ class StatisticsWorkspace extends StatelessWidget {
   );
 }
 
-class _SectionPainter extends CustomPainter {
-  const _SectionPainter(this.sectionId);
-
-  final String sectionId;
-
-  @override
-  void paint(Canvas canvas, Size size) => paintSectionSurface(
-    canvas,
-    buildSectionCanvasElementPath(size, statisticsSection(sectionId)),
-  );
-
-  @override
-  bool shouldRepaint(_SectionPainter oldDelegate) =>
-      oldDelegate.sectionId != sectionId;
-}
-
-class _SectionClipper extends CustomClipper<Path> {
-  const _SectionClipper(this.sectionId);
-
-  final String sectionId;
-
-  @override
-  Path getClip(Size size) =>
-      buildSectionCanvasElementPath(size, statisticsSection(sectionId));
-
-  @override
-  bool shouldReclip(_SectionClipper oldClipper) =>
-      oldClipper.sectionId != sectionId;
-}
-
-/// 섹션 표면 + 섹션 모양으로 자른 내용.
-class _SectionFrame extends StatelessWidget {
-  const _SectionFrame({
-    required this.sectionId,
-    required this.surfaceKey,
-    required this.children,
-  });
-
-  final String sectionId;
-  final String surfaceKey;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned.fill(
-        child: IgnorePointer(
-          child: CustomPaint(
-            key: ValueKey(surfaceKey),
-            painter: _SectionPainter(sectionId),
-          ),
-        ),
-      ),
-      Positioned.fill(
-        child: ClipPath(
-          clipper: _SectionClipper(sectionId),
-          child: Stack(clipBehavior: Clip.none, children: children),
-        ),
-      ),
-    ],
-  );
-}
-
-/// [scale]이 1보다 작으면 [child]를 시안 크기(자리 ÷ scale)로 배치한 뒤 같은 비율로 줄인다.
-class _ScaledBox extends StatelessWidget {
-  const _ScaledBox({required this.scale, required this.child});
-
-  final double scale;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (scale >= 1) return child;
-    return LayoutBuilder(
-      builder: (context, constraints) => FittedBox(
-        fit: BoxFit.fill,
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: constraints.maxWidth / scale,
-          height: constraints.maxHeight / scale,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 /// 자리가 [minWidth] · [minHeight]보다 작으면 그 크기로 배치하고 넘친 부분을 자른다(인벤토리 `_Fit`과 같은 규칙).
 class _MinBox extends StatelessWidget {
   const _MinBox({required this.minWidth, this.minHeight = 0, required this.child});
@@ -451,7 +363,7 @@ class _ScopeSection extends StatelessWidget {
     final scale = StatisticsMetrics.scaleFor(bottom - top);
     double railRight(double y) => _edgeX(points[1], points[2], y);
     // 아주 좁은 창에서는 행 내용을 최소 폭으로 배치하고 오른쪽을 자른다(넘침 예외 대신).
-    Widget scaled(Widget child) => _ScaledBox(
+    Widget scaled(Widget child) => SectionScaledBox(
       scale: scale,
       child: _MinBox(minWidth: _scopeRowMinWidth, child: child),
     );
@@ -473,7 +385,7 @@ class _ScopeSection extends StatelessWidget {
         top: y,
         width: math.max(0.0, railRight(y) - left - StatisticsMetrics.scopeRightMargin),
         height: height * scale,
-        child: _ScaledBox(
+        child: SectionScaledBox(
           scale: scale,
           child: Text(
             value,
@@ -647,9 +559,9 @@ class _ScopeSection extends StatelessWidget {
         ),
       ),
     );
-    return _SectionFrame(
-      sectionId: statisticsScopeSectionId,
-      surfaceKey: 'statistics-scope-surface',
+    return SectionFrame(
+      section: statisticsSection(statisticsScopeSectionId),
+      surfaceKey: const ValueKey('statistics-scope-surface'),
       children: children,
     );
   }
@@ -884,9 +796,9 @@ class _WidgetsSection extends StatelessWidget {
     final titleLeft = points[0].dx + StatisticsMetrics.titleLeftInset;
     final titleRight = points[1].dx - StatisticsMetrics.titleRightInset;
     final viewport = StatisticsViewportGeometry.of(size);
-    return _SectionFrame(
-      sectionId: statisticsWidgetsSectionId,
-      surfaceKey: 'statistics-widgets-surface',
+    return SectionFrame(
+      section: statisticsSection(statisticsWidgetsSectionId),
+      surfaceKey: const ValueKey('statistics-widgets-surface'),
       children: [
         Positioned.fill(
           child: AnimatedSwitcher(
@@ -2356,9 +2268,9 @@ class _EvidenceSection extends StatelessWidget {
       scale: scale,
     );
     final (secondary, primary) = actions;
-    return _SectionFrame(
-      sectionId: statisticsEvidenceSectionId,
-      surfaceKey: 'statistics-evidence-surface',
+    return SectionFrame(
+      section: statisticsSection(statisticsEvidenceSectionId),
+      surfaceKey: const ValueKey('statistics-evidence-surface'),
       children: [
         Positioned(
           left: titleLeft,
@@ -2368,7 +2280,7 @@ class _EvidenceSection extends StatelessWidget {
             right - StatisticsMetrics.evidenceTitleRight - titleLeft,
           ),
           height: StatisticsMetrics.evidenceTitleHeight * scale,
-          child: _ScaledBox(
+          child: SectionScaledBox(
             scale: scale,
             child: Align(
               alignment: Alignment.centerLeft,
@@ -2405,7 +2317,7 @@ class _EvidenceSection extends StatelessWidget {
               right - StatisticsMetrics.evidenceButtonRight - noteLeft,
             ),
             height: StatisticsMetrics.evidenceNoteHeight * scale,
-            child: _ScaledBox(
+            child: SectionScaledBox(
               scale: scale,
               child: Text(
                 notice ?? subtitle ?? emptyText,
@@ -2443,7 +2355,7 @@ class _EvidenceSection extends StatelessWidget {
             StatisticsMetrics.evidenceSecondaryFromBottom,
             StatisticsMetrics.evidenceSecondaryHeight,
           ),
-          child: _ScaledBox(
+          child: SectionScaledBox(
             scale: scale,
             child: _EvidenceButton(
               key: const ValueKey('statistics-evidence-secondary'),
@@ -2458,7 +2370,7 @@ class _EvidenceSection extends StatelessWidget {
             StatisticsMetrics.evidencePrimaryFromBottom,
             StatisticsMetrics.evidencePrimaryHeight,
           ),
-          child: _ScaledBox(
+          child: SectionScaledBox(
             scale: scale,
             child: _EvidenceButton(
               key: const ValueKey('statistics-evidence-primary'),

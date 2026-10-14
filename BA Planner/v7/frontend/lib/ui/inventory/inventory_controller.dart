@@ -44,6 +44,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
@@ -203,7 +204,6 @@ class InventoryController extends ChangeNotifier {
   final Set<String> _dirtyKeys = {};
   Set<String> _reviewKeys = const {};
   _InventorySaveRequest? _pendingSave;
-  int _saveSequence = 0;
   final Map<String, InventoryAcquisition> _acquisitions = {};
   int _generation = 0;
   bool _disposed = false;
@@ -1150,7 +1150,7 @@ class InventoryController extends ChangeNotifier {
             expectedRevision: state.revision,
             // 시계 해상도가 낮아도 새 요청마다 다른 key(같은 key·다른 내용 = idempotency_conflict).
             idempotencyKey:
-                'inventory-save-${DateTime.now().microsecondsSinceEpoch}-${++_saveSequence}',
+                newIdempotencyKey('inventory-save'),
           );
     _pendingSave = request;
     _saving = true;

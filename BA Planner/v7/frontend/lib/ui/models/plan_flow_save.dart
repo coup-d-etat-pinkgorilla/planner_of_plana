@@ -19,6 +19,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../services/idempotency_keys.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
@@ -885,9 +886,6 @@ class PlanFlowSaveController extends ChangeNotifier {
   final PlanFlowController flow;
   final DateTime Function() _clock;
 
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
-
   Object? get service => flow.service;
 
   PlanFlowDraft _draft;
@@ -1267,8 +1265,9 @@ class PlanFlowSaveController extends ChangeNotifier {
   }
 
   PlanFlowSaveRequest? _buildRequest(PlanFlowSaveSnapshot snapshot) {
-    final stamp = _clock().microsecondsSinceEpoch;
-    final key = 'plan-flow-save-${_target.name}-$stamp-${++_keySequence}';
+    final now = _clock();
+    final stamp = now.microsecondsSinceEpoch;
+    final key = newIdempotencyKey('plan-flow-save-${_target.name}', now: now);
     final profileId = snapshot.state.profileId;
     switch (_target) {
       case PlanFlowSaveTarget.scenario:

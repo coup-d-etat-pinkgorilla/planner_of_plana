@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
@@ -571,8 +572,6 @@ enum _ClusterView { manager, editor, picker }
 
 class _AccountSectionClusterState extends State<AccountSectionCluster>
     with TickerProviderStateMixin {
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
 
   late final AnimationController _managerMotion;
   late final AnimationController _editorMotion;
@@ -888,7 +887,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     try {
       final created = await repository.createProfile(
         name,
-        'account-create-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+        newIdempotencyKey('account-create'),
       );
       if (!mounted) return;
       if (widget.entry == AccountClusterEntry.createFirst) {
@@ -956,7 +955,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         name,
         _portraitId,
         editing.revision,
-        'account-update-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+        newIdempotencyKey('account-update'),
       );
       await _load();
       if (mounted) await _closeEditor();
@@ -978,7 +977,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       await repository.selectProfile(
         profile.id,
         profile.revision,
-        'account-select-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+        newIdempotencyKey('account-select'),
       );
       await _load();
     } catch (error) {
@@ -1023,7 +1022,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
             profileId: profile.id,
             expectedRevision: profile.revision,
             idempotencyKey:
-                'account-delete-${profile.id}-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+                newIdempotencyKey('account-delete-${profile.id}'),
           );
     _pendingDelete = request;
     setState(() {

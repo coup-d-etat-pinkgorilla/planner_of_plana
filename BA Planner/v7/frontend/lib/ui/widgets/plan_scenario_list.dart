@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scenario_service.dart';
 import '../geometry/diagonal_geometry.dart';
@@ -315,8 +316,6 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   Map<String, StudentCatalogEntry> _catalog = const {};
   bool _busy = false;
   int _loadGeneration = 0;
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
   final _searchController = TextEditingController();
   final _renameModal = BaModalController();
   final _deleteModal = BaModalController();
@@ -520,7 +519,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   }
 
   String _idempotencyKey(String action, String scenarioId) =>
-      'scenario-$action-$scenarioId-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}';
+      newIdempotencyKey('scenario-$action-$scenarioId');
 
   Future<void> _duplicate(PlanningScenarioSummary scenario) async {
     final result = _result;

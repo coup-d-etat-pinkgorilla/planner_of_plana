@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/diagnostics_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../widgets/diagonal_section.dart';
@@ -41,8 +42,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ? widget.service as DiagnosticsService
       : null;
 
-  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
-  int _keySequence = 0;
   List<RepositoryProfile> _profiles = const [];
   List<ScannerTarget> _targets = const [];
   Map<String, dynamic>? _readiness;
@@ -193,7 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await _profileMutation(() async {
       final created = await _repository!.createProfile(
         name,
-        'settings-create-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
+        newIdempotencyKey('settings-create'),
       );
       if (!created.selected) {
         await _repository!.selectProfile(
