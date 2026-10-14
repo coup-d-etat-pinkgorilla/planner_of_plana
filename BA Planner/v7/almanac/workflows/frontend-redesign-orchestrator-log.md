@@ -2809,3 +2809,48 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 
 - XB FB-6 exact9 `b795f24a`(13:48, 9경로 확인) → CF **fb6dart `29296336`**(DryRun 통과 뒤 커밋, gate `20261014_125829`). 공유 서비스 파일은 pre/post 3-way 병합으로 FB-6 줄만 커밋, 스캐너 WIP는 작업 트리에 그대로(HEAD 대비 4파일 +399 −1).
 - XB 13:51 회신 2건: ① 전술 페이지 v1 쓰기 4곳 → FE9-b 입력 ② 스캐너 기능부·시각 hunk 읽기 전용 초안(fb6dart 커밋 뒤 재base 필요) → backend 로그 14:52로 순서 ② 착수 요청.
+
+## 2026-10-14 15:05 — 다음 라운드 배정: Lane A FE7-f, Lane B FE9-b1
+
+- **Lane A** `debug/frontend_redesign_handoff/fe7f-worker-prompt-20261014.md`: 통계 2차 A3(성작·전용무기 단계 막대)·A4(학교·역할 산점도, 빈 상태 = 고른 seg 값 수 — FE7-e 발견 3)·B2(부족·과잉 발산 막대, FD-040 인벤토리와 같은 함수, 근거 "최근 변화" 3줄)·C4(목표 덤벨). **CF 결정(FD-042 워커 재량 범위)**: B2 근거 예측 문구는 시안 "이 속도면 P2 이전에 소진" 대신 FE6-f "n주 뒤 소진 예상"(페이즈에 시간축이 없음). 새 golden 장면 없음.
+- **Lane B** `debug/frontend_redesign_handoff/fe9b1-worker-prompt-20261014.md`: **순서 변경(CF, 2026-10-14)** — G-pvp §7.2는 "FE9-a v1 이식 → FE9-b v2 전환"이었으나 FB-6이 끝나 데이터 계층을 먼저(FE9-b1) 만들고 FE9-a 새 화면이 처음부터 v2 위에 서게 한다(v1 이식 뒤 다시 바꾸는 이중 작업 회피). 범위: read DTO 확장·좁은 읽기 interface(Mock 포함)·화면용 컨트롤러·도출 족보 표식·design-review seed. 화면 변경 0.
+- 겹침 0(Lane A statistics / Lane B services·lib/tactical). XB 순서 ② 진행 중 — FE9-b1의 공유 서비스 파일 변경은 몇 줄로 제한(backend 로그 15:05).
+
+
+## 2026-10-14 15:42 — 새전체 검증 시작(XB→CF): O1/R6e 격리 HEAD projection22
+
+- 집중 **67/1.344s PASS**. HEAD의기존matcher에 O1학습/독립숫자충돌·R6e미식별specimen/지정만옮기고 C6분할모듈·O2countshadow·O3학생필터·F11해상도정책은제외했다. repository_store import재정렬제외. 후보 **22경로**(core9/test6/contracts2/O0fixture5), actualselectedSHA와workingSHA를별도기록했다.
+- 첫focused39RED는projection선택적source_size키워드누락으로보존후호환인자만보완. 다음67RED의旧session표본이반대bundled label을보너스로이기는기대는 O1이미working의강화회귀(값None/conflict/uncertain·note검사)만선별해교체했다. 나머지보정회귀유지/skip·timeout변경0.
+- 지금 **debug/xb_scanner_functional_select_20261014/artifacts/candidate-v7**에서 표준 **py -3.11 -m unittest discover -s tests -v** 새전체를실행한다. 이것은커밋할HEAD기능projection검증이며 currentmain全WIP/CF최신미완료FE9b1전체 검증이라고부르지않는다. localruntime지원46목록/실제frontend입력도manifest로구분. 메인보호4114/기존WIP변경0·stage/commit/push0.
+- CF heavy whole gate는본Python실행과가능하면겹치지않도록조율한다. FE7f/FE9b1 source준비는독립진행가능. 완료뒤 **29296336기준재base front기능hunk/시각분할 + exactselected/working SHA + 같은후보CF gate 실행경로**를인계한다. 후보는격리상태이며 메인backend/contracts를임의로덮어쓰지않는다.
+
+
+## 2026-10-14 15:44 — 보강 알림(XB→CF): 29296336 frontend 기능hunk 재base·혼합test 정확분리
+
+- **debug/xb_scanner_functional_select_20261014/artifacts/frontend-functional-hunks-29296336.md/json**에 tracked13/new2를새HEAD29296336좌표·workingSHA/현재full diff로정리했다. 기능부 tracked11+new2, dock2/결과report·portrait·progress표시는FE8-g2 보존. FE9b1의service위임/interface추가는scope밖이며CFpre/post로분리한다.
+- 이전13:51초안의혼합test 설명을정정한다: student review test **hunk39**는O1 confirmation test + **별도wide report width unit test**라앞test만기능부. **hunk181은summary assertion+summary-row test 전부시각부**(revisionreset test가아님)라통째로FE8-g2에남긴다. 이전원artifact는보존했다. callback3→4 변경은기능부다.
+- checkbox hunk1178은 confirmedFields/onConfirmed·편집중header/checkbox5번째열만기능. 기존4열width 유지+새5번째열필요폭만추가하고media report구조는제외한다. 같은candidate id의revision교체때dirty/확인/오류reset을검사하는실제프론트회귀는현재confirmation test에없으므로 scanwip-func에서추가권고.
+- 현재XB표준Python은격리HEAD기능projection22에서진행중. **아직CFgate/commit요청이아니다**. whole결과뒤selected vsworking SHA·backendcandidateexact/CF실행경로와최종인계를묶어보낸다. main/frontend source변경0·WIP보존.
+
+
+## 2026-10-14 16:11 — 정정·진단 알림(XB): 첫whole RED 보존·새24후보/프론트 checkbox 실제6열
+
+- 첫격리whole **1128/710.457s FAILED(fail24/error4/skip6)**를그대로보존했다. Gitarchive는RawGitblob과달리text를CRLF로materialize해tactical_lobby_regions.json·서명CSV pin이달랐다. 새사본은1136text Rawblob복원+기존sealed1274회귀support355/측정출력dir를준비했다. 2개region JSON은원manifest가CRLF bytes를요구해**동일HEAD내용/기존SHA에맞는줄바꿈만**선택했다. 데이터값·manifesthash완화/골든변경0이다.
+- 기능후보는**24**(기존22+O1已working test_recognition_answer_samples/test_student_scan_s2의해당회귀만). quality를통과하는controlled mask·explicit confirmedfields·충돌uncertain 기대를함께선택했고새테스트의누락patch import도보완했다. 원RED/106집중FAIL도보존, main source/stage/commit/push0. 새whole는집중확인뒤다시실행한다.
+- **제가15:44에적은checkbox열번호/폭은잘못이었다. 실제원본표는5열(index0~4), 편집중확인은6번째열(index5)의 FixedColumnWidth(84)**다. hunk1178은기존5열width 그대로+editing일때index5의84만유지한다. 4열/index4/72 지시를폐기하고md/json을정정했다. 코드는수정하지않았다. test hunk39/181의기능/시각분리정정은그대로다.
+- source24의selected/working SHA와새whole결과/정확CFcandidate gate경로는최종인계에묶는다. 아직GREEN/commit요청0.
+
+
+## 2026-10-14 16:41 — 재검증 시작(XB→CF): O1/R6e source24 집중74 GREEN·새표준whole
+
+- 격리 source24 집중 **74/26.972s PASS**. main+12aux 기존 manifest의 **3051자산 전부 ready/누락0/손상0** 확인. archive/rawblob 줄바꿈 차이는 기존 SHA를 만족하는 동등 JSON 표현으로만 복구했으며 데이터값·manifest·guard·timeout·skip·golden 완화0. 첫whole1128 RED와 후속집중RED는 모두 보존했다.
+- **debug/xb_scanner_functional_select_20261014/artifacts/candidate-v2-v7/backend**에서 새 표준 `py -3.11 -m unittest discover -s tests -v` 시작. selected24/기존회귀support355/실제frontend입력은 before SHA로 고정했다. 메인보호4114·기존WIP 보존, stage/commit/push0.
+- 아직CFgate/commit요청이 아니다. 전체GREEN 뒤 selected/working SHA24 +29296336재base frontend 기능hunk 목록+동일격리후보 gate 실행경로를 전달한다.
+
+## 2026-10-14 16:55 — FE7-f·FE9-b1 검토·gate·커밋
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe7f 23행, fe9b1 12행), 겹침 0, 범위 밖 변경 0. 범위 메모: FE7-f가 C4 → "목표 정하기" 이동을 위해 `app_navigation_intent.dart`(`PlanNavigationTarget.goals`)와 `plan_section_layout.dart` 수신부(+11, 기존 order 경로 재사용·흐름이 열려 있으면 알림만)를 최소로 고침 — 승인. FE9-b1 공유 서비스 2파일은 위임·implements만(pre → post 추가 48·1줄, WIP 바이트 그대로).
+- XB는 격리 사본에서 Python을 돌리는 중이었으나 실행 중 프로세스 없음을 확인한 뒤 gate.
+- gate ① `20261014_163643`: analyze 0, 392 + 390 + 680 + 325, process 87, golden RED 5 = 예측 그대로(성장 A3·A4, 인벤토리 B2, 계획 C4, 필터 장면 2장 배경). 검토 → 승인. ② `-UpdateGoldens` `20261014_164359` **GREEN**(golden 47).
+- 커밋: **fe7f `fa4aa5df`**(22파일) → **fe9b1 `390c194a`**(11파일, 스캐너 WIP 제외 확인 — HEAD 대비 services 4파일 +399 −1 그대로).
+- CF 판단: FE7-f 발견 1(시안 B2 과잉 +22%·+38%는 FD-040 1.5배 미만) → **FD-040 유지**(앱 전체 한 규칙, 시안 숫자는 자리 표시) · 발견 2(C4 fixture 목표가 레벨뿐) → 작은 fixture 정리 후보 · 발견 7(C4 외 n명) → FE7-i 이후. FE9-b1 발견 1 → XB 요청(schema 원소 타입, backend 로그 16:55) · 2(족보 승패 = v6 가져오기 집계 vs 기록 집계) → FE9-d·e에서 결정 · 4(idempotency 순번 static 공유 — tidy1 State별 순번에도 이론상 같은 충돌) → 작은 정리 후보 · 5(이관 안내 seed) → FE9-a.
