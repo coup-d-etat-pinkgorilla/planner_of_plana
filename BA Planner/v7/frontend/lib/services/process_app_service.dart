@@ -34,6 +34,7 @@ class ProcessAppService
         TacticalService,
         TacticalEvidenceService,
         TacticalEvidenceWriteService,
+        TacticalEvidenceReadService,
         DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(

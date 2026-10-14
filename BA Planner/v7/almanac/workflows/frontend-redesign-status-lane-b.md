@@ -3903,3 +3903,181 @@ FB-6 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관의 Dart 연결을
 - fb6-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE7-e + FD-175)가 멈춘 뒤 XB FB-6 source9와 같은 소스로 gate 1회(예상: analyze 0, process +15, 일반 변화 0, golden 변화 0) → XB exact9 커밋 → `fe_commit.ps1 -Slice fb6dart`(mock·process·planning client는 3-way 병합, WIP 인접 hunk 없음) → FB-7.
 - 발견 사항 1·2·4·7은 FE9-b(CF), 3·5는 CF 판단, 6은 XB 판단을 기다린다.
+
+## FE9-b1 착수 기록 (2026-10-14)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE9-b1 종료 기록), CF gate 미실행**. 범위: 전술 v2 데이터 계층(화면 0) — read DTO 확장(G-pvp §7.1 "버림" 목록), 좁은 읽기 capability `TacticalEvidenceReadService`(Process 선언 + Mock 구현), 화면용 컨트롤러 `lib/tactical/tactical_records_controller.dart`, 도출 족보 "기록 없음" 표식, design-review 전술 v2 seed. 기존 `tactical_page.dart`(v1)는 그대로 둔다.
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-b1 착수 기록" 없음(grep 0건).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `ebc84ee463767b4d726120c8f16af7b14b34bb6d`.
+- 막힘: 대장 "slice별 막힘 요약" 현재 `열림` 0건, FE9-b 행의 FD-128은 확정(권장안 (a)). FD-129(워커 재량)는 FE9-d·FE9-e 몫이라 쓰지 않을 예정.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe9b1/pre/<v7 기준 경로>`, 6개 모두 작업 트리와 cmp 일치)과 WIP(`git status --short <경로>`), 줄바꿈(`git ls-files --eol`·바이트 셈):
+  - `frontend/lib/services/tactical_v2_service.dart`: WIP 없음. LF.
+  - `frontend/lib/services/mock_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 189~683줄 부근). CRLF 3148 + LF 128. 고칠 곳은 implements 목록(46줄 부근)·전술 v2 Mock 묶음(2862줄 뒤)뿐이라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `frontend/lib/services/process_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 1234~1276줄 부근). CRLF 1329 + LF 24. 고칠 곳은 implements 목록(36줄 부근) 선언 1줄뿐.
+  - `frontend/lib/services/mock_design_review_scenario.dart`: WIP 없음. LF.
+  - `frontend/test/tactical_v2_process_e2e_test.dart`: WIP 없음. LF(확장 DTO 확인 expect 추가 예정).
+  - 이 문서: WIP 없음. LF.
+  - `planning_protocol_client.dart`: 고칠 예정 없음.
+- 새 파일(예정): `frontend/lib/services/mock_tactical_v2_reads.dart`, `frontend/lib/tactical/tactical_records_controller.dart`, 테스트 `frontend/test/tactical_fe9b1_read_test.dart`·`frontend/test/tactical_records_controller_test.dart`.
+- WIP는 지우거나 고치거나 옮기지 않는다. 착수 때 WIP diff 사본: `debug/frontend_fe9b1/logs/wip-before.diff`(공유 2파일).
+
+## FE9-b1 종료 기록 (2026-10-14, 코드 작성 완료 · CF gate 미실행)
+
+전술 v2 데이터 계층을 끝냈다. read DTO 확장(G-pvp §7.1 "버림" 목록), 좁은 읽기 capability `TacticalEvidenceReadService`(Process 선언 1줄 · Mock 구현), 화면용 컨트롤러 `lib/tactical/tactical_records_controller.dart`(화면에 붙이지 않음), 도출 족보 "기록 없음" 표식, design-review 전술 seed. `lib/ui/**`(`tactical_page.dart` 포함) 수정 0. HEAD는 착수 때와 같다(`ebc84ee4`).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`(전체): 작업 중 info 2(`prefer_initializing_formals` — 컨트롤러 생성자, `unnecessary_string_escapes` — 테스트 정규식)를 고쳤다. 마지막 실행 **No issues found(0)**. 실행 시점에 Lane A 편집 중 파일도 함께 분석됐고 이슈 0.
+- 새 테스트: `flutter test test/tactical_fe9b1_read_test.dart` ① +9 −3(테스트 쪽: record 안 matcher 비교 2, 보유 학생 목록에 `chise` 빠짐 1) → ② **+12**. `flutter test test/tactical_records_controller_test.dart` ① +7 −1(같은 고정 시계의 두 컨트롤러가 같은 key `…-1`을 만들어 `idempotency_conflict` — 구현 수정: 순번을 프로세스 전체 static으로) → ② +6 −1(테스트 정규식 이스케이프) → ③ **+14**.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `tactical_v2_service`·v2 DTO 이름·`TacticalEvidence`·`MockDesignReviewScenario`·`createMockAppService`·`design-review`·`tactical.` + Mock 공용 몇 개). 일반(json, 12파일 병렬): **+98 −0** — home_app_shell +1, mock_design_review_scenario +11, profile_delete_fb2d +17, tactical_fe9b1_read +12, tactical_lobby_scanner_service +2, tactical_page_revision +5, tactical_page +8, tactical_records_controller +14, tactical_service +6, tactical_share_v1_contract +1, tactical_v2_service +5, widget_test +16.
+- process 묶음(`--concurrency=1`, 파일마다 따로): tactical_fb6_dart **+14**, planning_protocol_client **+24**, tactical_fb6_process_e2e **+1**, tactical_v2_process_e2e **+1**(확장 DTO 확인 expect 추가 전 +1, 추가 뒤 +1), tactical_process_e2e **+1**, profile_delete_fb2d_process_e2e **+1**. 모두 −0.
+- `dart format`: LF 파일만(`tactical_v2_service.dart`·`mock_design_review_scenario.dart`·`tactical_v2_process_e2e_test.dart`·새 5파일). WIP 공유 2파일은 포맷하지 않고 바이트 단위로 넣었다.
+- `git diff --check`(고친 5파일 + 이 문서): exit 0. 새 5파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `pubspec.yaml`·`pubspec.lock` 변경 0.
+- 3-way 병합 모의(스크래치, LF로 맞춘 뒤 `git merge-file`, base = pre · ours = HEAD · theirs = post): 고친 5파일 모두 충돌 0, HEAD → 병합 결과 차이 줄 수가 pre → post 차이와 같다(mock 48 · process 1 · tactical_v2_service 563 · design-review 13 · E2E 31). WIP는 커밋에 섞이지 않는다.
+- 잠금 충돌 0(재시도 없음). 로그 `debug/frontend_fe9b1/logs/`(실패 줄과 json 요약만 확인).
+
+### DTO 확장 표(필드 → schema 위치 → Dart 필드)
+
+schema = `contracts/tactical-protocol-v2.schema.json`. "키만"은 schema가 원소를 `{type: object}`로만 두거나 required 키 이름만 준다는 뜻이고, 그때 타입은 백엔드 코드에서 옮겼다(발견 1).
+
+| wire 필드 | schema 위치 · 타입 | Dart |
+|---|---|---|
+| snapshot `occurred_at`·`observed_at`·`imported_at` | `$defs/snapshot` timestamp\|null · 필수 문자열 | `TacticalDefenseSnapshot.occurredAt`·`observedAt`(String?)·`importedAt` |
+| snapshot `source`·`season`·`review_status` | `$defs/snapshot` | `.source`·`.season`·`.reviewStatus` |
+| identity `first_observed_at`·`last_observed_at`·`review_status` | `$defs/opponent` timestamp\|null | `TacticalOpponentIdentity.firstObservedAt`·`lastObservedAt`(String?)·`reviewStatus` |
+| jokbo `wins`·`losses`·`notes` | `$defs/jokbo` int≥0 · string | `TacticalJokboV2.wins`·`losses`·`notes` |
+| jokbo 출처 `created_at`·`imported_at`·`source`·`source_label`·`import_batch_id`·`source_record_id`·`confidence`·`review_status` | `$defs/jokbo`(confidence null\|0~1) | `.createdAt`·`.importedAt`·`.source`·`.sourceLabel`·`.importBatchId`·`.sourceRecordId`·`.confidence`(double?)·`.reviewStatus` |
+| signature `source_counts` | `statsResponse…public_signatures.items` 키만 → `core/tactical_stats_v2.py` 236~255 | `TacticalPublicSignatureStats.sourceCounts`(Map<String,int>, 키 = 출처 6종) |
+| signature `attack_decks`·`attack_deck_total` | 같은 곳 | `.attackDecks`(List<`TacticalSignatureAttackDeck`{signature, result: `TacticalObservedResult`}>)·`.attackDeckTotal` |
+| signature `full_defenses`·`full_defense_total` | 같은 곳 | `.fullDefenses`(List<`TacticalSignatureFullDefense`{signature, count}>)·`.fullDefenseTotal` |
+| stats `opponents` | `statsResponse.payload.opponents.items` `{type: object}` → `tactical_stats_v2.py` 264~310 | `TacticalStatisticsResult.opponents`(List<`TacticalOpponentStats`>: id · displayName · 노출/선택/기록 수 · `attackResults`·`defenseResults`(`TacticalObservedResult`) · `latestPublic`·`latestFull`(`TacticalOpponentLatestDeck`?)) |
+| freshness `last_success_at` | `trendsResponse…freshness.items` `{type: object}` → `core/tactical_trends_v2.py` 338~353 | `TacticalFreshnessEvidence.lastSuccessAt`(String?) |
+| freshness `verified_after_latest_change` | 같은 곳(변경 관측 없으면 null) | `.verifiedAfterLatestChange`(bool? — null = 모름) |
+| scenario `deck` | `recommendResponse…scenarios.items.properties.deck` = `$defs/deck` | `TacticalDefenseScenario.deck` |
+| recommendation `deck`·`wins`·`losses`·`last_observed_at` | `recommendResponse…recommendations.items` required 키만 → `core/tactical_recommend_v2.py` 316~332 | `TacticalAttackRecommendation.deck`·`wins`·`losses`·`lastObservedAt` |
+| `hidden_slots` | `recommendResponse…hidden_slots.items` required `position`·`candidates`만 → 같은 파일 236~266 | `TacticalRecommendationResult.hiddenSlots`(List<`TacticalHiddenSlot`{position `striker:0~3`·`special:0~1`, candidates: `TacticalHiddenSlotCandidate`{value, evidenceWeightShare, supportingSnapshotCount}}>) |
+| `ambiguity` | `recommendResponse…ambiguity` required 4키만 → 같은 파일 435~438 | `.ambiguity`(`TacticalRecommendationAmbiguity`: grade low/medium/high/unavailable · variantDefensePossible · topEvidenceWeightShare(double?) · publicKnownSlotCount 0~6) |
+| `evidence_summary` | `recommendResponse…evidence_summary` required 3키만 → 같은 파일 427~431 | `.evidenceSummary`(`TacticalEvidenceSummary` 수 3개) |
+
+- schema에 없는 필드는 만들지 않았다. 기존처럼 모든 객체는 exact 키(모르는 키 거부).
+- 새 필드는 모두 `required` 생성자 인자다(생성처는 `fromWire`뿐 — grep 확인).
+
+### Map으로 남긴 것
+
+| Dart 필드 | schema 위치 | 이유 |
+|---|---|---|
+| `TacticalTrendsResult.changes` | `trendsResponse.payload.changes` — 하위 배열 원소 `{type: object}` | 타입 없는 Map(프롬프트) |
+| `TacticalTrendsResult.exposure` | `trendsResponse.payload.exposure` — `by_*` 원소 `{type: object}`, `retention` required 키만 | 같음 |
+| `TacticalShareAnalyticsResult.groups`·`substitutions` | share analytics 응답(이 schema 밖, `version` 1 공유 계약) `groups`·`one_slot_substitutions` | 같음 |
+| `TacticalStatisticsResult.attackPatterns`·`quality` | `statsResponse.payload.attack_patterns`·`quality` required 키만 | §7.1 목록 밖 — 그대로 |
+| `TacticalRecommendationResult.validation`, recommendation `score_components`·`evidence_scope`·`source_counts`, scenario `source_counts`·`supporting_snapshot_ids` | `recommendResponse` 하위 | §7.1 목록 밖 — 검사만 하고 노출하지 않음(그대로) |
+
+### capability 구조
+
+- 새 `TacticalEvidenceReadService`(`tactical_v2_service.dart` 3177줄): `loadTacticalEvidenceState` · `queryTacticalStatistics` · `queryTacticalTrends` · `queryTacticalRecommendations`. 공유 · v6 가져오기 · 로비 · 예측 저장은 지금처럼 `TacticalEvidenceService`(Process만).
+- `ProcessAppService`: implements 목록에 `TacticalEvidenceReadService` 1줄만(메서드는 이미 있음).
+- `MockAppService`: implements 1줄 + import 1줄 + 위임 3메서드(요청을 `checkedTacticalV2Request`로 Process처럼 검사 → 새 `mock_tactical_v2_reads.dart`가 만든 wire → 같은 `fromWire`). `TacticalEvidenceService`는 여전히 구현하지 않는다(테스트로 확인).
+- 컨트롤러는 `TacticalEvidenceWriteService`(상태 읽기 + 쓰기 6)를 받는다. 통계 · 추천 패널(FE9-d)은 `TacticalEvidenceReadService`로 검사하면 된다.
+
+### Mock 차이(`mock_tactical_v2_reads.dart` 머리 주석과 같다)
+
+- 같은 계산: 관측 승률 = 승/(승+패), 95% Wilson(z = 1.959963984540054, 표본 0이면 null — p10 statistics-semantics · backend `_result`), 덱 시그니처, 기간 필터(`occurred_at` 없으면 `observed_at`, 기간을 주면 시각 없는 기록 제외), `prediction` 출처 제외. 테스트가 Wilson 값을 따로 계산해 1e-12 안에서 맞춘다.
+- Mock에 로비 스캔 · 후보가 없다: 통계 노출 · 선택 · 연결 0, 공개 시그니처 빈 목록, 공개 시그니처 필터 → 0건, 추이는 빈 구조(로비 관측이 없는 백엔드 응답과 같은 모양), 숨은 칸 빈 목록.
+- 공격 패턴은 `exact`·`strikers`·`specials`만, `cores`·`one_slot_variants`는 빈 목록.
+- 추천: 대상 상대의 확인된 완전 방어 스냅샷(시각 있음 · `as_of` 이전)만 근거(백엔드 3단계 `same_opponent_recent_full`, `selected_stage` 3, 시간 감쇠 없음 — 근거 가중치 = 스냅샷 수). 공격 추천 = 같은 상대(또는 같은 방어 덱)와 싸운 공격 기록 중 한 번이라도 이긴 덱, 승 많은 순 → 패 적은 순 → 시그니처 순. 점수 = Wilson 하한, 점수 구성 `observed_outcome` 하나. 검증(backtest) 0건 · null, 보정 gate 미통과. 신뢰 · 모호도 등급은 백엔드와 같은 문턱.
+
+### 컨트롤러 상태 · 오류 문구 표
+
+- 상태: `profileId` · `state`(v2) · `revision` · `matches`(시각 최신 순, 시각 없음은 뒤) · `jokbo`(`TacticalJokboEntry` 이름 순: 족보 + 같은 편성 v2 공격 기록 수 · 승 · 패) · `legacyPreview` · `legacyStatus`(`none`·`migrationRequired`·`migrated`) · `hasLegacyRecords` · `migrationRequired` · `lastDerivedJokboIds` · `loading` · `busy` · `error`(`TacticalRecordsError` 코드 + 문구).
+- 동작: `load(profileId)`(상태 + 이관 미리보기를 함께 읽고, 계정을 바꾸면 늦은 이전 응답을 버림) · `reload()` · `saveMatch`·`deleteMatch`·`saveJokbo`·`deleteJokbo` · `commitMigration()`(미리보기의 `source_revision`·`source_fingerprint` → `expected_source_revision`·`expected_fingerprint`, 이관할 것이 없으면 보내지 않음). 쓰기는 지금 revision을 `expected_revision`으로 보내고 성공하면 다시 읽는다. 쓰기 중에는 다른 쓰기를 보내지 않는다(false). dispose 뒤 notify 0.
+- idempotency key: `tactical-<동작>-<µs>-<순번>`(tidy1 방식). 답을 못 받은 요청(연결 끊김 · 시간 초과 · 프로토콜 오류)을 같은 내용(같은 revision)으로 다시 보내면 같은 key, 백엔드가 답한 요청(성공 · 도메인 오류)은 key를 버린다. 순번은 프로세스 전체 static(발견 4).
+- 답을 받은 뒤 다시 읽는 오류: `revision_conflict`·`idempotency_conflict`·`legacy_migration_required`·`import_source_changed`·`legacy_already_migrated`·`migration_conflict`·`record_not_found`(문구는 남긴다).
+
+| 코드 | 화면 문구 |
+|---|---|
+| `legacy_migration_required` | 이전 형식의 전술 기록을 새 형식으로 옮긴 뒤에 저장할 수 있습니다. 옮기기 미리보기를 확인해 주십시오. |
+| `import_source_changed` | 미리보기 뒤에 이전 형식 기록이 바뀌어 옮기지 않았습니다. 미리보기를 다시 읽었습니다. |
+| `import_review_required` | 옮길 수 없는 이전 형식 기록이 있어 옮기지 않았습니다. 미리보기의 문제 항목을 먼저 고쳐 주십시오. |
+| `legacy_already_migrated` | 이전 형식 기록은 이미 새 형식으로 옮겼습니다. |
+| `migration_conflict` | 옮길 기록의 ID가 이미 있는 기록과 겹쳐 옮기지 않았습니다. |
+| `lineage_conflict` | 자동으로 만든 족보의 편성은 바꿀 수 없습니다. 새 족보로 복사한 뒤 고쳐 주십시오. |
+| `opponent_alias_required` | 상대 이름이 이 상대에 저장된 이름과 다릅니다. 이름을 먼저 별칭으로 등록해 주십시오. |
+| `tactical_v1_read_only` | 새 형식으로 옮긴 뒤에는 이전 형식 기록을 읽기만 할 수 있습니다. |
+| `revision_conflict` | 저장하는 사이에 전술 기록이 바뀌어 저장하지 않았습니다. 최신 상태를 다시 읽었습니다. |
+| `idempotency_conflict` | 같은 요청 번호로 다른 내용이 와서 저장하지 않았습니다. 최신 상태를 다시 읽었습니다. |
+| (그 밖 백엔드 코드) | 전술 기록을 저장하지 못했습니다. |
+| (답 없음 `connection_failed`) | 백엔드의 답을 받지 못했습니다. 다시 연결한 뒤 같은 내용으로 다시 저장해 주십시오. |
+| (읽기 실패 `load_failed`) | 전술 기록을 읽지 못했습니다. |
+
+- 시각 표시(fb6-dart 발견 7): `tacticalOccurredText` — `date` 정밀도는 KST 날짜만(`2026-10-13`), `instant`는 KST 시각(`2026-10-04 21:10`, UTC `…Z`·`+00:00`에 9시간을 더함), `unknown`·null은 '—'. `tacticalKstDateText`·`tacticalKstInstantText`는 다른 시각(마지막 관측 등)에 쓴다. 기존 KST helper는 없었다(grep 0) — 새로 만들었다. 기기 시간대와 무관하다(UTC에서 더한다). key 시각은 `now` 주입(화면은 `() => appClockNow(service)`를 넘기면 된다).
+
+### 도출 족보 표시 규칙(fb6-dart 발견 1)
+
+- 족보는 백엔드 동작 그대로 목록에 남긴다. 컨트롤러가 족보마다 방어 · 공격 덱 identity(위치 · 와일드카드 `*` · 모름 `?` · 빈칸 `empty`까지, 백엔드 `deck_identity`와 같은 규칙)가 같은 v2 공격 기록을 세어 `recordCount`·`recordWins`·`recordLosses`를 준다. `lineage-` 족보인데 `recordCount` 0이면 `hasNoRecords` = true("기록 없음" 표식). 수동 · 가져온 족보는 표식 없음.
+- `TacticalJokboV2.wins`·`losses`(가져온 v6 집계, 자동 족보는 0)와 기록 집계를 더하지 않고 따로 둔다(계약 "not double counted").
+- 테스트: 기록 저장 → 자동 족보(기록 1 · 1승) → 기록 삭제 → 같은 족보가 남고 `hasNoRecords` → 이름 고침(notes 되보냄) 뒤에도 표식 유지 → 족보 삭제.
+
+### design-review seed
+
+- 새 `lib/services/design_review/tactical_records_data.dart` + `mock_design_review_scenario.dart` 생성자에서 같은 Mock 쓰기 경로(`upsertTacticalMatchV2`, 계획 seed와 같은 `unawaited` 방식, 기대 revision 0~3)로 기록 4개: 공격 2(게헨나 선도부, instant, 시도 1 · 3, 승 · 패) · 공격 1(아비도스 대책위원회, date, 시도 2, 모름 칸 2 · 빈칸 1인 부분 방어 덱) · 방어 1(unknown). 자동 족보 2, revision 4, 이관 미리보기 `v1_writes_disabled` true(빈 v1 claim).
+- 기본 Mock은 그대로 빈 v2(테스트 확인). design-review는 opt-in이라 golden 영향 없음.
+
+### FE9-a 전환 목록(v1 caller — 고치지 않음)
+
+| `tactical_page.dart` | 메서드 | v1 호출 → Process 줄(이번 implements 1줄로 +1) | FE9-a v2 대체 |
+|---|---|---|---|
+| 368 | `_editMatch`(448 `_copyJokboToMatch`도 거침) | `saveTacticalMatch` → `tactical.match.upsert` 680 | `TacticalRecordsController.saveMatch` |
+| 439 | `_editJokbo` | `saveTacticalJokbo` → `tactical.jokbo.upsert` 704 | `.saveJokbo` |
+| 483 | `_deleteMatch` | `deleteTacticalMatch` → `tactical.match.delete` 692 | `.deleteMatch` |
+| 498 | `_deleteJokbo` | `deleteTacticalJokbo` → `tactical.jokbo.delete` 716 | `.deleteJokbo` |
+
+- 근거: XB 13:51(`debug/xb_fb6_exact_commit_20261014/artifacts/tactical-v1-editor-caller-proof.json`). 이관 뒤 이 4곳은 `tactical_v1_read_only`이고 지금 화면은 일반 저장 실패로 보인다. FE9-a는 이관 안내(`legacyStatus`·`commitMigration`)와 묶어 전환한다.
+
+### golden 변화 0 근거(golden 미실행)
+
+- `lib/ui/**` 수정 0. golden harness · golden 테스트는 전술 v2 · design-review 시나리오를 쓰지 않는다(grep: harness의 `tactical`은 재화 `tactical_bd`뿐, `MockDesignReviewScenario`·`createMockAppService` 0). Mock 변화는 새 읽기 메서드 3개(부를 때만)와 design-review 생성자 seed뿐이다.
+- CF gate 예상: analyze 0. `tactical_fe9b1_read_test.dart`는 컴파일 시점 capability 검사 때문에 `ProcessAppService` 문자열이 있어 fe_gate 분류상 process(직렬) 묶음 → process **+12**(빠름), `tactical_records_controller_test.dart`는 일반 **+14**, `tactical_v2_process_e2e_test`는 1건 그대로(expect만 늘었다). golden 변화 0.
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1` · golden 비교 · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, 백엔드 수정 0).
+- 위 목록 밖 Flutter 테스트(Lane A 통계 · 계획, 스캐너 · 스캔 화면, 나머지 process E2E): **미실행**. 이 slice의 Mock 변화는 새 읽기 3메서드와 design-review seed뿐이다.
+- 컨트롤러를 실제 백엔드에 붙인 실행: **미실행**(컨트롤러가 부르는 서비스 메서드는 fb6 E2E가 실제 백엔드로 이미 검사). 같은 상태로 Mock 읽기와 실제 백엔드 숫자 대조: **미실행**(차이는 위 "Mock 차이").
+- 실제 사용자 프로필 · 화면 연결 · Windows release 빌드: **미실행**.
+
+### WIP 보존 확인
+
+- 공유 2파일을 pre 사본과 줄 단위(difflib, 줄바꿈 무시 비교)로 맞춰 봤다: 같은 줄은 바이트(줄바꿈 포함)까지 그대로(바뀐 줄 0), 새 줄은 모두 CRLF(주변과 같음). LF 줄 수 그대로(mock 128 · process 24).
+  - `mock_app_service.dart`: 삽입 3곳(22줄 import 1, 48줄 implements 1, 2948~2989줄 읽기 3메서드 42) + HEAD 주석 1줄 → 2줄 교체(2865~2866, `git show HEAD`에 있는 문장 — WIP 아님). WIP hunk(189~683줄)와 겹치거나 맞닿지 않는다.
+  - `process_app_service.dart`: 삽입 1곳(37줄 1줄). WIP hunk(1234~1276줄 부근)와 떨어져 있다.
+- `git diff`로 다시 셈: 착수 때 WIP diff(`logs/wip-before.diff`)의 +/− 줄 152개가 끝 diff(`logs/diff-after.diff`)에 모두 그대로 있다(빠진 줄 0, 늘어난 49줄은 이 slice).
+- 공유 파일 편집은 바이트 단위 삽입으로 했고 편집 도구 줄바꿈 통일은 일어나지 않았다(복원 불필요). `planning_protocol_client.dart`·`scanner_service.dart`·스캐너 테스트 · Lane A 파일 수정 0. git 쓰기 0회.
+
+### FD 처리
+
+- FD-128(확정, 권장안 (a)): v2 일원화 · 족보 자동 도출 + 이름 편집 — 컨트롤러는 v2 쓰기만 하고 자동 족보를 그대로 보인다.
+- 워커 재량 FD 사용 없음(FD-129는 FE9-d · FE9-e 몫).
+
+### 발견 사항
+
+1. **schema가 통계 · 추이 · 추천 하위 원소의 타입을 주지 않는다**(XB 요청 후보): `statsResponse.public_signatures`·`opponents`, `trendsResponse.freshness` 원소는 `{type: object}`, `recommendations`·`hidden_slots`·`ambiguity`·`evidence_summary`는 required 키 이름만 있다. Dart 타입은 백엔드 코드(위 표의 줄)를 따랐고 실제 응답은 E2E로 받았다. schema에 원소 타입을 적으면 Python schema 검사와 Dart strict 검사가 같은 근거를 갖는다. schema와 실제 백엔드 응답이 다른 곳은 찾지 못했다.
+2. **족보 승패의 뜻**: `jokbo.wins`·`losses`는 v6 가져오기 집계(자동 족보는 항상 0)이고 v2 기록에서 다시 세지 않는다. 컨트롤러는 기록 집계를 따로 준다. 분석 화면(FE9-d · FE9-e)이 둘 중 무엇을 "족보 승패"로 보일지(또는 나란히)는 CF 판단.
+3. **Mock 차이**: 위 "Mock 차이"(로비 없음, 패턴 일부, 추천 단순화). 검수에서 통계 · 추천 숫자가 실제 백엔드와 다를 수 있다.
+4. **idempotency 순번을 컨트롤러 사이에서 공유(static)**: tidy1은 State마다 순번이었지만, 같은 µs 시계(고정 시계 · 빠른 재생성)의 두 컨트롤러가 같은 key를 만들어 `idempotency_conflict`가 났다(테스트로 재현 → 수정). 같은 문제가 tidy1의 State별 순번에도 이론상 있다(두 인스턴스가 같은 µs) — CF 판단.
+5. **design-review seed는 빈 v1 claim 경로**: 이관 완료 상태를 v1 기록 없이 만든다. 이관된 기록(시도 null · date)의 모습은 seed에 없다(컨트롤러 테스트가 Mock 이관 경로를 검사). 검수에서 이관 안내 화면을 보려면 별도 seed가 필요하다.
+6. **fe_gate 분류**: `tactical_fe9b1_read_test.dart`가 process 묶음에 들어간다(fb6-dart 발견 5와 같은 이유, 빠름).
+7. **Process 줄 이동**: implements 1줄로 v1 전송 줄이 XB 13:51 표(679 · 703 · 691 · 715)에서 각각 +1(680 · 704 · 692 · 716). `tactical_page.dart` 줄은 그대로.
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe9b1/pre/<경로>`(고친 기존 5파일 + 이 문서).
+- 끝 사본: `debug/frontend_fe9b1/post/<경로>`(고친 기존 5파일 + 새 5파일).
+- `debug/frontend_fe9b1/commit.json`: slice `fe9b1`, `status=false`, `post_dir` = `debug/frontend_fe9b1/post`, modified 5, added 5, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`. message(ASCII) 근거: G-pvp §7.1 · §7.2, FD-128, fb6-dart 발견 1 · 2 · 4 · 7, backend 로그 13:51.
+- 인계: `debug/frontend_fe9b1/output.md`.
+
+### 다음 행동
+
+- FE9-b1 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-f)가 멈춘 뒤 gate 1회(예상: analyze 0, process +12 · 일반 +14 늘어남, golden 변화 0) → `fe_commit.ps1 -Slice fe9b1`(mock · process는 3-way 병합, WIP 인접 hunk 없음).
+- 그다음 FE9-a(새 기록 화면, 이 컨트롤러 위, v1 caller 4곳 전환). 발견 1은 XB 요청 후보, 2 · 4 · 5는 CF 판단.

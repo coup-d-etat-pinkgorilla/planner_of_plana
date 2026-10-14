@@ -416,12 +416,35 @@ class TacticalJokboV2 {
     required this.defenseDeck,
     required this.attackDeck,
     this.name,
+    required this.wins,
+    required this.losses,
+    required this.notes,
+    required this.createdAt,
+    required this.importedAt,
+    required this.source,
+    required this.sourceLabel,
+    required this.importBatchId,
+    required this.sourceRecordId,
+    required this.confidence,
+    required this.reviewStatus,
   });
   final String id;
   final TacticalDeckV2 defenseDeck, attackDeck;
 
   /// FB-6 족보 이름(자동 이름 또는 사용자 편집). 구 v2 기록에는 없을 수 있다(null).
   final String? name;
+
+  /// FE9-b1: schema `jokbo.wins`·`losses`. 가져온 족보(v6)의 집계 값이며 v2 기록에서 다시 세지 않는다
+  /// (자동 도출 `lineage-` 족보는 0). 기록 기준 승패는 화면 쪽에서 기록을 따로 센다.
+  final int wins, losses;
+
+  /// FE9-b1: schema `jokbo.notes`. 족보를 고쳐 저장할 때 입력 6키의 `notes`로 그대로 되보낸다.
+  final String notes;
+
+  /// FE9-b1: schema `jokbo`의 출처 필드(백엔드 소유 — 쓰기 입력에 넣지 않는다).
+  final String createdAt, importedAt, source, sourceLabel;
+  final String importBatchId, sourceRecordId, reviewStatus;
+  final double? confidence;
   factory TacticalJokboV2.fromWire(Map<String, dynamic> value) {
     const fields = {
       'version',
@@ -454,8 +477,6 @@ class TacticalJokboV2 {
         value['notes'] is! String) {
       throw const FormatException('Invalid tactical v2 jokbo');
     }
-    _timestampV2(value['created_at'], nullable: false);
-    _timestampV2(value['imported_at'], nullable: false);
     _provenanceV2(value);
     return TacticalJokboV2(
       id: value['jokbo_id'] as String,
@@ -466,6 +487,17 @@ class TacticalJokboV2 {
         Map<String, dynamic>.from(value['attack_deck'] as Map),
       ),
       name: name as String?,
+      wins: value['wins'] as int,
+      losses: value['losses'] as int,
+      notes: value['notes'] as String,
+      createdAt: _timestampV2(value['created_at'], nullable: false)!,
+      importedAt: _timestampV2(value['imported_at'], nullable: false)!,
+      source: value['source'] as String,
+      sourceLabel: value['source_label'] as String,
+      importBatchId: value['import_batch_id'] as String,
+      sourceRecordId: value['source_record_id'] as String,
+      confidence: (value['confidence'] as num?)?.toDouble(),
+      reviewStatus: value['review_status'] as String,
     );
   }
 }
@@ -477,10 +509,17 @@ class TacticalOpponentIdentity {
     required this.currentDisplayName,
     required this.aliases,
     required this.nameTemplateIds,
+    required this.firstObservedAt,
+    required this.lastObservedAt,
+    required this.reviewStatus,
   });
   final String id, currentDisplayName;
   final List<String> aliases;
   final List<String> nameTemplateIds;
+
+  /// FE9-b1: schema `opponent.first_observed_at`·`last_observed_at`(timestamp | null — 모르면 null).
+  final String? firstObservedAt, lastObservedAt;
+  final String reviewStatus;
   factory TacticalOpponentIdentity.fromWire(Map<String, dynamic> value) {
     const fields = {
       'version',
@@ -509,13 +548,14 @@ class TacticalOpponentIdentity {
         !_reviewStatusesV2.contains(value['review_status'])) {
       throw const FormatException('Invalid tactical opponent identity');
     }
-    _timestampV2(value['first_observed_at']);
-    _timestampV2(value['last_observed_at']);
     return TacticalOpponentIdentity(
       id: value['identity_id'] as String,
       currentDisplayName: value['current_display_name'] as String,
       aliases: List.unmodifiable(aliases.cast<String>()),
       nameTemplateIds: List.unmodifiable(templates.cast<String>()),
+      firstObservedAt: _timestampV2(value['first_observed_at']),
+      lastObservedAt: _timestampV2(value['last_observed_at']),
+      reviewStatus: value['review_status'] as String,
     );
   }
 }
@@ -527,10 +567,20 @@ class TacticalDefenseSnapshot {
     required this.opponentIdentityId,
     required this.deck,
     required this.matchId,
+    required this.occurredAt,
+    required this.observedAt,
+    required this.importedAt,
+    required this.source,
+    required this.season,
+    required this.reviewStatus,
   });
   final String id, opponentIdentityId;
   final String? matchId;
   final TacticalDeckV2 deck;
+
+  /// FE9-b1: schema `snapshot.occurred_at`·`observed_at`(timestamp | null), `imported_at`(필수).
+  final String? occurredAt, observedAt;
+  final String importedAt, source, season, reviewStatus;
   factory TacticalDefenseSnapshot.fromWire(Map<String, dynamic> value) {
     const fields = {
       'version',
@@ -563,9 +613,6 @@ class TacticalDefenseSnapshot {
                 value['confidence'] > 1))) {
       throw const FormatException('Invalid tactical defense snapshot');
     }
-    _timestampV2(value['occurred_at']);
-    _timestampV2(value['observed_at']);
-    _timestampV2(value['imported_at'], nullable: false);
     return TacticalDefenseSnapshot(
       id: value['snapshot_id'] as String,
       opponentIdentityId: value['opponent_identity_id'] as String,
@@ -573,6 +620,12 @@ class TacticalDefenseSnapshot {
         Map<String, dynamic>.from(value['deck'] as Map),
       ),
       matchId: value['match_id'] as String?,
+      occurredAt: _timestampV2(value['occurred_at']),
+      observedAt: _timestampV2(value['observed_at']),
+      importedAt: _timestampV2(value['imported_at'], nullable: false)!,
+      source: value['source'] as String,
+      season: value['season'] as String,
+      reviewStatus: value['review_status'] as String,
     );
   }
 }
@@ -1144,6 +1197,235 @@ class TacticalStatsPopulation {
   }
 }
 
+// FE9-b1: 통계 하위 행. schema(`statsResponse`)는 `public_signatures`·`opponents` 원소를 `{type: object}`로만 두므로
+// 키·타입은 백엔드 `core/tactical_stats_v2.py`(`_result`·signature·opponent 행)를 따른다(status-lane-b FE9-b1 DTO 표).
+
+bool _rateV2(Object? item) =>
+    item == null || (item is num && item >= 0 && item <= 1);
+
+bool _countV2(Object? item) => item is int && item >= 0;
+
+/// 출처별 개수(`source_counts`). 키는 출처 이름, 값은 0 이상 정수.
+Map<String, int> _sourceCountsV2(Object? raw) {
+  if (raw is! Map ||
+      raw.keys.any((key) => !_sourcesV2.contains(key)) ||
+      raw.values.any((item) => !_countV2(item))) {
+    throw const FormatException('Invalid tactical source counts');
+  }
+  return Map.unmodifiable(Map<String, int>.from(raw));
+}
+
+/// 관측 결과 묶음(백엔드 `_result`): 기록 수 · 승 · 패 · 관측 승률 · Wilson 95% 구간(표본 0이면 null).
+@immutable
+class TacticalObservedResult {
+  const TacticalObservedResult({
+    required this.count,
+    required this.wins,
+    required this.losses,
+    required this.observedWinRate,
+    required this.wilson95Low,
+    required this.wilson95High,
+  });
+  final int count, wins, losses;
+  final double? observedWinRate, wilson95Low, wilson95High;
+
+  static const fields = {
+    'count',
+    'wins',
+    'losses',
+    'observed_win_rate',
+    'wilson95_low',
+    'wilson95_high',
+  };
+
+  factory TacticalObservedResult.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, fields)) {
+      throw const FormatException('Invalid tactical observed result');
+    }
+    return TacticalObservedResult._checked(value);
+  }
+
+  /// [value]에 다른 키(예 `signature`)가 함께 있는 행에서 결과 6키만 읽는다.
+  factory TacticalObservedResult._checked(Map<String, dynamic> value) {
+    if (!_countV2(value['count']) ||
+        !_countV2(value['wins']) ||
+        !_countV2(value['losses']) ||
+        !_rateV2(value['observed_win_rate']) ||
+        !_rateV2(value['wilson95_low']) ||
+        !_rateV2(value['wilson95_high'])) {
+      throw const FormatException('Invalid tactical observed result');
+    }
+    return TacticalObservedResult(
+      count: value['count'] as int,
+      wins: value['wins'] as int,
+      losses: value['losses'] as int,
+      observedWinRate: (value['observed_win_rate'] as num?)?.toDouble(),
+      wilson95Low: (value['wilson95_low'] as num?)?.toDouble(),
+      wilson95High: (value['wilson95_high'] as num?)?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'count': count,
+    'wins': wins,
+    'losses': losses,
+    'observed_win_rate': observedWinRate,
+    'wilson95_low': wilson95Low,
+    'wilson95_high': wilson95High,
+  };
+}
+
+/// 공개 시그니처에 연결된 공격 덱 한 줄(`attack_decks` 원소: `signature` + 관측 결과).
+@immutable
+class TacticalSignatureAttackDeck {
+  const TacticalSignatureAttackDeck({
+    required this.signature,
+    required this.result,
+  });
+  final String signature;
+  final TacticalObservedResult result;
+
+  factory TacticalSignatureAttackDeck.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'signature', ...TacticalObservedResult.fields}) ||
+        value['signature'] is! String ||
+        (value['signature'] as String).isEmpty) {
+      throw const FormatException('Invalid signature attack deck');
+    }
+    return TacticalSignatureAttackDeck(
+      signature: value['signature'] as String,
+      result: TacticalObservedResult._checked(value),
+    );
+  }
+}
+
+/// 공개 시그니처 뒤에서 확인된 완전 방어 덱 한 줄(`full_defenses` 원소).
+@immutable
+class TacticalSignatureFullDefense {
+  const TacticalSignatureFullDefense({
+    required this.signature,
+    required this.count,
+  });
+  final String signature;
+  final int count;
+
+  factory TacticalSignatureFullDefense.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'signature', 'count'}) ||
+        value['signature'] is! String ||
+        (value['signature'] as String).isEmpty ||
+        !_countV2(value['count'])) {
+      throw const FormatException('Invalid signature full defense');
+    }
+    return TacticalSignatureFullDefense(
+      signature: value['signature'] as String,
+      count: value['count'] as int,
+    );
+  }
+}
+
+/// 상대 통계의 최근 공개 관측(`latest_public`) 또는 최근 완전 방어(`latest_full`).
+@immutable
+class TacticalOpponentLatestDeck {
+  const TacticalOpponentLatestDeck({
+    required this.signature,
+    required this.observedAt,
+    required this.snapshotId,
+  });
+
+  /// `latest_public`이면 공개 시그니처, `latest_full`이면 완전 덱 시그니처.
+  final String signature;
+  final String observedAt, snapshotId;
+
+  static TacticalOpponentLatestDeck? fromWire(
+    Object? raw, {
+    required String signatureKey,
+  }) {
+    if (raw == null) return null;
+    if (raw is! Map) {
+      throw const FormatException('Invalid opponent latest deck');
+    }
+    final value = Map<String, dynamic>.from(raw);
+    if (!_exactV2(value, {signatureKey, 'observed_at', 'snapshot_id'}) ||
+        value[signatureKey] is! String ||
+        (value[signatureKey] as String).isEmpty ||
+        !_recordIdV2(value['snapshot_id'])) {
+      throw const FormatException('Invalid opponent latest deck');
+    }
+    return TacticalOpponentLatestDeck(
+      signature: value[signatureKey] as String,
+      observedAt: _timestampV2(value['observed_at'], nullable: false)!,
+      snapshotId: value['snapshot_id'] as String,
+    );
+  }
+}
+
+/// 통계 응답 `opponents` 원소: 상대별 노출·선택·기록 수와 공격·방어 결과(따로), 최근 공개·완전 덱.
+@immutable
+class TacticalOpponentStats {
+  const TacticalOpponentStats({
+    required this.opponentIdentityId,
+    required this.displayName,
+    required this.exposureCount,
+    required this.selectedCount,
+    required this.matchCount,
+    required this.attackResults,
+    required this.defenseResults,
+    required this.latestPublic,
+    required this.latestFull,
+  });
+  final String opponentIdentityId;
+
+  /// 상대 identity가 없으면 백엔드가 빈 문자열을 준다(화면은 '—').
+  final String displayName;
+  final int exposureCount, selectedCount, matchCount;
+  final TacticalObservedResult attackResults, defenseResults;
+  final TacticalOpponentLatestDeck? latestPublic, latestFull;
+
+  factory TacticalOpponentStats.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'opponent_identity_id',
+      'display_name',
+      'exposure_count',
+      'selected_count',
+      'match_count',
+      'attack_results',
+      'defense_results',
+      'latest_public',
+      'latest_full',
+    };
+    if (!_exactV2(value, fields) ||
+        !_recordIdV2(value['opponent_identity_id']) ||
+        value['display_name'] is! String ||
+        !_countV2(value['exposure_count']) ||
+        !_countV2(value['selected_count']) ||
+        !_countV2(value['match_count']) ||
+        value['attack_results'] is! Map ||
+        value['defense_results'] is! Map) {
+      throw const FormatException('Invalid tactical opponent statistics');
+    }
+    return TacticalOpponentStats(
+      opponentIdentityId: value['opponent_identity_id'] as String,
+      displayName: value['display_name'] as String,
+      exposureCount: value['exposure_count'] as int,
+      selectedCount: value['selected_count'] as int,
+      matchCount: value['match_count'] as int,
+      attackResults: TacticalObservedResult.fromWire(
+        Map<String, dynamic>.from(value['attack_results'] as Map),
+      ),
+      defenseResults: TacticalObservedResult.fromWire(
+        Map<String, dynamic>.from(value['defense_results'] as Map),
+      ),
+      latestPublic: TacticalOpponentLatestDeck.fromWire(
+        value['latest_public'],
+        signatureKey: 'public_signature',
+      ),
+      latestFull: TacticalOpponentLatestDeck.fromWire(
+        value['latest_full'],
+        signatureKey: 'deck_signature',
+      ),
+    );
+  }
+}
+
 @immutable
 class TacticalPublicSignatureStats {
   const TacticalPublicSignatureStats({
@@ -1157,6 +1439,11 @@ class TacticalPublicSignatureStats {
     required this.observedWinRate,
     required this.wilson95Low,
     required this.wilson95High,
+    required this.sourceCounts,
+    required this.attackDecks,
+    required this.attackDeckTotal,
+    required this.fullDefenses,
+    required this.fullDefenseTotal,
   });
   final String signature;
   final int exposureCount,
@@ -1166,6 +1453,17 @@ class TacticalPublicSignatureStats {
       wins,
       losses;
   final double? observedWinRate, wilson95Low, wilson95High;
+
+  /// FE9-b1: 출처별 개수(`lobby_scan` = 노출 수, 그 밖 = 연결 기록의 출처).
+  final Map<String, int> sourceCounts;
+
+  /// FE9-b1: 이 시그니처에 연결된 공격 덱(많이 쓴 순, `limit`까지)과 전체 개수.
+  final List<TacticalSignatureAttackDeck> attackDecks;
+  final int attackDeckTotal;
+
+  /// FE9-b1: 이 시그니처 뒤에서 확인된 완전 방어 덱(많은 순, `limit`까지)과 전체 개수.
+  final List<TacticalSignatureFullDefense> fullDefenses;
+  final int fullDefenseTotal;
 
   factory TacticalPublicSignatureStats.fromWire(Map<String, dynamic> value) {
     const fields = {
@@ -1219,6 +1517,23 @@ class TacticalPublicSignatureStats {
       observedWinRate: (value['observed_win_rate'] as num?)?.toDouble(),
       wilson95Low: (value['wilson95_low'] as num?)?.toDouble(),
       wilson95High: (value['wilson95_high'] as num?)?.toDouble(),
+      sourceCounts: _sourceCountsV2(value['source_counts']),
+      attackDecks: List.unmodifiable(
+        (value['attack_decks'] as List).map(
+          (item) => TacticalSignatureAttackDeck.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      attackDeckTotal: value['attack_deck_total'] as int,
+      fullDefenses: List.unmodifiable(
+        (value['full_defenses'] as List).map(
+          (item) => TacticalSignatureFullDefense.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      fullDefenseTotal: value['full_defense_total'] as int,
     );
   }
 }
@@ -1233,9 +1548,13 @@ class TacticalStatisticsResult {
     required this.attackPatterns,
     required this.quality,
     required this.populationWarning,
+    required this.opponents,
   });
   final TacticalStatsPopulation population;
   final List<TacticalPublicSignatureStats> publicSignatures;
+
+  /// FE9-b1: 상대별 통계(노출 많은 순, `limit`까지). 전체 개수는 [opponentTotal].
+  final List<TacticalOpponentStats> opponents;
   final int publicSignatureTotal, opponentTotal;
   final Map<String, dynamic> attackPatterns, quality;
   final String populationWarning;
@@ -1284,6 +1603,13 @@ class TacticalStatisticsResult {
         ),
       ),
       publicSignatureTotal: value['public_signature_total'] as int,
+      opponents: List.unmodifiable(
+        (value['opponents'] as List).map(
+          (item) => TacticalOpponentStats.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
       opponentTotal: value['opponent_total'] as int,
       attackPatterns: Map.unmodifiable(
         Map<String, dynamic>.from(value['attack_patterns'] as Map),
@@ -1409,6 +1735,8 @@ class TacticalFreshnessEvidence {
     required this.freshnessWeight,
     required this.stale,
     required this.verifiedAfterLatestPublic,
+    required this.lastSuccessAt,
+    required this.verifiedAfterLatestChange,
   });
   final String opponentIdentityId,
       publicSignature,
@@ -1416,6 +1744,12 @@ class TacticalFreshnessEvidence {
       lastBattleAt;
   final double ageHours, freshnessWeight;
   final bool stale, verifiedAfterLatestPublic;
+
+  /// FE9-b1: 마지막 승리 시각(이긴 기록이 없으면 null).
+  final String? lastSuccessAt;
+
+  /// FE9-b1: 최근 공개 덱 변경 뒤에 다시 싸워 봤는가. 변경이 관측된 적 없으면 null(모름 — false와 다르다).
+  final bool? verifiedAfterLatestChange;
 
   factory TacticalFreshnessEvidence.fromWire(Map<String, dynamic> value) {
     const fields = {
@@ -1445,9 +1779,12 @@ class TacticalFreshnessEvidence {
         value['freshness_weight'] < 0 ||
         value['freshness_weight'] > 1 ||
         value['stale'] is! bool ||
-        value['verified_after_latest_public'] is! bool) {
+        value['verified_after_latest_public'] is! bool ||
+        (value['verified_after_latest_change'] != null &&
+            value['verified_after_latest_change'] is! bool)) {
       throw const FormatException('Invalid tactical freshness evidence');
     }
+    _timestampV2(value['last_battle_at'], nullable: false);
     return TacticalFreshnessEvidence(
       opponentIdentityId: value['opponent_identity_id'] as String,
       publicSignature: value['public_signature'] as String,
@@ -1457,6 +1794,8 @@ class TacticalFreshnessEvidence {
       freshnessWeight: (value['freshness_weight'] as num).toDouble(),
       stale: value['stale'] as bool,
       verifiedAfterLatestPublic: value['verified_after_latest_public'] as bool,
+      lastSuccessAt: _timestampV2(value['last_success_at']),
+      verifiedAfterLatestChange: value['verified_after_latest_change'] as bool?,
     );
   }
 }
@@ -1567,10 +1906,14 @@ class TacticalDefenseScenario {
     required this.snapshotCount,
     required this.distinctOpponentCount,
     required this.lastConfirmedAt,
+    required this.deck,
   });
   final String defenseSignature, lastConfirmedAt;
   final double evidenceWeightShare;
   final int snapshotCount, distinctOpponentCount;
+
+  /// FE9-b1: schema `recommendResponse.scenarios[].deck`(`#/$defs/deck`) — 가장 최근 근거 스냅샷의 완전 방어 덱.
+  final TacticalDeckV2 deck;
 
   factory TacticalDefenseScenario.fromWire(Map<String, dynamic> value) {
     const fields = {
@@ -1608,13 +1951,15 @@ class TacticalDefenseScenario {
       throw const FormatException('Invalid tactical defense scenario');
     }
     _timestampV2(value['last_confirmed_at'], nullable: false);
-    TacticalDeckV2.fromWire(Map<String, dynamic>.from(value['deck'] as Map));
     return TacticalDefenseScenario(
       defenseSignature: value['defense_signature'] as String,
       evidenceWeightShare: (value['evidence_weight_share'] as num).toDouble(),
       snapshotCount: value['snapshot_count'] as int,
       distinctOpponentCount: value['distinct_opponent_count'] as int,
       lastConfirmedAt: value['last_confirmed_at'] as String,
+      deck: TacticalDeckV2.fromWire(
+        Map<String, dynamic>.from(value['deck'] as Map),
+      ),
     );
   }
 }
@@ -1628,6 +1973,10 @@ class TacticalAttackRecommendation {
     required this.observedWinRate,
     required this.missingStudentIds,
     required this.allKnownStudentsOwned,
+    required this.deck,
+    required this.wins,
+    required this.losses,
+    required this.lastObservedAt,
   });
   final String attackSignature;
   final double score;
@@ -1635,6 +1984,11 @@ class TacticalAttackRecommendation {
   final double? observedWinRate;
   final List<String> missingStudentIds;
   final bool allKnownStudentsOwned;
+
+  /// FE9-b1: 추천 공격 덱(드래그 복사의 원본), 관측 승·패, 마지막 관측 시각.
+  final TacticalDeckV2 deck;
+  final int wins, losses;
+  final String lastObservedAt;
 
   factory TacticalAttackRecommendation.fromWire(Map<String, dynamic> value) {
     const fields = {
@@ -1666,10 +2020,11 @@ class TacticalAttackRecommendation {
         !(rate == null || rate is num && rate >= 0 && rate <= 1) ||
         value['missing_student_ids'] is! List ||
         value['all_known_students_owned'] is! bool ||
-        value['deck'] is! Map) {
+        value['deck'] is! Map ||
+        !_countV2(value['wins']) ||
+        !_countV2(value['losses'])) {
       throw const FormatException('Invalid tactical attack recommendation');
     }
-    TacticalDeckV2.fromWire(Map<String, dynamic>.from(value['deck'] as Map));
     return TacticalAttackRecommendation(
       attackSignature: value['attack_signature'] as String,
       score: (value['score'] as num).toDouble(),
@@ -1679,6 +2034,152 @@ class TacticalAttackRecommendation {
         (value['missing_student_ids'] as List).cast<String>(),
       ),
       allKnownStudentsOwned: value['all_known_students_owned'] as bool,
+      deck: TacticalDeckV2.fromWire(
+        Map<String, dynamic>.from(value['deck'] as Map),
+      ),
+      wins: value['wins'] as int,
+      losses: value['losses'] as int,
+      lastObservedAt: _timestampV2(value['last_observed_at'], nullable: false)!,
+    );
+  }
+}
+
+/// FE9-b1: 추천 근거 요약(`evidence_summary`). 날짜 없는 스냅샷은 근거에서 빠지고 따로 센다.
+@immutable
+class TacticalEvidenceSummary {
+  const TacticalEvidenceSummary({
+    required this.includedSnapshotCount,
+    required this.distinctOpponentCount,
+    required this.excludedUndatedSnapshotCount,
+  });
+  final int includedSnapshotCount,
+      distinctOpponentCount,
+      excludedUndatedSnapshotCount;
+
+  factory TacticalEvidenceSummary.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'included_snapshot_count',
+      'distinct_opponent_count',
+      'excluded_undated_snapshot_count',
+    };
+    if (!_exactV2(value, fields) ||
+        fields.any((key) => !_countV2(value[key]))) {
+      throw const FormatException('Invalid tactical evidence summary');
+    }
+    return TacticalEvidenceSummary(
+      includedSnapshotCount: value['included_snapshot_count'] as int,
+      distinctOpponentCount: value['distinct_opponent_count'] as int,
+      excludedUndatedSnapshotCount:
+          value['excluded_undated_snapshot_count'] as int,
+    );
+  }
+}
+
+const _hiddenSlotPositionsV2 = {
+  'striker:0',
+  'striker:1',
+  'striker:2',
+  'striker:3',
+  'special:0',
+  'special:1',
+};
+
+/// FE9-b1: 숨은 칸 후보 한 개. [value]는 학생 ID 또는 `?`(모름)·`*`(와일드카드)·`empty`(빈칸).
+/// [evidenceWeightShare]는 근거 가중치 비율이지 확률이 아니다(terminology).
+@immutable
+class TacticalHiddenSlotCandidate {
+  const TacticalHiddenSlotCandidate({
+    required this.value,
+    required this.evidenceWeightShare,
+    required this.supportingSnapshotCount,
+  });
+  final String value;
+  final double evidenceWeightShare;
+  final int supportingSnapshotCount;
+
+  factory TacticalHiddenSlotCandidate.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {
+          'value',
+          'evidence_weight_share',
+          'supporting_snapshot_count',
+        }) ||
+        value['value'] is! String ||
+        (value['value'] as String).isEmpty ||
+        value['evidence_weight_share'] is! num ||
+        !_rateV2(value['evidence_weight_share']) ||
+        !_countV2(value['supporting_snapshot_count'])) {
+      throw const FormatException('Invalid tactical hidden slot candidate');
+    }
+    return TacticalHiddenSlotCandidate(
+      value: value['value'] as String,
+      evidenceWeightShare: (value['evidence_weight_share'] as num).toDouble(),
+      supportingSnapshotCount: value['supporting_snapshot_count'] as int,
+    );
+  }
+}
+
+/// FE9-b1: 공개 로비에서 가려진 칸(`hidden_slots` 원소). [position]은 `striker:0`~`3`·`special:0`~`1`.
+@immutable
+class TacticalHiddenSlot {
+  TacticalHiddenSlot({
+    required this.position,
+    required List<TacticalHiddenSlotCandidate> candidates,
+  }) : candidates = List.unmodifiable(candidates);
+  final String position;
+  final List<TacticalHiddenSlotCandidate> candidates;
+
+  factory TacticalHiddenSlot.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'position', 'candidates'}) ||
+        !_hiddenSlotPositionsV2.contains(value['position']) ||
+        value['candidates'] is! List) {
+      throw const FormatException('Invalid tactical hidden slot');
+    }
+    return TacticalHiddenSlot(
+      position: value['position'] as String,
+      candidates: [
+        for (final item in value['candidates'] as List)
+          TacticalHiddenSlotCandidate.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+      ],
+    );
+  }
+}
+
+/// FE9-b1: 방어 덱 모호도(`ambiguity`). 근거가 없으면 [grade] `unavailable`·[topEvidenceWeightShare] null.
+@immutable
+class TacticalRecommendationAmbiguity {
+  const TacticalRecommendationAmbiguity({
+    required this.grade,
+    required this.variantDefensePossible,
+    required this.topEvidenceWeightShare,
+    required this.publicKnownSlotCount,
+  });
+  final String grade;
+  final bool variantDefensePossible;
+  final double? topEvidenceWeightShare;
+  final int publicKnownSlotCount;
+
+  factory TacticalRecommendationAmbiguity.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {
+          'grade',
+          'variant_defense_possible',
+          'top_evidence_weight_share',
+          'public_known_slot_count',
+        }) ||
+        !{'low', 'medium', 'high', 'unavailable'}.contains(value['grade']) ||
+        value['variant_defense_possible'] is! bool ||
+        !_rateV2(value['top_evidence_weight_share']) ||
+        !_countV2(value['public_known_slot_count']) ||
+        (value['public_known_slot_count'] as int) > 6) {
+      throw const FormatException('Invalid tactical recommendation ambiguity');
+    }
+    return TacticalRecommendationAmbiguity(
+      grade: value['grade'] as String,
+      variantDefensePossible: value['variant_defense_possible'] as bool,
+      topEvidenceWeightShare: (value['top_evidence_weight_share'] as num?)
+          ?.toDouble(),
+      publicKnownSlotCount: value['public_known_slot_count'] as int,
     );
   }
 }
@@ -1696,7 +2197,15 @@ class TacticalRecommendationResult {
     required this.recommendations,
     required this.validation,
     required this.warning,
+    required this.hiddenSlots,
+    required this.ambiguity,
+    required this.evidenceSummary,
   });
+
+  /// FE9-b1: 숨은 칸 후보(공개 로비 관측이 없으면 빈 목록), 모호도, 근거 요약.
+  final List<TacticalHiddenSlot> hiddenSlots;
+  final TacticalRecommendationAmbiguity ambiguity;
+  final TacticalEvidenceSummary evidenceSummary;
   final bool available, calibrationGatePassed;
   final String? unavailableReason;
   final int? selectedStage;
@@ -1784,6 +2293,19 @@ class TacticalRecommendationResult {
         Map<String, dynamic>.from(value['validation'] as Map),
       ),
       warning: terminology['warning'] as String,
+      hiddenSlots: List.unmodifiable(
+        (value['hidden_slots'] as List).map(
+          (item) => TacticalHiddenSlot.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      ambiguity: TacticalRecommendationAmbiguity.fromWire(
+        Map<String, dynamic>.from(value['ambiguity'] as Map),
+      ),
+      evidenceSummary: TacticalEvidenceSummary.fromWire(
+        Map<String, dynamic>.from(value['evidence_summary'] as Map),
+      ),
     );
   }
 }
@@ -2647,6 +3169,25 @@ abstract interface class TacticalEvidenceWriteService {
     required int expectedRevision,
     required String idempotencyKey,
   });
+}
+
+/// FE9-b1 읽기 capability(Process·Mock): 전술 화면이 쓰는 v2 읽기 묶음 — 상태 읽기 · 통계 · 추이 · 추천.
+/// 공유 · v6 가져오기 · 로비 쓰기 · 예측 저장은 [TacticalEvidenceService](Process만)에 남는다. Mock 결과도 같은
+/// strict `fromWire`를 거친다(fb6-dart 발견 4).
+abstract interface class TacticalEvidenceReadService {
+  Future<TacticalEvidenceState> loadTacticalEvidenceState(String profileId);
+  Future<TacticalStatisticsResult> queryTacticalStatistics(
+    String profileId,
+    TacticalStatsFilters filters,
+  );
+  Future<TacticalTrendsResult> queryTacticalTrends(
+    String profileId,
+    TacticalTrendFilters filters,
+  );
+  Future<TacticalRecommendationResult> queryTacticalRecommendations(
+    String profileId,
+    TacticalRecommendationFilters filters,
+  );
 }
 
 abstract interface class TacticalEvidenceService {

@@ -19,6 +19,7 @@ import 'scenario_service.dart';
 import 'tactical_service.dart';
 import 'tactical_v2_service.dart';
 import 'mock_tactical_v2_writes.dart';
+import 'mock_tactical_v2_reads.dart';
 
 enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 
@@ -44,6 +45,7 @@ class MockAppService
         ScannerService,
         TacticalService,
         TacticalEvidenceWriteService,
+        TacticalEvidenceReadService,
         DiagnosticsService {
   MockAppService({
     AppServiceState? initialState,
@@ -2733,7 +2735,8 @@ class MockAppService
   }
 
   // FB-6: 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관(mock_tactical_v2_writes.dart). v1 기록은 위 Mock v1
-  // 상태를 그대로 읽고, 이관 뒤 v1 새 쓰기는 `tactical_v1_read_only`. Mock에는 v2 로비·통계·추천·공유가 없다.
+  // 상태를 그대로 읽고, 이관 뒤 v1 새 쓰기는 `tactical_v1_read_only`. Mock에는 v2 로비·공유가 없고, 통계·추이·추천은
+  // FE9-b1 Mock 읽기(mock_tactical_v2_reads.dart)가 같은 strict DTO로 준다.
   late final _tacticalV2 = MockTacticalV2Writes(
     legacyState: _tactical,
     clock: _historyClock,
@@ -2815,6 +2818,49 @@ class MockAppService
     expectedRevision: expectedRevision,
     idempotencyKey: idempotencyKey,
   );
+
+  // FE9-b1: 좁은 읽기 capability(TacticalEvidenceReadService). 요청은 Process와 같은 검사를 거친다.
+  @override
+  Future<TacticalStatisticsResult> queryTacticalStatistics(
+    String profileId,
+    TacticalStatsFilters filters,
+  ) async {
+    checkedTacticalV2Request('tactical.v2.stats.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    });
+    return TacticalStatisticsResult.fromWire(
+      mockTacticalStatisticsWire(_tacticalV2.state(profileId), filters),
+    );
+  }
+
+  @override
+  Future<TacticalTrendsResult> queryTacticalTrends(
+    String profileId,
+    TacticalTrendFilters filters,
+  ) async {
+    checkedTacticalV2Request('tactical.v2.trends.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    });
+    return TacticalTrendsResult.fromWire(
+      mockTacticalTrendsWire(_tacticalV2.state(profileId), filters),
+    );
+  }
+
+  @override
+  Future<TacticalRecommendationResult> queryTacticalRecommendations(
+    String profileId,
+    TacticalRecommendationFilters filters,
+  ) async {
+    checkedTacticalV2Request('tactical.v2.recommend.query', {
+      'profile_id': profileId,
+      'filters': filters.toWire(),
+    });
+    return TacticalRecommendationResult.fromWire(
+      mockTacticalRecommendationsWire(_tacticalV2.state(profileId), filters),
+    );
+  }
 
   TacticalState _tactical(String profileId) {
     _requireNotDeletedProfile(profileId);

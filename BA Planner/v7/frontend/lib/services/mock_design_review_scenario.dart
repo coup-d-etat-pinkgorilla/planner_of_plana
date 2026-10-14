@@ -10,6 +10,7 @@
 // - 활성 계획 문서 · 문서 계산: 계획 집계 데이터(페이즈 5, 첫 부족 P2 · 기술 노트 (최상급)) — 통계 Stats-Plan · 계획 Detail.
 // - 계정 메타 마지막 스캔: 학생 스캔 이벤트 하나(어제 21:40, 수량 변화 없음). 인벤토리 KPI "마지막 스캔"은 재화를 적용한
 //   스캔만 보므로 3일 전 그대로다.
+// - 전술 v2(FE9-b1): 기록 4 · 자동 족보 2 · 이관 완료 상태(v1 기록 없음 → 첫 v2 저장이 v2를 유일한 저장소로 만든다).
 // 화면마다 시안 숫자가 서로 맞지 않는 곳은 한 계정에서 동시에 맞출 수 없다. 어느 화면이 정확하고 어느 화면이 근사인지는
 // status-lane-b "mockdemo 종료 기록"의 일치표를 본다.
 import 'dart:async';
@@ -20,6 +21,7 @@ import 'design_review/inventory_fe6a_data.dart';
 import 'design_review/inventory_history_data.dart';
 import 'design_review/statistics_growth_data.dart';
 import 'design_review/statistics_plan_data.dart';
+import 'design_review/tactical_records_data.dart';
 import 'mock_app_service.dart';
 import 'repository_service.dart';
 
@@ -137,6 +139,17 @@ class MockDesignReviewScenario extends MockAppService
         idempotencyKey: 'design-review-plan-seed',
       ),
     );
+    // 전술 v2 seed: 같은 Mock 쓰기 경로로 기록을 저장한다(await 없이 끝나므로 기대 revision은 0부터 하나씩 오른다).
+    for (final (revision, match) in designReviewTacticalMatches().indexed) {
+      unawaited(
+        upsertTacticalMatchV2(
+          profileId: designReviewProfileId,
+          match: match,
+          expectedRevision: revision,
+          idempotencyKey: 'design-review-tactical-seed-${match.id}',
+        ),
+      );
+    }
   }
 
   final _ScenarioClock _clock;
