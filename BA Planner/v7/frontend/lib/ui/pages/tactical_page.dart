@@ -1,15 +1,38 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
+// FE9-a: 전술대항전 기록 화면(시안 Tactical S1 기록 목록 + S3 기록 작성, S2 · S4는 FE9-c · FE9-d 자리).
+//
+// - 데이터는 FE9-b1 [TacticalRecordsController](v2)다. v1 쓰기(`saveTacticalMatch` 등)는 부르지 않는다. 기록 저장 · 지우기는
+//   컨트롤러가 v2 tactical revision을 `expected_revision`으로 보내고 idempotency key를 만든다. 저장 오류 문구는 컨트롤러 표 그대로다.
+// - revision 분리(T-FB1b): 계정 상태(repository) revision은 보유 학생 읽기에만 쓰고 tactical 쓰기에 섞지 않는다. 다른 탭에서
+//   프로필이 바뀌면 셸이 [TacticalPage.reloadToken]을 올리고(또는 계정 세대 key로 새로 만들고) 화면이 다시 읽는다.
+// - v1 기록이 남아 있으면(컨트롤러 `migrationRequired`) S1에 이관 안내 띠를 띄우고, v1 기록을 읽기 전용 행으로 목록 뒤에 보인다.
+//   "가져오기"를 누를 때만 이관한다(자동 이관 없음).
+// - 학생 고르기 · 상대 고르기 · 지우기 확인은 공용 [BaModal]이다(AlertDialog 없음).
 import 'package:flutter/material.dart';
 
+import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/tactical_service.dart';
+import '../../services/tactical_v2_service.dart';
+import '../../tactical/tactical_records_controller.dart';
+import '../kit/ba_modal.dart';
+import '../tactical/tactical_pickers.dart';
+import '../tactical/tactical_records_view.dart';
+import '../tactical/tactical_workspace.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryProfileWithRevision;
-import '../widgets/diagonal_section.dart';
 
-enum TacticalMode { records, jokbo }
+/// 목록 · 작성 섹션 안내 문구.
+const tacticalNoServiceText = '전술 기록 서비스가 제공되지 않습니다.';
+const tacticalNoProfileText = '선택된 프로필이 없습니다.';
+const tacticalLoadingText = '전술 기록을 읽는 중입니다.';
+const tacticalEmptyText = '아직 저장한 기록이 없습니다. 기록 작성에서 저장하면 여기에 나타납니다.';
+const tacticalDisconnectedText = '백엔드 연결이 끊어졌습니다.';
+const tacticalOtherProfileText = '선택 계정과 다른 계정의 응답을 받았습니다.';
+const tacticalReadOnlyHint = '이전 형식 기록은 가져온 뒤에 고칠 수 있습니다.';
+const tacticalNeedOpponentHint = '상대 이름을 입력해 주십시오.';
+const tacticalNeedAttemptHint = '시도 횟수를 정해 주십시오.';
+const tacticalInvalidInputText = '입력한 기록을 저장할 수 없습니다. 칸과 이름을 확인해 주십시오.';
 
 class TacticalPage extends StatefulWidget {
   const TacticalPage({super.key, required this.service, this.reloadToken = 0});
@@ -19,41 +42,76 @@ class TacticalPage extends StatefulWidget {
   State<TacticalPage> createState() => _TacticalPageState();
 }
 
+enum _OpponentPickerMode { editor, filter }
+
 class _TacticalPageState extends State<TacticalPage> {
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
       : null;
-  TacticalService? get _tactical => widget.service is TacticalService
+
+  /// v1 읽기(이관 전 읽기 전용 목록). 쓰기는 하지 않는다.
+  TacticalService? get _legacyReader => widget.service is TacticalService
       ? widget.service as TacticalService
       : null;
-  /// 선택 계정. revision은 목록 summary가 아니라 마지막으로 읽은 repository state 값이다(FB-1b: legacy 첫
-  /// 이관이 +1 할 수 있다).
+
+  TacticalRecordsController? _controller;
+
+  /// 선택 계정. revision은 목록 summary가 아니라 마지막으로 읽은 repository state 값이다(FB-1b).
   RepositoryProfile? _profile;
+
+  /// 계정 상태(보유 학생). 그 revision은 tactical 쓰기에 쓰지 않는다(T-FB1b).
   RepositoryState? _repositoryState;
-
-  /// 전술 기록·족보 collection. 그 revision(`_tacticalRevision`)은 profile revision과 독립이며 tactical
-  /// write의 expected에만 쓴다.
-  TacticalState? _tacticalState;
-
-  /// profile(repository) revision. repository mutation·scanner commit의 expected는 이 값이어야 한다(이 화면은
-  /// 지금 repository에 쓰지 않는다).
-  int? get _profileRevision => _repositoryState?.revision;
-
-  /// tactical collection revision. 경기·족보 저장과 삭제의 expected.
-  int? get _tacticalRevision => _tacticalState?.revision;
   List<StudentCatalogEntry> _catalog = const [];
-  TacticalMode _mode = TacticalMode.records;
-  String _query = '', _kind = 'all', _result = 'all';
-  DateTimeRange? _dateRange;
+  Map<String, String> _names = const {};
+
+  /// 이관 전 v1 기록(읽기 전용 표시만).
+  TacticalState? _legacyState;
   bool _loading = true;
   String? _error;
   int _generation = 0;
 
+  TacticalRecordFilter _filter = const TacticalRecordFilter();
+  String? _selectedKey;
+  TacticalRecordDraft _draft = TacticalRecordDraft.blank();
+  bool _autoSelect = true;
+  String? _localError;
+
+  final _opponentText = TextEditingController();
+  final _notesText = TextEditingController();
+  final _studentModal = BaModalController();
+  final _opponentModal = BaModalController();
+  final _deleteModal = BaModalController();
+  ({bool mine, int index})? _pickerSlot;
+  _OpponentPickerMode _opponentMode = _OpponentPickerMode.editor;
+
+  /// 새 기록 · 새 상대 ID 순번(같은 µs 시계에서도 겹치지 않게, 프로세스 전체).
+  static int _idSequence = 0;
+
   @override
   void initState() {
     super.initState();
+    _attach();
     widget.service.state.addListener(_connection);
+    _opponentText.addListener(_textChanged);
+    _notesText.addListener(_textChanged);
     _reload();
+  }
+
+  void _attach() {
+    final service = widget.service;
+    if (service is TacticalEvidenceWriteService) {
+      _controller = TacticalRecordsController(
+        service as TacticalEvidenceWriteService,
+        now: () => appClockNow(service),
+      )..addListener(_controllerChanged);
+    }
+  }
+
+  void _detach() {
+    _controller
+      ?..removeListener(_controllerChanged)
+      ..dispose();
+    _controller = null;
   }
 
   @override
@@ -62,27 +120,41 @@ class _TacticalPageState extends State<TacticalPage> {
     if (old.service != widget.service) {
       old.service.state.removeListener(_connection);
       widget.service.state.addListener(_connection);
+      _detach();
+      _attach();
       _reload();
-    } else if (old.reloadToken != widget.reloadToken)
+    } else if (old.reloadToken != widget.reloadToken) {
       _reload();
+    }
   }
 
   @override
   void dispose() {
     _generation++;
     widget.service.state.removeListener(_connection);
+    _detach();
+    _opponentText.dispose();
+    _notesText.dispose();
+    _studentModal.dispose();
+    _opponentModal.dispose();
+    _deleteModal.dispose();
     super.dispose();
   }
 
   void _connection() {
     if (!mounted) return;
-    if (widget.service.state.value.connection == BackendConnection.connected)
+    if (widget.service.state.value.connection == BackendConnection.connected) {
       _reload();
-    else
+    } else {
       setState(() {
         _loading = false;
-        _error = '백엔드 연결이 끊어졌습니다.';
+        _error = tacticalDisconnectedText;
       });
+    }
+  }
+
+  void _textChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _reload() async {
@@ -90,794 +162,525 @@ class _TacticalPageState extends State<TacticalPage> {
     setState(() {
       _loading = true;
       _error = null;
+      _localError = null;
     });
+    final repository = _repository;
+    final controller = _controller;
+    if (repository == null || controller == null) {
+      setState(() {
+        _loading = false;
+        _error = tacticalNoServiceText;
+      });
+      return;
+    }
     try {
-      final repository = _repository, tactical = _tactical;
-      if (repository == null || tactical == null)
-        throw StateError('전술 서비스가 제공되지 않습니다.');
       final profiles = await repository.listProfiles();
       RepositoryProfile? selected;
-      for (final item in profiles)
+      for (final item in profiles) {
         if (item.selected) {
           selected = item;
           break;
         }
+      }
+      if (!mounted || generation != _generation) return;
       if (selected == null) {
-        if (mounted && generation == _generation)
-          setState(() {
-            _profile = null;
-            _repositoryState = null;
-            _tacticalState = null;
-            _loading = false;
-          });
+        setState(() {
+          _profile = null;
+          _repositoryState = null;
+          _legacyState = null;
+          _loading = false;
+        });
         return;
       }
-      final results = await Future.wait<Object>([
-        repository.loadRepositoryState(selected.id),
-        tactical.loadTacticalState(selected.id),
+      final profileId = selected.id;
+      final (repositoryState, catalog, _) = await (
+        repository.loadRepositoryState(profileId),
         widget.service.listStudents(),
-      ]);
+        controller.load(profileId),
+      ).wait;
       if (!mounted || generation != _generation) return;
-      // 응답이 어떤 순서로 끝나도 결과는 요청 순서대로 온다. 그래도 계정이 다른 응답은 받지 않는다.
-      final repositoryState = results[0] as RepositoryState;
-      final tacticalState = results[1] as TacticalState;
-      if (repositoryState.profileId != selected.id ||
-          tacticalState.profileId != selected.id) {
-        throw StateError('선택 계정과 다른 계정의 응답을 받았습니다.');
+      final tacticalProfile = controller.state?.profileId;
+      if (repositoryState.profileId != profileId ||
+          (tacticalProfile != null && tacticalProfile != profileId)) {
+        throw StateError(tacticalOtherProfileText);
       }
-      final profile = repositoryProfileWithRevision(
-        selected,
-        repositoryState.revision,
-      );
+      TacticalState? legacy;
+      final reader = _legacyReader;
+      if (controller.migrationRequired && reader != null) {
+        legacy = await reader.loadTacticalState(profileId);
+        if (!mounted || generation != _generation) return;
+        if (legacy.profileId != profileId) legacy = null;
+      }
       setState(() {
-        _profile = profile;
+        _profile = repositoryProfileWithRevision(
+          selected!,
+          repositoryState.revision,
+        );
         _repositoryState = repositoryState;
-        _tacticalState = tacticalState;
-        _catalog = results[2] as List<StudentCatalogEntry>;
+        _catalog = catalog;
+        _names = {for (final item in catalog) item.studentId: item.displayName};
+        _legacyState = legacy;
         _loading = false;
+        _reconcileSelection();
       });
     } catch (error) {
-      if (mounted && generation == _generation)
+      if (mounted && generation == _generation) {
         setState(() {
           _loading = false;
-          _error = '$error';
+          _error = error is StateError ? error.message : '$error';
         });
+      }
     }
   }
 
-  List<TacticalMatch> get _matches {
-    final needle = _query.trim().toLowerCase(),
-        students = {
-          for (final item in _catalog)
-            item.studentId: item.displayName.toLowerCase(),
-        };
-    final items = (_tacticalState?.matches ?? const <TacticalMatch>[]).where((item) {
-      if (_kind != 'all' && item.kind != _kind ||
-          _result != 'all' && item.result != _result) {
-        return false;
+  void _controllerChanged() {
+    if (!mounted) return;
+    setState(() {
+      final controller = _controller;
+      if (controller != null && !controller.migrationRequired) {
+        _legacyState = null;
       }
-      if (_dateRange != null) {
-        final occurred = item.occurredOn == null
-            ? null
-            : DateTime.tryParse(item.occurredOn!);
-        if (occurred == null ||
-            occurred.isBefore(_dateRange!.start) ||
-            occurred.isAfter(_dateRange!.end)) {
-          return false;
-        }
-      }
-      final ids = [
-        ...item.attackDeck.strikers,
-        ...item.attackDeck.specials,
-        ...item.defenseDeck.strikers,
-        ...item.defenseDeck.specials,
-      ].whereType<String>();
-      final text = [
-        item.id,
-        item.opponent,
-        item.season,
-        item.notes,
-        item.kind,
-        item.result,
-        item.occurredOn ?? '',
-        ...ids,
-        ...ids.map((id) => students[id] ?? ''),
-      ].join(' ').toLowerCase();
-      return needle.isEmpty || text.contains(needle);
-    }).toList();
-    items.sort((a, b) {
-      final date = (b.occurredOn ?? '').compareTo(a.occurredOn ?? '');
-      return date != 0 ? date : a.id.compareTo(b.id);
+      _reconcileSelection();
     });
-    return items;
   }
 
-  List<StudentCatalogEntry> _candidates(
-    String combatClass, {
-    required bool own,
-  }) {
+  // --- 목록 ------------------------------------------------------------------
+
+  bool get _available =>
+      _controller != null && _profile != null && _error == null;
+
+  List<TacticalRecordRow> get _rows {
+    final controller = _controller;
+    if (controller == null || !_available) return const [];
+    return tacticalRecordRows(
+      controller.matches,
+      legacy: controller.migrationRequired
+          ? (_legacyState?.matches ?? const [])
+          : const [],
+    );
+  }
+
+  /// 고른 행이 사라졌으면(지움 · 이관) 같은 ID의 v2 행, 없으면 첫 행이나 새 초안으로 옮긴다. 처음 읽은 뒤에는 첫 행을 고른다.
+  void _reconcileSelection() {
+    final rows = _rows;
+    final key = _selectedKey;
+    if (key != null) {
+      if (rows.any((row) => row.key == key)) return;
+      // 이관한 v1 기록은 새 ID를 받고 원본 ID를 `v7-v1:match:<v1 ID>`로 남긴다.
+      final migrated = key.startsWith('v1:')
+          ? 'v7-v1:match:${key.substring(3)}'
+          : null;
+      final match = migrated == null
+          ? null
+          : rows.where((row) => row.sourceRecordId == migrated).firstOrNull;
+      if (match != null) {
+        _select(match);
+      } else if (rows.isNotEmpty) {
+        _select(rows.first);
+      } else {
+        _setDraft(null, TacticalRecordDraft.blank());
+      }
+      return;
+    }
+    if (_autoSelect && rows.isNotEmpty) {
+      _select(rows.first);
+    }
+  }
+
+  void _select(TacticalRecordRow row) {
+    _autoSelect = false;
+    _setDraft(row.key, row.draft);
+  }
+
+  void _setDraft(String? key, TacticalRecordDraft draft) {
+    _selectedKey = key;
+    _draft = draft;
+    _localError = null;
+    _opponentText.text = draft.opponentName;
+    _notesText.text = draft.notes;
+  }
+
+  void _onSelectRow(TacticalRecordRow row) {
+    _controller?.clearError();
+    setState(() => _select(row));
+  }
+
+  void _onNewRecord() {
+    _controller?.clearError();
+    setState(() {
+      _autoSelect = false;
+      _setDraft(
+        null,
+        TacticalRecordDraft.blank(season: tacticalCurrentSeason(_rows) ?? ''),
+      );
+    });
+  }
+
+  // --- 작성 ------------------------------------------------------------------
+
+  TacticalRecordDraft get _current =>
+      _draft.copyWith(opponentName: _opponentText.text, notes: _notesText.text);
+
+  bool get _busy {
+    final controller = _controller;
+    return controller == null || controller.busy || controller.loading;
+  }
+
+  bool get _editable => _available && !_draft.readOnly && !_busy;
+
+  bool get _migrationRequired => _controller?.migrationRequired ?? false;
+
+  /// 저장할 수 없는 이유(없으면 null).
+  String? get _saveBlocker {
+    if (_draft.readOnly) return tacticalReadOnlyHint;
+    if (_migrationRequired) {
+      return tacticalRecordsErrorMessages['legacy_migration_required'];
+    }
+    if (_opponentText.text.trim().isEmpty) return tacticalNeedOpponentHint;
+    if (_draft.attemptCount == null) return tacticalNeedAttemptHint;
+    return null;
+  }
+
+  void _updateDraft(TacticalRecordDraft Function(TacticalRecordDraft) change) {
+    _controller?.clearError();
+    setState(() {
+      _localError = null;
+      _draft = change(_draft);
+    });
+  }
+
+  String _newId(String prefix) =>
+      '$prefix-${appClockNow(widget.service).microsecondsSinceEpoch}-${++_idSequence}';
+
+  Future<void> _save() async {
+    final controller = _controller;
+    final state = controller?.state;
+    if (controller == null ||
+        state == null ||
+        !_editable ||
+        _saveBlocker != null) {
+      return;
+    }
+    final draft = _current;
+    final TacticalMatchInputV2 input;
+    try {
+      input = draft.toInput(
+        newId: () => _newId('match'),
+        identityId:
+            tacticalIdentityForName(state.opponents, draft.opponentName) ??
+            _newId('opponent'),
+        now: appClockNow(widget.service),
+      );
+    } on Object {
+      setState(() => _localError = tacticalInvalidInputText);
+      return;
+    }
+    final saved = await controller.saveMatch(input);
+    if (!mounted || !saved) return;
+    final row = _rows.where((row) => row.key == 'v2:${input.id}').firstOrNull;
+    setState(() {
+      if (row != null) {
+        _select(row);
+      } else {
+        _reconcileSelection();
+      }
+    });
+  }
+
+  void _duplicate() {
+    _controller?.clearError();
+    setState(() {
+      _autoSelect = false;
+      _setDraft(null, _current.duplicate());
+    });
+  }
+
+  void _openDelete() {
+    if (_draft.isNew || _draft.readOnly || _busy) return;
+    _deleteModal.open();
+  }
+
+  Future<void> _confirmDelete() async {
+    final controller = _controller;
+    final id = _draft.id;
+    _deleteModal.close();
+    if (controller == null || id == null || _draft.readOnly) return;
+    final deleted = await controller.deleteMatch(id);
+    if (!mounted || !deleted) return;
+    setState(() {
+      final rows = _rows;
+      if (rows.isNotEmpty) {
+        _select(rows.first);
+      } else {
+        _setDraft(null, TacticalRecordDraft.blank());
+      }
+    });
+  }
+
+  Future<void> _import() async {
+    final controller = _controller;
+    if (controller == null || !controller.migrationRequired) return;
+    final imported = await controller.commitMigration();
+    if (!mounted || !imported) return;
+    setState(() {
+      _legacyState = null;
+      _reconcileSelection();
+    });
+  }
+
+  void _copyLastDeck() {
+    final source = _lastDeckSource;
+    if (source == null) return;
+    _updateDraft((draft) => draft.copyWith(myDeck: source.draft.myDeck));
+  }
+
+  /// "지난 기록 덱 복사"의 원본: 같은 종류의 다른 v2 기록 중 같은 상대가 먼저, 없으면 가장 최근.
+  TacticalRecordRow? get _lastDeckSource {
+    final candidates = [
+      for (final row in _rows)
+        if (!row.legacy && row.kind == _draft.kind && row.draft.id != _draft.id)
+          row,
+    ];
+    final name = _opponentText.text.trim();
+    return candidates.where((row) => row.opponentName == name).firstOrNull ??
+        candidates.firstOrNull;
+  }
+
+  String get _opponentMeta {
+    final name = _opponentText.text.trim();
+    if (name.isEmpty) return '순위 — · 최근 대전 —';
+    final count = _rows.where((row) => row.opponentName == name).length;
+    return '순위 — · 최근 대전 $count회';
+  }
+
+  // --- 피커 ------------------------------------------------------------------
+
+  void _openSlotPicker(bool mine, int index) {
+    if (!_editable) return;
+    setState(() => _pickerSlot = (mine: mine, index: index));
+    _studentModal.open();
+  }
+
+  void _pickStudent(String? studentId) {
+    final slot = _pickerSlot;
+    _studentModal.close();
+    if (slot == null) return;
+    _updateDraft((draft) {
+      if (slot.mine) {
+        return draft.copyWith(
+          myDeck: tacticalDeckWithSlot(draft.myDeck, slot.index, studentId),
+        );
+      }
+      return draft.copyWith(
+        opponentDeck: tacticalDeckWithSlot(
+          draft.opponentDeck,
+          slot.index,
+          studentId,
+        ),
+      );
+    });
+  }
+
+  void _openOpponentPicker(_OpponentPickerMode mode) {
+    setState(() => _opponentMode = mode);
+    _opponentModal.open();
+  }
+
+  void _pickOpponent(String? name) {
+    _opponentModal.close();
+    if (_opponentMode == _OpponentPickerMode.filter) {
+      setState(
+        () => _filter = name == null
+            ? _filter.copyWith(clearOpponent: true)
+            : _filter.copyWith(opponent: name),
+      );
+      return;
+    }
+    if (name == null) return;
+    _controller?.clearError();
+    setState(() => _localError = null);
+    _opponentText.text = name;
+  }
+
+  Widget _studentPanel(BuildContext context) {
+    final slot = _pickerSlot;
+    if (slot == null) return const SizedBox.shrink();
+    final striker = slot.index < 4;
+    final combatClass = striker ? 'striker' : 'special';
     final owned = {
       ...?_repositoryState?.students.map((item) => item.studentId),
     };
-    return _catalog
-        .where(
-          (item) =>
-              item.combatClass?.toLowerCase() == combatClass &&
-              (!own || owned.contains(item.studentId)),
-        )
-        .toList();
-  }
-
-  String _deckLabel(TacticalDeck deck) {
-    final labels = {
-      for (final item in _catalog) item.studentId: item.displayName,
-    };
-    String slots(List<String?> values) =>
-        values.map((id) => id == null ? '—' : (labels[id] ?? id)).join(' / ');
-    return 'STR ${slots(deck.strikers)} · SP ${slots(deck.specials)}';
-  }
-
-  Future<void> _editMatch([TacticalMatch? source, bool copy = false]) async {
-    final original = copy ? null : source;
-    var kind = source?.kind ?? 'attack',
-        result = source?.result ?? 'win',
-        date = source?.occurredOn,
-        season = source?.season ?? '';
-    var opponent = source?.opponent ?? '', notes = source?.notes ?? '';
-    var attack = source?.attackDeck ?? TacticalDeck.empty(),
-        defense = source?.defenseDeck ?? TacticalDeck.empty();
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setLocal) {
-          final ownAttack = kind == 'attack';
-          return AlertDialog(
-            title: Text(
-              copy
-                  ? '기록으로 복사'
-                  : source == null
-                  ? '대전 기록 추가'
-                  : '대전 기록 수정',
-            ),
-            content: SizedBox(
-              width: 780,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        DropdownButton<String>(
-                          value: kind,
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'attack',
-                              child: Text('공격 기록'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'defense',
-                              child: Text('방어 기록'),
-                            ),
-                          ],
-                          onChanged: (v) => setLocal(() => kind = v!),
-                        ),
-                        DropdownButton<String>(
-                          value: result,
-                          items: const [
-                            DropdownMenuItem(value: 'win', child: Text('승리')),
-                            DropdownMenuItem(value: 'loss', child: Text('패배')),
-                          ],
-                          onChanged: (v) => setLocal(() => result = v!),
-                        ),
-                        OutlinedButton(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2100),
-                              initialDate: date == null
-                                  ? DateTime.now()
-                                  : DateTime.parse(date!),
-                            );
-                            if (picked != null)
-                              setLocal(
-                                () => date = picked.toIso8601String().substring(
-                                  0,
-                                  10,
-                                ),
-                              );
-                          },
-                          child: Text(date ?? '날짜 없음'),
-                        ),
-                        if (date != null)
-                          TextButton(
-                            onPressed: () => setLocal(() => date = null),
-                            child: const Text('날짜 지우기'),
-                          ),
-                      ],
-                    ),
-                    TextFormField(
-                      initialValue: season,
-                      decoration: const InputDecoration(labelText: '시즌'),
-                      onChanged: (v) => season = v,
-                    ),
-                    TextFormField(
-                      initialValue: opponent,
-                      decoration: const InputDecoration(labelText: '상대 (필수)'),
-                      onChanged: (v) => opponent = v,
-                    ),
-                    const SizedBox(height: 12),
-                    _DeckEditor(
-                      label: ownAttack ? '내 공격 덱' : '상대 공격 덱',
-                      deck: attack,
-                      strikers: _candidates('striker', own: ownAttack),
-                      specials: _candidates('special', own: ownAttack),
-                      onChanged: (v) => attack = v,
-                    ),
-                    const SizedBox(height: 12),
-                    _DeckEditor(
-                      label: ownAttack ? '상대 방어 덱' : '내 방어 덱',
-                      deck: defense,
-                      strikers: _candidates('striker', own: !ownAttack),
-                      specials: _candidates('special', own: !ownAttack),
-                      onChanged: (v) => defense = v,
-                    ),
-                    TextFormField(
-                      initialValue: notes,
-                      maxLines: 2,
-                      decoration: const InputDecoration(labelText: '메모'),
-                      onChanged: (v) => notes = v,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('취소'),
-              ),
-              FilledButton(
-                onPressed: opponent.trim().isEmpty
-                    ? null
-                    : () => Navigator.pop(context, true),
-                child: const Text('저장'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    final profileId = _profile?.id;
-    final tacticalRevision = _tacticalRevision;
-    if (saved != true || profileId == null || tacticalRevision == null) return;
-    final item = TacticalMatch(
-      id: original?.id ?? 'match-${DateTime.now().microsecondsSinceEpoch}',
-      kind: kind,
-      occurredOn: date,
-      season: season,
-      opponent: opponent,
-      result: result,
-      attackDeck: attack,
-      defenseDeck: defense,
-      notes: notes,
-    );
-    await _mutation(
-      (service) => service.saveTacticalMatch(
-        profileId,
-        item,
-        tacticalRevision,
-        'match-${item.id}-$tacticalRevision',
-      ),
+    final deck = slot.mine ? _draft.myDeck : _draft.opponentDeck;
+    final slots = tacticalDeckSlots(deck);
+    final classLabel = striker ? '스트라이커' : '스페셜';
+    final deckLabel = slot.mine
+        ? (_draft.attack ? '내 공격 덱' : '내 방어 덱')
+        : (_draft.attack ? '상대 방어 덱' : '상대 공격 덱');
+    return TacticalStudentPickerPanel(
+      title: '$deckLabel · ${tacticalSlotLabel(slot.index)}번 칸',
+      caption: slot.mine ? '$classLabel · 보유 학생' : classLabel,
+      students: [
+        for (final item in _catalog)
+          if (item.combatClass?.toLowerCase() == combatClass &&
+              (!slot.mine || owned.contains(item.studentId)))
+            TacticalPickerStudent(id: item.studentId, name: item.displayName),
+      ],
+      usedIds: {
+        for (final (index, value) in slots.indexed)
+          if (index != slot.index && value.studentId != null) value.studentId!,
+      },
+      currentId: slots[slot.index].studentId,
+      emptyText: slot.mine
+          ? '보유한 $classLabel 학생이 없습니다. 학생 스캔을 먼저 실행해 주십시오.'
+          : '고를 수 있는 $classLabel 학생이 없습니다.',
+      onPicked: _pickStudent,
+      onClose: _studentModal.close,
     );
   }
 
-  Future<void> _editJokbo([TacticalJokbo? source]) async {
-    final original = source;
-    var defense = source?.defenseDeck ?? TacticalDeck.empty(),
-        attack = source?.attackDeck ?? TacticalDeck.empty(),
-        notes = source?.notes ?? '';
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(source == null ? '족보 추가' : '족보 수정'),
-        content: SizedBox(
-          width: 780,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _DeckEditor(
-                  label: '상대 방어 덱',
-                  deck: defense,
-                  strikers: _candidates('striker', own: false),
-                  specials: _candidates('special', own: false),
-                  onChanged: (v) => defense = v,
-                ),
-                const SizedBox(height: 12),
-                _DeckEditor(
-                  label: '내 공격 덱',
-                  deck: attack,
-                  strikers: _candidates('striker', own: true),
-                  specials: _candidates('special', own: true),
-                  onChanged: (v) => attack = v,
-                ),
-                TextFormField(
-                  initialValue: notes,
-                  maxLines: 2,
-                  decoration: const InputDecoration(labelText: '메모'),
-                  onChanged: (v) => notes = v,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('저장'),
-          ),
-        ],
-      ),
-    );
-    final profileId = _profile?.id;
-    final tacticalRevision = _tacticalRevision;
-    if (saved != true || profileId == null || tacticalRevision == null) return;
-    final item = TacticalJokbo(
-      id: original?.id ?? 'jokbo-${DateTime.now().microsecondsSinceEpoch}',
-      defenseDeck: defense,
-      attackDeck: attack,
-      notes: notes,
-    );
-    await _mutation(
-      (service) => service.saveTacticalJokbo(
-        profileId,
-        item,
-        tacticalRevision,
-        'jokbo-${item.id}-$tacticalRevision',
-      ),
+  Widget _opponentPanel(BuildContext context) {
+    final filter = _opponentMode == _OpponentPickerMode.filter;
+    return TacticalOpponentPickerPanel(
+      title: filter ? '상대로 거르기' : '기록한 상대 고르기',
+      options: tacticalOpponentOptions(_rows),
+      current: filter ? _filter.opponent : _opponentText.text.trim(),
+      allLabel: filter ? '전체' : null,
+      onPicked: _pickOpponent,
+      onClose: _opponentModal.close,
     );
   }
 
-  Future<void> _copyJokboToMatch(TacticalJokbo item) => _editMatch(
-    TacticalMatch(
-      id: item.id,
-      kind: 'attack',
-      occurredOn: null,
-      season: '',
-      opponent: '',
-      result: 'win',
-      attackDeck: item.attackDeck,
-      defenseDeck: item.defenseDeck,
-      notes: item.notes,
-    ),
-    true,
-  );
+  Widget _deletePanel(BuildContext context) {
+    final draft = _current;
+    final when = occurredText(draft.occurredAt, draft.occurredPrecision);
+    return TacticalDeletePanel(
+      label:
+          '${draft.attack ? '' : '내 방어덱 · '}vs ${draft.opponentName} · $when',
+      busy: _busy,
+      onCancel: _deleteModal.close,
+      onConfirm: _confirmDelete,
+    );
+  }
 
-  Future<void> _mutation(Future<int> Function(TacticalService) action) async {
-    try {
-      await action(_tactical!);
-      await _reload();
-    } catch (error) {
-      if (mounted) {
-        setState(() => _error = '$error');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('저장하지 못했습니다. 새로고침 후 다시 시도하세요.')),
-        );
-      }
+  // --- 그리기 -----------------------------------------------------------------
+
+  String? get _listMessage {
+    if (_error != null) return _error;
+    if (_controller == null) return tacticalNoServiceText;
+    if (_profile == null) {
+      return _loading ? tacticalLoadingText : tacticalNoProfileText;
     }
+    final error = _controller?.error;
+    if (error != null && error.code == 'load_failed') return error.message;
+    if (_rows.isEmpty) {
+      return _loading || (_controller?.loading ?? false)
+          ? tacticalLoadingText
+          : tacticalEmptyText;
+    }
+    return null;
   }
 
-  Future<void> _deleteMatch(TacticalMatch item) async {
-    if (!await _confirm('이 대전 기록을 삭제할까요?')) return;
-    final profileId = _profile?.id;
-    final tacticalRevision = _tacticalRevision;
-    if (profileId == null || tacticalRevision == null) return;
-    await _mutation(
-      (s) => s.deleteTacticalMatch(
-        profileId,
-        item.id,
-        tacticalRevision,
-        'delete-${item.id}-$tacticalRevision',
-      ),
-    );
+  ({String? text, TacticalEditorStatusTone tone}) get _status {
+    final error = _controller?.error;
+    if (error != null && error.code != 'load_failed') {
+      return (text: error.message, tone: TacticalEditorStatusTone.error);
+    }
+    final local = _localError;
+    if (local != null) {
+      return (text: local, tone: TacticalEditorStatusTone.error);
+    }
+    if (!_available) return (text: null, tone: TacticalEditorStatusTone.none);
+    final blocker = _saveBlocker;
+    if (blocker != null) {
+      return (text: blocker, tone: TacticalEditorStatusTone.hint);
+    }
+    final controller = _controller;
+    if (controller != null && tacticalDraftLinked(_current, controller.jokbo)) {
+      return (text: tacticalLinkedText, tone: TacticalEditorStatusTone.linked);
+    }
+    return (text: null, tone: TacticalEditorStatusTone.none);
   }
-
-  Future<void> _deleteJokbo(TacticalJokbo item) async {
-    if (!await _confirm('이 족보를 삭제할까요?')) return;
-    final profileId = _profile?.id;
-    final tacticalRevision = _tacticalRevision;
-    if (profileId == null || tacticalRevision == null) return;
-    await _mutation(
-      (s) => s.deleteTacticalJokbo(
-        profileId,
-        item.id,
-        tacticalRevision,
-        'delete-${item.id}-$tacticalRevision',
-      ),
-    );
-  }
-
-  Future<bool> _confirm(String text) async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          content: Text(text),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('삭제'),
-            ),
-          ],
-        ),
-      ) ??
-      false;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(18),
-    child: DiagonalSection(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 36, 10),
-            child: Row(
-              children: [
-                const Icon(Icons.sports_esports_outlined),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TACTICAL / PVP',
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                      Text(
-                        '전술 대전',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      Text(
-                        '${_profile?.displayName ?? '프로필 없음'} · ${_profile?.id ?? '-'} · '
-                        'profile revision ${_profileRevision ?? '-'} · '
-                        'tactical revision ${_tacticalRevision ?? '-'}',
-                        key: const ValueKey('tactical-revision-line'),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: '새로고침',
-                  onPressed: _reload,
-                  icon: const Icon(Icons.refresh),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(child: _body()),
-        ],
-      ),
-    ),
-  );
-
-  Widget _body() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
-    // 읽기 오류(첫 읽기 포함)를 "선택된 프로필이 없습니다"로 가리지 않는다.
-    if (_error != null && _tacticalState == null)
-      return _Message(icon: Icons.cloud_off, text: _error!, action: _reload);
-    if (_profile == null)
-      return _Message(icon: Icons.person_off_outlined, text: '선택된 프로필이 없습니다.');
-    final labels = {
-      for (final item in _catalog)
-        item.studentId: item.displayName.toLowerCase(),
-    };
-    final jokbo = (_tacticalState?.jokbo ?? const <TacticalJokbo>[]).where((item) {
-      final needle = _query.trim().toLowerCase();
-      final ids = [
-        ...item.defenseDeck.strikers,
-        ...item.defenseDeck.specials,
-        ...item.attackDeck.strikers,
-        ...item.attackDeck.specials,
-      ].whereType<String>();
-      final text = [
-        item.id,
-        item.notes,
-        ...ids,
-        ...ids.map((id) => labels[id] ?? ''),
-      ].join(' ').toLowerCase();
-      return needle.isEmpty || text.contains(needle);
-    }).toList();
-    return Column(
-      children: [
-        if (_error != null)
-          MaterialBanner(
-            content: Text(_error!),
-            actions: [
-              TextButton(onPressed: _reload, child: const Text('다시 시도')),
-            ],
-          ),
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              SegmentedButton<TacticalMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: TacticalMode.records,
-                    label: Text('대전 기록'),
-                  ),
-                  ButtonSegment(value: TacticalMode.jokbo, label: Text('족보')),
-                ],
-                selected: {_mode},
-                onSelectionChanged: (v) => setState(() => _mode = v.first),
-              ),
-              SizedBox(
-                width: 260,
-                child: TextField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: '상대·학생·시즌·메모 검색',
-                  ),
-                  onChanged: (v) => setState(() => _query = v),
-                ),
-              ),
-              if (_mode == TacticalMode.records) ...[
-                DropdownButton<String>(
-                  value: _kind,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('공격/방어 전체')),
-                    DropdownMenuItem(value: 'attack', child: Text('공격')),
-                    DropdownMenuItem(value: 'defense', child: Text('방어')),
-                  ],
-                  onChanged: (v) => setState(() => _kind = v!),
-                ),
-                DropdownButton<String>(
-                  value: _result,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('승패 전체')),
-                    DropdownMenuItem(value: 'win', child: Text('승리')),
-                    DropdownMenuItem(value: 'loss', child: Text('패배')),
-                  ],
-                  onChanged: (v) => setState(() => _result = v!),
-                ),
-                OutlinedButton.icon(
-                  key: const ValueKey('tactical-date-filter'),
-                  onPressed: () async {
-                    final range = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                      initialDateRange: _dateRange,
-                    );
-                    if (range != null && mounted) {
-                      setState(() => _dateRange = range);
-                    }
-                  },
-                  icon: const Icon(Icons.date_range_outlined),
-                  label: Text(
-                    _dateRange == null
-                        ? '기간 전체'
-                        : '${_dateRange!.start.toIso8601String().substring(0, 10)}~${_dateRange!.end.toIso8601String().substring(0, 10)}',
-                  ),
-                ),
-                if (_dateRange != null)
-                  IconButton(
-                    tooltip: '기간 초기화',
-                    onPressed: () => setState(() => _dateRange = null),
-                    icon: const Icon(Icons.close),
-                  ),
-              ],
-              FilledButton.icon(
-                onPressed: () =>
-                    _mode == TacticalMode.records ? _editMatch() : _editJokbo(),
-                icon: const Icon(Icons.add),
-                label: Text(_mode == TacticalMode.records ? '대전 기록' : '족보 추가'),
-              ),
-            ],
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    final preview = controller?.legacyPreview;
+    final rows = _rows;
+    final filtered = tacticalFilterRows(rows, _filter);
+    final editable = _editable;
+    final status = _status;
+    final canSave = editable && _saveBlocker == null;
+    final migration = _available && preview != null && _migrationRequired
+        ? TacticalMigrationBand(
+            matchCount: preview.matchCount,
+            jokboCount: preview.jokboCount,
+            issueCount: preview.issues.length,
+            onImport: _busy || preview.issues.isNotEmpty ? null : _import,
+          )
+        : null;
+    final workspace = TacticalWorkspace(
+      rows: filtered,
+      selectedKey: _selectedKey,
+      onSelectRow: _available ? _onSelectRow : null,
+      filter: _filter,
+      onFilter: _available ? (next) => setState(() => _filter = next) : null,
+      seasonAvailable: tacticalCurrentSeason(rows) != null,
+      onOpenOpponentFilter: _available
+          ? () => _openOpponentPicker(_OpponentPickerMode.filter)
+          : null,
+      onNewRecord: _available && !_busy ? _onNewRecord : null,
+      listMessage:
+          _listMessage ?? (filtered.isEmpty ? '조건에 맞는 기록이 없습니다.' : null),
+      onRetry: _error != null || controller?.error?.code == 'load_failed'
+          ? _reload
+          : null,
+      migration: migration,
+      studentName: (id) => _names[id] ?? id,
+      draft: _draft,
+      editable: editable,
+      opponentController: _opponentText,
+      notesController: _notesText,
+      opponentMeta: _opponentMeta,
+      onKind: (kind) => _updateDraft((draft) => draft.copyWith(kind: kind)),
+      onResult: (result) =>
+          _updateDraft((draft) => draft.copyWith(result: result)),
+      onAttempt: (value) =>
+          _updateDraft((draft) => draft.copyWith(attemptCount: value)),
+      onSlotTap: _openSlotPicker,
+      onOpenOpponentPicker: () =>
+          _openOpponentPicker(_OpponentPickerMode.editor),
+      onCopyLastDeck: _lastDeckSource == null ? null : _copyLastDeck,
+      onSave: canSave ? _save : null,
+      onDuplicate: _available && !_busy && !_draft.isNew && !_draft.readOnly
+          ? _duplicate
+          : null,
+      onDelete: _available && !_busy && !_draft.isNew && !_draft.readOnly
+          ? _openDelete
+          : null,
+      statusText: status.text,
+      statusTone: status.tone,
+    );
+    return BaModal(
+      controller: _studentModal,
+      scrim: BaScrim.anchored,
+      label: '학생 고르기',
+      builder: _studentPanel,
+      child: BaModal(
+        controller: _opponentModal,
+        scrim: BaScrim.anchored,
+        label: '상대 고르기',
+        builder: _opponentPanel,
+        child: BaModal(
+          controller: _deleteModal,
+          scrim: BaScrim.anchored,
+          label: '기록 지우기',
+          builder: _deletePanel,
+          child: KeyedSubtree(
+            key: const ValueKey('tactical-page'),
+            child: workspace,
           ),
         ),
-        Expanded(
-          child: _mode == TacticalMode.records
-              ? (_matches.isEmpty
-                    ? const _Message(
-                        icon: Icons.sports_esports_outlined,
-                        text: '저장된 대전 기록이 없습니다.',
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _matches.length,
-                        itemBuilder: (context, index) {
-                          final item = _matches[index];
-                          return Card(
-                            child: ListTile(
-                              title: Text(
-                                '${item.opponent} · ${item.result == 'win' ? '승리' : '패배'}',
-                              ),
-                              isThreeLine: true,
-                              subtitle: Text(
-                                '${item.kind == 'attack' ? '내 공격 / 상대 방어' : '상대 공격 / 내 방어'} · ${item.occurredOn ?? '날짜 없음'} · ${item.season.isEmpty ? '시즌 없음' : item.season}\n'
-                                '공격 ${_deckLabel(item.attackDeck)}\n방어 ${_deckLabel(item.defenseDeck)}${item.notes.isEmpty ? '' : ' · ${item.notes}'}',
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: Wrap(
-                                children: [
-                                  IconButton(
-                                    tooltip: '수정',
-                                    onPressed: () => _editMatch(item),
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: '새 기록으로 복사',
-                                    onPressed: () => _editMatch(item, true),
-                                    icon: const Icon(Icons.copy_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: '삭제',
-                                    onPressed: () => _deleteMatch(item),
-                                    icon: const Icon(Icons.delete_outline),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ))
-              : (jokbo.isEmpty
-                    ? const _Message(
-                        icon: Icons.menu_book_outlined,
-                        text: '저장된 수동 족보가 없습니다.',
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: jokbo.length,
-                        itemBuilder: (context, index) {
-                          final item = jokbo[index];
-                          return Card(
-                            child: ListTile(
-                              title: Text('족보 ${item.id}'),
-                              isThreeLine: true,
-                              subtitle: Text(
-                                '방어 ${_deckLabel(item.defenseDeck)}\n공격 ${_deckLabel(item.attackDeck)}${item.notes.isEmpty ? '' : ' · ${item.notes}'}',
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: Wrap(
-                                children: [
-                                  IconButton(
-                                    tooltip: '수정',
-                                    onPressed: () => _editJokbo(item),
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: '공격 기록으로 복사',
-                                    onPressed: () => _copyJokboToMatch(item),
-                                    icon: const Icon(Icons.copy_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: '삭제',
-                                    onPressed: () => _deleteJokbo(item),
-                                    icon: const Icon(Icons.delete_outline),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      )),
-        ),
-      ],
-    );
-  }
-}
-
-class _DeckEditor extends StatefulWidget {
-  const _DeckEditor({
-    required this.label,
-    required this.deck,
-    required this.strikers,
-    required this.specials,
-    required this.onChanged,
-  });
-  final String label;
-  final TacticalDeck deck;
-  final List<StudentCatalogEntry> strikers, specials;
-  final ValueChanged<TacticalDeck> onChanged;
-  @override
-  State<_DeckEditor> createState() => _DeckEditorState();
-}
-
-class _DeckEditorState extends State<_DeckEditor> {
-  late List<String?> strikers, specials;
-  @override
-  void initState() {
-    super.initState();
-    strikers = [...widget.deck.strikers];
-    specials = [...widget.deck.specials];
-  }
-
-  void change(bool striker, int index, String? value) {
-    setState(() => (striker ? strikers : specials)[index] = value);
-    widget.onChanged(TacticalDeck(strikers: strikers, specials: specials));
-  }
-
-  Widget slot(bool striker, int index) {
-    final values = striker ? widget.strikers : widget.specials,
-        current = (striker ? strikers : specials)[index];
-    return SizedBox(
-      width: 170,
-      child: DropdownButtonFormField<String?>(
-        initialValue: current,
-        decoration: InputDecoration(
-          labelText: '${striker ? 'Striker' : 'Special'} ${index + 1}',
-        ),
-        items: [
-          const DropdownMenuItem<String?>(value: null, child: Text('비어 있음')),
-          ...values
-              .where(
-                (item) =>
-                    item.studentId == current ||
-                    ![...strikers, ...specials].contains(item.studentId),
-              )
-              .map(
-                (item) => DropdownMenuItem<String?>(
-                  value: item.studentId,
-                  child: Text(
-                    item.displayName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-        ],
-        onChanged: (v) => change(striker, index, v),
       ),
     );
   }
-
-  @override
-  Widget build(BuildContext context) => InputDecorator(
-    decoration: InputDecoration(labelText: widget.label),
-    child: Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (var i = 0; i < 4; i++) slot(true, i),
-        for (var i = 0; i < 2; i++) slot(false, i),
-      ],
-    ),
-  );
-}
-
-class _Message extends StatelessWidget {
-  const _Message({required this.icon, required this.text, this.action});
-  final IconData icon;
-  final String text;
-  final VoidCallback? action;
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 48),
-        const SizedBox(height: 12),
-        Text(text),
-        if (action != null)
-          TextButton(onPressed: action, child: const Text('다시 시도')),
-      ],
-    ),
-  );
 }

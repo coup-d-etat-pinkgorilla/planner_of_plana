@@ -4081,3 +4081,185 @@ schema = `contracts/tactical-protocol-v2.schema.json`. "키만"은 schema가 원
 - FE9-b1 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE7-f)가 멈춘 뒤 gate 1회(예상: analyze 0, process +12 · 일반 +14 늘어남, golden 변화 0) → `fe_commit.ps1 -Slice fe9b1`(mock · process는 3-way 병합, WIP 인접 hunk 없음).
 - 그다음 FE9-a(새 기록 화면, 이 컨트롤러 위, v1 caller 4곳 전환). 발견 1은 XB 요청 후보, 2 · 4 · 5는 CF 판단.
+
+## FE9-a 착수 기록 (2026-10-14)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE9-a 종료 기록), CF gate 미실행**. 범위: 전술대항전 기록 화면(Tactical artboard S1 기록 목록 + S3 기록 작성)을 FE9-b1 컨트롤러(`TacticalRecordsController`, v2) 위에 새 디자인으로 만든다. S2 로비 스캔(FE9-c)·S4 시그니처 족보(FE9-d)는 시안 틀 + "준비 중" 자리. v1 쓰기 4곳(`_editMatch`·`_editJokbo`·`_deleteMatch`·`_deleteJokbo`, `_copyJokboToMatch`)과 `_DeckEditor`·AlertDialog를 걷어내고 v2 컨트롤러 호출 + 이관 안내로 바꾼다.
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-a 착수 기록" 없음(grep 0건).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `26ef5cc37205d1e897ccf5ea557f12fb2c25384c`.
+- 막힘: 대장 "slice별 막힘 요약" FE9-a 행 FD-126은 확정(권장안 (a)), 현재 `열림` 0건. FD-132(워커 재량)는 권장안대로 처리할 예정.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe9a/pre/<v7 기준 경로>`, 6개 모두 작업 트리와 cmp 일치)과 WIP(`git status --short <경로>` 출력 0줄 = 6개 모두 WIP 없음), 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/tactical_page.dart`: WIP 없음. 작업 트리 CRLF(그대로 유지).
+  - `frontend/test/tactical_page_test.dart`: WIP 없음. LF.
+  - `frontend/test/tactical_page_revision_test.dart`: WIP 없음. LF.
+  - `frontend/lib/services/design_review/tactical_records_data.dart`: WIP 없음. LF(고칠 수도 있음 — 고치지 않으면 끝 기록에 적는다).
+  - `frontend/lib/tactical/tactical_records_controller.dart`: WIP 없음. LF(화면에 꼭 필요한 최소 추가만 — 고치지 않으면 끝 기록에 적는다).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/tactical/**`(덱 칸 줄·미니 덱·시도 스테퍼·출처 범례 칩·학생/상대 피커·4섹션 workspace), `frontend/lib/ui/studio/tactical_studio_layout.dart`, `frontend/test/goldens/fe9a_tactical_golden_test.dart`(+ 필요하면 새 위젯 테스트 파일).
+- 고치지 않는 것: `lib/services/**`(design-review seed 제외), `lib/ui/kit/**`, Lane A 통계 · 필터 모달, `app_shell.dart`, 스캐너 · 택틱 파일, golden harness · 다른 golden, `frontend/tool/**`, backend · contracts.
+
+### FE9-a 사고 기록 — `dart format` 범위 실수 (2026-10-14 17:35, CF 확인 필요)
+
+- 17:35:32 내 명령 `dart format test/tactical_page_test.dart lib/ui`(디렉터리 인자 실수)가 `lib/ui` 전체를 포맷해 이 slice 밖 파일 **79개**를 바꿨다(이 slice 파일 제외). 목록: `debug/frontend_fe9a/format_incident/touched-by-format.txt`.
+- 복구 ①(정확): 79개 중 **72개**는 사고 직전 WIP가 없었다(현재 내용 = HEAD 내용을 같은 포매터로 돌린 결과와 바이트 일치). 이 72개를 `git show HEAD:<경로>` 바이트로 되돌렸다(작업 트리 CRLF 4개 — `inventory_page.dart` · `plan_section_layout.dart` · `repository_profile_panel.dart` · `section_template_surface.dart` — 는 CRLF로). 되돌린 뒤 `git status --short lib/ui`에서 72개 모두 사라졌다(= index와 같음). 목록: `clean-restored-to-head.txt`.
+- 복구 ②(토큰 일치, 공백 · 줄바꿈 미확인): 나머지 **7개는 다른 레인 WIP 파일**이었다 — Lane A `kit/range_controls.dart` · `pages/statistics_page.dart` · `statistics/statistics_growth_evidence.dart` · `statistics/statistics_supply_evidence.dart` · `statistics/statistics_workspace.dart` · `widgets/student_filter_modal.dart`, 스캐너 `pages/scan_page.dart`. `debug/xb_scanner_functional_select_20261014/artifacts/candidate-v3-v7/frontend/lib/ui/<경로>`(17:15~17:21 사본)를 같은 포매터로 돌리면 사고 뒤 내용과 바이트 일치했으므로(= 같은 토큰), 그 사본으로 되돌렸다(7개 모두 사고 뒤 mtime 그대로임을 확인한 뒤). 사고 뒤 포맷된 내용은 `debug/frontend_fe9a/format_incident/formatted/<경로>`에 남겼다.
+  - **미확인**: 되돌린 7개가 사고 직전 바이트(공백 · 줄바꿈 CRLF/LF)와 같은지. 확인 명령이 권한 분류기에 막혀(다른 레인 작업 간섭) 더 보지 않았다. `git`이 `range_controls` · `scan_page` · `statistics_supply_evidence` · `statistics_workspace` · `student_filter_modal`에 "LF will be replaced by CRLF" 경고를 낸다 — 사고 전 줄바꿈과 다를 수 있다. Lane A가 17:21~17:35 사이에 공백만 바꾼 편집이 있었다면 그 공백도 사본 기준으로 돌아갔다.
+  - 포맷이 바꾸지 않은 WIP 파일: `statistics/statistics_matrix_charts.dart`(untracked) · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · `scan_inventory_identity_review.dart`.
+- 이후 `dart format`은 이 slice 파일만 경로로 지정한다. CF 요청: Lane A · 스캐너 쪽에 위 7개 파일의 공백 · 줄바꿈을 확인해 달라고 알려 주십시오(필요하면 각 레인의 마지막 사본과 비교).
+
+## FE9-a 종료 기록 (2026-10-14, 코드 작성 완료 · CF gate 미실행)
+
+전술대항전 기록 화면(시안 Tactical S1 기록 목록 + S3 기록 작성)을 FE9-b1 `TacticalRecordsController`(v2) 위에 새 4섹션 화면으로 만들었다. S2 로비 스캔 · S4 시그니처 족보는 시안 틀 + "준비 중" 자리다. v1 화면(`_DeckEditor` · AlertDialog · v1 쓰기 4곳)은 걷어냈다. HEAD는 착수 때와 같다(`26ef5cc3`). 위 "사고 기록"(`dart format` 범위 실수, 다른 레인 파일 79개 → 72개 정확 복구 · 7개 토큰 일치 복구, 공백 · 줄바꿈 미확인)을 CF가 먼저 봐 주십시오.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`(이 slice 파일만, 작성 중): No issues. 마지막 전체 `flutter analyze`: ① info 1(`curly_braces_in_flow_control_structures`, `tactical_page.dart` — 옛 파일 머리 `ignore_for_file`을 지워서 드러남) → 고침 → ② **No issues found(0)**. `pubspec.yaml` · `pubspec.lock` 변경 0.
+- `flutter test test/tactical_page_test.dart`: ① +16 −3 — 테스트 쪽 2(Mock이 instant를 UTC `Z`로 돌려줌 · `TacticalDeckV2`에 `==` 없음) + 구현 1(이관 기록은 새 ID를 받는다 → 고른 v1 행을 `source_record_id` `v7-v1:match:<v1 ID>`로 v2 행에 옮기게 고침) → ② **+19**.
+- `flutter test test/tactical_page_revision_test.dart test/tactical_page_test.dart`: **+24**(5 + 19).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `전술대항전` · `AppSection.pvp` · 셸을 띄우는 테스트 · 전술 서비스 · design-review), 일반 15파일 json: **+135 −0** — app_navigation_fe7d +14, app_navigation_tidy1 +11, home_app_shell +1, home_page +5, mock_design_review_scenario +11, profile_delete_fb2d +17, student_filter_modal +8, tactical_lobby_scanner_service +2, tactical_page_revision +5, tactical_page +19, tactical_records_controller +14, tactical_service +6, tactical_share_v1_contract +1, tactical_v2_service +5, widget_test +16.
+- process 묶음 분류 2파일(`--concurrency=1`, 가짜 프로세스라 빠름): tactical_fb6_dart **+14**, tactical_fe9b1_read **+12**.
+- 일회성 렌더(임시 `test/zz_fe9a_render_tmp_test.dart` = golden 파일 사본에서 비교 대신 `toImage` → scratchpad PNG, 실행 뒤 삭제): +2. 두 장면 모양을 눈으로 확인했다(아래 golden 절). 첫 렌더에서 상대 칸 "▾" 글자가 글꼴에 없어 네모로 보여 키트 `KitGlyph.chevronDown` 선 아이콘으로 바꿨다.
+- `git diff --check`(고친 3파일): exit 0. 새 6파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `tactical_page.dart`는 CRLF 그대로(686줄 모두 CRLF), 나머지 LF.
+- 잠금 충돌 0(재시도 없음). 로그: `debug/frontend_fe9a/logs/`(실패 줄과 json 요약만 확인).
+
+### 고친 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF) | 다시 씀. 상태(계정 · 계정 상태 · 카탈로그 · 컨트롤러 · 이관 전 v1 읽기 · 필터 · 선택 · 초안 · 모달 3개)와 저장 · 복제 · 지우기 · 가져오기 · 피커 흐름. 그리기는 `TacticalWorkspace` |
+| 새 `frontend/lib/ui/studio/tactical_studio_layout.dart` | 4섹션 Studio 문서 + `TacticalMetrics`(시안 artboard 숫자) |
+| 새 `frontend/lib/ui/tactical/tactical_workspace.dart` | 4섹션 위젯(섹션 표면 · 자르기는 통계와 같은 구성), S1 · S3 요소, S2 · S4 자리 |
+| 새 `frontend/lib/ui/tactical/tactical_records_view.dart` | 위젯 없는 모델: 초안(내 덱 · 상대 덱 ↔ 공격 · 방어 덱), 목록 행(FD-132 표기 · 시각 · 시도), 필터, 출처 범례, 상대 identity 찾기, 자동 연결 판정 |
+| 새 `frontend/lib/ui/tactical/tactical_deck_widgets.dart` | 덱 칸 줄 · 미니 덱 · 공격/방어 아이콘 칩 · 필터 칩 · 출처 범례 · 시도 스테퍼(모름 가능) |
+| 새 `frontend/lib/ui/tactical/tactical_pickers.dart` | 학생 고르기 · 상대 고르기 · 지우기 확인 패널(`BaModalPanel.dialog`) |
+| `frontend/test/tactical_page_test.dart` | 새 화면 기준으로 다시 씀(아래) |
+| `frontend/test/tactical_page_revision_test.dart` | 같은 규칙을 v2 화면 기준으로 다시 씀(아래) |
+| 새 `frontend/test/goldens/fe9a_tactical_golden_test.dart` | 장면 2(`tactical` · `tactical-migration`) |
+
+고치지 않음: `lib/tactical/tactical_records_controller.dart`(화면에 필요한 값이 이미 다 있어 추가 0 — pre 사본과 cmp 일치), `lib/services/design_review/tactical_records_data.dart`(golden · 테스트가 seed 함수를 그대로 부른다 — cmp 일치), `lib/services/**`, `lib/ui/kit/**`, `app_shell.dart`, Lane A · 스캐너 · 택틱 파일(사고 복구 제외), golden harness · 다른 golden.
+
+### 처리한 FD
+
+- **FD-126 (a)**: 하위 seg "기록 · 분석 · 슬롯". 셸 머리말은 `app_shell.dart` 소유(이 slice 수정 금지)이고 `PageHeaderOverride`는 seg 자리가 없어, S1 제목 "기록" 오른쪽에 둔다(FE6-a "목록 · 분석" seg 선례). 분석 · 슬롯은 흐림 + "준비 중" 툴팁. 머리말 부제는 셸의 `AppSection.pvp` 설명 "전술대항전 기록과 편성"(시안과 같음)이라 고치지 않았다. → 발견 2.
+- **FD-128 (a)**: v2 일원화 — 화면 쓰기는 컨트롤러 v2 저장 · 지우기 · 이관뿐. 자동 족보 연결은 "같은 시그니처 족보에 자동 연결됨"으로만 보인다.
+- **FD-132(워커 재량, 권장안)**: 방어 행 "내 방어덱 · vs <상대>". v2 기록은 상대 이름이 필수라(계약) 늘 이름이 붙는다. "상대 없이도 저장"은 계약상 불가 → 발견 3.
+- FD-127: 순위 · 방어 승률 · 채택률 등은 그리지 않는다(상대 칸 "순위 —").
+- FD-131: "스캔 파일 가져오기" 숨김, "엑셀 가져오기"는 FE9-f 전까지 흐림 + "준비 중".
+
+### 섹션별 구현
+
+- **4섹션 좌표**(기준 콘텐츠 캔버스 2560×1208, 테스트로 고정): S1 (0,2,30,94) 왼쪽 사다리꼴 — 시안과 같음. S2 rect (23,2,54,17) 위 면 평행사변형(faceStart 14 · faceSpan 73 · height 92) — 꼭짓점 1px 안. S3 rect (18,20,54,76) 아래 면 평행사변형(faceStart 9 · faceSpan 73) — x 0.4px 안, 윗변 y −1.5px(96 grid 한계). S4 (65,2,31,94) 오른쪽 사다리꼴 — −0.7px. 섹션 안 요소는 시안 rect ±2px(테스트 13개 rect). 작은 창: `TacticalMetrics.scaleFor` = min(가로 비율, 세로 비율, 1)(0.4 하한)로 요소 세로 위치 · 높이와 내용을 같이 줄이고, 가로는 섹션 사선을 따른다(화면 전체 축소 없음).
+- **S1 기록 목록**: 제목 줄 "기록" · seg · "새 기록"(시안에 없음 — 빈 초안을 여는 자리) · "엑셀 가져오기"(흐림). 칩 줄 전체 · 공격 · 방어 · 승 · 패 · 이번 시즌 · "상대: 전체"(누르면 상대 고르기 모달, "전체" 포함). 목록은 공용 `DiagonalScrollViewport` resize 모드(행 128 · 간격 8, 첫 행 743.9 → 둘째 719.9, 공용 스크롤바 · 포그), 필터마다 viewport key를 바꾼다. 행: 결과 칩 · 상대 표기(FD-132) · 종류 아이콘 · "시도 · 시각"(시도 모름 '—', 시각은 컨트롤러 정밀도 규칙) · 상대 덱 / 내 덱 미니 줄(빗금 = 모름, 흐린 상자 = 확인된 빈칸) · v1이면 "이전 형식" 칩. 행을 누르면 S3에 불러온다(고치지 않은 초안은 버린다 — FE6-a 규칙).
+- **S2 · S4**: 제목("로비 스캔" · "이 시그니처의 족보") + "준비 중". 스캔 버튼 없음.
+- **S3 기록 작성**: 머리("공격 기록 · 2026-10-04 21:10", 새 기록은 "새 공격 기록", 시즌 칩, v1이면 "이전 형식" 칩, 공격 · 방어 아이콘 칩 = 종류 seg), 상대 덱 캡션 + (i)(시안 문구 그대로), 상대 유저(이름 입력 + 꺾쇠 = 기록한 상대 고르기, "순위 — · 최근 대전 n회"), 상대 덱 6칸 + 출처 범례(공개 = `visible_lobby`, 기록 = 학생 있는 그 밖의 칸, 빈칸 = 학생 없음), 내 덱 캡션, 내 덱 6칸 + "지난 기록 덱 복사"(같은 종류의 다른 v2 기록, 같은 상대 먼저 · 없으면 가장 최근) · "족보에서 가져오기"(FE9-d, 흐림), 결과 seg 승리 · 패배, 시도 스테퍼(1부터, 모르면 '—', +로 1, −는 1에서 멈춤) + 보조 문구("첫 시도 성공" · "n번째 시도에 성공" · "n회 시도 · 패배" · "시도 횟수 모름"), 메모 한 줄, 저장(primary) · 복제해서 새 기록 · 지우기(danger, 시안에 없음) + 상태 문구.
+- **덱 칸 = 6칸**(스트라이커 4 + 스페셜 2, 시안 · DTO 그대로). 프롬프트의 "5칸"은 시안 · 계약과 달라 따르지 않았다 → 발견 1.
+- **학생 고르기**: 최소 피커(`TacticalStudentPickerPanel`, BaModal 스크림 anchored): 검색 + 8열 초상 격자(공용 사선 스크롤바) + "빈칸으로 두기"(모름) + 닫기. 칸 위치로 스트라이커 · 스페셜을 거르고, 내 덱은 보유 학생만(v1 `_candidates(own:)` 규칙), 같은 덱 다른 칸에 있는 학생은 흐림. 계획 만들기 1단계 학생 고르기는 흐름 초안 · 필터 컨트롤러 · 내 그룹에 묶여 덱 한 칸 고르기에 재사용할 수 없었다(근거).
+- **저장**: 이름이 같은(현재 이름 · 별칭) 상대 identity를 쓰고, 없으면 새 ID `opponent-<µs>-<순번>`. 새 기록은 ID `match-<µs>-<순번>`, 시각 = 고정 시계(`appClockNow`) UTC 초 단위 `instant`. 고친 기록은 시각 · 정밀도를 그대로 되보낸다. 저장 성공 뒤 그 기록을 고른다. expected revision · idempotency key는 컨트롤러. 저장할 수 없는 이유(v1 읽기 전용 · 이관 필요 · 이름 없음 · 시도 모름)를 상태 문구로 보이고 저장을 끈다. 저장 오류는 컨트롤러 문구 표 그대로(빨강).
+- **복제해서 새 기록**: 같은 내용의 저장 안 된 새 초안(시각은 저장할 때 지금). v1 "새 기록으로 복사" 동작(저장하지 않고 편집기를 연다)과 같다.
+- **지우기**: `BaModal` 확인("기록 지우기" — 이 기록에서 만든 족보는 남는다는 문구 포함, fb6-dart 발견 1) → 컨트롤러 지우기 → 첫 행(없으면 새 초안).
+
+### v1 → v2 전환 결과(FE9-b1 "FE9-a 전환 목록")
+
+| v1 | 결과 |
+|---|---|
+| `_editMatch`(→ `saveTacticalMatch`) | 삭제. S3 저장 = `TacticalRecordsController.saveMatch`(v2 upsert) |
+| `_editJokbo`(→ `saveTacticalJokbo`) | 삭제. 족보 편집 UI는 FE9-d 몫(이번 화면에 족보 목록 없음, 컨트롤러 `saveJokbo` 미사용) |
+| `_deleteMatch`(→ `deleteTacticalMatch`) | 삭제. S3 지우기 = `.deleteMatch` + BaModal 확인 |
+| `_deleteJokbo`(→ `deleteTacticalJokbo`) | 삭제. FE9-d 몫(`.deleteJokbo` 미사용) |
+| `_copyJokboToMatch` | 삭제. "족보에서 가져오기" 자리만(흐림 + "준비 중"), FE9-d |
+| `_DeckEditor` · AlertDialog · `showDatePicker` · `showDateRangePicker` · `SegmentedButton` · `DropdownButton` | 삭제(덱 칸 줄 + 학생 고르기 BaModal, 칩 필터) |
+
+화면의 v1 서비스 사용은 이관 전 읽기 `loadTacticalState`(읽기 전용 행) 하나뿐이다(grep: `tactical_page.dart`에 `saveTactical` · `deleteTactical` 0건).
+
+### 이관 안내 동작
+
+- 컨트롤러 `migrationRequired`(미리보기 v1 기록 · 족보 수 > 0이고 v1 쓰기가 아직 열림)일 때만 S1 칩 줄 아래(시안에 없음 — FE6-a 후보 띠 문법: 분홍 외곽 · 옅은 채움 · 오른쪽 primary)에 띠: 제목 "이전 형식 전술 기록 · 기록 n건 · 족보 m건", 본문 "가져오면 새 형식으로 옮겨 고치고 저장할 수 있습니다. 가져오기 전에는 읽기만 합니다."(옮길 수 없는 기록이 있으면 "옮길 수 없는 기록 k건이 있어 가져올 수 없습니다. …" + 버튼 꺼짐), 버튼 "가져오기". 목록은 띠 높이만큼 내려간다.
+- v1 기록은 v2 행 뒤에 읽기 전용 행("이전 형식" 칩)으로 보인다(권장안 — 이관 전에도 무엇을 옮기는지 보이게). 고르면 S3가 읽기 전용(칸 · 입력 · 버튼 꺼짐, "이전 형식 기록은 가져온 뒤에 고칠 수 있습니다.").
+- 이관 전에는 새 기록도 저장을 끄고 컨트롤러 `legacy_migration_required` 문구를 보인다. "가져오기"를 누를 때만 `commitMigration()`(자동 이관 없음). 성공하면 띠 · v1 행이 사라지고, 고른 v1 행은 `source_record_id` `v7-v1:match:<ID>`로 이관된 v2 행에 옮겨진다. 이관 기록은 시도 모름이라 '—'이고, 고쳐 저장하려면 시도 횟수를 정해야 한다.
+
+### 기본 Mock에서 처음 모습
+
+- 기본 `MockAppService`는 v1 · v2 모두 비어 있다 → 이관 안내 없음, S1 "아직 저장한 기록이 없습니다. 기록 작성에서 저장하면 여기에 나타납니다.", S3 새 공격 기록(승리 · 시도 1 · 덱 모두 빗금), 상태 문구 "상대 이름을 입력해 주십시오.", S2 · S4 "준비 중". 기본 Mock은 보유 학생이 없어 내 덱 학생 고르기 후보가 비어 있다("보유한 … 학생이 없습니다. 학생 스캔을 먼저 실행해 주십시오.").
+- design-review 시나리오(FE9-b1 seed 4개): 가장 최근 기록(게헨나 선도부 공격 · 승리 · 시도 1)이 골라진 채 열린다.
+
+### 정한 규칙
+
+- 처음 읽은 뒤 첫 행을 자동으로 고른다. 사용자가 행을 고르거나 새 기록을 열면 그 뒤로는 자동 선택하지 않는다. 고른 행이 사라지면(지움 · 이관) 이관 대응 행 → 첫 행 → 새 초안 순.
+- "이번 시즌" = 목록 맨 위(가장 최근)부터 처음 나오는 비어 있지 않은 시즌.
+- 상대 필터는 이름(표시명)으로 거른다. 상대 고르기 후보 = 목록에 나온 이름(기록 수).
+- 계정 상태 revision은 표시 · 보유 학생 읽기에만 쓰고 tactical 쓰기에는 쓰지 않는다. 계정 상태 · v2 상태 응답의 계정이 선택 계정과 다르면 받지 않고 "선택 계정과 다른 계정의 응답을 받았습니다."(쓰기 꺼짐). 셸 `reloadToken`(전술 탭 열기 · 프로필 변경)이 오르면 다시 읽는다.
+- 초안 버리기: 다른 행을 고르면 저장하지 않은 초안은 버린다.
+
+### 테스트(지운 · 고친 기존 테스트)
+
+- `tactical_page_test.dart`(다시 씀, 19): Studio 4섹션 꼭짓점 · scaleFor, 모델 3(FD-132 · 정밀도 · 시도 모름, 출처 범례, 새 초안 → 입력), 배치(시안 rect 13 + 기록 행 2), 기본 Mock 빈 화면 · 긴 이름 × 1280×720 · 1440×900 · 1280×960(넘침 예외 0), 분석 · 슬롯 · 엑셀 "준비 중" 툴팁, seed 목록 · 필터 · 상대 필터 · 방어 행 고르기, 새 기록(학생 고르기 모달 3칸 · 결과 · 시도 · 메모 → v2 upsert expected 0), 고쳐 저장(같은 ID · expected 4 · 같은 identity) + 피커 중복 학생 흐림, 복제 → 새 ID 저장 · 지우기 BaModal(그만두기 · 지우기, AlertDialog 0), 저장 오류 문구(`revision_conflict`), v1 이관(띠 · 읽기 전용 · 이관 전 새 기록 저장 불가 · 가져오기 → v2 · 시도 모름 → 정해야 저장).
+  - 지운 기존 테스트(v1 화면 전용): 빈 화면 "전술 대전" 문구 × 3크기 → 새 빈 화면 테스트, v1 기록 날짜 필터 · 복사 · 삭제 tooltip × 3크기 → 긴 이름 테스트 + 쓰기 테스트, "대전 기록 · 족보" 모드 → seg 테스트, 족보 → 기록 복사 → FE9-d로 넘김(복제 테스트가 "저장 안 된 초안" 동작을 대신 검사).
+- `tactical_page_revision_test.dart`(다시 씀, 5): legacy 계정 상태(summary 0 → 1)와 v2 tactical 2 — 지우기 expected 2 · 고쳐 저장 expected 3, 계정 상태 revision은 1 그대로; 병렬 읽기 순서 2가지(profile 7이 아니라 v2 2); 다른 계정 응답 거부(목록 · 쓰기 0); `reloadToken`으로 다시 읽기. 머리 줄 `tactical-revision-line`은 새 시안에 없어 없앴고, revision은 쓰기 요청 기록으로 검사한다.
+
+### golden(비교 미실행)
+
+- 새 장면 2(`test/goldens/fe9a_tactical_golden_test.dart`, 셸 → 전술대항전 탭, Mock 전체 카탈로그):
+  - `tactical`: design-review seed 4개. S1 행 4개(첫 행 분홍 선택 · "vs 게헨나 선도부 · 1회 · 2026-10-04 21:10", 셋째 "2회 · 2026-10-02", 넷째 "내 방어덱 · vs 아비도스 대책위원회 · 1회 · —", 빗금 · 흐린 칸 포함), 칩 "전체" 파랑, seg "기록" 분홍 · 분석 · 슬롯 흐림. S3 "공격 기록 · 2026-10-04 21:10" · "시즌 10" · 공격 칩 분홍, 상대 "게헨나 선도부" · "순위 — · 최근 대전 2회", 상대 덱 히나 · 이오리 · 아루 · 하루카 | 히비키 · 치세, 범례 "공개 — 로비 스캔 / 기록 1 · 2 · 3 · 4 · SP1 · SP2 지난 기록 / 빈칸 — 기록 없음", 내 덱 호시노 · 이즈나 · 미카 · 카요코 | 아야네 · 치세, 승리 분홍 · 시도 1 "첫 시도 성공", 메모 "첫 시도에 돌파했습니다.", 저장 · 복제 · 지우기 + 초록 "같은 시그니처 족보에 자동 연결됨". S2 "로비 스캔 / 준비 중", S4 "이 시그니처의 족보 / 준비 중".
+  - `tactical-migration`: v1 기록 2개(공격 2026-07-23 · 방어 2026-07-20). 이관 띠 "기록 2건 · 족보 0건" + "가져오기", v1 행 2개("이전 형식" 칩, "— · 2026-07-23"), S3 "공격 기록 · 2026-07-23" 읽기 전용(버튼 흐림, 시도 '—', "이전 형식 기록은 가져온 뒤에 고칠 수 있습니다.").
+  - 셸 머리말 "연결 안 됨" 칩은 Mock 기본 연결 상태 그대로(다른 golden과 같은 셸).
+- 기존 장면 변화 0 근거: 바뀐 화면은 전술 탭뿐이고 다른 golden은 전술 탭을 열지 않는다(grep: `golden_harness.dart`의 `tactical`은 재화 `tactical_bd`뿐, 다른 golden 테스트에 `top-tab-pvp` 0). 탭 줄 글자 · 셸 파일 수정 0. 사고 복구 72개는 HEAD 바이트 그대로, 7개는 같은 토큰이라 그림이 바뀌지 않는다.
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 위 목록 밖 Flutter 테스트(Lane A 통계 · 계획 · 인벤토리 · 스캔 화면, 나머지 process E2E): **미실행**. `lib/services/**` 수정 0이라 process E2E 영향 없음 예상.
+- 실제 백엔드에 붙인 화면 실행: **미실행** — 특히 이관 기록의 `source_record_id`가 백엔드에서도 `v7-v1:match:<ID>`인지(Mock 기준으로만 확인), 보유 학생 검사 · 별칭 검사(`opponent_alias_required`) 화면 문구.
+- 사고 복구 7개 파일의 공백 · 줄바꿈 바이트 일치: **미확인**(위 사고 기록).
+- 실제 사용자 프로필 · Windows release 빌드: **미실행**.
+
+### 검수표(시안 Tactical, mock 모드 · 기준 viewport 최대화)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 시안 Tactical | 개발 패널 design-review 시나리오 → 전술대항전 탭 | 4섹션 위치 · 모양(S3 윗변 −1.5px), 첫 행 선택 · 공격 · 승리 · 시도 1, S2 · S4 "준비 중", seg 분석 · 슬롯 흐림 + 툴팁 |
+| 목록 | 같은 화면 S1 | 행 폭이 사선을 따라 줄어듦, 스크롤바 · 포그, 칩 필터(공격 · 방어 · 승 · 패 · 이번 시즌 · 상대 모달), 방어 행 "내 방어덱 · vs …", 시각 정밀도(날짜만 · KST · '—'), 시도 '—' |
+| 고르기 | 행 누르기 | S3에 불러옴, 머리 · 시즌 · 종류 칩 · 범례 갱신, 자동 연결 문구(공격 기록) |
+| 작성 | "새 기록" | 이름 입력 · 꺾쇠(상대 고르기), 칸 누르기 → 학생 고르기 모달(보유 학생 · 중복 흐림 · 빈칸으로 두기), 결과 · 시도 스테퍼 · 메모, 저장 불가 이유 문구 |
+| 저장 | "저장" | 새 행이 맨 위에 생기고 골라짐, 고쳐 저장은 같은 행 |
+| 복제 | "복제해서 새 기록" | "새 공격 기록" 초안(저장 전 목록 변화 없음) → 저장하면 새 행 |
+| 삭제 | "지우기" | BaModal 확인(그만두기 · 지우기), 지우면 첫 행이 골라짐 |
+| 이관 | v1 기록이 있는 계정(기본 Mock에서 v1 기록 저장 후) | 띠 · 읽기 전용 행 · 저장 불가 → "가져오기" → 띠 사라짐 · v2 행 · 시도 '—' → 시도 정한 뒤 저장 |
+
+### WIP 보존 확인
+
+- 이 slice가 고친 기존 3파일은 착수 때 WIP 없음(착수 기록). pre 사본 `debug/frontend_fe9a/pre/<경로>`, post 사본 `debug/frontend_fe9a/post/<경로>`(고친 3 + 새 6). `tactical_records_controller.dart` · `tactical_records_data.dart`는 pre와 cmp 일치.
+- 다른 레인 파일: `dart format` 사고로 79개가 바뀌었다가 복구됨(위 사고 기록 — 72개 정확, 7개 토큰 일치 · 공백 · 줄바꿈 미확인). 스캐너 WIP(`scan_companion_dock.dart` · `scan_student_review_workspace.dart` · `scan_inventory_identity_review.dart`)와 Lane A 새 파일 `statistics_matrix_charts.dart`는 포매터가 바꾸지 않았다. git 쓰기 0회.
+
+### 키트 승격 후보(Lane A 판단)
+
+- `TacticalAttemptStepper`(모름 '—'을 가진 스테퍼 — `BaStepper`는 int 필수), `TacticalFilterChip`(누를 수 있는 `BaChip`), `TacticalDeckSlotRow` · `TacticalMiniDeck`(G §0 `DeckSlotRow` · `MiniDeckStrip`, FE9-c · d · e가 다시 씀), `TacticalSlotPortrait`(초상 · 빗금 · 빈 상자 한 칸).
+- `_Scaled` · `_SectionFrame`(통계 `_ScaledBox` · `_SectionFrame`과 같은 코드 — 세 번째 사본).
+
+### 삭제 후보 파일
+
+- 없음(지운 파일 0). `tactical_service.dart` v1 쓰기 메서드는 Mock · process 테스트가 아직 쓴다(이관 전 v1 읽기와 이관 원본).
+
+### 발견 사항
+
+1. **덱 칸 수**: 프롬프트는 "내 덱 5칸 · 상대 덱 5칸"이지만 시안(1~4 · SP1 · SP2)과 계약(`strikers` 4 + `specials` 2)이 6칸이라 6칸으로 했다.
+2. **FD-126 seg 자리**: 확정안은 "헤더 제목 옆"인데 머리말은 `app_shell.dart`(이 slice 수정 금지)이고 `PageHeaderOverride`에 seg 자리가 없다. S1 제목 줄에 두었다. FE9-e(분석 화면)에서 머리말로 옮기려면 셸 · `PageHeaderOverride` 확장이 필요하다(부제도 화면마다 바뀜) — CF 판단.
+3. **FD-132 "상대 없이도 저장"**: v2 쓰기 입력은 `opponent_display_name` 비어 있지 않음 + `opponent_identity_id` 필수(schema · Dart strict). 방어 기록도 상대 이름이 있어야 저장된다. 권장안 표기는 그대로 따랐다. 상대 없는 방어 기록이 필요하면 계약 변경(XB).
+4. **시도 횟수 "모름 가능"**: 쓰기 계약은 `attempt_count` ≥ 1 필수라 모름은 보이기만 하고 저장 전에 정해야 한다. 이관 기록을 고쳐 저장할 때마다 시도 횟수를 새로 정하게 된다(실제 값을 모르면 1을 넣게 될 위험) — 쓰기에서 null 허용 여부는 XB · CF 판단.
+5. **이관 기록 ID**: 이관은 기록에 새 ID를 준다(Mock FNV 해시). 화면은 `source_record_id` `v7-v1:match:<v1 ID>`로 고른 행을 옮긴다 — Mock 규칙으로만 확인(백엔드 미확인).
+6. **상대 identity**: 이름(현재 이름 · 별칭)이 같으면 그 identity, 아니면 화면이 새 ID를 만든다. 기존 기록의 상대 이름을 고치면 새 상대가 된다(별칭 등록 UI는 범위 밖).
+7. **보유 학생**: 내 덱은 보유 학생만 고른다(v1 규칙). 기본 Mock은 보유 0이라 내 덱을 채울 수 없다. 검수 시 학생 스캔 Mock이나 design-review 시나리오가 필요하다.
+8. **design-review seed 데이터**: seed 공격 덱 A의 SP2가 `chise`(카탈로그상 스트라이커). Mock은 역할을 검사하지 않아 그대로 보인다. 피커는 스페셜 칸에 스트라이커를 고를 수 없다(칸을 건드리지 않으면 그대로 되보낸다). seed를 고칠지 CF 판단.
+9. **시안에 없는 요소**: S1 "새 기록", S3 "지우기", 이관 띠, 상대 칸 꺾쇠의 상대 고르기 모달, 상태 문구(저장 불가 이유 · 오류). 순위는 데이터가 없어 "순위 —".
+10. **섹션 모션**: 탭 안 하위 화면 전환이 아직 없어(분석 · 슬롯 꺼짐) 섹션별 intro/outro를 넣지 않았다. 탭 전환 모션은 셸 것 그대로. FE9-e에서 부착면 표(S1 0/180, S2 260/80, S3 80/260, S4 180/0)대로.
+11. **`dart format` 사고**: 위 사고 기록. 워커 프롬프트 표준 주의에 "`dart format`에는 디렉터리를 주지 않고 이 slice 파일 경로만"을 더하는 것을 권한다.
+12. fe_gate 분류: `tactical_page_test.dart` · `tactical_page_revision_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음이다.
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9a/commit.json`: slice `fe9a`, modified 3, added 6, `post_dir` = `debug/frontend_fe9a/post`, `whole = []`, `optional_added` = `frontend/test/goldens/baseline/tactical.png` · `tactical-migration.png`, `status=true`.
+- 사고 기록 자료: `debug/frontend_fe9a/format_incident/`. 인계: `debug/frontend_fe9a/output.md`.
+
+### 다음 행동
+
+- FE9-a 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: ① 사고 기록의 7개 파일(Lane A 6 · 스캐너 1) 공백 · 줄바꿈 확인을 해당 레인에 알림 ② Lane A가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에서 tactical_page +19 · revision +5, golden 새 2장 RED → 승인 → `-UpdateGoldens`, 기존 golden 변화 0) ③ `fe_commit.ps1 -Slice fe9a`. 발견 1~4 · 8은 CF/XB 판단, 2는 FE9-e 착수 전에.
