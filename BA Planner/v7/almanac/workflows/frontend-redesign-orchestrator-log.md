@@ -2756,3 +2756,56 @@ Common migration/recovery may precede a guard rejection and increment revision. 
 
 - **FD-175 신설·확정**: 통계·이력 "스냅샷 n회" = 가까운 시각의 scan 세션(학생·인벤토리 모든 profile)을 한 "스캔 자리"로 묶음(기본: 앞 세션 끝에서 2시간 안), A6·B3 점은 묶음별 마지막 상태. 구현은 FE7-h 후속 소단위(`StatisticsHistory.snapshotTimes`와 FE6-f·계정 메타의 같은 개념).
 - **스캐너 frontend WIP 보존 승인**: XB 08:32 권고 순서(FB-6 왕복 → XB O1·R6e backend 기능부 선택·전체 Python·frontend 기능부 hunk 목록 → 같은 소스 gate → XB 커밋 → CF `scanwip-func` 커밋, 시각 hunk는 FE8-g2로 → FE8-f1). backend 로그 10:05 회신.
+
+## 2026-10-14 10:15 — 다음 라운드 배정: Lane A FE7-e + FD-175, Lane B fb6-dart
+
+- **Lane A** `debug/frontend_redesign_handoff/fe7e-worker-prompt-20261014.md`: ① FD-175 스냅샷 묶음(`StatisticsHistory.snapshotTimes`, 2시간 상수 하나, A6·B3 점 = 묶음별 마지막 상태, KPI "지난 스냅샷 대비" 묶음 기준, 인벤토리 재화별 "지난 스캔"은 그대로) ② FE7-e 통계 전용 필터(FD-104: FE3-d 모달에 통계 전용 상태 주입, "학생 탭 필터 불러오기" = 1회 복사, 적용 범위 A1~A6만, 새 장면 최대 2장). lib/services/** 금지.
+- **Lane B** `debug/frontend_redesign_handoff/fb6dart-worker-prompt-20261014.md`: XB 08:26 9경로 SHA 대조 후 착수. 새 메서드 6·성공 응답 strict·read DTO optional 3키(attempt_count·occurred_precision·jokbo name)·`_methodErrorCodes['tactical']` 추가 8·Mock v2·process E2E(XB fixture 방식 inline). 화면(FE9-b) 범위 밖. 공유 서비스 파일 스캐너 WIP 보존(pre/post·post_dir). golden 변화 0 예상.
+- 두 레인 파일 겹침 0(Lane A는 statistics, Lane B는 services). 끝나면 같은 소스 gate → XB exact9 커밋 → CF fb6dart·fe7e 커밋 → FB-7.
+
+## 2026-10-14 13:10 — FE7-e·fb6-dart 검토·gate, FE7-e 커밋, XB FB-6 커밋 요청
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fb6dart 9행, fe7e 16행), 겹침 0(Lane A statistics·셸·학생 페이지 필터 주입 / Lane B services), 범위 밖 변경 0. fb6-dart 공유 서비스 3파일은 pre → 작업 트리가 추가만(스캐너 WIP 그대로, mock 주석 2줄만 교체). XB FB-6 source9 9/9 재확인, XB Python 실행 없음 확인 뒤 gate.
+- FE7-e 범위 메모: 학생 탭 필터 객체를 셸이 소유하도록 `app_shell.dart` +12·`student_page.dart` +9 −2(통계가 학생 탭 적용 값을 읽을 길이 없어서 — 계정 전환 때 비우기는 이전 동작과 같음). 승인.
+- gate ① `20261014_125058`: analyze 0, 391 + 390 + 680 + 296, process 75, golden RED 5 = 예측 그대로(통계 3장 변경 + 새 2장 기준 없음). 차이: 성장 = 왼쪽 필터 버튼 흐림 해제 + 스냅샷 칩 "12회" → "7회", 인벤토리·계획 = 스냅샷 칩만. 새 2장(필터 모달·필터 적용 화면) 검토 → 승인. fe7e commit.json에 `optional_added` 2장 추가(CF). ② `-UpdateGoldens` `20261014_125829` **GREEN**(golden 47).
+- 커밋: **fe7e `7679283f`**(20파일). fb6dart는 DryRun 전 — XB exact9 커밋 뒤 CF 커밋(backend 로그 13:10 요청).
+- FE7-e 발견 CF 판단: ① 시안 "스냅샷 6회" vs fixture "7회" — fixture 유지(인벤토리 "3일 전"과 함께 6회는 불가, 시안 숫자 차이로 기록) ② 공용 필터 모달 800×600 넘침(기존, 학생 탭도 같음) — 작은 정리 후보 ③ A4 seg 판정 — FE7-f ④ A5 숫자 — FE7-i ⑥ 연속 스캔 묶음 상한 — 사용자 판단 후보(권장: 지금은 상한 없음, 실사용에서 문제가 보이면 FD-175 보강).
+- fb6-dart 발견: 삭제 뒤 도출 족보 잔존·족보 DTO notes 등 미수용·Mock/백엔드 차이·capability 분리 → FE9-b 입력.
+
+
+## 2026-10-14 13:48 — 회신(XB→CF): **FB6 exact9 커밋 완료 b795f24a4738191290b8868830b13a496f9b9462**
+
+- CF13:10 요청·same-source gate **20261014_125829 GREEN**에 따라 FB6source9 **정확9만** 커밋했다. parent **7679283f2c113b613d048d2e12d59b0e5645ff4b**. 변경경로/9Gitblob/9rawSHA 전수일치, indexempty·기존인식WIP/CFfrontend7·main보호4114 원bytes보존·push0. 상세 exact경로는 **debug/xb_fb6_exact_commit_20261014/artifacts/commit-receipt.json**.
+- 표준wholeretry **1274/1621.648s OK**(원RED2보존/조건완화0), 이후 CFfrontend가바뀐 현행main 의존20 **20/7.041s OK**·Almanac45/diffPASS. 의존20의 제한환경실행은 temp Move-Item denied+backend child15s timeout으로RED였고 원log보존; 승인된primary에서 같은source/test/timeout으로PASS. Canonicalwhole와actualmain20 범위를구분한다.
+- **CF 다음**: gate동일 frontend7로 **fb6dart커밋→왕복완료/동결해제회신**을남겨달라. 그전 backend/contracts/frontend/tool 추가source변경0. 10:05 사용자승인 O1/R6e 기능부선택/새whole·짝front hunk목록→CFsame-sourcegate→XB→CFscanwip-func→FE8f1, 이후FB7순서. 아직paired완료선언0.
+- 기존sealed 두output SHA검증/보존. 새 **debug/xb_fb6_exact_commit_20261014/output.md**는v1caller회신·최종상태/검증후마지막봉인예정이다.
+
+
+## 2026-10-14 13:51 — 회신(XB): CM·CF13:10 전술 편집기 v1 쓰기 호출 **4곳 확인**
+
+- 실제 **frontend/lib/ui/pages/tactical_page.dart:368/439/483/498**의 `_editMatch`·`_editJokbo`·`_deleteMatch`·`_deleteJokbo`는 여전히 `TacticalService.saveTacticalMatch/saveTacticalJokbo/deleteTacticalMatch/deleteTacticalJokbo`를 부른다. 족보를기록으로복사하는 `_copyJokboToMatch`도 `_editMatch`를거쳐 같은v1저장경로다.
+- ProcessAppService **679/703/691/715**에서 각각 **tactical.match.upsert / tactical.jokbo.upsert / tactical.match.delete / tactical.jokbo.delete**로전송한다. FB6신규 `TacticalEvidenceWriteService` v2구현은별도로생겼지만 현재편집page에서호출하지않는다.
+- **명시이관 또는빈v1의첫v2쓰기 뒤에는 이4개 새v1쓰기 모두 tactical_v1_read_only**다(tactical_store.py:260). 기존exact재요청은캐시응답/기존v1읽기유지. FE9-b에서v2편집·이관안내와묶어전환할 caller목록으로전달한다. 현재페이지는오류를일반저장실패메시지로보여준다.
+- 읽기전용확인/source수정0. 경로·현재bytes/SHA·정확호출/guard근거 **debug/xb_fb6_exact_commit_20261014/artifacts/tactical-v1-editor-caller-proof.json**. CM소유전술UI/연구파일수정0.
+
+
+## 2026-10-14 13:51 — 준비 알림(XB→CF): O1/R6e 기능부/시각 hunk **읽기전용 초안**
+
+- FB6 **b795f24a4738191290b8868830b13a496f9b9462** 회신뒤 다음단계준비로 tracked13+new2의 실제SHA와 기존scanner원patch별hunk를정리했다. **debug/xb_fb6_exact_commit_20261014/artifacts/scanner-functional-hunk-draft.md**·scanner-frontend-hunk-draft.json. transport/DTO/Mock/O1확인·숫자차단/revisionreset/R6e지정은기능부, dock live값·순차motion제거/progress·결과report/portrait/layout은FE8-g2로표시했다. 체크박스열과큰appendtest는기능/시각분할주의도기록했다.
+- 공유service 현재전체diff는FB6도포함하므로통stage금지. 표의hunk좌표는fb6-dart이전immutable scannerpatch이며 **CF fb6dart커밋뒤재base가필요**하다. 원patchbase와현재HEAD 일치여부도13행별기록했다.
+- backend 후보경로11실측은기록했으나 **exact11 확정아님**. protocol/session의student_identity_filters·runtime의미추적C6 분할import·numeric safety/recognizer의존을따로선택해야하며 repository_store는단순import재정렬이라기능부에서제외가능하다. 기존working을통커밋하거나C6미추적모듈전체를끼우지않는다.
+- **CFpaired회신전 추가source/staging/새whole0**. 10:05순서②는CF왕복뒤HEAD기능projection/의존폐쇄확인→새전체Python→최종exact경로/SHA·재basefront hunk목록으로완료한다. 이초안은그 gate요청/scanwip-func착수신호가아니다.
+
+
+## XB 보고 — 2026-10-14 13:53: FB6 exact9 커밋·CF paired대기 / 전술 v1 caller·scanner hunk 초안
+
+- **완료**: FB6 exact9 **b795f24a4738191290b8868830b13a496f9b9462**, parent **7679283f2c113b613d048d2e12d59b0e5645ff4b**. 원source9 SHA/현재HEAD원본일치→normalstage9→9경로/blob일치 검증, emptyindex/push0. 메인보호 **4114**/기존인식WIP·CF frontend7 원bytes보존. 커밋hash를CF에13:48즉시회신했다. 근거 **debug/xb_fb6_exact_commit_20261014/output.md** 및 commit-receipt/staged-exact9/source9.
+- **검증**: 기존봉인된 표준wholeretry **1274/1621.648s OK**(원wholeerrors2 RED보존/timeout·skip·골든완화0), 이후바뀐실제main frontend의존검사 **20/7.041s OK**, CF same-source **20261014_125829 GREEN**(analyze0/391+390+680+296/process75/golden47), Almanac45/diffPASS. 새20의 제한환경실패(tempMove-Item denied+catalogchild15stimeout)는원log보존했고 승인primary의동일조건PASS와분리했다. 기존whole는canonical사본검증이며이번wholemain/wholeselectedHEAD 실행이라고확대하지않는다.
+- **회신/준비**: 전술페이지368/439/483/498→Process679/703/691/715의 v1쓰기4곳과족보→기록복사경유를CM·CF에알렸다. 이관뒤새v1쓰기 tactical_v1_read_only이므로FE9-b전환입력이다. 기존scanner tracked13+new2의 **원HEADbase13/13현재일치**/SHA·hunk 기능부·시각부초안도CF전달, 혼합checkbox/test분할과공유service FB6commit뒤재base를명시했다. backend후보11은exact확정아니며studentfilters/C6import/recognizersafety의존은선택심사잔여다. frontend/CMsource편집0.
+- **다음/대기**: CF **fb6dart커밋→FB6왕복완료/동결해제회신** 전까지 backend/contracts/frontend/tool추가sourcefreeze 유지. 그후사용자10:05순서② O1/R6e HEAD기능projection/의존폐쇄·새whole→최종paths/SHA+front hunks→CFsame-sourcegate→XB→CFscanwip-func→FE8f1, 이후FB7. 지금newsource/staging/whole0(초안만), paired완료선언0. CF회신전종속작업을앞당기지않는다.
+- **범위보존**: 게임자료·공용store/lock/pipeline/연구/새holdout/userprofiles/OS설정/골든쓰기0·push0. FB7/공용cropfixture2/live5·earlystream/fullFB10/FD145/currency/M2native/M3/M4/O3/전체P0-P6 완료미선언. 동일XB/CF/CM보고와ownedP0/post상태갱신후 최종Almanac/diff/보호·index검사, 실제artifact SHA표로outputLAST봉인한다.
+
+## 2026-10-14 14:52 — FB-6 왕복 완료
+
+- XB FB-6 exact9 `b795f24a`(13:48, 9경로 확인) → CF **fb6dart `29296336`**(DryRun 통과 뒤 커밋, gate `20261014_125829`). 공유 서비스 파일은 pre/post 3-way 병합으로 FB-6 줄만 커밋, 스캐너 WIP는 작업 트리에 그대로(HEAD 대비 4파일 +399 −1).
+- XB 13:51 회신 2건: ① 전술 페이지 v1 쓰기 4곳 → FE9-b 입력 ② 스캐너 기능부·시각 hunk 읽기 전용 초안(fb6dart 커밋 뒤 재base 필요) → backend 로그 14:52로 순서 ② 착수 요청.
