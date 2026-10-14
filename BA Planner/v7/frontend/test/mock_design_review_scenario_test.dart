@@ -4,6 +4,7 @@
 // - `design-review`: 계정 `거모이는존재한다 (v7 UI 테스트)`가 선택되고, 통계 · 인벤토리 · 계획 · 계정 메타 서비스 응답이
 //   시안 숫자(대표값)를 준다. 숫자는 옮긴 데이터의 기존 기대값(`*_fixture.dart`의 Expected)을 그대로 쓴다.
 // - 쓰기는 메모리 안이고, 새 시나리오는 초기값으로 돌아간다.
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/mock_design_review_scenario.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
@@ -52,7 +53,7 @@ void main() {
       addTearDown(reference.dispose);
       expect(service.runtimeType, MockAppService);
       expect(service.fullStudentCatalog, isTrue);
-      expect(service, isNot(isA<InventoryClockSource>()));
+      expect(service, isNot(isA<AppClockSource>()));
       expect(createMockAppService(scenario: '  ').runtimeType, MockAppService);
 
       final profiles = await service.listProfiles();
@@ -237,7 +238,7 @@ void main() {
       ])).profiles.single;
       final lastScan = accountLastScanText(
         summary.lastScanAt,
-        service.inventoryNow,
+        service.clockNow,
       );
       expect(lastScan, '어제 21:40');
       final owned = (await service.loadRepositoryState(

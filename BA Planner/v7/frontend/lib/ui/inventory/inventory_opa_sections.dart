@@ -7,7 +7,8 @@
 // - "사용 학생": 초상 5명 + `…+n`. 누르거나 올리면 학생별 부족 티어 필요량 플라이아웃(FD-101, 시안 `T4 12 · T3 8`).
 // - "병목 순위 · 가장 부족한 티어 기준": 오파츠마다 가장 부족한 티어 하나, 부족량 큰 순 5행. 핵심 병목은 분홍 글자, 고른
 //   오파츠는 굵게. 행을 누르면 그 오파츠를 고른다.
-// - "계획에서 쓰는 단계 보기": 계획 탭으로 이동만 한다(재화 · 단계 포커스 인계는 후속).
+// - "계획에서 쓰는 단계 보기": 계획 탭으로 간다. 셸에서는 계획에 쓰는 티어를 활성 계획 Detail 홈 "전체" 탭에서 고른다(tidy1,
+//   [inventoryOopartPlanResource] · FD-108).
 part of 'inventory_workspace.dart';
 
 /// 상세 열 캡션(`.cap` 12px 600 #9eb0c2).
@@ -40,6 +41,16 @@ const _opaStudentsFlyout = FlyoutPreset(
 /// 사용 학생 플라이아웃 최대 줄 수(넘으면 `… 외 n명`).
 const _opaStudentRows = 8;
 
+/// 상세 "계획에서 쓰는 단계 보기"가 계획 탭에 넘길 재화(tidy1, FD-108): 머리 아이콘 티어가 계획에 있으면 그 티어, 아니면
+/// 계획에 있는 가장 높은 티어. 계획에 쓰는 티어가 없으면 null(계획 탭을 그대로 연다).
+String? inventoryOopartPlanResource(InventoryOopartDetail? detail) {
+  if (detail == null) return null;
+  for (final tier in [detail.icon, ...detail.tiers.reversed]) {
+    if (tier.planned) return tier.key;
+  }
+  return null;
+}
+
 extension _InventoryOpaSections on _InventoryAnalysisSections {
   /// 확장 S2의 상세 열. [reveal]은 등장 진행(0 → 1: 투명 → 불투명, 오른쪽 24px에서 제자리).
   Widget _oopartDetail(_SectionQuad quad, double reveal) {
@@ -52,7 +63,8 @@ extension _InventoryOpaSections on _InventoryAnalysisSections {
       selectedFamily: controller.selectedOopartFamily,
       studentName: controller.studentName,
       onSelect: controller.selectOopart,
-      onOpenPlan: onOpenPlan,
+      onOpenPlan: () =>
+          onOpenPlan(inventoryOopartPlanResource(controller.selectedOopartDetail)),
     );
     return Positioned(
       left: left,

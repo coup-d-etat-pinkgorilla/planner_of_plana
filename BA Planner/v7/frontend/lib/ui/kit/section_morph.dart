@@ -2,8 +2,8 @@
 // 동안의 표면 path와, 나머지 섹션이 부착면 쪽으로 빠지는 진행을 계산한다.
 //
 // - rect 보간은 실수다([sectionMorphRect] = `Rect.lerp`). Studio 문서의 정수 grid(`SectionGridRect`)를 반올림하며
-//   보간하면 기준 viewport에서 한 칸(가로 26.7px · 세로 12.6px)씩 계단이 지므로 grid를 거치지 않는다(선례
-//   `plan_phase_editor.dart`의 private `_lerpGridRect`는 `.round()` 보간이다. 그 파일은 FE5-f에서 지울 예정이라 고치지 않는다).
+//   보간하면 기준 viewport에서 한 칸(가로 26.7px · 세로 12.6px)씩 계단이 지므로 grid를 거치지 않는다(옛 페이즈 편집기
+//   `plan_phase_editor.dart`의 private `_lerpGridRect`가 `.round()` 보간이었다. 그 파일은 FE5-f2에서 지웠다).
 // - path는 두 끝 element의 꼭짓점(`buildAttachedSectionPolygon`, 같은 mode · face)을 실수로 보간한 polygon에서 같은 둥근
 //   모서리 함수(`buildRoundedSectionPolygon`)와 캔버스 경계로 다시 만든다([buildSectionMorphPath]). 같은 mode · face면 두
 //   끝의 사선 변이 모두 80°이고, 꼭짓점의 선형 보간도 그 기울기를 지킨다(가로 차 = tan 10° × 세로 차가 두 끝에서 성립하면

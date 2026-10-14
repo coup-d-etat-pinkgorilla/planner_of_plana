@@ -103,6 +103,9 @@ abstract final class PlanScenarioListMetrics {
   static const compareSlotHeight = 44.0;
   static const compareRunTop = 574.0;
   static const compareRunHeight = 50.0;
+
+  /// "나란히 비교" 버튼 안 칸이 이보다 좁으면 아이콘만 둔다(아이콘 18 + 간격 8 · 8 + "n개" 약 24 + 말줄임 자리).
+  static const compareRunLabelMinWidth = 72.0;
   static const compareNoteTop = 634.0;
 
   // S2 목록.
@@ -312,6 +315,8 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   Map<String, StudentCatalogEntry> _catalog = const {};
   bool _busy = false;
   int _loadGeneration = 0;
+  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
+  int _keySequence = 0;
   final _searchController = TextEditingController();
   final _renameModal = BaModalController();
   final _deleteModal = BaModalController();
@@ -515,7 +520,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
   }
 
   String _idempotencyKey(String action, String scenarioId) =>
-      'scenario-$action-$scenarioId-${DateTime.now().microsecondsSinceEpoch}';
+      'scenario-$action-$scenarioId-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}';
 
   Future<void> _duplicate(PlanningScenarioSummary scenario) async {
     final result = _result;
@@ -1136,28 +1141,38 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       variant: RailButtonVariant.tri,
       height: PlanScenarioListMetrics.compareRunHeight,
       onPressed: canCompare ? _runCompare : null,
-      child: Row(
-        children: [
-          const Icon(Icons.view_column_outlined, size: 18),
-          const SizedBox(width: 8),
-          const Text(
-            '나란히 비교',
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: AppType.titleSmallSize,
-              fontWeight: AppType.bold,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$compareCount개',
-            maxLines: 1,
-            style: const TextStyle(
-              fontSize: AppType.bodySmallSize,
-              fontWeight: AppType.semiBold,
-            ),
-          ),
-        ],
+      // 기준 viewport에서는 다 들어간다. 좁은 창(1280×720 등)에서는 "나란히 비교"를 말줄임하고, 글자 칸이 없으면
+      // 아이콘만 둔다(tidy1, FE5-f1 발견 1).
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            const Icon(Icons.view_column_outlined, size: 18),
+            if (constraints.maxWidth >=
+                PlanScenarioListMetrics.compareRunLabelMinWidth) ...[
+              const SizedBox(width: 8),
+              const Flexible(
+                child: Text(
+                  '나란히 비교',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppType.titleSmallSize,
+                    fontWeight: AppType.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$compareCount개',
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: AppType.bodySmallSize,
+                  fontWeight: AppType.semiBold,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
     children.add(
@@ -1379,12 +1394,16 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
           enabled: enabled,
           onChanged: _state.setQuery,
         ),
-        const Spacer(),
-        Text(
-          staleCount == 0 ? '오래된 시나리오 없음' : '오래된 시나리오 $staleCount개',
-          key: const ValueKey('plan-scenario-stale-count'),
-          maxLines: 1,
-          style: _muted.copyWith(fontSize: AppType.captionPlusSize),
+        // 남는 칸 오른쪽 끝(기준 viewport는 Spacer + 글자와 같은 자리). 좁은 창에서는 말줄임(tidy1, FE5-f1 발견 1).
+        Expanded(
+          child: Text(
+            staleCount == 0 ? '오래된 시나리오 없음' : '오래된 시나리오 $staleCount개',
+            key: const ValueKey('plan-scenario-stale-count'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: _muted.copyWith(fontSize: AppType.captionPlusSize),
+          ),
         ),
       ],
     );
@@ -2162,23 +2181,30 @@ class PlanScenarioActiveRow extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Container(
-                              height: AppControlHeights.chip,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              alignment: Alignment.center,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(AppRadii.chip),
-                                ),
-                              ),
-                              child: Text(
-                                '메인 · 지금 쓰는 계획',
-                                maxLines: 1,
-                                style: baChipTextStyle.copyWith(
-                                  color: const Color(0xff0c2233),
+                            // 기준 viewport에서는 글자 폭 그대로다. 좁은 창에서는 남는 칸까지 줄이고 말줄임한다
+                            // (tidy1, FE5-f1 발견 1).
+                            Flexible(
+                              child: IntrinsicWidth(
+                                child: Container(
+                                  height: AppControlHeights.chip,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(AppRadii.chip),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '메인 · 지금 쓰는 계획',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: baChipTextStyle.copyWith(
+                                      color: const Color(0xff0c2233),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

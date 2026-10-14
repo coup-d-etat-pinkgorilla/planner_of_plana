@@ -7,13 +7,16 @@
 // FE7-d: 통계 근거 이동 의도([InventoryPage.navigation])는 한 번만, 첫 로드가 끝난 뒤 적용한다. 행이면 목록 모드에서
 // 그 재화의 종류 · 보기로 거른 뒤 그 행을 고르고(상세가 그 재화를 보인다), 티어별 충족률이면 분석 모드의 티어 화면을 연다.
 // 모두 기존 컨트롤러 동작(`setScreenMode` · `setMode` · `showCategoryShortages` · `setView` · `toggleCategory` · `select` ·
-// `toggleTiers`)이다.
+// `toggleTiers`)이다. 행을 고르면 그 행이 목록 · 타일에서 보이게 스크롤한다(tidy1, FE7-d 발견 2, [InventoryRevealRequest]).
+// tidy1(FD-108): 상세 "계획에서 보기" 등 계획 탭으로 가는 버튼은 [InventoryPage.onNavigate]로 계획 이동 의도를 넘긴다(볼 재화가
+// 있으면 [PlanNavigationIntent.resource], 없으면 [PlanNavigationIntent.home]). 셸 밖(테스트)은 [InventoryPage.onOpenPlan]이다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../app_section.dart';
 import '../inventory/inventory_analysis.dart' show InventoryScreenMode;
 import '../inventory/inventory_controller.dart';
 import '../inventory/inventory_view_model.dart';
@@ -27,7 +30,8 @@ class InventoryPage extends StatefulWidget {
   const InventoryPage({
     super.key,
     required this.service,
-    required this.onOpenPlan,
+    this.onOpenPlan,
+    this.onNavigate,
     required this.onOpenScan,
     this.candidateContext,
     this.onCandidateCommitted,
@@ -36,7 +40,12 @@ class InventoryPage extends StatefulWidget {
     this.navigation,
   });
   final AppService service;
-  final VoidCallback onOpenPlan;
+
+  /// 계획 탭으로 간다([onNavigate]가 없을 때, 재화 없이).
+  final VoidCallback? onOpenPlan;
+
+  /// 다른 탭으로 가는 이동 의도(tidy1, FD-108). 앱 셸이 넘긴다. 있으면 [onOpenPlan] 대신 쓴다.
+  final ValueChanged<AppNavigationIntent>? onNavigate;
   final VoidCallback onOpenScan;
   final InventoryCandidateContext? candidateContext;
   final ValueChanged<ScannerCandidate>? onCandidateCommitted;
@@ -47,7 +56,7 @@ class InventoryPage extends StatefulWidget {
   /// 탭이 보이는가(셸이 넘긴다). 처음 true가 될 때 첫 로드를 시작한다. 셸 밖(테스트·golden)은 기본 true다.
   final bool active;
 
-  /// 통계 근거에서 넘긴 이동 의도(FE7-d). 같은 의도는 한 번만 적용한다.
+  /// 다른 탭에서 넘긴 이동 의도(FE7-d). 같은 의도는 한 번만 적용한다.
   final InventoryNavigationIntent? navigation;
 
   @override
@@ -68,6 +77,9 @@ class _InventoryPageState extends State<InventoryPage> {
   int? _navigationId;
   InventoryNavigationIntent? _pendingNavigation;
   InventoryController? _listened;
+
+  /// 마지막 이동 의도로 고른 행(목록 · 타일에서 한 번 보이게 한다).
+  InventoryRevealRequest? _reveal;
 
   @override
   void initState() {
@@ -130,6 +142,7 @@ class _InventoryPageState extends State<InventoryPage> {
           }
         }
         controller.select(key);
+        setState(() => _reveal = InventoryRevealRequest(key));
     }
   }
 
@@ -192,6 +205,23 @@ class _InventoryPageState extends State<InventoryPage> {
     }
   }
 
+  /// 계획 탭으로 간다. [resourceKey]가 있으면 활성 계획 Detail 홈에서 그 재화를 고른다(tidy1, FD-108).
+  void _openPlan(String? resourceKey) {
+    final navigate = widget.onNavigate;
+    if (navigate == null) {
+      widget.onOpenPlan?.call();
+      return;
+    }
+    navigate(
+      resourceKey == null
+          ? PlanNavigationIntent.home(origin: AppSection.inventory)
+          : PlanNavigationIntent.resource(
+              resourceKey,
+              origin: AppSection.inventory,
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: _controller,
@@ -200,8 +230,9 @@ class _InventoryPageState extends State<InventoryPage> {
       final candidate = widget.candidateContext;
       return InventoryWorkspace(
         controller: controller,
-        onOpenPlan: widget.onOpenPlan,
+        onOpenPlan: _openPlan,
         onOpenScan: widget.onOpenScan,
+        reveal: _reveal,
         candidatePanel: candidate == null
             ? null
             : _CandidatePanel(

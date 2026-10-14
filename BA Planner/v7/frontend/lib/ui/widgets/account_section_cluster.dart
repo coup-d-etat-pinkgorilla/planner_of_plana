@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
+import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
 import '../geometry/diagonal_geometry.dart';
-import '../inventory/inventory_controller.dart' show InventoryClockSource;
 import '../kit/ba_chip.dart';
 import '../kit/ba_modal.dart';
 import '../kit/diagonal_scrollbar.dart';
@@ -571,6 +571,9 @@ enum _ClusterView { manager, editor, picker }
 
 class _AccountSectionClusterState extends State<AccountSectionCluster>
     with TickerProviderStateMixin {
+  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
+  int _keySequence = 0;
+
   late final AnimationController _managerMotion;
   late final AnimationController _editorMotion;
   late final AnimationController _pickerMotion;
@@ -885,7 +888,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
     try {
       final created = await repository.createProfile(
         name,
-        'account-create-${DateTime.now().microsecondsSinceEpoch}',
+        'account-create-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
       );
       if (!mounted) return;
       if (widget.entry == AccountClusterEntry.createFirst) {
@@ -953,7 +956,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
         name,
         _portraitId,
         editing.revision,
-        'account-update-${DateTime.now().microsecondsSinceEpoch}',
+        'account-update-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
       );
       await _load();
       if (mounted) await _closeEditor();
@@ -975,7 +978,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       await repository.selectProfile(
         profile.id,
         profile.revision,
-        'account-select-${DateTime.now().microsecondsSinceEpoch}',
+        'account-select-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
       );
       await _load();
     } catch (error) {
@@ -1020,7 +1023,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
             profileId: profile.id,
             expectedRevision: profile.revision,
             idempotencyKey:
-                'account-delete-${profile.id}-${DateTime.now().microsecondsSinceEpoch}',
+                'account-delete-${profile.id}-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
           );
     _pendingDelete = request;
     setState(() {
@@ -1910,10 +1913,7 @@ class _AccountSectionClusterState extends State<AccountSectionCluster>
       accountStudioDocument.elements.singleWhere((item) => item.id == id);
 
   /// 메타 줄 "마지막 스캔"의 지금. 검수 fixture·테스트는 서비스가 고정 시각을 준다(없으면 기기 시계).
-  DateTime _now() => switch (widget.service) {
-    final InventoryClockSource source => source.inventoryNow,
-    _ => DateTime.now(),
-  };
+  DateTime _now() => appClockNow(widget.service);
 }
 
 /// 계정 추가 모달 컨트롤러. [locked] 동안에는 닫지 않는다(키트 [BaModal]은 Esc·스크림에서 [close]를 부른다).

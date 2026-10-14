@@ -40,7 +40,7 @@ enum InventoryAnalysisFocus {
   final String label;
 }
 
-/// S5 최근 변화 기간 seg(데이터는 FE6-f).
+/// S5 최근 변화 기간 seg. 기간별 순변화는 FE6-f 이력 집계(`inventory_history.dart`의 [InventoryChangeWindowSpan])다.
 enum InventoryChangeWindow {
   week1('1주'),
   week2('2주'),

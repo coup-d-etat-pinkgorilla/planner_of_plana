@@ -978,7 +978,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     if (mounted) setState(() {});
   }
 
-  /// 최근 본 학생 썸네일: 그 학생을 고르고 그리드를 그 학생까지 스크롤한다(FD-061).
+  /// 최근 본 학생 썸네일: 그 학생을 고르고 그리드 · 목록 보기를 그 학생까지 스크롤한다(FD-061, 목록은 tidy1).
   void _openRecentStudent(String studentId) {
     setState(() {
       _revealStudentId = studentId;
@@ -1015,7 +1015,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       _filter.addListener(_filterChanged);
     }
     if (!_sameFilterInputs(oldWidget, widget)) _candidates = null;
-    // 이동용 임시 목록이 새로 오면(FE7-d) 고른 학생이 보이게 그리드를 스크롤한다(최근 본 학생과 같은 길).
+    // 이동용 임시 목록이 새로 오면(FE7-d) 고른 학생이 보이게 그리드 · 목록 보기를 스크롤한다(최근 본 학생과 같은 길).
     final restrictedIds = widget.restrictedIds;
     if (restrictedIds != null &&
         !identical(restrictedIds, oldWidget.restrictedIds) &&
@@ -1469,6 +1469,8 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                                 studentValuesById: widget.studentValuesById,
                                 selectedId: widget.selectedId,
                                 onSelected: widget.onStudentSelected,
+                                revealStudentId: _revealStudentId,
+                                revealRequest: _revealRequest,
                               ),
                           ],
                         ),
@@ -4890,6 +4892,8 @@ class StudentDiagonalList extends StatefulWidget {
     required this.studentValuesById,
     required this.selectedId,
     required this.onSelected,
+    this.revealStudentId,
+    this.revealRequest = 0,
   });
 
   final List<StudentCatalogEntry> students;
@@ -4897,6 +4901,11 @@ class StudentDiagonalList extends StatefulWidget {
   final Map<String, Map<String, dynamic>> studentValuesById;
   final String? selectedId;
   final ValueChanged<String> onSelected;
+
+  /// [revealRequest]가 바뀌면 이 학생의 행이 viewport 가운데에 오게 스크롤한다(그리드 [StudentDiagonalGrid]와 같은 요청 —
+  /// 최근 본 학생 FD-061, 통계 이동 FE7-d. tidy1, FE7-d 발견 3).
+  final String? revealStudentId;
+  final int revealRequest;
 
   @override
   State<StudentDiagonalList> createState() => _StudentDiagonalListState();
@@ -4906,6 +4915,36 @@ class _StudentDiagonalListState extends State<StudentDiagonalList> {
   static const _inset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
+
+  @override
+  void didUpdateWidget(StudentDiagonalList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final studentId = widget.revealStudentId;
+    if (studentId != null && oldWidget.revealRequest != widget.revealRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(studentId));
+    }
+  }
+
+  void _reveal(String studentId) {
+    if (!mounted || !_controller.hasClients) return;
+    final index = widget.students.indexWhere(
+      (student) => student.studentId == studentId,
+    );
+    if (index < 0) return;
+    final position = _controller.position;
+    final offset = studentListRevealOffset(
+      index: index,
+      contentTop: _inset,
+      viewportHeight: position.viewportDimension,
+      maxScrollExtent: position.maxScrollExtent,
+    );
+    if ((offset - _controller.offset).abs() < 0.5) return;
+    _controller.animateTo(
+      offset,
+      duration: AppMotion.header,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -5362,6 +5401,21 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
         ),
     ];
   }
+}
+
+/// 목록 보기 [index]번째 행이 viewport 가운데에 오는 스크롤 위치(0 ~ [maxScrollExtent]로 자름, tidy1).
+double studentListRevealOffset({
+  required int index,
+  required double contentTop,
+  required double viewportHeight,
+  required double maxScrollExtent,
+}) {
+  final rowCenter =
+      contentTop + index * studentListItemExtent + studentListItemHeight / 2;
+  return (rowCenter - viewportHeight / 2).clamp(
+    0.0,
+    math.max(0.0, maxScrollExtent),
+  );
 }
 
 /// [row]행 카드가 viewport 가운데에 오는 스크롤 위치(0 ~ [maxScrollExtent]로 자름).

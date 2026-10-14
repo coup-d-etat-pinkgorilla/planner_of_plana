@@ -3,10 +3,9 @@
 // 기준 viewport 2560×1392에서 Studio 문서 값이 시안 px 값과 같은지(패널 ±1px, 안쪽 요소 ±2px), 펼침·접힘 전이,
 // 닫기 = 버림 · 저장 = 편집 중인 값에 반영 · 편집기 저장 = 저장소 호출, 메타 줄의 "마지막 스캔"(FD-041)을 본다.
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
-import 'package:ba_planner_v7/ui/inventory/inventory_controller.dart'
-    show InventoryClockSource;
 import 'package:ba_planner_v7/ui/kit/diagonal_scrollbar.dart';
 import 'package:ba_planner_v7/ui/kit/info_popover.dart';
 import 'package:ba_planner_v7/ui/studio/account_studio_layout.dart';
@@ -25,7 +24,7 @@ final _fixtureNow = DateTime(2026, 10, 13, 12);
 final _fixtureLastScan = DateTime(2026, 10, 12, 21, 40);
 
 /// 마지막 스캔이 있는 계정 하나(초상 [avatar]). 요약은 기록 없음 요약에 scan 적용 1건을 더한 값이다.
-class _LastScanService extends MockAppService implements InventoryClockSource {
+class _LastScanService extends MockAppService implements AppClockSource {
   _LastScanService({
     String avatar = 'airi',
     this.lastScan,
@@ -48,7 +47,7 @@ class _LastScanService extends MockAppService implements InventoryClockSource {
   final updates = <({String name, String avatar, int revision})>[];
 
   @override
-  DateTime get inventoryNow => _fixtureNow;
+  DateTime get clockNow => _fixtureNow;
 
   @override
   Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(

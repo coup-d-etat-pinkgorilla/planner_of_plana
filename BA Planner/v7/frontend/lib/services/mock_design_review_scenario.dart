@@ -14,7 +14,7 @@
 // status-lane-b "mockdemo 종료 기록"의 일치표를 본다.
 import 'dart:async';
 
-import '../ui/inventory/inventory_controller.dart' show InventoryClockSource;
+import 'app_clock.dart';
 import 'app_service.dart';
 import 'design_review/inventory_fe6a_data.dart';
 import 'design_review/inventory_history_data.dart';
@@ -101,7 +101,7 @@ RepositoryCurrentHistory _history() {
 
 /// 검수 시나리오 Mock. 기본 Mock 동작 위에 계정 · 데이터만 바꿔 끼운다.
 class MockDesignReviewScenario extends MockAppService
-    implements InventoryClockSource {
+    implements AppClockSource {
   factory MockDesignReviewScenario() =>
       MockDesignReviewScenario._(_ScenarioClock(designReviewStartedAt));
 
@@ -143,7 +143,7 @@ class MockDesignReviewScenario extends MockAppService
   List<StudentCatalogEntry>? _catalog;
 
   @override
-  DateTime get inventoryNow => _clock.now();
+  DateTime get clockNow => _clock.now();
 
   /// 학생 목록: 번들 학생 목록에서 성장 데이터 id 170명(이름 · 초상 · 애장품 여부는 실제 값).
   @override

@@ -9,7 +9,7 @@
 //   [GrowthCalculatorBondTile]), 성장 재화 목록(정렬 3종, 6행 + 접힘). 성장 계산 경고는 "필요 재화" 제목 줄에,
 //   인연 경고는 인연 타일에 둔다. 선물은 성장 재화 목록·"부족 n종"에 넣지 않는다(FD-165).
 // - 아래: "이 목표로 계획에 추가"(FE4-g, FD-171 (a): 계획 만들기 2단계로 넘김). "인벤토리 · 부족 위험에서 보기"는
-//   숨긴다(FD-173 (c)).
+//   숨긴다(FD-173 (c)). 연결(인벤토리 행 이동 의도)은 [GrowthCalculatorModeData.onOpenInventory]로 준비만 했다(tidy1).
 // - 계산 상태: 기다리는 동안 직전 결과를 흐리게, 실패하면 오류 문구와 직전 결과를 보인다.
 // 목표는 저장하지 않고, 학생 탭 인연 게이지의 활성 계획 목표(FD-049)와 섞지 않는다.
 import 'dart:math' as math;
@@ -392,6 +392,7 @@ class GrowthCalculatorModeData {
     required this.student,
     this.onOpenScan,
     this.onAddToPlan,
+    this.onOpenInventory,
     this.planMembership = GrowthCalculatorPlanMembership.unknown,
     this.recent = const [],
     this.onOpenRecent,
@@ -409,6 +410,10 @@ class GrowthCalculatorModeData {
 
   /// "이 목표로 계획에 추가"(FE4-g, FD-171 (a)). null이면 비활성이다.
   final VoidCallback? onAddToPlan;
+
+  /// "인벤토리 · 부족 위험에서 보기"(FD-173 (a), tidy1 준비): 인벤토리 목록에서 그 resource_key 행을 고른다. 버튼은 아직
+  /// 그리지 않는다(FD-173 (c) 숨김 유지). 앱 셸 밖이면 null이다.
+  final ValueChanged<String>? onOpenInventory;
 
   /// S4 선택 학생 요약의 계획 포함 여부(FD-172, FE4-h부터 저장된 활성 계획 문서 기준).
   final GrowthCalculatorPlanMembership planMembership;

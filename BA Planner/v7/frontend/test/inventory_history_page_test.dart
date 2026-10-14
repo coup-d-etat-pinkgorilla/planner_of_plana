@@ -1,6 +1,6 @@
 // FE6-f 인벤토리 이력 연동 위젯 · 컨트롤러 테스트(시안 Inventory KPI · 상세 "최근 변화", Inventory-All 상세, Inventory-Analysis
 // S5). 숫자는 검수 fixture(`inventory_fe6a_fixture.dart` · `inventory_fe6c_fixture.dart`)의 이력이고, 시계는 고정이다
-// (2026-10-05 12:00 UTC, [InventoryClockSource]).
+// (2026-10-05 12:00 UTC, [AppClockSource]).
 // - KPI: +3 지난 스캔 대비 · −1 · 최근 감소 6종 · 마지막 스캔 3일 전, 이력이 없으면 `—`.
 // - 상세: 스캔 n회 스파크라인, 순변화 · 이전 스캔 비교 · 소진 예상, 저장 뒤 다시 읽기(수동 수정 = 속 빈 지금 점).
 // - 다시 읽기: 탭을 다시 열 때 revision이 같으면 읽지 않고, 바뀌었으면(다른 탭의 쓰기) 다시 읽는다. 이력 revision이 상태와

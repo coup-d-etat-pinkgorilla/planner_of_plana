@@ -211,7 +211,8 @@ class PlanSectionLayout extends StatefulWidget {
   final List<PlanElementPreset> initialPresets;
   final bool loadRepositoryPlan;
 
-  /// 통계 근거에서 넘긴 이동 의도(FE7-d). 같은 의도는 한 번만 적용한다([_PlanSectionLayoutState._consumeNavigation]).
+  /// 다른 탭에서 넘긴 이동 의도(FE7-d 통계 근거, tidy1 인벤토리 "계획에서 보기"). 같은 의도는 한 번만 적용한다
+  /// ([_PlanSectionLayoutState._consumeNavigation]).
   final PlanNavigationIntent? navigation;
 
   @override
@@ -260,8 +261,14 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   PlanFlowSaveOutcome? _flowSaveOutcome;
   String? _consumedHandoffId;
 
-  /// 마지막으로 받은 통계 이동 의도 id(FE7-d).
+  /// 마지막으로 받은 이동 의도 id(FE7-d).
   int? _navigationId;
+
+  /// 활성 계획을 읽기 전에 받은 "계획에서 보기" 재화(tidy1). 읽은 뒤 Detail 홈 "전체" 탭에서 고른다.
+  String? _pendingHomeResource;
+
+  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
+  int _keySequence = 0;
 
   /// 넘어온 학생(FE4-g)으로 흐름을 여는 중(흐름 상태를 읽는 동안). 이 동안 계획 홈 섹션을 들이지 않는다.
   bool _handoffPending = false;
@@ -395,7 +402,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         _homeProjection = null;
         _homeSelectedCard = 0;
         _homeSelectedPhase = 1;
-        _homeSelectedResource = null;
+        _homeSelectedResource = _pendingHomeResource;
+        _pendingHomeResource = null;
       });
       // 계산할 수 없는 문서는 자세한 계산도 부르지 않는다. 문서 내용(섹션 2)은 그대로 보인다.
       if (_calculationUnavailable) return;
@@ -473,10 +481,18 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   /// - "계획 만들기 3 · 단계 순서": 페이즈 편집(활성 계획을 다시 읽은 초안) 흐름을 3단계로 열고 그 단계 카드를 고른다
   ///   ([PlanFlowController.initialOrderStageId], "페이즈 편집" 메뉴와 같은 초안). 진행 중 흐름이 있으면 초안을 버리지
   ///   않고 알리기만 한다.
+  /// - 인벤토리 "계획에서 보기"(tidy1, FD-108): 흐름을 열지 않는다. 재화가 있으면 [_selectHomeResource], 없으면 계획 탭을
+  ///   그대로 연다(전과 같다).
   void _consumeNavigation() {
     final intent = widget.navigation;
     if (intent == null || intent.id == _navigationId) return;
     _navigationId = intent.id;
+    if (intent.target == PlanNavigationTarget.home) return;
+    if (intent.resourceKey case final key?
+        when intent.target == PlanNavigationTarget.resource) {
+      _selectHomeResource(key);
+      return;
+    }
     final flow = _flow;
     if (flow != null) {
       // 빌드 중에 흐름 리스너 · SnackBar를 깨우지 않게 다음 프레임에 넣는다.
@@ -495,12 +511,26 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
             );
           case PlanNavigationTarget.order:
             _showMessage(planNavigationFlowOpenMessage);
+          case PlanNavigationTarget.resource || PlanNavigationTarget.home:
+            return; // 위에서 흐름 없이 처리했다.
         }
       });
       return;
     }
     _clearHomeForFlow();
     _openNavigationFlow(intent);
+  }
+
+  /// 인벤토리 "계획에서 보기"(tidy1): 활성 계획 Detail 홈 S3를 "전체" 탭으로 바꾸고 그 재화를 고른다(S2에 그 재화를 쓰는
+  /// 단계가 강조된다). build 전(initState · didUpdateWidget)에 부르므로 setState 없이 상태만 바꾼다. 흐름 · 시나리오 목록 ·
+  /// 비교 · 프리셋 관리가 열려 있으면 그 화면은 그대로 두고, 홈으로 돌아오면 고른 재화가 보인다. 활성 계획을 아직 읽기
+  /// 전이면 읽은 뒤 고른다([_pendingHomeResource]).
+  void _selectHomeResource(String resourceKey) {
+    _selectedResourceView = PlanResourceView.overall;
+    _homeSelectedResource = resourceKey;
+    _pendingHomeResource = _document == null && !_noProfile
+        ? resourceKey
+        : null;
   }
 
   void _showMessage(String message) {
@@ -1560,7 +1590,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         authoring: authoring,
         expectedRevision: plan.revision,
         idempotencyKey:
-            'plan-incorporate-${scenario.id}-${DateTime.now().microsecondsSinceEpoch}',
+            'plan-incorporate-${scenario.id}-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
       );
     } on Object catch (error) {
       if (!mounted) return;
@@ -1927,6 +1957,8 @@ class _PlanScenarioComparisonSectionState
   _PlanComparisonTarget? _targetB;
   PlanningScenarioComparisonResult? _comparison;
   bool _working = false;
+  /// idempotency key 순번. 시계 해상도가 낮아도 빠른 두 요청이 같은 key가 되지 않게 붙인다(fb10b-dart 발견 4 · tidy1).
+  int _keySequence = 0;
   Map<String, StudentCatalogEntry> _comparisonStudents = {};
 
   /// 시나리오 목록에서 두 대상을 골라 열었으면(FE5-a) 첫 읽기 뒤 한 번만 바로 비교한다.
@@ -2049,7 +2081,7 @@ class _PlanScenarioComparisonSectionState
         expectedRevision: list.revision,
         expectedScenarioRevision: scenario.revision,
         idempotencyKey:
-            'scenario-duplicate-${DateTime.now().microsecondsSinceEpoch}',
+            'scenario-duplicate-${DateTime.now().microsecondsSinceEpoch}-${++_keySequence}',
       );
       await _load();
       if (!mounted) return;

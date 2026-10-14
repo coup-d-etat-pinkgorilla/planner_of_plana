@@ -46,6 +46,7 @@ class StudentPage extends StatefulWidget {
     this.recentStudents,
     this.headerOverride,
     this.navigation,
+    this.onNavigate,
   });
 
   final AppService service;
@@ -68,6 +69,10 @@ class StudentPage extends StatefulWidget {
   /// 필터 상태는 그대로, FD-104), 고른 학생이 목록에 없으면 첫 학생을 고르고, 계산기가 열려 있으면 닫는다. 임시 목록은
   /// S4 칩 × · "모두 지우기" · 탭을 떠날 때 지운다.
   final StudentsNavigationIntent? navigation;
+
+  /// 다른 탭으로 가는 이동 의도(tidy1, FD-108). 앱 셸이 넘긴다. 지금은 계산기 "인벤토리 · 부족 위험에서 보기" 연결만
+  /// 준비한다(버튼은 FD-173 (c) 그대로 숨김, [GrowthCalculatorModeData.onOpenInventory]).
+  final ValueChanged<AppNavigationIntent>? onNavigate;
 
   @override
   State<StudentPage> createState() => _StudentPageState();
@@ -307,6 +312,16 @@ class _StudentPageState extends State<StudentPage> {
   /// - 학생 현재값은 확정값(repository)이다. 계획 쪽은 이 값이 아니라 흐름의 확정값을 바닥으로 쓴다.
   /// - 인연 목표도 올렸을 때만 싣는다. 현재 인연을 목표로 복사하지 않는다(FB-1b 연결 메모 4).
   /// - 계산기 상태·최근 계산(FD-170)은 그대로 둔다. 학생 탭으로 돌아오면 계산기가 그대로 열려 있다.
+  /// 계산기 "인벤토리 · 부족 위험에서 보기"(FD-173 (a) 준비, tidy1): 인벤토리 목록에서 그 재화 행을 고른다. 셸이 이동 의도를
+  /// 받지 않으면 null이다.
+  ValueChanged<String>? get _openInventory {
+    final navigate = widget.onNavigate;
+    if (navigate == null) return null;
+    return (resourceKey) => navigate(
+      InventoryNavigationIntent.row(resourceKey, origin: AppSection.students),
+    );
+  }
+
   void _addCalculatorToPlan() {
     final state = _calculator;
     final entry = _selectedEntry;
@@ -685,6 +700,7 @@ class _StudentPageState extends State<StudentPage> {
                       student: _selectedEntry,
                       onOpenScan: widget.onOpenScan,
                       onAddToPlan: _addCalculatorToPlan,
+                      onOpenInventory: _openInventory,
                       planMembership: growthCalculatorPlanMembership(
                         _activePlan,
                         state.studentId,

@@ -3614,3 +3614,143 @@ FB-10c 학생 무기 폴백 crop의 프론트 개인정보·수명 연결을 끝
 
 - CF: 레인 워커가 모두 멈춘 뒤 `fe_gate.ps1` 1회(golden 전 장면 변화 0 예상) → `fe_commit.ps1 -Slice mockdemo -DryRun` → 커밋(README는 post 3-way 병합). 사용자: 위 앱 실행 명령으로 검수표 확인. 발견 1 · 2 · 4 · 5 · 6은 CF 판단.
 - 인계: `debug/frontend_mockdemo/output.md`.
+
+## tidy1 착수 기록 (2026-10-14)
+
+- 상태: **코드 완료(아래 tidy1 종료 기록), CF gate 미실행**. 시작 SHA = `3995e1008cbff348b2afc4064d38159d39ed52a6`(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`). 착수 전 이 문서에 다른 "tidy1 착수 기록" 없음(grep 0건).
+- 범위: 작은 후속 6건(① FD-108 탭 이동 intent 확장 ② 목록 reveal ③ 키트 · 코드 주석 정정 ④ 시나리오 목록 1280×720 넘침 ⑤ 시계 계약 위치 ⑥ idempotency key 패턴 점검). 화면 디자인 변경 없음(④ 좁은 창만).
+- 막힘: 대장 "slice별 막힘 요약" 현재 `열림` 0건. FD-108 · FD-173 · FD-086은 워커 재량(종료 기록에 처리).
+- 이번 라운드 예외(프롬프트): `lib/ui/app_shell.dart` · `lib/ui/navigation/**`는 Lane B가 최소 diff, `lib/ui/kit/**`는 주석만.
+- 고칠 기존 파일(착수 사본 `debug/frontend_tidy1/pre/<v7 기준 경로>`, 27개 작업 트리와 cmp 일치). **모두 WIP 없음**(`git status --short <경로>` 빈 줄). 줄바꿈은 그대로 유지(`git ls-files --eol`: `inventory_page.dart` · `settings_page.dart` · `plan_section_layout.dart` · `repository_profile_panel.dart` CRLF, 나머지 LF).
+  - ① `lib/ui/navigation/app_navigation_intent.dart` · `lib/ui/app_shell.dart` · `lib/ui/pages/inventory_page.dart` · `lib/ui/inventory/inventory_workspace.dart` · `inventory_analysis_sections.dart` · `inventory_opa_sections.dart` · `lib/ui/widgets/plan_section_layout.dart` · `lib/ui/pages/student_page.dart` · `lib/ui/widgets/growth_calculator_section.dart`
+  - ② `lib/ui/pages/inventory_page.dart` · `lib/ui/inventory/inventory_workspace.dart` · `lib/ui/widgets/student_section_layout.dart`
+  - ③ `lib/ui/kit/section_morph.dart` · `lib/ui/kit/diagonal_scrollbar.dart`(주석만) · `lib/ui/inventory/inventory_analysis.dart`(주석)
+  - ④ `lib/ui/widgets/plan_scenario_list.dart`
+  - ⑤ 새 `lib/services/app_clock.dart`, `lib/ui/inventory/inventory_controller.dart` · `lib/ui/widgets/account_section_cluster.dart` · `lib/services/mock_design_review_scenario.dart` · `lib/services/design_review/inventory_fe6a_data.dart`(주석), 테스트 `account_editor_fe8c_test.dart` · `inventory_fe6a_fixture.dart` · `inventory_fe6c_fixture.dart` · `inventory_history_page_test.dart`(주석) · `mock_design_review_scenario_test.dart`
+  - ⑥ `lib/ui/models/plan_flow_save.dart` · `lib/ui/pages/settings_page.dart` · `lib/ui/widgets/account_section_cluster.dart` · `plan_scenario_list.dart` · `plan_section_layout.dart` · `repository_profile_panel.dart`
+  - 이 문서(`almanac/workflows/frontend-redesign-status-lane-b.md`, LF)
+- 새 파일(예정): `lib/services/app_clock.dart`, 테스트 `test/app_navigation_tidy1_test.dart` · `test/tidy1_followups_test.dart`.
+- 고치지 않음: `lib/ui/statistics/**` · `lib/statistics/**` · `statistics_page.dart`(Lane A), 스캐너 WIP(`scan_page.dart` · `scan_companion_dock.dart` · `scanner_service.dart` · `planning_protocol_client.dart` · `process_app_service.dart` · `mock_app_service.dart`), 스캐너 · 택틱 소유 파일, golden harness · 기존 golden 테스트, `frontend/tool/**`, backend · contracts, 키트 코드.
+
+## tidy1 종료 기록 (2026-10-14, 코드 작성 완료 · CF gate 미실행)
+
+작은 후속 6건을 끝냈다. 화면 디자인 변경은 ④(좁은 창 넘침)뿐이고 기준 viewport 모습은 그대로다. 새 서비스 메서드 · 백엔드 · 계약 · 키트 코드 변경 없음(키트는 주석만). HEAD는 착수 때와 같다(`3995e100`).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+로그는 `debug/frontend_tidy1/logs/`이고 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter test test/tidy1_followups_test.dart`(진단, 고치기 전) | −1: 1280×720 목록에서 RenderFlex 넘침 3건 재현 — `plan_scenario_list.dart` 1139:14(123px, "나란히 비교" 버튼 안 칸 21px) · 1343:12(37px, `plan-scenario-filter-row`) · 2154:25(1.8px, 활성 계획 행 제목 줄). FE5-f1 발견 1과 같은 줄 · 같은 수치 |
+| 같은 파일(④ 고친 뒤) | +1 −0 |
+| `flutter analyze`(⑤ 뒤 · 인벤토리 · 계획 · 학생 쪽마다 부분 실행) | 1회 error 1(`RenderAbstractViewport` import 없음) → 고침, 나머지 0 |
+| `flutter analyze test/app_navigation_tidy1_test.dart` | warning 1(쓰지 않는 import) · error 3(카탈로그 항목 필수 인자) → 고침 → 0 |
+| `flutter test test/app_navigation_tidy1_test.dart`(1차) | +6 −2: 인벤토리 reveal(기본 Mock 카탈로그는 종류마다 1개라 스크롤할 것이 없음 — 테스트 서비스가 장비 60종을 더하게 고침) · 학생 목록(없는 초상 그림 — 실제 초상 id 30명으로 고침). 구현 문제 아님 |
+| 같은 파일(2차) | 불러오기 실패: Lane A 작업 중 `lib/ui/statistics/statistics_workspace.dart` 컴파일 오류(앱 셸이 통계를 import). 이 slice 파일이 아니어서 고치지 않고 다음 실행으로 넘겼다 |
+| 관련 68파일 한 번에(`--file-reporter json`, `logs/related_1.json`) | **+824 −0**(그 사이 Lane A 컴파일 오류가 풀림) |
+| `flutter test test/tidy1_followups_test.dart`(④ 기준 · 좁은 창, ⑥ 추가 뒤) | **+3 −0** |
+| `flutter analyze`(최종, 전체) | **4 issues — 모두 Lane A 새 파일** `test/statistics_history_projection_test.dart`(error 4, `RepositoryState.toWire` 없음, FE7-h 작업 중). tidy1 파일만 analyze(`logs/analyze_scope.txt`, 수정 · 새 파일 30개): **No issues found**(info 포함 0) |
+| 관련 69파일 한 번에(위 68 + `statistics_app_shell_test`, `logs/related_final.json`) | **+826 −2** — 실패 2건은 모두 `statistics_app_shell_test`, 원인은 Lane A 새 파일 `lib/ui/statistics/statistics_history_charts.dart:115` Column 넘침(0.865 · 25px). tidy1이 고친 파일 아님. 나머지 68파일 −0 |
+| `git diff --check`(고친 27파일) · 새 3파일 줄 끝 공백 | 0 · 0 |
+| 줄바꿈 · 끝 개행(python으로 pre와 비교) | 27파일 모두 착수 때와 같은 줄바꿈(`inventory_page.dart` · `plan_section_layout.dart` · `settings_page.dart` · `repository_profile_panel.dart` CRLF, 나머지 LF), 끝 개행 하나. 새 3파일 LF · 끝 개행 하나(`dart format`은 새 파일에만) |
+
+관련 68파일(최종, 모두 −0): account_editor_fe8c +9, account_manager_fe8b +6, app_navigation_fe7d +13, app_navigation_tidy1 +11(새), connected_target_fe8d +8, developer_tools_app +12, geometry/diagonal_geometry +5, growth_calculator_adapter +24, growth_calculator_rules +15, growth_calculator_state +16, growth_calculator_view +24, home_app_shell +1, home_connect_fe8e +10, inventory_analysis_page +8, inventory_analysis +16, inventory_controller +13, inventory_currency_readonly +2, inventory_history_page +11, inventory_history +33, inventory_opa_page +6, inventory_opa +9, inventory_page +9, inventory_review_fb10b +19, inventory_shell_lazy +1, inventory_tiers_page +7, inventory_tiers +9, inventory_view_model +13, kit/diagonal_scrollbar +8, kit/section_morph +7, mock_design_review_scenario +11, plan_detail_tabs +8, plan_element_builder +47, plan_flow_authoring +18, plan_flow_goal_step +23, plan_flow_handoff +23, plan_flow_order_step +19, plan_flow_presets +13, plan_flow_save +15, plan_flow_student_step +8, plan_flow +15, plan_home_detail +9, plan_preset_manager +5, plan_scenario_compare +7, plan_scenario_comparison +2, plan_scenario_detail +12, plan_scenario_list +10, plan_scenario_preview +9, planning_page +17, profile_delete_fb2d +17, repository_profile_panel +1, scan_inventory_identity_review +2, scan_page_revision +14, scenario_service +2, school_labels +3, section_template_studio +15, settings_page +10, student_bond_gauge +12, student_card_de +17, student_filter_followups +4, student_filter_modal +7, student_form_cycle +10, student_page +9, student_search_section +13, student_studio_layout +45, tidy1_followups +3(새), title_page +25, widget +16, widgets/section_surface +5.
+
+- 걸리는 기존 테스트 찾기: test/ 전체를 `app/app.dart|app_shell|InventoryPage(|inventory_|StudentPage(|student_section_layout|StudentDiagonalList|PlanningPage(|PlanSectionLayout|plan_scenario_list|PlanScenario|plan_flow_save|PlanFlowSaveController|account_section_cluster|AccountSectionCluster|SettingsPage|settings_page|repository_profile_panel|RepositoryProfilePanel|growth_calculator_section|GrowthCalculator|app_navigation_intent|mock_design_review|AppClockSource|diagonal_scrollbar|section_morph`로 grep해(golden · 스캐너 WIP 테스트 · process E2E 제외) 모두 돌렸고, 계획 흐름 2 · 3단계 테스트 2개를 더했다. 뺀 것: `metadata_manager_dto_test` · `planning_protocol_contract_test` · `repository_history_*`(이름만 걸림, 무관), `statistics_*`(Lane A 작업 중, 셸 확인용 `statistics_app_shell_test`만 돌림).
+- 빌드 잠금 충돌 없음. `flutter analyze` · `flutter test`가 pub get을 돌렸지만 `pubspec.lock` · `pubspec.yaml` 변화 없음.
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+### 항목별 결과
+
+| # | 결과 | 내용 |
+|---|---|---|
+| ① FD-108 intent 확장 | **완료** | 인벤토리 → 계획 버튼 4곳이 이동 의도다. 상세 "계획에서 보기" = `PlanNavigationIntent.resource(그 재화, origin 인벤토리)`, 오파츠 상세 "계획에서 쓰는 단계 보기" = 계획에 쓰는 티어(머리 아이콘 티어가 계획에 있으면 그것, 아니면 계획에 있는 가장 높은 티어, `inventoryOopartPlanResource`), "계획 열기"(계획 없음) · 학교 플라이아웃 "계획에서 보기 →" = `PlanNavigationIntent.home()`(payload 없음, 학교 · 학생 필터가 계획 홈에 없다). 계획 탭: 재화 의도는 흐름을 열지 않고 활성 계획 Detail 홈 S3를 "전체" 탭 + 그 재화 선택으로 바꾼다(S2에 그 재화를 쓰는 단계 강조). 활성 계획을 읽기 전이면 읽은 뒤 고른다. 그대로 열기는 아무것도 바꾸지 않는다(전 `_open`과 같음). 계산기 FD-173: 연결만 준비(아래). 통계 "← 통계" 칩 동작은 그대로 |
+| ② 목록 reveal | **완료** | 인벤토리: 이동 의도로 행을 고르면 `InventoryRevealRequest`(의도마다 새로, 한 번만 소비)를 워크스페이스에 넘기고, 그 행(부족 위험 목록 행 · 전체 보기 타일)이 처음 그려진 다음 프레임에 일부라도 화면 밖이면 목록 가운데로 스크롤한다. 키트 `DiagonalScrollViewport`는 고치지 않았다 — 행 안에서 자기 `Scrollable.position`과 `RenderAbstractViewport.getOffsetToReveal`을 쓴다(키트 viewport에는 reveal API가 없고, 기존 `controller` 주입은 같은 자리의 다른 viewport가 컨트롤러를 나눠 쓰는 위험이 있어 피했다). 학생 S2 목록 보기: `StudentDiagonalList`에 그리드와 같은 `revealStudentId` · `revealRequest`(가운데 정렬, `studentListRevealOffset`) — 최근 본 학생 · 통계 이동 둘 다 목록 보기에서도 스크롤한다 |
+| ③ 주석 정정 | **완료(코드 변경 0)** | `kit/section_morph.dart` 머리(지운 `plan_phase_editor.dart` → "FE5-f2에서 지웠다"), `kit/diagonal_scrollbar.dart` 머리(계정 = 표준 썸 + 공용 포그, 레일 점 2종 · 페이즈 편집기 지움, 그 값은 쓰는 화면 없음)와 같은 파일 doc 주석 5줄(옛 페이즈 편집기 · 옛 계정 화면), `inventory/inventory_analysis.dart` S5 seg 주석(이력 집계 위치). 키트 diff의 +/− 줄은 모두 `//` · `///` 줄이다(grep 확인) |
+| ④ 1280×720 넘침 | **완료** | `plan_scenario_list.dart` 3곳: "나란히 비교" 버튼 = `LayoutBuilder`로 칸이 72px(`PlanScenarioListMetrics.compareRunLabelMinWidth`)보다 좁으면 아이콘만, 넓으면 글자 `Flexible` + 말줄임 · 필터 줄 = `Spacer` + 글자 → `Expanded` + 오른쪽 정렬 말줄임 · 활성 계획 행 칩 = `Flexible(IntrinsicWidth(...))` + 말줄임. 1280×720 넘침 0(테스트), 기준 viewport는 글자 그대로 · 말줄임 없음(테스트) |
+| ⑤ 시계 계약 위치 | **완료(동작 변화 0)** | 새 `lib/services/app_clock.dart`: `AppClockSource { DateTime get clockNow; }` + `appClockNow(service)`. 인벤토리 컨트롤러(같은 식), 계정 메타(`appClockNow`), 검수 시나리오(`implements AppClockSource`)가 쓴다. `lib/services/mock_design_review_scenario.dart`의 `lib/ui` import가 없어졌다. 테스트 fixture 3개(`inventory_fe6a_fixture` · `inventory_fe6c_fixture` · `account_editor_fe8c_test`)와 시나리오 테스트를 새 이름으로 바꿨다. **typedef는 두지 않았다**: 멤버 이름도 `inventoryNow` → `clockNow`로 바꿔(인벤토리 이름이 공용 계약에 남지 않게) typedef로는 구현 쪽 소스 호환이 안 되고, 착수 · 종료 때 lib · test 전체 grep에서 옛 이름 참조 0(Lane A 작업 파일 포함)이었다 |
+| ⑥ idempotency key | **완료** | 아래 표. 같은 위험 10곳(파일 6개)에 fb10b와 같은 순번(`-${++_keySequence}`, 인스턴스마다)을 붙였다. key 모양만 바뀐다(백엔드는 key를 불투명 문자열로 본다) |
+
+### `app_shell.dart` diff(+2 −1)와 이유
+
+- 학생 페이지에 `onNavigate: _navigate` 1줄(계산기 FD-173 연결 준비), 인벤토리 페이지 `onOpenPlan: () => _open(AppSection.plan)` → `onNavigate: _navigate`(인벤토리 → 계획 이동을 의도로). 다른 줄 변경 0. 복귀 칩을 통계 출발만 보이게 하는 것은 셸이 아니라 의도 모델(`returnLabel`이 통계 출발 밖에서 null)에서 했다 — 셸 머리말은 이미 `returnLabel == null`이면 칩을 그리지 않는다.
+- 셸의 다른 `_open` 이동은 그대로 두었다(이유): 스캔 탭(`onOpenScan` 4곳 · 통계 다시 스캔)은 수신 페이지가 스캐너 WIP(`scan_page.dart`)라 의도를 받을 수 없고 payload도 없다. 홈 카드 · 설정 → 진단 · Studio는 주 탭 메뉴와 같은 이동이라 payload가 없다. 계산기 "이 목표로 계획에 추가"는 `_open`이 아니라 기존 학생 넘기기(`PlanningStudentSeed`, FE4-g) 길이다.
+
+### FD 처리
+
+- **FD-108(워커 재량, 권장안 계속)**: 인벤토리 출발 이동이 같은 의도를 쓴다. "← 통계" 칩은 시안대로 통계 출발만(다른 출발은 칩 없음 — 발견 1).
+- **FD-173(워커 재량, (c) 유지)**: 계산기 모드 값 `GrowthCalculatorModeData.onOpenInventory`(셸 안에서 `InventoryNavigationIntent.row(재화, origin 학생)`)까지 연결했고 버튼은 그리지 않는다. 근거: 권장안 (a)는 "계산기 부족 재화 **키들**을 강조 필터로" 넘기는 것인데 인벤토리 수신부는 행 하나만 받는다(종류 · 보기로 거른 뒤 한 행 선택). 부족 재화 여러 개를 강조하는 인벤토리 필터 상태는 FE6 쪽 기능 추가라 이번 범위(작은 후속)를 넘는다. (c)의 조건("FE6-a · FE7-d 전까지")은 이제 채워졌으므로 버튼을 켤지는 CF 판단(발견 4).
+- **FD-086(워커 재량)**: 이 slice에서 바꾼 것 없음(④는 시나리오 목록 화면이고 4열 비교 화면에 닿지 않는다).
+- 막는 `열림` FD 없음.
+
+### idempotency key 표(`microsecondsSinceEpoch` grep, `lib/**`)
+
+| 위치(현재 줄) | 용도 | 같은 위험(빠른 두 요청이 같은 key) | 처리 |
+|---|---|---|---|
+| `ui/inventory/inventory_controller.dart:1153` | 인벤토리 저장 key | 있었음 | fb10b-dart에서 순번 있음(그대로) |
+| `ui/models/repository_presets_controller.dart:423` | 프리셋 저장 key | — | 이미 `++_keyNumber` 순번(그대로) |
+| `ui/models/plan_flow_save.dart:1270` | 계획 흐름 저장 key(`plan-flow-save-<위치>-<µs>`) | 있음(같은 흐름에서 보류 요청을 버리고 다시 저장) | **순번 추가** |
+| `ui/widgets/account_section_cluster.dart:891` · `959` · `981` · `1026` | 계정 만들기 · 고치기 · 고르기 · 지우기 key | 있음(고르기 두 번 등, 지우기는 계정 id 포함) | **순번 추가**(4곳, 한 State 카운터) |
+| `ui/pages/settings_page.dart:196` | 설정 프로필 만들기 key | 있음 | **순번 추가** |
+| `ui/widgets/repository_profile_panel.dart:92` | 프로필 만들기 · 고르기 · 이름 바꾸기 key(`<action>-<µs>`) | 있음 | **순번 추가** |
+| `ui/widgets/plan_scenario_list.dart:523` | 시나리오 복제 · 이름 · 삭제 · 적용 key(`scenario-<action>-<id>-<µs>`) | 있음(같은 시나리오에 같은 동작 두 번) | **순번 추가** |
+| `ui/widgets/plan_section_layout.dart:1593` | 시나리오 편입(활성 계획 저장) key | 있음 | **순번 추가** |
+| `ui/widgets/plan_section_layout.dart:2084` | 비교 화면 시나리오 복제 key(id 없음) | 있음 | **순번 추가** |
+| `ui/pages/scan_page.dart:1057` | 스캔 적용 key(`widget.now()`) | — | 이미 `_applyIntentSequence` 순번(스캐너 WIP, 표에만) |
+| `ui/models/plan_flow_save.dart:1189` | 비교 초안 문서 id(key 아님) | — | 그대로 |
+| `ui/models/plan_flow_draft.dart:1483` · `1737` · `1844` | 흐름 학생 넘기기 `handoffId`(key 아님) | 같은 학생 · 같은 시각이면 같은 id(한 번에 여러 학생은 학생 id로 갈림) | 그대로(발견 5) |
+| `ui/models/plan_flow_draft.dart:1553` · `2068` | 흐름 문서 id · 칸 id(key 아님) | — | 칸 id는 이미 순번 |
+| `ui/pages/student_page.dart:336` | 계산기 넘기기 `handoffId`(key 아님) | 같은 학생을 같은 시각에 두 번 넘기면 둘째가 무시될 수 있음 | 그대로(발견 5) |
+| `ui/widgets/plan_preset_manager.dart:342` | 새 프리셋 id(key 아님) | — | 그대로 |
+| `ui/pages/tactical_page.dart:357` · `433` | 택틱 경기 · 족보 id(key 아님) | — | 택틱 소유, 표에만 |
+
+새 테스트(⑥): 프로필 패널에서 만들기 두 번(+ 고르기) key가 모두 다르고 끝 순번이 1, 2, …로 오른다.
+
+### 새 테스트
+
+- `test/app_navigation_tidy1_test.dart`(11): 의도 모델(통계 출발만 복귀 칩 글자, 재화 · 그대로 열기 의도), 인벤토리 상세 "계획에서 보기" → 재화 의도 · 셸 밖은 `onOpenPlan`, 오파츠 → 계획에 쓰는 티어, 계획 탭 재화 의도(첫 생성 · 읽은 뒤 · 그대로 열기), 셸 인벤토리 → 계획 Detail 홈 "전체" + 그 재화 · 복귀 칩 없음, 인벤토리 타일 reveal(1280×720, 장비 61종 마지막 타일 → 스크롤 > 0 · viewport 안, 같은 요청은 다시 스크롤하지 않음), 학생 목록 reveal(요청 → 스크롤 · 같은 번호면 다시 안 함), `studentListRevealOffset` 식, 셸 계산기 모드 값 `onOpenInventory` 있음 · 버튼 숨김 · 부르면 인벤토리 탭(복귀 칩 없음), `InventoryRevealRequest` 한 번 소비.
+- `test/tidy1_followups_test.dart`(3): ④ 1280×720 넘침 0 · 버튼 아이콘만, ④ 기준 viewport 글자 그대로(말줄임 없음 — `RenderParagraph.didExceedMaxLines` false), ⑥ key 순번.
+- 지운 테스트 없음. 기존 테스트 기대는 바꾸지 않았다(⑤ 이름 바꿈만).
+
+### golden 변화 0 근거(golden 미실행)
+
+1. **① ②**: 모든 변화는 버튼을 누르거나 이동 의도 · reveal 요청이 있을 때만 생긴다. golden 테스트(`test/goldens/**`)는 `navigation:` · `onNavigate` · `inventory-action-plan` · `inventory-oopart-open-plan` · `inventory-open-plan`을 쓰지 않는다(grep 0). 학생 golden은 그리드 보기만 쓰고 목록 보기 · 최근 본 학생 누르기가 없다(grep). 의도가 없으면 계획 홈은 `_pendingHomeResource` null → 읽은 뒤 `_homeSelectedResource = null`(전과 같음), 인벤토리 행 래퍼 `_RevealOnRequest`는 자식을 그대로 돌려준다(레이아웃 · 그림 같음). 통계 출발 `returnLabel`은 같은 글자.
+2. **③ ⑤ ⑥**: 주석 · 계약 위치 · key 문자열만 바뀐다(그리는 값 없음). 시계는 같은 시각을 준다(fixture `inventoryHistoryFixtureNow` · 시나리오 시계 그대로, 시계를 읽는 테스트 그대로 통과).
+3. **④**: golden은 모두 2560×1392(`golden_harness.dart` `goldenViewportSize`)다. 그 크기에서 (a) 비교 버튼 안 칸이 72px 이상이라 같은 Row 자식(아이콘 · 8 · 글자 · 8 · n개, `LayoutBuilder`는 제약을 그대로 넘긴다), 글자가 들어가므로 `Flexible`(loose)은 원래 폭, (b) `Expanded` + 오른쪽 정렬 글자는 `Spacer` + 글자와 같은 x(남는 칸 오른쪽 끝), (c) 칩 `IntrinsicWidth`는 자식 최대 고유 폭(글자 + 좌우 10)을 그대로 줘 전과 같은 크기 · 가운데 정렬이다. 기준 viewport 테스트가 세 글자 모두 말줄임 없음 · 비교 버튼 글자 있음을 확인했다.
+4. golden 테스트 파일 · harness는 고치지 않았고 `flutter analyze` 대상(test 포함)으로 그대로 컴파일된다. commit.json `whole`에 기준 이미지 없음.
+
+### 미검증(미실행)
+
+- golden 비교 · 전체 `fe_gate.ps1`(CF) · process E2E · `codealmanac validate` · `flutter build windows --release`: **미실행**.
+- 실제 앱 창에서 인벤토리 → 계획 이동 모습(탭 진입 모션과 Detail 홈 "전체" 탭 전환), 인벤토리 · 학생 목록 reveal 스크롤 체감: **미실행**(위젯 테스트는 위치 · 상태만).
+- 인벤토리 "부족한 것" 보기의 위험 행 reveal: 같은 래퍼 코드지만 화면 밖 행이 생길 만큼 부족 행이 많은 fixture로는 확인하지 않았다(타일 길만 테스트).
+- 실제 백엔드 key 처리(순번 붙은 key의 응답 재사용 · 충돌): **미실행**(Mock만).
+
+### WIP 보존 확인
+
+- 고친 기존 27파일은 착수 때 WIP가 없었다(`git status --short` 빈 줄). post 사본 · `post_dir`는 두지 않았다. pre 사본 대비 diff는 이 slice 줄뿐이고 줄바꿈을 유지했다.
+- 스캐너 WIP(`scan_page.dart` · `scan_companion_dock.dart` · `scanner_service.dart` · `planning_protocol_client.dart` · `process_app_service.dart` · `mock_app_service.dart`, 스캐너 테스트), Lane A 파일(`lib/ui/statistics/**` · `lib/statistics/**` · `statistics_page.dart`와 새 통계 테스트), 키트 코드, golden harness · golden 테스트, `frontend/tool/**`, backend · contracts, 택틱 파일: 편집 0회. git 쓰기 0회.
+
+### 발견 사항
+
+1. **다른 탭 출발 복귀 칩**: 인벤토리 → 계획(그리고 준비만 한 학생 → 인벤토리)은 복귀 칩이 없다(시안에 없음, 프롬프트 "디자인 변경 없음"). "← 인벤토리" 칩을 둘지는 CF 판단(의도 모델 `returnLabel` 한 줄).
+2. **계획 탭에 다른 화면이 열려 있을 때 재화 의도**: 흐름 · 시나리오 목록 · 비교 · 프리셋 관리가 열려 있으면 그 화면을 그대로 두고 홈 상태만 바꾼다(전 `_open`과 같은 화면, 알림 없음). 홈으로 돌아오면 고른 재화가 보인다. 닫고 홈을 보여 줄지 · 알림을 둘지는 CF 판단.
+3. **학교 플라이아웃 "계획에서 보기 →"**: 계획 Detail 홈에 학교 · 학생 필터가 없어 payload 없이 연다. 그 학교 학생을 계획에서 강조하려면 계획 홈 상태 추가가 필요하다.
+4. **FD-173 버튼**: 연결은 준비됨. 켜려면 (a) 행 하나로 갈지(지금 의도), (b) 부족 재화 여러 개 강조 필터(인벤토리 상태 추가, FE6 쪽)로 갈지 CF가 정한 뒤 계산기 하단 버튼을 그리는 소단위가 필요하다.
+5. **key가 아닌 같은 패턴**: `student_page.dart:336` 계산기 넘기기 `handoffId`와 `plan_flow_draft.dart` 학생 넘기기 id는 같은 학생을 같은 시각에 두 번 넘기면 같은 id가 되어 계획 탭 `_consumedHandoffId` 검사에 둘째가 무시될 수 있다(드묾). idempotency key가 아니라 고치지 않았다.
+6. **레이어**: `lib/services` → `lib/ui` import는 시계 쪽이 없어졌지만 `ui/models/planning_models.dart`를 서비스 8개(`mock_app_service.dart` 등 스캐너 WIP 포함)와 `design_review/statistics_plan_data.dart`가 import한다. 계획 모델 위치 정리는 별도 판단.
+7. **Lane A 작업 중 상태**: 실행 중 `statistics_workspace.dart` 컴파일 오류(일시), 최종 시점 `statistics_history_charts.dart:115` 넘침(`statistics_app_shell_test` 2 실패) · `statistics_history_projection_test.dart` analyze error 4가 있었다. 모두 Lane A FE7-h 진행 중 파일이다. CF gate는 Lane A가 멈춘 뒤가 맞다.
+8. **④ 비교 버튼 기준 폭 72px**은 아이콘 · 간격 · "n개" 폭에서 정한 값이다. 1280×720에서는 칸이 21px라 아이콘만 남는다(글자가 들어갈 자리가 없다). 시안 좁은 창 모습이 따로 있으면 그에 맞춘다.
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_tidy1/pre/<경로>`(고친 기존 27파일, 이 문서 포함). WIP가 없어 post 사본은 없다.
+- `debug/frontend_tidy1/commit.json`: slice `tidy1`, `status=false`, modified 26(코드 · 테스트), added 3, `whole` = `[almanac/workflows/frontend-redesign-status-lane-b.md]`(이 문서는 파일 단위). 바뀌는 기준 이미지 없음. message는 ASCII(항목별 한 줄 + 근거 발견 사항).
+- 인계: `debug/frontend_tidy1/output.md`.
+
+### 다음 행동
+
+- tidy1 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-h)가 멈춘 뒤 `fe_gate.ps1` 1회. 예상: analyze 0(Lane A 새 테스트가 고쳐진 뒤), 일반 테스트에 새 14건(`app_navigation_tidy1_test` 11 · `tidy1_followups_test` 3), golden 전 장면 변화 0. GREEN이면 `fe_commit.ps1 -Slice tidy1 -DryRun` → 커밋.
+- CF 판단 대기: 발견 1 · 2 · 3 · 4(FD-173 버튼) · 5 · 6 · 8.

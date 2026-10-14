@@ -3,8 +3,8 @@
 // 80° 레일과 평행한 트랙(3px outline@.48, round cap)과 썸(8px scrollThumb)을 그리고,
 // 썸이 레일을 따라 움직인다. 스크롤 포그도 같은 Stack에 올린다.
 // 원래 `plan_section_layout.dart`의 `PlanDiagonalScrollbar`였고, 학생·계정·프리셋·페이즈 편집기가
-// 각자 비슷한 private 스크롤바를 두고 있었다. FE2-a는 동작 보존이라 다섯 구현의 현재 렌더를
-// 그대로 재현하는 파라미터를 둔다. 새 화면은 기본값만 쓴다.
+// 각자 비슷한 private 스크롤바를 두고 있었다. FE2-a는 동작 보존이라 다섯 구현의 그때 렌더를
+// 그대로 재현하는 파라미터를 두었다. 새 화면은 기본값만 쓴다.
 //
 // 기본값 = 계획 화면 구현:
 // - 레일 점: [diagonalScrollbarTrackPoint](아래쪽 기준, y clamp).
@@ -14,13 +14,14 @@
 // - 드래그: 레일 오른쪽 사각 영역([DiagonalScrollbarDrag.rect]).
 // - 포그: [ScrollFogSpec.standard].
 //
-// 기존 화면별 차이와 그 화면이 넘기는 값:
+// 지금 화면별 차이와 그 화면이 넘기는 값:
 // - 학생: 드래그 영역이 레일 띠(`rail`)이고, 포그 위젯이 `StudentViewportFog`다.
-// - 계정: 포그가 없고 썸이 #8edcff다. 레일 점은 `portraitScrollbarTrackPoint`(y를 clamp하지 않음)를 쓴다.
+// - 계정(FE8-b · FE8-c): 표준 썸(#e5a0ea)과 공용 포그다. 레일 점만 다르다(계정 목록 `portraitScrollbarTrackPoint`
+//   (y를 clamp하지 않음), 초상 그리드 `accountPortraitScrollbarTrackPoint`).
 // - 프리셋(요소 빌더): 범위와 썸 길이를 콘텐츠 높이로 계산하고 `drawLine`으로 그린다.
 //   레일 점은 위쪽 기준 [diagonalScrollbarRailTrackPoint]다. 스크롤 값은 보정된 값을 넘긴다.
-// - 페이즈 편집기: 썸 길이를 콘텐츠 비율로 계산하고 `drawLine`으로 그린다. 트랙은 2px outline@.38,
-//   썸은 4px accent@.9이고, 스크롤할 것이 없어도 썸을 그린다. 드래그는 없다.
+// - 옛 페이즈 편집기(`plan_phase_editor.dart`)는 FE5-f2에서 지웠다. 그 화면만 쓰던 값(트랙 2px outline@.38, 썸 4px
+//   accent@.9, 스크롤할 것이 없어도 썸 그리기 [DiagonalScrollbarStyle.paintThumbWhenIdle])은 지금 쓰는 화면이 없다.
 // 이 차이들은 각 탭 slice에서 캔버스와 대조해 기본값으로 모은다.
 import 'dart:math' as math;
 
@@ -90,7 +91,7 @@ Path diagonalScrollbarDragPath(
     ..close();
 }
 
-/// 트랙·썸 선을 그리는 방식. `line`은 기존 프리셋·페이즈 편집기 렌더 보존용이다.
+/// 트랙·썸 선을 그리는 방식. `line`은 기존 프리셋 목록 렌더 보존용이다(옛 페이즈 편집기도 썼다).
 enum DiagonalScrollbarStroke { path, line }
 
 /// 썸 길이 계산식.
@@ -98,7 +99,7 @@ enum DiagonalScrollbarThumbSizing {
   /// `trackHeight * viewport / (viewport + maxScroll)`(기본).
   viewportRatio,
 
-  /// `trackHeight * height / contentExtent`. 기존 프리셋·페이즈 편집기 식. `contentExtent`가 필요하다.
+  /// `trackHeight * height / contentExtent`. 기존 프리셋 목록 식(옛 페이즈 편집기도 썼다). `contentExtent`가 필요하다.
   contentRatio,
 }
 
@@ -147,7 +148,7 @@ class DiagonalScrollbarStyle {
   final double thumbWidth;
   final DiagonalScrollbarStroke stroke;
 
-  /// 스크롤할 것이 없어도 트랙 길이만큼 썸을 그린다(기존 페이즈 편집기).
+  /// 스크롤할 것이 없어도 트랙 길이만큼 썸을 그린다(옛 페이즈 편집기 값, 지금 쓰는 화면 없음).
   final bool paintThumbWhenIdle;
 
   DiagonalScrollbarStyle copyWith({
@@ -205,7 +206,7 @@ class DiagonalScrollbarPainter extends CustomPainter {
   final double handleHeight;
   final DiagonalScrollbarStyle style;
 
-  /// 콘텐츠 비율 식(기존 프리셋·페이즈 편집기)을 쓸 때의 콘텐츠 높이.
+  /// 콘텐츠 비율 식(기존 프리셋 목록)을 쓸 때의 콘텐츠 높이.
   /// 이때 [maxScrollExtent]와 [handleHeight]는 쓰지 않고 그리는 크기에서 다시 계산한다.
   final double? contentExtent;
   final double trackInset;
@@ -350,7 +351,7 @@ class DiagonalScrollbar extends StatelessWidget {
   final DiagonalScrollbarTrackPoint trackPoint;
   final DiagonalScrollbarDrag drag;
 
-  /// `false`면 포그를 올리지 않는다(기존 계정 화면).
+  /// `false`면 포그를 올리지 않는다(옛 계정 화면 값, 지금 쓰는 화면 없음 — 계정 화면은 FE8-c부터 포그를 쓴다).
   final bool showFog;
   final ScrollFogSpec fog;
 

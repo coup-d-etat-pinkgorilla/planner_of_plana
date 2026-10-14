@@ -428,6 +428,7 @@ class _AppShellState extends State<AppShell>
                                       intent,
                                     _ => null,
                                   },
+                                  onNavigate: _navigate,
                                 ),
                                 PlanningPage(
                                   key: ValueKey('plan-$_profileGeneration'),
@@ -445,7 +446,7 @@ class _AppShellState extends State<AppShell>
                                     'inventory-$_profileGeneration',
                                   ),
                                   service: widget.service,
-                                  onOpenPlan: () => _open(AppSection.plan),
+                                  onNavigate: _navigate,
                                   onOpenScan: () => _open(AppSection.scan),
                                   candidateContext: _inventoryCandidate,
                                   onCandidateCommitted:

@@ -19,6 +19,8 @@
 //   부착면 쪽으로 빠지고(360ms), S2가 오른쪽 · 위 부착을 유지한 채 확장 rect로 커지며(360ms, 키트 `section_morph.dart` 실수
 //   보간, 점 → 아이콘 크로스페이드) 마지막에 선택 오파츠 상세 열이 나타난다(220ms). "축소"는 같은 값을 거꾸로 지나는
 //   역순이다(`inventory_opa_sections.dart`).
+// - 이동 의도로 고른 행(tidy1, FE7-d 발견 2): [InventoryRevealRequest]가 오면 그 행(목록 · 타일)이 처음 그려진 뒤 한 번,
+//   화면 밖이면 목록 가운데로 스크롤한다. 키트 [DiagonalScrollViewport]는 고치지 않고 행 안에서 자기 Scrollable position을 쓴다.
 // 섹션 rect는 Studio 문서(`ui/studio/inventory_studio_layout.dart`)를 따르고, 섹션 안 좌표는 시안 값(섹션 위 기준)이다.
 // 작은 창에서는 각 내용 묶음이 시안 최소 크기 아래로 줄지 않고 자기 상자(사선을 따라 계산한 rect)로 잘린다(전체
 // 화면을 줄이지 않는다).
@@ -26,6 +28,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
@@ -274,6 +277,22 @@ class _Fit extends StatelessWidget {
   );
 }
 
+/// 이동 의도로 고른 행을 한 번 보이게 하는 요청(tidy1, FE7-d 발견 2). 의도마다 새로 만든다. 그 행이 처음 그려진 뒤 한 번만
+/// 스크롤한다(행이 다시 그려지거나 보기를 바꿔도 다시 스크롤하지 않는다).
+class InventoryRevealRequest {
+  InventoryRevealRequest(this.resourceKey);
+
+  final String resourceKey;
+  bool _done = false;
+
+  /// 처음 부르면 true(스크롤한다), 그 뒤로는 false.
+  bool consume() {
+    if (_done) return false;
+    _done = true;
+    return true;
+  }
+}
+
 /// 인벤토리 4섹션. [candidatePanel]은 스캔 후보 승인 패널(FE8-g5 전까지)이다.
 class InventoryWorkspace extends StatelessWidget {
   const InventoryWorkspace({
@@ -282,12 +301,18 @@ class InventoryWorkspace extends StatelessWidget {
     required this.onOpenPlan,
     required this.onOpenScan,
     this.candidatePanel,
+    this.reveal,
   });
 
   final InventoryController controller;
-  final VoidCallback onOpenPlan;
+
+  /// 계획 탭으로 간다("계획에서 보기" 등). 볼 재화가 있으면 그 resource_key, 없으면 null(tidy1, FD-108).
+  final ValueChanged<String?> onOpenPlan;
   final VoidCallback onOpenScan;
   final Widget? candidatePanel;
+
+  /// 목록 · 타일에서 보이게 할 행(이동 의도, tidy1).
+  final InventoryRevealRequest? reveal;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -948,12 +973,15 @@ class InventoryWorkspace extends StatelessWidget {
                     padding: const EdgeInsets.only(
                       right: InventoryAllMetrics.tileRowGap,
                     ),
-                    child: InventoryItemTile(
-                      key: ValueKey('inventory-tile-${view.key}'),
-                      view: view,
-                      selected: view.key == selected,
-                      needsReview: controller.needsReview(view.key),
-                      onTap: () => controller.select(view.key),
+                    child: _RevealOnRequest(
+                      request: reveal?.resourceKey == view.key ? reveal : null,
+                      child: InventoryItemTile(
+                        key: ValueKey('inventory-tile-${view.key}'),
+                        view: view,
+                        selected: view.key == selected,
+                        needsReview: controller.needsReview(view.key),
+                        onTap: () => controller.select(view.key),
+                      ),
                     ),
                   ),
               ],
@@ -1006,7 +1034,7 @@ class InventoryWorkspace extends StatelessWidget {
           action: TonalButton(
             key: const ValueKey('inventory-open-plan'),
             label: '계획 열기',
-            onPressed: onOpenPlan,
+            onPressed: () => onOpenPlan(null),
           ),
         );
       }
@@ -1033,12 +1061,15 @@ class InventoryWorkspace extends StatelessWidget {
       fog: const ScrollFogSpec.panel(color: inventoryPanelFill),
       itemBuilder: (context, index) {
         final view = visible[index];
-        return InventoryRiskRow(
-          key: ValueKey('inventory-row-${view.key}'),
-          view: view,
-          selected: view.key == selected,
-          needsReview: controller.needsReview(view.key),
-          onTap: () => controller.select(view.key),
+        return _RevealOnRequest(
+          request: reveal?.resourceKey == view.key ? reveal : null,
+          child: InventoryRiskRow(
+            key: ValueKey('inventory-row-${view.key}'),
+            view: view,
+            selected: view.key == selected,
+            needsReview: controller.needsReview(view.key),
+            onTap: () => controller.select(view.key),
+          ),
         );
       },
     );
@@ -1365,7 +1396,7 @@ class InventoryWorkspace extends StatelessWidget {
               key: const ValueKey('inventory-action-plan'),
               label: '계획에서 보기',
               variant: TonalButtonVariant.primary,
-              onPressed: onOpenPlan,
+              onPressed: () => onOpenPlan(view.key),
             ),
             const SizedBox(width: 10),
             TonalButton(
@@ -1630,7 +1661,7 @@ class _InventoryAnalysisStage extends StatefulWidget {
   });
 
   final InventoryController controller;
-  final VoidCallback onOpenPlan;
+  final ValueChanged<String?> onOpenPlan;
   final Size size;
 
   /// 티어별 충족률 화면이 목표다.
@@ -2869,4 +2900,64 @@ class _QuantityEditorState extends State<_QuantityEditor> {
       ],
     );
   }
+}
+
+/// [request]가 오면 이 행이 처음 그려진 다음 프레임에 한 번, 화면 밖(일부라도)이면 목록 가운데로 스크롤한다(tidy1, FE7-d 발견 2).
+/// 키트 viewport는 고치지 않고 행이 속한 Scrollable의 position과 viewport의 `getOffsetToReveal`을 쓴다(행이 모두 그려지는
+/// 목록이라 행 render box가 늘 있다).
+class _RevealOnRequest extends StatefulWidget {
+  const _RevealOnRequest({required this.request, required this.child});
+
+  final InventoryRevealRequest? request;
+  final Widget child;
+
+  @override
+  State<_RevealOnRequest> createState() => _RevealOnRequestState();
+}
+
+class _RevealOnRequestState extends State<_RevealOnRequest> {
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(_RevealOnRequest oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.request, widget.request)) _schedule();
+  }
+
+  void _schedule() {
+    final request = widget.request;
+    if (request == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(request));
+  }
+
+  void _reveal(InventoryRevealRequest request) {
+    if (!mounted || !identical(widget.request, request)) return;
+    final box = context.findRenderObject();
+    final position = Scrollable.maybeOf(context)?.position;
+    if (box is! RenderBox || !box.hasSize || position == null) return;
+    final viewport = RenderAbstractViewport.maybeOf(box);
+    if (viewport == null || !request.consume()) return;
+    // 위 끝을 viewport 위에 맞추는 offset ≥ 지금 ≥ 아래 끝을 viewport 아래에 맞추는 offset이면 다 보인다.
+    final topAligned = viewport.getOffsetToReveal(box, 0).offset;
+    final bottomAligned = viewport.getOffsetToReveal(box, 1).offset;
+    if (position.pixels <= topAligned && position.pixels >= bottomAligned) {
+      return;
+    }
+    final target = viewport
+        .getOffsetToReveal(box, 0.5)
+        .offset
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    position.animateTo(
+      target,
+      duration: AppMotion.header,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

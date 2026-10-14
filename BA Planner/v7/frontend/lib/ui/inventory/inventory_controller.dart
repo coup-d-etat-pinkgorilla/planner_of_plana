@@ -35,13 +35,14 @@
 // - 이력 응답의 revision이 읽은 상태와 다르면(사이에 쓰기) 이력을 버리고 다음 기회에 다시 읽는다(섞어 그리지 않는다).
 // - 탭을 다시 열 때 [refreshIfChanged]가 `repository.history.summary`의 revision만 보고, 다르면(다른 탭의 스캔 commit 등)
 //   [load]를 다시 부른다. 셸 시작 때(탭을 열기 전)는 아무것도 읽지 않는다(FE6-b).
-// - "지금"은 [InventoryClockSource]가 주는 시각(검수 fixture · 테스트의 고정 시계), 없으면 기기 시계다.
+// - "지금"은 서비스가 [AppClockSource]면 그 시각(검수 fixture · 테스트의 고정 시계), 아니면 기기 시계다(`services/app_clock.dart`).
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
@@ -51,11 +52,6 @@ import 'inventory_analysis.dart';
 import 'inventory_history.dart';
 import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
-
-/// 인벤토리 이력 집계의 "지금"을 주는 서비스(검수 fixture · 테스트가 고정 시각을 준다). 없으면 기기 시계다.
-abstract interface class InventoryClockSource {
-  DateTime get inventoryNow;
-}
 
 /// 이력 events를 끝까지 읽을 때의 쪽 수 상한(200 × 50 = FB-2 보존 상한 10,000건).
 const _historyMaxPages = 50;
@@ -139,8 +135,8 @@ class InventoryController extends ChangeNotifier {
   final DateTime Function() _clock;
 
   static DateTime Function() _serviceClock(AppService service) {
-    if (service case final InventoryClockSource source) {
-      return () => source.inventoryNow;
+    if (service case final AppClockSource source) {
+      return () => source.clockNow;
     }
     return DateTime.now;
   }

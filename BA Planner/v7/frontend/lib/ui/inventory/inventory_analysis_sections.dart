@@ -280,7 +280,7 @@ class _InventoryAnalysisSections extends StatelessWidget {
   });
 
   final InventoryController controller;
-  final VoidCallback onOpenPlan;
+  final ValueChanged<String?> onOpenPlan;
   final Size size;
 
   _SectionQuad _quad(String id) => _SectionQuad.of(size, id, analysis: true);
@@ -478,7 +478,7 @@ class _InventoryAnalysisSections extends StatelessWidget {
               key: ValueKey('inventory-school-${rows[index].school}'),
               row: rows[index],
               studentName: controller.studentName,
-              onOpenPlan: onOpenPlan,
+              onOpenPlan: () => onOpenPlan(null),
             ),
           ),
         ),

@@ -17,10 +17,9 @@
 //   커지는 중(4주 뒤 −66) · 밀레니엄 BD (상급)은 곧 충분(2주 뒤 0). 시안 견본(로혼치 +86 · 네브라 −6)은 계획 재화의 지금
 //   보유(S2 · S4 값)를 바꾸지 않고는 낼 수 없어 가까운 값으로 두었다. 상급 활동 보고서와 밀레니엄 BD (최상급)은 계획에
 //   쓰지 않는 보유 항목으로 더했다(S1 · S2 · S4는 계획 재화만 그린다).
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
-import 'package:ba_planner_v7/ui/inventory/inventory_controller.dart'
-    show InventoryClockSource;
 
 import 'inventory_history_fixture.dart';
 
@@ -286,7 +285,7 @@ Map<String, Map<String, int>> get inventoryAnalysisFixturePlan => _fixture.plan;
 
 /// 분석 검수 fixture 서비스.
 class InventoryAnalysisFixtureService extends MockAppService
-    implements InventoryClockSource {
+    implements AppClockSource {
   InventoryAnalysisFixtureService({bool history = true})
     : super(
         repositoryStates: {
@@ -307,7 +306,7 @@ class InventoryAnalysisFixtureService extends MockAppService
       );
 
   @override
-  DateTime get inventoryNow => inventoryHistoryFixtureNow;
+  DateTime get clockNow => inventoryHistoryFixtureNow;
 
   @override
   Future<InventoryCatalogResult> listInventoryItems() async =>
