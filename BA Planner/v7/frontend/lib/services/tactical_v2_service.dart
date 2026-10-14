@@ -141,6 +141,11 @@ const _reviewStatusesV2 = {
   'rejected',
 };
 
+const _occurredPrecisionsV2 = {'date', 'instant', 'unknown'};
+
+bool _sha256V2(Object? value) =>
+    value is String && RegExp(r'^[0-9a-f]{64}$').stringMatch(value) == value;
+
 @immutable
 class TacticalSlotObservation {
   const TacticalSlotObservation({
@@ -314,6 +319,8 @@ class TacticalMatchV2 {
     required this.attackDeck,
     required this.defenseDeck,
     required this.notes,
+    this.attemptCount,
+    this.occurredPrecision = 'unknown',
   });
   final String id, kind, importedAt, createdAt, source, sourceLabel;
   final String importBatchId, sourceRecordId, reviewStatus, season;
@@ -321,6 +328,13 @@ class TacticalMatchV2 {
   final String? occurredAt, observedAt;
   final double? confidence;
   final TacticalDeckV2 attackDeck, defenseDeck;
+
+  /// FB-6 시도 횟수. null = 모름(구 v2 기록·v7-v1 이관 기록). 1로 채우지 않는다.
+  final int? attemptCount;
+
+  /// FB-6 `date`·`instant`·`unknown`. 구 v2 기록에 키가 없으면 `unknown`이다. `date`의 `occurredAt`은
+  /// KST 자정 표기일 뿐 전투 시각이 아니다.
+  final String occurredPrecision;
 
   factory TacticalMatchV2.fromWire(Map<String, dynamic> value) {
     const fields = {
@@ -345,7 +359,14 @@ class TacticalMatchV2 {
       'defense_deck',
       'notes',
     };
-    if (!_exactV2(value, fields) ||
+    // FB-6 additive optional 키. 그 밖의 모르는 키는 지금처럼 거부한다.
+    const optional = {'attempt_count', 'occurred_precision'};
+    final attempt = value['attempt_count'];
+    if (!value.keys.toSet().containsAll(fields) ||
+        !{...fields, ...optional}.containsAll(value.keys) ||
+        (attempt != null && (attempt is! int || attempt < 1)) ||
+        (value.containsKey('occurred_precision') &&
+            !_occurredPrecisionsV2.contains(value['occurred_precision'])) ||
         value['version'] != 2 ||
         !_recordIdV2(value['match_id']) ||
         !{'attack', 'defense'}.contains(value['kind']) ||
@@ -382,6 +403,8 @@ class TacticalMatchV2 {
         Map<String, dynamic>.from(value['defense_deck'] as Map),
       ),
       notes: value['notes'] as String,
+      attemptCount: attempt as int?,
+      occurredPrecision: value['occurred_precision'] as String? ?? 'unknown',
     );
   }
 }
@@ -392,9 +415,13 @@ class TacticalJokboV2 {
     required this.id,
     required this.defenseDeck,
     required this.attackDeck,
+    this.name,
   });
   final String id;
   final TacticalDeckV2 defenseDeck, attackDeck;
+
+  /// FB-6 족보 이름(자동 이름 또는 사용자 편집). 구 v2 기록에는 없을 수 있다(null).
+  final String? name;
   factory TacticalJokboV2.fromWire(Map<String, dynamic> value) {
     const fields = {
       'version',
@@ -413,7 +440,11 @@ class TacticalJokboV2 {
       'confidence',
       'review_status',
     };
-    if (!_exactV2(value, fields) ||
+    final name = value['name'];
+    // FB-6 additive optional `name`. 그 밖의 모르는 키는 지금처럼 거부한다.
+    if (!value.keys.toSet().containsAll(fields) ||
+        !{...fields, 'name'}.containsAll(value.keys) ||
+        (value.containsKey('name') && (name is! String || name.isEmpty)) ||
         value['version'] != 2 ||
         !_recordIdV2(value['jokbo_id']) ||
         value['wins'] is! int ||
@@ -434,6 +465,7 @@ class TacticalJokboV2 {
       attackDeck: TacticalDeckV2.fromWire(
         Map<String, dynamic>.from(value['attack_deck'] as Map),
       ),
+      name: name as String?,
     );
   }
 }
@@ -2140,6 +2172,483 @@ class TacticalShareAnalyticsResult {
   }
 }
 
+// FB-6: 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관(contracts/tactical-protocol-v2.schema.json `fb6*`,
+// contracts/README.md "FB-6a tactical v2 writes and explicit v7-v1 migration").
+
+bool _validFb6DeckV2(Object? raw) {
+  if (raw is! Map) return false;
+  try {
+    TacticalDeckV2.fromWire(Map<String, dynamic>.from(raw));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool _validFb6MatchInputV2(Object? raw) {
+  if (raw is! Map) return false;
+  final value = Map<String, dynamic>.from(raw);
+  const fields = {
+    'version',
+    'match_id',
+    'kind',
+    'occurred_at',
+    'occurred_precision',
+    'season',
+    'opponent_identity_id',
+    'opponent_display_name',
+    'result',
+    'attack_deck',
+    'defense_deck',
+    'notes',
+    'attempt_count',
+  };
+  final precision = value['occurred_precision'];
+  final attempt = value['attempt_count'];
+  try {
+    return _exactV2(value, fields) &&
+        value['version'] == 2 &&
+        _recordIdV2(value['match_id']) &&
+        {'attack', 'defense'}.contains(value['kind']) &&
+        _occurredPrecisionsV2.contains(precision) &&
+        (precision == 'unknown'
+            ? value['occurred_at'] == null
+            : _timestampV2(value['occurred_at'], nullable: false) != null) &&
+        value['season'] is String &&
+        _recordIdV2(value['opponent_identity_id']) &&
+        value['opponent_display_name'] is String &&
+        (value['opponent_display_name'] as String).isNotEmpty &&
+        {'win', 'loss'}.contains(value['result']) &&
+        _validFb6DeckV2(value['attack_deck']) &&
+        _validFb6DeckV2(value['defense_deck']) &&
+        value['notes'] is String &&
+        attempt is int &&
+        attempt >= 1;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool _validFb6JokboInputV2(Object? raw) {
+  if (raw is! Map) return false;
+  final value = Map<String, dynamic>.from(raw);
+  return _exactV2(value, {
+        'version',
+        'jokbo_id',
+        'name',
+        'attack_deck',
+        'defense_deck',
+        'notes',
+      }) &&
+      value['version'] == 2 &&
+      _recordIdV2(value['jokbo_id']) &&
+      value['name'] is String &&
+      (value['name'] as String).isNotEmpty &&
+      _validFb6DeckV2(value['attack_deck']) &&
+      _validFb6DeckV2(value['defense_deck']) &&
+      value['notes'] is String;
+}
+
+/// `date` 정밀도는 KST 자정 표기만 받는다(백엔드 `request_match`와 같다).
+bool _kstMidnightV2(String value) =>
+    RegExp(r'^\d{4}-\d{2}-\d{2}T00:00(:00(\.0+)?)?\+09:00$').hasMatch(value) &&
+    DateTime.tryParse(value) != null;
+
+/// FB-6 `fb6MatchInput`(13키). read DTO의 backend 소유 audit/created/import/source 필드
+/// (`observed_at`·`imported_at`·`created_at`·`source`·`source_label`·`import_batch_id`·`source_record_id`·
+/// `confidence`·`review_status`)는 넣지 않는다.
+@immutable
+class TacticalMatchInputV2 {
+  TacticalMatchInputV2({
+    required this.id,
+    required this.kind,
+    required this.occurredAt,
+    required this.occurredPrecision,
+    required this.season,
+    required this.opponentIdentityId,
+    required this.opponentDisplayName,
+    required this.result,
+    required this.attackDeck,
+    required this.defenseDeck,
+    required this.notes,
+    required this.attemptCount,
+  }) {
+    if (!_validFb6MatchInputV2(toWire()) ||
+        (occurredPrecision == 'date' && !_kstMidnightV2(occurredAt!))) {
+      throw const FormatException('Invalid tactical v2 match input');
+    }
+  }
+
+  /// 읽은 기록에서 입력 13키만 옮긴다. 모르는 시도 횟수(null)와 키가 없던 정밀도(`unknown`인데 시각이
+  /// 있음)는 추측하지 않으므로 [attemptCount]·[occurredPrecision]을 직접 넘겨야 한다.
+  factory TacticalMatchInputV2.fromRecord(
+    TacticalMatchV2 record, {
+    int? attemptCount,
+    String? occurredPrecision,
+  }) {
+    final count = attemptCount ?? record.attemptCount;
+    if (count == null) {
+      throw const FormatException(
+        'Unknown tactical attempt count must be entered explicitly',
+      );
+    }
+    return TacticalMatchInputV2(
+      id: record.id,
+      kind: record.kind,
+      occurredAt: record.occurredAt,
+      occurredPrecision: occurredPrecision ?? record.occurredPrecision,
+      season: record.season,
+      opponentIdentityId: record.opponentIdentityId,
+      opponentDisplayName: record.opponentDisplayName,
+      result: record.result,
+      attackDeck: record.attackDeck,
+      defenseDeck: record.defenseDeck,
+      notes: record.notes,
+      attemptCount: count,
+    );
+  }
+
+  final String id, kind, occurredPrecision, season;
+  final String opponentIdentityId, opponentDisplayName, result, notes;
+  final String? occurredAt;
+  final TacticalDeckV2 attackDeck, defenseDeck;
+  final int attemptCount;
+
+  Map<String, dynamic> toWire() => {
+    'version': 2,
+    'match_id': id,
+    'kind': kind,
+    'occurred_at': occurredAt,
+    'occurred_precision': occurredPrecision,
+    'season': season,
+    'opponent_identity_id': opponentIdentityId,
+    'opponent_display_name': opponentDisplayName,
+    'result': result,
+    'attack_deck': attackDeck.toWire(),
+    'defense_deck': defenseDeck.toWire(),
+    'notes': notes,
+    'attempt_count': attemptCount,
+  };
+}
+
+/// FB-6 `fb6JokboInput`(6키). 승패 수·출처·생성 시각은 백엔드가 보존한다.
+@immutable
+class TacticalJokboInputV2 {
+  TacticalJokboInputV2({
+    required this.id,
+    required this.name,
+    required this.attackDeck,
+    required this.defenseDeck,
+    required this.notes,
+  }) {
+    if (!_validFb6JokboInputV2(toWire())) {
+      throw const FormatException('Invalid tactical v2 jokbo input');
+    }
+  }
+  final String id, name, notes;
+  final TacticalDeckV2 attackDeck, defenseDeck;
+
+  Map<String, dynamic> toWire() => {
+    'version': 2,
+    'jokbo_id': id,
+    'name': name,
+    'attack_deck': attackDeck.toWire(),
+    'defense_deck': defenseDeck.toWire(),
+    'notes': notes,
+  };
+}
+
+int _revisionV2(Map<String, dynamic> value) {
+  final revision = value['revision'];
+  if (revision is! int || revision < 0) {
+    throw const FormatException('Invalid tactical v2 revision');
+  }
+  return revision;
+}
+
+@immutable
+class TacticalMatchUpsertResult {
+  const TacticalMatchUpsertResult({
+    required this.revision,
+    required this.match,
+    required this.jokboIds,
+  });
+  final int revision;
+  final TacticalMatchV2 match;
+
+  /// 이 기록에서 자동 도출된 족보 ID(공격 기록만, 없으면 빈 목록).
+  final List<String> jokboIds;
+
+  factory TacticalMatchUpsertResult.fromWire(Map<String, dynamic> value) {
+    final ids = value['jokbo_ids'];
+    if (!_exactV2(value, {'revision', 'match', 'jokbo_ids'}) ||
+        value['match'] is! Map ||
+        ids is! List ||
+        !ids.every(_recordIdV2) ||
+        ids.toSet().length != ids.length) {
+      throw const FormatException('Invalid tactical v2 match upsert result');
+    }
+    return TacticalMatchUpsertResult(
+      revision: _revisionV2(value),
+      match: TacticalMatchV2.fromWire(
+        Map<String, dynamic>.from(value['match'] as Map),
+      ),
+      jokboIds: List.unmodifiable(ids.cast<String>()),
+    );
+  }
+}
+
+@immutable
+class TacticalMatchDeleteResult {
+  const TacticalMatchDeleteResult({
+    required this.revision,
+    required this.matchId,
+  });
+  final int revision;
+  final String matchId;
+
+  factory TacticalMatchDeleteResult.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'revision', 'match_id'}) ||
+        !_recordIdV2(value['match_id'])) {
+      throw const FormatException('Invalid tactical v2 match delete result');
+    }
+    return TacticalMatchDeleteResult(
+      revision: _revisionV2(value),
+      matchId: value['match_id'] as String,
+    );
+  }
+}
+
+@immutable
+class TacticalJokboUpsertResult {
+  const TacticalJokboUpsertResult({
+    required this.revision,
+    required this.jokbo,
+  });
+  final int revision;
+  final TacticalJokboV2 jokbo;
+
+  factory TacticalJokboUpsertResult.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'revision', 'jokbo'}) || value['jokbo'] is! Map) {
+      throw const FormatException('Invalid tactical v2 jokbo upsert result');
+    }
+    return TacticalJokboUpsertResult(
+      revision: _revisionV2(value),
+      jokbo: TacticalJokboV2.fromWire(
+        Map<String, dynamic>.from(value['jokbo'] as Map),
+      ),
+    );
+  }
+}
+
+@immutable
+class TacticalJokboDeleteResult {
+  const TacticalJokboDeleteResult({
+    required this.revision,
+    required this.jokboId,
+  });
+  final int revision;
+  final String jokboId;
+
+  factory TacticalJokboDeleteResult.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'revision', 'jokbo_id'}) ||
+        !_recordIdV2(value['jokbo_id'])) {
+      throw const FormatException('Invalid tactical v2 jokbo delete result');
+    }
+    return TacticalJokboDeleteResult(
+      revision: _revisionV2(value),
+      jokboId: value['jokbo_id'] as String,
+    );
+  }
+}
+
+/// v7-v1 이관 미리보기의 변환 문제. 하나라도 있으면 commit이 `import_review_required`로 전부 거부된다.
+@immutable
+class TacticalLegacyIssue {
+  const TacticalLegacyIssue({
+    required this.recordKind,
+    required this.recordId,
+    required this.code,
+    required this.message,
+  });
+  final String recordKind, recordId, code, message;
+
+  factory TacticalLegacyIssue.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'record_kind', 'record_id', 'code', 'message'}) ||
+        !{'match', 'jokbo'}.contains(value['record_kind']) ||
+        value['record_id'] is! String ||
+        (value['record_id'] as String).isEmpty ||
+        value['code'] is! String ||
+        (value['code'] as String).isEmpty ||
+        value['message'] is! String) {
+      throw const FormatException('Invalid tactical legacy issue');
+    }
+    return TacticalLegacyIssue(
+      recordKind: value['record_kind'] as String,
+      recordId: value['record_id'] as String,
+      code: value['code'] as String,
+      message: value['message'] as String,
+    );
+  }
+}
+
+@immutable
+class TacticalLegacyPreview {
+  const TacticalLegacyPreview({
+    required this.sourceRevision,
+    required this.sourceFingerprint,
+    required this.matchCount,
+    required this.jokboCount,
+    required this.issues,
+    required this.v1WritesDisabled,
+  });
+
+  /// commit 요청에는 `expected_source_revision`·`expected_fingerprint`로 넣는다.
+  final int sourceRevision;
+  final String sourceFingerprint;
+  final int matchCount, jokboCount;
+  final List<TacticalLegacyIssue> issues;
+
+  /// 이미 v2가 유일한 쓰기 저장소다(이관 완료 또는 빈 v1 claim). 이관을 다시 제안하지 않는다.
+  final bool v1WritesDisabled;
+
+  factory TacticalLegacyPreview.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'source_revision',
+      'source_fingerprint',
+      'match_count',
+      'jokbo_count',
+      'issues',
+      'v1_writes_disabled',
+    };
+    final issues = value['issues'];
+    if (!_exactV2(value, fields) ||
+        [
+          value['source_revision'],
+          value['match_count'],
+          value['jokbo_count'],
+        ].any((item) => item is! int || item < 0) ||
+        !_sha256V2(value['source_fingerprint']) ||
+        issues is! List ||
+        value['v1_writes_disabled'] is! bool) {
+      throw const FormatException('Invalid tactical legacy preview');
+    }
+    return TacticalLegacyPreview(
+      sourceRevision: value['source_revision'] as int,
+      sourceFingerprint: value['source_fingerprint'] as String,
+      matchCount: value['match_count'] as int,
+      jokboCount: value['jokbo_count'] as int,
+      issues: List.unmodifiable(
+        issues.map(
+          (item) => TacticalLegacyIssue.fromWire(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        ),
+      ),
+      v1WritesDisabled: value['v1_writes_disabled'] as bool,
+    );
+  }
+}
+
+@immutable
+class TacticalLegacyCommitResult {
+  const TacticalLegacyCommitResult({
+    required this.revision,
+    required this.importedMatches,
+    required this.importedJokbo,
+    required this.v1WritesDisabled,
+  });
+  final int revision, importedMatches, importedJokbo;
+
+  /// 계약상 항상 true(이관 뒤 v1 새 쓰기는 `tactical_v1_read_only`).
+  final bool v1WritesDisabled;
+
+  factory TacticalLegacyCommitResult.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'revision',
+      'imported_matches',
+      'imported_jokbo',
+      'v1_writes_disabled',
+    };
+    if (!_exactV2(value, fields) ||
+        [
+          value['imported_matches'],
+          value['imported_jokbo'],
+        ].any((item) => item is! int || item < 0) ||
+        value['v1_writes_disabled'] != true) {
+      throw const FormatException('Invalid tactical legacy commit result');
+    }
+    return TacticalLegacyCommitResult(
+      revision: _revisionV2(value),
+      importedMatches: value['imported_matches'] as int,
+      importedJokbo: value['imported_jokbo'] as int,
+      v1WritesDisabled: true,
+    );
+  }
+}
+
+/// FB-6 요청 payload를 보내기 전에 strict 검사한다(schema `fb6*Request`). 아니면 [FormatException].
+Map<String, dynamic> checkedTacticalV2Request(
+  String method,
+  Map<String, dynamic> payload,
+) {
+  if (!isValidTacticalV2ProtocolMessage({
+    'protocol': 1,
+    'id': 'request',
+    'type': 'request',
+    'method': method,
+    'payload': payload,
+  })) {
+    throw FormatException('Invalid $method request');
+  }
+  return payload;
+}
+
+/// FB-6 쓰기 capability(Process·Mock). [TacticalEvidenceService] 전체(통계·추천·공유)를 구현하지 않는
+/// 대역도 v2 기록·족보 쓰기와 이관만 따로 구현할 수 있게 나눈다(RepositoryInventoryReviewService 선례).
+///
+/// v1 기록이 있으면 새 v2 기록·족보 쓰기는 `legacy_migration_required`다. [previewTacticalLegacyMigration] →
+/// [commitTacticalLegacyMigration](미리보기의 source revision·fingerprint) 뒤 v1 새 쓰기는
+/// `tactical_v1_read_only`. 같은 key 재요청은 원 응답(삭제된 레코드를 되살리지 않음), 다른 내용은
+/// `idempotency_conflict`.
+abstract interface class TacticalEvidenceWriteService {
+  Future<TacticalEvidenceState> loadTacticalEvidenceState(String profileId);
+  Future<TacticalMatchUpsertResult> upsertTacticalMatchV2({
+    required String profileId,
+    required TacticalMatchInputV2 match,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalMatchDeleteResult> deleteTacticalMatchV2({
+    required String profileId,
+    required String matchId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalJokboUpsertResult> upsertTacticalJokboV2({
+    required String profileId,
+    required TacticalJokboInputV2 jokbo,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalJokboDeleteResult> deleteTacticalJokboV2({
+    required String profileId,
+    required String jokboId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+  Future<TacticalLegacyPreview> previewTacticalLegacyMigration(
+    String profileId,
+  );
+  Future<TacticalLegacyCommitResult> commitTacticalLegacyMigration({
+    required String profileId,
+    required int expectedSourceRevision,
+    required String expectedFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+}
+
 abstract interface class TacticalEvidenceService {
   Future<TacticalEvidenceState> loadTacticalEvidenceState(String profileId);
   Future<TacticalImportPreview> previewTacticalV6Import(
@@ -2558,6 +3067,28 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
             profile(payload['profile_id']) &&
             _validShareFiltersV1(payload['filters']);
       }
+      if (method == 'tactical.v2.match.upsert') {
+        return base({'match'}) && _validFb6MatchInputV2(payload['match']);
+      }
+      if (method == 'tactical.v2.match.delete') {
+        return base({'match_id'}) && _recordIdV2(payload['match_id']);
+      }
+      if (method == 'tactical.v2.jokbo.upsert') {
+        return base({'jokbo'}) && _validFb6JokboInputV2(payload['jokbo']);
+      }
+      if (method == 'tactical.v2.jokbo.delete') {
+        return base({'jokbo_id'}) && _recordIdV2(payload['jokbo_id']);
+      }
+      if (method == 'tactical.v2.legacy.preview') {
+        return _exactV2(payload, {'profile_id'}) &&
+            profile(payload['profile_id']);
+      }
+      if (method == 'tactical.v2.legacy.commit') {
+        return base({'expected_source_revision', 'expected_fingerprint'}) &&
+            payload['expected_source_revision'] is int &&
+            payload['expected_source_revision'] >= 0 &&
+            _sha256V2(payload['expected_fingerprint']);
+      }
       return false;
     }
     if (payload.containsKey('error')) {
@@ -2666,6 +3197,30 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
     }
     if (method == 'tactical.v2.share.analytics.query') {
       TacticalShareAnalyticsResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.match.upsert') {
+      TacticalMatchUpsertResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.match.delete') {
+      TacticalMatchDeleteResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.jokbo.upsert') {
+      TacticalJokboUpsertResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.jokbo.delete') {
+      TacticalJokboDeleteResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.legacy.preview') {
+      TacticalLegacyPreview.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.legacy.commit') {
+      TacticalLegacyCommitResult.fromWire(payload);
       return true;
     }
     return false;

@@ -14,7 +14,7 @@ sources:
 
 ## 현재 상태
 
-**fb10c-dart 코드 작성 완료, CF gate 대기(2026-10-14).** 시작 커밋 `cbc63d98`. 아래 "fb10c-dart 착수 기록"·"fb10c-dart 종료 기록". 그 전: FE8-e `9f11869f`, FE8-d(시작 `75943ffc`, 커밋 `998fe0cc`), FE8-c(시작 `cac83222`, 커밋 `d0964853`), FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
+**fb6-dart 코드 작성 완료, CF gate 대기(2026-10-14).** 시작 커밋 `5b1d8d15`. 아래 "fb6-dart 착수 기록"·"fb6-dart 종료 기록". 그 전: tidy1 `7bd7530d`, fb10c-dart `16606c58`(시작 `cbc63d98`), FE8-e `9f11869f`, FE8-d(시작 `75943ffc`, 커밋 `998fe0cc`), FE8-c(시작 `cac83222`, 커밋 `d0964853`), FE6-f(시작 `9c03d50b`, 커밋 `00290cea`), fb10b-dart `b49ce994`, fb2d-dart `3f42cee3`, FE6-e `fe920b81`, FE6-c `6305171c`, fb10a-dart `e53fee9e`, FE6-b `e45194bc`(+ 옛 Studio 문서 삭제 커밋), FE6-a `2f88e65f`, fb3-dart `739f3bfe`, T-FB1b `5c78c83c`, FE8-b `8268abb3`, S-FB1b `70d1173b`, fb4-dart `63a01318`, FE8-a `815e0589`.
 
 ## FE8-a 착수 기록 (2026-10-10)
 
@@ -3754,3 +3754,152 @@ FB-10c 학생 무기 폴백 crop의 프론트 개인정보·수명 연결을 끝
 - tidy1 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE7-h)가 멈춘 뒤 `fe_gate.ps1` 1회. 예상: analyze 0(Lane A 새 테스트가 고쳐진 뒤), 일반 테스트에 새 14건(`app_navigation_tidy1_test` 11 · `tidy1_followups_test` 3), golden 전 장면 변화 0. GREEN이면 `fe_commit.ps1 -Slice tidy1 -DryRun` → 커밋.
 - CF 판단 대기: 발견 1 · 2 · 3 · 4(FD-173 버튼) · 5 · 6 · 8.
+
+## fb6-dart 착수 기록 (2026-10-14)
+
+- 상태: 진행 중 → 코드 작성 완료(아래 종료 기록).
+- 범위: FB-6(전술 v2 기록·족보 쓰기, 명시적 v7-v1 이관)의 Dart 연결 — 새 메서드 6(`tactical.v2.match.upsert`·`match.delete`·`jokbo.upsert`·`jokbo.delete`·`legacy.preview`·`legacy.commit`) DTO·strict request/success validator·Process·Mock v2·process E2E, read DTO additive optional 3키, `PlanningProtocolClient._methodErrorCodes['tactical']` 추가 8. 화면(기록 화면 v2 전환)은 FE9-b라 범위 밖. 근거: backend 로그 2026-10-14 08:26(최종 Dart 목록)·08:27(legacy commit 요청키 `expected_source_revision`·`expected_fingerprint`)·08:36(allowlist 8)·08:43(guarded JSONL fixture)·09:35(표준 1274 재검증 GREEN), 2026-10-13 18:09·18:42(설계·사전목록), `debug/xb_fb6_main_overlay_20261014/artifacts/`(DART-CONNECTION.md·wire-request6.json·CF-tactical-error-allowlist-delta.json·CF-process-fixture-notice.json·fb6_rpc_fixture_backend.py), FB-6 요청서(status-backend 2026-10-13 17:50), FD-127·FD-128·FD-129.
+- 착수 전 확인: 이 문서 끝에 다른 "fb6-dart 착수 기록" 없음.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `5b1d8d159173515c8faf0d965e7210ad35ef200c`.
+- XB 08:26 표 9경로 대조(메인 작업 트리 bytes/SHA256): **9개 모두 일치**.
+  - `backend/core/tactical_fb6.py` 6798 `f51c3033d7eff25689c39e6926a05aa899c453f6dac83e6d9b246b43a9e7ab59`
+  - `backend/core/tactical_fb6_store.py` 20538 `e99f2b03a5f7e0c24ef19434ce44afa76cfb867240f5e723b0c8508be1a4d0df`
+  - `backend/core/tactical_store.py` 16790 `9773a7567577cfecdcaf5879b93f09550e17acefe50c2943eaef733b7037b208`
+  - `backend/core/tactical_v2.py` 57676 `1ae8b4fd123f630750b6e87468884fe26a552c77cca45c9fa74d083d2f411a36`
+  - `backend/tests/test_tactical_fb6_primitives.py` 6166 `d6e2386bab64d1997e6c24b285a484e622237ec15450370910a2de6ceb84ffb2`
+  - `backend/tests/test_tactical_fb6_writes.py` 14447 `e32f2b1f5cf229a9640c623531e360196c6432ad79a4146cc987285d4ab1f0dc`
+  - `contracts/README.md` 90625 `2f5b642543e8a4963f5ef2b2c72a56fb6a844316a35131638826bf744dd0e56e`(절 "FB-6a tactical v2 writes and explicit v7-v1 migration")
+  - `contracts/fixtures/tactical_fb6_writes_v2.json` 39342 `946f9312f477160046516ec76ec29ddc62c7ce95bfd574a8d8836cfddb9c6f10`(11 cases: 유효 요청 6 + 무효 5)
+  - `contracts/tactical-protocol-v2.schema.json` 88241 `8a0be074e56a60220c7fa8deef76c7d86be0001535b313a7f7a09fe2e9d1eb51`(`fb6*` 정의 14)
+- XB 목록과 메인 schema·코드 대조(읽기): schema `fb6MatchInput` 13키·`fb6JokboInput` 6키·요청 6종·성공 6종·`match`(optional `attempt_count` null|int≥1, `occurred_precision` enum)·`jokbo`(optional `name` minLength 1)이 08:26 목록·`wire-request6.json`과 같다. `fb6LegacyCommitResponse.v1_writes_disabled`는 `const true`, issue `record_kind`는 `match|jokbo`. 08:36 allowlist 8은 `tactical_fb6_store.py`·`tactical_store.py`의 RepositoryError 코드와 같다. 차이 없음.
+- 막힘: 대장 막힘 요약에 fb6-dart 행 없음, 현재 열림 0건. FB-6 행의 FD-127·FD-128은 확정(권장안 (a)). FD-129는 '워커 재량'이지만 FE9-d·FE9-e(시그니처 족보 수·독립 재현) 몫이라 이 slice에서 쓰지 않는다.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb6dart/pre/<v7 기준 경로>`)과 WIP(`git status --short <경로>`), 줄바꿈(바이트로 셈):
+  - `frontend/lib/services/tactical_v2_service.dart`: WIP 없음. LF.
+  - `frontend/lib/services/planning_protocol_client.dart`: **WIP 있음**(스캐너 WIP hunk 188·863·902줄 부근). CRLF 주 + LF 18줄. 고치는 곳은 `_methodErrorCodes['tactical']`(140~158줄)뿐이라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `frontend/lib/services/process_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 1139~1181줄 부근). CRLF 주 + LF 24줄. 고치는 곳은 implements 목록(35줄)·v2 메서드 묶음(722줄 뒤)이라 WIP hunk와 떨어져 있다.
+  - `frontend/lib/services/mock_app_service.dart`: **WIP 있음**(스캐너 WIP hunk 186~680줄 부근). CRLF 주 + LF 128줄. 고치는 곳은 import·implements 목록(19·43줄)·`deleteProfile`(2247줄)·전술 v1 Mock(2858줄 뒤)이라 WIP hunk와 겹치거나 맞닿지 않는다.
+  - `almanac/workflows/frontend-redesign-status-lane-b.md`: WIP 없음(이 기록). LF.
+- 새 파일(예정): `frontend/lib/services/mock_tactical_v2_writes.dart`(Mock v2 쓰기 의미), `frontend/test/tactical_fb6_dart_test.dart`(계약 fixture·DTO·validator·allowlist·Mock), `frontend/test/tactical_fb6_process_e2e_test.dart`(실제 백엔드, inline guarded 진입점).
+- WIP는 지우거나 고치거나 옮기지 않는다. WIP 원 diff 사본: `debug/frontend_fb6dart/logs/wip-before.diff`.
+
+## fb6-dart 종료 기록 (2026-10-14, 코드 작성 완료·CF gate 미실행)
+
+FB-6 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관의 Dart 연결을 끝냈다. 새 메서드 6의 입력·결과 DTO와 strict request/success 검사, read DTO additive optional 3키, tactical 오류 allowlist 8, Process·Mock v2(새 capability `TacticalEvidenceWriteService`), 계약 fixture·Mock 테스트, 실제 백엔드 process E2E. 화면(FE9-b)은 건드리지 않았다.
+
+### 실행 명령·결과
+
+- `flutter analyze`(frontend): 작업 중 info 2(`prefer_initializing_formals`, Mock 새 파일 생성자)·error 1(새 테스트의 `BackendConnection` import 빠짐)을 고쳤다. 마지막 실행(포맷 뒤): **No issues found(0)**. 실행 시점에 Lane A FE7-e 편집 중 파일(`lib/ui/statistics/**` 등)도 함께 분석됐고 이슈 0이었다.
+- `flutter test test/tactical_fb6_dart_test.dart`: ① **+13 −1**(ProcessAppService 테스트에 `TestWidgetsFlutterBinding.ensureInitialized()` 빠짐) → ② **+14**. 포맷 뒤 마지막 확인 **+14**.
+- `flutter test --concurrency=1 test/tactical_fb6_process_e2e_test.dart`: 첫 실행부터 **+1**, 다시 돌려 +1·+1, 포맷 뒤 마지막 확인 **+1**(단독 약 5초). 기존 v1 E2E(기본 진입점·startup probe, 15초)보다 빨라서, 값을 출력하는 임시 사본(`test/zz_fb6_probe_tmp_test.dart`)으로 실제 백엔드 응답(파이썬 마이크로초 시각, sha256 fingerprint, 카탈로그 표시명이 든 자동 족보 이름 "족보 3e3491 · 시로코", 프로세스 2개)을 확인한 뒤 그 사본을 지웠다(남은 파일 0).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalEvidence`·`tactical_v2_service`·`TacticalMatchV2`·`TacticalJokboV2`·v1 전술 Mock 쓰기·`loadTacticalState`·`deleteProfile`·`_methodErrorCodes`·`tactical.`, MockAppService 공용 테스트 몇 개 추가):
+  - 일반(json, 17파일 병렬): **+178 −0** — account_manager_fe8b +6, home_app_shell +1, inventory_review_fb10b +19, mock_design_review_scenario +11, mock_scanner_commit_history +9, mock_scanner_service +4, profile_delete_fb2d +17, repository_presets_service +49, repository_protocol_contract +1, scanner_protocol_client +6, tactical_fb6_dart +14, tactical_page_revision +5, tactical_page +8, tactical_service +6, tactical_share_v1_contract +1, tactical_v2_service +5, widget_test +16.
+  - `planning_protocol_client_test.dart`(실제 Python 테스트 포함, `--concurrency=1`): **+24 −0**.
+  - process(`--concurrency=1`, 7파일 차례로): **+8 −0** — tactical_fb6_process_e2e +1, tactical_v2_process_e2e +1, tactical_process_e2e +1, profile_delete_fb2d_process_e2e +1, final_p6_process_e2e +2, repository_process_e2e +1, repository_presets_process_e2e +1.
+- `dart format`: LF 4파일(`tactical_v2_service.dart`·새 3파일)만 적용했다. pre `tactical_v2_service.dart`는 이미 포맷 상태(변경 0)라 포맷이 이 slice hunk만 바꿨다. WIP가 있는 공유 3파일은 포맷하지 않았고, 임시 사본을 포맷해 비교한 결과 이 slice hunk와 겹치는 포맷 차이 0.
+- `git diff --check`(고친 4파일): exit 0. 새 3파일: 줄 끝 공백 0, 끝 개행 하나, LF. `pubspec.yaml`·`pubspec.lock` 변경 0.
+- 3-way 병합 모의(스크래치, `fe_commit.ps1`과 같이 LF로 맞춘 뒤 `git merge-file`, base = pre·ours = HEAD·theirs = post): 고친 4파일 모두 충돌 0, HEAD → 병합 결과 차이가 pre → post 차이(이 slice hunk 12·1·2·9개)와 같다(WIP는 커밋에 섞이지 않는다).
+- 잠금 충돌 0(재시도 없음). 로그는 `debug/frontend_fb6dart/logs/`(실패 줄과 json 요약만 확인).
+
+### 고친 파일
+
+- `frontend/lib/services/tactical_v2_service.dart`(WIP 없음, LF):
+  - `TacticalMatchV2`: optional `attemptCount`(`attempt_count` int ≥ 1 | null, 없으면 null = 모름)·`occurredPrecision`(`date|instant|unknown`, 없으면 `unknown`). 두 키만 더 허용하고 그 밖의 모르는 키(`legacy_v1` 포함)는 계속 거부.
+  - `TacticalJokboV2`: optional `name`(빈 문자열·null 거부, 없으면 null).
+  - 입력 DTO `TacticalMatchInputV2`(13키, `date`는 KST 자정 표기만, `unknown` ⇔ 시각 null, 시도 ≥ 1)·`fromRecord`(읽은 기록에서 입력 13키만 옮김. 모르는 시도 횟수·키가 없던 정밀도는 직접 넘기지 않으면 FormatException — 추측하지 않음), `TacticalJokboInputV2`(6키, 이름 필수).
+  - 결과 DTO `TacticalMatchUpsertResult`(`revision`·`match`·`jokbo_ids` unique)·`TacticalMatchDeleteResult`·`TacticalJokboUpsertResult`·`TacticalJokboDeleteResult`·`TacticalLegacyIssue`(`record_kind` match|jokbo)·`TacticalLegacyPreview`·`TacticalLegacyCommitResult`(`v1_writes_disabled`는 true만). 모두 exact 키.
+  - `isValidTacticalV2ProtocolMessage`: 요청 6·성공 6 갈래. `checkedTacticalV2Request`(보내기 전 검사). capability `TacticalEvidenceWriteService`(state 읽기 + 6메서드).
+- `frontend/lib/services/planning_protocol_client.dart`(스캐너 WIP 위): `_methodErrorCodes['tactical']`에 8코드 추가(주석 1줄). 그 밖 0.
+- `frontend/lib/services/process_app_service.dart`(스캐너 WIP 위): implements에 `TacticalEvidenceWriteService`, `_tacticalV2Write`(검사 후 전송) + 6메서드(legacy commit은 `expected_source_revision`·`expected_fingerprint`로 보냄).
+- `frontend/lib/services/mock_app_service.dart`(스캐너 WIP 위): import 2, implements, `_tacticalV2`(새 Mock 파일, v1 상태 = 원본) + 7메서드 위임, v1 쓰기 4곳 앞에 `requireV1Writable`, `deleteProfile`에서 v2 Mock 저장도 지움(주석 갱신).
+- 새 `frontend/lib/services/mock_tactical_v2_writes.dart`: backend `tactical_fb6_store.py`와 같은 순서·코드(아래 검수표). 실패한 쓰기는 사본에만 적용돼 상태를 바꾸지 않는다.
+- 새 테스트: `frontend/test/tactical_fb6_dart_test.dart`(14), `frontend/test/tactical_fb6_process_e2e_test.dart`(1).
+- 고치지 않음: backend/**·contracts/**, `lib/ui/**`(FE9-b 몫), Lane A 파일, 택틱·스캐너 소유 파일, `scanner_service.dart`, golden harness·golden 테스트, `frontend/tool/**`, `app_shell.dart`, 기존 `tactical_v2_service_test.dart`·`tactical_v2_process_e2e_test.dart`(그대로 통과).
+
+### XB 목록(08:26·08:27·08:36·08:43·DART-CONNECTION.md) 행별 검수
+
+| XB 목록 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| 새 메서드 6, 요청은 schema(`wire-request6.json`) 그대로 | 요청 갈래 6(exact 키, profile 24hex, revision ≥ 0, key 비지 않음, recordId·sha256) | fb6_dart "six requests are exact…", fixture 11 cases |
+| match 입력 13키 / jokbo 입력 6키, backend 소유 audit/created/import/source 되보내지 않음 | 입력 DTO 키 = fixture 키, backend 소유 9키(기록)·4키(족보)를 넣으면 요청 거부, `fromRecord`가 13키만 옮김 | "six requests…", "input DTOs carry only input keys…" |
+| mutation 공통 `profile_id`·`expected_revision`·`idempotency_key`, preview는 `profile_id`만 | 갈래 `base(...)`·preview exact 1키 | "six requests…"(키 빠짐·더함 음성) |
+| legacy commit 요청키 = `expected_source_revision`·`expected_fingerprint`(08:27) | Process가 preview의 `source_revision`·`source_fingerprint`를 이 이름으로 보냄, 응답 이름(`source_*`)으로 보내면 거부 | "six requests…", "ProcessAppService sends exact requests…"(fixture payload와 같음), E2E |
+| 성공 strict 6종 + issue 4키, 모르는 키 거부 | 결과 DTO 7종, 키 더함·빠짐·revision −1·중복 jokbo_ids·attempt 0·commit `v1_writes_disabled` false·issue kind/id/code 음성 | "six success payloads are exact", Process 응답 키 더함 → protocol 오류 |
+| read DTO additive optional(`attempt_count`·`occurred_precision`·jokbo `name`), 그 밖 거부 | 위 "고친 파일" | "read DTOs accept only the additive optional keys" |
+| 오류 allowlist 8(08:36) typed backend error | 8코드 + `revision_conflict` → `BackendRemoteException`·연결 유지, v1 `tactical.match.upsert`의 `tactical_v1_read_only`도 typed, 모르는 코드는 protocol 오류 | "tactical allowlist 8 are typed…", E2E 6코드 실제 수신 |
+| Mock: v1 rows → `legacy_migration_required` → preview → commit → v1 read-only | `_ensureWriteMode`·v1 쓰기 4곳 `requireV1Writable` | Mock "v1 rows require explicit migration…" |
+| Mock: 빈 v1은 첫 v2 쓰기가 claim | 같은 쓰기에서 빈 표식, 이후 v1 read-only·commit `legacy_already_migrated`, 실패한 v2 쓰기는 claim 안 함 | Mock "empty v1 is claimed…", "failed v2 writes do not claim…" |
+| Mock: 같은 key = 원 응답, 다른 payload = `idempotency_conflict`, 삭제 후 재요청이 되살리지 않음 | `_mutation`(캐시 → revision → 적용) | Mock "retry returns the original response…" |
+| Mock: attempt_count·occurred_precision 보존, 이관 기록 null/date·unknown | 입력 그대로 저장, 이관 변환 | Mock 두 테스트 |
+| Mock: source 변경 `import_source_changed`, 변환 문제 `import_review_required`(전체 거부) | 순서 backend와 같음 | Mock "v1 rows…", "unresolved legacy conversion…" |
+| Mock: lineage 족보 자동 도출·이름 유지·`lineage_conflict`, 별칭 `opponent_alias_required`, 부분 덱 스냅샷 없음 | `_derivedJokbo`·`_lineageId`(위치·와일드카드·모름·빈칸 구분) | Mock "identity, lineage and snapshot rules" |
+| 기존 v1 Mock 동작 그대로 | 이관 전 v1 저장·삭제·revision 오류 그대로 | "failed v2 writes…", tactical_page·tactical_service 테스트 |
+| process E2E(legacy rows → v2 `legacy_migration_required` → preview → commit → v1 read-only → upsert/delete → 재시작 → 원 요청이 되살리지 않음) | 아래 | `tactical_fb6_process_e2e_test` |
+| guarded fixture 방식(명시 storage root, prefix `ba_planner_fb6_rpc_`) inline | `-c` 진입점이 `fb6_rpc_fixture_backend.py`와 같은 검사(임시 폴더 아래·prefix·폴더 존재), 스캐너 미결합 | E2E |
+
+### process E2E 내용
+
+- 임시 저장소 `Directory.systemTemp/ba_planner_fb6_rpc_*`(실제 경로로 풀어서 넘김, 끝에 지움). 진입점은 inline `-c`(메인 `ApplicationProtocolV1` + `stdio_server.serve`, `PYTHONDONTWRITEBYTECODE=1`). 실제 게임·사용자 프로필·공용 저장소 접근 0.
+- 프로필 1개 + 보유 학생 6(shiroko·akane·yuuka·mika·serina·hibiki). v1 기록 m1(날짜 있음) + v1 족보 j1 → v2 upsert `legacy_migration_required`.
+- 미리보기(source revision 2, 기록 1·족보 1, 문제 0, v1 쓰기 가능) → v1 기록 m2(날짜 없음) 추가 → 옛 미리보기로 commit `import_source_changed` → 새 미리보기(revision 3, fingerprint 다름)로 commit = revision 1·기록 2·족보 1·`v1_writes_disabled` true → 미리보기 `v1_writes_disabled` true → 다른 key commit `legacy_already_migrated`.
+- v1 새 쓰기 `tactical_v1_read_only`, 원 v1 요청(같은 key·내용) = 원 revision 1, v1 읽기 revision 3·기록 2·족보 1 그대로.
+- v2 상태: 이관 기록 2개 시도 횟수 null, 정밀도 {date, unknown}, date 시각 `2026-10-13T00:00:00+09:00`, source_label `v7_v1_migration`, 족보 이름 모두 있음(공개 상태에 `legacy_v1` 없음 — strict 상태 DTO가 받아들임).
+- v2 기록 manual-one(시도 3, instant) → revision 2, 자동 족보 1(`lineage-`). 같은 상대 identity에 다른 이름 → `opponent_alias_required`. 족보 manual-jokbo → revision 3·이름 그대로. lineage ID로 다른 방어 덱 → `lineage_conflict`. 같은 key 다른 내용 → `idempotency_conflict`. 옛 revision 삭제 → `revision_conflict`. 족보 삭제 4, 기록 삭제 5(스냅샷도 사라짐).
+- 재시작 뒤 같은 상태(revision·기록·족보·상대 ID). 원 이관 commit·원 기록 upsert(revision 2·manual-one)·원 족보 upsert(revision 3) 재전송 = 원 응답, 상태는 revision 5 그대로이고 manual-one·manual-jokbo가 되살아나지 않음. 백엔드 프로세스 2개 모두 exit 0.
+
+### 계약 SHA 대조
+
+- 착수·종료 두 번 XB 08:26 9경로 bytes/SHA256이 모두 일치(착수 기록). 이 slice는 backend/contracts를 읽기만 했다(`git status --short backend contracts`의 기존 변경은 XB·스캐너 쪽, 이 slice 쓰기 0).
+- 테스트가 읽는 계약: `contracts/fixtures/tactical_fb6_writes_v2.json` 39342 B `946f9312f477160046516ec76ec29ddc62c7ce95bfd574a8d8836cfddb9c6f10`, schema `contracts/tactical-protocol-v2.schema.json` 88241 B `8a0be074e56a60220c7fa8deef76c7d86be0001535b313a7f7a09fe2e9d1eb51`(Dart validator는 schema를 손으로 옮긴 것, 실행 때 schema를 읽지 않는다).
+
+### allowlist 8 확인
+
+- `PlanningProtocolClient._methodErrorCodes['tactical']`에 `import_review_required`·`import_source_changed`·`legacy_already_migrated`·`legacy_migration_required`·`lineage_conflict`·`migration_conflict`·`opponent_alias_required`·`tactical_v1_read_only` 8개(XB `CF-tactical-error-allowlist-delta.json` `needed_from_source9`와 같은 목록)를 더했다. 기존 17개는 그대로.
+- 단위: 8코드 모두 v2 쓰기 응답에서 `BackendRemoteException`(연결 connected 유지), v1 쓰기 응답 `tactical_v1_read_only`도 typed, 집합 밖 코드는 `BackendProtocolException`.
+- 실제 백엔드에서 받은 것: `legacy_migration_required`·`import_source_changed`·`legacy_already_migrated`·`tactical_v1_read_only`·`opponent_alias_required`·`lineage_conflict`(+ 기존 `idempotency_conflict`·`revision_conflict`). `import_review_required`·`migration_conflict`는 실제 백엔드에서 만들지 않았다(Mock·단위만).
+
+### golden 변화 예상
+
+- **변화 0.** `lib/ui/**`를 고치지 않았다. Mock 변화는 v2 쓰기 메서드를 부를 때만 생기고(v1 쓰기의 read-only 검사는 v2 쓰기·이관 전에는 항상 통과), golden 테스트·harness는 전술 v2 쓰기·`loadTacticalEvidenceState`를 쓰지 않는다(grep 0, harness의 `tactical` 문자는 재화 `tactical_bd`). golden 테스트는 돌리지 않았다.
+- CF gate 예상: analyze 0. 새 두 테스트 파일 모두 `ProcessAppService`를 포함해 fe_gate 분류상 process 묶음(직렬)에 들어간다 → process **+15**(tactical_fb6_dart 14 + E2E 1), 일반 변화 0, golden 변화 0.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, XB 09:35 표준 1274 GREEN 보고만 읽음).
+- 위 목록 밖 Flutter 테스트(Lane A 통계·계획 테스트, 스캐너·스캔 화면 테스트, 나머지 process E2E): **미실행**. 이 slice가 바꾼 Mock 경로는 전술 v1 쓰기 앞 검사·`deleteProfile`·새 v2 메서드뿐이다.
+- 실제 백엔드의 `import_review_required`(카탈로그 밖 v1 ID)·`migration_conflict`(이관 ID 충돌)·`link_conflict`(로비 연결 기록 수정): **미실행**(v1 API로는 카탈로그 밖 ID를 쓸 수 없고 파일 직접 편집은 하지 않았다. XB 백엔드 테스트 몫).
+- 실제 사용자 프로필 이관·삭제: **미실행**(금지 범위). 화면 연결(FE9-b)·Windows release 빌드: **미실행**.
+
+### WIP 보존 확인
+
+- 공유 3파일은 pre 사본과 줄 단위(difflib, 줄바꿈 무시 비교)로 맞춰 봤다: 같은 줄은 바이트(줄바꿈 포함)까지 그대로(바뀐 줄 0), 이 slice hunk는 삽입(과 mock 주석 2줄 교체)뿐이고 새 줄은 모두 CRLF(주변 줄과 같음).
+  - `planning_protocol_client.dart`: 삽입 1곳(157~165줄, 9줄). WIP hunk(188·863·902줄 부근)와 떨어져 있다.
+  - `process_app_service.dart`: 삽입 2곳(36줄 1줄, 729~822줄 94줄). WIP hunk(1139줄 이후)와 떨어져 있다.
+  - `mock_app_service.dart`: 삽입 8곳(20~21·46·2251·2862~2945·v1 쓰기 4곳 각 1줄)과 HEAD 주석 2줄 교체(2248~2249, `git show HEAD`에 있는 문장 — WIP 아님). WIP hunk(186~680줄)와 겹치거나 맞닿지 않는다.
+- `git diff`로 다시 셈: 착수 때 WIP diff(`logs/wip-before.diff`)의 +/− 줄 220개가 끝 diff(`logs/diff-after.diff`)에 모두 그대로 있다(빠진 줄 0, 늘어난 200줄은 이 slice).
+- 공유 3파일 편집은 바이트 단위 삽입으로 했고 편집 도구 줄바꿈 통일은 일어나지 않았다(복원 불필요). `tactical_v2_service.dart`·새 파일은 LF.
+- 다른 WIP 파일(`scanner_service.dart`·scan 계열·스캐너 테스트)과 Lane A 파일은 수정 0. git 쓰기 0회.
+
+### 발견 사항
+
+1. **기록 삭제 뒤 자동 족보가 남는다**(백엔드 동작): manual-one을 지워도 그 기록에서 도출된 `lineage-` 족보("족보 3e3491 · 시로코")는 남는다(E2E에서 확인). 템플릿이 관측과 따로 산다는 계약 문장과 맞지만, 결과 0인 자동 족보를 화면에 어떻게 보일지는 FE9-b·CF 판단.
+2. **족보 read DTO는 여전히 notes·wins·losses·출처를 버린다**(G-pvp §7.1). 이번 범위는 FB-6 새 키만이라 `name`만 더했다. FE9-b에서 족보를 편집하면 입력 6키에 기존 notes를 넣어야 하므로 그때 DTO 확장이 필요하다(지금 화면 쓰기 0).
+3. **Mock과 백엔드의 차이**(모두 Mock 파일 머리 주석에 적음): 카탈로그·보유 학생·역할 검사 없음, 로비 연결 `link_conflict` 없음, 자동 족보 이름이 표시명 대신 학생 ID, ID·fingerprint 해시가 sha256이 아닌 결정적 FNV 값, instant 시각을 Dart UTC 표기(`…000Z`, 백엔드는 `+00:00`)로 둔다. 또 Mock v1에는 idempotency 캐시가 없어 이관 뒤 원 v1 재요청이 Mock에서는 `tactical_v1_read_only`다(백엔드는 원 응답). 기존 v1 Mock 동작을 바꾸지 않으려고 그대로 두었다.
+4. **capability 분리**: Mock은 `TacticalEvidenceWriteService`만 구현하고 `TacticalEvidenceService`(통계·추세·추천·공유)는 여전히 Process만이다. FE9-b가 화면에서 v2 읽기를 쓸 때 어느 capability로 검사할지 정해야 한다.
+5. **fe_gate 분류**: `tactical_fb6_dart_test.dart`는 가짜 프로세스로 `ProcessAppService`를 만들 뿐인데 이름 패턴 때문에 process(직렬) 묶음에 들어간다(14건, 빠름). 기존 `planning_protocol_client_test`와 같은 처리라 그대로 두었다.
+6. **E2E 진입점**: XB 공용 FB-6 진입점이 `backend/tests/`에 생기면 inline `-c`를 그쪽으로 옮긴다(fb10c 선례, XB 판단).
+7. **정밀도 표시**: 백엔드는 instant를 UTC(`+00:00`)로, date를 KST 자정(`+09:00`)으로 돌려준다. FE9-b는 date를 시각 없이 날짜로만, instant는 KST로 보여야 한다(UI 몫).
+8. 워커 재량 FD 사용 없음(FD-129는 FE9-d·FE9-e 몫).
+
+### 사본·commit.json
+
+- 착수 사본: `debug/frontend_fb6dart/pre/<경로>`(고친 기존 4파일 + 이 문서).
+- 끝 사본: `debug/frontend_fb6dart/post/<경로>`(고친 기존 4파일 + 새 3파일).
+- `debug/frontend_fb6dart/commit.json`: slice `fb6dart`, `status=false`, `post_dir` = `debug/frontend_fb6dart/post`, modified 4, added 3, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`(바뀌는 기준 이미지 없음). message(ASCII) 근거: backend 로그 08:26·08:27·08:36·08:43·09:35, DART-CONNECTION.md·wire-request6.json 경로, FD-128.
+- 인계: `debug/frontend_fb6dart/output.md`.
+
+### 다음 행동
+
+- fb6-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE7-e + FD-175)가 멈춘 뒤 XB FB-6 source9와 같은 소스로 gate 1회(예상: analyze 0, process +15, 일반 변화 0, golden 변화 0) → XB exact9 커밋 → `fe_commit.ps1 -Slice fb6dart`(mock·process·planning client는 3-way 병합, WIP 인접 hunk 없음) → FB-7.
+- 발견 사항 1·2·4·7은 FE9-b(CF), 3·5는 CF 판단, 6은 XB 판단을 기다린다.

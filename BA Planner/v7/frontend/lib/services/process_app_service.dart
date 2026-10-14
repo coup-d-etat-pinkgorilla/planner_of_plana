@@ -33,6 +33,7 @@ class ProcessAppService
         ScannerService,
         TacticalService,
         TacticalEvidenceService,
+        TacticalEvidenceWriteService,
         DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
@@ -723,6 +724,100 @@ class ProcessAppService
     String profileId,
   ) async => TacticalEvidenceState.fromWire(
     await _client.send('tactical.v2.state.get', {'profile_id': profileId}),
+  );
+
+  // FB-6: 요청은 보내기 전에 strict 검사한다(checkedTacticalV2Request), 응답은 client가 검사한 뒤 typed DTO.
+  Future<Map<String, dynamic>> _tacticalV2Write(
+    String method,
+    Map<String, dynamic> payload,
+  ) async => _client.send(method, checkedTacticalV2Request(method, payload));
+
+  @override
+  Future<TacticalMatchUpsertResult> upsertTacticalMatchV2({
+    required String profileId,
+    required TacticalMatchInputV2 match,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalMatchUpsertResult.fromWire(
+    await _tacticalV2Write('tactical.v2.match.upsert', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'match': match.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalMatchDeleteResult> deleteTacticalMatchV2({
+    required String profileId,
+    required String matchId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalMatchDeleteResult.fromWire(
+    await _tacticalV2Write('tactical.v2.match.delete', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'match_id': matchId,
+    }),
+  );
+
+  @override
+  Future<TacticalJokboUpsertResult> upsertTacticalJokboV2({
+    required String profileId,
+    required TacticalJokboInputV2 jokbo,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalJokboUpsertResult.fromWire(
+    await _tacticalV2Write('tactical.v2.jokbo.upsert', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'jokbo': jokbo.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalJokboDeleteResult> deleteTacticalJokboV2({
+    required String profileId,
+    required String jokboId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalJokboDeleteResult.fromWire(
+    await _tacticalV2Write('tactical.v2.jokbo.delete', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'jokbo_id': jokboId,
+    }),
+  );
+
+  @override
+  Future<TacticalLegacyPreview> previewTacticalLegacyMigration(
+    String profileId,
+  ) async => TacticalLegacyPreview.fromWire(
+    await _tacticalV2Write('tactical.v2.legacy.preview', {
+      'profile_id': profileId,
+    }),
+  );
+
+  /// 미리보기 응답의 `source_revision`·`source_fingerprint`를 요청 `expected_source_revision`·
+  /// `expected_fingerprint`로 보낸다(backend 2026-10-14 08:27).
+  @override
+  Future<TacticalLegacyCommitResult> commitTacticalLegacyMigration({
+    required String profileId,
+    required int expectedSourceRevision,
+    required String expectedFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalLegacyCommitResult.fromWire(
+    await _tacticalV2Write('tactical.v2.legacy.commit', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'expected_source_revision': expectedSourceRevision,
+      'expected_fingerprint': expectedFingerprint,
+    }),
   );
 
   @override

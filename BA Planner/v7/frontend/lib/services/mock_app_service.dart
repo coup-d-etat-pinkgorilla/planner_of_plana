@@ -17,6 +17,8 @@ import 'planning_protocol_client.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
 import 'tactical_service.dart';
+import 'tactical_v2_service.dart';
+import 'mock_tactical_v2_writes.dart';
 
 enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 
@@ -41,6 +43,7 @@ class MockAppService
         RepositoryInventoryReviewService,
         ScannerService,
         TacticalService,
+        TacticalEvidenceWriteService,
         DiagnosticsService {
   MockAppService({
     AppServiceState? initialState,
@@ -2115,9 +2118,10 @@ class MockAppService
     }
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
-    // 7경로와 같은 범위: 프로필(학생·인벤토리·목표·이력)·계획·프리셋·시나리오·전술 v1. Mock에는 전술 v2·
-    // 로컬 공유 저장이 없다(ProcessAppService만).
+    // 7경로와 같은 범위: 프로필(학생·인벤토리·목표·이력)·계획·프리셋·시나리오·전술 v1·전술 v2 FB-6 쓰기.
+    // Mock에는 전술 v2 로비·통계·로컬 공유 저장이 없다(ProcessAppService만).
     _tacticalStates.remove(profileId);
+    _tacticalV2.remove(profileId);
     _repositoryStates.remove(profileId);
     _currentHistories.remove(profileId);
     _mockInventoryReviews.remove(profileId); // FB-10b 표시는 프로필 파일 안(FB-2d 삭제 범위).
@@ -2728,6 +2732,90 @@ class MockAppService
     return response;
   }
 
+  // FB-6: 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관(mock_tactical_v2_writes.dart). v1 기록은 위 Mock v1
+  // 상태를 그대로 읽고, 이관 뒤 v1 새 쓰기는 `tactical_v1_read_only`. Mock에는 v2 로비·통계·추천·공유가 없다.
+  late final _tacticalV2 = MockTacticalV2Writes(
+    legacyState: _tactical,
+    clock: _historyClock,
+  );
+
+  @override
+  Future<TacticalEvidenceState> loadTacticalEvidenceState(
+    String profileId,
+  ) async => _tacticalV2.state(profileId);
+
+  @override
+  Future<TacticalMatchUpsertResult> upsertTacticalMatchV2({
+    required String profileId,
+    required TacticalMatchInputV2 match,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalV2.upsertMatch(
+    profileId: profileId,
+    match: match,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
+  Future<TacticalMatchDeleteResult> deleteTacticalMatchV2({
+    required String profileId,
+    required String matchId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalV2.deleteMatch(
+    profileId: profileId,
+    matchId: matchId,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
+  Future<TacticalJokboUpsertResult> upsertTacticalJokboV2({
+    required String profileId,
+    required TacticalJokboInputV2 jokbo,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalV2.upsertJokbo(
+    profileId: profileId,
+    jokbo: jokbo,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
+  Future<TacticalJokboDeleteResult> deleteTacticalJokboV2({
+    required String profileId,
+    required String jokboId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalV2.deleteJokbo(
+    profileId: profileId,
+    jokboId: jokboId,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  @override
+  Future<TacticalLegacyPreview> previewTacticalLegacyMigration(
+    String profileId,
+  ) async => _tacticalV2.preview(profileId);
+
+  @override
+  Future<TacticalLegacyCommitResult> commitTacticalLegacyMigration({
+    required String profileId,
+    required int expectedSourceRevision,
+    required String expectedFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalV2.commit(
+    profileId: profileId,
+    expectedSourceRevision: expectedSourceRevision,
+    expectedFingerprint: expectedFingerprint,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
   TacticalState _tactical(String profileId) {
     _requireNotDeletedProfile(profileId);
     return _tacticalStates[profileId] ??
@@ -2754,6 +2842,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _tacticalV2.requireV1Writable(profileId);
     final state = _tactical(profileId),
         revision = _tacticalRevision(profileId, expectedRevision);
     _tacticalStates[profileId] = TacticalState(
@@ -2772,6 +2861,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _tacticalV2.requireV1Writable(profileId);
     final state = _tactical(profileId),
         revision = _tacticalRevision(profileId, expectedRevision);
     _tacticalStates[profileId] = TacticalState(
@@ -2790,6 +2880,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _tacticalV2.requireV1Writable(profileId);
     final state = _tactical(profileId),
         revision = _tacticalRevision(profileId, expectedRevision);
     _tacticalStates[profileId] = TacticalState(
@@ -2808,6 +2899,7 @@ class MockAppService
     int expectedRevision,
     String idempotencyKey,
   ) async {
+    _tacticalV2.requireV1Writable(profileId);
     final state = _tactical(profileId),
         revision = _tacticalRevision(profileId, expectedRevision);
     _tacticalStates[profileId] = TacticalState(

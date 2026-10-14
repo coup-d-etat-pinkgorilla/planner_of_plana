@@ -154,6 +154,15 @@ class PlanningProtocolClient {
       'corrupt_data',
       'migration_required',
       'persistence_failed',
+      // FB-6(backend 2026-10-14 08:36): v2 기록·족보 쓰기·v7-v1 이관·v1 read-only typed 오류.
+      'import_review_required',
+      'import_source_changed',
+      'legacy_already_migrated',
+      'legacy_migration_required',
+      'lineage_conflict',
+      'migration_conflict',
+      'opponent_alias_required',
+      'tactical_v1_read_only',
       'unknown_method',
     },
     'scanner': {
