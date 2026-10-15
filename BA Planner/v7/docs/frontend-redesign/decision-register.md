@@ -182,6 +182,7 @@
 | FD-111 | 근거 패널 "풀리는 방법"(what-if)은 언제 넣는가? | Stats-Plan 오른쪽. 출처 F §5 근거 | — | FE7-i 이후. 그 전에는 "획득처 보기" 행만 | FE7-c, FE7-i | 워커 재량 |
 | FD-112 | C1에 크레딧 행을 넣는가(shortage rows 포함 여부 미확인)? | 출처 F §5 C1 | — | rows에 없으면 `grossScalars['credits']`로 크레딧 행 추가 | FE7-c | 워커 재량 |
 | FD-175 | 통계·이력의 "스냅샷 n회"는 무엇을 한 번으로 세는가?(저장은 학생·인벤토리 profile마다 scan 세션이 따로라 시안 "스냅샷 6회"와 실제 세션 수 12·31이 다르다) | Stats-Growth·Stats-Growth-Filter·Stats-Inventory 기준 데이터·B3 seg, 출처 FE7-h 발견 2·FE6-f 발견 5 | (a) 가까운 시각의 scan 세션(학생·인벤토리 모든 profile)을 한 "스캔 자리" = 스냅샷 1회로 묶는다(예: 앞 세션 끝에서 2시간 안) (b) 종류별로 따로 세어 "학생 6회 · 인벤토리 6회"로 표시 | **사용자 선택: 권장안 (a)** — (a). 시안 문구와 맞고, 한 번에 학생·아이템을 차례로 스캔하는 실제 사용과 맞는다. 묶음 간격 2시간은 구현 기본값(바꾸려면 FD 갱신). A6·B3 점은 묶음별 마지막 상태 | FE7-h 후속, FE6-f, FE8-c(계정 메타 "스냅샷") | 확정 2026-10-14 |
+| FD-176 | 전술 v2 기록에서 시도 횟수를 모르거나(옛 형식 이관 기록 등) 방어 기록의 공격 상대를 모를 때 저장할 수 있는가?(FB-6 쓰기 계약은 `attempt_count` 양의 정수 필수, 상대 identity·이름 필수 — FD-132 "상대 없이도 저장"과 불일치) | FE9-a 발견 3·4, XB FB-6b 설계 검토(frontend-redesign-status-backend.md 끝, `debug/xb_fb6b_design_review_20261015/output.md`) | (A) 시도: 현행 필수 / **null 허용**(키는 required, 값 null 또는 양의 정수) / 별도 known·unknown 표식 (B) 방어 상대: 현행 필수 / **방어 한정 null 쌍**(identity·이름 둘 다 null, 공격은 현행) / 별도 known·unknown 표식 | **사용자 선택: 권장안 (A) null 허용 · (B) 방어 한정 null 쌍** — null을 0·1·첫 시도로 바꾸지 않고 통계는 아는 값만(known/unknown 분모 구분), 상대 없는 방어 행은 가짜 identity를 만들지 않고 상대별 통계·추이에서 빠진다. 한쪽만 null·빈 문자열은 거부. 구현은 FB-6b(XB 계약·저장·회귀 + CF Dart strict DTO·Mock·화면) | FB-6b, FE9-a 후속 | 확정 2026-10-15 |
 
 ## §8 타이틀·홈·스캔 (FB-4, FB-10, FE8) — 스캔 탭 행 FD-140~156은 2026-10-06 추가
 

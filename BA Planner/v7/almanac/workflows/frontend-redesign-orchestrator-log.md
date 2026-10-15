@@ -3145,3 +3145,119 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - XB가 지시문(`xb-instruction-20261015.md`)을 받아 source30 exact30 커밋 `30d35f81`(frontend 0). CF DryRun: 병합 결과 = post 11/11. status-lane-b는 FE9-d 워커가 아직 쓰지 않은 상태(미커밋분 = scanwip 기록뿐)를 확인하고 `whole`에 포함 → **scanwipfunc `2026c953`**.
 - 남은 메인 frontend 미커밋 = 시각부 5파일(워커 표와 같은 줄 수) — FE8-g2 몫, `scan-student-review` 메인 기준 이미지는 시각부 포함 상태 그대로.
 - 동결 해제, XB FB-7 exact15 메인 window 대기 → CF `fb7-dart`. 다음 CF 후보에 FE8-f1 복귀(기능부 HEAD 반영으로 선행 조건 충족, 시각 hunk 보존 규칙 필요).
+
+## 2026-10-15 09:55 — Claude 워커 세션 사용 불가: XB 단독 작업 배정
+
+- 사용자: 지금은 XB 세션만 쓸 수 있다. FE9-d·FE7-j 프롬프트는 배정만 되고 시작 전(status 착수 기록 0) — 워커 세션이 생기면 그대로 쓴다.
+- XB 배정문 `debug/frontend_redesign_handoff/xb-instruction-20261015b.md`: ① FB-7 exact15 메인 반영 → Dart 영향 0 근거 → CF gate(CF 오케스트레이터가 실행) → **XB backend 단독 커밋**(fb7-dart는 CF 워커가 생기면 따로 — 새 메서드만 추가라 기존 Dart 동작 같음) ② FB-10 형식 고정(FE8-g2 착수 조건) 격리 준비·선언 ③ tactical schema 원소 타입 보강 ④ attempt_count null·방어 상대 필수 설계 검토(코드 0) ⑤ 막히면 XB 소유 P0-P6 잔여.
+
+
+## 2026-10-15 16:55 — 세션 시작·FB7 메인 반영 계획(XB→CF): 20261015b 수신
+
+- CF09:40 source30 **30d35f81+2026c953 왕복완료/동결해제**, 새배정 **xb-instruction-20261015b.md** 수신. HEAD **adb6f98e060f5bebce10d91aa9fd3670aff64809**, emptyindex. **debug/xb_fb7_main_overlay_20261015**에서 FB7 backend 단독 경로를 진행한다. FE9d/FE7j 워커 미착수·frontend수정금지 유지.
+- **반영 순서**: frozen source15/base15를 검증/기존7경로 원bytes 백업→core6/tests4/contracts3의 **13경로 exact bytes** 반영→project/lock2는 기존 ruff/UnityPy1.25.3 WIP의 원 TOML/package blocks를 유지하고 parser3만 합친 검증사본을 반영한다. 원파일은 artifacts/main-backup에 보존. Recognition 및 나머지 protected4114는 그대로다. selected exact15(커밋용/UnityPy1.25.4)는 기존 봉인 사본에 원byte 보존하며 main merged2 SHA와 명확히 구분한다. 향후 exact15 index projection은 기존 WIP를 통째로 stage하지 않는다.
+- **환경**: .venv의 기존파일/cfg를 보존하며 이미 SHA 확인된 openpyxl3.1.5/defusedxml0.7.1/et_xmlfile2 세 wheel만 로컬 .venv에 추가한다(전역환경 변경0/기존패키지upgrade0). Main 전체는 실제 반영 source/WIP + 이 local runtime을 사용해 표준 `py -3.11 -m unittest discover -s tests -v`를 실행하고, 정확 env/import출처·입력변경을 기록한다. 격리candidate1219를 메인 전체로 대체 주장하지 않는다.
+- **Dart 읽기 조사**: 실제 fixture reader는 tactical_fb6_dart_test.dart의 기존 tactical_fb6_writes_v2.json이며 원 SHA 유지. schema 참조는 주석, 새excel fixture/method 소비0이다. shared Python3 경로의 기존 caller는 tactical/profile_delete process E2E이므로 기존 suite 및 별도 응답비교 근거로 기존 wire 의미를 확인한다. 정적 조사만으로 기존동작0변경을 단정하지 않는다.
+- 이 계획 게시 후 반영, 실제15경로 bytes/SHA(merged2 구분)와 whole 시작/종료를 게시한다. **Dart 변경없는 CF main same-source gate 요청→새GREEN→XB exact15 커밋**, fb7dart는 별도후속. Main 반영 뒤 gate/commit 전 backend/contracts/tool 추가동결을 유지한다. 병렬heavy CF gate 방지를 위해 whole종료 전 CFgate시작을 요청하지 않는다. push0.
+
+
+## 2026-10-15 16:57 — FB7 메인 반영 완료(XB→CF): paths15/SHA·기존 WIP 보존
+
+- 계획 게시 뒤 실제 **15경로**를 반영했다. exact13 + project/lock2 WIP 보존 병합이다. main protected4114→4122, 이15경로 외 변경0·인식/CF WIP 보존·emptyindex·commit/push0. **debug/xb_fb7_main_overlay_20261015/artifacts/overlay-receipt.json**, 원백업/main15-paths-sha.md/merged-lock-check가 근거다.
+- ruff0.16.9 및 모든 기존 nonroot lock package blocks 원bytes·UnityPy1.25.3 유지, parser3만추가; 원project는 새2dependency 문자열 제거시 원byte복원된다. selected exact15/UnityPy1.25.4 후보는 봉인원본 그대로이며 향후 exact index projection과 working WIP 병합표현을 구분한다. local .venv도 기존파일/cfg 변경0·검증wheel3만 추가·전역설치0.
+- Dart 정적 소비 증거는 dart-consumer-proof.json. **새excel method/fixture 소비0·기존FB6fixture원SHA보존**, 기존 processcaller의 shared core3 의미는 이어지는 whole/기존요청비교로 검증한다. 아직 CF gate를 시작하지 말아 달라: 이제 표준 Python 전체를 시작하고 종료를 따로 알린다. 그 후 **CF gate 요청**으로 명시한다. 반영 이후 backend/contracts/tool 추가sourcefreeze 유지, 후속FB10은 격리 사본만 사용한다.
+
+| Path | Bytes | SHA256 | Main representation |
+|---|---:|---|---|
+| `backend/core/tactical_excel_reader.py` | 7965 | `d246529898bf79097bc8d5943b2cb493a3302cd60087ed4ce3e7b173ce3eae0b` | exact selected |
+| `backend/core/tactical_excel_interpreter.py` | 25856 | `fc8130f2e680d14961969108e83ed404e314e4f099b6c097d4dc1a060d314111` | exact selected |
+| `backend/core/tactical_excel_store.py` | 9225 | `4989d6a9bded7c36e98439bff9ce67e29cce1a57d5634cbef756c291f33774c5` | exact selected |
+| `backend/core/tactical_fb6_store.py` | 21222 | `025820a4d1272ff368f7449c85df363ab8ec2df6ac6cd87ceddba9866cebe7ff` | exact selected |
+| `backend/core/tactical_v2.py` | 59340 | `490fb716466c44b64f44e45699df8b81c7b5509d2fe77f62ed306f3e89883ff9` | exact selected |
+| `backend/core/tactical_store.py` | 16962 | `5e621e2b94de507efa798cceb10e6899bebd8633a16e8795bbdf0081e98fb356` | exact selected |
+| `backend/tests/test_tactical_excel_reader.py` | 6219 | `784b4cfb1d80520aa8228043d4fcd4e9053a9fb8cdefd0d9375b733c6a279bbe` | exact selected |
+| `backend/tests/test_tactical_excel_interpreter.py` | 20938 | `d0c4db475003c4746e88801a06f2e802ae37d874cbaa5432f2587dd6cc7e7d42` | exact selected |
+| `backend/tests/test_tactical_excel_store.py` | 18140 | `f89c1028d129cf95b7e3799d490547aa752c6e5a6c8cc6f21c37886b8309feb4` | exact selected |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | `2dc35c24c5a84b5ab9cd2e9e96575ef7c3b423c78faffed722aba6b0ace1558b` | exact selected |
+| `backend/pyproject.toml` | 692 | `2bf94845013372f0d208c0f32805b984a53be84d8f08a7af5966a635074677b3` | merged existing WIP; selected commit blob kept separately |
+| `backend/uv.lock` | 146492 | `21f50f4c60f26ce4e81154b3d8fec7c4dc38eda4f8702e754a789d5275bcae79` | merged existing WIP; selected commit blob kept separately |
+| `contracts/tactical-protocol-v2.schema.json` | 119463 | `3e00e82027cb4eecca753c3ac3dce5515067f4e69448ef00ab57ef07fc9f08fa` | exact selected |
+| `contracts/fixtures/tactical_excel_v2.json` | 36860 | `b8c774827a8b5fdae660fc033df96ebd23f38d2759a67257a210bac4eb4e88a3` | exact selected |
+| `contracts/README.md` | 94174 | `4b6fe7005172f5acfe04dd41e57d0c971d96ad69e013c6bd598f769a2b9e5827` | exact selected |
+
+
+## 2026-10-15 16:58 — 표준 Python 전체 시작(XB→CF): FB7 main actual input
+
+- 실제 main backend에서 **py -3.11 -m unittest discover -s tests -v**를 시작한다. source15 반영+기존recognition/C6/ruff/UnityPy1.25.3 WIP를 그대로 포함한다. local .venv parser3/라이브러리를 PYTHONPATH로 명시하며 core/test는 main에서만 로드되는지 audit receipt를 남긴다. 원격/격리 사본 전체1219를 이 메인 전체로 대신하지 않는다.
+- **CF heavy gate는 종료 알림 뒤** 실행 요청한다. 현재 backend/contracts/tool sourcefreeze, timeout/skip/exclusion/golden 완화0·실profile/게임·공용store/lock쓰기0·commit/push0. 로그 debug/xb_fb7_main_overlay_20261015/artifacts/python-full.log.
+
+
+## 2026-10-15 17:05 — FB-10 형식 고정 선언(XB→CF): FE8-g2 기존 학생 진행 subset 재확정
+
+- 배정20261015b 2번·workflow FE8-g2/스캐너변동대응/status-backend FB10·기존 **20261013 18:18 부분고정/CF 수용**을 현재 HEAD+source30 기준으로 확인했다. **FE8-g2 baseline은 기존 이벤트로 착수 가능**(FE8-f1/f2 등 나머지 선행조건은 CF 소유). 새 wire key/method/runtime producer 변경0이다. live5·early candidate를 새 필수조건으로 몰래 추가하지 않는다.
+- **고정 범위**: protocol/type/method, session_id/generation/sequence/scan_kind/event_kind; phase; progress **current/total|null/message_key**; feedback **student_id/field/values object**; 기존 candidate revision/batch-final; paused/resumed reason; terminal outcome/error. phase/message_key/field/values의 값은 확장가능하다. unknown total과 zero를 구별하며 progress.current를 approved/changed/new KPI로 바꾸지 않는다. identify values={}라 성장5값은 unknown, 방금 읽은학생은 feedback 관측값이며 승인후보/저장기록이 아니다. **history attribution: contracts/scan-commit-history-context-v1.schema.json** 유지.
+- **추가 계약 초안/격리 검증**: debug/xb_fb10_fe8g2_freeze_20261015/artifacts/candidate의 **source4** = 새 subset schema·synthetic event9 fixture·README·실제 _SessionProgress/cursor/취소/paused 계약 test. 기존 scanner schema를 $ref하는 additive 문서이며 기존 schema/producer bytes 변경0. **14/0.030s PASS**, 외부 core/test import0, main4122변경0. coverage-and-gaps.md가 이미HEAD/더필요한것/제외범위 표다. schema/fixture를 메인에 게시했다고 주장하지 않는다.
+- **Dart 사전목록**: 신규 DTO/method 필수0. 후속 CF는 새 fixture대조·FE8g2 view에서 current/total/message_key/feedback/cursor를 소비하면 된다. 실제 live fields 필요 시 별도 계약·batch/terminal/수명검증 후 새 목록. 크레딧/엘리그마·live5/earlystream/fullFB10·g3/g4/g5 전범위는 이번 범위 밖이다.
+- 현재 FB7 main 전체 실행 중이며 이4경로 **메인 반영/커밋0**. FB7 gate/커밋 후 별도계획→source4 같은입력검증/CF gate 뒤 반영·커밋 순서를 조율한다. **지금 CF heavy gate 요청이 아니다**. 상세·SHA는 **debug/xb_fb10_fe8g2_freeze_20261015/output.md**.
+
+
+## 2026-10-15 17:08 — FB-6b 설계 검토 완료(XB→CF): attempt null·방어 상대 미상, 코드0
+
+- 배정20261015b 4번에 따라 **frontend-redesign-status-backend.md 끝 'FB-6b 설계 검토'**에 두 선택지 표를 게시했다. 현재 일반write 양의 attempt/legacy null과 FD132의 방어 상대 생략 불일치를 실제코드로 확인했다. **권장안(A)=required키 유지+null 또는 양의int, (B)=방어 한정 identity/name 둘 다 null**이며 사용자·CF 결정 전 적용하지 않는다.
+- 현행유지/null/별도표식 각각 계약·Dart·atomic 저장·idempotency·통계/공유·이관 영향을 적었다. null을0/1/첫시도로 만들지 않고 unknown 분모를 구별, globalunknown identity로 서로다른사람 병합금지. 기존 share attempt_index는 별도관측이며 자동유도하지 않는다. 기존 legacy명/별칭 자동정리·FB7 미확정횟수 정책완화0.
+- 근거 **debug/xb_fb6b_design_review_20261015/output.md**, design-review.md/source-read-pins.json. runtime/schema/source변경0·실profile/공용store/연구/골든쓰기0·메인FB7freeze 유지/commit·push0. 이 설계선택은 사용자·CF 몫이며 FB7 기존계약 커밋을 막지 않는다.
+
+
+## 2026-10-15 17:13 — 표준 Python 전체 종료(XB→CF): FB7 main PASS_MAIN_FB7_STANDARD_WHOLE
+
+- 실제 main 표준 전체 **1345/903.354s OK**, error0/failure0, process import receipts22/main밖core-test0, unexpectedinput0. 상세 debug/xb_fb7_main_overlay_20261015/artifacts/python-full-receipt.json. timeout/skip/exclusion/golden완화0/commit·push0. **Heavy Python은 종료됐다**. 최종 기존응답비교·Almanac/diff 및 같은source 표 검증 후 CF gate 요청을 별도 게시한다.
+
+
+## 2026-10-15 17:15 — CF gate 요청(XB): FB7 main15·Dart 변경0·backend 단독 커밋
+
+- 배정20261015b 1번의 실제 main 반영/표준전체가 끝났다. **Heavy Python 종료**, 지금 **메인 frontend/tool/fe_gate.ps1** 같은소스 gate를 요청한다. Dart 코드 변경없이 기존 analyze/test/process/golden을 실행해 달라. 새GREEN stamp/summary와 main15(merged2 포함) SHA 동일 회신을 받으면 XB는 **frozen selected exact15만 index projection**으로 커밋하고 해시를 회신한다. fb7dart 새 DTO/Mock/화면연결은 별도후속이므로 이번 backend커밋을 막지 않는다.
+- main 표준 **1345/903.354s OK**, failure/error/skip/exclusion/timeout/golden완화0. process import receipts **22**, main밖 core/test0, 예상외입력변경0·main protected4122 불변. 기존격리1219와 별개이며 이번은 actual main WIP/UnityPy1.25.3/local parser3 입력이다. `python-full-receipt.json`/whole-inputs maps/import receipts에 근거가 있다.
+- **기존 Dart 영향 확인**: 새excel fixture/method 참조0, tactical schema 참조는 주석, 실제Dart reader는 기존 **tactical_fb6_writes_v2.json 원SHA 유지**. 기존 core3를 백업본/새메인으로 각각 로드해 시각/UUID 입력만 고정한 **기존 응답12/28596bytes SHA9481b6d5…가 완전 동일**(필드 삭제·치환0). actual main **기본 core.backend_process CSV4+XLSX4 JSONL**, schema request/response16·원파일보존·파일삭제뒤 재시작 원요청retry PASS. 라이브러리4는 local.venv, UnityPy1.25.3, main밖core0. 이근거의적용범위만주장하며 전체모든상황의새계약연결완료로쓰지않는다.
+- **WIP 보존**: exact13 source bytes + project/lock2 parser-only 병합. 새parser추가분만제거하면 **원project/lock 전체byte가 정확복원**, 기존패키지/ruff/UnityPy1.25.3·인식/CF WIP 보존. selected commit용 exact15의2config(본래UnityPy1.25.4)는봉인그대로이며 지금main actual merged2와구분한다. 이전selected1219/copy-runtime8와이번main whole/runtime8를각각보존한다. `exact15-commit-plan.json`은readonly준비이며 stage0/commit0/push0.
+- 반영이후 main backend/contracts/tool 추가freeze 유지. FB10 source4는 **격리**만(14PASS·고정선언게시), FB6b는 **설계문서만**(코드0). Tactical nested schema 구현은 **FB7 커밋 뒤** 배정순서를지킨다. 근거 **debug/xb_fb7_main_overlay_20261015/output.md**를 최종검사뒤마지막으로봉인한다.
+
+| Path | Bytes | SHA256 | Main representation |
+|---|---:|---|---|
+| `backend/core/tactical_excel_reader.py` | 7965 | `d246529898bf79097bc8d5943b2cb493a3302cd60087ed4ce3e7b173ce3eae0b` | exact selected |
+| `backend/core/tactical_excel_interpreter.py` | 25856 | `fc8130f2e680d14961969108e83ed404e314e4f099b6c097d4dc1a060d314111` | exact selected |
+| `backend/core/tactical_excel_store.py` | 9225 | `4989d6a9bded7c36e98439bff9ce67e29cce1a57d5634cbef756c291f33774c5` | exact selected |
+| `backend/core/tactical_fb6_store.py` | 21222 | `025820a4d1272ff368f7449c85df363ab8ec2df6ac6cd87ceddba9866cebe7ff` | exact selected |
+| `backend/core/tactical_v2.py` | 59340 | `490fb716466c44b64f44e45699df8b81c7b5509d2fe77f62ed306f3e89883ff9` | exact selected |
+| `backend/core/tactical_store.py` | 16962 | `5e621e2b94de507efa798cceb10e6899bebd8633a16e8795bbdf0081e98fb356` | exact selected |
+| `backend/tests/test_tactical_excel_reader.py` | 6219 | `784b4cfb1d80520aa8228043d4fcd4e9053a9fb8cdefd0d9375b733c6a279bbe` | exact selected |
+| `backend/tests/test_tactical_excel_interpreter.py` | 20938 | `d0c4db475003c4746e88801a06f2e802ae37d874cbaa5432f2587dd6cc7e7d42` | exact selected |
+| `backend/tests/test_tactical_excel_store.py` | 18140 | `f89c1028d129cf95b7e3799d490547aa752c6e5a6c8cc6f21c37886b8309feb4` | exact selected |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | `2dc35c24c5a84b5ab9cd2e9e96575ef7c3b423c78faffed722aba6b0ace1558b` | exact selected |
+| `backend/pyproject.toml` | 692 | `2bf94845013372f0d208c0f32805b984a53be84d8f08a7af5966a635074677b3` | merged existing WIP; selected commit blob kept separately |
+| `backend/uv.lock` | 146492 | `21f50f4c60f26ce4e81154b3d8fec7c4dc38eda4f8702e754a789d5275bcae79` | merged existing WIP; selected commit blob kept separately |
+| `contracts/tactical-protocol-v2.schema.json` | 119463 | `3e00e82027cb4eecca753c3ac3dce5515067f4e69448ef00ab57ef07fc9f08fa` | exact selected |
+| `contracts/fixtures/tactical_excel_v2.json` | 36860 | `b8c774827a8b5fdae660fc033df96ebd23f38d2759a67257a210bac4eb4e88a3` | exact selected |
+| `contracts/README.md` | 94174 | `4b6fe7005172f5acfe04dd41e57d0c971d96ad69e013c6bd598f769a2b9e5827` | exact selected |
+
+
+## XB 보고 — 2026-10-15 17:15: FB7 main15/whole/runtime 검증 완료·CF gate 요청, FB10 격리·FB6b 설계
+
+- **FB7 actual main 반영 완료**: source15(13exact + project/lock2 WIP 병합), protected4114→4122. standard **1345/903.354s OK**, 오류/실패/skip/timeout/exclusion/golden완화0, import receipts22/밖core-test0·예상외source변경0. 기존 wire 응답12 canonical28596bytes exact동일, 실제 main local.venv **default backend_process CSV4+XLSX4/schema16 PASS**·원본보존·파일삭제후재시작 exactretry. UnityPy1.25.3·ruff·인식WIP 유지, parser3만추가, old.venv파일/cfg변경0, project/lock은신규추가분제거시원byte복원. 전체실행종료/CF동시heavy0을알렸다.
+- **CF gate 요청 게시**: main frontend/test 수정0·새Dart method/fixture소비0/기존FB6fixture원SHA유지. **CF 새 same-source GREEN→XB selected exact15 indexprojection 단독커밋**(frozen config1.25.4와mainWIP1.25.3병합2를명시구분). 아직stage/commit0/push0이며 backend/contracts/tool 추가freeze. 후속fb7dart는CF워커가능할때. 상세 **debug/xb_fb7_main_overlay_20261015/output.md**, main15-paths-sha/legacy-comparison/runtime/whole/commit-plan이근거다.
+- **FB10**: **debug/xb_fb10_fe8g2_freeze_20261015/output.md**, 이전CF수용FE8g2기존형식재확정(envelope/phase/progress current/total|null/message_key/feedback/control/terminal/batchfinal). additive subset schema/fixture9/README/test **격리source4·14PASS**, runtime/wire추가0/main반영0. history **contracts/scan-commit-history-context-v1.schema.json**. live5/earlystream/currency/fullFB10/g3-g5는범위밖이다.
+- **FB6b**: **debug/xb_fb6b_design_review_20261015/output.md**, status-backend끝 선택지/계약/저장/통계/이관표게시. 권장attempt null + defense상대null쌍은 **사용자·CF 결정전 코드변경0**. null→0/1 및미상상대전역병합금지. **schema 원소타입 구현은 FB7커밋뒤** 현재미착수다.
+- **보존/잔여**: source30 XB30d35f81+CF2026c953 왕복완료수신, 현HEADadb6f98e060f5bebce10d91aa9fd3670aff64809. 기존CF시각부5·recognition/C6/ruff/lock WIP·실profile·공용store/ba-data.lock/연구/게임/골든보존. Native publication/M3/M4/O3/전체P0-P6 완료미선언. 현재실제외부대기는새CFgate회신이다.
+
+
+## 2026-10-15 17:18 — XB 보고: FB7 P6-6/backend 배포 복사 경로 audit 완료
+
+- 기존 **sync_windows_release.ps1 Copy-BackendRuntime**은 core/data/assets와 local.venv의 .pyc 외 모든파일을 복사하므로 새FB7 core3/parser3의 **207파일이 기존복사선택에 포함**됨을 원경로/SHA로확인했다. 이번필요범위에서 buildscript 변경은없다. 실제 main runtime8 PASS와 구분한 static packaging 근거다.
+- 현재 release/backend 존재=True, 해당 신규 core/parser 대상의 존재는 readiness.json에각각기록했다. **이번에 release를 갱신하거나 native build/실행/배포하지 않았다**. 새CFgate/FB7commit 뒤 정식배포 재생성은별도후속이며 P6/P7/native완료선언0.
+- 근거 **debug/xb_fb7_release_audit_20261015/output.md**, selected-file-pins/readiness. Main4122·frontend/source/release/기존환경변경0·heavy0/commit·push0. FB7 same-source CFgate 대기와 backend/contracts/tool freeze를유지한다.
+
+## 2026-10-15 17:55 — FB-7 같은 소스 gate GREEN, FD-176 사용자 결정
+
+- XB 작업 결과(배정문 b): FB-7 exact15 메인 반영(15/15 SHA 확인, Python 전체 1345 OK, Dart 소비 0 근거), FB-10 형식 고정 재확정(FE8-g2는 기존 이벤트로 착수 가능 — 새 Dart DTO 필수 0, 격리 source4 subset schema·fixture), FB-6b 설계 검토, FB-7 배포 복사 경로 audit.
+- CF gate `20261015_172230` **GREEN**(analyze 0, 382 + 391 + 659 + 393, process 87, golden 49) → XB exact15 단독 커밋 진행 회신(backend 로그 17:45). `fb7-dart`는 CF 워커 가능 시.
+- **FD-176**(사용자 결정): 전술 v2 쓰기 `attempt_count` null 허용, 방어 기록 상대 identity·이름 null 쌍 허용(공격은 현행). FB-6b slice로 XB 배정(Dart 영향 있음 → `fb6b-dart`와 같은 gate).
+- FE8-g2 착수 조건(FB-10 형식 고정)은 충족. 다만 선행 FE8-f1·f2가 CF 워커 몫.
