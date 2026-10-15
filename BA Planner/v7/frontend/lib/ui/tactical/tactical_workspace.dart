@@ -6,9 +6,11 @@
 //   (resize 모드 — 행 폭이 사선을 따라 준다, 공용 스크롤바 · 포그).
 // - S2 로비 스캔(가운데 위, FE9-c 자리): 제목 + "준비 중". 스캔 버튼 없음.
 // - S3 기록 작성(가운데 아래): 머리 줄(종류 · 시각, 시즌 칩, 공격/방어 칩), 상대 덱 캡션 + (i), 상대 유저 · 상대 덱 6칸 ·
-//   출처 범례, 내 덱 캡션, 내 덱 6칸 + "지난 기록 덱 복사" · "족보에서 가져오기"(FE9-d, 비활성), 결과 seg · 시도 스테퍼,
-//   메모, 저장 · 복제해서 새 기록 · 지우기 + 상태 문구(자동 연결 · 오류 · 저장할 수 없는 이유).
-// - S4 이 시그니처의 족보(오른쪽, FE9-d 자리): 제목 + "준비 중".
+//   출처 범례, 내 덱 캡션, 내 덱 6칸 + "지난 기록 덱 복사" · "족보에서 가져오기"(FE9-d: S4에서 고른 카드), 결과 seg · 시도 스테퍼,
+//   메모, 저장 · 복제해서 새 기록 · 지우기 + 상태 문구(자동 연결 · 오류 · 저장할 수 없는 이유). 내 덱 줄은 족보 카드를 받는
+//   놓을 자리다(FE9-d: 끄는 동안 강조 + 힌트 알약 "놓으면 … 덱으로 복사 · 위치 포함", 놓을 수 없으면 이유).
+// - S4 이 시그니처의 족보(오른쪽, FE9-d): 대상 방어 덱 · KPI 4 · 끌기 안내 · 족보 카드(끌 수 있다). 이관 전에는 FE9-a와 같은
+//   제목 + "준비 중".
 // 좌표는 `tactical_studio_layout.dart`의 Studio 문서와 [TacticalMetrics]다. 작은 창에서는 요소 세로 위치 · 높이와 내용을 같은
 // 비율로 줄이고 가로는 섹션 사선을 따른다(화면 전체를 한 번에 줄이지 않는다).
 import 'dart:math' as math;
@@ -16,6 +18,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../services/tactical_v2_service.dart';
 import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
@@ -28,6 +31,8 @@ import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/skew_controls.dart';
 import '../studio/tactical_studio_layout.dart';
 import 'tactical_deck_widgets.dart';
+import 'tactical_jokbo_view.dart';
+import 'tactical_jokbo_widgets.dart';
 import 'tactical_records_view.dart';
 
 /// 아직 그리지 않는 자리(S2 · S4 · 분석 · 슬롯, 통계 "준비 중"과 같은 문구).
@@ -96,6 +101,56 @@ class TacticalMigrationBand {
 /// 기록 작성 섹션 상태 문구 종류.
 enum TacticalEditorStatusTone { none, linked, error, hint }
 
+/// S4 "이 시그니처의 족보" 값(FE9-d).
+@immutable
+class TacticalJokboPanel {
+  const TacticalJokboPanel({
+    required this.targetCaption,
+    required this.targetName,
+    required this.targetDeck,
+    required this.kpis,
+    required this.cards,
+    required this.selectedId,
+    required this.onSelect,
+    this.message,
+    this.readError,
+    this.onRetry,
+  }) : pending = false;
+
+  /// 이관 전 · 계정 없음: FE9-a와 같은 "준비 중" 자리.
+  const TacticalJokboPanel.pending()
+    : pending = true,
+      targetCaption = '',
+      targetName = '',
+      targetDeck = null,
+      kpis = null,
+      cards = const [],
+      selectedId = null,
+      onSelect = null,
+      message = null,
+      readError = null,
+      onRetry = null;
+
+  final bool pending;
+
+  /// 대상 방어 덱 줄("대상 방어 덱" · 상대 이름 · S3 상대 덱).
+  final String targetCaption, targetName;
+  final TacticalDeckV2? targetDeck;
+
+  /// 공개 시그니처가 없으면 null(KPI · 안내를 그리지 않는다).
+  final TacticalJokboKpis? kpis;
+  final List<TacticalJokboCard> cards;
+  final String? selectedId;
+  final ValueChanged<TacticalJokboCard>? onSelect;
+
+  /// 카드 대신 보일 문구(공개 칸 없음 · 족보 없음).
+  final String? message;
+
+  /// 통계 · 추이 · 추천을 읽지 못했을 때 안내 줄 문구(카드는 기록에서 센 값으로 남는다).
+  final String? readError;
+  final VoidCallback? onRetry;
+}
+
 /// 4섹션 화면. 상태는 화면(`TacticalPage`)이 갖고 이 위젯은 그리기와 콜백만 한다.
 class TacticalWorkspace extends StatelessWidget {
   const TacticalWorkspace({
@@ -128,6 +183,11 @@ class TacticalWorkspace extends StatelessWidget {
     required this.onDelete,
     required this.statusText,
     required this.statusTone,
+    this.jokbo = const TacticalJokboPanel.pending(),
+    this.onFromJokbo,
+    this.fromJokboHint = tacticalPendingText,
+    this.dropReason,
+    this.onDropJokbo,
   });
 
   // --- S1 ---
@@ -169,6 +229,19 @@ class TacticalWorkspace extends StatelessWidget {
   final VoidCallback? onDelete;
   final String? statusText;
   final TacticalEditorStatusTone statusTone;
+
+  // --- S4 · 복사 (FE9-d) ---
+  final TacticalJokboPanel jokbo;
+
+  /// "족보에서 가져오기": S4에서 고른 카드를 내 덱에 복사한다. null이면 흐림.
+  final VoidCallback? onFromJokbo;
+
+  /// "족보에서 가져오기" 툴팁(할 일 또는 할 수 없는 이유).
+  final String fromJokboHint;
+
+  /// 내 덱 줄에 족보를 놓을 수 없는 이유(null = 놓을 수 있다).
+  final String? dropReason;
+  final ValueChanged<TacticalJokboCard>? onDropJokbo;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -223,9 +296,7 @@ class TacticalWorkspace extends StatelessWidget {
     );
     return SectionFrame(
       section: tacticalSection(tacticalRecordsSectionId),
-      surfaceKey: const ValueKey(
-        'tactical-section-$tacticalRecordsSectionId',
-      ),
+      surfaceKey: const ValueKey('tactical-section-$tacticalRecordsSectionId'),
       children: [
         _placed(
           'tactical-slot-records-title',
@@ -455,40 +526,168 @@ class TacticalWorkspace extends StatelessWidget {
 
   Widget _jokboSection(Size size, double scale) {
     final edges = _SectionEdges.of(size, tacticalJokboSectionId);
-    return SectionFrame(
-      section: tacticalSection(tacticalJokboSectionId),
-      surfaceKey: const ValueKey('tactical-section-$tacticalJokboSectionId'),
-      children: [
-        _placed(
-          'tactical-slot-jokbo-title',
-          edges.slot(TacticalMetrics.jokboTitle, scale),
-          scale,
-          Padding(
-            padding: const EdgeInsets.only(left: 18.3, right: 14),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('이 시그니처의 족보', style: _display(18)),
-            ),
-          ),
+    final panel = jokbo;
+    final title = _placed(
+      'tactical-slot-jokbo-title',
+      edges.slot(TacticalMetrics.jokboTitle, scale),
+      scale,
+      Padding(
+        padding: const EdgeInsets.only(left: 18.3, right: 14),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text('이 시그니처의 족보', style: _display(18)),
         ),
-        _placed(
-          'tactical-slot-jokbo-body',
-          edges.slot(TacticalMetrics.jokboBody, scale),
-          scale,
-          const Padding(
-            padding: EdgeInsets.only(left: 23.3, right: 14),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                tacticalPendingText,
-                key: ValueKey('tactical-jokbo-pending'),
-                style: TextStyle(color: _mutedColor),
+      ),
+    );
+    final targetDeck = panel.targetDeck;
+    if (panel.pending || targetDeck == null) {
+      return SectionFrame(
+        section: tacticalSection(tacticalJokboSectionId),
+        surfaceKey: const ValueKey('tactical-section-$tacticalJokboSectionId'),
+        children: [
+          title,
+          _placed(
+            'tactical-slot-jokbo-body',
+            edges.slot(TacticalMetrics.jokboBody, scale),
+            scale,
+            const Padding(
+              padding: EdgeInsets.only(left: 23.3, right: 14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  tacticalPendingText,
+                  key: ValueKey('tactical-jokbo-pending'),
+                  style: TextStyle(color: _mutedColor),
+                ),
               ),
             ),
           ),
+        ],
+      );
+    }
+    final kpis = panel.kpis;
+    final message = panel.message;
+    final children = <Widget>[
+      title,
+      _placed(
+        'tactical-slot-jokbo-target',
+        edges.slot(TacticalMetrics.jokboBody, scale),
+        scale,
+        TacticalJokboTargetRow(
+          caption: panel.targetCaption,
+          name: panel.targetName,
+          deck: targetDeck,
+        ),
+      ),
+      if (kpis != null) ...[
+        _placed(
+          'tactical-slot-jokbo-kpi',
+          edges.slot(TacticalMetrics.jokboKpi, scale),
+          scale,
+          TacticalJokboKpiRow(kpis: kpis),
+        ),
+        _placed(
+          'tactical-slot-jokbo-hint',
+          edges.slot(TacticalMetrics.jokboHint, scale),
+          scale,
+          TacticalJokboHintRow(error: panel.readError, onRetry: panel.onRetry),
         ),
       ],
+    ];
+    if (message != null) {
+      children.add(
+        _placed(
+          'tactical-slot-jokbo-message',
+          edges.slot(
+            TacticalSlotSpec(
+              top: kpis == null
+                  ? TacticalMetrics.jokboKpi.top
+                  : TacticalMetrics.jokboCardTop,
+              height: 60,
+              leftGap: 24,
+              rightGap: 22,
+            ),
+            scale,
+          ),
+          scale,
+          TacticalJokboMessage(text: message),
+        ),
+      );
+    } else {
+      children.addAll(_jokboCards(edges, scale));
+    }
+    return SectionFrame(
+      section: tacticalSection(tacticalJokboSectionId),
+      surfaceKey: const ValueKey('tactical-section-$tacticalJokboSectionId'),
+      children: children,
     );
+  }
+
+  /// 족보 카드(높이 128 · 간격 8, 왼쪽 사선을 따라 넓어진다). 섹션에 들어가는 만큼만 놓고, 넘치면 "족보 n개 중 k개" 한 줄.
+  List<Widget> _jokboCards(_SectionEdges edges, double scale) {
+    final cards = jokbo.cards;
+    const step = TacticalMetrics.jokboCardHeight + TacticalMetrics.jokboCardGap;
+    final room =
+        (edges.bottom - edges.top) / scale -
+        TacticalMetrics.jokboCardTop -
+        TacticalMetrics.jokboListBottomGap +
+        TacticalMetrics.jokboCardGap;
+    final fit = math.max(0, (room / step).floor());
+    final withMore = math.max(
+      0,
+      ((room - TacticalMetrics.jokboMoreHeight - TacticalMetrics.jokboCardGap) /
+              step)
+          .floor(),
+    );
+    final shown = cards.length <= fit ? cards.length : withMore;
+    final onSelect = jokbo.onSelect;
+    return [
+      for (var index = 0; index < shown; index++)
+        _placed(
+          'tactical-slot-jokbo-card-$index',
+          edges.slot(
+            TacticalSlotSpec(
+              top: TacticalMetrics.jokboCardTop + index * step,
+              height: TacticalMetrics.jokboCardHeight,
+              leftGap: 24,
+              rightGap: 22,
+            ),
+            scale,
+          ),
+          scale,
+          TacticalJokboCardTile(
+            key: ValueKey('tactical-jokbo-card-${cards[index].id}'),
+            card: cards[index],
+            selected: cards[index].id == jokbo.selectedId,
+            onSelect: onSelect == null ? null : () => onSelect(cards[index]),
+            scale: scale,
+          ),
+        ),
+      if (shown < cards.length)
+        _placed(
+          'tactical-slot-jokbo-more',
+          edges.slot(
+            TacticalSlotSpec(
+              top: TacticalMetrics.jokboCardTop + shown * step,
+              height: TacticalMetrics.jokboMoreHeight,
+              leftGap: 24,
+              rightGap: 22,
+            ),
+            scale,
+          ),
+          scale,
+          Padding(
+            padding: const EdgeInsets.only(left: 15.9, right: 14),
+            child: Text(
+              '족보 ${cards.length}개 중 $shown개를 보입니다.',
+              key: const ValueKey('tactical-jokbo-more'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _mutedSmall,
+            ),
+          ),
+        ),
+    ];
   }
 
   // --- S3 기록 작성 -------------------------------------------------------------
@@ -632,49 +831,51 @@ class TacticalWorkspace extends StatelessWidget {
           'tactical-slot-my-row',
           edges.slot(TacticalMetrics.myRow, scale),
           scale,
-          DiagonalRow(
-            variant: DiagonalRowVariant.row,
-            padding: const EdgeInsets.symmetric(horizontal: 35.7),
-            child: Row(
-              children: [
-                TacticalDeckSlotRow(
-                  keyPrefix: 'tactical-my-deck',
-                  deck: draft.myDeck,
-                  portraitSize: Size(
-                    TacticalMetrics.mySlotPortrait.width,
-                    TacticalMetrics.mySlotPortrait.height,
-                  ),
-                  studentName: studentName,
-                  onSlotTap: !editable || onSlotTap == null
-                      ? null
-                      : (index) => onSlotTap(true, index),
-                ),
-                const Spacer(),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    TonalButton(
-                      key: const ValueKey('tactical-copy-last-deck'),
-                      label: '지난 기록 덱 복사',
-                      height: 32,
-                      fontSize: AppType.bodySmallSize,
-                      onPressed: editable ? onCopyLastDeck : null,
+          _dropTarget(
+            DiagonalRow(
+              variant: DiagonalRowVariant.row,
+              padding: const EdgeInsets.symmetric(horizontal: 35.7),
+              child: Row(
+                children: [
+                  TacticalDeckSlotRow(
+                    keyPrefix: 'tactical-my-deck',
+                    deck: draft.myDeck,
+                    portraitSize: Size(
+                      TacticalMetrics.mySlotPortrait.width,
+                      TacticalMetrics.mySlotPortrait.height,
                     ),
-                    const SizedBox(height: 8),
-                    const Tooltip(
-                      message: tacticalPendingText,
-                      child: TonalButton(
-                        key: ValueKey('tactical-from-jokbo'),
-                        label: '족보에서 가져오기',
+                    studentName: studentName,
+                    onSlotTap: !editable || onSlotTap == null
+                        ? null
+                        : (index) => onSlotTap(true, index),
+                  ),
+                  const Spacer(),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      TonalButton(
+                        key: const ValueKey('tactical-copy-last-deck'),
+                        label: '지난 기록 덱 복사',
                         height: 32,
                         fontSize: AppType.bodySmallSize,
-                        onPressed: null,
+                        onPressed: editable ? onCopyLastDeck : null,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(height: 8),
+                      Tooltip(
+                        message: fromJokboHint,
+                        child: TonalButton(
+                          key: const ValueKey('tactical-from-jokbo'),
+                          label: '족보에서 가져오기',
+                          height: 32,
+                          fontSize: AppType.bodySmallSize,
+                          onPressed: onFromJokbo,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -812,6 +1013,53 @@ class TacticalWorkspace extends StatelessWidget {
       ],
     );
   }
+
+  /// 내 덱 줄 = 족보 카드를 놓는 자리. 끄는 동안 줄을 넓힌 강조와 힌트 알약(시안 (783, 679))을 그린다.
+  Widget _dropTarget(Widget row) => DragTarget<TacticalJokboCard>(
+    onWillAcceptWithDetails: (_) => onDropJokbo != null && dropReason == null,
+    onAcceptWithDetails: (details) => onDropJokbo?.call(details.data),
+    builder: (context, candidates, rejected) {
+      final accepted = candidates.whereType<TacticalJokboCard>().firstOrNull;
+      final refused = accepted == null && rejected.isNotEmpty;
+      const inflate = TacticalMetrics.dropHighlightInflate;
+      return Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          row,
+          if (accepted != null || refused) ...[
+            Positioned(
+              left: -inflate,
+              top: -inflate,
+              right: -inflate,
+              bottom: -inflate,
+              child: IgnorePointer(
+                child: CustomPaint(
+                  key: const ValueKey('tactical-drop-highlight'),
+                  painter: TacticalDropHighlightPainter(
+                    accepted: accepted != null,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: TacticalMetrics.dropPillOffset.dx,
+              top: TacticalMetrics.dropPillOffset.dy,
+              height: TacticalMetrics.dropPillHeight,
+              child: IgnorePointer(
+                child: TacticalDropPill(
+                  text: accepted != null
+                      ? tacticalDropHintText(accepted.name)
+                      : dropReason ?? '',
+                  accepted: accepted != null,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    },
+  );
 
   Widget _status() {
     final text = statusText;

@@ -7,6 +7,12 @@
 // - v1 기록이 남아 있으면(컨트롤러 `migrationRequired`) S1에 이관 안내 띠를 띄우고, v1 기록을 읽기 전용 행으로 목록 뒤에 보인다.
 //   "가져오기"를 누를 때만 이관한다(자동 이관 없음).
 // - 학생 고르기 · 상대 고르기 · 지우기 확인은 공용 [BaModal]이다(AlertDialog 없음).
+// - FE9-d: S4 "이 시그니처의 족보"는 고른 기록(작성 중 초안)의 상대 덱 공개 시그니처로 [TacticalEvidenceReadService] 통계 ·
+//   추이 · 추천을 읽는다(시그니처 · 기록 revision · 상대 · 시즌이 바뀌면 디바운스 뒤 다시 질의, 늦게 온 응답은 세대 번호로 버린다).
+//   카드는 컨트롤러 족보 중 그 시그니처를 가진 것(FD-129)이다. 카드를 끌어 내 덱 줄에 놓거나 "족보에서 가져오기"를 누르면
+//   내 덱 초안을 그 공격 덱으로 채운다(저장하지 않는다, 공격 기록만). 이관 전에는 S4를 열지 않는다(FE9-a "준비 중" 그대로).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../services/app_clock.dart';
@@ -16,6 +22,7 @@ import '../../services/tactical_service.dart';
 import '../../services/tactical_v2_service.dart';
 import '../../tactical/tactical_records_controller.dart';
 import '../kit/ba_modal.dart';
+import '../tactical/tactical_jokbo_view.dart';
 import '../tactical/tactical_pickers.dart';
 import '../tactical/tactical_records_view.dart';
 import '../tactical/tactical_workspace.dart';
@@ -34,6 +41,30 @@ const tacticalNeedOpponentHint = '상대 이름을 입력해 주십시오.';
 const tacticalNeedAttemptHint = '시도 횟수를 정해 주십시오.';
 const tacticalInvalidInputText = '입력한 기록을 저장할 수 없습니다. 칸과 이름을 확인해 주십시오.';
 
+/// S4 · 족보 복사 문구(FE9-d).
+const tacticalJokboNoSignatureText =
+    '상대 덱에 로비 스캔 공개 칸(1번 · SP1 · SP2)이 없어 족보를 찾지 않았습니다.';
+const tacticalJokboEmptyText =
+    '이 공개 시그니처의 족보가 아직 없습니다. 공격 기록을 저장하면 같은 편성 족보가 생깁니다.';
+const tacticalJokboReadErrorText = '족보 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다.';
+const tacticalJokboDefenseText = '방어 기록에는 족보 덱을 복사할 수 없습니다. 공격 기록에서만 복사합니다.';
+const tacticalJokboBusyText = '저장하는 중에는 덱을 바꿀 수 없습니다.';
+const tacticalJokboUnavailableText = '지금은 덱을 바꿀 수 없습니다.';
+const tacticalJokboNoneText = '가져올 족보가 없습니다.';
+const tacticalJokboCopyHint = '오른쪽에서 고른 족보 덱을 내 공격 덱에 복사합니다. 저장은 따로 합니다.';
+
+/// S4 질의 디바운스(고른 기록 · 공개 칸이 잇따라 바뀔 때 마지막 것만 묻는다).
+const tacticalJokboQueryDelay = Duration(milliseconds: 200);
+
+/// S4 질의 조건. 하나라도 바뀌면 다시 묻는다(기록 revision이 오르면 통계도 바뀐다).
+typedef _JokboQuery = ({
+  String profileId,
+  String signature,
+  int revision,
+  String? opponentId,
+  String season,
+});
+
 class TacticalPage extends StatefulWidget {
   const TacticalPage({super.key, required this.service, this.reloadToken = 0});
   final AppService service;
@@ -47,6 +78,12 @@ enum _OpponentPickerMode { editor, filter }
 class _TacticalPageState extends State<TacticalPage> {
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
+      : null;
+
+  /// FE9-d S4 읽기(통계 · 추이 · 추천).
+  TacticalEvidenceReadService? get _reader =>
+      widget.service is TacticalEvidenceReadService
+      ? widget.service as TacticalEvidenceReadService
       : null;
 
   /// v1 읽기(이관 전 읽기 전용 목록). 쓰기는 하지 않는다.
@@ -87,6 +124,22 @@ class _TacticalPageState extends State<TacticalPage> {
   /// 새 기록 · 새 상대 ID 순번(같은 µs 시계에서도 겹치지 않게, 프로세스 전체).
   static int _idSequence = 0;
 
+  // --- S4 족보(FE9-d) ---
+  _JokboQuery? _jokboQuery;
+  Timer? _jokboTimer;
+  int _jokboGeneration = 0;
+  TacticalJokboReads? _jokboReads;
+  String? _jokboError;
+
+  /// 사용자가 고른 족보 카드(없으면 지금 내 덱과 같은 카드 → 첫 카드).
+  String? _selectedJokboId;
+
+  /// 마지막으로 그린 S4(버튼이 고른 카드를 찾는다).
+  TacticalJokboPanel _lastJokbo = const TacticalJokboPanel.pending();
+
+  /// 족보 덱을 복사한 뒤 상태 문구(다음 초안 변경까지).
+  String? _copyNotice;
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +175,8 @@ class _TacticalPageState extends State<TacticalPage> {
       widget.service.state.addListener(_connection);
       _detach();
       _attach();
+      _syncJokboQuery(null);
+      _jokboReads = null;
       _reload();
     } else if (old.reloadToken != widget.reloadToken) {
       _reload();
@@ -131,6 +186,8 @@ class _TacticalPageState extends State<TacticalPage> {
   @override
   void dispose() {
     _generation++;
+    _jokboGeneration++;
+    _jokboTimer?.cancel();
     widget.service.state.removeListener(_connection);
     _detach();
     _opponentText.dispose();
@@ -296,6 +353,8 @@ class _TacticalPageState extends State<TacticalPage> {
     _selectedKey = key;
     _draft = draft;
     _localError = null;
+    _copyNotice = null;
+    _selectedJokboId = null;
     _opponentText.text = draft.opponentName;
     _notesText.text = draft.notes;
   }
@@ -341,10 +400,14 @@ class _TacticalPageState extends State<TacticalPage> {
     return null;
   }
 
-  void _updateDraft(TacticalRecordDraft Function(TacticalRecordDraft) change) {
+  void _updateDraft(
+    TacticalRecordDraft Function(TacticalRecordDraft) change, {
+    String? notice,
+  }) {
     _controller?.clearError();
     setState(() {
       _localError = null;
+      _copyNotice = notice;
       _draft = change(_draft);
     });
   }
@@ -451,6 +514,185 @@ class _TacticalPageState extends State<TacticalPage> {
     if (name.isEmpty) return '순위 — · 최근 대전 —';
     final count = _rows.where((row) => row.opponentName == name).length;
     return '순위 — · 최근 대전 $count회';
+  }
+
+  // --- S4 족보 (FE9-d) ----------------------------------------------------------
+
+  /// [query]가 바뀌었으면 이전 질의를 버리고 디바운스 뒤 다시 묻는다. build에서 부른다(setState 없음).
+  void _syncJokboQuery(_JokboQuery? query) {
+    if (query == _jokboQuery) return;
+    _jokboQuery = query;
+    _jokboTimer?.cancel();
+    _jokboTimer = null;
+    final generation = ++_jokboGeneration;
+    _jokboError = null;
+    if (query == null) return;
+    _jokboTimer = Timer(
+      tacticalJokboQueryDelay,
+      () => _runJokboQuery(query, generation),
+    );
+  }
+
+  Future<void> _runJokboQuery(_JokboQuery query, int generation) async {
+    final reader = _reader;
+    if (reader == null || !mounted || generation != _jokboGeneration) return;
+    final asOf = tacticalUtcInstant(appClockNow(widget.service));
+    final opponentId = query.opponentId;
+    try {
+      final (statistics, trends, recommendation) = await (
+        reader.queryTacticalStatistics(
+          query.profileId,
+          TacticalStatsFilters(publicSignature: query.signature),
+        ),
+        reader.queryTacticalTrends(
+          query.profileId,
+          TacticalTrendFilters(publicSignature: query.signature, asOf: asOf),
+        ),
+        opponentId == null || query.season.isEmpty
+            ? Future<TacticalRecommendationResult?>.value()
+            : reader.queryTacticalRecommendations(
+                query.profileId,
+                TacticalRecommendationFilters(
+                  season: query.season,
+                  opponentIdentityId: opponentId,
+                  publicSignature: query.signature,
+                  asOf: asOf,
+                  topK: 10,
+                ),
+              ),
+      ).wait;
+      if (!mounted || generation != _jokboGeneration) return;
+      setState(() {
+        _jokboError = null;
+        _jokboReads = TacticalJokboReads(
+          signature: query.signature,
+          statistics: statistics.publicSignatures
+              .where((item) => item.signature == query.signature)
+              .firstOrNull,
+          freshness: [
+            for (final item in trends.freshness)
+              if (item.publicSignature == query.signature) item,
+          ],
+          recommendation: recommendation,
+        );
+      });
+    } catch (_) {
+      if (!mounted || generation != _jokboGeneration) return;
+      setState(() => _jokboError = tacticalJokboReadErrorText);
+    }
+  }
+
+  void _retryJokbo() {
+    final query = _jokboQuery;
+    if (query == null) return;
+    _jokboTimer?.cancel();
+    final generation = ++_jokboGeneration;
+    setState(() => _jokboError = null);
+    _runJokboQuery(query, generation);
+  }
+
+  /// S4 값. 이관 전 · 계정 없음이면 "준비 중" 자리.
+  TacticalJokboPanel _jokboPanel(TacticalRecordDraft current) {
+    final controller = _controller;
+    final profileId = _profile?.id;
+    if (controller == null ||
+        profileId == null ||
+        !_available ||
+        _migrationRequired) {
+      _syncJokboQuery(null);
+      return const TacticalJokboPanel.pending();
+    }
+    final name = current.opponentName.trim();
+    final caption = current.attack ? '대상 방어 덱' : '상대 공격 덱';
+    final targetName = name.isEmpty ? '—' : name;
+    final signature = tacticalPublicSignature(current.opponentDeck);
+    if (signature == null) {
+      _syncJokboQuery(null);
+      return TacticalJokboPanel(
+        targetCaption: caption,
+        targetName: targetName,
+        targetDeck: current.opponentDeck,
+        kpis: null,
+        cards: const [],
+        selectedId: null,
+        onSelect: null,
+        message: tacticalJokboNoSignatureText,
+      );
+    }
+    _syncJokboQuery((
+      profileId: profileId,
+      signature: signature,
+      revision: controller.revision ?? -1,
+      opponentId:
+          tacticalIdentityForName(
+            controller.state?.opponents ?? const [],
+            name,
+          ) ??
+          current.opponentIdentityId,
+      season: current.season.trim(),
+    ));
+    final reads = _jokboReads?.signature == signature ? _jokboReads : null;
+    final cards = tacticalSignatureJokboCards(
+      signature: signature,
+      jokbo: controller.jokbo,
+      matches: controller.matches,
+      statistics: reads?.statistics,
+      freshness: reads?.freshness ?? const [],
+      recommendations: reads?.recommendation?.recommendations ?? const [],
+    );
+    final error = _jokboError;
+    return TacticalJokboPanel(
+      targetCaption: caption,
+      targetName: targetName,
+      targetDeck: current.opponentDeck,
+      kpis: tacticalJokboKpis(
+        reads: reads,
+        cardCount: cards.length,
+        now: appClockNow(widget.service),
+      ),
+      cards: cards,
+      selectedId: tacticalEffectiveJokboSelection(
+        cards,
+        _selectedJokboId,
+        current.myDeck,
+      ),
+      onSelect: (card) => setState(() => _selectedJokboId = card.id),
+      message: cards.isEmpty ? tacticalJokboEmptyText : null,
+      readError: error,
+      onRetry: error == null ? null : _retryJokbo,
+    );
+  }
+
+  /// 내 덱에 족보를 놓을 수 없는 이유(null = 놓을 수 있다). 공격 기록 · 고칠 수 있는 초안만.
+  String? get _jokboDropReason {
+    if (!_available) return tacticalJokboUnavailableText;
+    if (_draft.readOnly) return tacticalReadOnlyHint;
+    if (_busy) return tacticalJokboBusyText;
+    if (!_draft.attack) return tacticalJokboDefenseText;
+    return null;
+  }
+
+  /// 족보 공격 덱으로 내 덱 초안을 채운다(저장하지 않는다). 보유하지 않은 학생 칸은 빗금 빈칸으로 두고 알린다.
+  void _copyJokbo(TacticalJokboCard card) {
+    if (_jokboDropReason != null) return;
+    final owned = {
+      ...?_repositoryState?.students.map((item) => item.studentId),
+    };
+    final copy = tacticalCopyJokboDeck(card.jokbo.attackDeck, owned);
+    final missing = copy.missing;
+    final notice = missing.isEmpty
+        ? '${card.name} 덱을 내 공격 덱에 복사했습니다. 저장하면 기록에 남습니다.'
+        : '${card.name} 덱을 복사했습니다. 보유하지 않은 학생 ${missing.length}명'
+              '(${missing.map((id) => _names[id] ?? id).join(' · ')})은 빈칸으로 두었습니다.';
+    _selectedJokboId = card.id;
+    _updateDraft((draft) => draft.copyWith(myDeck: copy.deck), notice: notice);
+  }
+
+  /// "족보에서 가져오기": S4에서 고른 카드를 복사한다(끌기와 같은 일 — 키보드 · 접근성 경로).
+  void _copySelectedJokbo() {
+    final id = _lastJokbo.selectedId;
+    final card = _lastJokbo.cards.where((item) => item.id == id).firstOrNull;
+    if (card != null) _copyJokbo(card);
   }
 
   // --- 피커 ------------------------------------------------------------------
@@ -590,6 +832,10 @@ class _TacticalPageState extends State<TacticalPage> {
       return (text: local, tone: TacticalEditorStatusTone.error);
     }
     if (!_available) return (text: null, tone: TacticalEditorStatusTone.none);
+    final notice = _copyNotice;
+    if (notice != null) {
+      return (text: notice, tone: TacticalEditorStatusTone.hint);
+    }
     final blocker = _saveBlocker;
     if (blocker != null) {
       return (text: blocker, tone: TacticalEditorStatusTone.hint);
@@ -610,6 +856,9 @@ class _TacticalPageState extends State<TacticalPage> {
     final editable = _editable;
     final status = _status;
     final canSave = editable && _saveBlocker == null;
+    final jokbo = _lastJokbo = _jokboPanel(_current);
+    final dropReason = _jokboDropReason;
+    final fromJokboReady = dropReason == null && jokbo.selectedId != null;
     final migration = _available && preview != null && _migrationRequired
         ? TacticalMigrationBand(
             matchCount: preview.matchCount,
@@ -659,6 +908,15 @@ class _TacticalPageState extends State<TacticalPage> {
           : null,
       statusText: status.text,
       statusTone: status.tone,
+      jokbo: jokbo,
+      onFromJokbo: fromJokboReady ? _copySelectedJokbo : null,
+      fromJokboHint:
+          dropReason ??
+          (jokbo.selectedId == null
+              ? tacticalJokboNoneText
+              : tacticalJokboCopyHint),
+      dropReason: dropReason,
+      onDropJokbo: jokbo.cards.isEmpty ? null : _copyJokbo,
     );
     return BaModal(
       controller: _studentModal,

@@ -15,7 +15,7 @@ import 'section_template.dart';
 ///   아래 면 구간을 9+73칸으로 골랐다. 꼭짓점 아랫변 615.0→1710.0, 윗변 783.6→1878.6, 위 y 435.7.
 ///   시안(615.4→1710.0, 783.8→1878.3, 437.2)과 x는 0.4px 안, 위 y는 grid 한계로 −1.5px.
 /// - 오른쪽 족보 `tactical-jokbo` (1734, 209.2, 826, 1182.8): 오른쪽 면에 붙은 사다리꼴(왼쪽 변 사선), 65~96칸.
-///   윗변 1941.9→2560, 아랫변 1733.3→2560. 시안(1942.6, 1734)과 −0.7px. FE9-d 자리.
+///   윗변 1941.9→2560, 아랫변 1733.3→2560. 시안(1942.6, 1734)과 −0.7px. FE9-d: 공개 시그니처 족보 카드.
 /// 시안 그리기 순서는 기록 작성 → 기록 목록 → 족보 → 로비 스캔이다(서로 겹치지 않는다).
 final SectionStudioDocument tacticalStudioDocument = SectionStudioDocument(
   headerRows: 12,
@@ -83,7 +83,7 @@ const tacticalLobbySectionId = 'tactical-lobby';
 /// 가운데 아래 기록 작성.
 const tacticalEditorSectionId = 'tactical-editor';
 
-/// 오른쪽 이 시그니처의 족보(FE9-d 자리).
+/// 오른쪽 이 시그니처의 족보(FE9-d).
 const tacticalJokboSectionId = 'tactical-jokbo';
 
 SectionCanvasElement tacticalSection(String id) =>
@@ -227,7 +227,7 @@ abstract final class TacticalMetrics {
   static const mySlotPortrait = (width: 83.0, height: 67.0);
   static const deckSlotWidth = 92.0;
 
-  // --- 가운데 위 로비 스캔 · 오른쪽 족보 (자리) --------------------------------
+  // --- 가운데 위 로비 스캔(자리) · 오른쪽 족보 제목 -------------------------
 
   /// 로비 스캔 제목 줄(시안 (838.1, 229.2, 1052.9×36), 안쪽 16.3).
   static const lobbyTitle = TacticalSlotSpec(
@@ -253,13 +253,58 @@ abstract final class TacticalMetrics {
     rightGap: 22,
   );
 
-  /// 족보 첫 행 자리(시안 `.row` (1944.3, 271.2, 593.7×64)) — "준비 중" 문구.
+  /// 족보 첫 행 자리(시안 `.row` (1944.3, 271.2, 593.7×64)). 이관 전에는 여기에 "준비 중"(FE9-a 모습 그대로), 그 밖에는
+  /// "대상 방어 덱" 줄(FE9-d: 상대 이름 · 덱 6칸 40×32 · 빈칸 안내, 안쪽 23.3).
   static const jokboBody = TacticalSlotSpec(
     top: 62,
     height: 64,
     leftGap: 24,
     rightGap: 22,
   );
+
+  // --- 오른쪽 족보 (FE9-d) ----------------------------------------------------
+
+  /// KPI 4칸(시안 `.row` (1927.8, 345.2, 610.2×84), 안쪽 26.8): 방어 유저 · 연결 족보 · 최신 검증 · 숨은 편성 다양성.
+  static const jokboKpi = TacticalSlotSpec(
+    top: 136,
+    height: 84,
+    leftGap: 24,
+    rightGap: 22,
+  );
+
+  /// 끌기 안내(시안 `.plain` (1922.5, 437.2, 615.5×22), 안쪽 15.9).
+  static const jokboHint = TacticalSlotSpec(
+    top: 228,
+    height: 22,
+    leftGap: 24,
+    rightGap: 22,
+  );
+
+  /// 족보 카드(시안 `.row` 첫 행 (1898.9, 465.2, 639.1×128), 안쪽 34.6): 높이 128 · 간격 8, 아래로 갈수록 왼쪽 사선을 따라 넓어진다.
+  static const jokboCardTop = 256.0;
+  static const jokboCardHeight = 128.0;
+  static const jokboCardGap = 8.0;
+  static const jokboCardPadding = 34.6;
+
+  /// 카드 목록 아래 여백(섹션 아랫변에서). 넘치는 카드는 "족보 n개 중 k개" 한 줄로 알린다.
+  static const jokboListBottomGap = 18.0;
+  static const jokboMoreHeight = 22.0;
+
+  /// 카드 덱 칸 44×36, 대상 덱 · 고스트 덱 칸 40×32.
+  static const jokboCardPortrait = (width: 44.0, height: 36.0);
+  static const jokboSmallPortrait = (width: 40.0, height: 32.0);
+
+  /// 끌기 고스트(시안 (1162, 739, 448×104), rotate −2.5°). 포인터는 고스트 안 (237, 90)에 있다(시안 커서 위치).
+  static const jokboGhostWidth = 448.0;
+  static const jokboGhostHeight = 104.0;
+  static const jokboGhostAnchor = (dx: 237.0, dy: 90.0);
+  static const jokboGhostTurns = -2.5 / 360;
+
+  /// 놓기 힌트 알약(시안 (783, 679), 높이 26): 내 덱 줄 자리(733.4, 713.2)에서 (+49.6, −34.2).
+  /// 놓을 자리 강조는 내 덱 줄 자리를 6씩 넓힌 사선 행(시안 (727.4, 707.2, 1084.3×158)).
+  static const dropPillOffset = (dx: 49.6, dy: -34.2);
+  static const dropPillHeight = 26.0;
+  static const dropHighlightInflate = 6.0;
 
   /// 기준보다 작은 창에서 세로 값 · 내용을 줄이는 비율(0.4~1). 가로 · 세로 중 더 줄어든 쪽을 따른다.
   static double scaleFor(double canvasWidth, double canvasHeight) => [

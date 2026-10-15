@@ -8788,3 +8788,232 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 view
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261014_222332\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE7-j 통계 마무리 · 키트 정리 (Lane A, 로컬 Claude Code)
+
+### FE7-j 착수 기록 (2026-10-15 22:49, Lane A)
+
+- 상태: 진행 중 → **종료**(아래 FE7-j 종료 기록). 시작 SHA `810a15f2e840a2b369fdf7ed98aa9a0e52bccab0`(브랜치 `scanner-consolidation`). 착수 때 status 끝에 다른 FE7-j 착수 기록 없음.
+- 범위: 1. A6 구간 선택 → 오른 학생 순위(FE7-h 발견 5, Statistics-Proposal A6). 2. 차트 키트 승격(스파크라인 · 발산 막대 — 같은 그림인지 먼저 확인). 3. UI Kit 갤러리에 `SectionFrame` · `SectionScaledBox`(tidy2 발견 3)와 2의 차트 위젯.
+- 막힘 확인: 막힘 요약에 FE7-j 행이 없고 지금 `열림` FD가 없다. 관련 FD-028 · FD-041 · FD-104 · FD-175는 모두 확정이다.
+- 항목 2 사전 판정(코드 읽기): 같은 그림이 아니다. 아래 승격 표는 종료 기록에 둔다. 그래서 2는 표만 남기고 코드를 고치지 않을 예정이고, 3의 차트 갤러리 항목도 없다.
+- 고칠 파일(예정)과 착수 때 WIP(`git status --short <경로>`):
+
+| 항목 | 파일 | 착수 WIP |
+|---|---|---|
+| 1 | `frontend/lib/statistics/statistics_history_projection.dart` | 없음 |
+| 1 | `frontend/lib/ui/statistics/statistics_growth_evidence.dart`(CRLF) | 없음 |
+| 1 | `frontend/lib/ui/statistics/statistics_history_charts.dart` | 없음 |
+| 1 | `frontend/lib/ui/statistics/statistics_workspace.dart` | 없음 |
+| 1 | `frontend/lib/ui/pages/statistics_page.dart`(CRLF) | 없음 |
+| 1 | `frontend/test/statistics_history_view_test.dart`(필요할 때만) | 없음 |
+| 1 | 새 `frontend/test/statistics_a6_ranking_test.dart` | 새 파일 |
+| 3 | `frontend/lib/ui/kit/gallery/ui_kit_gallery_page.dart` | 없음 |
+| 3 | `frontend/test/kit/ui_kit_gallery_test.dart` | 없음 |
+| 3 | 새 `frontend/lib/ui/kit/gallery/ui_kit_frame_section.dart` | 새 파일 |
+| 공통 | `almanac/workflows/frontend-redesign-status.md`(이 문서) | 없음 |
+
+- 사본: 위 기존 파일 9개를 `debug/frontend_fe7j/pre/<v7 기준 경로>`에 두었다. WIP가 있는 파일이 없어 post 사본 · `post_dir`는 두지 않는다.
+- 고치지 않음: 스캐너 WIP 15파일, `lib/services/**`, Lane B 전술 파일, 인벤토리 파일(항목 2가 승격 없음이면), 셸 · navigation, golden harness · golden 테스트, `frontend/tool/**`, backend · contracts.
+
+### FE7-j 종료 기록 (2026-10-15, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+세 항목 중 1 · 3을 했고, 2는 같은 그림이 아니라 승격하지 않았다(표만). A6 점을 누르면 그 스냅샷 → 마지막 스냅샷 구간을 고르고, 오른쪽 근거 패널에 "오른 학생 순위"가 나온다. UI Kit 갤러리에 "섹션 틀" 구역을 더했다. 서비스 · 셸 · navigation · 인벤토리 · 키트 위젯 · harness 변경은 없다.
+
+#### 실행 명령 · 결과
+
+모두 `frontend`에서 이 PC(Claude Code)로 실행했다. 로그는 `debug/frontend_fe7j/logs/`에 있고, 실패 줄(`[E]` · `EXCEPTION` · `Some tests failed` · `error •`)만 찾았다.
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/statistics/statistics_history_projection.dart`(projection 편집 뒤) | No issues found |
+| `flutter analyze lib/ui/statistics/statistics_growth_evidence.dart`(1차) | 오류 1(`int?`를 `num` 자리에 — 끝 점 null 검사 누락) → 고침 → No issues found |
+| `flutter analyze lib/ui/statistics/statistics_history_charts.dart` · `lib/ui/statistics` · `lib/ui/pages/statistics_page.dart lib/ui/statistics lib/statistics` | 모두 No issues found |
+| `flutter test test/statistics_a6_ranking_test.dart`(새) | **+11 −0**(첫 실행) |
+| `flutter analyze lib/ui/kit` · `test/kit/ui_kit_gallery_test.dart` | No issues found |
+| `flutter test test/kit/ui_kit_gallery_test.dart` | **+7 −0**(첫 실행, 새 1건 포함) |
+| `flutter analyze`(frontend 전체, 1차) | **No issues found**(info 포함 0) |
+| 관련 30파일 한 번에(`--file-reporter json`, 아래) | **+275 −0** |
+| A6 근거 조건 보강(끝이 지금 마지막 점일 때만) 뒤 5파일(`statistics_a6_ranking` · `statistics_page` · `statistics_history_view` · `statistics_growth_view` · `app_navigation_fe7d`) | **+65 −0** |
+| `flutter analyze`(frontend 전체, 최종) | **No issues found**(info 포함 0) |
+| `git diff --check`(고친 기존 7파일) · 새 2파일 검사 | 0. 새 파일은 LF · 줄 끝 공백 0 · 끝 개행 하나. 기존 파일 줄바꿈은 pre와 같다(`statistics_growth_evidence.dart` · `statistics_page.dart` CRLF, 나머지 LF) |
+
+관련 30파일의 파일별 결과(30파일 실행 기준):
+
+- 통계: statistics_a6_ranking +11(새), statistics_history_projection +17, statistics_second_tiles +15, statistics_history_view +14, statistics_page +14, statistics_workspace +13, statistics_growth_view +12, statistics_growth_projection +11, statistics_supply_view +11, statistics_filter +10, statistics_third_tiles +10, statistics_plan_view +9, statistics_supply_projection +8, statistics_plan_projection +7, statistics_projection +7, statistics_app_shell +2
+- 키트 · 갤러리: kit/ui_kit_gallery +7, kit/stat_chart +7, kit/scroll_viewport_fog +6, kit/section_frame +5, kit/ui_kit_gallery_overlays +4, kit/ui_kit_gallery_controls +2, kit/ui_kit_gallery_data +2, kit/ui_kit_gallery_range +2
+- 셸 · 이동 · 그 밖: widget_test +16, app_navigation_fe7d +14, developer_tools_app +12, app_navigation_tidy1 +11, mock_design_review_scenario +11, home_page +5
+
+- 걸리는 테스트는 grep으로 찾았다. 찾은 말은 `statistics|Statistics|UiKitGallery|ui_kit_gallery|section_frame|SectionFrame|SectionScaledBox|top-tab-statistics|design_review|MockDesignReview|studentSnapshotsFor|StatisticsGrowthView`이다.
+  - goldens를 빼고 걸린 테스트 파일은 모두 실행했다. 뺀 것은 아래와 같다.
+    - process E2E 2개(`repository_process_e2e` · `tactical_v2_process_e2e`).
+    - "statistics" 낱말이나 `SectionFrame`만 걸린 전술 · 메타 6개(`tactical_page` · `tactical_page_revision` · `tactical_fe9b1_read` · `tactical_records_controller` · `design_review_tactical_seed` · `metadata_manager_dto`). 전술 쪽은 이 slice가 고친 코드를 쓰지 않고, Lane B가 FE9-d로 작업 중이다.
+  - `kit/stat_chart_test`는 더해서 돌렸다(A6가 `StatChartFrame.onTapAt`을 쓴다).
+  - 인벤토리 테스트는 돌리지 않았다. 항목 2가 승격 없음이라 인벤토리 코드 변경이 0이다.
+- 검수 수치: scratchpad의 임시 출력 테스트(저장소 밖, `file:` import)로 fixture 순위를 한 번 출력했다.
+  - 9/29 → 10/05: 평균 +1.2%p, 행 112(오른 110 · 새 2 · 모름 0), 상위 +5.9%p.
+  - 9/22 → 10/05: 평균 +2.0%p, 행 112(오른 110 · 새 2).
+- `dart format`은 새 2파일과 `test/kit/ui_kit_gallery_test.dart`에만 파일 경로로 돌렸다.
+  - 갤러리 테스트는 포매터가 손대지 않은 기존 줄 8줄(행 견본 `expect` 셋)을 다시 감쌌다. pre 사본에 내 3곳(머리 주석 · import · 새 테스트)만 다시 넣어 되돌렸다. diff에는 이 slice 줄만 있다.
+- 빌드 잠금(`build/` · `.dart_tool/`) 충돌은 없었다. `flutter analyze`가 "Got dependencies!"를 찍었지만 `pubspec.lock` · `pubspec.yaml`은 바뀌지 않았다(`git status` 빈 줄).
+- 실행하지 않음: golden(`test/goldens/**`), 전체 `fe_gate.ps1`, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, process E2E, `codealmanac validate`.
+
+#### 항목별 결과
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 1 A6 구간 선택 → 오른 학생 순위 | **완료** | 아래 "오른 학생 순위 규칙". 새 테스트 11건 |
+| 2 차트 키트 승격 | **보류(승격하지 않음, 표만)** | 아래 승격 표. 스파크라인 · 발산 막대 모두 통계와 인벤토리가 다른 그림이다. 코드 변경 0 |
+| 3 UI Kit 갤러리 등록 | **완료(섹션 틀 2개)** | `SectionFrame` · `SectionScaledBox` 구역과 갤러리 테스트 1건. 2가 승격 없음이라 차트 항목은 없다 |
+
+#### 1. 오른 학생 순위 규칙
+
+- **고르는 동작**(시안에 규칙 없음 → A1 문법):
+  - 시안 Statistics-Proposal A6에는 다음 두 줄만 있다. ① 두 스냅샷을 고르면 그 사이만 분홍으로 칠하고 차이를 적는다. ② 구간을 누르면 오른쪽 상세(오른 학생 순위)다.
+  - 고르는 동작은 A1 문법(누르면 고름 · 같은 것을 다시 누르면 풂)으로 정했다.
+  - 누르는 단위는 점이다. 점의 세로 칸은 이웃 점과의 가운데까지, 설계 좌표 y 10 ~ 231(날짜 글자 아래)이다.
+  - 점 하나를 누르면 **그 스냅샷 → 마지막 스냅샷** 구간이다. 마지막 점을 누르면 바로 앞 점부터다.
+  - 근거: 질문 "지난 스캔 이후 얼마나 올랐습니까?"는 지금(마지막)까지의 변화다. FE7-h 기본 강조도 마지막 점에서 끝난다. 끝을 아무 점으로 고르려면 "첫 클릭 = 시작, 둘째 클릭 = 끝" 같은 중간 상태가 필요해 A1 문법이 아니다(발견 1).
+- **그림**:
+  - 고르지 않으면 FE7-h 기본 강조(마지막에서 14일 안)가 그대로다.
+  - 고르면 고른 구간이 강조 구간이 된다(분홍 바탕 · 두 끝 분홍 점 · "9/29 → 10/05 +1.2%p"). painter는 바꾸지 않았고 강조 시작만 넘긴다.
+  - 고른 구간이 기본 강조와 같으면(예 9/22 점) 그림은 같고 근거만 열린다.
+- **풀림**: 같은 구간을 다시 누를 때, 다른 타일을 고를 때, 주제 · A1 seg · 통계 필터를 바꿀 때, 다시 읽을 때 풀린다(기존 성장 선택과 같다).
+- **스냅샷**: FD-175 묶음 끝 학생 상태(A6 점과 같은 값)이고, 시작 · 끝 모두 스냅샷이다.
+  - 끝 스냅샷 뒤의 수동 수정은 이 순위에 들지 않는다. 행의 Lv도 끝 스냅샷 값이다.
+  - 근거 판정은 "끝이 지금 마지막 점"일 때만이다. 새 스냅샷이 생기면 이 구간 근거는 없어진다.
+- **통계 필터(FE7-e)**: A6와 같은 대상 학생만 본다. 대상은 지금 필터의 학생 id이고, 스냅샷마다 그때 보유한 대상만 센다.
+  - 필터가 바뀌면 고른 구간이 풀린다.
+  - 그래서 "새 학생"은 필터 대상 중 시작 스냅샷에 없던 학생이다.
+  - 구현: `studentSnapshotsFor`가 대상 학생 상태(`states`)도 남긴다. 성장 값은 그대로다.
+- **순위**(`statisticsGrowthRanking`, `lib/statistics/statistics_history_projection.dart`):
+  - 끝 스냅샷에 있는 학생만 본다. 그사이 빠진 학생은 넣지 않는다.
+  - **오른 학생**: 두 스냅샷의 육성도(FD-028, 애장품 없는 학생 6항목)를 모두 알고, 화면 글자(0.1%p) 반올림끼리의 차가 0보다 크다. 그래서 "+0.0%p" 행은 생기지 않는다.
+    - 차례는 증감 큰 순 → 끝 육성도 높은 순 → 이름 → id다.
+  - **새 학생**: 시작 스냅샷에 없던 학생이다. 증감 없이 오른 학생 뒤에 끝 육성도 높은 순(모르면 뒤)으로 놓는다.
+  - 그대로이거나 내린 학생은 넣지 않는다.
+  - 한쪽이라도 육성도를 모르면 비교하지 않고, 부제 끝에 "육성도 모름 n명 제외"를 붙인다.
+- **근거 패널**(성장 근거 틀 그대로, `statisticsRankingEvidence`):
+  - 머리 "9/29 → 10/05" + 분홍 "n명"(오른 + 새).
+  - 부제 "A6에서 고른 구간 · 오른 학생 순". 없으면 "A6에서 고른 구간 · 오른 학생이 없습니다."다.
+  - 행은 초상 · 이름 · Lv · 칩이다. 칩은 오른 학생 "+5.9%p"(초록 `AppTones.ok`), 새 학생 "새 학생"(파랑 `AppTones.info`)이다.
+  - 7행 다음은 "나머지 n명 · 모두 보기"다. 성장 근거(시안 Stats-Growth) 문구를 따랐다. 프롬프트 "외 n명"은 재화 근거 문구다(발견 2).
+  - 요약 "구간 요약"은 평균 육성도 변화(A6 강조 글자와 같은 값) · 오른 학생 n명 · 새 학생 n명이다.
+- **근거 → 학생 탭**(FE7-d intent 그대로, 새 intent 종류 없음):
+  - "학생 탭에서 보기 · 필터: 9/29 → 10/05"는 `StudentsNavigationIntent`(순위 학생 전부, 라벨 "통계: 9/29 → 10/05 · n명")다.
+  - "이 구간 학생을 계획에 추가"는 계획 1단계 미리 선택이다(기존 성장 근거와 같다).
+- **"← 통계" 복귀**: 이력은 보드 뒤에 읽는다. 그래서 A6 구간은 이력을 읽은 뒤 되살린다(`_pendingTrend`). 그사이 다른 것을 골랐거나 구간이 없으면 버린다.
+- 고친 파일:
+  - `statistics_history_projection.dart`(순위 · `growthAt` · 대상 `states` · `withHighlight` · `indexOf`)
+  - `statistics_growth_evidence.dart`(`StatisticsGrowthTrendSelection` · `trendStart` · `shownTrend` · `selectTrendStart` · 근거)
+  - `statistics_history_charts.dart`(`pointAt` · `startFor` · 차트 `onStartSelected`)
+  - `statistics_workspace.dart`(`_a6Body`)
+  - `statistics_page.dart`(이력 값을 성장 화면 값에 넘김 · 복귀)
+- 새 테스트 `test/statistics_a6_ranking_test.dart` 11건:
+  - projection 4건: 순위 차례 · 새 학생, 긴 구간 증감 값과 그대로인 학생 제외, 필터 대상, 못 찾는 구간 null.
+  - 화면 7건: 고름 · 다시 눌러 풂, 새 학생 칩 · 모두 보기, 학생 탭 intent, 주제 변경 풀림, "← 통계" 복귀, 1280×720 · 1440×900 넘침 0.
+
+#### 2. 승격 표(같은 그림인가)
+
+| 그림 | 통계 | 인벤토리 | 같은가 |
+|---|---|---|---|
+| 스파크라인 / 꺾은선 | B3 `StatisticsResourceTrendPainter`(`statistics_history_charts.dart`, 통계 B3 패널 3장) · A6 `StatisticsGrowthTrendPainter` | `InventorySparklinePainter`(`inventory_history_charts.dart`, 인벤토리 상세 "최근 변화" `_SparklineRow`) | **아니다**. 아래 "스파크라인 차이" |
+| 가운데 축 발산 막대 | B2 `StatisticsBalancePainter`(`statistics_balance_charts.dart`, 통계 B2 6행) | `InventoryChangeBar`(`inventory_history_charts.dart`, 분석 S5 행 `inventory_analysis_sections.dart`) | **아니다**. 아래 "발산 막대 차이" |
+
+- 스파크라인 차이:
+  - 좌표계: 인벤토리는 위젯 높이 92 픽셀 좌표(옆 30 안쪽)다. 통계는 `StatChartFrame` viewBox 1030×226 균일 배율이다.
+  - 점 · 글자: 인벤토리는 모든 점이 r4이고 점마다 값 글자(11px)와 시간 글자("n주 전")가 있다. 통계 B3는 끝 점 하나만 r4.5 + #16202c 테두리이고, 값 글자는 끝 값 하나다. 패널 상자 · "필요" 점선 · 순변화 글자도 있다.
+  - 선: 인벤토리 2.5, 통계 2.
+  - 모르는 값: 인벤토리는 선을 끊고 빗금을 친다. 통계는 끊기만 한다.
+  - 지금 점: 인벤토리는 바탕 rgb(26,44,59), 통계는 #16202c다.
+- 발산 막대 차이:
+  - 모양: 인벤토리는 한 행 위젯(395×30)이고 수직 변 둥근 막대(높이 8, r4)다. 통계는 한 painter가 6행을 그리고 80° 기울인 막대(높이 13, r3)다.
+  - 뜻 · 색: 인벤토리는 증가 초록 · 감소 분홍(정수 증감)이다. 통계는 부족 분홍 · 과잉 노랑 α.92(필요량 대비 %, FD-040)다.
+  - 글자 · 축: 인벤토리는 값 글자가 오른쪽 칸(351~395)에 있고 축선이 없다. 통계는 값 글자가 막대 끝, 이름이 왼쪽이고 축선을 그린다. 축척 줄임 · 고른 행 띠 · 아래 범례도 통계에만 있다.
+- 결론: 하나로 합치면 좌표 · 기울기 · 색 · 글자 자리를 모두 인자로 받게 되어, 공유하는 그림이 없다. 모습 변화 0으로 묶을 수 있는 공통 부분이 사실상 없어 승격하지 않았다. 한 모양으로 맞추려면 어느 쪽 모습을 따를지 정해야 하고, 그것은 시각 변경 slice다(발견 3).
+- 이미 공유하는 것: 두 화면 모두 키트 `StatChartPalette`(`magnitude` · `axis` · `axisLabel` · `valueLabel` · `highlight`)와 `paintHatch` · `paintStatLabel`을 쓴다.
+
+#### 3. 갤러리 항목
+
+- 새 `lib/ui/kit/gallery/ui_kit_frame_section.dart`(`UiKitFrameSection`). 갤러리 페이지 FE2-d 구역 아래에 머리 "섹션 틀"과 함께 놓았다.
+- 높이 420인 줄에 타일 두 개가 있다(FE2-d 데이터 타일과 같은 여백).
+  - `kit-gallery-frame-section-frame` "섹션 틀 · SectionFrame":
+    - 560×270 견본 섹션(왼쪽 면에 붙은 사다리꼴)의 표면(`kit-gallery-section-frame-surface`)이 있다.
+    - 안에는 근거 패널 머리 한 줄("9/22 → 10/05" + 분홍 "12명")을 두었다.
+    - 분홍 막대는 일부러 섹션 밖까지 놓아 사선에서 잘리는 것을 보인다.
+  - `kit-gallery-frame-scaled-box` "섹션 안 배율 · SectionScaledBox": 같은 머리 한 줄(시안 360×44)을 배율 1 · 0.75 · 0.5 자리(`kit-gallery-scaled-box-100/75/50`)에 넣었다.
+- 시안 W-* artboard에 이 두 위젯의 견본이 없다(화면 틀이다). 그래서 좌표 대조가 아니라 동작 견본이다.
+- 갤러리 테스트(`test/kit/ui_kit_gallery_test.dart`) 새 1건:
+  - 견본 크기, 표면 painter, 넘치는 막대 위의 `SectionShapeClipper`를 본다.
+  - 배율 상자 크기 3개, 배율 1은 `FittedBox` 없음 · 1 미만은 하나, 넘침 예외 0을 본다.
+
+#### golden 변화 0 근거(장면별)
+
+- **통계 5장**(`statistics-growth` · `statistics-growth-filter` · `statistics-inventory` · `statistics-plan` · `statistics-filter-open`): **변화 0 예상**.
+  - golden 조작(`fe7a_statistics_golden_test.dart`)은 A6를 누르지 않는다. 그래서 A6 선택은 늘 없다.
+  - `shownTrend`는 그때 같은 trend 객체를 돌려준다. painter 입력(점 · 강조 시작 · 강조 글자)이 FE7-h와 같고, painter 코드는 바꾸지 않았다.
+  - `StatChartFrame`은 `onTapAt`이 없어도 원래 `GestureDetector`를 두므로 위젯 트리 모양이 같다.
+  - 근거 패널은 선택이 없으면 그대로다.
+  - 페이지는 이력 화면 값을 성장 화면 값보다 먼저 만든다. 입력이 같고 캐시 조건도 같아 값이 같다.
+  - `statistics-growth-filter`: 대상 스냅샷에 `states`를 더 담을 뿐 성장 값은 같은 map으로 센다.
+- **인벤토리 5장**: 코드 변경 0(항목 2 승격 없음).
+- **갤러리**: golden 장면이 없다(`test/goldens/`에 갤러리 장면 없음).
+- **다른 장면**: 바꾼 파일은 통계 · 갤러리뿐이다. 키트 위젯 · harness · 셸 변경은 0이다.
+- 그래서 commit.json `whole`은 빈 배열이다. golden은 돌리지 않았다(미실행).
+
+#### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Statistics-Proposal A6(구간 → 오른 학생 순위) | 통계 → 학생 성장 → A6 점 누르기. fixture는 `test/statistics_a6_ranking_test.dart`이고, 앱 mock 검수 시나리오는 학생 스냅샷 1회라 A6가 문구 상태다(FE7-h 발견 6) | 9/29 점 → 분홍 구간 9/29 ~ 10/05 · "9/29 → 10/05 +1.2%p" / 근거 머리 "9/29 → 10/05" · "112명", 부제 "A6에서 고른 구간 · 오른 학생 순", 첫 행 칩 "+5.9%p"(초록), 펼치면 끝에 "새 학생" 2명(파랑), 요약 +1.2%p · 110명 · 2명 / 같은 구간 다시 누르기 → 기본 강조 9/22 · "근거 확인" / "학생 탭에서 보기"가 학생 탭 임시 목록 112명 |
+| UI Kit 갤러리 "섹션 틀" | 개발 패널 → UI Kit 갤러리 → 맨 아래 | 사다리꼴 표면 · 그림자, 분홍 막대가 사선에서 잘림 / 배율 1 · 0.75 · 0.5 머리 줄이 같은 비율로 줄어듦 |
+
+#### 처리한 FD
+
+- FD-028(확정): 증감은 FD-028 육성도(애장품 없는 학생 6항목)의 차다.
+- FD-175(확정): 두 끝은 묶음 끝 학생 스냅샷이다(A6 점과 같다).
+- FD-104(확정): 통계 필터 대상만 센다(A1~A6 범위).
+- FD-041(확정): 비교는 scan 점(스냅샷)끼리다. 수동 수정은 끝 스냅샷 뒤면 들지 않는다.
+- 막는 `열림` FD 없음. 워커 재량 FD 처리 없음(새 규칙은 위 "오른 학생 순위 규칙"과 발견 사항).
+
+#### 미검증 항목
+
+- golden 비교: **미실행**. 모든 장면 변화 0으로 예상한다(위 근거). CF가 `fe_gate.ps1`을 돌린다.
+- 전체 `fe_gate.ps1`(그 밖의 테스트 · process E2E · `codealmanac validate` · 저장소 전체 `git diff --check`): **미실행**.
+- 실제 백엔드 계정에서 순위 속도: **미실행**. 순위는 고를 때 두 스냅샷의 학생 전원을 FE7-b 식으로 다시 센다(구간당 한 번, 같은 구간이면 캐시). 학생 수백 명 규모라 가볍다고 보지만 재지 않았다.
+- 갤러리 견본의 시각 검수: 테스트(크기 · clipper · `FittedBox`)만 보았고, 렌더 이미지는 보지 않았다.
+- 전술 테스트(`tactical_*`)는 이 slice가 고친 코드와 무관하고 Lane B 작업 중이라 돌리지 않았다.
+
+#### WIP 보존 확인
+
+- 고친 기존 7파일은 착수 때 WIP가 없었다(착수 기록). pre 사본과 비교한 diff에는 이 slice 줄만 있다(`diff --strip-trailing-cr` 확인). post 사본 · `post_dir`는 없다.
+- 착수 때 사본을 둔 `frontend/test/statistics_history_view_test.dart`는 고치지 않았다. pre와 `cmp`가 같고, 사본은 지우지 않았다(삭제 후보).
+- 스캐너 WIP 파일(`scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · 스캐너 테스트 등), `lib/services/**`, Lane B 전술 파일(`tactical_studio_layout.dart` 등 작업 트리 변경)은 고치지 않았다. git 쓰기 · 파일 삭제는 하지 않았다.
+
+#### 발견 사항
+
+1. **A6 끝 점 고르기**: 이번 구간은 늘 "고른 점 → 마지막 스냅샷"이다. 끝도 고르게(예 9/08 → 9/22) 하려면 두 번 누르기(시작 · 끝) 같은 새 동작 규칙이 필요하다. 시안 문구 "두 스냅샷을 고르면"은 그 뜻일 수 있다. 필요하면 CF 판단(FD 후보)이다. `StatisticsGrowthTrendSelection`은 이미 시작 · 끝 세션을 따로 갖는다.
+2. **"외 n명" vs "나머지 n명 · 모두 보기"**: 프롬프트는 "상위 n + 외 n명"이다. 같은 성장 근거 틀(A1~A5 · C5)은 시안 Stats-Growth 문구 "나머지 n명 · 모두 보기"를 쓰므로 그대로 두었다. "외 n명"은 재화 근거(FE7-d) 문구다. 바꾸려면 성장 근거 전체를 같이 바꾸는 결정이 필요하다.
+3. **차트 승격 보류**: 스파크라인 · 발산 막대는 통계와 인벤토리가 서로 다른 그림이다(위 표). W-Data-Widgets `LineTrend` · `DivergingBars` 한 벌로 맞추려면 어느 모습을 따를지 정하는 시각 변경 slice(golden 갱신)가 필요하다. FE7-h가 적은 "점 범위를 받는 `inventorySparkline`"(데이터 함수 공유)은 그림과 별개로 남은 후보다.
+4. **fixture 순위 모양**: 검수 fixture는 과거 학생 값을 "스킬을 한 칸씩 내려" 만들었다. 그래서 9/29 → 10/05에 110명이 함께 오른다(시안 placeholder와 다름). 실제 계정에서는 스캔 사이에 바뀐 학생만 오른다.
+5. **mock 검수 시나리오**: 앱 검수 시나리오는 학생 스냅샷이 1회라 A6를 누를 수 없다(FE7-h 발견 6과 같음). 앱에서 보려면 시나리오에 학생 스냅샷 이력이 필요하다(`lib/services/design_review/`, 이번 범위 밖).
+
+#### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe7j/pre/<경로>`(9파일 = 고친 7 + 이 문서 + 고치지 않은 `statistics_history_view_test.dart`). WIP가 없어 post 사본은 없다.
+- `debug/frontend_fe7j/commit.json`: slice `fe7j`, `status=true`, modified 8(이 문서 포함), added 2, `whole` = [](바뀌는 기준 이미지 없음).
+- 인계: `debug/frontend_fe7j/output.md`.
+
+#### 다음 행동
+
+- FE7-j 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: 레인 워커가 모두 멈춘 뒤 gate를 한 번 돌린다.
+  - 예상: analyze 0, 일반 테스트 녹색. 새 테스트 12건(a6_ranking 11 · ui_kit_gallery 1)을 포함한다.
+  - golden은 모든 장면 변화 0이다.
+  - GREEN이면 `fe_commit.ps1 -Slice fe7j`(golden 갱신 없음).
+- 발견 1(끝 점 고르기) · 2(근거 "외 n명" 문구) · 3(차트 모습 통일 slice)은 CF 판단을 기다린다.
+
+### fe9d commit record (2026-10-16 02:40, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_023150\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

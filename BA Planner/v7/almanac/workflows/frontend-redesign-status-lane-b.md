@@ -4398,3 +4398,183 @@ schema = `contracts/tactical-protocol-v2.schema.json`. "키만"은 schema가 원
 
 - Lane B는 여기서 멈춘다.
 - CF: ① candidate `frontend/tool/fe_gate.ps1`(발견 2 · 4 확인) → ② 결과(summary 경로 · stamp · source30 unchanged pin · 최종 frontend pin = `candidate-frontend-pins.json`)를 backend 로그로 XB에 회신 → ③ XB source30 커밋 → ④ CF `fe_commit.ps1 -Slice scanwipfunc` → ⑤ FE8-f1(발견 1 반영 여부 포함).
+
+## FE9-d 착수 기록 (2026-10-15)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE9-d 종료 기록), CF gate 미실행**. 범위: 전술대항전 기록 화면 S4 "이 시그니처의 족보"(공개 시그니처로 `TacticalEvidenceReadService` 통계 · 추이 · 추천 질의, FD-127 (a) 관측 지표만, FD-129 권장안) + 족보 → 내 덱 복사(끌기 고스트 · "놓으면 … 복사" 힌트, S3 "족보에서 가져오기" 버튼, 초안만 — 저장하지 않음).
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-d 착수 기록" 없음(grep 0건).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `810a15f2e840a2b369fdf7ed98aa9a0e52bccab0`.
+- 막힘: 대장 "slice별 막힘 요약" FE9-d 행 FD-127은 확정(권장안 (a)), 현재 `열림` 0건. FD-129 · FD-134(워커 재량)는 권장안대로 처리할 예정.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe9d/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치)과 WIP(`git status --short <경로>` 출력 0줄 = 모두 WIP 없음 → post_dir 불필요), 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/tactical_page.dart`: WIP 없음. 작업 트리 CRLF(그대로 유지).
+  - `frontend/lib/ui/tactical/tactical_workspace.dart`: WIP 없음. LF.
+  - `frontend/lib/ui/studio/tactical_studio_layout.dart`: WIP 없음. LF.
+  - `frontend/lib/services/design_review/tactical_records_data.dart`: WIP 없음. LF(seed 공개 칸 · 족보 2개용).
+  - `frontend/lib/tactical/tactical_records_controller.dart`: WIP 없음. LF(꼭 필요할 때만 — 고치지 않으면 끝 기록에 적는다).
+  - `frontend/test/tactical_page_test.dart` · `frontend/test/tactical_page_revision_test.dart` · `frontend/test/design_review_tactical_seed_test.dart` · `frontend/test/goldens/fe9a_tactical_golden_test.dart`: WIP 없음. LF(고치지 않은 파일은 끝 기록에 적는다).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/tactical/tactical_jokbo_view.dart`(위젯 없는 모델: 공개 시그니처 · FD-129 족보 묶음 · 관측 값 · 복사 규칙), `frontend/lib/ui/tactical/tactical_jokbo_widgets.dart`(카드 · KPI · 대상 덱 · 고스트 · 놓기 힌트), `frontend/test/tactical_jokbo_panel_test.dart`.
+- 고치지 않는 것: 스캐너 WIP 15파일, 그 밖의 `lib/services/**`, `lib/ui/kit/**` · `lib/ui/statistics/**` · `lib/statistics/**`(Lane A), `app_shell.dart`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 소유 파일.
+
+## FE9-d 종료 기록 (2026-10-15, 코드 작성 완료 · CF gate 미실행)
+
+S4 "이 시그니처의 족보"(시안 Tactical S4)를 FE9-b1 `TacticalEvidenceReadService` 위에 그렸고, 족보 → 내 덱 복사(끌어 놓기 + "족보에서 가져오기")를 붙였다. 복사는 초안만 바꾸고 저장하지 않는다. HEAD는 착수 때와 같다(`810a15f2`). 아래 "사고 기록"(임시 렌더 파일이 golden 비교로 돈 일)을 CF가 먼저 봐 주십시오.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`: 작성 중(이 slice 경로만) info 1(`library_private_types_in_public_api` — 고스트 틀 `updateRenderObject` 인자 타입) → 고침. 전체 `flutter analyze` 2회(중간 · 마지막) **No issues found(0)**. `pubspec.yaml` · `pubspec.lock` 변경 0.
+- `flutter test test/tactical_page_test.dart`: ① +16 −4(모두 기대 변경 — seed 공개 칸으로 출처 범례 문구, 기본 Mock S4가 "준비 중" 대신 공개 칸 없음 안내) → 테스트 고침 → ② **+20**(S4 요소 rect 5개 추가 포함).
+- 새 `flutter test test/tactical_jokbo_panel_test.dart`: ① +14 −3(테스트 쪽 3: 같은 덱에 같은 학생 · 기본 Mock 계정 보유 학생 0 · 800×600 기본 창 넘침) → ② +16 −1(테스트 픽스처 스페셜 칸) → ③ **+17**. 시안 좌표 확인을 더한 뒤 끌기 테스트만 다시 +1.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `designReviewTactical` · `MockDesignReviewScenario` · `AppSection.pvp` · `top-tab-pvp` · `BAPlannerApp(` · `tactical_records_data` · `tactical_workspace` · `TacticalEvidenceReadService` + tactical 서비스 4), 일반 28파일 json(`--exclude-tags golden`): **+269 −0** — account_editor_fe8c +9, account_manager_fe8b +6, app_navigation_fe7d +14, app_navigation_tidy1 +11, connected_target_fe8d +8, design_review_tactical_seed +2, growth_calculator_view +24, home_app_shell +1, home_connect_fe8e +10, home_page +5, inventory_shell_lazy +1, mock_design_review_scenario +11, profile_delete_fb2d +17, section_template_studio +15, statistics_app_shell +2, statistics_filter +10, student_filter_followups +4, student_filter_modal +8, tactical_jokbo_panel +17, tactical_lobby_scanner_service +2, tactical_page_revision +5, tactical_page +20, tactical_records_controller +14, tactical_service +6, tactical_share_v1_contract +1, tactical_v2_service +5, title_page +25, widget +16.
+- process 묶음 분류 1파일(`--concurrency=1`): tactical_fe9b1_read **+12**.
+- 일회성 렌더(임시 `test/goldens/zz_fe9d_render_tmp_test.dart` = golden 파일 사본에서 비교 대신 `toImage` → scratchpad PNG, 실행 뒤 삭제): +3. 세 장면 모양을 눈으로 확인했다(아래 golden 절).
+- `dart format`: 이 slice 파일만 경로 하나씩(디렉터리 인자 0). `--set-exit-if-changed` 9파일 모두 0.
+- `git diff --check -- frontend almanac/workflows/frontend-redesign-status-lane-b.md`: exit 0. 새 3파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `tactical_page.dart`는 CRLF 그대로(944줄 모두 CRLF), 나머지 LF.
+- 잠금 충돌 0(재시도 없음). 로그: `debug/frontend_fe9d/logs/`(실패 줄과 json 요약만 확인).
+
+### 사고 기록 — 임시 렌더 사본이 golden 비교로 돌았다 (2026-10-15 23:10, CF 확인 필요)
+
+- 첫 일회성 렌더에서 사본을 고치는 스크립트가 Windows 경로 이스케이프로 실패했는데, 고치지 않은 사본(= `fe9a_tactical_golden_test.dart` 그대로, `@Tags(['golden'])` 포함)이 그대로 실행됐다. 결과: `tactical` 실패(예상된 변화), `tactical-jokbo-drag` 실패(기준 이미지 없음), **`tactical-migration` 통과(기준 이미지와 같음)**. 의도한 비교가 아니므로 검증으로 세지 않는다(아래 golden 절은 "예상"으로 적는다).
+- 부산물: `frontend/test/goldens/failures/tactical_{isolatedDiff,maskedDiff,masterImage,testImage}.png`(23:10, `.gitignore` 대상 — git 상태 변화 0). 지우지 않았다(CF gate가 덮어쓴다). 사본은 즉시 지웠고, 두 번째 렌더는 사본에서 `@Tags`와 비교 호출이 0건인지 grep으로 확인한 뒤 돌렸다.
+- `baseline/` PNG 변경 0, `-UpdateGoldens` 실행 0.
+
+### 고친 파일 · 새 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF) | S4 질의(시그니처 · 기록 revision · 상대 · 시즌이 바뀌면 200ms 디바운스 뒤 통계 · 추이 · 추천 병렬, 세대 번호로 늦은 응답 버림, dispose 때 타이머 취소), S4 값 조립, 끌어 놓기 · "족보에서 가져오기" 복사(초안만), 놓을 수 없는 이유, 복사 뒤 상태 문구 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | `TacticalJokboPanel` 값, S4 그리기(이관 전 · 계정 없음은 FE9-a "준비 중" 그대로), 카드 배치(섹션에 들어가는 만큼 + "족보 n개 중 k개"), 내 덱 줄 `DragTarget`(강조 · 힌트 알약), "족보에서 가져오기" 켬 · 툴팁 |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart` | S4 요소 좌표(KPI · 안내 · 카드 · 고스트 · 힌트 알약 · 강조), 주석 |
+| `frontend/lib/services/design_review/tactical_records_data.dart` | seed: 공격 기록 상대 방어 덱의 1번 · SP1 · SP2를 `visible_lobby`(`lobby_scan`)로, 아비도스 방어 덱을 같은 공개 시그니처로(아래 seed 절) |
+| `frontend/test/tactical_page_test.dart` | 출처 범례 기대값, 기본 Mock S4 기대값, S4 요소 rect 5 |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart` | `tactical`이 S4 질의를 기다림, 새 장면 `tactical-jokbo-drag` |
+| 새 `frontend/lib/ui/tactical/tactical_jokbo_view.dart` | 위젯 없는 모델: 공개 시그니처, FD-129 묶음, 관측 값 · 마지막 관측, 복사 규칙, 고른 카드, 상대 시각, KPI |
+| 새 `frontend/lib/ui/tactical/tactical_jokbo_widgets.dart` | 대상 덱 줄 · KPI 줄 · 안내 줄 · 카드 · 덱 줄(초상만) · 고스트(화면 안으로 미는 틀) · 힌트 알약 · 강조 painter · 안내 문구 |
+| 새 `frontend/test/tactical_jokbo_panel_test.dart` | 모델 6 + 화면 5 + 읽기 6(위 +17) |
+
+고치지 않음: `lib/tactical/tactical_records_controller.dart`(**추가 0** — 화면에 필요한 기록 · 족보 · 기록 집계 · revision · 상대 identity가 이미 있고, 질의 세대는 화면 상태로 충분하다. pre와 cmp 일치), `test/tactical_page_revision_test.dart` · `test/design_review_tactical_seed_test.dart`(seed 바꾼 뒤에도 그대로 통과 — cmp 일치), 그 밖 `lib/services/**`, 키트 · Lane A · 스캐너 · 택틱 파일, `app_shell.dart`, golden harness.
+
+### 처리한 FD
+
+- **FD-127 (a)**: 관측 지표만. 숨긴 시안 지표는 아래 표.
+- **FD-129(워커 재량, 권장안)**: 시그니처 족보 = 방어 덱이 그 공개 시그니처를 가진 족보 전부의 합집합(상대 · 완전 덱이 달라도). "연결 족보 n개" = 그 수. 부분 방어 덱(모름 칸이 있는 덱)의 족보도 공개 칸이 맞으면 넣는다(→ 발견 3).
+- **FD-134(워커 재량)**: 해당 없음 — 시안 S4에 검증 강도 · 표본 적음 자리가 없고 검증 강도는 FD-127로 숨긴다. FE9-e에 그대로 남긴다.
+- FD-128 (a): 복사는 초안만 바꾸고, 저장은 기존 "저장"(v2 upsert → 자동 족보)이다. 이 slice는 족보 쓰기를 하지 않는다.
+- FE9-b1 발견 2(CF 결정 2026-10-15): 카드 승/패 = v2 기록에서 센 관측 값, `jokbo.wins/losses`는 0이 아니면 "가져온 집계 n승 m패" 보조 글자, 기록이 0인 자동 족보는 흐림 + "기록 없음" 칩(`TacticalJokboEntry.hasNoRecords`).
+
+### 공개 시그니처 정의 · 질의 시점
+
+- **공개 칸**: 로비에 보이는 세 위치(1번 = 스트라이커 0, SP1, SP2 — 백엔드 `TacticalV2Store._public_signature`와 같은 순서) 가운데 관측 상태 `visible_lobby`이고 학생이 있는 칸. 2~4번은 `visible_lobby`여도 넣지 않는다(백엔드 시그니처 형식에 자리가 없다).
+- **시그니처 문자열**: 백엔드와 같은 `1번|SP1|SP2`, 공개 칸이 아니면 `?`(예 `hina|hibiki|ako`, SP2만 공개면 `?|?|ako`). 공개 칸 0이면 시그니처 없음 → 질의하지 않고 빈 상태("상대 덱에 로비 스캔 공개 칸(1번 · SP1 · SP2)이 없어 족보를 찾지 않았습니다.").
+- **대상 덱**: S3에서 고른 기록 또는 작성 중 초안의 상대 덱(종류 칩을 바꿔도 상대 덱은 그대로라 시그니처도 그대로다).
+- **질의**: 조건(계정 · 시그니처 · v2 revision · 상대 identity(이름 → identity, 없으면 초안 identity) · 시즌)이 바뀌면 200ms 디바운스 뒤 세 질의를 병렬로 보낸다 — 통계 `TacticalStatsFilters(public_signature)`, 추이 `TacticalTrendFilters(public_signature, as_of = 고정 시계)`, 추천 `TacticalRecommendationFilters(season, opponent, public_signature, as_of, top_k 10)`(상대 identity나 시즌을 모르면 추천은 묻지 않는다). 조건이 바뀔 때마다 세대 번호를 올려 이전 응답 · 대기 타이머를 버린다. dispose 뒤 응답은 setState하지 않는다.
+- **오류**: 셋 중 하나라도 실패하면 S4 안내 줄이 "족보 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다." + "다시 읽기"로 바뀐다. 카드는 컨트롤러 기록 집계로 남고 화면 다른 곳은 막지 않는다.
+- **이관 전**(컨트롤러 `migrationRequired`) · 계정 없음 · 서비스 오류: S4는 FE9-a와 같은 제목 + "준비 중"이고 질의하지 않는다(판단: 이관 전 v2에는 v1 기록이 없어 통계가 비어 보이므로 열지 않는다, `tactical-migration` 변화 0이 목표).
+
+### 카드 · KPI 값의 출처
+
+| 자리(시안) | 값 | 출처 |
+|---|---|---|
+| 카드 목록 | 시그니처 족보(FD-129), 승 많은 순 → 패 적은 순 → 이름 순 | 컨트롤러 `jokbo`(v2 상태) |
+| 관측 승/패 · 관측 성공률 | "관측 n승 m패 · 관측 성공률 x%"(표본 0이면 '—') | 통계 응답에 이 시그니처 행이 있으면 그 행 `attack_decks`의 같은 공격 덱 값(없으면 0승 0패), 행이 없으면 컨트롤러가 같은 편성(방어 · 공격 덱 identity) 기록을 센 값 |
+| 마지막 관측("6시간 전 성공" 자리) | "마지막 관측 2026-10-04 21:10"(KST, date 정밀도는 날짜만) | 추이 신선도 `last_battle_at`(시그니처 · 공격 덱) → 추천 `last_observed_at` → 같은 편성 기록 시각 → '—' |
+| 가져온 집계 | "가져온 집계 n승 m패"(0이 아닐 때만, 10px 보조) | `jokbo.wins/losses` |
+| 방어 유저 | "n명" | 통계 시그니처 행 `opponent_count`(내 로비에 이 시그니처를 보인 상대 수), 행이 없으면 '—' |
+| 연결 족보 | "n개" | FD-129 카드 수 |
+| 최신 검증 | "n시간 전"(고정 시계 기준 상대 시각) | 추이 신선도 `last_success_at` 최댓값, 없으면 '—' |
+| 숨은 편성 다양성 | 높음 · 보통 · 낮음 + "유형 n" | 추천 `ambiguity.grade` · `scenario_total`(관측된 완전 방어 덱 수), 없으면 '—'(→ 발견 8) |
+
+### 숨긴 지표(FD-127 (a))
+
+| 시안 | 처리 | 근거 |
+|---|---|---|
+| 카드 "채택률 52%" | 그리지 않음 | FD-127 목록(다수 사용자 데이터) |
+| 카드 "독립 재현 28명" | 그리지 않음 | FD-127 목록(share analytics 독립 기여자) |
+| 카드 "첫 시도 57%" · "평균 1.7회" | 그리지 않음 | 읽기 응답(통계 · 추이 · 추천)에 없음. v2 `attempt_count`로 셀 수는 있다 → 발견 5 |
+| 하단 경고 "B 유저에게는 족보 A가 2승 5패 · 숨은 편성 차이 가능성" + "상대 카드 보기" | 그리지 않음 | "숨은 편성 차이 가능성"은 판단 지표, 상대 카드는 FE9-e |
+| 상대 방어 승률 30일 · 변경 확률 · 보정 방어 · 검증 강도 | S4에 자리 없음(만들지 않음) | FD-127 |
+
+### 복사 규칙
+
+- 끌어 놓기(카드 → S3 내 덱 줄)와 "족보에서 가져오기"(S4에서 고른 카드 — 기본은 지금 내 덱과 같은 카드, 없으면 첫 카드, 누르면 바뀜) 모두 같은 일을 한다: 내 덱 6칸을 족보 공격 덱으로 **위치 그대로** 바꾼다. 저장 · 서비스 쓰기는 없다(초안만, 테스트로 revision 그대로 확인).
+- **보유하지 않은 학생**: 그 칸은 빗금 빈칸(모름, `manual` 출처 `unknown`)으로 두고 상태 문구로 알린다 — "<족보 이름> 덱을 복사했습니다. 보유하지 않은 학생 n명(이름 · …)은 빈칸으로 두었습니다." 모두 보유면 "<족보 이름> 덱을 내 공격 덱에 복사했습니다. 저장하면 기록에 남습니다." 보유 = 계정 상태 학생 목록(내 덱 학생 고르기와 같은 규칙).
+- 족보의 모름 · 와일드카드 칸은 모름, 확인된 빈칸은 확인된 빈칸(`empty`)으로 옮긴다. 복사한 칸은 `manual` 관측이다.
+- **놓을 수 없는 경우**(드롭 거부 + 버튼 흐림, 이유 = 힌트 알약(회색) · 버튼 툴팁): 방어 기록 "방어 기록에는 족보 덱을 복사할 수 없습니다. 공격 기록에서만 복사합니다.", 이전 형식(v1) 기록 "이전 형식 기록은 가져온 뒤에 고칠 수 있습니다.", 저장 중 "저장하는 중에는 덱을 바꿀 수 없습니다.", 계정 없음 "지금은 덱을 바꿀 수 없습니다.", 카드 없음(버튼) "가져올 족보가 없습니다.". 이관 전에도 새 초안은 고칠 수 있지만 S4가 닫혀 있어 복사할 카드가 없다.
+- 복사 뒤 상태 문구는 다음 초안 변경(칸 · 결과 · 시도 · 다른 행)까지 남는다. 순서: 오류 → 입력 오류 → 복사 문구 → 저장할 수 없는 이유 → 자동 연결.
+
+### 정한 규칙
+
+- 카드는 끌 수 있다(`Draggable`, 마우스 즉시 끌기, 커서 grab). 고스트는 포인터가 고스트 안 (237, 90)에 오게(시안 커서 자리) 놓고, 그릴 때 화면 밖으로 나가지 않게 민다(여백 8). 놓을 자리 = 내 덱 줄 자리(hit test). 강조 = 그 자리를 6씩 넓힌 사선 행(분홍 테두리 · 채움 .08), 힌트 알약 = 자리 왼쪽 위 (+49.6, −34.2).
+- 카드는 섹션 아랫변 18 위까지 들어가는 만큼 놓고(기준 창 6장), 넘치면 마지막 자리에 "족보 n개 중 k개를 보입니다." 한 줄. 스크롤 없음(→ 발견 6).
+- 대상 덱 줄 굵은 글자 = 모르는 칸 위치("4번 빈칸", 여럿이면 "3 · 4번 빈칸", SP가 끼면 "번" 없이, 없으면 "빈칸 없음", 모두면 "모두 빈칸"), 둘째 줄 = 시안 문구 그대로. 방어 기록이면 캡션이 "상대 공격 덱".
+- 키보드 · 접근성: 카드는 `KitPressable`(포커스 · Enter로 고르기, 의미 레이블 = 시안 aria "족보 … — 끌어서 내 공격 덱에 놓으면 복사"), 복사는 "족보에서 가져오기" 버튼.
+
+### design-review seed
+
+- 공격 기록 3개의 상대 방어 덱: 1번 · SP1 · SP2 학생 칸 = `visible_lobby` · `lobby_scan`(로비 스캔 공개 칸 모양, Mock 쓰기 · 계약상 허용 — 백엔드 실제 저장은 미확인).
+- 아비도스 방어 덱(dr-match-3)을 `aru · haruna · ? · ? | hibiki · empty` → **`hina · haruna · ? · empty | hibiki · ako`**로 바꿨다: 게헨나 덱과 공개 시그니처(`hina|hibiki|ako`)가 같아 게헨나 기록을 고르면 FD-129 합집합 카드 2장(완전 덱 · 부분 덱)이 보인다. 모름 칸 · 확인된 빈칸 예시는 그대로 남는다.
+- 방어 기록(dr-match-4)의 덱은 공개 칸 없이 예전 구성 그대로(내 방어 덱 = 게헨나 학생, 상대 공격 덱 = 옛 아비도스 구성). 기록 수 4 · 자동 족보 2 · revision 4는 같다.
+
+### golden 변화 예상(비교 미실행 — 사고 기록의 우연한 실행은 세지 않는다)
+
+- `tactical`: **바뀜**. S4 "준비 중" → 대상 방어 덱 줄("대상 방어 덱 / 게헨나 선도부" · 히나 … 아코 · "빈칸 없음"), KPI(방어 유저 — · 연결 족보 2개 · 최신 검증 — · 숨은 편성 다양성 낮음 / 유형 1), 끌기 안내, 카드 2장 — 위 "족보 3a0a33 · haruna"(마지막 관측 2026-10-02, 관측 1승 0패 · 100%), 아래 "족보 edd9e2 · hoshino"(분홍 선택, 마지막 관측 2026-10-04 21:10, 1승 1패 · 50%). S3 출처 범례 "공개 1 · SP1 · SP2 로비 스캔 / 기록 2 · 3 · 4 지난 기록 / 빈칸 — 기록 없음". S1 셋째 행(아비도스 공격) 상대 덱 미니 줄이 히나 · 하루나 · 빗금 · 빈 상자 | 히비키 · 아코로 바뀜. 일회성 렌더로 모양 확인.
+- `tactical-migration`: **변화 0 예상**(S4는 FE9-a와 같은 "준비 중", "족보에서 가져오기"는 흐림 그대로, 놓을 자리는 끌 때만 그린다). 사고 기록의 우연한 실행에서 통과했다.
+- 새 `tactical-jokbo-drag`(optional_added): `tactical`과 같은 화면에서 위 카드("족보 3a0a33 · haruna")를 끌어 포인터 (1399, 829)에 둔 상태 — 고스트 (1162, 739, 448×104, −2.5°, 이름 + 덱 6칸 40×32), 내 덱 줄 분홍 강조, 힌트 알약 "놓으면 족보 3a0a33 · haruna 덱으로 복사 · 위치 포함"(783, 679), 내 덱은 그대로. 일회성 렌더로 모양 확인, 위젯 테스트가 고스트 · 알약 · 강조 위치를 시안 ±2px로 고정.
+- 다른 장면: 변화 0 예상(전술 탭을 여는 golden은 이 파일뿐, 셸 · 키트 수정 0).
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1` · golden 비교(의도한 실행) · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 위 목록 밖 Flutter 테스트(Lane A 통계 · 계획 · 인벤토리 · 스캔, 나머지 process E2E): **미실행**. `lib/services/**`는 design-review seed 데이터만 바뀌어 process E2E 영향 없음 예상.
+- 실제 백엔드에 붙인 S4: **미실행** — 로비 연결 기록이 있을 때 통계 시그니처 행 · 신선도 값, 추천 질의 속도, `visible_lobby` 칸을 가진 기록 저장(백엔드가 이 상태 · 출처를 받는지).
+- 마우스 실제 끌기(Windows 앱): **미실행**(위젯 테스트 제스처로만).
+- 실제 사용자 프로필 · Windows release 빌드: **미실행**.
+
+### 검수표(시안 Tactical, mock 모드 · 기준 viewport 최대화)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| S3 기록 고르기 | 개발 패널 design-review 시나리오 → 전술대항전 탭(첫 행 게헨나 공격이 골라짐) | S3 범례 "공개 1 · SP1 · SP2", S4 대상 덱 줄 · KPI(— · 2개 · — · 낮음 유형 1) · 안내 문구 |
+| S4 카드 | 같은 화면 | 카드 2장 위치(왼쪽 사선을 따라 넓어짐), 손잡이 점, 이름 · 마지막 관측, 덱 44×36, 관측 승/패 · 성공률(초록), 지금 내 덱과 같은 카드가 분홍 선택. 채택률 · 독립 재현 · 첫 시도 · 평균 · 하단 경고 없음 |
+| 다른 기록 | S1 셋째 행(아비도스 공격) · 넷째 행(방어) | 같은 시그니처라 카드 2장 그대로(대상 이름 바뀜) / 방어 행은 "공개 칸이 없어…" 빈 상태 |
+| 끌기 | 위 카드를 S3 내 덱 줄로 끌기 | 고스트(기울어짐, 화면 밖으로 안 나감), 내 덱 줄 분홍 강조, 알약 "놓으면 … 덱으로 복사 · 위치 포함" |
+| 놓기 | 내 덱 줄에서 놓기 | 내 덱 6칸 = 그 족보 덱(보유하지 않은 학생은 빗금), 상태 문구, 그 카드가 선택됨, 목록 · revision 변화 없음(저장 안 함) |
+| 버튼 | 다른 카드를 눌러 고른 뒤 "족보에서 가져오기" | 끌기와 같은 결과, 툴팁 "오른쪽에서 고른 족보 덱을…" |
+| 방어 거부 | S3 종류 칩 방어 | 버튼 흐림 · 툴팁 이유, 끌면 회색 알약 이유, 놓아도 그대로 |
+| 이관 전 | v1 기록만 있는 계정 | S4 "준비 중", 버튼 흐림 |
+
+### WIP 보존 확인
+
+- 이 slice가 고친 기존 파일 6개 + 이 문서는 착수 때 WIP 없음(착수 기록) → `post_dir` 없음. pre 사본 `debug/frontend_fe9d/pre/<경로>`. 고치지 않은 3파일(컨트롤러 · revision 테스트 · seed 테스트)은 pre와 cmp 일치.
+- 스캐너 WIP 15파일 · Lane A 파일 · 택틱 파일: 열지도 고치지도 않았다(`git status --short`에 보이는 그 밖의 ` M` · `??`는 다른 레인 것 그대로). `dart format`은 이 slice 파일 경로만. git 쓰기 0회.
+
+### 키트 승격 후보(Lane A 판단)
+
+- `TacticalDeckStrip`(덱 6칸 초상 줄 — `TacticalMiniDeck`과 라벨만 다름), `TacticalDropPill`(skew 알약), `TacticalDragGhostFrame`(그릴 때 화면 안으로 미는 틀 — 끌기 고스트 공용), `TacticalDropHighlightPainter`(사선 행 강조).
+- `DiagonalScrollViewport`에 왼쪽 사선 레일(오른쪽 사다리꼴 섹션, 아래로 갈수록 넓어지는 행) 모드가 없다 → 발견 6.
+
+### 발견 사항
+
+1. **Mock에는 로비가 없어** 통계 시그니처 행 · 신선도가 늘 비어 있다(FE9-b1 Mock 차이 그대로, 고치지 않음): design-review에서 방어 유저 · 최신 검증은 '—'이고 카드 승/패는 컨트롤러 기록 집계다. 실제 백엔드는 로비 후보에 연결된 기록만 시그니처 통계에 들어간다.
+2. **카드 승/패의 두 출처**: 통계 행이 있으면 "이 공개 시그니처에 연결된 기록을 공격 덱별로 센 값"(완전 덱이 달라도 같은 공격 덱은 같은 숫자), 없으면 "같은 완전 방어 덱 + 같은 공격 덱 기록을 센 값"이다. 둘 다 v2 기록 관측 값이지만 뜻이 조금 다르다 — 통일할지(예: 늘 컨트롤러 집계) CF 판단.
+3. **대상 덱 안내 문구 vs FD-129**: 시안 "빈칸은 아무 학생이나 일치로 보고 족보를 찾았습니다"는 그대로 두었지만, FD-129는 공개 칸만 맞추므로 기록 칸(2~4번)도 아무 학생이나 맞는 것으로 본다. 부분 덱(모름 칸 있음) 족보도 넣었다. 문구를 바꿀지 CF 판단.
+4. **Mock 자동 족보 이름이 학생 ID**("족보 3a0a33 · haruna", FB-6 Mock 차이): golden · 검수 화면에 ID가 보인다. 백엔드는 표시명이다.
+5. **첫 시도 · 평균 시도**: v2 `attempt_count`로 같은 편성 기록에서 셀 수 있다(관측 값). 읽기 응답에 없어 이번에는 그리지 않았다 — FE9-e 후보.
+6. **S4 스크롤 없음**: 키트 사선 스크롤은 오른쪽 레일만 지원해 카드를 들어가는 만큼만(기준 6장) 놓고 "족보 n개 중 k개" 한 줄로 알린다. 많은 족보 보기는 FE9-e "전체 보기"나 키트 왼쪽 레일 모드(Lane A)가 필요하다.
+7. **마지막 관측은 절대 시각**: 시안 "6시간 전 성공"과 달리 KST 시각으로 보인다 — golden의 `MockAppService`는 고정 시계(`AppClockSource`)가 아니라 상대 시각이 실행 시각에 따라 바뀐다. "최신 검증" KPI는 상대 시각(Mock은 늘 '—').
+8. **숨은 편성 다양성**: 추천 `ambiguity.grade`(관측된 완전 방어 덱의 근거 비율로 정한 등급)와 `scenario_total`을 그렸다. 확률 · 보정 지표는 아니라 FD-127 숨김 목록 밖으로 판단했다 — 숨길지 CF 판단.
+9. **기본 Mock 계정의 보유 학생**: 이 계정의 계정 상태 학생 목록이 비어 있어(FE9-a 발견 7) 기본 Mock에서 복사하면 모든 칸이 빗금이다. 테스트는 `saveRepositoryStudents`로 보유 학생을 넣었다. design-review 시나리오는 확인하지 않았다(미실행).
+10. **시안의 끌기 궤적 선**(원래 카드 → 커서 분홍 곡선)과 그려진 커서는 만들지 않았다(앱은 실제 커서). 힌트 알약은 시안처럼 "내 공격 덱 · 위치 포함" 캡션을 덮는다.
+11. **seed 덱 구성 변경**(아비도스 방어 덱): 검수 · golden에서 S1 셋째 행 미니 덱이 바뀐다. 다른 seed 소비처(design-review 시나리오 테스트 · seed 역할 테스트 · revision 테스트)는 그대로 통과.
+12. 사고 기록(임시 렌더 사본의 golden 비교 실행)과 `failures/tactical_*.png` 부산물 — 위 절.
+13. fe_gate 분류: 새 `tactical_jokbo_panel_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음이다(+17, 약 5초).
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9d/commit.json`: slice `fe9d`, modified 6(이 문서는 `whole`), added 3, `post_dir` 없음(WIP 없음), `whole` = 이 문서 · `frontend/test/goldens/baseline/tactical.png`, `optional_added` = `frontend/test/goldens/baseline/tactical-jokbo-drag.png`, `status=true`.
+- 인계: `debug/frontend_fe9d/output.md`. 로그 `debug/frontend_fe9d/logs/`.
+
+### 다음 행동
+
+- FE9-d 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: ① 사고 기록 확인 ② Lane A가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 tactical_jokbo_panel +17 · tactical_page +20, golden `tactical` RED(변화 예상대로) · `tactical-jokbo-drag` 새 기준 없음 · `tactical-migration` GREEN → 승인 → `-UpdateGoldens`) ③ `fe_commit.ps1 -Slice fe9d`. 발견 2 · 3 · 8은 CF 판단, 5 · 6은 FE9-e · Lane A 후보.

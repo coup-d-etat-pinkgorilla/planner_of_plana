@@ -5,6 +5,10 @@
 // 든 부분 방어 덱을 모두 보인다. 공격 기록 3개는 편성 두 쌍이라 자동 족보(`lineage-`)가 2개 생긴다.
 // 스페셜 칸(SP1 · SP2)에는 카탈로그 `combat_class`가 special인 학생만 둔다(tidy2: SP2 `chise`(스트라이커) → 공격 덱 A `hanae`,
 // 게헨나 방어 덱 `ako` — 기본 Mock · 검수 시나리오 모두 보유 학생, FE9-a 발견 8).
+// FE9-d: 공격 기록의 상대 방어 덱은 로비 공개 칸(1번 · SP1 · SP2)이 `visible_lobby`(출처 `lobby_scan`)다. 게헨나 선도부와
+// 아비도스 대책위원회의 방어 덱이 같은 공개 시그니처(히나 | 히비키 | 아코)라, 게헨나 기록을 고르면 S4에 족보 2개(완전 덱 ·
+// 부분 덱, FD-129 합집합)가 보인다. 아비도스 방어 덱은 2번이 기록, 3번이 모름, 4번이 확인된 빈칸이다. 방어 기록의 덱(내 방어 덱 ·
+// 상대 공격 덱)은 공개 칸이 없다.
 import '../tactical_v2_service.dart';
 
 const designReviewTacticalOpponentA = 'dr-opponent-gehenna';
@@ -14,35 +18,52 @@ TacticalSlotObservation _slot(
   int position,
   String? studentId, {
   String? state,
+  String source = 'manual',
 }) => TacticalSlotObservation(
   position: position,
   studentId: studentId,
   state: state ?? (studentId == null ? 'unknown' : 'manual'),
-  source: 'manual',
+  source: source,
   confidence: null,
   reviewStatus: 'confirmed',
   wildcard: false,
 );
 
-/// [strikers] 4칸 · [specials] 2칸. null = 모름 칸, `'empty'` = 확인된 빈칸.
-TacticalDeckV2 _deck(List<String?> strikers, List<String?> specials) {
-  TacticalSlotObservation slot(int position, String? value) => value == 'empty'
+/// [strikers] 4칸 · [specials] 2칸. null = 모름 칸, `'empty'` = 확인된 빈칸. [lobby]면 1번 · SP1 · SP2의 학생 칸을
+/// 로비 공개 관측(`visible_lobby` · `lobby_scan`)으로 둔다.
+TacticalDeckV2 _deck(
+  List<String?> strikers,
+  List<String?> specials, {
+  bool lobby = false,
+}) {
+  TacticalSlotObservation slot(int position, String? value, bool public) =>
+      value == 'empty'
       ? _slot(position, null, state: 'empty')
+      : public && lobby && value != null
+      ? _slot(position, value, state: 'visible_lobby', source: 'lobby_scan')
       : _slot(position, value);
   return TacticalDeckV2(
-    strikers: [for (final (index, id) in strikers.indexed) slot(index, id)],
-    specials: [for (final (index, id) in specials.indexed) slot(index, id)],
+    strikers: [
+      for (final (index, id) in strikers.indexed) slot(index, id, index == 0),
+    ],
+    specials: [
+      for (final (index, id) in specials.indexed) slot(index, id, true),
+    ],
   );
 }
 
 final _gehennaDefense = _deck(
   ['hina', 'iori', 'aru', 'haruka'],
   ['hibiki', 'ako'],
+  lobby: true,
 );
 final _abydosDefense = _deck(
-  ['aru', 'haruna', null, null],
-  ['hibiki', 'empty'],
+  ['hina', 'haruna', null, 'empty'],
+  ['hibiki', 'ako'],
+  lobby: true,
 );
+final _myDefense = _deck(['hina', 'iori', 'aru', 'haruka'], ['hibiki', 'ako']);
+final _abydosAttack = _deck(['aru', 'haruna', null, null], ['hibiki', 'empty']);
 final _attackA = _deck(
   ['hoshino', 'izuna', 'mika', 'kayoko'],
   ['ayane', 'hanae'],
@@ -105,8 +126,8 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
     opponentIdentityId: designReviewTacticalOpponentB,
     opponentDisplayName: '아비도스 대책위원회',
     result: 'win',
-    attackDeck: _abydosDefense,
-    defenseDeck: _gehennaDefense,
+    attackDeck: _abydosAttack,
+    defenseDeck: _myDefense,
     notes: '',
     attemptCount: 1,
   ),

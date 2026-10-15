@@ -1,7 +1,8 @@
-// FE9-a: 전술대항전 기록 화면(시안 Tactical S1 · S3, S2 · S4 자리)을 FE9-b1 컨트롤러(v2) 위에서 검사한다.
+// FE9-a: 전술대항전 기록 화면(시안 Tactical S1 · S3, S2 자리 · S4는 FE9-d)을 FE9-b1 컨트롤러(v2) 위에서 검사한다.
 //
-// - Studio 섹션 꼭짓점(기준 콘텐츠 캔버스 2560×1208, 시안 y − 184)과 섹션 안 요소 배치(±2px).
-// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 · S4 "준비 중", 분석 · 슬롯 seg 비활성. 세 창 크기에서 넘침 예외 0.
+// - Studio 섹션 꼭짓점(기준 콘텐츠 캔버스 2560×1208, 시안 y − 184)과 섹션 안 요소 배치(±2px, FE9-d S4 요소 포함).
+// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 "준비 중", S4 공개 칸 없음 안내(FE9-d), 분석 · 슬롯 seg 비활성.
+//   세 창 크기에서 넘침 예외 0.
 // - design-review seed 기록 4개: 행 표기(FD-132 방어 행, 시각 정밀도, 시도 모름 '—'), 필터, 첫 행 자동 선택.
 // - 작성: 새 기록(학생 고르기 모달 · 상대 이름) → 저장, 고쳐 저장(같은 ID · v2 revision), 복제해서 새 기록, 지우기(BaModal).
 // - v1 기록이 남은 계정: 이관 안내 띠 · 읽기 전용 행 · 저장 불가 → "가져오기" → v2 기록(시도 모름 → 정해야 저장).
@@ -178,9 +179,10 @@ void main() {
       final deck = designReviewTacticalMatches()[2].defenseDeck;
       final legend = tacticalSourceLegend(deck);
       expect(legend.map((item) => item.label), ['공개', '기록', '빈칸']);
-      expect(legend[0].text, '— 로비 스캔');
-      expect(legend[1].text, '1 · 2 · SP1 지난 기록');
-      expect(legend[2].text, '3 · 4 · SP2 기록 없음');
+      // FE9-d seed: 아비도스 방어 덱은 1번 · SP1 · SP2가 로비 공개 칸, 2번 기록, 3번 모름, 4번 확인된 빈칸.
+      expect(legend[0].text, '1 · SP1 · SP2 로비 스캔');
+      expect(legend[1].text, '2 지난 기록');
+      expect(legend[2].text, '3 · 4 기록 없음');
     });
 
     test('a new draft saves as an instant attack with my deck first', () {
@@ -295,6 +297,33 @@ void main() {
       // 기록 행: 첫 행 743.9, 둘째 행 719.9(사선을 따라 준다), 높이 128 · 간격 8.
       _expectRect(tester, 'tactical-records-row-0', 14, 323.2, 743.9, 128);
       _expectRect(tester, 'tactical-records-row-1', 14, 459.2, 719.9, 128);
+      // FE9-d S4(시안 `.row` · `.plain`): 대상 방어 덱 · KPI · 끌기 안내 · 족보 카드 2장(왼쪽 사선을 따라 넓어진다).
+      _expectRect(
+        tester,
+        'tactical-slot-jokbo-target',
+        1944.3,
+        271.2,
+        593.7,
+        64,
+      );
+      _expectRect(tester, 'tactical-slot-jokbo-kpi', 1927.8, 345.2, 610.2, 84);
+      _expectRect(tester, 'tactical-slot-jokbo-hint', 1922.5, 437.2, 615.5, 22);
+      _expectRect(
+        tester,
+        'tactical-slot-jokbo-card-0',
+        1898.9,
+        465.2,
+        639.1,
+        128,
+      );
+      _expectRect(
+        tester,
+        'tactical-slot-jokbo-card-1',
+        1874.9,
+        601.2,
+        663.1,
+        128,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -318,10 +347,12 @@ void main() {
           find.byKey(const ValueKey('tactical-lobby-pending')),
           findsOneWidget,
         );
+        // FE9-d: 새 초안의 상대 덱은 모두 빈칸이라 공개 시그니처가 없다(질의하지 않는다).
         expect(
-          find.byKey(const ValueKey('tactical-jokbo-pending')),
-          findsOneWidget,
+          _text(tester, 'tactical-jokbo-message'),
+          tacticalJokboNoSignatureText,
         );
+        expect(_text(tester, 'tactical-jokbo-target-blank'), '모두 빈칸');
         expect(_text(tester, 'tactical-editor-header'), '새 공격 기록');
         // tidy2: 시즌을 모르면(기록 없음 → 새 초안 시즌 '') 시즌 칩은 '—'다.
         expect(find.text('시즌 —'), findsOneWidget);
@@ -660,10 +691,7 @@ void main() {
         'legacy-no-season-seed',
       );
       await _pump(tester, service);
-      expect(
-        _text(tester, 'tactical-editor-header'),
-        '공격 기록 · 2026-07-23',
-      );
+      expect(_text(tester, 'tactical-editor-header'), '공격 기록 · 2026-07-23');
       expect(find.text('시즌 —'), findsOneWidget);
       expect(find.textContaining('시즌 0'), findsNothing);
       expect(tester.takeException(), isNull);
