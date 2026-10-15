@@ -1,7 +1,8 @@
 // FE9-a: 전술대항전 기록 화면(시안 Tactical S1 · S3, S2 자리 · S4는 FE9-d)을 FE9-b1 컨트롤러(v2) 위에서 검사한다.
 //
 // - Studio 섹션 꼭짓점(기준 콘텐츠 캔버스 2560×1208, 시안 y − 184)과 섹션 안 요소 배치(±2px, FE9-d S4 요소 포함).
-// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 "준비 중", S4 공개 칸 없음 안내(FE9-d), 분석 · 슬롯 seg 비활성.
+// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 "준비 중", S4 공개 칸 없음 안내(FE9-d), S1 제목 줄에 seg 없음
+//   (FE9-e: 셸 머리말로 옮김 — `tactical_analysis_test.dart`).
 //   세 창 크기에서 넘침 예외 0.
 // - design-review seed 기록 4개: 행 표기(FD-132 방어 행, 시각 정밀도, 시도 모름 '—'), 필터, 첫 행 자동 선택.
 // - 작성: 새 기록(학생 고르기 모달 · 상대 이름) → 저장, 고쳐 저장(같은 ID · v2 revision), 복제해서 새 기록, 지우기(BaModal).
@@ -400,22 +401,18 @@ void main() {
       });
     }
 
-    testWidgets('sub views analysis and slots are disabled with 준비 중', (
+    testWidgets('S1 title has no sub view seg and excel import is pending', (
       tester,
     ) async {
       final service = MockAppService();
       addTearDown(service.dispose);
       await _pump(tester, service);
-      for (final key in const [
-        'tactical-view-analysis',
-        'tactical-view-slots',
-      ]) {
-        final tooltip = find.ancestor(
-          of: find.byKey(ValueKey(key)),
-          matching: find.byType(Tooltip),
-        );
-        expect(tester.widget<Tooltip>(tooltip).message, tacticalPendingText);
-      }
+      // FE9-e: 하위 화면 seg는 셸 머리말로 옮겼다(FD-126 (a)). 머리말 없이 띄운 화면에는 seg가 없다.
+      expect(
+        find.byKey(const ValueKey('tactical-view-segments')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('tactical-view-records')), findsNothing);
       final excel = find.ancestor(
         of: find.byKey(const ValueKey('tactical-import-excel')),
         matching: find.byType(Tooltip),

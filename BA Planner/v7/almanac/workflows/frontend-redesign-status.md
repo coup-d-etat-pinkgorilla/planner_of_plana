@@ -9022,3 +9022,200 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 view
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_023150\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE9-e 착수 기록 (2026-10-16 07:30, Lane A)
+
+- 상태: **진행 중**. 범위: 전술대항전 분석 화면(Tactical-Analysis S1~S3) · 족보 전체 보기 팝업(Tactical-Analysis-All) · 기록 ↔ 분석 하위 화면 전환(FD-126 seg를 셸 머리말로, 섹션 intro/outro). 슬롯(FE9-g)은 seg 자리만(흐림).
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-e 착수 기록" 없음(grep 0건). 막힘 요약 `열림` 0건(FE9-e 행 FD-126 · FD-127 모두 확정). 워커 재량 FD-129 · FD-130 · FD-134는 권장안으로 처리한다.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `1d9a11b360ecf5a090150ee49000cfcae0be6407`.
+- 고칠 기존 파일(모두 착수 때 WIP 없음 — `git status --short` 빈 줄, 사본 `debug/frontend_fe9e/pre/<경로>`):
+
+| 파일 | 줄바꿈 | WIP |
+|---|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart` | CRLF | 없음 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | LF | 없음 |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart` | LF | 없음 |
+| `frontend/lib/ui/app_shell.dart` | LF | 없음 |
+| `frontend/lib/ui/widgets/page_header_override.dart` | LF | 없음 |
+| `frontend/test/tactical_page_test.dart` | LF | 없음 |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart` | LF | 없음 |
+| `frontend/lib/services/design_review/tactical_records_data.dart`(고칠 수도 있음) | LF | 없음 |
+| `frontend/lib/tactical/tactical_records_controller.dart`(고칠 수도 있음) | LF | 없음 |
+| 이 문서 | LF | 없음 |
+
+- 새 파일 예정: `frontend/lib/ui/tactical/tactical_analysis_view.dart`(위젯 없는 모델) · `tactical_analysis_workspace.dart`(분석 3섹션) · `tactical_jokbo_all_panel.dart`(전체 보기 팝업) · `tactical_sub_screen.dart`(머리말 seg · 하위 화면 모션), `frontend/test/tactical_analysis_test.dart`.
+- 스캐너 시각부 미커밋 5파일 · `lib/services/**`(design_review 제외) · 키트 · 택틱 · 통계 파일은 고치지 않는다.
+
+## FE9-e 종료 기록 (2026-10-16 08:05, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+전술대항전 분석 화면(시안 Tactical-Analysis S1~S3)과 족보 전체 보기 팝업(Tactical-Analysis-All)을 만들고, 하위 seg "기록 · 분석 · 슬롯"을 셸 머리말 제목 옆으로 옮겼다(FD-126 (a), CF 결정 2026-10-16). 하위 화면을 바꾸면 섹션이 부착면 방향으로 빠지고 들어온다. 슬롯은 seg 자리만(흐림 + "준비 중"). HEAD는 착수 때와 같다(`1d9a11b3`).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`(작성 중 경로별 여러 번 · 전체 3회): 마지막 전체 **No issues found(0)**. `pubspec.yaml` · `pubspec.lock` 변경 0(analyze가 pub get을 돌렸지만 git status 변화 없음).
+- `flutter test test/tactical_page_test.dart test/tactical_jokbo_panel_test.dart test/tactical_page_revision_test.dart --exclude-tags golden`: ① +41 −1(예상된 실패 — seg를 머리말로 옮겨 S1의 `tactical-view-analysis` 툴팁 테스트가 깨짐) → 테스트를 "S1 제목 줄에 seg 없음 · 엑셀 준비 중"으로 고침.
+- 새 `flutter test test/tactical_analysis_test.dart`: ① +10 −9(구현 쪽 2: 누적 돌파율 칸 110+220+60 > 370 넘침, 팝업 줄 높이 66 < 내용 52.6 + 테두리 → 70 · 테두리는 foregroundDecoration / 테스트 쪽 1: 검증 강도 키가 칩) → ② +13 −4 → ③ **+19** → 1280×720 셸 테스트 추가 뒤 **+20**.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `tactical_workspace` · `tactical_studio_layout` · `AppSection.pvp` · `top-tab-pvp` · `BAPlannerApp(` · `PageHeaderOverride` · `page-header` · `tactical_jokbo` · `designReviewTactical` · `MockDesignReviewScenario` · `tactical-view` + tactical 서비스 4), 일반 29파일 한 명령(`--exclude-tags golden`, json): **+288 −0** — account_editor_fe8c 9, account_manager_fe8b 6, app_navigation_fe7d 14, app_navigation_tidy1 11, connected_target_fe8d 8, design_review_tactical_seed 2, growth_calculator_view 24, home_app_shell 1, home_connect_fe8e 10, home_page 5, inventory_shell_lazy 1, mock_design_review_scenario 11, profile_delete_fb2d 17, section_template_studio 15, statistics_app_shell 2, statistics_filter 10, student_filter_followups 4, student_filter_modal 8, tactical_analysis 19(그 뒤 20), tactical_jokbo_panel 17, tactical_lobby_scanner_service 2, tactical_page_revision 5, tactical_page 20, tactical_records_controller 14, tactical_service 6, tactical_share_v1_contract 1, tactical_v2_service 5, title_page 25, widget 16.
+- process 묶음 분류 1파일(`--concurrency=1`): tactical_fe9b1_read **+12**.
+- 일회성 렌더(임시 `test/goldens/zz_fe9e_render_tmp_test.dart` = golden 파일 사본에서 `@Tags(['golden'])` · `expectGoldenScene` 0건을 grep으로 확인한 뒤 `toImage` → scratchpad PNG, 실행 뒤 삭제): **+5**(다섯 장면). 모양을 눈으로 확인했다(아래 golden 절). 렌더 뒤 누적 돌파율 묶음 사이 간격 28을 더했다(analyze 0 · 분석 테스트 +20 다시 확인).
+- `dart format`: 이 slice 파일 경로만 하나씩(디렉터리 인자 0). `app_shell.dart`를 포맷했을 때 이 slice와 무관한 `_TopTab` 한 줄이 접혀서 원래 3줄로 되돌렸다(아래 diff 크기는 되돌린 뒤).
+- `git diff --check`(고친 기존 7파일 + 이 문서): exit 0. 새 6파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `tactical_page.dart`는 CRLF 그대로(1353줄 모두 CRLF), 나머지 LF.
+- 잠금 충돌 0(재시도 없음). 로그: `debug/frontend_fe9e/logs/`(실패 줄과 json 요약만 확인).
+
+### 고친 파일 · 새 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/widgets/page_header_override.dart` | `backLabel` · `onBack` 선택 인자, 새 `trailing`(제목 옆 위젯). 값은 탭마다 하나(Map) — 학생 계산기와 전술 seg가 서로 지우지 않게. `back()`은 `onBack`이 없으면 false(셸 기본 동작 = 다시 읽기). `value` getter 삭제(사용처 0, grep) |
+| `frontend/lib/ui/app_shell.dart` | **+10 −3**: TacticalPage에 `headerOverride` 1줄, 머리말 복귀 칩 조건(`backLabel != null`), 제목 · 칩 뒤 `trailing` |
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF) | 머리말 seg 걸기(빌드 뒤 · 화면 바꿀 때) · 해제(dispose), 하위 화면 상태 · `TacticalSubScreenStage`, 분석 질의(통계 · 추이 · 추천, 200ms 디바운스 · 세대 번호 · dispose 뒤 setState 0), 분석 값 조립, 전체 보기 팝업(BaModal), 분석 → 기록 복사 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | S1 제목 줄에서 seg 삭제, `_SectionEdges` · `_placed`를 새 공용 파일로(식 그대로), 섹션 모션 오프셋 훅 `sectionOffset` |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart` | 분석 3섹션 Studio 문서 · `tacticalSectionMotion`(부착면 표) · `TacticalAnalysisMetrics`(시안 좌표 · 팝업 자리) |
+| `frontend/test/tactical_page_test.dart` | seg 툴팁 테스트 → "S1 제목 줄에 seg 없음 · 엑셀 준비 중" |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart` | 장면 2 추가(`tactical-analysis` · `tactical-analysis-all`, 고정 시계 Mock 하위 클래스 · seg 누르기), 머리 주석 |
+| 새 `frontend/lib/ui/tactical/tactical_section_edges.dart` | 섹션 변 · 요소 자리(기록 · 분석 공용) |
+| 새 `frontend/lib/ui/tactical/tactical_sub_screen.dart` | 하위 화면 enum(글자 · 부제), 머리말 seg 위젯, 전환 모션 stage |
+| 새 `frontend/lib/ui/tactical/tactical_analysis_view.dart` | 위젯 없는 모델: 30일 기간, 시그니처 행, 족보 카드 · 시도 지표 · 상대별 결과, 상대 카드(이력 · 2~4번 비율 · 변경 감지 · 유효한 족보), 정렬, 검증 강도 |
+| 새 `frontend/lib/ui/tactical/tactical_analysis_workspace.dart` | 분석 3섹션 그리기 |
+| 새 `frontend/lib/ui/tactical/tactical_jokbo_all_panel.dart` | 족보 전체 보기 팝업(자리 계산 · 정렬 seg · 순위 줄) |
+| 새 `frontend/test/tactical_analysis_test.dart` | 20건(아래) |
+
+고치지 않음: `lib/tactical/tactical_records_controller.dart`(필요한 값이 이미 있음 — pre와 cmp 일치), `lib/services/design_review/tactical_records_data.dart`(seed 확장 없이 1 시그니처 · 족보 2 · 상대 2로 시안 상태가 나옴 — cmp 일치), `lib/services/**`(Lane B 작업 중 파일 열지 않음), 스캐너 시각부 5파일, 키트 · golden harness · 통계 · 택틱 파일.
+
+### 머리말 seg 구현(FD-126 (a))
+
+- **diff 크기**: `app_shell.dart` **+10 −3**(13줄), `page_header_override.dart` +30 −22.
+- **이유**: 시안에는 하위 이동 UI가 없고(G §0, A1) 사용자 결정 (a)는 "헤더 제목 옆 하위 seg"다. 셸 머리말은 지금 탭과 `PageHeaderOverride.section`이 같을 때만 override 값을 그리므로, 같은 통로에 "제목 옆 위젯" 한 자리(`trailing`)만 더했다. 복귀 칩이 없는 override(전술)를 위해 `backLabel` · `onBack`을 선택으로 바꿨다. 값을 탭마다 한 개로 바꾼 이유: 예전 컨트롤러는 전역 한 개라, 전술 화면이 seg를 걸면 학생 성장 계산기의 머리말(제목 · "← 학생")이 지워진다.
+- **부제**: 기록 "전술대항전 기록과 편성" · 분석 "공개 방어 시그니처별 족보 분석" · 슬롯 "슬롯별 사용률 · 위치 선호 · 궁합 · 카운터"(시안 그대로, 슬롯은 열리지 않아 보이지 않는다).
+- **같은 탭 다시 누르기**: 전술 override에는 `onBack`이 없어 `back()`이 false → 셸이 예전처럼 `_tacticalReloadToken`을 올린다(다시 읽기, 하위 화면은 그대로). 테스트로 확인.
+- **다른 탭 영향 0 근거**: ① 머리말 위젯 트리는 `trailing == null`이면 예전과 같다(새 `if` 블록이 아무것도 넣지 않음). ② 복귀 칩 조건은 `backLabel != null`이 더해졌을 뿐이고, 유일한 다른 사용처(학생 계산기, `student_page.dart` 239)는 `backLabel` · `onBack`을 늘 준다. ③ 값은 `section == AppSection.pvp`로만 걸리므로 다른 탭의 `valueFor`는 예전과 같다(학생은 학생 값 그대로). ④ 테스트: 셸 테스트에서 첫 화면(홈) · 학생 탭에 seg 없음, 학생 계산기 테스트(growth_calculator_view 24)와 셸을 띄우는 18파일 모두 통과. ⑤ golden: 다른 golden 중 머리말 override를 쓰는 것은 `fe1g_baseline_golden_test.dart`의 성장 계산기 장면(복귀 칩)뿐이고 위 ②로 같은 위젯이다.
+
+### 분석 화면(시안 Tactical-Analysis)
+
+- **3섹션 좌표**(기준 콘텐츠 캔버스, 테스트로 고정): S1 (0,2,21,94) 왼쪽 사다리꼴 — 시안과 같음. S2 rect (7,2,68,94) 아래 면 평행사변형(faceStart 10 · faceSpan 72 · height 96, **FD-130 주 부착면 아래**) — 꼭짓점 0.4px 안. S3 (66,2,30,94) 오른쪽 사다리꼴 — 시안과 같음. 섹션 안 요소 rect 21개를 시안 ±2px로 테스트한다(S1 행 · S2 11 · S3 9).
+- **S1 공개 방어 시그니처**: 제목 + "최근 30일" 칩, 공용 `DiagonalScrollViewport` resize 모드(행 86 · 간격 8, 첫 행 폭 511.7 — 시안과 같음, 스크롤바 · 포그). 행 = 공개 칸 초상 3(1번 | SP1 · SP2, 42×34) · 최근 관측("23h") · "방어 유저 n · 족보 n" · 칩 "변경 의심 n"(있을 때) · "표본 적음"(FD-134). 누르면 그 시그니처로 바뀐다(족보 · 상대 선택 초기화). 고른 행은 레일 분홍 선택.
+- **S2 족보 상세**: 이름 · "편집"(흐림 + "준비 중") · "검증 강도 X", 상대 방어 덱 6칸(73×59, 이름 · 위치) + "이 방어 덱 사용 n명 / 최근 30일 · 같은 6명 · 같은 위치", 족보 seg(상위 4, 고른 족보가 밖이면 넷째 자리에) + "전체 보기 (n)", 공격 덱 6칸 + "공격 기록에 복사" · "내 보유로 대체 찾기"(흐림 + "준비 중"), KPI 6칸, "N회 내 누적 돌파율" 막대 3, "상대별 결과" 4행(`srow`, 누르면 S3 상대가 바뀌고 그 줄이 파랑), "수명 · 신선도" 한 줄.
+- **S3 상대 카드**: "<이름> · 순위 —", 공개 방어 이력(지금 구간 30×24 + "10/3 ~ 현재", 앞 구간이 있으면 화살표 + 24×19 + 기간), "추정 숨은 스트라이커 2~4번 (추정값)" 4행 + 근거 줄, 변경 감지, "이 유저에게 유효한 족보" 2행(이름 + "이 상대 n승 m패" 칩 + 덱 46×37), 기억 카드.
+- **데이터**: 컨트롤러 기록 · 족보 + `TacticalEvidenceReadService` 통계(`date_from` = 30일 전) · 추이(`date_from` · `as_of`) · 추천(시즌 · 고른 상대 · 시그니처). 분석 화면이 열려 있을 때만 묻는다(기록 화면 테스트의 서비스 호출 변화 0). 늦은 응답은 세대 번호로 버리고, 실패하면 S2 제목 줄에 빨간 "분석 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다." + "다시 읽기"(기록에서 센 값은 그대로).
+- **안내 문구**: 서비스 없음 · 계정 없음 · 읽는 중 · 읽기 실패는 기록 화면 문구, 이관 전 "이전 형식 기록을 가져온 뒤에 분석할 수 있습니다. 기록 화면에서 "가져오기"를 눌러 주십시오.", 기록 없음 "최근 30일 동안 로비 공개 칸(1번 · SP1 · SP2)이 있는 공격 기록이 없습니다. …", S2/S3 "왼쪽에서 공개 방어 시그니처를 고르면 족보와 상대 카드가 보입니다." · "이 시그니처로 최근 30일에 기록한 상대가 없습니다.".
+- **Mock**: design-review seed(FE9-b1 · FE9-d) 그대로로 보인다 — 시그니처 1(히나 | 히비키 · 아코), 족보 2, 상대 2. 기본 Mock(빈 v2)은 기록 없음 안내.
+
+### 숨긴 지표(FD-127 (a)) · 대체 표시
+
+| 시안 | 처리 | 근거 |
+|---|---|---|
+| S1 "최다 채택 족보 X" | 그리지 않음 | 채택 = 다수 사용자 자료 |
+| S2 칩 "널리 알려짐 · 변경 위험" | 그리지 않음 | 판단 · 다수 사용자 |
+| S2 KPI "채택률 52% · 28명 중" | 칸은 두고 '—' | 다수 사용자 자료(공유 집계는 읽기 capability에 없음) |
+| S2 KPI "독립 재현 12명 · 방어 8명 상대" | 칸은 두고 '—' | 같은 이유(share analytics는 Process 전용 `TacticalEvidenceService`, Mock 미구현) |
+| S2 KPI 관측 성공률 · 첫 시도 성공 · 평균 시도 · 최근 검증, N회 내 누적 돌파율 | **관측 값으로 그림** | 같은 편성 v2 기록의 승패 · `attempt_count`(FE9-d 발견 5). 시도 모름은 분모에서 뺀다(FD-176) |
+| S2 상대별 결과 보조 "안정 · 비추천 · 최근 검증" | "마지막 대전 n시간 전"으로 바꿈 | 판단 문구 대신 관측 시각 |
+| S2 대체 학생 허용도(3행) | 캡션 · 행 모두 그리지 않음(자리 비움) | 공유 집계(`one_slot_substitutions`) |
+| S2 수명 · 신선도 "전성기 · 최근 성공률 76%→71% · 시간 가중 점수 68 · 최초 제보자 / 타 사용자" | "최초 10/3 · 최근 10/4 · 관측 기록 n건 · 시도 횟수를 아는 기록 n건"만 | 시간 가중 점수 = 모델 지표, 제보자 = 공유 자료 |
+| S3 칩 "방어 변경 성향 높음" | 그리지 않음 | 판단 지표 |
+| S3 순위 "31위" | "순위 —" | 데이터 없음(기록 화면과 같음) |
+| S3 추정 숨은 스트라이커 %(근거 비중) | **이 상대 기록에서 그 학생이 2~4번에 나온 비율**로 그림 | 확률이 아닌 관측 비율(근거 줄에 "기록에 나온 비율"이라고 적음) |
+| S3 변경 감지 "족보 A 성공률 76% → 28% · 추정 시점 9/21 밤" | "n번 A → B · 마지막 같은 덱 M/D · 바뀐 기록 M/D"(없으면 "변경 관측 없음") | 추정 시점 · 성공률 변화 대신 관측 변화 |
+| S3 유효한 족보 칩 "변경 이후 4승 1패 · 최근 3연속 실패" | "이 상대 n승 m패" | 관측 승패 |
+| S3 기억 카드 "평균 유지 1.8일 · 12시간 내 변경 확률 63%" | "최근 30일 기록 n건 · 공개 덱 변경 n회 · 마지막 대전 …"만 | 확률 지표 |
+| 팝업 채택률 · 독립 재현 열과 정렬 | 열 '—', 정렬 seg 꺼짐 + 툴팁 "공유 자료가 없어 이 값으로 정렬할 수 없습니다." | 같은 이유 |
+
+### 처리한 FD
+
+- **FD-126 (a)**: 셸 머리말 제목 옆 seg(위 절).
+- **FD-127 (a)**: 위 표.
+- **FD-129(워커 재량, 권장안)**: 시그니처 족보 = 방어 덱이 그 공개 시그니처를 가진 족보의 합집합. S1 "족보 n", S2 seg · "족보 n개" · 전체 보기가 모두 같은 집합이다(→ 발견 2). 독립 재현은 share analytics가 읽기 capability에 없어 '—'.
+- **FD-130(워커 재량, 권장안)**: 분석 S2 주 부착면 = 아래(intro 80° · outro 260°). Studio spec도 face bottom.
+- **FD-134(워커 재량)**: 검증 강도 = 추천 `confidence_grade` high/medium/low → A/B/C, 그 밖 '—'(칩 색 A 초록 · B 파랑 · C 노랑 · — 회색). **표본 적음은 권장안과 다르게** "관측 기록(승 + 패) 5건 미만"으로 했다 — 권장안의 "독립 재현 5명 미만"은 독립 재현을 읽을 수 없고, `populationWarning`은 통계 · 추이 응답에 늘 들어 있는 고정 문장이라 기준으로 쓰면 모든 줄이 표본 적음이 된다(→ 발견 3). 팝업 각주도 이 기준으로 바꿨다("관측 기록 5건 미만은 흐리게 표시합니다 · …").
+- FD-176: 시도 모름 기록은 첫 시도 · 평균 · 누적 돌파율 분모에서 뺀다.
+
+### 정한 규칙
+
+- **분석 대상 기록**: 공격 기록 · 시각을 앎(정밀도 date · instant) · 고정 시계 기준 30일 안 · 상대 방어 덱에 공개 칸 있음. 방어 기록 · 시각 모름은 빠진다.
+- **시그니처 행**: 기록에서 모은 시그니처 + 통계 응답의 시그니처(로비 관측만 있는 것은 공개 칸만 그린다). 순서 = 최근 관측 → 기록 수 → 시그니처. 방어 유저 = 통계 행 `opponent_count`, 없으면 기록의 상대 수(→ 발견 4). "변경 의심 n" = 기록 사이 2~4번 학생이 바뀐 상대 수(앞 · 뒤 모두 학생을 아는 칸만).
+- **족보 승패**: 통계 시그니처 행의 공격 덱 값, 행이 없으면 30일 안 같은 편성 기록(FE9-d 규칙에 기간만 더함). 카드 순서 = FE9-d(승 많은 순 → 패 적은 순 → 이름). **기본 족보 = 관측 표본(승 + 패)이 가장 많은 카드**(seed: 게헨나 족보 1승 1패 — 시안 "족보 A"처럼 2위가 골라짐).
+- **seg 글자**: 족보 이름의 첫 " · " 앞("족보 edd9e2").
+- **기본 상대(S3)** = 고른 시그니처의 가장 최근 기록 상대. S2 상대별 결과 줄을 누르면 바뀐다.
+- **이 방어 덱 사용 n명** = 30일 안 기록 중 방어 덱 identity(6명 · 위치 · 모름 · 빈칸)가 고른 족보 방어 덱과 같은 상대 수.
+- **공개 방어 이력** = 이 상대의 분석 대상 기록을 오래된 순으로 보고 공개 시그니처가 이어지는 구간(가장 최근 구간 "~ 현재"). 공개 덱 변경 = 구간 수 − 1.
+- **팝업**: 키트 `layoutKitOverlay` 아래 · 오른쪽 맞춤(버튼 아래 12, 패널 오른쪽 = 버튼 오른쪽 + 16, 꼬리 = 패널 오른쪽 − 120, 키트 `KitOverlayTail`), 폭 940(화면이 좁으면 여백 8 안), 아래 공간에 들어가는 줄만 놓고 넘치면 "족보 n개 중 k개를 보입니다.". 기준 창에서 패널 왼쪽 · 위가 시안 (941, 467)과 2px 안(테스트). 줄을 누르면 S2 족보가 바뀌고 팝업은 열린 채("보는 중"이 옮겨감). 닫기 = 닫기 버튼 · Esc · 스크림. 하위 화면을 바꾸면 닫힌다.
+- **"공격 기록에 복사"(S2 · 팝업 줄)**: 팝업을 닫고 기록 화면으로 돌아가 FE9-d `_copyJokbo` 규칙 그대로 내 덱 초안을 채운다(저장 0, 보유하지 않은 학생은 빗금 + 상태 문구). 지금 초안이 방어 기록 · 이전 형식이면 새 공격 초안(이번 시즌)을 연 뒤 채운다. 계정 없음 · 저장 중이면 버튼 흐림 + 이유 툴팁.
+- **전환 모션**: 인벤토리 분석 ↔ 티어(FE6-e)와 같은 문법 — `AppMotion.section` × 2(720ms), 앞 절반 지금 섹션 outro, 뒤 절반 새 섹션 intro(`sectionExitOffset` · `sectionEntryOffset`, `AppMotion.sectionCurve`). 방향 `tacticalSectionMotion`: 기록 S1 0/180 · S2 260/80 · S3 80/260 · S4 180/0, 분석 S1 0/180 · S2 80/260(FD-130) · S3 180/0. 움직이는 동안 누르기 꺼짐. 멈춰 있을 때 오프셋은 0이고 순수 이동 Transform이라 그림 · golden에 영향 없음.
+- 머리말 seg는 셸 머리말 빌드 밖(빌드 뒤 콜백 · 이벤트)에서만 건다(빌드 중 notify 금지).
+
+### golden 변화 예상(비교 미실행)
+
+- `tactical`: **바뀜** — 머리말 제목 "전술대항전" 오른쪽에 seg(기록 분홍 · 분석 · 슬롯 흐림), 머리말 줄 높이가 seg(32)만큼이라 부제가 몇 px 내려갈 수 있음. S1 제목 줄은 "기록" + "새 기록" · "엑셀 가져오기"만(seg 빠짐). 나머지 같음.
+- `tactical-jokbo-drag`: **바뀜** — 같은 머리말 · S1 제목 줄 변화. 끌기 고스트 · 알약 · 강조는 같음.
+- `tactical-migration`: **바뀜** — 같은 머리말 · S1 제목 줄 변화. 이관 띠 · 읽기 전용 · S4 "준비 중"은 같음.
+- 새 `tactical-analysis`(optional_added): 머리말 부제 "공개 방어 시그니처별 족보 분석", seg 분석 분홍. S1 행 1개(분홍 선택: 히나 | 히비키 · 아코 초상, "23h", "방어 유저 2 · 족보 2", "표본 적음"). S2 "족보 edd9e2 · hoshino" · 편집(흐림) · "검증 강도 B"(Mock 추천 medium, 파랑), 상대 방어 덱 히나 · 이오리 · 아루 · 하루카 | 히비키 · 아코 + "1명", seg "족보 3a0a33 · 족보 edd9e2(분홍)" + "전체 보기 (2)", 공격 덱 호시노 · 이즈나 · 미카 · 카요코 | 아야네 · 하나에 + 복사 · 대체 찾기(흐림), KPI — · 50%(1승 1패) · 50% · 1.0회 · — · 23h 전, 누적 50% × 3, 상대별 결과 "게헨나 선도부 1승 1패" 파랑 테두리, (대체 학생 자리 비움), 수명 · 신선도 한 줄. S3 "게헨나 선도부 · 순위 —", 이력 "10/3 ~ 현재", 2~4번 아루 · 하루카 · 이오리 100%, 근거 줄, "변경 관측 없음", 유효한 족보 1행(이 상대 1승 1패 회색), 기억 카드. 일회성 렌더로 확인.
+- 새 `tactical-analysis-all`(optional_added): 위 화면 + 스크림 .35 + 940 패널(꼬리는 "전체 보기" 위), "족보 전체 · 2개 · 상대 방어 덱: 히나 · 이오리 · 아루 · 하루카 | 히비키 · 아코", 정렬 seg 성공률(분홍) · 채택률 · 독립 재현(흐림) · 최근 성공, 1위 "족보 3a0a33 · haruna" 100% · 3일 전, 2위 "족보 edd9e2 · hoshino · 보는 중"(분홍 외곽) 50% · 23시간 전, 두 줄 모두 흐림 .62 + "표본 적음", 각주. 일회성 렌더로 확인.
+- 다른 장면: 변화 0 예상(위 "다른 탭 영향 0 근거").
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 위 목록 밖 Flutter 테스트(통계 · 계획 · 인벤토리 · 스캔 화면 단독, process E2E): **미실행**. `lib/services/**` 수정 0.
+- 실제 백엔드에 붙인 분석 화면: **미실행** — 통계 `date_from` · 추이 신선도 `last_success_at` · 추천 `confidence_grade`가 실제 값일 때, 로비 관측만 있는 시그니처 행.
+- 실제 마우스 · 창 크기 조절 중 팝업 위치(앞 프레임 버튼 자리를 쓴다), Windows release 빌드: **미실행**.
+- Lane B가 같은 시각 `lib/services/**`(fb7-dart)를 고치고 있어, 내 테스트는 그 작업 중 파일 위에서 돌았다(실패 0).
+
+### 검수표(시안 Tactical-Analysis · -All, mock 모드 · 기준 viewport 최대화)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 기록 | 개발 패널 design-review 시나리오 → 전술대항전 탭 | 머리말 "전술대항전" 옆 seg(기록 분홍 · 분석 · 슬롯 흐림 + "준비 중" 툴팁), 부제 "전술대항전 기록과 편성", S1 제목 줄에 seg 없음 |
+| 분석 | 머리말 seg "분석" | 기록 섹션이 부착면 쪽으로 빠지고(S1 왼쪽 · S2 위 · S3 아래 · S4 오른쪽) 분석 섹션이 들어옴(S2는 아래에서), 부제 바뀜. S1 시그니처 행 · 표본 적음, S2 족보(게헨나) KPI · 채택률 · 독립 재현 '—' · 누적 돌파율, S3 게헨나 카드 |
+| 족보 바꾸기 | S2 seg 다른 족보 | 이름 · 덱 · KPI 100% · 상대별 결과 "아비도스 대책위원회" |
+| 상대 바꾸기 | S2 상대별 결과 줄 | S3 제목 · 이력 "10/2 ~ 현재" · 근거 |
+| 전체 보기 | "전체 보기 (2)" | 스크림 .35, 940 패널 꼬리가 버튼을 가리킴, 성공률 정렬 · "보는 중" 2위 · 흐림 + 표본 적음, 채택률 · 독립 재현 정렬 흐림 + 툴팁, "최근 성공"으로 바꾸면 순서 바뀜, 줄 누르면 S2 족보 바뀜, Esc · 닫기 · 스크림으로 닫힘 |
+| 복사 | 팝업 줄 "공격 기록에 복사" | 기록 화면으로 돌아감(모션), 내 덱 = 그 족보 덱, 상태 문구 "… 복사했습니다. 저장하면 기록에 남습니다.", 목록 · revision 변화 없음. 방어 행을 고른 상태였으면 "새 공격 기록" 초안 |
+| 다시 기록 | 머리말 seg "기록" | 부제 원래대로, 다른 탭(학생 · 통계)에 seg 없음, 전술 탭 다시 누르면 하위 화면 유지(다시 읽기) |
+| 작은 창 | 1280×720 | 넘침 없음, 팝업이 화면 안 |
+
+### 테스트(새 · 고친)
+
+- 새 `tactical_analysis_test.dart`(20): Studio 3섹션 꼭짓점 · 모션 방향 표, 모델 7(30일 기간 · 시그니처 행 · 족보 시도 지표와 시도 모름 · 상대 카드 · 변경 감지 · 정렬 · 검증 강도), 셸 머리말(제목 옆 seg · 부제 · 슬롯 준비 중 · 다른 탭 seg 없음 · 같은 탭 다시 누르기), 셸 1280×720(넘침 0 · 팝업 화면 안), 분석 화면 7(전환 모션 앞 · 뒤 절반, 시안 rect 21개 + 관측 값, seg · 상대 줄, 팝업 자리 · 꼬리 · 정렬 · 줄 선택 · 닫기, 팝업 복사(방어 초안 → 새 공격 초안, 저장 0), S2 복사(공격 초안 유지), 기본 Mock 안내), 1280×536 · 1440×716 페이지 넘침 0.
+- 고친 `tactical_page_test.dart`: 지운 테스트 "sub views analysis and slots are disabled with 준비 중" → 대체 "S1 title has no sub view seg and excel import is pending"(슬롯 준비 중 툴팁은 새 셸 테스트가 검사).
+
+### WIP 보존 확인
+
+- 고친 기존 7파일 + 이 문서는 착수 때 WIP 없음 → `post_dir` 없음. pre 사본 `debug/frontend_fe9e/pre/<경로>`(10파일 — 고치지 않은 컨트롤러 · seed 데이터 포함, 둘은 cmp 일치).
+- 스캐너 시각부 5파일(`scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · 그 테스트 2), Lane B 작업 중 `lib/services/**`(mock_app_service · mock_tactical_v2_writes · planning_protocol_client · process_app_service · tactical_v2_service): 열지도 고치지도 않았다. `dart format`은 이 slice 파일 경로만. git 쓰기 0회. 임시 렌더 파일은 실행 뒤 삭제(`test/goldens/`에 `zz_` 0건 확인).
+
+### 키트 승격 후보(Lane A 판단)
+
+- `TacticalSectionEdges` · `tacticalPlaced`(통계 화면에도 같은 "섹션 변 + 요소 자리" 식이 있음 — 키트 `SectionFrame` 옆 후보).
+- `TacticalSubScreenStage`(인벤토리 `_InventoryAnalysisStage` 교체 모션과 같은 문법 — 키트 "섹션 교체 stage" 후보, golden 0으로 옮길 수 있음).
+- 팝업 자리 계산 `tacticalJokboAllPlacement` + `KitOverlayTail` + `BaModalPanel.dialog` = "앵커 모달"(BaModal에 anchor 자리 옵션) 후보.
+- 덱 초상 줄이 이제 넷째 사본이다(`TacticalDeckStrip` · 분석 `_DeckRow` · 팝업 `_deck` · `TacticalMiniDeck`) — FE9-d 후보와 합쳐 한 벌로.
+
+### 발견 사항
+
+1. **머리말 컨트롤러 전역 1개 문제(고침)**: 예전 `PageHeaderOverrideController`는 값이 하나라, 다른 탭 화면이 값을 걸면 학생 성장 계산기 머리말이 지워질 수 있었다. 탭마다 하나로 바꿨다(위). CF가 셸 소유 규칙상 확인 필요.
+2. **"이 방어 덱을 깨는 족보 n개" 문구 vs FD-129**: 시안 문구는 그대로 두었지만, n은 FD-129 시그니처 족보(합집합)라 S1 "족보 n"과 늘 같다. 완전 방어 덱별로 나누려면(시안 A2 — S1 4 · S2 7) 규칙 결정이 필요하다. CF 판단.
+3. **FD-134 표본 적음 기준**: 권장안 "독립 재현 5명 미만 또는 populationWarning"은 지금 쓸 수 없다(독립 재현 읽기 capability 없음, `populationWarning`은 고정 문장). "관측 기록 5건 미만"으로 했고 각주 문구도 바꿨다. 공유 집계를 읽게 되면 권장안대로 되돌릴지 CF 판단.
+4. **방어 유저 수 두 규칙**: 분석 S1은 통계 행이 없으면 기록의 상대 수를 쓰고, 기록 화면 S4 KPI(FE9-d)는 '—'다. Mock에서 둘이 다르게 보인다(분석 2 · S4 —). 통일할지 CF 판단(S4를 고치면 `tactical` golden이 또 바뀜).
+5. **검증 강도 vs FD-127**: FD-127 질문 목록에 "검증 강도"가 있지만 FD-134 권장안(A/B/C)이 이 slice에 배정되어 칩을 그렸다. 숨기려면 칩 한 줄을 빼면 된다(golden `tactical-analysis` · `-all` 변화).
+6. **30일 기간**: S1 "최근 30일" 칩대로 분석은 30일 안 기록만 쓴다(통계 · 추이 `date_from`도 같다). 기록 화면 S4(FE9-d)는 기간이 없어 두 화면 숫자가 다를 수 있다.
+7. **design-review seed**: 시그니처가 1개뿐이라 S1이 한 줄이고 대체 학생 자리가 비어 S2 아래가 휑하다. 검수에 여러 시그니처가 필요하면 seed 확장(revision 4 → 기록 수 · 자동 족보 수가 바뀌어 seed 테스트 · `tactical` golden도 바뀜)이 필요하다 — 이번에는 하지 않았다.
+8. **팝업 위치**: 버튼 자리를 앞 프레임 레이아웃에서 읽는다(창 크기를 바꾸는 동안 한 프레임 늦을 수 있음).
+9. **Mock 자동 족보 이름이 ID**(FE9-d 발견 4 그대로): seg 글자가 "족보 edd9e2"로 보인다.
+10. **상대별 결과 이름 칸**: 시안 80px은 실제 상대 이름("게헨나 선도부")이 잘려 150px로 넓혔다(줄 폭 안).
+11. fe_gate 분류: `tactical_analysis_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음이다(+20, 약 15초).
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9e/commit.json`: slice `fe9e`, modified 8(이 문서 포함), added 6, `post_dir` 없음(WIP 없음), `whole` = `tactical.png` · `tactical-jokbo-drag.png` · `tactical-migration.png`, `optional_added` = `tactical-analysis.png` · `tactical-analysis-all.png`, `status=true`.
+- 인계: `debug/frontend_fe9e/output.md`. 로그 `debug/frontend_fe9e/logs/`.
+
+### 다음 행동
+
+- FE9-e 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(fb7-dart)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 tactical_analysis +20 · tactical_page 20 그대로, golden `tactical` · `tactical-jokbo-drag` · `tactical-migration` RED(머리말 seg · S1 제목 줄) · 새 `tactical-analysis` · `tactical-analysis-all` 기준 없음, 다른 장면 GREEN) → 실패 이미지 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9e`.
+- 발견 1(셸 컨트롤러) · 2 · 3 · 4 · 5는 CF 판단, 7은 검수 seed 후속 후보.
+
+### fe9e commit record (2026-10-16 08:38, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_082438\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

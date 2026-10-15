@@ -1,7 +1,7 @@
 // FE9-a: 전술대항전 기록 화면 4섹션(시안 Tactical, G 보고서 §1).
 //
-// - S1 기록 목록(왼쪽 사다리꼴): 제목 "기록" + 하위 seg "기록 · 분석 · 슬롯"(FD-126 (a) — 셸 머리말은 이 slice가 고치지 않는
-//   `app_shell.dart` 소유라 S1 제목 줄에 둔다, 분석 · 슬롯은 비활성 + "준비 중" 툴팁) + "새 기록" + "엑셀 가져오기"(FE9-f, 비활성),
+// - S1 기록 목록(왼쪽 사다리꼴): 제목 "기록" + "새 기록" + "엑셀 가져오기"(FE9-f, 비활성). 하위 seg "기록 · 분석 · 슬롯"은
+//   FE9-e부터 셸 머리말 제목 옆이다(FD-126 (a), `tactical_sub_screen.dart`).
 //   필터 칩(전체 · 공격 · 방어 · 승 · 패 · 이번 시즌 · 상대), 이관 안내 띠(v1 기록이 남았을 때만), 공용 사선 스크롤 목록
 //   (resize 모드 — 행 폭이 사선을 따라 준다, 공용 스크롤바 · 포그).
 // - S2 로비 스캔(가운데 위, FE9-c 자리): 제목 + "준비 중". 스캔 버튼 없음.
@@ -27,13 +27,13 @@ import '../kit/info_popover.dart';
 import '../kit/kit_glyph.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/section_frame.dart';
-import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/skew_controls.dart';
 import '../studio/tactical_studio_layout.dart';
 import 'tactical_deck_widgets.dart';
 import 'tactical_jokbo_view.dart';
 import 'tactical_jokbo_widgets.dart';
 import 'tactical_records_view.dart';
+import 'tactical_section_edges.dart';
 
 /// 아직 그리지 않는 자리(S2 · S4 · 분석 · 슬롯, 통계 "준비 중"과 같은 문구).
 const tacticalPendingText = '준비 중';
@@ -188,7 +188,11 @@ class TacticalWorkspace extends StatelessWidget {
     this.fromJokboHint = tacticalPendingText,
     this.dropReason,
     this.onDropJokbo,
+    this.sectionOffset,
   });
+
+  /// 하위 화면 전환 중 섹션마다 민 거리(FE9-e, 부착면 intro/outro). null이면 제자리.
+  final Offset Function(String sectionId)? sectionOffset;
 
   // --- S1 ---
   final List<TacticalRecordRow> rows;
@@ -248,13 +252,19 @@ class TacticalWorkspace extends StatelessWidget {
     builder: (context, constraints) {
       final size = constraints.biggest;
       final scale = TacticalMetrics.scaleFor(size.width, size.height);
+      final offset = sectionOffset;
+      Widget layer(String id, Widget section) => Positioned.fill(
+        child: offset == null
+            ? section
+            : Transform.translate(offset: offset(id), child: section),
+      );
       // 시안 그리기 순서: 기록 작성 → 기록 목록 → 족보 → 로비 스캔.
       return Stack(
         children: [
-          Positioned.fill(child: _editorSection(size, scale)),
-          Positioned.fill(child: _recordsSection(size, scale)),
-          Positioned.fill(child: _jokboSection(size, scale)),
-          Positioned.fill(child: _lobbySection(size, scale)),
+          layer(tacticalEditorSectionId, _editorSection(size, scale)),
+          layer(tacticalRecordsSectionId, _recordsSection(size, scale)),
+          layer(tacticalJokboSectionId, _jokboSection(size, scale)),
+          layer(tacticalLobbySectionId, _lobbySection(size, scale)),
         ],
       );
     },
@@ -263,7 +273,10 @@ class TacticalWorkspace extends StatelessWidget {
   // --- S1 기록 목록 -------------------------------------------------------------
 
   Widget _recordsSection(Size size, double scale) {
-    final edges = _SectionEdges.of(size, tacticalRecordsSectionId);
+    final edges = TacticalSectionEdges.of(
+      size,
+      tacticalSection(tacticalRecordsSectionId),
+    );
     final title = edges.slot(TacticalMetrics.recordsTitle, scale);
     final filters = edges.slot(TacticalMetrics.recordsFilters, scale);
     final band = migration;
@@ -298,15 +311,13 @@ class TacticalWorkspace extends StatelessWidget {
       section: tacticalSection(tacticalRecordsSectionId),
       surfaceKey: const ValueKey('tactical-section-$tacticalRecordsSectionId'),
       children: [
-        _placed(
+        tacticalPlaced(
           'tactical-slot-records-title',
           title,
           scale,
           Row(
             children: [
               Text('기록', style: _display(18)),
-              const SizedBox(width: 14),
-              _ViewSegments(),
               const Spacer(),
               TonalButton(
                 key: const ValueKey('tactical-new-record'),
@@ -329,14 +340,14 @@ class TacticalWorkspace extends StatelessWidget {
             ],
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-records-filters',
           filters,
           scale,
           Align(alignment: Alignment.centerLeft, child: _filters()),
         ),
         if (band != null && bandRect != null)
-          _placed(
+          tacticalPlaced(
             'tactical-slot-migration',
             bandRect,
             scale,
@@ -487,12 +498,15 @@ class TacticalWorkspace extends StatelessWidget {
   // --- S2 로비 스캔 · S4 족보 (자리) -----------------------------------------
 
   Widget _lobbySection(Size size, double scale) {
-    final edges = _SectionEdges.of(size, tacticalLobbySectionId);
+    final edges = TacticalSectionEdges.of(
+      size,
+      tacticalSection(tacticalLobbySectionId),
+    );
     return SectionFrame(
       section: tacticalSection(tacticalLobbySectionId),
       surfaceKey: const ValueKey('tactical-section-$tacticalLobbySectionId'),
       children: [
-        _placed(
+        tacticalPlaced(
           'tactical-slot-lobby-title',
           edges.slot(TacticalMetrics.lobbyTitle, scale),
           scale,
@@ -504,7 +518,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-lobby-body',
           edges.slot(TacticalMetrics.lobbyBody, scale),
           scale,
@@ -525,9 +539,12 @@ class TacticalWorkspace extends StatelessWidget {
   }
 
   Widget _jokboSection(Size size, double scale) {
-    final edges = _SectionEdges.of(size, tacticalJokboSectionId);
+    final edges = TacticalSectionEdges.of(
+      size,
+      tacticalSection(tacticalJokboSectionId),
+    );
     final panel = jokbo;
-    final title = _placed(
+    final title = tacticalPlaced(
       'tactical-slot-jokbo-title',
       edges.slot(TacticalMetrics.jokboTitle, scale),
       scale,
@@ -546,7 +563,7 @@ class TacticalWorkspace extends StatelessWidget {
         surfaceKey: const ValueKey('tactical-section-$tacticalJokboSectionId'),
         children: [
           title,
-          _placed(
+          tacticalPlaced(
             'tactical-slot-jokbo-body',
             edges.slot(TacticalMetrics.jokboBody, scale),
             scale,
@@ -569,7 +586,7 @@ class TacticalWorkspace extends StatelessWidget {
     final message = panel.message;
     final children = <Widget>[
       title,
-      _placed(
+      tacticalPlaced(
         'tactical-slot-jokbo-target',
         edges.slot(TacticalMetrics.jokboBody, scale),
         scale,
@@ -580,13 +597,13 @@ class TacticalWorkspace extends StatelessWidget {
         ),
       ),
       if (kpis != null) ...[
-        _placed(
+        tacticalPlaced(
           'tactical-slot-jokbo-kpi',
           edges.slot(TacticalMetrics.jokboKpi, scale),
           scale,
           TacticalJokboKpiRow(kpis: kpis),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-jokbo-hint',
           edges.slot(TacticalMetrics.jokboHint, scale),
           scale,
@@ -596,7 +613,7 @@ class TacticalWorkspace extends StatelessWidget {
     ];
     if (message != null) {
       children.add(
-        _placed(
+        tacticalPlaced(
           'tactical-slot-jokbo-message',
           edges.slot(
             TacticalSlotSpec(
@@ -624,7 +641,7 @@ class TacticalWorkspace extends StatelessWidget {
   }
 
   /// 족보 카드(높이 128 · 간격 8, 왼쪽 사선을 따라 넓어진다). 섹션에 들어가는 만큼만 놓고, 넘치면 "족보 n개 중 k개" 한 줄.
-  List<Widget> _jokboCards(_SectionEdges edges, double scale) {
+  List<Widget> _jokboCards(TacticalSectionEdges edges, double scale) {
     final cards = jokbo.cards;
     const step = TacticalMetrics.jokboCardHeight + TacticalMetrics.jokboCardGap;
     final room =
@@ -643,7 +660,7 @@ class TacticalWorkspace extends StatelessWidget {
     final onSelect = jokbo.onSelect;
     return [
       for (var index = 0; index < shown; index++)
-        _placed(
+        tacticalPlaced(
           'tactical-slot-jokbo-card-$index',
           edges.slot(
             TacticalSlotSpec(
@@ -664,7 +681,7 @@ class TacticalWorkspace extends StatelessWidget {
           ),
         ),
       if (shown < cards.length)
-        _placed(
+        tacticalPlaced(
           'tactical-slot-jokbo-more',
           edges.slot(
             TacticalSlotSpec(
@@ -693,7 +710,10 @@ class TacticalWorkspace extends StatelessWidget {
   // --- S3 기록 작성 -------------------------------------------------------------
 
   Widget _editorSection(Size size, double scale) {
-    final edges = _SectionEdges.of(size, tacticalEditorSectionId);
+    final edges = TacticalSectionEdges.of(
+      size,
+      tacticalSection(tacticalEditorSectionId),
+    );
     final draft = this.draft;
     final editable = this.editable;
     final onSlotTap = this.onSlotTap;
@@ -707,7 +727,7 @@ class TacticalWorkspace extends StatelessWidget {
       section: tacticalSection(tacticalEditorSectionId),
       surfaceKey: const ValueKey('tactical-section-$tacticalEditorSectionId'),
       children: [
-        _placed(
+        tacticalPlaced(
           'tactical-slot-editor-header',
           edges.slot(TacticalMetrics.editorHeader, scale),
           scale,
@@ -750,7 +770,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-opponent-caption',
           edges.slot(TacticalMetrics.opponentCaption, scale),
           scale,
@@ -767,7 +787,7 @@ class TacticalWorkspace extends StatelessWidget {
             ],
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-opponent-row',
           edges.slot(TacticalMetrics.opponentRow, scale),
           scale,
@@ -815,7 +835,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-my-caption',
           edges.slot(TacticalMetrics.myCaption, scale),
           scale,
@@ -827,7 +847,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-my-row',
           edges.slot(TacticalMetrics.myRow, scale),
           scale,
@@ -879,7 +899,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-result-row',
           edges.slot(TacticalMetrics.resultRow, scale),
           scale,
@@ -938,7 +958,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-memo-row',
           edges.slot(TacticalMetrics.memoRow, scale),
           scale,
@@ -972,7 +992,7 @@ class TacticalWorkspace extends StatelessWidget {
             ),
           ),
         ),
-        _placed(
+        tacticalPlaced(
           'tactical-slot-action-row',
           edges.slot(TacticalMetrics.actionRow, scale),
           scale,
@@ -1104,91 +1124,6 @@ const _memoStyle = TextStyle(
   height: 1.3,
   color: _mutedColor,
 );
-
-/// 요소 하나를 [rect]에 놓고 내용을 [scale]로 줄여 그린다.
-Widget _placed(String key, Rect rect, double scale, Widget child) =>
-    Positioned.fromRect(
-      key: ValueKey(key),
-      rect: rect,
-      child: SectionScaledBox(scale: scale, child: child),
-    );
-
-/// 섹션 변(콘텐츠 캔버스 좌표).
-class _SectionEdges {
-  _SectionEdges._(this._left, this._right, this.top, this.bottom);
-
-  factory _SectionEdges.of(Size size, String id) {
-    final points = sectionCanvasElementPolygon(size, tacticalSection(id));
-    return switch (id) {
-      // 오른쪽 사다리꼴: 위 오 · 아래 오 · 아래 왼 · 위 왼.
-      tacticalJokboSectionId => _SectionEdges._(
-        (points[3], points[2]),
-        (points[0], points[1]),
-        points[0].dy,
-        points[1].dy,
-      ),
-      // 왼쪽 사다리꼴 · 평행사변형: 위 왼 · 위 오 · 아래 오 · 아래 왼.
-      _ => _SectionEdges._(
-        (points[0], points[3]),
-        (points[1], points[2]),
-        points[0].dy,
-        points[3].dy,
-      ),
-    };
-  }
-
-  final (Offset, Offset) _left, _right;
-  final double top, bottom;
-
-  double leftX(double y) => _edgeX(_left.$1, _left.$2, y);
-  double rightX(double y) => _edgeX(_right.$1, _right.$2, y);
-
-  /// [spec] 자리: 왼쪽 = 요소 아래 높이의 왼쪽 변 + 간격, 오른쪽 = 요소 위 높이의 오른쪽 변 − 간격.
-  Rect slot(TacticalSlotSpec spec, double scale) {
-    final y = top + spec.top * scale;
-    final height = spec.height * scale;
-    final left = leftX(y + height) + spec.leftGap * scale;
-    final right = rightX(y) - spec.rightGap * scale;
-    return Rect.fromLTWH(left, y, math.max(0, right - left), height);
-  }
-}
-
-double _edgeX(Offset a, Offset b, double y) {
-  final span = b.dy - a.dy;
-  if (span == 0) return a.dx;
-  final t = ((y - a.dy) / span).clamp(0.0, 1.0).toDouble();
-  return a.dx + (b.dx - a.dx) * t;
-}
-
-/// 하위 화면 seg(FD-126 (a)): 기록(지금) · 분석(FE9-e) · 슬롯(FE9-g). 꺼진 칸은 "준비 중" 툴팁.
-class _ViewSegments extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    Widget segment(String key, String label, {required bool enabled}) {
-      final seg = SkewSegmented<String>(
-        key: ValueKey('tactical-view-$key'),
-        height: 32,
-        fontSize: AppType.bodySmallSize,
-        horizontalPadding: 14,
-        segments: [SkewSegment(value: key, label: label)],
-        selected: enabled ? key : null,
-        onChanged: enabled ? (_) {} : null,
-      );
-      return enabled ? seg : Tooltip(message: tacticalPendingText, child: seg);
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        segment('records', '기록', enabled: true),
-        const SizedBox(width: 6),
-        segment('analysis', '분석', enabled: false),
-        const SizedBox(width: 6),
-        segment('slots', '슬롯', enabled: false),
-      ],
-    );
-  }
-}
 
 /// 이관 안내 띠(시안 없음 — FE6-a 후보 띠 문법: 분홍 외곽 · 옅은 채움, 오른쪽 primary 버튼).
 class _MigrationBand extends StatelessWidget {

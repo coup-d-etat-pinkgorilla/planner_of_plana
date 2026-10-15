@@ -11,6 +11,11 @@
 //   추이 · 추천을 읽는다(시그니처 · 기록 revision · 상대 · 시즌이 바뀌면 디바운스 뒤 다시 질의, 늦게 온 응답은 세대 번호로 버린다).
 //   카드는 컨트롤러 족보 중 그 시그니처를 가진 것(FD-129)이다. 카드를 끌어 내 덱 줄에 놓거나 "족보에서 가져오기"를 누르면
 //   내 덱 초안을 그 공격 덱으로 채운다(저장하지 않는다, 공격 기록만). 이관 전에는 S4를 열지 않는다(FE9-a "준비 중" 그대로).
+// - FE9-e: 하위 화면 seg "기록 · 분석 · 슬롯"을 셸 머리말 제목 옆에 건다([PageHeaderOverride.trailing], FD-126 (a)), 부제는 하위
+//   화면마다. 분석 화면(시안 Tactical-Analysis)은 컨트롤러 기록과 [TacticalEvidenceReadService] 통계 · 추이 · 추천(최근 30일,
+//   고른 시그니처 · 상대)을 읽어 관측 값만 보인다(FD-127). "전체 보기"는 버튼에 꼬리를 단 앵커 팝업 모달이다. 분석의 "공격 기록에
+//   복사"는 기록 화면으로 돌아가 내 덱 초안을 채운다(FE9-d 복사 규칙, 저장하지 않는다 — 고칠 수 없는 초안이면 새 공격 초안).
+//   하위 화면을 바꾸면 섹션이 부착면 방향으로 빠지고 들어온다(`tactical_sub_screen.dart`).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,13 +26,19 @@ import '../../services/repository_service.dart';
 import '../../services/tactical_service.dart';
 import '../../services/tactical_v2_service.dart';
 import '../../tactical/tactical_records_controller.dart';
+import '../app_section.dart';
 import '../kit/ba_modal.dart';
+import '../tactical/tactical_analysis_view.dart';
+import '../tactical/tactical_analysis_workspace.dart';
+import '../tactical/tactical_jokbo_all_panel.dart';
 import '../tactical/tactical_jokbo_view.dart';
 import '../tactical/tactical_pickers.dart';
 import '../tactical/tactical_records_view.dart';
+import '../tactical/tactical_sub_screen.dart';
 import '../tactical/tactical_workspace.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryProfileWithRevision;
+import '../widgets/page_header_override.dart';
 
 /// 목록 · 작성 섹션 안내 문구.
 const tacticalNoServiceText = '전술 기록 서비스가 제공되지 않습니다.';
@@ -53,8 +64,37 @@ const tacticalJokboUnavailableText = '지금은 덱을 바꿀 수 없습니다.'
 const tacticalJokboNoneText = '가져올 족보가 없습니다.';
 const tacticalJokboCopyHint = '오른쪽에서 고른 족보 덱을 내 공격 덱에 복사합니다. 저장은 따로 합니다.';
 
+/// 분석 화면 문구(FE9-e).
+const tacticalAnalysisMigrationText =
+    '이전 형식 기록을 가져온 뒤에 분석할 수 있습니다. 기록 화면에서 "가져오기"를 눌러 주십시오.';
+const tacticalAnalysisEmptyText =
+    '최근 30일 동안 로비 공개 칸(1번 · SP1 · SP2)이 있는 공격 기록이 없습니다. 기록 작성에서 상대 방어 덱의 공개 칸을 남기면 여기에 나타납니다.';
+const tacticalAnalysisPickText = '왼쪽에서 공개 방어 시그니처를 고르면 족보와 상대 카드가 보입니다.';
+const tacticalAnalysisNoOpponentText = '이 시그니처로 최근 30일에 기록한 상대가 없습니다.';
+const tacticalAnalysisReadErrorText = '분석 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다.';
+const tacticalAnalysisCopyHint =
+    '기록 화면으로 돌아가 내 공격 덱 초안에 이 족보 덱을 복사합니다. 저장은 따로 합니다.';
+
 /// S4 질의 디바운스(고른 기록 · 공개 칸이 잇따라 바뀔 때 마지막 것만 묻는다).
 const tacticalJokboQueryDelay = Duration(milliseconds: 200);
+
+/// 분석 화면 질의 조건(FE9-e). 하나라도 바뀌면 통계 · 추이 · 추천을 다시 묻는다.
+typedef _AnalysisQuery = ({
+  String profileId,
+  int revision,
+  String dateFrom,
+  String? signature,
+  String? opponentId,
+  String season,
+});
+
+/// 분석 화면 질의 결과.
+typedef _AnalysisReads = ({
+  _AnalysisQuery query,
+  TacticalStatisticsResult statistics,
+  TacticalTrendsResult trends,
+  TacticalRecommendationResult? recommendation,
+});
 
 /// S4 질의 조건. 하나라도 바뀌면 다시 묻는다(기록 revision이 오르면 통계도 바뀐다).
 typedef _JokboQuery = ({
@@ -66,9 +106,17 @@ typedef _JokboQuery = ({
 });
 
 class TacticalPage extends StatefulWidget {
-  const TacticalPage({super.key, required this.service, this.reloadToken = 0});
+  const TacticalPage({
+    super.key,
+    required this.service,
+    this.reloadToken = 0,
+    this.headerOverride,
+  });
   final AppService service;
   final int reloadToken;
+
+  /// 셸 머리말(하위 화면 seg · 부제, FE9-e). 없으면 seg를 그리지 않는다(화면 단독 테스트).
+  final PageHeaderOverrideController? headerOverride;
   @override
   State<TacticalPage> createState() => _TacticalPageState();
 }
@@ -140,6 +188,23 @@ class _TacticalPageState extends State<TacticalPage> {
   /// 족보 덱을 복사한 뒤 상태 문구(다음 초안 변경까지).
   String? _copyNotice;
 
+  // --- 하위 화면 · 분석(FE9-e) ---
+  TacticalSubScreen _screen = TacticalSubScreen.records;
+  String? _analysisSignature;
+  String? _analysisJokboId;
+  String? _analysisOpponentId;
+  TacticalJokboSort _jokboSort = TacticalJokboSort.successRate;
+  final _allModal = BaModalController();
+  final _allButtonKey = GlobalKey(debugLabel: 'tactical-analysis-all');
+  _AnalysisQuery? _analysisQuery;
+  Timer? _analysisTimer;
+  int _analysisGeneration = 0;
+  _AnalysisReads? _analysisReads;
+  String? _analysisError;
+
+  /// 마지막으로 그린 분석 화면(팝업이 쓴다).
+  TacticalAnalysisPanel? _lastAnalysis;
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +213,34 @@ class _TacticalPageState extends State<TacticalPage> {
     _opponentText.addListener(_textChanged);
     _notesText.addListener(_textChanged);
     _reload();
+    // 머리말은 셸의 다른 부분이라 빌드가 끝난 뒤 건다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _publishHeader();
+    });
+  }
+
+  /// 셸 머리말: 제목 "전술대항전" 옆 하위 화면 seg, 부제는 하위 화면마다(시안).
+  void _publishHeader() {
+    widget.headerOverride?.set(
+      PageHeaderOverride(
+        owner: this,
+        section: AppSection.pvp,
+        title: AppSection.pvp.label,
+        subtitle: _screen.subtitle,
+        trailing: TacticalSubScreenSegments(
+          selected: _screen,
+          onChanged: _openScreen,
+        ),
+      ),
+    );
+  }
+
+  void _openScreen(TacticalSubScreen screen) {
+    if (!screen.available || screen == _screen || !mounted) return;
+    _allModal.close();
+    if (screen != TacticalSubScreen.analysis) _syncAnalysisQuery(null);
+    setState(() => _screen = screen);
+    _publishHeader();
   }
 
   void _attach() {
@@ -177,9 +270,17 @@ class _TacticalPageState extends State<TacticalPage> {
       _attach();
       _syncJokboQuery(null);
       _jokboReads = null;
+      _syncAnalysisQuery(null);
+      _analysisReads = null;
       _reload();
     } else if (old.reloadToken != widget.reloadToken) {
       _reload();
+    }
+    if (old.headerOverride != widget.headerOverride) {
+      old.headerOverride?.release(this);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _publishHeader();
+      });
     }
   }
 
@@ -188,6 +289,9 @@ class _TacticalPageState extends State<TacticalPage> {
     _generation++;
     _jokboGeneration++;
     _jokboTimer?.cancel();
+    _analysisGeneration++;
+    _analysisTimer?.cancel();
+    widget.headerOverride?.release(this);
     widget.service.state.removeListener(_connection);
     _detach();
     _opponentText.dispose();
@@ -195,6 +299,7 @@ class _TacticalPageState extends State<TacticalPage> {
     _studentModal.dispose();
     _opponentModal.dispose();
     _deleteModal.dispose();
+    _allModal.dispose();
     super.dispose();
   }
 
@@ -695,6 +800,288 @@ class _TacticalPageState extends State<TacticalPage> {
     if (card != null) _copyJokbo(card);
   }
 
+  // --- 분석 화면 (FE9-e) ----------------------------------------------------------
+
+  /// [query]가 바뀌었으면 이전 질의를 버리고 디바운스 뒤 다시 묻는다. build에서 부른다(setState 없음).
+  void _syncAnalysisQuery(_AnalysisQuery? query) {
+    if (query == _analysisQuery) return;
+    _analysisQuery = query;
+    _analysisTimer?.cancel();
+    _analysisTimer = null;
+    final generation = ++_analysisGeneration;
+    _analysisError = null;
+    if (query == null) return;
+    _analysisTimer = Timer(
+      tacticalJokboQueryDelay,
+      () => _runAnalysisQuery(query, generation),
+    );
+  }
+
+  Future<void> _runAnalysisQuery(_AnalysisQuery query, int generation) async {
+    final reader = _reader;
+    if (reader == null || !mounted || generation != _analysisGeneration) {
+      return;
+    }
+    final asOf = tacticalUtcInstant(appClockNow(widget.service));
+    final signature = query.signature;
+    final opponentId = query.opponentId;
+    try {
+      final (statistics, trends, recommendation) = await (
+        reader.queryTacticalStatistics(
+          query.profileId,
+          TacticalStatsFilters(dateFrom: query.dateFrom),
+        ),
+        reader.queryTacticalTrends(
+          query.profileId,
+          TacticalTrendFilters(dateFrom: query.dateFrom, asOf: asOf),
+        ),
+        signature == null || opponentId == null || query.season.isEmpty
+            ? Future<TacticalRecommendationResult?>.value()
+            : reader.queryTacticalRecommendations(
+                query.profileId,
+                TacticalRecommendationFilters(
+                  season: query.season,
+                  opponentIdentityId: opponentId,
+                  publicSignature: signature,
+                  asOf: asOf,
+                  topK: 10,
+                ),
+              ),
+      ).wait;
+      if (!mounted || generation != _analysisGeneration) return;
+      setState(() {
+        _analysisError = null;
+        _analysisReads = (
+          query: query,
+          statistics: statistics,
+          trends: trends,
+          recommendation: recommendation,
+        );
+      });
+    } catch (_) {
+      if (!mounted || generation != _analysisGeneration) return;
+      setState(() => _analysisError = tacticalAnalysisReadErrorText);
+    }
+  }
+
+  void _retryAnalysis() {
+    final query = _analysisQuery;
+    if (query == null) return;
+    _analysisTimer?.cancel();
+    final generation = ++_analysisGeneration;
+    setState(() => _analysisError = null);
+    _runAnalysisQuery(query, generation);
+  }
+
+  /// 분석 화면 값. 계정 · 서비스가 없거나 이관 전이면 안내 문구만.
+  TacticalAnalysisPanel _analysisPanel() {
+    final now = appClockNow(widget.service);
+    final controller = _controller;
+    final profileId = _profile?.id;
+    String? blocked;
+    if (_error != null) {
+      blocked = _error;
+    } else if (controller == null) {
+      blocked = tacticalNoServiceText;
+    } else if (profileId == null) {
+      blocked = _loading ? tacticalLoadingText : tacticalNoProfileText;
+    } else if (controller.error?.code == 'load_failed') {
+      blocked = controller.error?.message;
+    } else if (_migrationRequired) {
+      blocked = tacticalAnalysisMigrationText;
+    }
+    if (blocked != null || controller == null || profileId == null) {
+      _syncAnalysisQuery(null);
+      return TacticalAnalysisPanel(
+        now: now,
+        listMessage: blocked ?? tacticalNoServiceText,
+        jokboMessage: tacticalAnalysisPickText,
+        opponentMessage: '',
+      );
+    }
+    final matches = tacticalAnalysisMatches(controller.matches, now);
+    final base = _analysisReads;
+    final reads =
+        base != null &&
+            base.query.profileId == profileId &&
+            base.query.revision == (controller.revision ?? -1)
+        ? base
+        : null;
+    final summaries = tacticalSignatureSummaries(
+      matches: matches,
+      jokbo: controller.jokbo,
+      statistics: reads?.statistics.publicSignatures ?? const [],
+    );
+    final summary =
+        summaries
+            .where((item) => item.signature == _analysisSignature)
+            .firstOrNull ??
+        summaries.firstOrNull;
+    final opponentId = summary == null
+        ? null
+        : (summary.matches.any(
+                (match) => match.opponentIdentityId == _analysisOpponentId,
+              )
+              ? _analysisOpponentId
+              : summary.matches.firstOrNull?.opponentIdentityId);
+    final season = summary?.matches.firstOrNull?.season.trim() ?? '';
+    _syncAnalysisQuery((
+      profileId: profileId,
+      revision: controller.revision ?? -1,
+      dateFrom: tacticalAnalysisDateFrom(now),
+      signature: summary?.signature,
+      opponentId: opponentId,
+      season: season,
+    ));
+    final error = _analysisError;
+    if (summary == null) {
+      return TacticalAnalysisPanel(
+        now: now,
+        listMessage: tacticalAnalysisEmptyText,
+        jokboMessage: tacticalAnalysisPickText,
+        opponentMessage: '',
+        readError: error,
+        onRetry: error == null ? null : _retryAnalysis,
+      );
+    }
+    final statistics = reads?.statistics.publicSignatures
+        .where((item) => item.signature == summary.signature)
+        .firstOrNull;
+    final cards = tacticalAnalysisJokboCards(
+      signature: summary.signature,
+      jokbo: controller.jokbo,
+      matches: matches,
+      statistics: statistics,
+    );
+    final freshness = [
+      for (final item
+          in reads?.trends.freshness ?? const <TacticalFreshnessEvidence>[])
+        if (item.publicSignature == summary.signature) item,
+    ];
+    final analyses = [
+      for (final card in cards)
+        tacticalJokboAnalysis(
+          card: card,
+          matches: matches,
+          freshness: freshness,
+        ),
+    ];
+    final jokboId = cards.any((card) => card.id == _analysisJokboId)
+        ? _analysisJokboId
+        : tacticalDefaultAnalysisJokbo(cards);
+    final opponent = opponentId == null
+        ? null
+        : tacticalOpponentAnalysis(
+            identityId: opponentId,
+            allMatches: matches,
+            signatureMatches: summary.matches,
+            cards: cards,
+          );
+    final recommendation =
+        reads != null &&
+            reads.query.signature == summary.signature &&
+            reads.query.opponentId == opponentId
+        ? reads.recommendation
+        : null;
+    final copyBlocker = _analysisCopyBlocker;
+    return TacticalAnalysisPanel(
+      now: now,
+      signatures: summaries,
+      selectedSignature: summary.signature,
+      onSelectSignature: (signature) => setState(() {
+        _analysisSignature = signature;
+        _analysisJokboId = null;
+        _analysisOpponentId = null;
+      }),
+      jokboMessage: analyses.isEmpty ? tacticalJokboEmptyText : null,
+      jokbo: analyses,
+      selectedJokboId: jokboId,
+      onSelectJokbo: (id) => setState(() => _analysisJokboId = id),
+      verificationGrade: tacticalVerificationGrade(
+        recommendation?.confidenceGrade,
+      ),
+      onOpenAll: analyses.isEmpty ? null : _allModal.open,
+      onCopy: copyBlocker != null || analyses.isEmpty
+          ? null
+          : () {
+              final selected = analyses
+                  .where((item) => item.card.id == jokboId)
+                  .firstOrNull;
+              if (selected != null) _copyFromAnalysis(selected.card);
+            },
+      copyHint: copyBlocker ?? tacticalAnalysisCopyHint,
+      opponentMessage: opponent == null ? tacticalAnalysisNoOpponentText : null,
+      opponent: opponent,
+      onSelectOpponent: (id) => setState(() => _analysisOpponentId = id),
+      readError: error,
+      onRetry: error == null ? null : _retryAnalysis,
+    );
+  }
+
+  /// 분석에서 족보 덱을 복사할 수 없는 이유(null = 복사할 수 있다).
+  String? get _analysisCopyBlocker {
+    if (!_available) return tacticalJokboUnavailableText;
+    if (_busy) return tacticalJokboBusyText;
+    return null;
+  }
+
+  /// "공격 기록에 복사"(분석 · 전체 보기): 기록 화면으로 돌아가 내 덱 초안을 채운다(FE9-d 복사 규칙, 저장하지 않는다).
+  /// 지금 초안이 공격 기록이 아니거나 고칠 수 없으면(방어 · 이전 형식) 새 공격 초안을 연다.
+  void _copyFromAnalysis(TacticalJokboCard card) {
+    if (_analysisCopyBlocker != null) return;
+    _allModal.close();
+    if (_jokboDropReason != null) {
+      _controller?.clearError();
+      setState(() {
+        _autoSelect = false;
+        _setDraft(
+          null,
+          TacticalRecordDraft.blank(season: tacticalCurrentSeason(_rows) ?? ''),
+        );
+      });
+    }
+    _copyJokbo(card);
+    _openScreen(TacticalSubScreen.records);
+  }
+
+  /// 전체 보기 버튼 자리(오버레이 좌표). 아직 그려지지 않았으면 null.
+  Rect? _allAnchor(BuildContext overlayContext) {
+    final button = _allButtonKey.currentContext?.findRenderObject();
+    final overlay = Overlay.maybeOf(overlayContext)?.context.findRenderObject();
+    if (button is! RenderBox ||
+        overlay is! RenderBox ||
+        !button.attached ||
+        !button.hasSize) {
+      return null;
+    }
+    return button.localToGlobal(Offset.zero, ancestor: overlay) & button.size;
+  }
+
+  Widget _allPanel(BuildContext context) {
+    final panel = _lastAnalysis;
+    final selected = panel?.selected;
+    if (panel == null || selected == null) return const SizedBox.shrink();
+    final copyBlocker = _analysisCopyBlocker;
+    return SizedBox.expand(
+      child: TacticalJokboAllPopup(
+        anchor: _allAnchor(context),
+        analyses: panel.jokbo,
+        selectedId: selected.card.id,
+        sort: _jokboSort,
+        deckText: tacticalDeckNamesText(
+          selected.card.jokbo.defenseDeck,
+          (id) => _names[id] ?? id,
+        ),
+        now: panel.now,
+        onSort: (sort) => setState(() => _jokboSort = sort),
+        onSelect: (id) => setState(() => _analysisJokboId = id),
+        onCopy: copyBlocker == null ? _copyFromAnalysis : null,
+        copyHint: copyBlocker ?? tacticalAnalysisCopyHint,
+        onClose: _allModal.close,
+      ),
+    );
+  }
+
   // --- 피커 ------------------------------------------------------------------
 
   void _openSlotPicker(bool mine, int index) {
@@ -849,6 +1236,49 @@ class _TacticalPageState extends State<TacticalPage> {
 
   @override
   Widget build(BuildContext context) {
+    final stage = TacticalSubScreenStage(
+      screen: _screen,
+      builder: (screen, offset) => screen == TacticalSubScreen.analysis
+          ? TacticalAnalysisWorkspace(
+              panel: _lastAnalysis = _analysisPanel(),
+              studentName: (id) => _names[id] ?? id,
+              allButtonKey: _allButtonKey,
+              sectionOffset: offset,
+            )
+          : _recordsWorkspace(offset),
+    );
+    return BaModal(
+      controller: _studentModal,
+      scrim: BaScrim.anchored,
+      label: '학생 고르기',
+      builder: _studentPanel,
+      child: BaModal(
+        controller: _opponentModal,
+        scrim: BaScrim.anchored,
+        label: '상대 고르기',
+        builder: _opponentPanel,
+        child: BaModal(
+          controller: _deleteModal,
+          scrim: BaScrim.anchored,
+          label: '기록 지우기',
+          builder: _deletePanel,
+          child: BaModal(
+            controller: _allModal,
+            scrim: BaScrim.anchored,
+            label: '족보 전체',
+            builder: _allPanel,
+            child: KeyedSubtree(
+              key: const ValueKey('tactical-page'),
+              child: stage,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 기록 화면 4섹션(FE9-a · FE9-d). [offset]은 하위 화면 전환 중 섹션마다 민 거리다.
+  Widget _recordsWorkspace(Offset Function(String sectionId) offset) {
     final controller = _controller;
     final preview = controller?.legacyPreview;
     final rows = _rows;
@@ -867,7 +1297,7 @@ class _TacticalPageState extends State<TacticalPage> {
             onImport: _busy || preview.issues.isNotEmpty ? null : _import,
           )
         : null;
-    final workspace = TacticalWorkspace(
+    return TacticalWorkspace(
       rows: filtered,
       selectedKey: _selectedKey,
       onSelectRow: _available ? _onSelectRow : null,
@@ -917,28 +1347,7 @@ class _TacticalPageState extends State<TacticalPage> {
               : tacticalJokboCopyHint),
       dropReason: dropReason,
       onDropJokbo: jokbo.cards.isEmpty ? null : _copyJokbo,
-    );
-    return BaModal(
-      controller: _studentModal,
-      scrim: BaScrim.anchored,
-      label: '학생 고르기',
-      builder: _studentPanel,
-      child: BaModal(
-        controller: _opponentModal,
-        scrim: BaScrim.anchored,
-        label: '상대 고르기',
-        builder: _opponentPanel,
-        child: BaModal(
-          controller: _deleteModal,
-          scrim: BaScrim.anchored,
-          label: '기록 지우기',
-          builder: _deletePanel,
-          child: KeyedSubtree(
-            key: const ValueKey('tactical-page'),
-            child: workspace,
-          ),
-        ),
-      ),
+      sectionOffset: offset,
     );
   }
 }

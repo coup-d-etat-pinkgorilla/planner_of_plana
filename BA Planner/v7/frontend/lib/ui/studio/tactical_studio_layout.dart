@@ -1,7 +1,7 @@
 import 'section_studio_document.dart';
 import 'section_template.dart';
 
-/// 전술대항전 기록 화면 4-Section(FE9-a, 시안 Tactical, G 보고서 §1.1).
+/// 전술대항전 기록 화면 4-Section(FE9-a, 시안 Tactical, G 보고서 §1.1). 분석 화면 3-Section(FE9-e)은 이 파일 아래.
 ///
 /// 기준 viewport 2560×1392(헤더 아래 2560×1208, y=184부터)에서 시안 path 꼭짓점에 맞춘다. 96 grid 한 칸은
 /// 가로 26.67px, 세로 12.58px다(`gx = x/2560·96`, `gy = (y−184)/1208·96`).
@@ -312,4 +312,217 @@ abstract final class TacticalMetrics {
     canvasHeight / referenceCanvasHeight,
     1.0,
   ].reduce((a, b) => a < b ? a : b).clamp(0.4, 1.0).toDouble();
+}
+
+/// 전술대항전 분석 화면 3-Section(FE9-e, 시안 Tactical-Analysis, G 보고서 §2.1).
+///
+/// - 왼쪽 공개 방어 시그니처 `tactical-analysis-signatures` (0, 209.2, 560, 1182.8): 왼쪽 면 사다리꼴, 0~21칸.
+///   윗변 0→560, 아랫변 0→351.4. 시안과 같다.
+/// - 가운데 족보 상세 `tactical-analysis-jokbo` (375.4, 209.2, 1569.1, 1182.8): 위 · 아래 모두 닿는 평행사변형. 주 부착면은
+///   아래다(FD-130 워커 재량 — intro 80° · outro 260°). rect 7~75칸 안에서 아래 면 구간을 10+72칸으로 골랐다. 꼭짓점 아랫변
+///   375.6→1735.6, 윗변 584.1→1944.1. 시안(375.4→1736.0, 584.0→1944.5)과 0.4px 안. rect 나머지는 path 밖이라 그리지 않는다.
+/// - 오른쪽 상대 카드 `tactical-analysis-opponent` (1760, 209.2, 800, 1182.8): 오른쪽 면 사다리꼴, 66~96칸. 윗변 1968.6→2560,
+///   아랫변 1760→2560. 시안과 같다.
+/// 시안 그리기 순서는 족보 상세 → 시그니처 → 상대 카드다(서로 겹치지 않는다).
+final SectionStudioDocument tacticalAnalysisStudioDocument =
+    SectionStudioDocument(
+      headerRows: 12,
+      viewport: 'standard',
+      showGrid: false,
+      showSafeArea: true,
+      selectedElementId: tacticalAnalysisJokboSectionId,
+      placementGap: 0,
+      elements: const [
+        SectionCanvasElement(
+          id: tacticalAnalysisJokboSectionId,
+          label: '족보 상세',
+          rect: SectionGridRect(7, 2, 68, 94),
+          spec: AttachedSectionSpec(
+            mode: SectionShapeMode.parallelogram,
+            face: SectionAttachmentFace.bottom,
+            faceStart: 10,
+            faceSpan: 72,
+            height: 96,
+          ),
+        ),
+        SectionCanvasElement(
+          id: tacticalAnalysisSignaturesSectionId,
+          label: '공개 방어 시그니처',
+          rect: SectionGridRect(0, 2, 21, 94),
+          spec: AttachedSectionSpec(
+            mode: SectionShapeMode.trapezoid,
+            face: SectionAttachmentFace.left,
+            faceSpan: 96,
+            height: 96,
+          ),
+        ),
+        SectionCanvasElement(
+          id: tacticalAnalysisOpponentSectionId,
+          label: '상대 카드',
+          rect: SectionGridRect(66, 2, 30, 94),
+          spec: AttachedSectionSpec(
+            mode: SectionShapeMode.trapezoid,
+            face: SectionAttachmentFace.right,
+            faceSpan: 96,
+            height: 96,
+          ),
+        ),
+      ],
+    );
+
+/// 왼쪽 공개 방어 시그니처 목록.
+const tacticalAnalysisSignaturesSectionId = 'tactical-analysis-signatures';
+
+/// 가운데 족보 상세(주 부착면 아래, FD-130).
+const tacticalAnalysisJokboSectionId = 'tactical-analysis-jokbo';
+
+/// 오른쪽 상대 카드.
+const tacticalAnalysisOpponentSectionId = 'tactical-analysis-opponent';
+
+SectionCanvasElement tacticalAnalysisSection(String id) =>
+    tacticalAnalysisStudioDocument.elements.firstWhere(
+      (element) => element.id == id,
+    );
+
+/// 하위 화면 전환 모션 방향(§1.4 부착면 표, FE9-a 발견 10): 왼쪽 0/180 · 위 260/80 · 아래 80/260 · 오른쪽 180/0.
+/// 분석 가운데 족보 상세는 위 · 아래 모두 닿아 주 부착면 아래(FD-130)를 따른다.
+({double intro, double outro}) tacticalSectionMotion(String id) => switch (id) {
+  tacticalRecordsSectionId ||
+  tacticalAnalysisSignaturesSectionId => (intro: 0, outro: 180),
+  tacticalLobbySectionId => (intro: 260, outro: 80),
+  tacticalEditorSectionId ||
+  tacticalAnalysisJokboSectionId => (intro: 80, outro: 260),
+  _ => (intro: 180, outro: 0),
+};
+
+/// 분석 화면 섹션 안 좌표(시안 Tactical-Analysis 값, 각 섹션 윗변 기준). 작은 창 규칙은 [TacticalMetrics.scaleFor]와 같다.
+abstract final class TacticalAnalysisMetrics {
+  // --- 왼쪽 시그니처 -----------------------------------------------------------
+
+  /// 제목 줄(시안 (20, 229.2)): "공개 방어 시그니처" 18px + 칩 "최근 30일".
+  static const signaturesTitle = TacticalSlotSpec(
+    top: 20,
+    height: 36,
+    leftGap: 20,
+    rightGap: 24,
+  );
+
+  /// 시그니처 목록 viewport: 첫 행 (14, 279.2), 행 오른쪽은 행 윗변 높이 사선에서 22(시안 첫 행 폭 511.7).
+  static const listTop = 70.0;
+  static const listLeft = 14.0;
+  static const listRailGap = 4.0;
+  static const listBottomGap = 18.0;
+
+  /// 시그니처 행(시안 `button.btn.ghost` 86, 간격 8): 첫 행 폭 511.7 = viewport − 18(스크롤바 자리).
+  static const rowHeight = 86.0;
+  static const rowGap = 8.0;
+  static const rowScrollbarReserve = 18.0;
+
+  /// 행 안쪽(시안 왼쪽 16, 오른쪽 27.2), 공개 칸 초상 42×34.
+  static const rowContentLeft = 16.0;
+  static const rowContentRight = 27.2;
+  static const rowPortrait = (width: 42.0, height: 34.0);
+
+  // --- 가운데 족보 상세(평행사변형: 행 왼쪽 = 행 아래 높이의 왼쪽 사선 + 24, 오른쪽 = 행 위 높이의 오른쪽 사선 − 23.6) ---
+
+  static TacticalSlotSpec _jokbo(double top, double height) =>
+      TacticalSlotSpec(top: top, height: height, leftGap: 24, rightGap: 23.6);
+
+  static TacticalSlotSpec _jokboCaption(double top) =>
+      TacticalSlotSpec(top: top, height: 24, leftGap: 26, rightGap: 25.5);
+
+  /// 제목 줄(시안 (597.4, 229.2, 1319.6×40), 안쪽 17.1): 족보 이름 · 편집 · 칩.
+  static final jokboTitle = _jokbo(20, 40);
+
+  /// 상대 방어 덱 `.srow`(시안 (571.7, 279.2, 1336.5×136), 안쪽 34).
+  static final defenseRow = _jokbo(70, 136);
+
+  /// 족보 seg 줄(시안 (566.3, 423.2, 1314.6×34), 안쪽 16): 화살표 · 캡션 · seg 4 · "전체 보기 (n)".
+  static final segRow = TacticalSlotSpec(
+    top: 214,
+    height: 34,
+    leftGap: 26,
+    rightGap: 25.5,
+  );
+
+  /// 족보 공격 덱 `.srow`(시안 (538.9, 465.2, 1336.5×136), 안쪽 34).
+  static final attackRow = _jokbo(256, 136);
+
+  /// KPI 6칸(시안 (523.0, 611.2, 1326.7×80), 안쪽 24.1).
+  static final kpiRow = _jokbo(402, 80);
+
+  /// "N회 내 누적 돌파율"(시안 (518.7, 703.2), 안쪽 14.2) · 막대 3(시안 (507.8, 733.2, 1320.3×44), 안쪽 17.8).
+  static final cumulativeCaption = _jokboCaption(494);
+  static final cumulativeRow = _jokbo(524, 44);
+
+  /// "상대별 결과 · 같은 방어 덱을 쓰는 유저"(시안 (503.9, 787.2)) · 행 42 간격 6(시안 첫 행 (493.4, 817.2)), 4행.
+  static final opponentsCaption = _jokboCaption(578);
+  static const opponentRowTop = 608.0;
+  static const opponentRowHeight = 42.0;
+  static const opponentRowStep = 48.0;
+  static const opponentRowCount = 4;
+  static TacticalSlotSpec opponentRow(int index) =>
+      _jokbo(opponentRowTop + index * opponentRowStep, opponentRowHeight);
+
+  /// "수명 · 신선도"(시안 (431.2, 1199.2)) · 한 줄(시안 (420.4, 1229.2, 1320.3×44), 안쪽 17.8). 그 위 "대체 학생 허용도"
+  /// 자리(시안 1017.2~1185.2)는 FD-127로 그리지 않는다.
+  static final lifetimeCaption = _jokboCaption(990);
+  static final lifetimeRow = _jokbo(1020, 44);
+
+  /// 덱 칸 초상 73×59(시안 `.deck` 폭 92).
+  static const deckPortrait = (width: 73.0, height: 59.0);
+
+  // --- 오른쪽 상대 카드(왼쪽 = 행 아래 높이의 왼쪽 사선 + 24, 오른쪽 22) --------------
+
+  static TacticalSlotSpec _opponent(double top, double height) =>
+      TacticalSlotSpec(top: top, height: height, leftGap: 24, rightGap: 22);
+
+  /// 제목(시안 `.plain` (1982.0, 229.2, 556×40), 안쪽 19.1).
+  static final opponentTitle = _opponent(20, 40);
+
+  /// "공개 방어 · 이력"(시안 (1976.3, 277.2)) · 이력 행(시안 `.row` (1965.4, 307.2, 572.6×56), 안쪽 21.9).
+  static final historyCaption = _opponent(68, 24);
+  static final historyRow = _opponent(98, 56);
+
+  /// "추정 숨은 스트라이커 2~4번 (추정값)"(시안 (1959.8, 371.2)) · 행 44 간격 6(시안 첫 행 (1951.0, 401.2)) 4행 · 근거 줄
+  /// (시안 (1918.2, 601.2, 619.8×30)).
+  static final hiddenCaption = _opponent(162, 24);
+  static const hiddenRowTop = 192.0;
+  static const hiddenRowHeight = 44.0;
+  static const hiddenRowStep = 50.0;
+  static const hiddenRowCount = 4;
+  static TacticalSlotSpec hiddenRow(int index) =>
+      _opponent(hiddenRowTop + index * hiddenRowStep, hiddenRowHeight);
+  static final hiddenBasis = _opponent(392, 30);
+
+  /// "변경 감지"(시안 (1912.2, 641.2)) · 행(시안 `.row` (1898.8, 671.2, 639.2×70), 안쪽 24.3).
+  static final changeCaption = _opponent(432, 24);
+  static final changeRow = _opponent(462, 70);
+
+  /// "이 유저에게 유효한 족보"(시안 (1892.8, 751.2)) · 행 92 간격 6(시안 첫 행 (1875.5, 781.2), 안쪽 28.2) 2행.
+  static final effectiveCaption = _opponent(542, 24);
+  static const effectiveRowTop = 572.0;
+  static const effectiveRowHeight = 92.0;
+  static const effectiveRowStep = 98.0;
+  static const effectiveRowCount = 2;
+  static TacticalSlotSpec effectiveRow(int index) =>
+      _opponent(effectiveRowTop + index * effectiveRowStep, effectiveRowHeight);
+
+  /// "기억 카드"(시안 (1852.9, 977.2)) · 행(시안 `.row` (1838.5, 1007.2, 699.5×76), 안쪽 25.4).
+  static final memoryCaption = _opponent(768, 24);
+  static final memoryRow = _opponent(798, 76);
+
+  // --- 족보 전체 보기 팝업(시안 Tactical-Analysis-All) -------------------------
+
+  /// 패널(시안 left 941 · top 467 · 폭 940): "전체 보기" 버튼 아래 12, 패널 오른쪽 = 버튼 오른쪽 + 16, 꼬리는 패널 오른쪽에서 120.
+  static const allPanelWidth = 940.0;
+  static const allPanelGap = 12.0;
+  static const allPanelOutset = 16.0;
+  static const allPanelTailInset = 120.0;
+
+  /// 화면 가장자리 여백(팝업이 화면 밖으로 나가지 않게).
+  static const allPanelMargin = 8.0;
+
+  /// 순위 행 덱 칸 40×32.
+  static const allRowPortrait = (width: 40.0, height: 32.0);
 }

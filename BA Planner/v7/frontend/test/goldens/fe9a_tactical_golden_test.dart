@@ -15,6 +15,14 @@
 // - `tactical-jokbo-drag`(FE9-d, 시안 "족보 D 드래그 중"): `tactical`과 같은 seed에서 위 카드(아비도스 덱의 족보)를 끌어 포인터를
 //   시안 커서 자리 (1399, 829)에 둔 채 찍는다. 고스트 (1162, 739, 448×104, −2.5°), 내 덱 줄 강조 · 힌트 알약 "놓으면 … 덱으로
 //   복사 · 위치 포함"(783, 679). 놓지 않아 내 덱은 그대로다.
+// - FE9-e: 하위 seg "기록 · 분석 · 슬롯"은 셸 머리말 제목 "전술대항전" 옆이다(FD-126 (a)). 세 장면 모두 S1 제목 줄에서 seg가
+//   빠지고 머리말에 seg가 생긴다(기록 분홍 · 분석 · 슬롯 흐림).
+// - `tactical-analysis`(FE9-e, 시안 "시그니처 1 · 족보 A · 상대 B 열림"): 같은 seed, 고정 시계(UTC 2026-10-05 12:00 — 상대 시각
+//   "23h" 등이 실행 시각에 따라 바뀌지 않게)에서 머리말 seg "분석"을 눌러 모션이 끝난 뒤 찍는다. S1 공개 시그니처 1행(히나 | 히비키 ·
+//   아코, 방어 유저 2 · 족보 2 · 표본 적음), S2 표본이 많은 게헨나 족보(KPI 관측 값 · 채택률 · 독립 재현 '—', 누적 돌파율, 상대별
+//   결과), S3 게헨나 선도부 카드(이력 · 2~4번 관측 비율 · 변경 관측 없음 · 유효한 족보 · 기억 카드).
+// - `tactical-analysis-all`(FE9-e, 시안 "성공률 정렬 · 족보 A 보는 중"): 위 화면에서 "전체 보기 (2)"를 눌러 연 팝업(스크림 .35,
+//   940 패널 · 꼬리). 1위 아비도스 족보 100%, 2위 게헨나 족보 50% "보는 중", 두 줄 모두 표본 적음(흐림 + 칩).
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -23,6 +31,7 @@
 library;
 
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/design_review/tactical_records_data.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/tactical_service.dart';
@@ -34,6 +43,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'golden_harness.dart';
 
 const _profileId = '000000000000000000000001';
+
+/// 분석 장면 고정 시계(상대 시각이 실행 시각에 따라 바뀌지 않게).
+class _ClockedMockAppService extends MockAppService implements AppClockSource {
+  _ClockedMockAppService() : super(fullStudentCatalog: true);
+
+  @override
+  DateTime get clockNow => DateTime.utc(2026, 10, 5, 12);
+}
+
+/// 머리말 seg "분석"을 눌러 모션 · 분석 질의(디바운스 뒤)가 끝날 때까지 기다린다.
+Future<void> _openAnalysis(WidgetTester tester) async {
+  final seg = find.byKey(const ValueKey('tactical-view-analysis'));
+  expect(seg, findsOneWidget, reason: 'header sub view seg');
+  await tester.tap(seg);
+  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 250));
+  await tester.pumpAndSettle();
+  await pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey('tactical-analysis-slot-memory')),
+  );
+}
 
 Future<void> _openTactical(WidgetTester tester, MockAppService service) async {
   setGoldenViewport(tester);
@@ -116,6 +147,34 @@ void main() {
     await expectGoldenScene(tester, 'tactical-jokbo-drag');
     await gesture.up();
     await tester.pumpAndSettle();
+  }, variant: goldenPlatform);
+
+  testWidgets('tactical-analysis', (tester) async {
+    final service = _ClockedMockAppService();
+    addTearDown(service.dispose);
+    await _seedV2(service);
+    await _openTactical(tester, service);
+    await _openAnalysis(tester);
+    expect(find.text('공개 방어 시그니처별 족보 분석'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tactical-signature-hina|hibiki|ako')),
+      findsOneWidget,
+    );
+    expect(find.text('게헨나 선도부 · 순위 —'), findsOneWidget);
+    await expectGoldenScene(tester, 'tactical-analysis');
+  }, variant: goldenPlatform);
+
+  testWidgets('tactical-analysis-all', (tester) async {
+    final service = _ClockedMockAppService();
+    addTearDown(service.dispose);
+    await _seedV2(service);
+    await _openTactical(tester, service);
+    await _openAnalysis(tester);
+    await tester.tap(find.byKey(const ValueKey('tactical-analysis-all')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tactical-jokbo-all')), findsOneWidget);
+    expect(find.textContaining(' · 보는 중'), findsOneWidget);
+    await expectGoldenScene(tester, 'tactical-analysis-all');
   }, variant: goldenPlatform);
 
   testWidgets('tactical-migration', (tester) async {

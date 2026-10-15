@@ -473,6 +473,7 @@ class _AppShellState extends State<AppShell>
                                   key: ValueKey('tactical-$_profileGeneration'),
                                   service: widget.service,
                                   reloadToken: _tacticalReloadToken,
+                                  headerOverride: _headerOverride,
                                 ),
                                 StatisticsPage(
                                   key: ValueKey(
@@ -990,6 +991,8 @@ class _AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final pageOverride = this.pageOverride;
     final returnLabel = this.returnLabel;
+    final backLabel = pageOverride?.backLabel;
+    final trailing = pageOverride?.trailing;
     return ValueListenableBuilder(
       valueListenable: service.state,
       builder: (context, state, _) {
@@ -1021,14 +1024,14 @@ class _AppHeader extends StatelessWidget {
                               style: AppType.headline,
                             ),
                           ),
-                          if (pageOverride != null) ...[
+                          if (pageOverride != null && backLabel != null) ...[
                             const SizedBox(width: AppSpacing.sm),
                             KitPressable(
                               key: const ValueKey('page-header-back-chip'),
                               onPressed: pageOverride.onBack,
-                              semanticLabel: pageOverride.backLabel,
+                              semanticLabel: backLabel,
                               builder: (context, state) => BaChip(
-                                label: pageOverride.backLabel,
+                                label: backLabel,
                                 tone: state.hovered || state.focused
                                     ? AppTones.pink
                                     : AppTones.info,
@@ -1048,6 +1051,10 @@ class _AppHeader extends StatelessWidget {
                                     : AppTones.info,
                               ),
                             ),
+                          ],
+                          if (trailing != null) ...[
+                            const SizedBox(width: AppSpacing.md),
+                            trailing,
                           ],
                         ],
                       ),
