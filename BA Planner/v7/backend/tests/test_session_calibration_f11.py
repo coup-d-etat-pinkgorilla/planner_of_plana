@@ -126,24 +126,23 @@ class SessionCalibrationPrecedenceTests(unittest.TestCase):
         self.bank = StudioNumericBank({"roi": {"1": bundled_one, "2": bundled_two}})
         self.addCleanup(self.bank.close)
 
-    def test_session_sample_beats_equally_shaped_bundled_template_with_distinct_provenance(self) -> None:
+    def test_conflicting_session_sample_stays_uncertain(self) -> None:
         source = light_cell(VERTICAL)
         session = mask(VERTICAL)
         self.addCleanup(source.close)
         self.addCleanup(session.close)
         self.bank.add_session_template("roi", "2", session, sample_id="session:1")
         result = self.bank.match((source,), field="student_level", roi_names=("roi",))
-        self.assertEqual(2, result.value)
+        self.assertIsNone(result.value)
+        self.assertTrue(result.bundled_conflict)
         self.assertTrue(result.used_session_sample)
         self.assertFalse(result.used_user_sample)
         observation = StudentBasicRecognizer._studio_numeric_observation(
             result, minimum=1, maximum=100, score_gate=.5, margin_gate=.01,
             source="student_level_studio_position_bank",
         )
-        self.assertEqual(
-            "student_level_studio_position_bank_session_calibrated",
-            observation.source,
-        )
+        self.assertEqual("uncertain", observation.status)
+        self.assertIn("bundled_label_conflict", observation.note)
 
     def test_user_sample_has_priority_over_session_sample(self) -> None:
         source = light_cell(VERTICAL)

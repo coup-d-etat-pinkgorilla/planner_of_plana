@@ -18,6 +18,8 @@ METHODS = frozenset({
     "scanner.candidate.review",
     "scanner.candidate.revalidate",
     "scanner.candidate.commit",
+    "scanner.review.unresolved_slots",
+    "scanner.review.assign_identity",
 })
 
 
@@ -78,11 +80,13 @@ class ScannerProtocolV1:
             return {"candidate": candidate}
         if method == "scanner.candidate.review":
             required = {"session_id", "generation", "candidate_id", "expected_candidate_revision", "candidate_payload", "approve", "reason"}
-            if not required.issubset(payload) or not set(payload).issubset(required | {"relationship_ranks"}):
+            if not required.issubset(payload) or not set(payload).issubset(required | {"relationship_ranks", "confirmed_fields"}):
                 raise ScannerError("invalid_payload", "review payload has invalid fields")
             candidate_payload = self._object(payload["candidate_payload"], "candidate_payload")
             if not isinstance(payload["approve"], bool):
                 raise ScannerError("invalid_payload", "approve must be a boolean")
+            if "confirmed_fields" in payload and not isinstance(payload["confirmed_fields"], list):
+                raise ScannerError("invalid_payload", "confirmed_fields must be an array")
             candidate = self.service.review(
                 self._text(payload["session_id"], "session_id"),
                 self._integer(payload["generation"], "generation", minimum=1),
@@ -92,6 +96,7 @@ class ScannerProtocolV1:
                 approve=payload["approve"],
                 reason=self._string(payload["reason"], "reason"),
                 relationship_ranks=self._relationship_ranks(payload.get("relationship_ranks")),
+                confirmed_fields=payload.get("confirmed_fields"),
             )
             return {"candidate": candidate}
         if method == "scanner.candidate.revalidate":
@@ -105,6 +110,30 @@ class ScannerProtocolV1:
                 self._integer(payload["expected_candidate_revision"], "expected_candidate_revision", minimum=1),
                 self._relationship_ranks(payload.get("relationship_ranks")),
             )}
+        if method == "scanner.review.unresolved_slots":
+            self._exact(payload, {"session_id", "generation", "candidate_id"})
+            return self.service.unresolved_slots(
+                self._text(payload["session_id"], "session_id"),
+                self._integer(payload["generation"], "generation", minimum=1),
+                self._text(payload["candidate_id"], "candidate_id"),
+            )
+        if method == "scanner.review.assign_identity":
+            required = {
+                "session_id", "generation", "candidate_id", "expected_candidate_revision",
+                "slot", "identity", "persist",
+            }
+            self._exact(payload, required)
+            if not isinstance(payload["persist"], bool):
+                raise ScannerError("invalid_payload", "persist must be a boolean")
+            return self.service.assign_inventory_identity(
+                self._text(payload["session_id"], "session_id"),
+                self._integer(payload["generation"], "generation", minimum=1),
+                self._text(payload["candidate_id"], "candidate_id"),
+                self._integer(payload["expected_candidate_revision"], "expected_candidate_revision", minimum=1),
+                self._integer(payload["slot"], "slot", minimum=0),
+                self._text(payload["identity"], "identity"),
+                payload["persist"],
+            )
         if method == "scanner.candidate.commit":
             required = {"session_id", "generation", "candidate_id", "candidate_revision", "profile_id", "expected_repository_revision", "idempotency_key"}
             self._exact(payload, required)

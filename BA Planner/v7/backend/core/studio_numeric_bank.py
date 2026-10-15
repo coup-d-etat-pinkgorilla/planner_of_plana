@@ -23,6 +23,7 @@ class StudioNumericMatch:
     complete: bool
     used_user_sample: bool = False
     used_session_sample: bool = False
+    bundled_conflict: bool = False
 
 
 def _pixels(image: Image.Image):
@@ -181,10 +182,12 @@ class StudioNumericBank:
         self.templates = templates
         self.user_templates: dict[str, dict[str, dict[str, Image.Image]]] = {}
         self.session_templates: dict[str, dict[str, dict[str, Image.Image]]] = {}
+        self.validated_user_ids: set[str] = set()
         self._lock = RLock()
 
     def add_user_template(
-        self, roi_name: str, digit: str, image: Image.Image, *, sample_id: str
+        self, roi_name: str, digit: str, image: Image.Image, *, sample_id: str,
+        validated: bool = False,
     ) -> None:
         with self._lock:
             if roi_name not in self.templates or digit not in "0123456789":
@@ -192,6 +195,8 @@ class StudioNumericBank:
             samples = self.user_templates.setdefault(roi_name, {}).setdefault(digit, {})
             if sample_id not in samples:
                 samples[sample_id] = image.convert("L")
+            if validated:
+                self.validated_user_ids.add(sample_id)
 
     def clear_user_templates(self) -> None:
         with self._lock:
@@ -200,6 +205,27 @@ class StudioNumericBank:
                     for image in samples.values():
                         image.close()
             self.user_templates.clear()
+            self.validated_user_ids.clear()
+
+    def sample_conflict(self, roi_name: str, digit: str, mask: Image.Image) -> str | None:
+        """No provenance bonuses: compare a proposed label with independent shape evidence."""
+        with self._lock:
+            templates = self.templates.get(roi_name, {})
+            if digit not in templates:
+                return "bundled_roi_missing"
+            ranked = []
+            for label, bundled in templates.items():
+                variants = [bundled, *(image for sample_id, image in
+                    self.user_templates.get(roi_name, {}).get(label, {}).items()
+                    if sample_id in self.validated_user_ids)]
+                scores = [(_shape_normalized_iou(mask, variant) if roi_name.startswith("weaponlevel")
+                           else _best_shift(mask, variant)[0]) for variant in variants]
+                ranked.append((label, max(scores)))
+            own = dict(ranked)[digit]
+            other, score = max((row for row in ranked if row[0] != digit), key=lambda row: row[1])
+            if score > own:
+                return f"cross_label_collision:label={digit};opposite={other};own={own:.6f};other={score:.6f}"
+            return None
 
     def add_session_template(
         self, roi_name: str, digit: str, image: Image.Image, *, sample_id: str
@@ -282,6 +308,7 @@ class StudioNumericBank:
                     return StudioNumericMatch(None, 0.0, 0.0, tuple(labels), tuple(shifts), False)
                 templates = self.templates.get(roi_name, {})
                 ranked: list[tuple[str, float, int, int, str]] = []
+                bundled: list[tuple[str, float]] = []
                 bonus = {"bundled": 0.0, "session": 0.04, "user": 0.08}
                 for digit, template in templates.items():
                     variants = [(template, "bundled"), *(
@@ -292,21 +319,26 @@ class StudioNumericBank:
                         for sample in self.user_templates.get(roi_name, {}).get(digit, {}).values()
                     )]
                     if field == "weapon_level":
-                        best = max(
-                            ((_shape_normalized_iou(source, variant), 0, 0, provenance)
-                             for variant, provenance in variants),
-                            key=lambda item: item[0] + bonus[item[3]],
-                        )
+                        scored = [(_shape_normalized_iou(source, variant), 0, 0, provenance)
+                                  for variant, provenance in variants]
                     else:
-                        best = max(
-                            ((*_best_shift(source, variant), provenance)
-                             for variant, provenance in variants),
-                            key=lambda item: item[0] + bonus[item[3]],
-                        )
+                        scored = [(*_best_shift(source, variant), provenance)
+                                  for variant, provenance in variants]
+                    bundled.append((digit, scored[0][0]))
+                    best = max(scored, key=lambda item: item[0] + bonus[item[3]])
                     ranked.append((digit, *best))
                 ranked.sort(key=lambda item: item[1] + bonus[item[4]], reverse=True)
                 if len(ranked) < 2:
                     return StudioNumericMatch(None, 0.0, 0.0, tuple(labels), tuple(shifts), False)
+                # Provenance may break a near tie only within the bundled top label.
+                # A conflicting user/session winner remains review evidence, never a value.
+                bundled_label = max(bundled, key=lambda item: item[1])[0]
+                if ranked[0][4] != "bundled" and ranked[0][0] != bundled_label:
+                    return StudioNumericMatch(
+                        None, ranked[0][1], 0.0, tuple(labels + [ranked[0][0]]),
+                        tuple(shifts + [(ranked[0][2], ranked[0][3])]), False,
+                        ranked[0][4] == "user", ranked[0][4] == "session", True,
+                    )
                 labels.append(ranked[0][0])
                 scores.append(ranked[0][1])
                 margins.append(

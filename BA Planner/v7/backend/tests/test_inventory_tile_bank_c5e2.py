@@ -152,12 +152,23 @@ class AdapterBankTests(unittest.TestCase):
         self.assertEqual("uncertain", next(e["status"] for e in row["evidence"] if e["field"] == "tile_bank"))
 
     def test_a_tile_the_detail_panel_reads_but_cannot_name_is_unknown_new(self):
-        adapter = self.adapter(None, ScriptedBank([BankMatch(None, 0.0, 0.0)]))
+        adapter = self.adapter(None, ScriptedBank([BankMatch(
+            None, 0.0, 0.0,
+            ranked=((ITEM, .74), (OTHER, .62)),
+        )]))
         adapter.detail_recovery.read.return_value = DetailRecoveryResult(DetailResult(None, .4, 0, DetailCount(None, reason="weak_x_match")))
         row = self.scan(adapter)
         slot, = [e for e in row["evidence"] if e["field"] == "slots[0]"]
         self.assertTrue(slot["note"].startswith("unknown_new;"))
         self.assertIn("unknown_new=1", self.bank_note(row))
+        specimen = row["_answer_specimen"]
+        self.assertIn(0, specimen["slot_crops"])
+        self.assertEqual("tech_notes", specimen["unresolved_slots"][0]["profile"])
+        self.assertEqual(
+            [{"identity": ITEM, "score": .74}, {"identity": OTHER, "score": .62}],
+            specimen["unresolved_slots"][0]["candidates"],
+        )
+        self.assertEqual(set(), specimen["assigned_slots"])
 
     def test_a_failed_detail_read_is_not_unknown_new(self):
         adapter = self.adapter(None, ScriptedBank([BankMatch(None, 0.0, 0.0)]))

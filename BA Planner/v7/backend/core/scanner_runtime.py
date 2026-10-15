@@ -55,9 +55,19 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
     def train_answer(
         scan_kind: str, profile_id: str, candidate_id: str,
         specimen: dict, payload: dict, _reason: str, _approve: bool,
+        confirmed_fields: tuple[str, ...],
     ) -> int:
         matcher = student_matcher if scan_kind == "student" else inventory_matcher
+        if scan_kind == "student":
+            return matcher.train_user_answer(profile_id, candidate_id, specimen, payload, confirmed_fields)
         return matcher.train_user_answer(profile_id, candidate_id, specimen, payload)
+
+    def assign_inventory_identity(
+        profile_id, source_size, item_id, crop, candidate_id, observed_slot, persist,
+    ):
+        return inventory_matcher.assign_user_identity(
+            profile_id, source_size, item_id, crop, candidate_id, observed_slot, persist,
+        )
 
     def close_resources():
         student_matcher.potential_recognizer.close()
@@ -84,5 +94,6 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         asset_status=catalog.verify,
         student_validator=StudentCandidateValidator(repository),
         candidate_review_hook=train_answer,
+        inventory_identity_assignment_hook=assign_inventory_identity,
         resource_close_hook=close_resources,
     )

@@ -29,6 +29,7 @@ class IdentityF8Tests(unittest.TestCase):
     def test_failed_identity_recaptures_before_reading_any_fields(self):
         adapter, capture = self.adapter()
         with patch.object(adapter.matcher, 'match', side_effect=[Match('mika', .3, .01), Match('miyu', .99, .5)]), \
+             patch.object(adapter.identity_recognizer, 'attributes', return_value={}), \
              patch.object(adapter.basic_recognizer, 'recognize') as basic:
             frame, identity = adapter._capture_identified({}, Event())
             frame.close()
@@ -93,8 +94,8 @@ class IdentityF8Tests(unittest.TestCase):
             matcher.rank.return_value.append(('shiroko', .89))
             self.assertIsNone(reader.identify(frame, matcher, adapter.texture_region, adapter._canonical_student_ref, .82, .04))
 
-    def test_attribute_candidates_require_three_fields_and_keep_all_portrait_competitors(self):
-        self.assertEqual((), StudentIdentityRecognizer.attribute_candidates({'role':'dealer'}))
+    def test_attribute_candidates_use_each_confident_field_without_top_k_truncation(self):
+        self.assertTrue(StudentIdentityRecognizer.attribute_candidates({'role':'dealer'}))
         ids = StudentIdentityRecognizer.attribute_candidates(dict(role='tanker', attack_type='mystic', position='front'))
         self.assertIn('hoshino_battle', ids)
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Event
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -199,12 +200,15 @@ class StudentScanS2Tests(unittest.TestCase):
             )
 
             def cells(field: str) -> tuple[Image.Image, Image.Image]:
-                color = (90, 110, 135) if field == "relationship_rank" else (255, 255, 255)
+                color = (
+                    (90, 110, 135) if field == "relationship_rank" else (255, 255, 255)
+                )
                 result = []
                 for x in (4, 7):
                     image = Image.new("RGB", (12, 16))
                     for y in range(3, 13):
-                        image.putpixel((x, y), color)
+                        for dx in (0, 1):
+                            image.putpixel((x + dx, y), color)
                     result.append(image)
                 return tuple(result)  # type: ignore[return-value]
 
@@ -219,20 +223,30 @@ class StudentScanS2Tests(unittest.TestCase):
             specimen = {"source_size": (1280, 720), "numeric_groups": groups}
             payload = {
                 "values": {
-                    "level": 12, "bond_rank": 28, "weapon_level": 48,
-                    "equip1_level": 10, "equip2_level": 20, "equip3_level": 30,
+                    "level": 12,
+                    "bond_rank": 28,
+                    "weapon_level": 48,
+                    "equip1_level": 10,
+                    "equip2_level": 20,
+                    "equip3_level": 30,
                 }
             }
             try:
-                self.assertEqual(
-                    12,
-                    matcher.train_user_answer("a" * 24, "candidate-1", specimen, payload),
-                )
+                # Routing is tested with controlled labels; real collision and
+                # mask fixtures are exercised separately by the O1 safety suite.
+                with patch.object(matcher.basic_recognizer.studio_numeric_bank, "sample_conflict", return_value=None), patch.object(matcher.equipment_recognizer.studio_numeric_bank, "sample_conflict", return_value=None):
+                    self.assertEqual(12, matcher.train_user_answer(
+                        "a" * 24, "candidate-1", specimen, payload, tuple(payload["values"])))
                 loaded = store.load_numeric("a" * 24, (1280, 720))
                 try:
                     self.assertEqual(12, len(loaded))
                     self.assertEqual(
-                        {"student_level", "relationship_rank", "weapon_level", "equipment_level"},
+                        {
+                            "student_level",
+                            "relationship_rank",
+                            "weapon_level",
+                            "equipment_level",
+                        },
                         {sample.field for sample in loaded},
                     )
                 finally:

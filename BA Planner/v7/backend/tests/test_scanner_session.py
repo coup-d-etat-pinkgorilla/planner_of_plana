@@ -5,6 +5,8 @@ from threading import Event
 import time
 import unittest
 
+from PIL import Image
+
 from core.scanner_session import ScannerError, ScannerEventCursor, ScannerSessionService
 from core.scanner_protocol_v1 import ScannerProtocolV1
 from core.repository_store import RepositoryError
@@ -59,7 +61,10 @@ class FakeRepository:
 
 
 class ScannerSessionTests(unittest.TestCase):
-    def service(self, matcher, *, events=None, student_validator=None, candidate_review_hook=None) -> ScannerSessionService:
+    def service(
+        self, matcher, *, events=None, student_validator=None,
+        candidate_review_hook=None, inventory_identity_assignment_hook=None,
+    ) -> ScannerSessionService:
         ids = iter(["s1", "c1", "s2", "c2"])
         return ScannerSessionService(
             target_provider=lambda: [{"target_id": "w1", "title": "Blue Archive", "status": "ready"}],
@@ -71,6 +76,7 @@ class ScannerSessionTests(unittest.TestCase):
             id_factory=lambda: next(ids),
             student_validator=student_validator,
             candidate_review_hook=candidate_review_hook,
+            inventory_identity_assignment_hook=inventory_identity_assignment_hook,
         )
 
     @staticmethod
@@ -158,10 +164,26 @@ class ScannerSessionTests(unittest.TestCase):
         service.review(
             "s1", 1, "c1", 2, STUDENT, approve=False,
             reason="edited_and_revalidated_in_scan_page",
+            confirmed_fields=["level"],
         )
         self.assertEqual(1, len(calls))
         self.assertEqual(("student", "p1", "c1"), calls[0][:3])
+        self.assertEqual(("level",), calls[0][-1])
         service.close()
+
+    def test_omitted_or_invalid_confirmation_cannot_clear_unconfirmed_evidence(self):
+        service = self.service(lambda *_: self.candidate(uncertain=True))
+        self.addCleanup(service.close)
+        service.start("student", "w1", "p1")
+        service.wait("s1")
+        for fields in (["level", "level"], ["unknown"], [False], "level"):
+            with self.assertRaisesRegex(ScannerError, "confirmed_fields"):
+                service.review("s1", 1, "c1", 1, STUDENT, approve=False,
+                    reason="edited_and_revalidated_in_scan_page", confirmed_fields=fields)
+        reviewed = service.review("s1", 1, "c1", 1, STUDENT, approve=False,
+            reason="edited_and_revalidated_in_scan_page")
+        self.assertTrue(reviewed["review_required"])
+        self.assertEqual("uncertain", reviewed["evidence"][0]["status"])
 
     def test_inventory_specimen_trains_only_on_explicit_approval(self) -> None:
         calls: list[tuple] = []
@@ -279,6 +301,7 @@ class ScannerSessionTests(unittest.TestCase):
             "s1", 1, "c1", held["revision"], STUDENT,
             approve=False,
             reason="edited_and_revalidated_in_scan_page",
+            confirmed_fields=["level"],
         )
         self.assertFalse(revalidated["review_required"])
         self.assertFalse(revalidated["approved"])
@@ -421,6 +444,96 @@ class ScannerSessionTests(unittest.TestCase):
         self.assertEqual("ready", listed["payload"]["targets"][0]["status"])
         invalid = protocol.handle({"protocol": 1, "id": "r2", "type": "request", "method": "scanner.session.start", "payload": {"scan_kind": "student", "target_id": "w1", "extra": True}})
         self.assertEqual("invalid_payload", invalid["payload"]["error"]["code"])
+        service.close()
+
+    def test_inventory_unresolved_slot_can_be_labeled_at_explicit_persistence_tier(self) -> None:
+        calls: list[tuple] = []
+        crop = Image.new("RGB", (12, 9), "navy")
+        identity = "Item_Icon_SkillBook_Abydos_0"
+        inventory = {
+            "version": 1,
+            "entries": [],
+        }
+
+        def matcher(*_args):
+            return [{
+                "payload": inventory,
+                "evidence": [{
+                    "field": "slots[7]", "status": "partial",
+                    "source": "inventory_detail_panel", "confidence": 0.0,
+                }],
+                "review_required": True,
+                "_answer_specimen": {
+                    "source_size": (1280, 720),
+                    "slot_crops": {7: crop},
+                    "unresolved_slots": {7: {
+                        "profile": "tech_notes",
+                        "candidates": [{"identity": identity, "score": 0.81}],
+                    }},
+                    "assigned_slots": set(),
+                },
+            }]
+
+        service = self.service(
+            matcher,
+            inventory_identity_assignment_hook=lambda *args: calls.append(args) or "sample-1",
+        )
+        protocol = ScannerProtocolV1(service)
+        service.start("inventory", "w1", "p1", inventory_scan_profile="tech_notes")
+        service.wait("s1")
+        listed = protocol.handle({
+            "protocol": 1, "id": "list", "type": "request",
+            "method": "scanner.review.unresolved_slots",
+            "payload": {"session_id": "s1", "generation": 1, "candidate_id": "c1"},
+        })
+        self.assertEqual(7, listed["payload"]["slots"][0]["slot"])
+        self.assertEqual("tech_notes", listed["payload"]["slots"][0]["profile"])
+        self.assertTrue(listed["payload"]["slots"][0]["crop_png_base64"])
+
+        assigned = protocol.handle({
+            "protocol": 1, "id": "assign", "type": "request",
+            "method": "scanner.review.assign_identity",
+            "payload": {
+                "session_id": "s1", "generation": 1, "candidate_id": "c1",
+                "expected_candidate_revision": 1, "slot": 7,
+                "identity": identity, "persist": True,
+            },
+        })
+        candidate = assigned["payload"]["candidate"]
+        self.assertEqual(2, candidate["revision"])
+        self.assertEqual(identity, candidate["payload"]["entries"][0]["item_id"])
+        self.assertIsNone(candidate["payload"]["entries"][0]["quantity"])
+        self.assertEqual([], assigned["payload"]["slots"])
+        self.assertTrue(candidate["review_required"])
+        self.assertEqual(("p1", (1280, 720), identity), calls[0][:3])
+        self.assertTrue(calls[0][-1])
+        service.close()
+
+    def test_inventory_identity_assignment_rejects_stale_or_cross_profile_label(self) -> None:
+        crop = Image.new("RGB", (4, 4), "white")
+
+        def matcher(*_args):
+            return [{
+                "payload": {"version": 1, "entries": []},
+                "evidence": [], "review_required": True,
+                "_answer_specimen": {
+                    "source_size": (1280, 720), "slot_crops": {0: crop},
+                    "unresolved_slots": {0: {"profile": "tech_notes", "candidates": []}},
+                    "assigned_slots": set(),
+                },
+            }]
+
+        service = self.service(matcher, inventory_identity_assignment_hook=lambda *_args: None)
+        service.start("inventory", "w1", "p1", inventory_scan_profile="tech_notes")
+        service.wait("s1")
+        with self.assertRaisesRegex(ScannerError, "not part"):
+            service.assign_inventory_identity(
+                "s1", 1, "c1", 1, 0, "Item_Icon_ExpItem_0", False,
+            )
+        with self.assertRaisesRegex(ScannerError, "stale"):
+            service.assign_inventory_identity(
+                "s1", 1, "c1", 2, 0, "Item_Icon_SkillBook_Abydos_0", False,
+            )
         service.close()
 
     def test_inventory_scan_profile_crosses_protocol_without_using_account_profile(self) -> None:

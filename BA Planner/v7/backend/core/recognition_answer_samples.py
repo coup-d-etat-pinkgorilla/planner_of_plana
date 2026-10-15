@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import hashlib
 from pathlib import Path
 import re
 from typing import Iterable
 from uuid import uuid4
 
 from PIL import Image
+from core.numeric_sample_safety import numeric_mask_issue
 
 
 _PROFILE_ID = re.compile(r"^[0-9a-f]{24}$")
@@ -22,6 +24,14 @@ class NumericAnswerSample:
     digit: str
     image: Image.Image
     sample_id: str
+    validated: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class NumericSampleWrite:
+    sample_id: str
+    created: bool
+    quarantined: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,22 +87,55 @@ class RecognitionAnswerSampleStore:
         mask: Image.Image,
         candidate_id: str,
     ) -> str:
+        return self.write_numeric(
+            profile_id, source_size, field=field, roi_name=roi_name, digit=digit,
+            mask=mask, candidate_id=candidate_id,
+        ).sample_id
+
+    def write_numeric(
+        self, profile_id: str, source_size: tuple[int, int], *, field: str,
+        roi_name: str, digit: str, mask: Image.Image, candidate_id: str,
+        quarantine_reason: str | None = None,
+    ) -> NumericSampleWrite:
         field = self._part(field, "field")
         roi_name = self._part(roi_name, "roi_name")
         if digit not in "0123456789" or len(digit) != 1:
             raise ValueError("digit must be one decimal character")
-        sample_id = uuid4().hex
-        directory = self._scope(profile_id, source_size) / "numeric" / field / roi_name / digit
+        issue = numeric_mask_issue(mask, field, roi_name)
+        if issue:
+            raise ValueError(f"numeric_mask_rejected:{issue}")
+        scope = self._scope(profile_id, source_size)
+        prepared = mask.convert("L")
+        mask_sha = hashlib.sha256(
+            json.dumps(prepared.size).encode() + prepared.tobytes()
+        ).hexdigest()
+        sample_id = hashlib.sha256(json.dumps(
+            [profile_id, list(source_size), candidate_id, field, roi_name, digit, mask_sha],
+            separators=(",", ":"), ensure_ascii=False,
+        ).encode()).hexdigest()
+        active_directory = scope / "numeric" / field / roi_name / digit
+        directory = (self.root / "_quarantine" / "numeric" / active_directory.relative_to(self.root)
+                     if quarantine_reason else active_directory)
         directory.mkdir(parents=True, exist_ok=True)
         image_path = directory / f"{sample_id}.png"
+        metadata_path = directory / f"{sample_id}.json"
+        if image_path.is_file() and metadata_path.is_file():
+            try:
+                existing = json.loads(metadata_path.read_text(encoding="utf-8"))
+                intact = (isinstance(existing, dict) and existing.get("mask_sha256") == mask_sha
+                          and existing.get("png_sha256") == hashlib.sha256(image_path.read_bytes()).hexdigest())
+            except (OSError, ValueError):
+                intact = False
+            if intact:
+                prepared.close()
+                return NumericSampleWrite(sample_id, False, quarantine_reason is not None)
         temporary_image = image_path.with_suffix(".png.tmp")
-        prepared = mask.convert("L")
         try:
             prepared.save(temporary_image, format="PNG", optimize=True)
         finally:
             prepared.close()
         temporary_image.replace(image_path)
-        self._write_metadata(directory / f"{sample_id}.json", {
+        self._write_metadata(metadata_path, {
             "version": self.VERSION,
             "sample_id": sample_id,
             "kind": "numeric_digit",
@@ -103,8 +146,14 @@ class RecognitionAnswerSampleStore:
             "capture_resolution": list(source_size),
             "confirmed_at": datetime.now(timezone.utc).isoformat(),
             "confirmation_source": "user_review",
+            "mask_sha256": mask_sha,
+            "png_sha256": hashlib.sha256(image_path.read_bytes()).hexdigest(),
+            "safety_status": "quarantined" if quarantine_reason else "validated",
+            "reason": quarantine_reason,
+            "original_path": str(active_directory / image_path.name),
+            "stored_path": str(image_path),
         })
-        return sample_id
+        return NumericSampleWrite(sample_id, True, quarantine_reason is not None)
 
     def load_numeric(
         self, profile_id: str, source_size: tuple[int, int]
@@ -119,7 +168,22 @@ class RecognitionAnswerSampleStore:
                 field, roi_name, digit = relative[:3]
                 with Image.open(path) as opened:
                     image = opened.convert("L")
-                result.append(NumericAnswerSample(field, roi_name, digit, image, path.stem))
+                if numeric_mask_issue(image, field, roi_name):
+                    image.close()
+                    continue
+                metadata_path = path.with_suffix(".json")
+                try:
+                    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    metadata = {}
+                if not isinstance(metadata, dict) or metadata.get("safety_status") == "quarantined":
+                    image.close()
+                    continue
+                if metadata.get("png_sha256") and metadata["png_sha256"] != hashlib.sha256(path.read_bytes()).hexdigest():
+                    image.close()
+                    continue
+                result.append(NumericAnswerSample(field, roi_name, digit, image, path.stem,
+                                                  metadata.get("safety_status") == "validated"))
             except (OSError, ValueError, IndexError):
                 continue
         return tuple(result)

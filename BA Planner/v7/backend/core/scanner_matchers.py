@@ -3,6 +3,7 @@ from core.student_fallback_evidence import weapon_fallback_review_details
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import json
 from threading import Event, RLock
 from typing import Any, Callable, Protocol
 
@@ -33,6 +34,7 @@ from core.student_equipment_recovery import EquipmentControlRecognizer, resolve_
 from core.student_identity_recovery import StudentIdentityRecognizer
 from core.student_form_recovery import StudentFormRecovery
 from core.studio_numeric_bank import source_digit_mask
+from core.numeric_sample_safety import numeric_mask_issue
 from core.session_calibration import SessionCalibrationStore
 from core import student_meta
 
@@ -273,12 +275,17 @@ class Match:
     score: float
     margin: float
     source: str = "bundled"
+    # Additive diagnostics; legacy positional construction/equality are retained.
+    runner_exists: bool | None = field(default=None, compare=False)
+    runner_margin: float | None = field(default=None, compare=False)
 
 
 class TemplateMatcher:
     _MATCH_SIZE = (96, 96)
 
-    def __init__(self, catalog: RecognitionAssetCatalog, scan_kind: str, purpose: str) -> None:
+    def __init__(
+        self, catalog: RecognitionAssetCatalog, scan_kind: str, purpose: str
+    ) -> None:
         self.catalog = catalog
         self.templates = [
             (asset.identity, self._load_template(catalog.resolve(asset.path)))
@@ -297,79 +304,128 @@ class TemplateMatcher:
             for _identity, image in self.user_templates.values():
                 image.close()
             self.user_templates = {
-                sample_id: (identity, image.convert("RGB").resize(self._MATCH_SIZE, Image.Resampling.BILINEAR))
+                sample_id: (
+                    identity,
+                    image.convert("RGB").resize(
+                        self._MATCH_SIZE, Image.Resampling.BILINEAR
+                    ),
+                )
                 for sample_id, identity, image in samples
             }
 
-    def add_user_template(self, sample_id: str, identity: str, image: Image.Image) -> None:
+    def add_user_template(
+        self, sample_id: str, identity: str, image: Image.Image
+    ) -> None:
         with self._lock:
             if sample_id in self.user_templates:
                 return
             self.user_templates[sample_id] = (
-                identity, image.convert("RGB").resize(self._MATCH_SIZE, Image.Resampling.BILINEAR)
+                identity,
+                image.convert("RGB").resize(
+                    self._MATCH_SIZE, Image.Resampling.BILINEAR
+                ),
             )
 
     @classmethod
     def _load_template(cls, path: Path) -> Image.Image:
         with Image.open(path) as image:
-            return image.convert("RGB").resize(cls._MATCH_SIZE, Image.Resampling.BILINEAR)
+            return image.convert("RGB").resize(
+                cls._MATCH_SIZE, Image.Resampling.BILINEAR
+            )
 
     @staticmethod
     def _center(image: Image.Image, trim: float) -> Image.Image:
         if trim <= 0:
             return image
-        return image.crop((round(image.width * trim), round(image.height * trim), round(image.width * (1 - trim)), round(image.height * (1 - trim))))
+        return image.crop(
+            (
+                round(image.width * trim),
+                round(image.height * trim),
+                round(image.width * (1 - trim)),
+                round(image.height * (1 - trim)),
+            )
+        )
 
     def match(
-        self, image: Image.Image, *, center_trim: float = 0.0,
-        prefer_user: bool = False, threshold: float = 0.0, margin: float = 0.0,
+        self,
+        image: Image.Image,
+        *,
+        center_trim: float = 0.0,
+        prefer_user: bool = False,
+        threshold: float = 0.0,
+        margin: float = 0.0,
         allowed_identities: set[str] | None = None,
     ) -> Match:
         with self._lock:
             if prefer_user and self.user_templates:
-                preferred = self._match_preferred(image, center_trim, allowed_identities)
+                preferred = self._match_preferred(
+                    image, center_trim, allowed_identities
+                )
                 if (
                     preferred.source == "user_confirmed"
-                    and preferred.score >= threshold and preferred.margin >= margin
+                    and preferred.score >= threshold
+                    and preferred.margin >= margin
                 ):
                     return preferred
-            templates = self.templates if allowed_identities is None else [
-                item for item in self.templates if item[0] in allowed_identities
-            ]
+            templates = (
+                self.templates
+                if allowed_identities is None
+                else [item for item in self.templates if item[0] in allowed_identities]
+            )
             if not templates:
-                raise ScannerError("template_missing", "no templates match the requested inventory profile")
+                raise ScannerError(
+                    "template_missing",
+                    "no templates match the requested inventory profile",
+                )
             return self._match_templates(image, templates, center_trim, "bundled")
 
     def _match_preferred(
-        self, image: Image.Image, center_trim: float,
+        self,
+        image: Image.Image,
+        center_trim: float,
         allowed_identities: set[str] | None = None,
     ) -> Match:
         best_by_identity: dict[str, tuple[float, str]] = {}
         variants = [
             *((identity, template, "bundled") for identity, template in self.templates),
-            *((identity, template, "user_confirmed") for identity, template in self.user_templates.values()),
+            *(
+                (identity, template, "user_confirmed")
+                for identity, template in self.user_templates.values()
+            ),
         ]
         if allowed_identities is not None:
             variants = [item for item in variants if item[0] in allowed_identities]
         if not variants:
-            raise ScannerError("template_missing", "no templates match the requested inventory profile")
+            raise ScannerError(
+                "template_missing", "no templates match the requested inventory profile"
+            )
         for identity, template, source in variants:
             score = image_similarity(
-                self._center(image, center_trim), self._center(template, center_trim),
+                self._center(image, center_trim),
+                self._center(template, center_trim),
             )
             previous = best_by_identity.get(identity)
-            if previous is None or score > previous[0] or (
-                score == previous[0] and source == "user_confirmed"
+            if (
+                previous is None
+                or score > previous[0]
+                or (score == previous[0] and source == "user_confirmed")
             ):
                 best_by_identity[identity] = (score, source)
-        ranked = sorted(best_by_identity.items(), key=lambda item: item[1][0], reverse=True)
+        ranked = sorted(
+            best_by_identity.items(), key=lambda item: item[1][0], reverse=True
+        )
         identity, (score, source) = ranked[0]
         second = ranked[1][1][0] if len(ranked) > 1 else 0.0
-        return Match(identity, score, score - second, source)
+        return Match(identity, score, score - second, source,
+                     runner_exists=len(ranked) > 1,
+                     runner_margin=score - second if len(ranked) > 1 else None)
 
     def _match_templates(
-        self, image: Image.Image, templates: list[tuple[str, Image.Image]],
-        center_trim: float, source: str,
+        self,
+        image: Image.Image,
+        templates: list[tuple[str, Image.Image]],
+        center_trim: float,
+        source: str,
     ) -> Match:
         best_by_identity: dict[str, float] = {}
         for identity, template in templates:
@@ -378,17 +434,28 @@ class TemplateMatcher:
                 self._center(template, center_trim),
             )
             best_by_identity[identity] = max(score, best_by_identity.get(identity, 0.0))
-        ranked = sorted(best_by_identity.items(), key=lambda item: item[1], reverse=True)
+        ranked = sorted(
+            best_by_identity.items(), key=lambda item: item[1], reverse=True
+        )
         best_id, best_score = ranked[0]
         second = ranked[1][1] if len(ranked) > 1 else 0.0
-        return Match(best_id, best_score, best_score - second, source)
+        return Match(best_id, best_score, best_score - second, source,
+                     runner_exists=len(ranked) > 1,
+                     runner_margin=best_score - second if len(ranked) > 1 else None)
+
+    @property
+    def identities(self) -> frozenset[str]:
+        with self._lock:
+            return frozenset(identity for identity, _template in self.templates)
 
     def rank(self, image: Image.Image) -> list[tuple[str, float]]:
         """Full bundled portrait ranking; no candidate hint may remove a competitor."""
         with self._lock:
             scores: dict[str, float] = {}
             for identity, template in self.templates:
-                scores[identity] = max(image_similarity(image, template), scores.get(identity, 0.0))
+                scores[identity] = max(
+                    image_similarity(image, template), scores.get(identity, 0.0)
+                )
             return sorted(scores.items(), key=lambda item: item[1], reverse=True)
 
 
@@ -616,8 +683,11 @@ class StudentMatcherAdapter:
                 for sample in samples:
                     for bank in banks:
                         bank.add_user_template(
-                            sample.roi_name, sample.digit, sample.image,
+                            sample.roi_name,
+                            sample.digit,
+                            sample.image,
                             sample_id=sample.sample_id,
+                            validated=sample.validated,
                         )
             finally:
                 self.answer_samples.close(samples)
@@ -625,11 +695,15 @@ class StudentMatcherAdapter:
         if calibration is None or not calibration.bind_scope(profile_id, source_size):
             return
         for sample in calibration.numeric_samples(
-            profile_id=profile_id, source_size=source_size, student_ref=student_ref,
+            profile_id=profile_id,
+            source_size=source_size,
+            student_ref=student_ref,
         ):
             for bank in banks:
                 bank.add_session_template(
-                    sample.roi_name, sample.digit, sample.image,
+                    sample.roi_name,
+                    sample.digit,
+                    sample.image,
                     sample_id=sample.sample_id,
                 )
 
@@ -702,8 +776,12 @@ class StudentMatcherAdapter:
         return None
 
     def train_user_answer(
-        self, profile_id: str, candidate_id: str, specimen: dict[str, Any],
+        self,
+        profile_id: str,
+        candidate_id: str,
+        specimen: dict[str, Any],
         payload: dict[str, Any],
+        confirmed_fields: tuple[str, ...] = (),
     ) -> int:
         if self.answer_samples is None:
             return 0
@@ -711,12 +789,24 @@ class StudentMatcherAdapter:
         groups = specimen.get("numeric_groups")
         values = payload.get("values")
         if (
-            not isinstance(source_size, tuple) or len(source_size) != 2
-            or not isinstance(groups, dict) or not isinstance(values, dict)
+            not isinstance(source_size, tuple)
+            or len(source_size) != 2
+            or not isinstance(groups, dict)
+            or not isinstance(values, dict)
         ):
             return 0
-        saved = 0
-        for field in ("level", "bond_rank", "weapon_level", "equip1_level", "equip2_level", "equip3_level"):
+        saved = reused = quarantined = rejected = 0
+        issues, blocked_fields = [], set()
+        for field in (
+            "level",
+            "bond_rank",
+            "weapon_level",
+            "equip1_level",
+            "equip2_level",
+            "equip3_level",
+        ):
+            if field not in confirmed_fields:
+                continue
             value = values.get(field)
             if not isinstance(value, int) or isinstance(value, bool):
                 continue
@@ -726,25 +816,51 @@ class StudentMatcherAdapter:
             sample_field, group_name, roi_names = spec
             cells = groups.get(group_name)
             digits = str(value)
-            if not isinstance(cells, tuple) or len(cells) < len(digits) or len(roi_names) < len(digits):
+            if (
+                not isinstance(cells, tuple)
+                or len(cells) < len(digits)
+                or len(roi_names) < len(digits)
+            ):
                 continue
             for cell, roi_name, digit in zip(cells, roi_names, digits):
                 mask = source_digit_mask(cell, sample_field)
                 try:
-                    if mask.getbbox() is None:
+                    issue = numeric_mask_issue(mask, sample_field, roi_name)
+                    if issue:
+                        rejected += 1
+                        issues.append({"field": field, "roi": roi_name, "reason": issue})
                         continue
-                    sample_id = self.answer_samples.save_numeric(
-                        profile_id, source_size, field=sample_field, roi_name=roi_name,
-                        digit=digit, mask=mask, candidate_id=candidate_id,
+                    banks = (self.basic_recognizer.studio_numeric_bank,
+                             self.equipment_recognizer.studio_numeric_bank)
+                    bank = banks[1] if sample_field == "equipment_level" else banks[0]
+                    conflict = bank.sample_conflict(roi_name, digit, mask)
+                    receipt = self.answer_samples.write_numeric(
+                        profile_id,
+                        source_size,
+                        field=sample_field,
+                        roi_name=roi_name,
+                        digit=digit,
+                        mask=mask,
+                        candidate_id=candidate_id,
+                        quarantine_reason=conflict,
                     )
-                    for bank in (
-                        self.basic_recognizer.studio_numeric_bank,
-                        self.equipment_recognizer.studio_numeric_bank,
-                    ):
-                        bank.add_user_template(roi_name, digit, mask, sample_id=sample_id)
-                    saved += 1
+                    if receipt.quarantined:
+                        quarantined += int(receipt.created)
+                        blocked_fields.add(field)
+                        issues.append({"field": field, "roi": roi_name, "reason": conflict})
+                        continue
+                    for bank in banks:
+                        bank.add_user_template(
+                            roi_name, digit, mask, sample_id=receipt.sample_id, validated=True,
+                        )
+                    saved += int(receipt.created)
+                    reused += int(not receipt.created)
                 finally:
                     mask.close()
+        specimen["_sample_training_report"] = {
+            "sample_count": saved, "reused_count": reused, "quarantined_count": quarantined,
+            "rejected_count": rejected, "blocked_fields": sorted(blocked_fields), "issues": issues,
+        }
         return saved
 
     @staticmethod
@@ -777,6 +893,8 @@ class StudentMatcherAdapter:
     def _capture_identified(self, target, cancel):
         recovery = self._panel_recovery()
         attempts, entered = 0, False
+        self.last_identity_filter_evidence = None
+        filter_attempts = []
         while attempts < 2:
             if cancel.is_set():
                 raise ScannerError('cancelled', 'identity capture cancelled')
@@ -796,6 +914,12 @@ class StudentMatcherAdapter:
                 attempts += 1
                 identity = self.identity_recognizer.identify(frame, self.matcher, self.texture_region,
                     self._canonical_student_ref, self.threshold, self.margin)
+                filter_note = getattr(self.identity_recognizer, "last_filter_evidence", None)
+                if isinstance(filter_note, dict) and filter_note:
+                    filter_attempts.append(dict(filter_note))
+                    self.last_identity_filter_evidence = {
+                        **filter_note, "capture_attempts": list(filter_attempts),
+                    }
                 if identity is not None:
                     return frame, identity
             except Exception:
@@ -849,7 +973,12 @@ class StudentMatcherAdapter:
                 answer_specimen["fallback_review_details"] = review_details
         finally:
             crops.close()
-        candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
+        identity_filter = getattr(self, "last_identity_filter_evidence", None)
+        if isinstance(identity_filter, dict):
+            candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence,
+                                               answer_specimen, identity_filter=identity_filter)
+        else:
+            candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
         progress(4, 4, "scanner.student.matched")
         return [candidate]
 
@@ -1011,7 +1140,7 @@ class StudentMatcherAdapter:
             "note": observation.note,
         } for field, observation in observations.items()]
 
-    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen) -> dict[str, Any]:
+    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen, identity_filter=None) -> dict[str, Any]:
         kept = {field: observation for field, observation in observations.items()
                 if observation.confirmed or observation.source == "panel_value_conflict"}
         values = {field: observation.value for field, observation in kept.items()}
@@ -1031,6 +1160,12 @@ class StudentMatcherAdapter:
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()
         )
+        if isinstance(identity_filter, dict):
+            evidence.append({
+                "field": "student_id", "status": "ok",
+                "source": "student_attribute_prefilter", "confidence": identity.score,
+                "note": json.dumps(identity_filter, ensure_ascii=False, sort_keys=True),
+            })
         return {
             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
             "evidence": evidence,
@@ -1300,6 +1435,7 @@ class _InventoryScan:
                                                                  "count_checked": 0, "count_agree": 0, "count_disagree": 0,
                                                                  "numeric_synth_checked": 0, "numeric_synth_agree": 0})
     unknown_new: set[int] = field(default_factory=set)
+    unresolved_slots: dict[int, dict[str, Any]] = field(default_factory=dict)
     allow_synth: bool = False
     count_bank: Any = None
     glyph_seeds: dict[int, Any] = field(default_factory=dict)
@@ -1312,12 +1448,25 @@ class _InventoryScan:
         self.evidence.append({"field": f"slots[{index}]", "status": "skipped",
                               "source": "inventory_profile_catalog", "confidence": confidence, "note": note})
 
-    def candidate(self, evidence: list[dict[str, Any]], review_required: bool) -> dict[str, Any]:
+    def candidate(
+        self, evidence: list[dict[str, Any]], review_required: bool
+    ) -> dict[str, Any]:
+        specimen: dict[str, Any] = {
+            "source_size": self.source_size,
+            "slot_crops": self.slot_crops,
+        }
+        if self.unresolved_slots:
+            specimen["unresolved_slots"] = self.unresolved_slots
+            specimen["assigned_slots"] = set()
         return {
-            "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": self.entries},
+            "payload": {
+                "version": 1,
+                "catalog_revision": CATALOG_REVISION,
+                "entries": self.entries,
+            },
             "evidence": evidence,
             "review_required": review_required,
-            "_answer_specimen": {"source_size": self.source_size, "slot_crops": self.slot_crops},
+            "_answer_specimen": specimen,
         }
 
 
@@ -1696,6 +1845,13 @@ class InventoryMatcherAdapter:
             if reading.detail_read:
                 scan.unknown_new.add(index)
                 scan.bank_stats["unknown_new"] += 1
+                scan.slot_crops[index] = crop.copy()
+                guess = scan.bank_guesses.get(index)
+                ranked = getattr(guess, "ranked", ()) if guess is not None else ()
+                scan.unresolved_slots[index] = {
+                    "profile": scan.prepared.profile_id,
+                    "candidates": [{"identity": identity, "score": score} for identity, score in ranked[:3]],
+                }
                 flag = "unknown_new;"
             scan.evidence.append({"field": f"slots[{index}]", "status": "partial", "source": "inventory_detail_panel",
                                   "confidence": 0.0, "note": f"{flag}identity unresolved by detail panel;{reading.note}"})
@@ -1981,15 +2137,24 @@ class InventoryMatcherAdapter:
         return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
 
     def train_user_answer(
-        self, profile_id: str, candidate_id: str, specimen: dict[str, Any],
+        self,
+        profile_id: str,
+        candidate_id: str,
+        specimen: dict[str, Any],
         payload: dict[str, Any],
     ) -> int:
         if self.answer_samples is None:
             return 0
         source_size = specimen.get("source_size")
         slot_crops = specimen.get("slot_crops")
+        assigned_slots = specimen.get("assigned_slots", set())
         entries = payload.get("entries")
-        if not isinstance(source_size, tuple) or not isinstance(slot_crops, dict) or not isinstance(entries, list):
+        if (
+            not isinstance(source_size, tuple)
+            or not isinstance(slot_crops, dict)
+            or not isinstance(entries, list)
+            or not isinstance(assigned_slots, set)
+        ):
             return 0
         saved = 0
         for entry in entries:
@@ -1998,12 +2163,54 @@ class InventoryMatcherAdapter:
             item_id = entry.get("item_id")
             observed_slot = entry.get("observed_slot")
             crop = slot_crops.get(observed_slot)
-            if not isinstance(item_id, str) or not isinstance(observed_slot, int) or not isinstance(crop, Image.Image):
+            if observed_slot in assigned_slots:
+                # C5e-6e labels are learned immediately with their explicit persistence choice.
+                continue
+            if (
+                not isinstance(item_id, str)
+                or not isinstance(observed_slot, int)
+                or not isinstance(crop, Image.Image)
+            ):
                 continue
             sample_id = self.answer_samples.save_inventory(
-                profile_id, source_size, item_id=item_id, crop=crop,
-                candidate_id=candidate_id, observed_slot=observed_slot,
+                profile_id,
+                source_size,
+                item_id=item_id,
+                crop=crop,
+                candidate_id=candidate_id,
+                observed_slot=observed_slot,
             )
             self.matcher.add_user_template(sample_id, item_id, crop)
             saved += 1
         return saved
+
+    def assign_user_identity(
+        self,
+        profile_id: str | None,
+        source_size: tuple[int, int],
+        item_id: str,
+        crop: Image.Image,
+        candidate_id: str,
+        observed_slot: int,
+        persist: bool,
+    ) -> str | None:
+        """Learn one explicit C5e-6e label at the requested persistence tier."""
+        bank = self._tile_bank(source_size)
+        if not persist:
+            bank.add(item_id, crop, "session")
+            return None
+        if self.answer_samples is None or profile_id is None:
+            raise ValueError(
+                "persistent inventory labels require an account profile and sample store"
+            )
+        sample_id = self.answer_samples.save_inventory(
+            profile_id,
+            source_size,
+            item_id=item_id,
+            crop=crop,
+            candidate_id=candidate_id,
+            observed_slot=observed_slot,
+        )
+        bank.add(item_id, crop, "user_confirmed")
+        self.matcher.add_user_template(sample_id, item_id, crop)
+        return sample_id

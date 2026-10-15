@@ -641,10 +641,18 @@ class StudentEquipmentRecognizer:
             and raw_studio.value is not None
             and raw_studio.value >= 10
             and equipment_level_matches_tier(raw_studio.value, tier)
-            and raw_studio.score >= rt.value("student.equipment.position_binary.raw_studio.score")
-            and raw_studio.margin >= rt.value("student.equipment.position_binary.raw_studio.margin")
+            and raw_studio.score
+            >= rt.value("student.equipment.position_binary.raw_studio.score")
+            and raw_studio.margin
+            >= rt.value("student.equipment.position_binary.raw_studio.margin")
         )
         if raw_confident:
+            if raw_studio.used_user_sample or raw_studio.used_session_sample:
+                independent = self._read_studio_position_level(crop, slot=slot, tier=tier, region=region)
+                if independent is not None and independent.confirmed and independent.value != raw_studio.value:
+                    return Observation(None, min(raw_studio.score, independent.confidence), "uncertain",
+                                       "independent_numeric_conflict",
+                                       f"studio={raw_studio.value};independent={independent.value};slot={slot}")
             self.metrics.position_binary_shadow_hits += 1
             self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
             return Observation(
@@ -665,16 +673,26 @@ class StudentEquipmentRecognizer:
                 ),
             )
         studio = self._read_studio_position_level(
-            crop, slot=slot, tier=tier, region=region,
+            crop,
+            slot=slot,
+            tier=tier,
+            region=region,
         )
         if studio is not None and studio.confirmed:
             self.metrics.position_binary_shadow_hits += 1
             self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
             return studio
-        if crop is None or tier not in EQUIPMENT_MAX_LEVEL or set(self._position_binary_templates) != {1, 2}:
+        if (
+            crop is None
+            or tier not in EQUIPMENT_MAX_LEVEL
+            or set(self._position_binary_templates) != {1, 2}
+        ):
             self.metrics.position_binary_match_ms += (perf_counter() - started) * 1000.0
             return Observation(
-                None, 0.0, "shadow", "equipment_position_binary_shadow",
+                None,
+                0.0,
+                "shadow",
+                "equipment_position_binary_shadow",
                 "context_crop_or_templates_missing;production_enabled=false",
             )
         cells = self._level_cells(crop, region)
@@ -691,19 +709,28 @@ class StudentEquipmentRecognizer:
                         margins.append(1.0)
                         continue
                     return Observation(
-                        None, 0.0, "shadow", "equipment_position_binary_shadow",
+                        None,
+                        0.0,
+                        "shadow",
+                        "equipment_position_binary_shadow",
                         f"position={position};feature_missing;production_enabled=false",
                     )
                 ranked = sorted(
                     (
                         (digit, *screen.compare(template))
-                        for digit, template in self._position_binary_templates[position].items()
+                        for digit, template in self._position_binary_templates[
+                            position
+                        ].items()
                     ),
-                    key=lambda item: item[1], reverse=True,
+                    key=lambda item: item[1],
+                    reverse=True,
                 )
                 if len(ranked) < 2:
                     return Observation(
-                        None, 0.0, "shadow", "equipment_position_binary_shadow",
+                        None,
+                        0.0,
+                        "shadow",
+                        "equipment_position_binary_shadow",
                         f"position={position};competitors_missing;production_enabled=false",
                     )
                 labels.append(ranked[0][0])
@@ -722,7 +749,9 @@ class StudentEquipmentRecognizer:
                 value if confident else None,
                 min(scores),
                 "ok" if production else "shadow",
-                "equipment_position_binary" if production else "equipment_position_binary_shadow",
+                "equipment_position_binary"
+                if production
+                else "equipment_position_binary_shadow",
                 (
                     f"tier={tier};candidate={value};labels={labels};margin={min(margins):.6f};"
                     f"production_enabled={str(self.position_binary_production_enabled).lower()}"

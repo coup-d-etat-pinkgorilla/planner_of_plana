@@ -1,9 +1,10 @@
 from __future__ import annotations
-from core.student_fallback_evidence import attach_student_fallback_details, remove_student_crop_images
 
 from concurrent.futures import Future, ThreadPoolExecutor
+import base64
 from copy import deepcopy
 from dataclasses import dataclass, field
+from io import BytesIO
 import inspect
 import json
 from threading import Event, RLock
@@ -12,12 +13,13 @@ from uuid import uuid4
 
 from PIL import Image
 
-from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES, canonical_resource_key
+from core.inventory_catalog import BY_KEY, CATALOG_REVISION, SCAN_PROFILES, canonical_resource_key
 from core.repository_inventory import rebase_inventory_snapshot
 from core.current_history import HistoryError, canonical_students
 from core.scan_commit_history_context import ScanCommitHistoryContext
 from core.scan_context import ScanContext
 from core.scanner_pause_control import ScannerPauseControl
+from core.student_fallback_evidence import attach_student_fallback_details, remove_student_crop_images
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError, canonical_json
 
 
@@ -76,7 +78,10 @@ Matcher = Callable[[dict[str, Any], Event, Callable[..., None]], list[dict[str, 
 EventSink = Callable[[dict[str, Any]], None]
 TacticalLobbyCommitter = Callable[[str, dict[str, Any], int, str], dict[str, Any]]
 StudentValidator = Callable[[Mapping[str, Any], str | None, Mapping[int, int] | None], dict[str, Any]]
-CandidateReviewHook = Callable[[str, str, str, dict[str, Any], dict[str, Any], str, bool], int | None]
+CandidateReviewHook = Callable[[str, str, str, dict[str, Any], dict[str, Any], str, bool, tuple[str, ...]], int | None]
+InventoryIdentityAssignmentHook = Callable[
+    [str | None, tuple[int, int], str, Image.Image, str, int, bool], str | None
+]
 
 
 @dataclass(slots=True)
@@ -161,6 +166,7 @@ class ScannerSessionService:
         executor: ThreadPoolExecutor | None = None,
         student_validator: StudentValidator | None = None,
         candidate_review_hook: CandidateReviewHook | None = None,
+        inventory_identity_assignment_hook: InventoryIdentityAssignmentHook | None = None,
         resource_close_hook: Callable[[], None] | None = None,
     ) -> None:
         self._target_provider = target_provider
@@ -175,6 +181,7 @@ class ScannerSessionService:
         self._executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="scanner")
         self._student_validator = student_validator
         self._candidate_review_hook = candidate_review_hook
+        self._inventory_identity_assignment_hook = inventory_identity_assignment_hook
         self._resource_close_hook = resource_close_hook
         self._owns_executor = executor is None
         self._lock = RLock()
@@ -295,6 +302,138 @@ class ScannerSessionService:
                 raise ScannerError("candidate_not_found", "scanner candidate was not found")
             return item.to_wire()
 
+    def unresolved_slots(
+        self, session_id: str, generation: int, candidate_id: str,
+    ) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        with self._lock:
+            item = session.candidates.get(candidate_id)
+            if item is None:
+                raise ScannerError("candidate_not_found", "scanner candidate was not found")
+            if item.scan_kind != "inventory":
+                raise ScannerError("invalid_candidate", "unresolved slots are only available for inventory candidates")
+            return {
+                "candidate_id": item.candidate_id,
+                "candidate_revision": item.revision,
+                "slots": self._unresolved_slots_wire(item),
+            }
+
+    def assign_inventory_identity(
+        self,
+        session_id: str,
+        generation: int,
+        candidate_id: str,
+        expected_candidate_revision: int,
+        slot: int,
+        identity: str,
+        persist: bool,
+    ) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        with self._lock:
+            item = session.candidates.get(candidate_id)
+            if item is None:
+                raise ScannerError("candidate_not_found", "scanner candidate was not found")
+            if item.revision != expected_candidate_revision:
+                raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
+            if item.scan_kind != "inventory":
+                raise ScannerError("invalid_candidate", "identity assignment requires an inventory candidate")
+            unresolved = item.answer_specimen.get("unresolved_slots")
+            slot_crops = item.answer_specimen.get("slot_crops")
+            source_size = item.answer_specimen.get("source_size")
+            if (not isinstance(unresolved, dict) or slot not in unresolved
+                    or not isinstance(slot_crops, dict) or not isinstance(slot_crops.get(slot), Image.Image)
+                    or not isinstance(source_size, tuple) or len(source_size) != 2):
+                raise ScannerError("unresolved_slot_not_found", "unresolved inventory slot was not found")
+            metadata = unresolved[slot]
+            profile = metadata.get("profile") if isinstance(metadata, dict) else None
+            row = BY_KEY.get(canonical_resource_key(identity))
+            if not isinstance(profile, str) or row is None or row.profile_id != profile:
+                raise ScannerError("invalid_identity", "identity is not part of the unresolved slot profile")
+            entries = item.payload.get("entries")
+            if not isinstance(entries, list):
+                raise ScannerError("invalid_candidate", "inventory candidate entries are invalid")
+            if any(entry.get("item_id") == row.item_id for entry in entries if isinstance(entry, dict)):
+                raise ScannerError("identity_conflict", "identity is already present in this candidate")
+            if self._inventory_identity_assignment_hook is None:
+                raise ScannerError("assignment_unavailable", "inventory identity assignment is unavailable")
+            try:
+                sample_id = self._inventory_identity_assignment_hook(
+                    session.profile_id, source_size, row.item_id, slot_crops[slot],
+                    item.candidate_id, slot, persist,
+                )
+            except (OSError, ValueError) as exc:
+                raise ScannerError("sample_storage_failed", str(exc)) from exc
+
+            entries.append({
+                "key": row.resource_key,
+                "quantity": None,
+                "item_id": row.item_id,
+                "name": row.display_name,
+                "observed_slot": slot,
+                "profile_id": profile,
+                "inventory_scan_profile": profile,
+            })
+            self._remember_inventory_keys(item, item.payload)
+            item.evidence = [
+                evidence for evidence in item.evidence
+                if not (isinstance(evidence, dict) and evidence.get("field") == f"slots[{slot}]")
+            ]
+            item.evidence.extend([
+                {"field": f"entries[{slot}].item_id", "status": "verified", "source": "user_label",
+                 "confidence": 1.0, "note": "identity assigned by user"},
+                {"field": f"entries[{slot}].quantity", "status": "deferred", "source": "user_label",
+                 "confidence": None, "note": "identity assignment does not infer quantity"},
+            ])
+            unresolved.pop(slot)
+            assigned_slots = item.answer_specimen.setdefault("assigned_slots", set())
+            if not isinstance(assigned_slots, set):
+                raise ScannerError("invalid_candidate", "inventory assignment specimen is invalid")
+            assigned_slots.add(slot)
+            item.audit.append({
+                "from_revision": item.revision,
+                "source": "user_identity_assignment",
+                "slot": slot,
+                "identity": row.item_id,
+                "persistence": "user_confirmed" if persist else "session",
+                **({"sample_id": sample_id} if sample_id is not None else {}),
+            })
+            item.revision += 1
+            item.approved = False
+            item.review_required = True
+            return {
+                "candidate": item.to_wire(),
+                "candidate_revision": item.revision,
+                "slots": self._unresolved_slots_wire(item),
+            }
+
+    @staticmethod
+    def _unresolved_slots_wire(item: SessionCandidate) -> list[dict[str, Any]]:
+        unresolved = item.answer_specimen.get("unresolved_slots")
+        crops = item.answer_specimen.get("slot_crops")
+        source_size = item.answer_specimen.get("source_size")
+        if not isinstance(unresolved, dict) or not isinstance(crops, dict):
+            return []
+        resolution = (
+            {"width": source_size[0], "height": source_size[1]}
+            if isinstance(source_size, tuple) and len(source_size) == 2 else None
+        )
+        result = []
+        for slot in sorted(unresolved):
+            metadata = unresolved[slot]
+            crop = crops.get(slot)
+            if not isinstance(slot, int) or not isinstance(metadata, dict) or not isinstance(crop, Image.Image):
+                continue
+            buffer = BytesIO()
+            crop.save(buffer, format="PNG")
+            result.append({
+                "slot": slot,
+                "profile": metadata.get("profile"),
+                "resolution": resolution,
+                "crop_png_base64": base64.b64encode(buffer.getvalue()).decode("ascii"),
+                "candidates": deepcopy(metadata.get("candidates", [])),
+            })
+        return result
+
     def revalidate(
         self, session_id: str, generation: int, candidate_id: str,
         expected_candidate_revision: int,
@@ -335,6 +474,7 @@ class ScannerSessionService:
         approve: bool,
         reason: str,
         relationship_ranks: Mapping[int, int] | None = None,
+        confirmed_fields: list[str] | tuple[str, ...] | None = None,
     ) -> dict[str, Any]:
         session = self._session(session_id, generation)
         with self._lock:
@@ -344,59 +484,87 @@ class ScannerSessionService:
             if item.revision != expected_candidate_revision:
                 raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
             self._validated_payload(item.scan_kind, payload)
-            self._train_answer_sample(session, item, payload, reason, approve)
+            fields = self._confirmed_fields(item.scan_kind, payload, confirmed_fields)
+            report = self._train_answer_sample(session, item, payload, reason, approve, fields)
             if approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}:
                 self._release_candidate_images(session, item)
             if (
                 item.scan_kind == "student"
                 and reason == "edited_and_revalidated_in_scan_page"
             ):
-                self._mark_user_verified(item, payload)
+                self._mark_user_verified(item, payload, fields, report.get("blocked_fields", []))
+                for field in report.get("blocked_fields", []):
+                    item.evidence.append({"field": field, "status": "uncertain",
+                        "source": "recognition_sample_safety", "confidence": 0.0,
+                        "note": "cross-label collision; confirm the value against the captured screen"})
             item.audit.append({
                 "from_revision": item.revision,
                 "reason": reason,
                 "approved": approve,
                 "source": "user_review",
+                "confirmed_fields": list(fields),
             })
             if item.scan_kind == "inventory":
                 self._remember_inventory_keys(item, payload)
             item.payload = deepcopy(payload)
             if item.scan_kind == "student" and self._student_validator is not None:
                 self._revalidate_student(session, item, relationship_ranks)
+            elif item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page":
+                item.review_required = any(
+                    row.get("status") not in NON_REVIEW_EVIDENCE_STATUSES for row in item.evidence
+                )
             item.revision += 1
             item.approved = approve
             return item.to_wire()
 
-    def _train_answer_sample(self, session, item, payload, reason: str, approve: bool) -> None:
+    @staticmethod
+    def _confirmed_fields(scan_kind, payload, fields) -> tuple[str, ...]:
+        if fields is None:
+            return ()
+        if (not isinstance(fields, (list, tuple)) or any(not isinstance(field, str) for field in fields)
+                or len(set(fields)) != len(fields)):
+            raise ScannerError("invalid_payload", "confirmed_fields must be distinct field names")
+        values = payload.get("values", {}) if scan_kind == "student" else {}
+        if any(field not in values for field in fields):
+            raise ScannerError("invalid_payload", "confirmed_fields must belong to student values")
+        return tuple(fields)
+
+    def _train_answer_sample(self, session, item, payload, reason: str, approve: bool,
+                             confirmed_fields: tuple[str, ...]) -> dict:
         """Only an explicit user answer becomes a stored recognition sample."""
         if not (
             self._candidate_review_hook is not None
             and session.profile_id is not None
             and item.answer_specimen
             and (
-                (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page")
+                (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page" and confirmed_fields)
                 or (item.scan_kind == "inventory" and approve)
             )
         ):
-            return
+            return {}
         try:
             sample_count = self._candidate_review_hook(
                 item.scan_kind, session.profile_id, item.candidate_id,
                 item.answer_specimen, payload, reason, approve,
+                confirmed_fields,
             )
+            report = item.answer_specimen.pop("_sample_training_report", {})
             item.audit.append({
                 "source": "user_confirmed_answer_sample",
                 "sample_count": sample_count or 0,
+                **report,
             })
+            return report
         except (OSError, ValueError) as exc:
             item.audit.append({
                 "source": "user_confirmed_answer_sample",
                 "status": "storage_failed",
                 "message": str(exc),
             })
+            return {}
 
     @staticmethod
-    def _mark_user_verified(item, payload) -> None:
+    def _mark_user_verified(item, payload, confirmed_fields, blocked_fields=()) -> None:
         """Fields the user edited and revalidated no longer count as unresolved evidence."""
         values = payload.get("values") if isinstance(payload, dict) else None
         if not isinstance(values, dict):
@@ -406,7 +574,8 @@ class ScannerSessionService:
             replacement = deepcopy(evidence)
             if (
                 isinstance(replacement, dict)
-                and replacement.get("field") in values
+                and replacement.get("field") in confirmed_fields
+                and replacement.get("field") not in blocked_fields
                 and replacement.get("status")
                 not in {"ok", "inferred", "skipped", "verified", "deferred"}
             ):
