@@ -3012,3 +3012,136 @@ Review material only. Main files and index are untouched. Base HEAD ebc84ee46376
 - 메인 gate ① `20261014_220829`: 382 + 391 + 659 + 393, process 87, golden RED 2 = 예측 그대로(`tactical` seed SP2 3칸·`statistics-plan` C4 덤벨). 승인 → ② `-UpdateGoldens` `20261014_222332` **GREEN** → **tidy2 `4e2b5b6c`**. tidy2 항목 3 "시즌 0"은 CF 오독(기준 이미지는 "시즌 9", 축소 이미지를 잘못 읽음) — 코드 변경 없음, '—' 동작은 테스트로 고정.
 - **candidate gate** `candidate-v4-v7/debug/frontend_gate/20261014_223800`: 스캐너 범위 전부 PASS(process 87 포함). 비스캐너 예외 3: ① `plan_element_builder`·`plan_preset_manager` 테스트가 미추적 `release/` Studio json에 기댐 → candidate에 3파일 복사 뒤 재실행 +52 ② `scan-student-review` golden — 기준 이미지가 시각 WIP 포함(메인 GREEN 유지, 기준 이미지 그대로, FE8-g2에서 갱신) ③ candidate almanac 사본 오래됨. source30 30/30·candidate frontend pins 43/43 그대로. CF가 candidate의 옛 임시 테스트 2개(`zz_fe7i_*`) 삭제. backend 로그 23:00으로 회신, XB source30 커밋 대기.
 - 후속 chip: 테스트가 미추적 `release/` 파일에 기대는 문제(새 세션 후보).
+
+
+## 2026-10-14 23:20 — 회신/요청(XB→CF): 23:00 후보RED 수신·새source30 GREEN 요청
+
+- scanner 기능/process87·30/30 pins·43/43 frontend pins·revisionreset 변이검사/기능시각분리 수신, source30 backend/contracts동결 유지. 실제223800 summary는RED이므로 이를GREEN 또는커밋gate통과로계산하지않는다. source30커밋0/기존WIP·push0.
+- 환경①release3원본복사/52retry PASS는수신했으므로같은사본새gate에포함하고 ③Almanac은현재main의동일문서로검증환경을맞춰달라(원실패보존). ②시각WIP를빼며생기는의도차이는CF가실패이미지/HEAD와diff를직접검토해후보전용golden기준을승인할수있는지판단해달라. 승인가능하면기존후보baseline과원RED를보존한뒤후보에만적용하여새전체same-source GREEN/summary·source30SHA·최종frontpins를회신해달라. 메인기준이미지변경0·기능후퇴를golden갱신으로숨김0. 승인불가면구체차이/대안을회신해달라. golden/fe_gate는CF소유라XB가바꾸거나실행하지않는다.
+- 새GREEN뒤XBexact30 indexprojection→CFscanwipfunc→FE8f1 순서유지. FB7격리해석층은후보밖에서독립진행한다.
+
+
+## 2026-10-14 23:53 — 새전체 시작(XB→CF): FB7 격리 source/계약·atomic batch
+
+- 새FB7사본 debug/xb_fb7_interpreter_prepare_20261014/artifacts/candidate에서 표준 `py -3.11 -m unittest discover -s tests -v`를 시작한다. Frozen source30을기반으로새reader/interpreter/store·FB6 pure apply경계·private v2field·새2methods/strictschema·project/lock만추가했다. 원source30사본변경0/메인4114변경0·stage/commit/push0.
+- 행해석34·atomic/계약·기존전술/reader8회귀를집중검사했다. 원restricted 임시rename오류16·fixture중복import17·schema-name/HEAD가정/uv옵션 오류는보존했고기준/skip/timeout완화0. HEAD는이미UnityPy를선언하지만oldlock에없어새격리lock은그필수의존도닫았다; 메인ruff/lock WIP/runtime설치0. 새사본runtime에공식lock21packages 설치완료.
+- source30 엄격 CF GREEN 요청은계속대기·후보동결 유지. 이FB7전체는 source30의다음독립검증으로CF gate대체가아니다. heavy gate와가능하면겹치지않도록이시작을알린다. library copied-runtime smoke도별도합성경로에서확인한다.
+
+
+## 2026-10-15 00:21 — 새전체 시작(XB→CF): FB7 v2·readonly profile/rule 경계 보강
+
+- 새FB7사본 debug/xb_fb7_interpreter_prepare_20261014/artifacts/candidate에서 표준 `py -3.11 -m unittest discover -s tests -v`를 시작한다. Frozen source30을기반으로새reader/interpreter/store·FB6 pure apply경계·private v2field·새2methods/strictschema·project/lock만추가했다. 원source30사본변경0/메인4114변경0·stage/commit/push0.
+- 원전체1208/1351.905s RED7(누락root검증입력6오류+기존stdio10s1)을보존했다. 기존봉인root입력5를원SHA로사본에만복사했고main ba-data.lock/공용store변경0이다. 구형profile의plan/catalog자동이관 없는readonly FB7 경계·병합rule4096상한을보강, 신규4회귀포함117집중PASS/기존APIdefault유지. 다른조건/timeout/skip/golden완화0.
+- 복사venv의CSV/XLSX guarded actualApplication JSONL4+4 PASS·libs4 copylocal/coreoutside0. 첫defaultruntime asset누락/새completecopy의30s startupRED는그대로보존하며guarded근거로defaultstartup를GREEN이라하지않는다. 전체종료뒤동일30s로별도확인한다.
+- source30 엄격 CF GREEN 요청은계속대기·후보동결 유지. 이FB7전체는 source30의다음독립검증으로CF gate대체가아니다. heavy gate와가능하면겹치지않도록이시작을알린다. library copied-runtime smoke도별도합성경로에서확인한다.
+
+
+## 2026-10-15 00:33 — 새전체 시작(XB→CF): FB7 v3·readonly profile/rule 경계 보강
+
+- 새FB7사본 debug/xb_fb7_interpreter_prepare_20261014/artifacts/candidate에서 표준 `py -3.11 -m unittest discover -s tests -v`를 시작한다. Frozen source30을기반으로새reader/interpreter/store·FB6 pure apply경계·private v2field·새2methods/strictschema·project/lock만추가했다. 원source30사본변경0/메인4114변경0·stage/commit/push0.
+- 원전체1208/1351.905s RED7(누락root검증입력6오류+기존stdio10s1)을보존했다. 기존봉인root입력5를원SHA로사본에만복사했고main ba-data.lock/공용store변경0이다. 구형profile의plan/catalog자동이관 없는readonly FB7 경계·병합rule4096상한/회귀4를보강했다. v2는native time/timedelta JSON오류를실증해자체test자식2개만중단/부분log보존했고전체PASS로세지않는다. 두값을typed raw문자열로보존해명시처리전review issue로반환, 실제XLSX추가회귀포함118집중PASS/기존APIdefault유지. 다른조건/timeout/skip/golden완화0.
+- 복사venv의CSV/XLSX guarded actualApplication JSONL4+4 PASS·libs4 copylocal/coreoutside0. 첫defaultruntime asset누락/새completecopy의30s startupRED는그대로보존하며guarded근거로defaultstartup를GREEN이라하지않는다. 전체종료뒤동일30s로별도확인한다.
+- source30 엄격 CF GREEN 요청은계속대기·후보동결 유지. 이FB7전체는 source30의다음독립검증으로CF gate대체가아니다. heavy gate와가능하면겹치지않도록이시작을알린다. library copied-runtime smoke도별도합성경로에서확인한다.
+
+
+## 2026-10-15 01:04 — 새전체 시작(XB→CF): FB7 v4·readonly profile/rule 경계 보강
+
+- 새FB7사본 debug/xb_fb7_interpreter_prepare_20261014/artifacts/candidate에서 표준 `py -3.11 -m unittest discover -s tests -v`를 시작한다. Frozen source30을기반으로새reader/interpreter/store·FB6 pure apply경계·private v2field·새2methods/strictschema·project/lock만추가했다. 원source30사본변경0/메인4114변경0·stage/commit/push0.
+- 원전체1208/1351.905s RED7(누락root검증입력6오류+기존stdio10s1)을보존했다. 기존봉인root입력5를원SHA로사본에만복사했고main ba-data.lock/공용store변경0이다. 구형profile의plan/catalog자동이관 없는readonly FB7 경계·병합rule4096상한/회귀4를보강했다. v2는native time/timedelta JSON오류를실증해자체test자식2개만중단/부분log보존했고전체PASS로세지않는다. 두값을typed raw문자열로보존해명시처리전review issue로반환, 실제XLSX추가회귀포함118집중PASS/기존APIdefault유지. 다른조건/timeout/skip/golden완화0.
+- 복사venv의CSV/XLSX guarded actualApplication JSONL4+4 PASS·libs4 copylocal/coreoutside0. 첫defaultruntime asset누락/새completecopy의30s startupRED는그대로보존하며guarded근거로defaultstartup를GREEN이라하지않는다. 전체종료뒤동일30s로별도확인한다.
+- v3표준전체1217/1090.308s OK는원source로보존한다. 후속실증에서프로필/CSV구분자지문누락을찾아 profile_id/reader format/delimiter를같이bind했고신규2포함120집중PASS. 이번새전체는그최종source이다. 별도새합성user/synth/storage root의default backend_process는30s조건에서4.672s 응답+exit0; 예전copy의시간초과원인을시작/종료나부하로단정하지않는다.
+- source30 엄격 CF GREEN 요청은계속대기·후보동결 유지. 이FB7전체는 source30의다음독립검증으로CF gate대체가아니다. heavy gate와가능하면겹치지않도록이시작을알린다. library copied-runtime smoke도별도합성경로에서확인한다.
+
+
+## XB 보고 — 2026-10-15 01:21: CF source30 엄격 gate 대기·FB7 exact15 격리 구현/전체 PASS
+
+- **CF 수신/메인 상태**: CF 2026-10-14 23:00의 source30 30/30·scanner/process PASS와 실제 후보 gate223800 **RED**(검증환경·의도된 시각 차이)를 구분해 수신했다. 23:20 CF 로그에 환경 정리/시각 차이 CF 검토·후보 기준 승인 후 **새 같은 source GREEN**을 요청했다. 원 RED/메인 baseline 보존, source30 커밋0·후보 backend/contracts 동결이다. 최신 새 CF 회신은 아직 없다. 현재 HEAD **8f3c34d58a4620dc05121aa7af4377a24e093fe6**, index empty, 신규 커밋/push0.
+- **FB7 구현**: `debug/xb_fb7_interpreter_prepare_20261014/artifacts/candidate`의 **exact15**(core6/test4/project·lock2/contracts3)만 격리 준비했다. XLSX/UTF8 CSV bounded reader, 실제 bytes 지문·프로필/format/delimiter/선택 mapping·resolutions/rules/catalog context 지문, 역할/소유/명시 opponent identity, 원문 groups·위치·제안, 날짜 정밀도/미확정·양의 시도, ordered deck 중복/명시 target·skip/keep-separate를 구현했다. alias/fuzzy 자동 승인·누락값 now/one/zero·N개 결과행 생성0이다. 시간만 있는 셀/기간도 typed raw와 JSON-safe 원문으로 남기고 명시 처리 전에는 review issue다.
+- **원자 저장/보존**: FB6 단일행 default를 유지한 pure `apply_match` 경계로 모든 행·족보/스냅샷·batch·private rules/원 source-row receipts를 **한 v2 교체/한 revision**에 넣는다. late invalid row/alias, replace 실패, 원본 변경/선택 변경, 재시작·응답 유실/파일 부재 원 요청 retry를 검사했다. Preview/실패/정상 FB7 commit/retry는 구형 profile plan/catalog를 자동 이관하지 않는다. 병합 rules4096 초과는 기존 규칙을 자르지 않고 전체 쓰기를 거부한다. Root→v1→v2 순서/guard 내 경로 재확인·명시 v1 이관 barrier, 기존 v2 삭제/tombstone 경로 유지(새 소유 경로0).
+- **최종 검증**: 표준 전체 **1219/804.751s OK**, fail/error/skip/exclusion/golden/timeout 완화0, import receipt **21 processes / 격리 외 core·test0**, source/fixture/golden drift0(기존 생성 출력3 별도). 집중 **120/7.519s PASS**, 누락 입력·동일10s stdio/Studio **14/12.494s PASS**. 새로운 완전한 복사 runtime-v5의 **실제 기본 backend_process CSV4+XLSX4 JSONL PASS**, 원 bytes 보존·파일 삭제 후 exact retry/재시작·strict actual wire16/fixture8 PASS; library4는 복사 .venv, core outside0. 새 합성 user/synth/storage 경로·각30s 조건이며 **실제 native build/publication/기존 user-cache 환경 타이밍 근거로 확대하지 않는다**. 별도 기본 entrypoint 새 합성 환경4.672s 응답+exit0도 기록했다.
+- **의존성/공백**: HEAD는 이미 UnityPy를 선언했으나 old lock에는 없었다. 새 격리 uv graph는 그 선언의 closure와 parser3(openpyxl3.1.5/defusedxml0.7.1/et_xmlfile2)를 닫았다(추가14/기존 버전 변경0), 새 runtime21 설치/offline lock check PASS. 메인 .venv/config·ruff/lock WIP 그대로다. Schema/fixture raw CRLF를 `autocrlf=false`로 본 공백 RED는 전부 보존; 실제 repo clean-filter OID와 CRLF→LF만 바꾼 bytes 일치를 증명한 **15 clean blob PASS**, 진짜 trailing-space 대조군은 계속 RED다. raw 후보 내용/bytes 변경0, Git 객체/index 쓰기0.
+- **이전 근거 보존**: 원 전체 **1208/1351.905s RED7**(누락 봉인 root 입력6 오류 + 기존 stdio10s1), 보강 전 time/timedelta/프로필·구분자 지문 실패, v2 자체 test 자식2 중단/부분 로그, v3 **1217/1090.308s OK**를 각각 보존했다. root 검증 입력5는 이전 source30 전체와 동일 SHA를 **사본에만** 복사(main ba-data.lock/공용 store 변경0). 첫 복사 runtime 자산 누락과 이후 `communicate30` 실패도 보존했고 시작/종료/부하 원인을 단정하지 않는다. 나중의 새 합성 환경 PASS로 원 RED를 바꾸지 않는다.
+- **CF 인계/다음**: `dart-handoff-final.md`, `final-source15-manifest.json`, `final-source15-paths-sha.md`, `final-source15-review/`, 실제 schema/fixture를 준비했다. 새 methods2 **tactical.v2.excel.preview/commit**, strict preview/mapping/raw cell/group/row/conflict/summary/result DTO, error **import_interpretation_changed**와 기존 import/legacy/alias/link 오류, Mock·Process/file-path E2E가 CF 후속이다. Public v2 state DTO 변경0/private fields는 Dart에 노출0. 목록은 커밋 전에 이 CF 로그에 게시한다. **source30 새 CF GREEN→XB exact30(index projection/WIP 보존)→CF scanwipfunc paired 완료가 먼저**, 이후 FB7 exact15를 별도 격리 gate/CF overlay window·같은 source CF fb7-dart gate→XB exact15→CF fb7-dart로 진행한다. 지금 FB7 메인 overlay0/CF 연결0이며 동결을 앞당겨 풀지 않는다.
+- **남은 범위**: CF16:55 nested tactical schema 원소타입 보강은 FB7 뒤 대기열; CF19:32 attempt-null/방어 opponent 선택 의미도 별도 검토이며 이번에 바꾸지 않았다. Main protected **4114**/기존 recognition·CF WIP 보존, frontend source·공용 store/lock/pipeline/연구·실 profile·골든쓰기0/push0. FB7 paired/native·M3/M4/O3 승격·live5/earlystream/full FB10/전체 P0-P6 완료는 미선언이다. 근거 `debug/xb_fb7_interpreter_prepare_20261014/output.md`는 실제 pin 확인과 마지막 Almanac/diff 뒤 마지막으로 봉인한다.
+
+
+## 2026-10-15 01:21 — 계약 사전 게시(XB→CF): FB7 final exact15/새2methods (메인 미반영)
+
+- 위 보고와 `debug/xb_fb7_interpreter_prepare_20261014/artifacts/dart-handoff-final.md`가 커밋 전 최종 Dart 변경 목록이다. 새2 request/success/row/group/conflict DTO는 candidate schema와 fixture를 쓴다. 지문은 profile/format/CSV delimiter도 bind한다. 단계별 counts·source row replay·private rules/receipt를 public state와 구분했다.
+- 아직 source30 strict same-source GREEN/paired 회신 대기. 먼저 그 왕복을 마치고 FB7 main/runtime window와 CF 연결 순서를 알려 달라. 이번 source15를 임의 main에 덮어쓰거나 backend/contracts/tool 동결을 해제하지 않는다. 정확 source15 SHA표는 아래다.
+
+# FB7 final exact15 — isolated v4
+
+Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unchanged.
+
+| Path | Bytes | SHA256 |
+|---|---:|---|
+| `backend/core/tactical_excel_reader.py` | 7965 | `d246529898bf79097bc8d5943b2cb493a3302cd60087ed4ce3e7b173ce3eae0b` |
+| `backend/core/tactical_excel_interpreter.py` | 25856 | `fc8130f2e680d14961969108e83ed404e314e4f099b6c097d4dc1a060d314111` |
+| `backend/core/tactical_excel_store.py` | 9225 | `4989d6a9bded7c36e98439bff9ce67e29cce1a57d5634cbef756c291f33774c5` |
+| `backend/core/tactical_fb6_store.py` | 21222 | `025820a4d1272ff368f7449c85df363ab8ec2df6ac6cd87ceddba9866cebe7ff` |
+| `backend/core/tactical_v2.py` | 59340 | `490fb716466c44b64f44e45699df8b81c7b5509d2fe77f62ed306f3e89883ff9` |
+| `backend/core/tactical_store.py` | 16962 | `5e621e2b94de507efa798cceb10e6899bebd8633a16e8795bbdf0081e98fb356` |
+| `backend/tests/test_tactical_excel_reader.py` | 6219 | `784b4cfb1d80520aa8228043d4fcd4e9053a9fb8cdefd0d9375b733c6a279bbe` |
+| `backend/tests/test_tactical_excel_interpreter.py` | 20938 | `d0c4db475003c4746e88801a06f2e802ae37d874cbaa5432f2587dd6cc7e7d42` |
+| `backend/tests/test_tactical_excel_store.py` | 18140 | `f89c1028d129cf95b7e3799d490547aa752c6e5a6c8cc6f21c37886b8309feb4` |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | `2dc35c24c5a84b5ab9cd2e9e96575ef7c3b423c78faffed722aba6b0ace1558b` |
+| `backend/pyproject.toml` | 527 | `17c21fc893b737174d1d08c50a6a9f9629bf825bc39be24c5e5f8ce6d7556f5a` |
+| `backend/uv.lock` | 140578 | `9de36af4566899931a34b9ce5f09f35202355942e0f9a947085c5af6c5418d70` |
+| `contracts/tactical-protocol-v2.schema.json` | 119463 | `3e00e82027cb4eecca753c3ac3dce5515067f4e69448ef00ab57ef07fc9f08fa` |
+| `contracts/fixtures/tactical_excel_v2.json` | 36860 | `b8c774827a8b5fdae660fc033df96ebd23f38d2759a67257a210bac4eb4e88a3` |
+| `contracts/README.md` | 94174 | `4b6fe7005172f5acfe04dd41e57d0c971d96ad69e013c6bd598f769a2b9e5827` |
+
+## 2026-10-15 01:50 — source30 candidate gate 재실행(XB 엄격 GREEN 요청), FB-7 격리 구현 수신
+
+- XB 23:20: 23:00 candidate RED(설명된 예외 3)로는 커밋하지 않고 새 같은 source GREEN 요청. CF 조치(candidate 안에서만): `release/` json 3 유지, **candidate 전용 `scan-student-review` 기준 이미지 승인**(시각 WIP 뺀 렌더, 메인 기준 이미지는 그대로 — FE8-g2에서 갱신), 원 상태 백업 `debug/frontend_scanwipfunc/candidate-env-backup-20261015/`.
+- candidate gate `20261015_012804`: analyze·일반 4묶음·process 87·golden 49·diff **모두 PASS**, almanac만 RED. almanac은 부분 사본에서 구조상 통과 불가(메인 작업 트리 almanac의 dead_refs 대상에 source30 밖 backend 파일 포함 — 동결 위반이라 추가하지 않음), 메인 almanac issue 0. source30 30/30·frontend pins 43/43 그대로. backend 로그 01:50 회신.
+- XB 01:21: FB-7 exact15 격리 구현·표준 전체 1219 OK, Dart 인계 `debug/xb_fb7_interpreter_prepare_20261014/artifacts/dart-handoff-final.md`(새 메서드 `tactical.v2.excel.preview/commit`, 오류 `import_interpretation_changed`). 순서: source30 왕복 → FB-7 메인 window → CF `fb7-dart` → 같은 source gate → XB exact15 → CF 커밋.
+
+## 2026-10-15 08:05 — XB 대기 중 라운드 배정: Lane A FE7-j, Lane B FE9-d
+
+- XB는 01:24에 FB-7 격리 task를 봉인했고 CF 01:50 회신(source30 gate)을 아직 읽지 않았다 — source30 커밋 대기(사용자에게 XB 재시작 안내). 그동안 XB와 무관한 두 slice를 배정. 두 프롬프트 모두 스캐너 WIP 15파일 수정 금지를 명시.
+- **Lane B** `debug/frontend_redesign_handoff/fe9d-worker-prompt-20261015.md`: Tactical S4 "이 시그니처의 족보"(공개 시그니처로 `TacticalEvidenceReadService` 통계·추천·추이 질의, FD-127 (a) 관측 지표만, FD-129 권장안) + 족보 → 내 덱 복사(끌기 고스트 "놓으면 … 복사" + "족보에서 가져오기" 버튼, 초안만). **CF 결정(FE9-b1 발견 2)**: 카드 승/패 = v2 기록 관측 값, `jokbo.wins/losses`(v6 가져오기 집계)는 0이 아니면 보조 글자 "가져온 집계 n승 m패". 새 golden 최대 1(`tactical-jokbo-drag`).
+- **Lane A** `debug/frontend_redesign_handoff/fe7j-worker-prompt-20261015.md`: A6 구간 선택 → 오른 학생 순위 근거(FE7-h 발견 5), 스파크라인·발산 막대 키트 승격(같은 그림일 때만, 모습 변화 0), UI Kit 갤러리에 `SectionFrame`·`SectionScaledBox`·승격 차트 등록(tidy2 발견 3).
+- 겹침 0(Lane B tactical / Lane A statistics·kit·인벤토리 차트 사용처).
+
+
+## 2026-10-15 09:07 — 세션 시작(XB): CF01:50 수신·source30 exact 커밋 검증
+
+- AGENTS/README/헌장·마스터·인계/관련 로그·Almanac/P0 상태를 읽었다. CF 새 gate **20261015_012804** 실제 summary는 **RED**이며 analyze·일반4묶음·process87·golden49·diff는 PASS, Almanac만 부분 사본의 저장소 외부 참조 누락이다. CF 승인 candidate 전용 golden과 frontend43/source30 SHA를 확인했다. 원 RED를 GREEN으로 고치지 않는다.
+- XB 판단: 프론트 관련 gate 전 단계와 저장소 전체 문서 검사를 나눠 입증한다. **메인 codealmanac validate를 새로 실행해 PASS일 때만** source30 커밋한다. backend/contracts 전체 입력은 기존 standard1148/1389.164s OK 이후 동일이며 HEAD base도 동일하다. 최종 CF frontend를 쓰는 Python 배포 의존 검사20도 추가한다.
+- **debug/xb_scanner_functional_exact_commit_20261015**: clean-filtered exact30 index projection→parent/path/blob 검증→CF 해시 회신. 현재 main protected4114/기존WIP/CF 작업 bytes 보존·empty index. source30/FB7 봉인자료 변경0, main source overlay0/push0. CF scanwipfunc paired 회신 전 backend/contracts/frontend/tool 추가sourcefreeze를 유지하며 FB7 window를 앞당기지 않는다.
+
+
+## 2026-10-15 09:09 — 커밋 완료(XB→CF): O1/R6e source30 exact commit
+
+- **30d35f81f4749274fc8d3062f55b56c9c1c9332a** (parent **8f3c34d58a4620dc05121aa7af4377a24e093fe6**), frozen `selected-source-v4`의 **exact30**만 index projection으로 커밋했다. 경로·raw SHA는 기존 `selected30-paths-sha.md`, Git clean-filter blob·parent/path30 전수 검증은 **debug/xb_scanner_functional_exact_commit_20261015/artifacts/commit-receipt.json**이다. 현재 working scanner_matchers facade/C6·recognition·모든 기존 tracked WIP 및 protected4114/CF 소스 원bytes 보존, index empty, main source overlay0/push0.
+- CF01:50 새 gate **20261015_012804**의 analyze·일반4(392/392/680/347)·**process87/golden49**·diff PASS, CF 승인 candidate 전용 기준 이미지1/source30·frontend43 지문 일치를 확인했다. **원 summary RED는 보존**했다: 부분 사본의 Almanac dead_refs는 저장소 전체 검사이므로 **실제 main codealmanac validate를 새로 실행해 issue0 PASS**로 닫았다. 완전한 후보 gate GREEN이라고 쓰지 않는다. 기존 source30 표준 **1148/1389.164s OK**와 backend/contracts 전입력 동일, 최종 CF frontend 대상 배포/Dart/catalog **12+8=20 PASS**·격리 외 import0. 최초12건은 모두 PASS였고20개로 잘못 예상한 harness assertion 기록도 보존했다.
+- **CF scanwipfunc 커밋→왕복 완료·동결 해제 회신을 요청한다.** 그 전까지 main backend/contracts/frontend/tool 추가sourcefreeze, FB7 미반영. 이어서 FB7 exact15 window와 `fb7-dart` 연결을 01:21 순서대로 진행한다. 근거 **debug/xb_scanner_functional_exact_commit_20261015/output.md**는 최종 보고/상태·검사 뒤 마지막으로 봉인한다.
+
+
+## XB 보고 — 2026-10-15 09:10: O1/R6e source30 exact 커밋·CF paired 대기
+
+- **완료**: **30d35f81f4749274fc8d3062f55b56c9c1c9332a** (parent 8f3c34d58a4620dc05121aa7af4377a24e093fe6), O1 확인필드/표본 무결성·R6e unknown identity 지정과 최소 기존 의존을 **exact30**으로 커밋했다. selected raw bytes/SHA→Git clean-filter blob→commit parent/path30/blob 전수 확인. working scanner_matchers facade/C6·기존 recognition·원래 tracked WIP·protected4114와 CF 소스 바이트를 보존했고 index empty·main overlay0·push0이다. 상세 `debug/xb_scanner_functional_exact_commit_20261015/artifacts/commit-receipt.json`, 원source `debug/xb_scanner_functional_select_20261014/output.md`.
+- **검증/판단**: CF01:50 **20261015_012804**에서 analyze·일반4(392/392/680/347)·**process87·golden49**·diff PASS, source30/CFfrontend43 동일과 candidate 전용 golden CF 승인을 확인했다. **실제 summary RED는 그대로 보존**: 부분사본 Almanac dead_refs만 실패했고, 저장소 전체 문서 검사를 실제 main `codealmanac validate` 새실행 **issue0 PASS**로 입증했다. 이 조합으로 XB gate를 확정했으며 후보 full GREEN이라고 보고하지 않는다. 기존 standard whole **1148/1389.164s OK**의 backend/contracts 전입력 동일, 최종 CF frontend의 Python 배포/Dart/catalog **12+8=20 PASS**, 외부 core/test import0. 처음12 PASS 뒤 잘못된20-count harness assertion은 원기록 유지·빠졌던 catalog8을 별도추가했다. 원wholeRED/이전CFRED/메인golden 수정0.
+- **후속/동결**: CF 로그에 해시를 보냈다. **CF scanwipfunc 커밋→왕복 완료·동결 해제 및 FB7 window 회신**이 다음 종속 단계다. 그 전까지 backend/contracts/frontend/tool 추가sourcefreeze 유지, FB7 메인 반영0. FB7 exact15는 봉인된 격리 후보 **1219/804.751s OK·focus120·기본 copied-runtime CSV4+XLSX4·actualwire16/fixture8** 상태 그대로다. 기존 01:21 Dart 목록/최종 source15 표를 재생성하지 않았다. Pair 뒤 FB7 window→CF fb7dart/same-sourcegate→XB15→CF 순서로 진행한다.
+- **잔여/보존**: nested tactical schema 타입·attempt-null/방어 상대 선택은 FB7 뒤 대기열, native publication/M3/M4/O3/live5/earlystream/full workflow 완료는 미선언이다. 공용store/ba-data.lock/파이프라인/연구/게임/실profile/골든/프론트 source쓰기0. 이번 근거 **debug/xb_scanner_functional_exact_commit_20261015/output.md**는 보고·상태·최종검사·artifact SHA 뒤 마지막으로 봉인한다.
+
+## 2026-10-15 09:18 — XB 보고: 새 instruction 위치 확인 중·FB7 readonly overlay 계획
+
+- 사용자 새 instruction 수신 후 global/project AGENTS·XB master·lane charter 및 최신 XB/CF/CM 로그를 재확인했다. 현재 파일에서는 새 지시 항목을 식별하지 못해 사용자에게 파일 경로/문서 이름을 질문했다. 확인되지 않은 새 지시를 추정해 적용하지 않는다.
+- 독립 readonly 준비: **debug/xb_fb7_overlay_plan_20261015/output.md**, overlay-plan.json/lock-graph-comparison.json/verification.json. FB7 exact15 모두 원base와 현재 HEAD가 같고, 13경로는 기존WIP 충돌0. **pyproject.toml/uv.lock 2경로는 WIP 보존 merge 필요**: main ruff0.16.9 유지, parser3은 후보에만 존재, UnityPy는 main WIP1.25.3 / 봉인 candidate1.25.4. 이 차이를 조용히 덮어쓰거나 두 runtime 검증을 동일하게 취급하지 않는다. 실제 적용 window에서 WIP 보존 병합과 해당 실행환경 검증을 따로 진행한다.
+- source30 **30d35f81f4749274fc8d3062f55b56c9c1c9332a** 그대로, CF scanwipfunc paired/동결해제/window 회신은 아직 없다. Main protected4114·FB7봉인15 원bytes 보존/indexempty, mainoverlay0/설치0/추가commit0/push0. 새제품검사/전체검사 재실행0(이번은 readonly 경로·TOML graph 비교다). 다음은 새 instruction 위치 확인 및 CF 회신 수신이다.
+
+
+## XB 보고 — 2026-10-15 09:31: 20261015 instruction 수신·source30 완료 확인
+
+- **새 지시 확인 완료**: `debug/frontend_redesign_handoff/xb-instruction-20261015.md`. source30 최우선 exact30 커밋 요청은 **30d35f81f4749274fc8d3062f55b56c9c1c9332a** 및 기존 **debug/xb_scanner_functional_exact_commit_20261015/output.md**로 충족했다. 현HEAD/path/blob30/emptyindex 재확인, 중복commit0. 원CF gate RED/메인 Almanac PASS의 분리 근거도 기존보고 그대로다.
+- **다음 순서 확정**: CF **scanwipfunc 커밋·왕복완료·동결해제 회신** 후, XB가 **FB7 반영 순서·ruff/lock/recognition WIP 보존·반영 후 같은 입력의 표준 Python 전체·경로/bytes/SHA 표 계획을 로그에 게시한 뒤 반영**한다. 지시문에는 별도 window 승인 회신 조건이 없으므로 앞선 'window 회신' 표현을 추가 승인 요구로 쓰지 않는다. 반영표→CF fb7dart→같은source CF gate→XB exact15→CF 순서, heavy Python 시작/종료를 CF에 알린다. **현재 최신CF는 여전히01:50이며 paired/release 회신은 없다.**
+- **독립 준비/보존**: readonly **debug/xb_fb7_overlay_plan_20261015/output.md**의13경로충돌0·project/lock2 WIP 및 UnityPy main1.25.3/candidate1.25.4 차이를 window 병합 때 보존/별도검증한다. 이번 main protected4114/FB7봉인15/기존WIP 원bytes 유지, sourcewrites0/install0/newtests0/stage0/newcommit0/push0. nested schema·attempt-null·방어 상대 의미는 지시4대로 FB7 뒤다. 현재 실작업 근거 **debug/xb_instruction_intake_20261015/output.md**를 마지막으로 봉인한다.
+
+## 2026-10-15 09:40 — source30 왕복 완료: XB `30d35f81` → CF scanwipfunc `2026c953`
+
+- XB가 지시문(`xb-instruction-20261015.md`)을 받아 source30 exact30 커밋 `30d35f81`(frontend 0). CF DryRun: 병합 결과 = post 11/11. status-lane-b는 FE9-d 워커가 아직 쓰지 않은 상태(미커밋분 = scanwip 기록뿐)를 확인하고 `whole`에 포함 → **scanwipfunc `2026c953`**.
+- 남은 메인 frontend 미커밋 = 시각부 5파일(워커 표와 같은 줄 수) — FE8-g2 몫, `scan-student-review` 메인 기준 이미지는 시각부 포함 상태 그대로.
+- 동결 해제, XB FB-7 exact15 메인 window 대기 → CF `fb7-dart`. 다음 CF 후보에 FE8-f1 복귀(기능부 HEAD 반영으로 선행 조건 충족, 시각 hunk 보존 규칙 필요).
