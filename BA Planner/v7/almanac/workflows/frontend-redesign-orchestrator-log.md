@@ -3261,3 +3261,222 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - CF gate `20261015_172230` **GREEN**(analyze 0, 382 + 391 + 659 + 393, process 87, golden 49) → XB exact15 단독 커밋 진행 회신(backend 로그 17:45). `fb7-dart`는 CF 워커 가능 시.
 - **FD-176**(사용자 결정): 전술 v2 쓰기 `attempt_count` null 허용, 방어 기록 상대 identity·이름 null 쌍 허용(공격은 현행). FB-6b slice로 XB 배정(Dart 영향 있음 → `fb6b-dart`와 같은 gate).
 - FE8-g2 착수 조건(FB-10 형식 고정)은 충족. 다만 선행 FE8-f1·f2가 CF 워커 몫.
+
+## 2026-10-15 18:10 — XB 추가 배정(배정문 c)
+
+- `debug/frontend_redesign_handoff/xb-instruction-20261015c.md`: 대기열 1 FB-7 단독 커밋 → 2 tactical schema 원소 타입 → 3 FB-6b(격리 검증까지만, 메인 반영·커밋은 `fb6b-dart`와 같은 gate까지 보류)에 더해, 4 FB-10 FE8-g2 subset source4 메인 반영·커밋(2와 같은 gate 가능), 5 메타데이터 관리자 M3 다음 단계(공용 저장소 쓰기는 CM 승인 + 사용자 실행), 6 크레딧·엘리그마 보유량 스캔(FD-096 (c)) 설계 조사(코드 0, 캡처 요청 포함).
+
+
+## 2026-10-15 22:44 — FB7 exact15 커밋·동결 해제 회신(XB→CF)
+
+- **810a15f2e840a2b369fdf7ed98aa9a0e52bccab0** (parenta7d41e02974bce92c3134cbd2cb01bed94c59d33), frozen selected **exact15만 index projection 커밋**했다. parent/path15/clean-filterblob 전수일치·main4122/working project·lock 병합표현·인식/CF WIP 원bytes 보존·emptyindex/push0. 상세 **debug/xb_fb7_exact_commit_20261015/artifacts/commit-receipt.json**.
+- CF **20261015_172230 GREEN**, main whole1345/903.354s·기존응답12 exact·default CSV4+XLSX4/wire16 PASS 근거를사용했다. **FB7 범위의 backend/contracts/tool 동결은 지금 해제**한다. fb7dart는CF워커가능시별도이며기존Dart의새메서드연결완료는미선언이다.
+- 다음 tactical원소타입/FB10subset을격리준비→계획→메인반영→새CFgate로묶는다. FD176 FB6b는격리전용·메인반영/커밋보류 및Dart목록선게시. M3외부store/lock/pipeline쓰기0·SchaleDB제거완료선언0. 근거 **debug/xb_fb7_exact_commit_20261015/output.md**.
+
+
+## 2026-10-15 22:55 — 메인 반영 계획(XB→CF): tactical typed-read + FB10 subset source7
+
+- 격리 **38/2.445s PASS**, 기존실제 populated/unavailable응답6의 canonical bytes동일·producer변경0·기존scanner schema변경0·요청정의변경0 확인. 최초18회귀실패(request/response선택오류)는원로그/첫schema로보존하고응답3정의만강화했다.
+- **source7**: tactical schema1/actualresponse fixture1/test1 + FB10subset schema1/fixture1/test1 + sharedREADME1. 새subset3파일은기존봉인source4원bytes이고README만현재base에append/rebase했다. oldmain7경로백업→candidate exact7반영→경로/bytes/SHA→actualmain표준전체→**CF gate 요청** 순서다. 원source7외main/recognition/C6/config/CF WIP를보존한다.
+- 새wiremethod/key/runtime추가0·기존응답byte의미0변화. CF Dart는후속fixture대조만이며이번gate는현재Dart그대로다. Main반영뒤 backend/contracts/tool추가freeze/commit전새CFGREEN필수/push0. Heavy Python시작/종료를따로알리며CFheavy와겹치지않는다.
+
+
+## 2026-10-15 22:55 — メイン反영 완료(XB→CF): typed-read/FB10 source7
+
+- 계획뒤source7반영완료·다른WIP/producer/기존scanner schema변경0. 6실제응답canonical불변, requests불변, newDart DTO필수0(후속대조만). 이제main표준전체를실행하므로 **CF heavy gate는종료뒤요청**한다. 아직commit/push0이다.
+
+| Path | Bytes | SHA256 |
+|---|---:|---|
+| `contracts/tactical-protocol-v2.schema.json` | 129508 | `c998b3e497c48fb3e594bdf3ac6f332561bae8759b467951b9bb547ebf79482b` |
+| `contracts/fixtures/tactical_typed_read_responses_v2.json` | 208954 | `4bf0818f5dc10314de6212a87128014763b0ad914b2bf347f23345d5cc7987c0` |
+| `backend/tests/test_tactical_typed_reads.py` | 4358 | `af04d7572d202b0e469754c44ae400b018a79115883eaa297f5c13974ca41995` |
+| `contracts/README.md` | 96717 | `f3ae570844d8ef54ef809aec48ad6647ad61637ac8b4e585578a2b8b0aba3e0a` |
+| `contracts/scanner-student-progress-fe8g2-v1.schema.json` | 706 | `e6d6b4753710f253981e18612a7a862b2cad0a5997e454d5f8b69f489612d950` |
+| `contracts/fixtures/scanner_student_progress_fe8g2_v1.json` | 3116 | `6b748c0bf0b95b21928d6714e6169871e85dffceb2df4c3af6e5eeeb2963ee9e` |
+| `backend/tests/test_scanner_progress_fe8g2.py` | 6629 | `3ca1b7dade8b6ba09ab303885cb3cee9aae0adb76023345bcb5617a7732d14a8` |
+
+
+## 2026-10-15 22:56 — 표준 Python 전체 시작(XB→CF): typed-read/FB10 actual main
+
+- 실제main source7+기존WIP에서 표준 `py -3.11 -m unittest discover -s tests -v` 시작. Runtimeproducer/기존scanner schema변경0·단지타입/fixture/test/docs 추가다. **CF heavy gate는 종료 알림 뒤** 요청한다. timeout/skip/exclusion/golden완화0, main source추가freeze·commit/push0. 격리후속은main밖에서만진행한다.
+
+
+## 2026-10-15 23:20 — FB10d 크레딧·엘리그마 스캔 설계 게시·사용자 캡처 요청(XB)
+
+- status-backend끝 **FB-10d 크레딧·엘리그마 스캔 설계**에 인식대상/ROI확정절차·정확정수/약식거부·실패표시/과거값보존·기존inventory+currencies제안·FD096(c) FB3키/스캔없음/zero-fill금지·부분merge/pairedhistory검증계획을게시했다. 코드/schema/runtime/frontend편집0.
+- **사용자 원본 PNG 필요**: 실제보유 크레딧과 엘리그마 각각 아이콘/라벨·정수전체가보이는 client전체 원본 + client폭높이/DPI·화면이름/그대로읽은문자열. 자연상태추가만/소비·구매불필요/앱수동입력아님. 현재 게임메뉴/ROI/성공임계/실제정확도는미검증이며캡처전고정하지않는다. 프로세스/메모리/키/원본/Viewer/Arena/기존holdout접근0.
+- 근거 debug/xb_fb10d_currency_design_20261015/artifacts/design.md. 구현은새허가캡처수신뒤별도계약/CFpaired gate. 이번설계작업완료·화면스캔구현완료아니다.
+
+
+## FB-6b FD-176 — 커밋 전 Dart 변경 목록 (XB → CF)
+
+2026-10-15. **CF 워커가 없으므로 이 목록만 게시한다. frontend 편집 0. `fb6b-dart`를 같은 source gate에 묶을 때까지 FB6b 메인 반영/커밋을 보류한다.**
+
+| 파일/영역 | 필요한 변경 |
+|---|---|
+| `frontend/lib/services/tactical_v2_service.dart` `_validFb6MatchInputV2` | 13개 키는 그대로 required. attempt_count는 null 또는 양의 int, 누락·0·bool·음수 거부. defense일 때 상대 ID/이름 null 쌍만 허용. attack·한쪽 null·빈 문자열은 거부 |
+| 같은 파일 `TacticalMatchInputV2` / fromRecord / toWire | required int? attemptCount, required String? 상대 쌍. fromRecord의 unknown attempt 강제 입력 오류 제거; null을 1/0으로 대체하지 않는다. nullable override에서 “지정 안 함”과 “명시적 null”이 구분돼야 하면 sentinel/copy API를 CF가 판단한다 |
+| 같은 파일 read DTO `TacticalMatchV2.fromWire` / 필드 | attempt는 이미 nullable; 기존 legacy missing 처리와 FD176 required write를 구분. opponentIdentityId/opponentDisplayName은 defense 한정 null 쌍, String? 로 읽기. opponent/snapshot/prediction DTO 자체를 nullable로 넓히지 않는다 |
+| `frontend/lib/services/mock_tactical_v2_writes.dart` match.upsert | null attempt 원형 보존, anonymous defense에 opponents/aliases/fake identity 생성 0. 기존 revision/idempotency/atomic 의미 보존. legacy null edit 가능 |
+| `frontend/lib/services/mock_tactical_v2_reads.dart` stats | 전체 기록·방어 집계에는 포함, 상대별 rows/서로 다른 상대 수·이름 재사용은 제외. unknown ID를 공통 상대 집단으로 만들지 않는다. 추이/추천은 기존 공격/연결된 관측 증거 범위 유지 |
+| `frontend/test/tactical_fb6_dart_test.dart` 및 process E2E | FD176 fixture 13개, required-vs-null/익명 방어/재시도/legacy edit/Mock parity. 기존 writes fixture unknown_manual_attempt가 valid로 바뀐다. 기존 positive 요청 응답 fixture는 동일 |
+
+추가 컴파일 영향 확인 대상(자동 수정 지시가 아님): `tactical_records_controller.dart`, `ui/tactical/tactical_records_view.dart`, `ui/tactical/tactical_workspace.dart`, `ui/pages/tactical_page.dart`, `services/design_review/tactical_records_data.dart` 및 해당 테스트. 읽기 타입 nullable 전환으로 상대 이름/ID를 사용하는 표시·필터·그룹·편집 로직을 점검한다. `process_app_service.dart`·`mock_app_service.dart` 전달 API는 새 method/key가 없으므로 필요한 변경만 한다.
+
+표시 원칙: 상대 미상 방어는 한 기록으로 표시하고 상대 선택/이름 히스토리에 가짜 공통 항목을 만들지 않는다. 시도 미상은 “미상”으로 보존. 미래 attempt 통계는 known만 계산하고 known/unknown 분모를 분리한다. 수동 날짜·덱 정책/Excel 열 해석은 이 slice에서 바꾸지 않는다(빈 Excel attempt는 기존 review-required 유지).
+
+저장 판단: **tactical storage version2/동일 경로 유지**. 배열/record kind/revision/idempotency 구조는 같고 기존 값을 강제 재작성하지 않는 nullable 확장이다. 새 read DTO 없이는 이전 Dart가 읽을 수 없으므로 main 보류가 필요하다. v1 migration의 원래 null을 보존하고 1로 추측하지 않는다.
+
+격리 집중95 PASS, old-positive/read/retry/error/rename/delete/restart 응답11 canonical **28,452B SHA bfd1cd8576b4f4a0f455d9e10f9855a2d2190ba15c699a9e4b1f53e872ba44e4 exact**. FD176이 의도적으로 바꾸는 null-attempt 거부 사례는 old/new 양쪽 비교에서 제외하고 신규 fixture/runtime/schema에서 검증했다. 최초 schema fixture 기대값/legacy test 인자 오류는 원로그에 보존했다. 격리 전체 Python은 M3 CLI/test4와 통합 사본에서 이어 검증하며 실제 결과를 별도로 기록한다.
+
+
+## 2026-10-15 23:24 — 표준 Python 전체 종료(XB→CF): typed-read/FB10 FAIL_PRESERVED
+
+- actualmain **1366/1711.726s FAILED (failures=1, errors=1)**, errors1/failures1, 밖core-test0·unexpectedinput14. 상세 debug/xb_tactical_schema_fb10_20261015/artifacts/python-full-receipt.json. **Heavy Python 종료**, 마지막Almanac/diff·source7동일검사뒤 CF gate 요청을별도게시한다. main source추가freeze·commit/push0.
+
+
+## 2026-10-15 23:26 — 메인 보완 계획(XB→CF): source7 → source8, schema inventory 등록
+
+- 첫 whole1366/1711.726s는 **FAIL 원본보존**: 새FE8g2 schema가 기존 exact schema inventory expected목록에빠짐1 + 기존stdio process communicate(timeout=10) 1건. 타임아웃/프로덕션코드는바꾸지않는다.
+- 필요한보완은 `backend/tests/test_planning_protocol_contract.py` expected집합에 새schema명을1개추가하는것뿐이다. 새선택범위 **source8=기존7+inventory test1**; 원 봉인FB10source4와초기source7는보존한다. 아래계획뒤candidate/main에동일보완→inventory/stdio집중→새actualmain wholev2. 같은소스CFGREEN전commit0.
+- 첫whole중 CF소유 frontend입력14의외부변경도지문/목록으로보존했다. XB frontend쓰기0이며복원하지않는다. CFgate폴더의최신summary는17:22실행완료분이다. 새heavy시작/종료를알리고 CFheavy는요청전실행하지않도록조율한다. FD176/M3메인반영0·sourcefreeze유지.
+
+
+## 2026-10-15 23:26 — メイン補完反영 완료(XB→CF): source8
+
+- 기존exactinventory guard를유지한채 새schema1개를등록했다. source7원bytes그대로·runtime/scannerproducer/요청의미변경0. 추가경로 `backend/tests/test_planning_protocol_contract.py` **7703B / 22965fd358bc1c32d6715252afd8f078b44269839a9943f5714ad9300781fc25**. source8전수SHA는debug/xb_tactical_schema_fb10_20261015/artifacts/source8-manifest.json. 첫실패/외부frontend14변경증거보존·추가commit/push0.
+
+
+## 2026-10-15 23:27 — 표준 Python 전체 시작(XB→CF): typed-read/FB10 actual main
+
+- 실제main source8+기존WIP에서 표준 `py -3.11 -m unittest discover -s tests -v` 시작. Runtimeproducer/기존scanner schema변경0·단지타입/fixture/test/docs 추가다. **CF heavy gate는 종료 알림 뒤** 요청한다. timeout/skip/exclusion/golden완화0, main source추가freeze·commit/push0. 격리후속은main밖에서만진행한다.
+
+
+## 2026-10-15 23:29 — source8 커밋 경계 사전 게시(XB→CF)
+
+- 새 같은소스 CF gate GREEN 뒤 **tactical typed-read exact4 → FB10 FE8g2 exact5** 두개로나눠커밋한다(push금지). README는shared경로여서 첫커밋은typed설명까지만의selected blob, 둘째는현재최종README다. unique main8경로/프로듀서0이며검증할최종source8는변하지않는다.
+- 필요한 FE8g2 schema inventory 등록1은subset exact5에포함한다. 원 source4초안/초기source7/첫wholeFAIL은보존한다. 상세 debug/xb_tactical_schema_fb10_20261015/artifacts/selected-commit-plan.json. 현mainwholev2중/아직gate요청·stage·새commit0. FB6b/M3는별도격리·미반영이다.
+
+
+## 2026-10-15 23:38 — 무거운 Python 중단·종료 알림(XB→CF): 기존 설치본 자산 회귀와 원본 금지 범위 확인 필요
+
+- 재실행mainwholev2를중단했다. 표준suite에 `test_recognition_asset_extract_c5e6a0.LiveClientAnswerKeyTests`가있고 `find_game_dir()`/`extract(GAME,...)`로실제Steam설치본자산을읽는것을뒤늦게확인했다. 첫전체와v2의해당테스트는이미실행되었다. **설치본 원본 접근0으로보고하지않는다**. XB소유helper PID32736와직접자식unitrunner1개만종료했고 게임프로세스를종료/수정하지않았다.
+- v2는completed ok lines 491, finalfooter없음/**전체PASS아님**. 첫whole1366 FAILED 원본과v2중단로그/receipt를보존한다. schema inventory누락은수정했고 repairfocused30/stdiosame10초PASS다. Main source8 freeze/pin보존, frontend WIP 복원/편집0. **모든 heavy Python 종료**, M3통합전체는시작하지않았다. 타임아웃·skip·제외·골든을바꿔GREEN을만들지않는다.
+- 사용자에게 “원본금지에기존Steam설치본자산회귀도포함되는지”를text질문했다. 답변전표준전체재실행보류. 이는새기능승인요청이아니라사용자의원본금지조건과기존표준검증간충돌확인이다. 독립적인tactical/M3 synthetic focus·설계·로그/인계는계속한다. M3full/Schale독립diff0은미완료다.
+- 근거 debug/xb_tactical_schema_fb10_20261015/artifacts/python-full-v2-interrupted-receipt.json. 첫whole중외부frontend14변경도그대로보존했다. 앞으로외부연구holdout/키/바이너리원본에직접접근하지않는다.
+
+
+## 2026-10-15 23:40 — 사용자 결정 수신·표준 전체 재개(XB→CF)
+
+- 직접회신: **“기존 설치본 자산 회귀는 허용 — 키·프로세스·연구 원본 접근은 계속 금지”**. 기존standard suite의Steam설치본자산회귀만허용됐고새게임프로세스/키/연구원본/Viewer/Arena/O3외부holdout접근은하지않는다. 기존unitfixture의split명holdout과외부연구holdout은구분한다. 관련test source를읽어다른GameAssembly/metadata입력은synthetic tempfixture임을확인했다.
+- mainv2중단기록을PASS로바꾸지않는다. source8동일 mainv3전체→종료→FB6b+M3통합격리준비/전체를**순차실행**한다. 각start/end로그유지·무거운실행중복0. CF heavy gate는두전체종료뒤요청한다. 문서/복사작업도main전체도중무겁게겹치지않는다.
+- backend/contracts/frontend/tool sourcefreeze/FB6b메인보류/M3원천결손·삭제보류/공용store·lock·pipeline쓰기금지/모든push금지유지. 사용자결정근거 debug/xb_session_finalize_20261015/artifacts/user-asset-regression-decision.json.
+
+
+## 2026-10-15 23:40 — 표준 Python 전체 시작(XB→CF): typed-read/FB10 actual main
+
+- 실제main source8+기존WIP에서 표준 `py -3.11 -m unittest discover -s tests -v` 시작. Runtimeproducer/기존scanner schema변경0·단지타입/fixture/test/docs 추가다. **CF heavy gate는 종료 알림 뒤** 요청한다. timeout/skip/exclusion/golden완화0, main source추가freeze·commit/push0. 격리후속은main밖에서만진행한다.
+
+
+## 2026-10-16 00:01 — 표준 Python 전체 종료(XB→CF): typed-read/FB10 PASS_MAIN_SOURCE8_STANDARD_WHOLE
+
+- actualmain **1366/1256.2s OK**, errors0/failures0, 밖core-test0·unexpectedinput0. 상세 debug/xb_tactical_schema_fb10_20261015/artifacts/python-full-v3-receipt.json. **Heavy Python 종료**, 마지막Almanac/diff·source8동일검사뒤 CF gate 요청을별도게시한다. main source추가freeze·commit/push0.
+
+
+## 2026-10-16 00:02 — 격리 표준 Python 전체 시작(XB→CF): FD176 FB6b + M3 source4
+
+- Actual main typed/FB10 whole 종료 뒤 시작. **CF heavy gate는 이 격리 전체 종료 알림 뒤** 요청한다. Integrated validation copy에 FB6b10 + M3 CLI/test4를 함께 검증하고 selected목록은분리한다. 메인4127/frontend/lock/store/pipeline 쓰기0·FB6b main보류·Schale삭제0. 표준명령 그대로, timeout/skip/exclusion/golden완화0.
+
+
+## 2026-10-16 00:31 — 격리 표준 Python 전체 종료(XB→CF): FAIL_PRESERVED
+
+- **1385/1702.184s FAILED (failures=166, errors=26)**, errors26/failures166, 밖core-test0, unexpectedinput0, main변경0. debug/xb_m3_store_prepare_20261015/artifacts/python-full-receipt.json. Heavy 종료. FB6b격리보류·M3원천결손으로제거미완료. 마지막source검사뒤 source7 CF gate 요청.
+
+
+## 2026-10-16 00:37 — 격리 전체 실패 분석·복제 입력 보완(XB)
+
+- 최초격리전체 **1385/1702.184s FAILED(failures166/errors26)** 원본보존. stdio10초초과외에부모root상대검증문서/JSON/PNG·pipelinePython소스누락이있었다. 초반진행확인에서footer전inlineFAIL을놓쳤음을정정한다. 메인source8whole1366PASS와는별개다.
+- 테스트가실제로참조하는승인된검증입력 **55개**만격리root에원bytes복사했다. nativeDLL/metadata/DB/키/연구holdout은복사하지않았다. 실제main docs/tactic-editor·pipeline·공용store/lock쓰기는0. 새검증입력manifest는 input-repair-receipt.json이다.
+- **FB6b source10→source11**: FD176에서유효한null attempt를오류로기대하던기존Excel응답부정test1을bool mutation으로교체했다(검사수/엄격성유지). 실제Excelblank review-required는그대로회귀한다. 새Dart영향은기게시FD176목록과같고추가필드/method0. source11은M3/candidate와FB6b/candidate에만적용·메인0/commit0이다.
+- 누락/부정fixture관련모듈집중→원10초stdio재확인→같은표준전체v2를순차진행한다. 소스8동결유지, CFheavy는종료뒤gate요청까지보류한다.
+
+
+## 2026-10-16 00:41 — 격리 검증 입력 최종 보완·Python 기본 캐시 복원(XB)
+
+- 보완focus96/19.008s는failures0/errors2: 추가Mermaid기준파일1누락과stdio10초초과. 기준MMD를격리문서에원bytes복사했다. 실제main docs/pipeline은읽기만·쓰기0이다.
+- 격리본은__pycache__를복사하지않으면서검증전용 `PYTHONDONTWRITEBYTECODE=1`을설정해자식process가매번source를재컴파일하게했다. 이추가제약을**격리 subprocess에서만해제**, 사용자표준명령의일반bytecode캐시동작으로돌려집중회귀를재확인한다. 코어/계약소스·테스트10초·검사항목은바꾸지않는다. 생성cache는AGENTS대로localstate이고source지문/import-origin은별도확인한다.
+- source11/CLI4는그대로, frontend/공용store/lock/mainpipeline/실profile/골든쓰기0. 차이와실패원본은각receipt/log로보존하며최종전체PASS를미리선언하지않는다.
+
+
+## 2026-10-16 00:43 — 보완 집중96 PASS·격리 전체 v2 시작 계획(XB→CF)
+
+- focus96/14.971s **OK**, stdio도원10초한도안에서PASS. 복제누락56검증입력+FD176에맞춘Pythonnegativecase1보완, 생성cache금지라는검증전용제약을해제해일반Python동작으로검증했다. product소스추가변경0·실제main변경0.
+- 이제같은표준명령전체를source11+CLI4에서재실행한다. source/import지문과기존WIP보존을유지하고모든원실패/보완기록을인계한다. timeout/skip/exclusion/golden완화0. CFheavy는종료후CF gate요청까지보류, FB6b/M3메인보류유지.
+
+
+## 2026-10-16 00:43 — 격리 표준 Python 전체 v2 시작(XB→CF): FD176 FB6b + M3 source4
+
+- Actual main typed/FB10 whole 종료 뒤 시작. **CF heavy gate는 이 격리 전체 종료 알림 뒤** 요청한다. Integrated validation copy에 FB6b11 + M3 CLI/test4를 함께 검증하고 selected목록은분리한다. 메인4127/frontend/lock/store/pipeline 쓰기0·FB6b main보류·Schale삭제0. 표준명령 그대로, timeout/skip/exclusion/golden완화0.
+
+
+## 2026-10-16 00:46 — FB6b source11 보완 목록·Dart 영향 동일(XB→CF)
+
+- 기존FD176 Dart strictrequest/readDTO/Mock 목록이그대로최종영향범위다. 추가Dartfield/method0. 백엔드선택은 **source11**: oldExcelnegative fixture의null-attempt가이제유효하므로bool 부정값으로변경한Python test1을추가했다. 검사수는유지했고 실제Excelblank는review-required그대로다.
+- source11은격리전용이며 **CF워커 fb6b-dart 같은gate까지 main/commit보류**. 완성source11 actual목록은debug/xb_m3_store_prepare_20261015/artifacts/fb6b-source11-manifest.json이며기존source10은초기기록으로보존한다. 메인source8 schema는변경하지않았다.
+
+| Candidate path | Bytes | SHA256 |
+|---|---:|---|
+| `backend/core/tactical_fb6.py` | 6787 | `ba43f4774e74f55997dae5e14f2496dc6147b27885276d8f7bb71d5eb54ca8fb` |
+| `backend/core/tactical_fb6_store.py` | 21502 | `d15bed27d056c8b62f530891978e2413cc37d59304321e8efa07c95d17b3c11e` |
+| `backend/core/tactical_stats_v2.py` | 18197 | `52e06324fc7da111ec03bc5004d0caef15250f9f2eba0d79adabbfef119b005b` |
+| `backend/core/tactical_share_v1.py` | 30956 | `d19b2666b19886f339ccabdd33bfbf5bcd6503f4c58d97186698f9fc16b40e54` |
+| `contracts/tactical-protocol-v2.schema.json` | 132069 | `95eff4a72d161d59c2b376ba26da6d2df212748b5978be8b9726ec3997af926a` |
+| `contracts/README.md` | 97788 | `a4687feadce0c64d23cd491dde3e5d0a054f9a9d750ef69594a907143aafe498` |
+| `backend/tests/test_tactical_fb6_primitives.py` | 6217 | `9a803545bc180df11077505c937b9d258c2450f54ae19bdcec5c59257fa1257d` |
+| `backend/tests/test_tactical_fb6b.py` | 12178 | `138af806ea287b1d8a88936aca8efac966af40abb2266d2475b62c100221e5ca` |
+| `contracts/fixtures/tactical_fb6b_nulls_v2.json` | 56078 | `90e1fd7b02232a3d6ff7a11053040de1ecd1be218e56d0a286dfaebfe7f182c6` |
+| `contracts/fixtures/tactical_fb6_writes_v2.json` | 38146 | `446b21d2ac695cce7a9c1d5ee5ac201bc114df6afff9a5f7a43eb48e7c6b3b9b` |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | `8f8527c8098d3dc6af0bde8163a9b6abe5583763972fdaea1cf6ac1502a53c10` |
+
+
+## 2026-10-16 01:04 — 격리 표준 Python 전체 v2 종료(XB→CF): PASS_ISOLATED_FB6B_M3_STANDARD_WHOLE
+
+- **1402/1254.606s OK**, errors0/failures0, 밖core-test0, unexpectedinput0, main변경0. debug/xb_m3_store_prepare_20261015/artifacts/python-full-v2-receipt.json. Heavy 종료. FB6b격리보류·M3원천결손으로제거미완료. 마지막source검사뒤 source8 CF gate 요청.
+
+
+## 2026-10-16 01:09 — XB 보고·CF gate 요청: tactical typed-read + FB10 FE8g2 source8
+
+- **FB7 exact15 커밋 810a15f2e840a2b369fdf7ed98aa9a0e52bccab0**, CF172230 GREEN. 원working config/lock·인식/C6/CF WIP를보존했고 FB7동결해제를회신했다. push0. 현재새source8에대해서는backend/contracts/frontend/tool freeze유지.
+- **새 CF gate 요청**: 현재메인아래source8, actualstandard **1366/1256.2s OK**, focused38/repair30, 기존실제query응답6 canonical불변·requestdefs/producer/기존scanner schema변경0. Initial selector18FAIL 및 whole1366/1711.726FAIL(목록1+stdio10초1/외부frontend14변경)을원본보존했다. Inventory등록보완뒤v2는원본경계확인으로중단했고사용자직접답변으로기존설치본자산회귀허용을받아v3전체PASS. Timeout/skip/exclusion/golden완화0. CF가검증할source는아래8경로다. **Heavy Python 모두종료**, 새Dart수정필수0/현재Dart그대로gate가능. Almanac45·working/cached diff-check PASS.
+- **GREEN 뒤 커밋계획**: tactical typed exact4 → FB10subset exact5 별도커밋. sharedREADME는첫typed설명blob→현재최종blob순서, unique8. selected-commit-plan.json이근거. 새CF회신전stage/추가commit0, push금지. 기존frontend14외부변경/WIP를복원하거나선택하지않는다.
+- **FB6b FD176 source11 격리완료**: focus95/old응답11 exact28452B + integratedfull **1402/1254.606s OK**. Requirednull·defense상대null쌍·retry/legacy/stats/trends/recommend/share/Excel경계검증, 저장v2/기존값강제변환0. 기존Excelnegativecase1은이제유효한null대신금지bool로보완했다(실제blank review-required동일). 커밋전Dart strictrequest/readDTO/Mock/테스트목록게시완료. **CF워커 fb6b-dart가같은gate에묶일때까지메인반영·커밋보류**다.
+- **격리 검증 보완 기록**: 최초1385/1702.184s FAIL166/errors26는원본보존. 복제검증자료56개누락과FD176의옛null-negative1건을보완했고, 검증전용cache생성금지를해제해일반Python동작으로집중96/14.971s PASS→전체v2 PASS를확인했다. 기존stdio10초/skip/검사항목은유지했다. 실제main문서·pipeline·공용store/lock수정0이다.
+- **M3 source4 격리준비**: opt-in readonlypreview/explicitcrosswalk + stats --from-store KIND, focus78/integratedfull위동일 PASS. Frozen11 exact보존, 현재pinID후보265/265이나verifiedassociation0; **독립Schale제거비교diff=null/BLOCKED**. Gift/affinity필드kind·approvedcrosswalk·statskind가필요하다. 메인계획은metadata/backend로그게시, 현재미반영. 공용store/lock/pipeline명령은CM승인+사용자실행만; Schale삭제0/제거완료선언CM. M2DTO변경0, futurefilledprovenance/Dart영향은CF워커까지보류.
+- **FB10d 설계완료**: status-backend끝요청절게시. 사용자에게실제보유 크레딧/엘리그마 각각아이콘·명칭·정수전체·client문맥의원본PNG와폭높이/DPI·원문수량을요청한다. 메뉴/ROI/인식정확도는캡처전미검증. 화면캡처만/소비불필요/앱수동입력0. 키·게임프로세스메모리/후킹·연구원본·Viewer/Arena·O3외부holdout접근0. 표준전체의기존설치본자산회귀는사용자직접허용범위에서실행했고원본전체접근0이라고주장하지않는다.
+- **잔여**: CF 새source8GREEN/두커밋, FB6bCF워커, M3원천/CM결정, FB10d사용자캡처. 전체P0-P6/native/M3제거완료는미선언. 소스·fixture·현재WIP·실profile/공용store/lock/골든보존.
+
+| Main exact path | Bytes | SHA256 |
+|---|---:|---|
+| `contracts/tactical-protocol-v2.schema.json` | 129508 | `c998b3e497c48fb3e594bdf3ac6f332561bae8759b467951b9bb547ebf79482b` |
+| `contracts/fixtures/tactical_typed_read_responses_v2.json` | 208954 | `4bf0818f5dc10314de6212a87128014763b0ad914b2bf347f23345d5cc7987c0` |
+| `backend/tests/test_tactical_typed_reads.py` | 4358 | `af04d7572d202b0e469754c44ae400b018a79115883eaa297f5c13974ca41995` |
+| `contracts/README.md` | 96717 | `f3ae570844d8ef54ef809aec48ad6647ad61637ac8b4e585578a2b8b0aba3e0a` |
+| `contracts/scanner-student-progress-fe8g2-v1.schema.json` | 706 | `e6d6b4753710f253981e18612a7a862b2cad0a5997e454d5f8b69f489612d950` |
+| `contracts/fixtures/scanner_student_progress_fe8g2_v1.json` | 3116 | `6b748c0bf0b95b21928d6714e6169871e85dffceb2df4c3af6e5eeeb2963ee9e` |
+| `backend/tests/test_scanner_progress_fe8g2.py` | 6629 | `3ca1b7dade8b6ba09ab303885cb3cee9aae0adb76023345bcb5617a7732d14a8` |
+| `backend/tests/test_planning_protocol_contract.py` | 7703 | `22965fd358bc1c32d6715252afd8f078b44269839a9943f5714ad9300781fc25` |
+
+- **typed** `debug/xb_tactical_schema_fb10_20261015/output.md` — 1769B / `29989f2c5b9626c8175edc2910cf3c40f4e5e9897cd9072f852be433e0f439df`, artifacts4228
+- **fb6b** `debug/xb_fb6b_isolated_20261015/output.md` — 1777B / `ade337f3c02a506dcc7fdb9ff56c7ba7edf369d5189900ad7bbfca04e7a78a1d`, artifacts4149
+- **m3** `debug/xb_m3_store_prepare_20261015/output.md` — 2804B / `94bdf5b2f822ae4903da90486159fe91e5631ed1056445ff5e53bf34d7bb49a8`, artifacts7436
+- **design** `debug/xb_fb10d_currency_design_20261015/output.md` — 1058B / `0e51c2ddccff22836d848b0c35447d6cfc128810352990e0d3e311bcee1f17f7`, artifacts4
+
+## 2026-10-16 02:45 — FE9-d·FE7-j 검토·gate·커밋, XB source8 gate GREEN, 다음 라운드 배정
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fe9d 11행, fe7j 11행), 겹침 0, 스캐너 시각부 5파일 그대로(줄 수 같음). FE9-d 사고: 일회성 렌더 사본이 golden 비교로 한 번 돌아 `failures/`만 생김(기준 이미지 변화 0) → FE9-e 프롬프트에 "사본에서 `@Tags`·`expectGoldenScene` 제거" 추가.
+- XB 기록: FB-7 단독 커밋 `810a15f2`, source8(tactical typed-read 4 + FB-10 FE8-g2 subset 5) 메인 반영·Python 1366 OK·CF gate 요청, FB-6b source11 격리 1402 OK(메인 보류), M3 source4 격리(제거 비교 BLOCKED — 원천 결손), FB-10d 크레딧·엘리그마 설계(사용자 캡처 요청). 23:38 사용자 직접 결정: 표준 suite의 기존 설치본 자산 회귀는 허용(키·프로세스·연구 원본 금지 유지).
+- gate ① `20261016_022252`: 모두 PASS, golden RED 2 = `tactical`(S4 족보 패널)·새 `tactical-jokbo-drag` → 검토 승인 ② `-UpdateGoldens` `20261016_023150` **GREEN**(golden 50).
+- 커밋: **fe9d `627bb249`** → **fe7j `863e5524`**. fe7j는 fe9d 커밋이 status.md에 commit record를 덧붙여 gate 뒤 변경으로 거부됨 → 같은 내용(문서 1파일)을 post_dir로 고정해 커밋(gate 재실행 대신, 도구 안내 방식).
+- XB에 source8 GREEN 회신(backend 02:45) → XB 두 커밋 대기.
+- FE7-j 발견 CF 판단: 1(A6 끝 점 고르기) · 3(차트 모습 통일) → 후속 후보, 2(근거 "나머지 n명 · 모두 보기" 문구) → 그대로.
+- **다음 라운드**: Lane B `debug/frontend_redesign_handoff/fb7dart-worker-prompt-20261016.md`(FB-7 Dart, 짝 gate 없음) · Lane A `debug/frontend_redesign_handoff/fe9e-worker-prompt-20261016.md`(전술 분석 화면 + Analysis-All + seg 머리말 이동(FD-126 (a) 준수 — CF 결정) + 하위 화면 모션). 그다음 Lane B `fb6b-dart`(XB source11 메인 반영과 짝).
