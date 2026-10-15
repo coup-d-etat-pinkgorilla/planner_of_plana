@@ -1,9 +1,11 @@
 // FE2-a UI Kit 갤러리 테스트: 개발 패널에서 열림, 두 스크롤 모드, 행 hover·선택, 사선 hit test.
+// FE7-j: 섹션 틀 구역(tidy2 `SectionFrame` · `SectionScaledBox`).
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/ui/geometry/diagonal_geometry.dart';
 import 'package:ba_planner_v7/ui/kit/diagonal_row.dart';
 import 'package:ba_planner_v7/ui/kit/gallery/ui_kit_gallery_page.dart';
+import 'package:ba_planner_v7/ui/kit/section_frame.dart';
 import 'package:ba_planner_v7/ui/widgets/development_panel.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -176,6 +178,45 @@ void main() {
     expect(selected.border, AppColors.accent);
     expect(selected.borderWidth, 4);
     expect(find.text('선택됨 · 다시 누르면 해제합니다'), findsOneWidget);
+  });
+
+  testWidgets('section frame samples clip to the shape and scale contents', (
+    tester,
+  ) async {
+    await _pumpGallery(tester);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('kit-gallery-frame-scaled-box')),
+    );
+    await tester.pumpAndSettle();
+    final frame = find.byKey(const ValueKey('kit-gallery-section-frame'));
+    expect(tester.getSize(frame), const Size(560, 270));
+    final surface = tester.widget<CustomPaint>(
+      find.byKey(const ValueKey('kit-gallery-section-frame-surface')),
+    );
+    expect(surface.painter, isA<SectionSurfacePainter>());
+    // 섹션 밖까지 놓은 막대는 섹션 모양 clipper 아래에 있다.
+    final clip = find.ancestor(
+      of: find.byKey(const ValueKey('kit-gallery-section-frame-overflow')),
+      matching: find.byType(ClipPath),
+    );
+    expect(
+      tester.widgetList<ClipPath>(clip).map((path) => path.clipper),
+      contains(isA<SectionShapeClipper>()),
+    );
+
+    for (final (percent, scale) in const [(100, 1.0), (75, 0.75), (50, 0.5)]) {
+      final box = find.byKey(ValueKey('kit-gallery-scaled-box-$percent'));
+      expect(tester.getSize(box), Size(360 * scale, 44 * scale));
+      final fitted = find.descendant(of: box, matching: find.byType(FittedBox));
+      // 배율 1은 그대로, 1 미만은 시안 크기로 배치한 뒤 줄인다.
+      expect(fitted, scale >= 1 ? findsNothing : findsOneWidget);
+      expect(
+        find.descendant(of: box, matching: find.text('9/22 → 10/05')),
+        findsOneWidget,
+      );
+    }
+    expect(find.byType(SectionScaledBox), findsNWidgets(3));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('resize rows select on tap', (tester) async {

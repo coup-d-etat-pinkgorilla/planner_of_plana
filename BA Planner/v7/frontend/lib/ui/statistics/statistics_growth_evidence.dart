@@ -11,6 +11,9 @@
 // "단계 요약"(A1 구간 요약과 같은 세 줄) · A4 "학교 요약"(보유율 n% · 보유 / 학생 목록, 평균 육성도, 계획 등록)이다.
 // FE7-i: A5 칸(행 · 레벨 구간)을 고르면 같은 틀이다. 머리 "EX 스킬 1–3" · "장비 T7–8", 부제 "A5에서 고른 칸 · 낮은
 // 항목 순", 요약 "칸 요약"(A1 구간 요약과 같은 세 줄).
+// FE7-j: A6 구간(두 학생 스냅샷)을 고르면 같은 틀에 "오른 학생 순위"다(Statistics-Proposal A6, FE7-h 발견 5). 머리 "9/22 → 10/05",
+// 부제 "A6에서 고른 구간 · 오른 학생 순", 행 칩은 증감 "+3.2%p"(초록) · 그때 보유하지 않던 학생 "새 학생"(파랑), 요약 "구간
+// 요약"(평균 육성도 변화 · 오른 학생 · 새 학생). 규칙은 [statisticsGrowthRanking].
 // 원본 탭 이동(아래 버튼 · 학생 탭 임시 목록)은 FE7-d(`statistics_page.dart`)다. 펼친 목록 · "모두 보기" 버튼은 재화 근거
 // "외 n종 · 외 n명"(FE7-d)도 같이 쓴다([statisticsEvidenceList] · [StatisticsEvidenceMoreButton]).
 import 'dart:math' as math;
@@ -20,6 +23,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../statistics/statistics_breakdown_projection.dart';
 import '../../statistics/statistics_growth_projection.dart';
+import '../../statistics/statistics_history_projection.dart';
 import '../../statistics/statistics_matrix_projection.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/ba_chip.dart';
@@ -112,6 +116,23 @@ final class StatisticsGrowthMatrixSelection extends StatisticsGrowthSelection {
   int get hashCode => cell.hashCode;
 }
 
+/// A6 구간(FE7-j): [fromSession] 스냅샷 → [toSession] 스냅샷(FD-175 묶음 이름). 끝은 고를 때의 마지막 점이다.
+final class StatisticsGrowthTrendSelection extends StatisticsGrowthSelection {
+  const StatisticsGrowthTrendSelection(this.fromSession, this.toSession);
+
+  final String fromSession;
+  final String toSession;
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatisticsGrowthTrendSelection &&
+      other.fromSession == fromSession &&
+      other.toSession == toSession;
+
+  @override
+  int get hashCode => Object.hash(fromSession, toSession);
+}
+
 /// 성장 주제 화면 상태(페이지가 들고 있다)와 바꾸는 콜백.
 @immutable
 class StatisticsGrowthView {
@@ -126,6 +147,8 @@ class StatisticsGrowthView {
     this.breakdown,
     this.a4Group = StatisticsA4Group.school,
     this.onA4GroupChanged,
+    this.history,
+    this.trend,
   });
 
   /// 읽지 못했으면 null(KPI · 그래프 '—').
@@ -142,8 +165,53 @@ class StatisticsGrowthView {
   final StatisticsGrowthMetric metric;
   final StatisticsGrowthSelection? selection;
 
+  /// A6 이력 색인 · 값([growth]와 같은 대상 학생, FE7-j 구간 근거). 읽기 전 · 실패면 null.
+  final StatisticsHistory? history;
+  final StatisticsGrowthTrend? trend;
+
   /// 근거 목록을 모두 펼쳤는가.
   final bool expanded;
+
+  /// 고른 A6 구간의 시작 점([trend] 순번). 끝이 지금 마지막 점이 아니거나 고르지 않았으면 null.
+  int? get trendStart {
+    final trend = this.trend;
+    final selection = this.selection;
+    if (trend == null || selection is! StatisticsGrowthTrendSelection) {
+      return null;
+    }
+    final start = trend.indexOf(selection.fromSession);
+    final end = trend.indexOf(selection.toSession);
+    if (start == null ||
+        end == null ||
+        end != trend.points.length - 1 ||
+        start >= end) {
+      return null;
+    }
+    return start;
+  }
+
+  /// A6에 그릴 값: 구간을 골랐으면 그 구간을 강조하고, 아니면 기본 강조(FE7-h)다.
+  StatisticsGrowthTrend? get shownTrend {
+    final start = trendStart;
+    return start == null ? trend : trend?.withHighlight(start);
+  }
+
+  /// A6 [start] 점 → 마지막 점 구간을 고른다(null이면 푼다).
+  void selectTrendStart(int? start) {
+    final trend = this.trend;
+    final onSelectionChanged = this.onSelectionChanged;
+    if (onSelectionChanged == null) return;
+    if (start == null || trend == null) {
+      onSelectionChanged(null);
+      return;
+    }
+    onSelectionChanged(
+      StatisticsGrowthTrendSelection(
+        trend.points[start].sessionId,
+        trend.points.last.sessionId,
+      ),
+    );
+  }
   final ValueChanged<StatisticsGrowthMetric>? onMetricChanged;
   final ValueChanged<StatisticsGrowthSelection?>? onSelectionChanged;
   final VoidCallback? onExpand;
@@ -206,6 +274,16 @@ class StatisticsGrowthView {
             ('planned', '계획 등록', '${summary.plannedCount}명'),
           ],
         );
+      case StatisticsGrowthTrendSelection(:final fromSession, :final toSession):
+        // 끝이 지금 마지막 점이 아니면(새 스냅샷) A6에 그 구간이 없다.
+        if (trendStart == null) return null;
+        final ranking = statisticsGrowthRanking(
+          history,
+          trend,
+          fromSession: fromSession,
+          toSession: toSession,
+        );
+        return ranking == null ? null : statisticsRankingEvidence(ranking);
       case StatisticsGrowthItemSelection(:final item):
         final students = growth.itemStudents(item);
         final summary = StatisticsGrowthSummary.of(students);
@@ -267,6 +345,42 @@ StatisticsGrowthEvidenceContent _rangeEvidence({
     ],
   );
 }
+
+/// A6 고른 구간 근거(FE7-j, "오른 학생 순위"): 행은 오른 학생(증감 큰 순) 다음 새 학생, 칩은 "+3.2%p"(초록) · "새 학생"
+/// (파랑), 요약은 평균 육성도 변화(A6 강조 글자와 같은 값) · 오른 학생 · 새 학생 수다. 육성도를 몰라 비교하지 못한 학생은
+/// 부제 끝에 적는다.
+StatisticsGrowthEvidenceContent statisticsRankingEvidence(
+  StatisticsGrowthRanking ranking,
+) {
+  final rises = {for (final row in ranking.rows) row.student.studentId: row};
+  final unknown = ranking.unknownCount;
+  return StatisticsGrowthEvidenceContent(
+    title: ranking.title,
+    subtitle: [
+      'A6에서 고른 구간',
+      ranking.rows.isEmpty ? '오른 학생이 없습니다.' : '오른 학생 순',
+      if (unknown > 0) '육성도 모름 $unknown명 제외',
+    ].join(' · '),
+    students: [for (final row in ranking.rows) row.student],
+    chipOf: (student) {
+      final rise = rises[student.studentId];
+      if (rise == null) return null;
+      final tenths = rise.tenths;
+      return tenths == null
+          ? (statisticsNewStudentText, AppTones.info)
+          : ('${statisticsSignedTenths(tenths)}%p', AppTones.ok);
+    },
+    summaryTitle: '구간 요약',
+    summary: [
+      ('change', '평균 육성도 변화', ranking.averageText),
+      ('risen', '오른 학생', '${ranking.risenCount}명'),
+      ('new', statisticsNewStudentText, '${ranking.newCount}명'),
+    ],
+  );
+}
+
+/// A6 구간 근거에서 시작 스냅샷 때 보유하지 않던 학생(FE7-j).
+const statisticsNewStudentText = '새 학생';
 
 /// C5 고른 구간(미계획 · 40% 미만, FE7-i) 근거: 머리 "미계획 · 40% 미만", 부제 "C5에서 고른 구간 · 육성도 낮은 순",
 /// 행 칩은 A1과 같은 "낮음" 칩, 요약 "구간 요약"은 평균 레벨 · 가장 낮은 항목 · 평균 육성도다(계획 등록은 늘 0명이라 뺀다).

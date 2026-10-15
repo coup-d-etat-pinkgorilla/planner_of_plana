@@ -19,6 +19,8 @@
 //   - 목표(계획 등록 · 미계획 학생)와 문서 계산(막힌 학생)은 이력에 없어 '—'다.
 // - B3(FD-110): seg "스냅샷 6회" = 재화마다 최근 6점, "4주" = 지금 − 28일 안, "전체" = 남은 이력 전부. 패널은 재화(크레딧 ·
 //   엘리그마) 다음에 계획이 쓰는 재화 중 |순변화| / 필요량이 큰 것으로 3개까지다(단위가 달라 수량끼리 비교하지 않는다, FD-033).
+// - A6 고른 구간(FE7-j, Statistics-Proposal A6 "오른 학생 순위"): 두 학생 스냅샷의 확정 학생으로 학생별 육성도 증감을 센다
+//   ([statisticsGrowthRanking]). 시작 때 보유하지 않던 학생은 "새 학생"이다.
 // - 시계가 되돌려진 기록(`timestamps_monotonic = false`)이 있으면 증감 · 추이를 내지 않는다(FE6-f와 같다).
 // - 모르는 값은 0이 아니라 null('—')이다.
 import 'dart:math' as math;
@@ -372,18 +374,30 @@ class StatisticsHistory {
     final cached = _targetSnapshots;
     if (cached != null && identical(_targets, targets)) return cached;
     _targets = targets;
+    StatisticsStudentSnapshot scoped(StatisticsStudentSnapshot snapshot) {
+      final states = Map<String, ConfirmedStudentState>.unmodifiable({
+        for (final entry in snapshot.states.entries)
+          if (targets.contains(entry.key)) entry.key: entry.value,
+      });
+      return StatisticsStudentSnapshot.of(
+        _growthOf(states),
+        at: snapshot.at,
+        sessionId: snapshot.sessionId,
+        states: states,
+      );
+    }
+
     return _targetSnapshots = List.unmodifiable([
-      for (final snapshot in studentSnapshots)
-        StatisticsStudentSnapshot.of(
-          _growthOf({
-            for (final entry in snapshot.states.entries)
-              if (targets.contains(entry.key)) entry.key: entry.value,
-          }),
-          at: snapshot.at,
-          sessionId: snapshot.sessionId,
-        ),
+      for (final snapshot in studentSnapshots) scoped(snapshot),
     ]);
   }
+
+  /// [states](어느 스냅샷의 확정 학생)로 다시 센 성장(FE7-b 식, 학생 목록 · 계획 등록은 지금 것). A6 오른 학생 순위(FE7-j)가 쓴다.
+  StatisticsGrowth growthAt(Map<String, ConfirmedStudentState> states) =>
+      _growthOf(states);
+
+  Object? _rankingKey;
+  StatisticsGrowthRanking? _ranking;
 
   /// 남은 이력 전부로 만든 재화 색인(B3).
   final InventoryHistory inventory;
@@ -647,6 +661,20 @@ class StatisticsGrowthTrend {
   /// 안내 둘째 줄(`스냅샷 1회 · 9/22 21:40`).
   String get note => statisticsSnapshotNoteText(snapshotCount, lastAt);
 
+  /// [sessionId] 스냅샷의 점 순번. 없으면 null.
+  int? indexOf(String sessionId) {
+    final index = points.indexWhere((point) => point.sessionId == sessionId);
+    return index < 0 ? null : index;
+  }
+
+  /// 강조 구간 시작만 [start]로 바꾼 값(A6 고른 구간, FE7-j).
+  StatisticsGrowthTrend withHighlight(int start) => StatisticsGrowthTrend(
+    points: points,
+    snapshotCount: snapshotCount,
+    lastAt: lastAt,
+    highlightStart: start,
+  );
+
   /// 강조 구간 글자(`9/22 → 10/05 +2.0%p`). 끝 값을 모르면 null.
   String? get highlightText {
     final start = highlightStart;
@@ -684,6 +712,131 @@ StatisticsGrowthTrend? statisticsGrowthTrend(
     snapshotCount: all.length,
     lastAt: all.isEmpty ? null : all.last.at,
     highlightStart: start,
+  );
+}
+
+// --- A6 오른 학생 순위(FE7-j) ----------------------------------------------------------
+
+/// A6 고른 구간의 학생 한 명(끝 스냅샷 상태).
+@immutable
+class StatisticsGrowthRise {
+  const StatisticsGrowthRise({required this.student, this.tenths});
+
+  final StatisticsStudentGrowth student;
+
+  /// 두 스냅샷 사이 육성도 증감(0.1%p 단위, 화면 글자 반올림끼리의 차). 새 학생이면 null.
+  final int? tenths;
+
+  /// 시작 스냅샷 때 보유하지 않던 학생.
+  bool get isNew => tenths == null;
+}
+
+/// A6 고른 구간(두 학생 스냅샷 사이)의 학생별 육성도 증감(Statistics-Proposal A6 "오른 학생 순위").
+@immutable
+class StatisticsGrowthRanking {
+  StatisticsGrowthRanking({
+    required this.from,
+    required this.to,
+    required List<StatisticsGrowthRise> rows,
+    required this.risenCount,
+    required this.newCount,
+    required this.unknownCount,
+  }) : rows = List.unmodifiable(rows);
+
+  final StatisticsStudentSnapshot from;
+  final StatisticsStudentSnapshot to;
+
+  /// 오른 학생(증감 큰 순) 다음에 새 학생(끝 육성도 높은 순, 모르면 뒤).
+  final List<StatisticsGrowthRise> rows;
+  final int risenCount;
+  final int newCount;
+
+  /// 두 스냅샷에 다 있지만 한쪽이라도 육성도를 몰라 비교하지 못한 학생 수.
+  final int unknownCount;
+
+  /// 머리 글자(`9/22 → 10/05`).
+  String get title =>
+      '${statisticsDateText(from.at)} → ${statisticsDateText(to.at)}';
+
+  /// 평균 육성도 증감(`+2.0%p`, A6 강조 글자와 같은 값). 모르면 '—'.
+  String get averageText {
+    final a = from.averageGrowth, b = to.averageGrowth;
+    if (a == null || b == null) return '—';
+    return '${statisticsSignedTenths(_percentUnits(b, 1) - _percentUnits(a, 1))}%p';
+  }
+}
+
+/// A6에서 고른 구간([fromSession] → [toSession], [trend]의 점)의 학생별 육성도 증감. 두 끝은 그 스냅샷(FD-175 묶음 끝)의
+/// 확정 학생이고, [trend]가 통계 필터 대상만 센 것이면(FE7-e) 대상 학생만이다. 끝 스냅샷에 있는 학생만 본다:
+/// - 시작 스냅샷에 없던 학생은 "새 학생"이다(증감 없음).
+/// - 두 스냅샷의 육성도(FD-028)를 다 알면 화면 글자(0.1%p) 반올림끼리의 차가 0보다 큰 학생이 "오른 학생"이다.
+/// - 한쪽이라도 모르면 비교하지 않는다([StatisticsGrowthRanking.unknownCount]). 그대로이거나 내린 학생은 넣지 않는다.
+/// 구간을 찾지 못하면(다시 읽어 점이 바뀜 등) null.
+StatisticsGrowthRanking? statisticsGrowthRanking(
+  StatisticsHistory? history,
+  StatisticsGrowthTrend? trend, {
+  required String fromSession,
+  required String toSession,
+}) {
+  if (history == null || trend == null) return null;
+  final start = trend.indexOf(fromSession), end = trend.indexOf(toSession);
+  if (start == null || end == null || start >= end) return null;
+  final from = trend.points[start], to = trend.points[end];
+  final key = (from, to);
+  final cached = history._ranking;
+  if (cached != null && history._rankingKey == key) return cached;
+  final before = {
+    for (final student in history.growthAt(from.states).students)
+      student.studentId: student,
+  };
+  final risen = <StatisticsGrowthRise>[];
+  final added = <StatisticsGrowthRise>[];
+  var unknown = 0;
+  for (final student in history.growthAt(to.states).students) {
+    final then = before[student.studentId];
+    if (then == null) {
+      added.add(StatisticsGrowthRise(student: student));
+      continue;
+    }
+    final a = then.growth, b = student.growth;
+    if (a == null || b == null) {
+      unknown++;
+      continue;
+    }
+    final tenths = _percentUnits(b, 1) - _percentUnits(a, 1);
+    if (tenths > 0) {
+      risen.add(StatisticsGrowthRise(student: student, tenths: tenths));
+    }
+  }
+  int byName(StatisticsGrowthRise a, StatisticsGrowthRise b) {
+    final name = a.student.displayName.compareTo(b.student.displayName);
+    return name != 0
+        ? name
+        : a.student.studentId.compareTo(b.student.studentId);
+  }
+
+  int byGrowth(StatisticsGrowthRise a, StatisticsGrowthRise b) {
+    final x = a.student.growth, y = b.student.growth;
+    if (x == null || y == null) {
+      return x == y ? byName(a, b) : (x == null ? 1 : -1);
+    }
+    final order = y.compareTo(x);
+    return order != 0 ? order : byName(a, b);
+  }
+
+  risen.sort((a, b) {
+    final order = b.tenths!.compareTo(a.tenths!);
+    return order != 0 ? order : byGrowth(a, b);
+  });
+  added.sort(byGrowth);
+  history._rankingKey = key;
+  return history._ranking = StatisticsGrowthRanking(
+    from: from,
+    to: to,
+    rows: [...risen, ...added],
+    risenCount: risen.length,
+    newCount: added.length,
+    unknownCount: unknown,
   );
 }
 

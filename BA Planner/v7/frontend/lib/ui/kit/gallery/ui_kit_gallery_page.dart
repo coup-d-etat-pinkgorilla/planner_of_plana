@@ -6,6 +6,7 @@
 // FE2-b: `ui_kit_controls_section.dart`(W-Layout 첫 줄, W-Filter, 레일 버튼·스위치·스테퍼, 상태 견본).
 // FE2-c: `ui_kit_overlays_section.dart`(W-Info-Popover 보드, 모달 스크림 프리셋, W-Layout 팝오버 줄, 프리셋 견본).
 // FE2-d: `ui_kit_data_section.dart`(W-Data KPI · 주요 재화 · 아이템 타일 · 비율 막대 행, 차트·이미지 원자 견본).
+// FE7-j: `ui_kit_frame_section.dart`(tidy2 섹션 틀 `SectionFrame` · `SectionScaledBox`).
 // 다음 FE2 slice는 이 페이지에 자기 위젯 타일을 더한다.
 import 'dart:math' as math;
 
@@ -20,6 +21,7 @@ import '../scroll_viewport_fog.dart';
 import '../titles.dart';
 import 'ui_kit_controls_section.dart';
 import 'ui_kit_data_section.dart';
+import 'ui_kit_frame_section.dart';
 import 'ui_kit_overlays_section.dart';
 
 /// 갤러리 페이지. 개발 패널의 "UI Kit 갤러리" 버튼이 연다.
@@ -93,6 +95,15 @@ class UiKitGalleryPage extends StatelessWidget {
               ),
               SizedBox(height: 24),
               UiKitDataSection(),
+              SizedBox(height: 48),
+              _GalleryHeading(
+                title: '섹션 틀',
+                caption:
+                    '섹션 표면 · 모양 자르기와 섹션 안 배율 상자입니다. '
+                    '통계 · 전술 화면이 Studio 섹션 하나를 그릴 때 함께 씁니다.',
+              ),
+              SizedBox(height: 24),
+              UiKitFrameSection(),
               SizedBox(height: 40),
             ],
           ),

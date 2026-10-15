@@ -167,6 +167,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
   /// 다음 다시 읽기가 "← 통계" 복귀다(FE7-d).
   bool _restoreOnReload = false;
 
+  /// "← 통계" 복귀 때 되살릴 A6 구간(FE7-j). 이력은 보드 뒤에 읽으므로 이력을 읽은 뒤 근거가 있으면 되살린다.
+  ({StatisticsGrowthTrendSelection selection, bool expanded})? _pendingTrend;
+
   /// 인벤토리 · 계획 projection 캐시(읽은 인벤토리 목록 · 계정 상태 · 부족 계산 · 성장이 같으면 다시 만들지 않는다).
   StatisticsSupply? _supply;
   Map<String, StatisticsEvidenceStudent> _supplyStudents = const {};
@@ -428,6 +431,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           )
         : null;
     _restoreOnReload = false;
+    _pendingTrend = null;
     setState(() {
       _loading = true;
       _growthSelection = null;
@@ -658,7 +662,30 @@ class _StatisticsPageState extends State<StatisticsPage> {
         _history = history;
         _historyError = error;
         _historyLoading = false;
+        _restoreTrendSelection(history);
       });
+  }
+
+  /// "← 통계" 복귀로 미뤄 둔 A6 구간을 이력을 읽은 뒤 되살린다(FE7-j). 그사이 다른 것을 골랐거나 구간을 찾지 못하면 버린다.
+  /// setState 안에서 부른다.
+  void _restoreTrendSelection(StatisticsHistory? history) {
+    final pending = _pendingTrend;
+    _pendingTrend = null;
+    if (pending == null || history == null || _growthSelection != null) {
+      return;
+    }
+    final growth = _currentGrowth();
+    final scope = _currentScope(growth);
+    final view = StatisticsGrowthView(
+      growth: scope?.growth ?? growth,
+      selection: pending.selection,
+      history: history,
+      trend: statisticsGrowthTrend(history, targets: scope?.targets),
+    );
+    if (view.evidence != null) {
+      _growthSelection = pending.selection;
+      _evidenceExpanded = pending.expanded;
+    }
   }
 
   /// B3 보드: 계획이 있으면 인벤토리 · 계획 projection의 보드, 없으면 카탈로그 · 계정 인벤토리만으로 만든다.
@@ -751,7 +778,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final growth = _currentGrowth();
     final growthSelection = saved.growth;
     final scoped = _currentScope(growth)?.growth ?? growth;
-    if (growthSelection != null &&
+    if (growthSelection is StatisticsGrowthTrendSelection) {
+      _pendingTrend = (selection: growthSelection, expanded: saved.expanded);
+    } else if (growthSelection != null &&
         (StatisticsGrowthView(
               growth: scoped,
               metric: _growthMetric,
@@ -907,6 +936,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void _select(StatisticsGrowthSelection? selection) => setState(() {
     _growthSelection = selection;
     _evidenceExpanded = false;
+    _pendingTrend = null;
   });
 
   /// 인벤토리 · 계획 주제 화면 상태(지금 읽은 자료 + [selection]).
@@ -1122,8 +1152,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final growth = _loading ? null : _currentGrowth();
     // FE7-e: 학생 성장(A1~A6 · KPI · 근거)은 통계 필터 대상 학생만, 인벤토리 · 계획은 전체 성장이다.
     final scope = _currentScope(growth);
+    final supplyView = _supplyView(growth, _supplySelection);
+    final historyView = _currentHistoryView(
+      scope?.growth ?? growth,
+      supplyView.supply,
+      targets: scope?.targets,
+    );
     final growthView = StatisticsGrowthView(
       growth: scope?.growth ?? growth,
+      // A6 구간 근거(FE7-j): A6과 같은 대상 학생의 이력 값.
+      history: historyView.history,
+      trend: historyView.growthTrend,
       breakdown: _currentBreakdown(scope?.growth ?? growth),
       a4Group: _a4Group,
       onA4GroupChanged: (group) => setState(() {
@@ -1147,7 +1186,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
       onSelectionChanged: _select,
       onExpand: () => setState(() => _evidenceExpanded = true),
     );
-    final supplyView = _supplyView(growth, _supplySelection);
     return BaModal(
       controller: _filterModal,
       scrim: BaScrim.filter,
@@ -1162,11 +1200,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         data: data,
         growth: growthView,
         supply: supplyView,
-        history: _currentHistoryView(
-          scope?.growth ?? growth,
-          supplyView.supply,
-          targets: scope?.targets,
-        ),
+        history: historyView,
         filter: StatisticsFilterView(
           scope: scope,
           onOpen: scope == null ? null : _openFilter,

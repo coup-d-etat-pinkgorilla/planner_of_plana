@@ -22,7 +22,7 @@
 //   원본 탭으로 넘긴다, 버튼 글자 · 동작은 [StatisticsWorkspace.evidenceActions]).
 //   학생 성장에서 A1 구간 · A2 항목을 고르면 그 근거 목록이다(`statistics_growth_evidence.dart`). B1 막대 · C1 행 · C2 점을
 //   고르면 재화 · 학생 근거다(`statistics_supply_evidence.dart`). A5 칸은 성장 근거, C5 구간은 계획 주제에서 성장 근거와
-//   같은 틀이다(FE7-i).
+//   같은 틀이다(FE7-i). A6 구간(두 스냅샷)은 같은 틀의 "오른 학생 순위"다(FE7-j).
 // 좌표는 `statistics_studio_layout.dart`의 Studio 문서와 [StatisticsMetrics]다. 창이 낮으면 왼쪽 · 오른쪽 섹션 요소는
 // 세로 비율대로 함께 줄고(계획 만들기 A 레일 규칙), 가운데 타일은 viewport 폭 비율로 높이가 바뀐다(타일 모양 유지).
 import 'dart:math' as math;
@@ -1745,16 +1745,27 @@ class _StatisticsTile extends StatelessWidget {
     ),
   );
 
-  /// A6 내용(FE7-h). 읽는 중 · 성장 자료 없음 '—', 읽기 실패는 그 글자, 학생 스냅샷 2회 미만은 확정 4 문구다.
+  /// A6 내용(FE7-h). 읽는 중 · 성장 자료 없음 '—', 읽기 실패는 그 글자, 학생 스냅샷 2회 미만은 확정 4 문구다. 점을 누르면 그
+  /// 스냅샷 → 마지막 스냅샷 구간을 고르고(같은 구간을 다시 누르면 푼다), 고른 구간이 강조 구간이다(FE7-j).
   Widget _a6Body() {
     final error = history.error;
     if (error != null) return _empty(error);
     final trend = history.growthTrend;
-    if (history.loading || trend == null || growth?.growth == null) {
+    final view = growth;
+    if (history.loading || trend == null || view?.growth == null) {
       return _empty('—');
     }
     if (!trend.drawable) return _short(trend.note);
-    return _chart(StatisticsGrowthTrendChart(trend: trend));
+    final selectable = view != null && identical(view.trend, trend);
+    return _chart(
+      StatisticsGrowthTrendChart(
+        trend: selectable ? view.shownTrend ?? trend : trend,
+        selectedStart: selectable ? view.trendStart : null,
+        onStartSelected: selectable && view.onSelectionChanged != null
+            ? view.selectTrendStart
+            : null,
+      ),
+    );
   }
 
   /// B3 내용(FE7-h). 계획이 없어도 재화(크레딧 · 엘리그마) 변화는 그린다. 아는 수량 점이 2개 이상인 재화가 없으면 확정 4
