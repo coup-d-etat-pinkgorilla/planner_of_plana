@@ -163,6 +163,9 @@ class PlanningProtocolClient {
       'migration_conflict',
       'opponent_alias_required',
       'tactical_v1_read_only',
+      // FB-7(XB `810a15f2`, dart-handoff-final.md): 엑셀·CSV 해석 맥락 변경 · 원본 읽기 실패(details.reason).
+      'import_interpretation_changed',
+      'import_source_unreadable',
       'unknown_method',
     },
     'scanner': {

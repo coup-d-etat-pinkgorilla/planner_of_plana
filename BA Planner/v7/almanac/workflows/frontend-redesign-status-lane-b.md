@@ -4578,3 +4578,134 @@ S4 "이 시그니처의 족보"(시안 Tactical S4)를 FE9-b1 `TacticalEvidenceR
 
 - FE9-d 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: ① 사고 기록 확인 ② Lane A가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 tactical_jokbo_panel +17 · tactical_page +20, golden `tactical` RED(변화 예상대로) · `tactical-jokbo-drag` 새 기준 없음 · `tactical-migration` GREEN → 승인 → `-UpdateGoldens`) ③ `fe_commit.ps1 -Slice fe9d`. 발견 2 · 3 · 8은 CF 판단, 5 · 6은 FE9-e · Lane A 후보.
+
+## fb7-dart 착수 기록 (2026-10-16)
+
+- 상태: 진행 중.
+- 범위: FB-7(전술 엑셀·UTF-8 CSV 가져오기 해석)의 Dart 연결 — 새 메서드 2(`tactical.v2.excel.preview`·`tactical.v2.excel.commit`)의 요청·성공 strict DTO·validator, `_methodErrorCodes['tactical']` 추가, Process·Mock(CSV 최소 의미), 계약 fixture 왕복 테스트, 실제 백엔드 process E2E 1. 화면(엑셀 가져오기 모달)은 FE9-f라 범위 밖. 근거: XB `810a15f2`, `debug/xb_fb7_interpreter_prepare_20261014/artifacts/dart-handoff-final.md`, `contracts/README.md` "FB7 Excel / UTF-8 CSV import", backend 로그 2026-10-15 16:57·17:15·01:09, FD-128(확정 (a))·FD-131(워커 재량).
+- 착수 전 확인: 이 문서 끝에 다른 "fb7-dart 착수 기록" 없음.
+- 시작 커밋(HEAD, 브랜치 `scanner-consolidation`): `1d9a11b360ecf5a090150ee49000cfcae0be6407`.
+- 막힘: 대장 막힘 요약 현재 `열림` 0건. FB-7·FE9-f 행의 FD-128은 확정. FD-131은 '워커 재량'(권장안 = Python 파서·.xlsx+.csv·시트 선택·분모 = 가져올 건수·규칙 프로필별 저장) — 백엔드가 이미 그 모양으로 커밋했고 이 slice는 그대로 연결만 한다.
+- 계약 읽기 기준: excel 정의는 HEAD(`810a15f2`) schema. 메인 작업 트리 schema·README에는 XB 미커밋 변경(typed read 배열·FB-10 절)이 있지만 `excel*` 정의·fixture·FB7 절에는 차이 0(`git diff -U0` 확인).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb7dart/pre/<v7 기준 경로>`), WIP(`git status --short <경로>`), 줄바꿈(바이트로 셈):
+  - `frontend/lib/services/tactical_v2_service.dart`: WIP 없음. LF.
+  - `frontend/lib/services/planning_protocol_client.dart`: WIP 없음. CRLF 1051 + LF 18.
+  - `frontend/lib/services/process_app_service.dart`: WIP 없음. CRLF 1330 + LF 24.
+  - `frontend/lib/services/mock_app_service.dart`: WIP 없음. CRLF 3194 + LF 128.
+  - `frontend/lib/services/mock_tactical_v2_writes.dart`: WIP 없음. LF.
+  - `almanac/workflows/frontend-redesign-status-lane-b.md`: WIP 없음(이 기록). LF.
+- 새 파일(예정): `frontend/lib/services/mock_tactical_v2_excel.dart`(Mock CSV 최소 의미, `mock_tactical_v2_writes.dart`의 part), `frontend/test/tactical_fb7_dart_test.dart`(계약 fixture·DTO·validator·allowlist·Process·Mock), `frontend/test/tactical_fb7_process_e2e_test.dart`(실제 백엔드).
+- post 사본·`post_dir`: WIP 있는 파일이 없어 만들지 않는다.
+
+## fb7-dart 종료 기록 (2026-10-16, 코드 작성 완료 · CF gate 미실행)
+
+FB-7 엑셀·UTF-8 CSV 가져오기의 Dart 연결을 끝냈다. 새 메서드 2(`tactical.v2.excel.preview`·`tactical.v2.excel.commit`)의 요청·성공 strict DTO와 validator, capability `TacticalExcelImportService`(Process·Mock), tactical 오류 allowlist +2, Mock CSV 최소 의미(새 part 파일), 계약 fixture 왕복 테스트, 실제 백엔드 process E2E. 화면(FE9-f 엑셀 가져오기 모달)은 건드리지 않았다. HEAD는 착수 때와 같다(`1d9a11b3`), git 쓰기 0회.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze lib/services/tactical_v2_service.dart`: ① error 1(`_countV2` 중복 정의 — 같은 뜻의 기존 함수가 있어 내 것을 지움)·warning 1·info 1(`prefer_initializing_formals` — 이슈 키 집합을 공개 `wireKeys`로) → ② **No issues found(0)**.
+- `flutter analyze lib/services test/tactical_fb7_dart_test.dart test/tactical_fb7_process_e2e_test.dart`: **0**(여러 번).
+- 전체 `flutter analyze`: 작업 중 1회는 error 1(`lib/ui/app_shell.dart:476` `headerOverride` — Lane A FE9-e 편집 중 파일, 이 slice 파일 아님). 마지막 실행 **No issues found(0)**(Lane A가 그사이 맞춤).
+- `flutter test test/tactical_fb7_dart_test.dart`: 첫 실행부터 **+12 −0**(process 묶음 실행에서도 +12).
+- `flutter test --concurrency=1 test/tactical_fb7_process_e2e_test.dart`: ① +1(약 3초) → 원본 보존·v1 프로필 검사 추가 → ② −1(테스트 쪽: 두 번째 프로필에 보유 학생이 없어 v1 쓰기가 `invalid_payload`) → 보유 학생 저장 추가 → ③ **+1** ④ **+1**(각 약 3초). 남은 임시 폴더 `ba_planner_fb7_*` 0.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `tactical_v2_service`·`TacticalEvidence`·`mock_tactical_v2`·`upsertTacticalMatchV2`·`_methodErrorCodes`·`planning_protocol_client`·`deleteProfile`·`saveTacticalMatch` + fb6 선례 목록):
+  - 일반(json, 20파일 병렬): **+182 −4**. 성공: design_review_tactical_seed +2, inventory_review_fb10b +19, mock_design_review_scenario +11, mock_scanner_commit_history +9, mock_scanner_service +4, repository_presets_service +49, repository_protocol_contract +1, scanner_protocol_client +6, tactical_fe9b1_read +12, tactical_jokbo_panel +17, tactical_lobby_scanner_service +2, tactical_page_revision +5, tactical_page +19, tactical_records_controller +14, tactical_service +6, tactical_share_v1_contract +1, tactical_v2_service +5. 실패 4: account_manager_fe8b·home_app_shell·profile_delete_fb2d 컴파일 실패(위 `app_shell.dart:476`, Lane A WIP), tactical_page 1건(아래).
+  - 재시도 1회(Lane A가 `app_shell.dart`를 맞춘 뒤, 5파일): **+59 −1** — account_manager_fe8b +6, home_app_shell +1, profile_delete_fb2d +17, widget_test +16, tactical_page +19 −1. 남은 실패 `sub views analysis and slots are disabled with 준비 중`(`tactical_page_test.dart:417`, 분석 하위 화면 툴팁이 없어 `No element`)은 Lane A FE9-e가 분석 하위 화면을 켜는 중이라 생긴다(`tactical_workspace.dart` 수정·`tactical_analysis_view.dart` 새 파일, 미커밋). 이 slice는 `lib/ui/**`와 그 테스트를 고치지 않았다 — Lane A 몫.
+  - process 묶음(`--concurrency=1`, 파일마다 따로): tactical_fb7_dart **+12**, tactical_fb6_dart **+14**, planning_protocol_client **+24**, tactical_fb7_process_e2e **+1**, tactical_fb6_process_e2e **+1**, tactical_v2_process_e2e **+1**, tactical_process_e2e **+1**, profile_delete_fb2d_process_e2e **+1**. 모두 −0.
+- `dart format`: LF 파일만 경로를 하나씩(`tactical_v2_service.dart`·`mock_tactical_v2_writes.dart`·새 3파일). CRLF 공유 3파일은 포맷하지 않고 바이트 삽입했다 — `dart format --output=show` 결과와 비교한 포맷 차이 hunk 수가 pre 사본과 같다(planning 1 · process 1 · mock 38, 모두 기존 줄) → 이 slice 삽입은 포맷 상태. `mock_tactical_v2_writes.dart` 포맷은 이 slice hunk만 바꿨다(pre 대비 diff 블록 = part 지시·`_no_change`·`_applyMatch`).
+- `git diff --check -- frontend/lib/services/`: exit 0. 새 3파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `pubspec.yaml`·`pubspec.lock` 변경 0.
+- 잠금 충돌 0(재시도 없음). 로그 `debug/frontend_fb7dart/logs/`(실패 줄과 json 요약만 확인).
+
+### 고친 파일 · 새 파일
+
+- `frontend/lib/services/tactical_v2_service.dart`(WIP 없음, LF, 삽입만 1296줄): `dart:convert` import, `TacticalMatchInputV2.fromWire`(13키, 미리보기 행 `match`), FB-7 DTO — `TacticalExcelColumnMapping`·`TacticalExcelResolutionValue`(sealed: `TacticalExcelTextValue`·`TacticalExcelIntegerValue`·`TacticalExcelNewOpponentValue`)·`TacticalExcelResolution`·`TacticalExcelRowDecision`·`TacticalExcelImportChoices`·`TacticalExcelIssue`·`TacticalExcelRawCell`·`TacticalExcelPreviewRow`·`TacticalExcelSuggestion`(sealed: 학생·상대·결과)·`TacticalExcelPlace`(record typedef)·`TacticalExcelStringGroup`·`TacticalExcelConflict`·`TacticalExcelMappingCandidate`·`TacticalExcelSummary`·`TacticalExcelPreview`·`TacticalExcelCommitResult`(모두 exact 키 · `toWire` 왕복), 공개 필드 상수 `tacticalExcelFields`·`…ScalarFields`·`…SlotFields`·`…RequiredFields`, capability `TacticalExcelImportService`, `tacticalExcelCommitPayload`, `isValidTacticalV2ProtocolMessage` 요청 2·성공 2 갈래. 기존 줄 변경 0.
+- `frontend/lib/services/planning_protocol_client.dart`(WIP 없음, CRLF 삽입 3줄): `_methodErrorCodes['tactical']`에 `import_interpretation_changed`·`import_source_unreadable` + 주석 1줄.
+- `frontend/lib/services/process_app_service.dart`(WIP 없음, CRLF 삽입 31줄): implements `TacticalExcelImportService`, 두 메서드(기존 `_tacticalV2Write` = 보내기 전 strict 검사).
+- `frontend/lib/services/mock_app_service.dart`(WIP 없음, CRLF 삽입 34줄): implements, `_tacticalExcel`(늦은 생성), `@visibleForTesting debugSetTacticalExcelSource(path, rows)`(null = 원본 삭제), 두 메서드 위임.
+- `frontend/lib/services/mock_tactical_v2_writes.dart`(WIP 없음, LF): `part 'mock_tactical_v2_excel.dart'`, `_mutation`이 apply 결과의 `_no_change`면 revision을 올리지 않음(FB-7만 쓴다), `upsertMatch` 적용 본문을 `_applyMatch(value, input, {recordMetadata})`로 옮김(수동 기록 규칙 그대로 — 출처 4필드 유지·`manual_edit`; FB-7 원본 행 메타데이터면 `created_at`만 유지, backend `apply_match`와 같다).
+- 새 `frontend/lib/services/mock_tactical_v2_excel.dart`(part): Mock CSV 최소 의미(아래 "Mock 차이").
+- 새 테스트: `frontend/test/tactical_fb7_dart_test.dart`(12), `frontend/test/tactical_fb7_process_e2e_test.dart`(1).
+- 고치지 않음: backend/**·contracts/**, `lib/ui/**`(FE9-f · Lane A FE9-e), 스캐너 시각부 5파일, `scanner_service.dart`, 택틱 소유 파일, golden harness·golden 테스트, `frontend/tool/**`, `app_shell.dart`, 기존 테스트 파일.
+
+### handoff 목록(dart-handoff-final.md) 행별 검수
+
+| handoff 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| 새 메서드 2 | 요청·성공 갈래 2+2, capability `TacticalExcelImportService`, Process·Mock 구현 | fb7_dart "shared FB-7 fixture…"·"ProcessAppService sends exact…", E2E |
+| 두 요청 공통 8키(시트 null/정확한 이름, 구분자 쉼표·탭, 매핑 null/명시 `{header_row, columns}`, resolutions, row_decisions, on_conflict skip/overwrite) | `TacticalExcelImportChoices`·`_validExcelChoicesV2`(exact 8키, profile 24hex, 경로·시트 비지 않음) | "requests are exact…"(음성 26종 × preview·commit) |
+| commit +5키(`save_rules`·`expected_fingerprint`·`expected_interpretation_fingerprint`·`expected_revision`·`idempotency_key`) | commit 갈래 exact 13키, bool·sha256 2·revision ≥ 0·key 비지 않음, `tacticalExcelCommitPayload` | 같은 테스트 음성 6종, fixture `save-rules-not-int` |
+| 매핑 필드 19(1부터), 열 중복 없음, 후보·저장 매핑은 명시 확인 | `TacticalExcelColumnMapping`(필수 5 · 열 1~64 · 머리글 1~10000 · 열 중복 거부), 후보 DTO `requires_confirmation` true만, 매핑 null 미리보기 = 후보 + `mapping_confirmation_required` | 음성(필수 빠짐·모르는 필드·중복 열·열 65·머리글 0), Mock·E2E "매핑 없는 미리보기" |
+| 날짜·결과·양수 시도는 풀려야 함, now·1·0 없음, 빈 슬롯 = 모름, 와일드카드는 명시 resolution | Dart는 해석하지 않는다. 와일드카드는 슬롯 필드만(validator) | fixture `wildcard-not-attempts`, Mock·E2E `positive_attempts_required`·`result_resolution_required` 그룹 |
+| resolution `{field, raw, action, value, row?}`, raw = typed raw_key, 행동 5, 값 = 학생 ID·기존 상대 ID·새 `{identity_id, display_name}`, 제안은 제안일 뿐, 전역 규칙만 저장(행·skip 제외) | `TacticalExcelResolution` + sealed 값 3종(null 허용), value 밖 행동은 value null, raw ≤ 8192 UTF-8 바이트, (행, 필드, 원값) 중복 거부 | "requests…"·"typed variants…", Mock·E2E 규칙 저장(행 지정 결정은 규칙 아님) |
+| 행 결정 `{row, action, target_match_id}`, overwrite는 실제 충돌 ID | `TacticalExcelRowDecision`(overwrite ⇔ recordId, 나머지 null, 같은 행 두 번 거부) | 음성 3종, Mock "conflicts need explicit decisions…"(충돌 아닌 대상 = `invalid_payload`) |
+| 미리보기 strict DTO 16키 · 행 7키 · raw cell 6키 · 행 match = FB-6 입력 DTO | `TacticalExcelPreview`·`TacticalExcelPreviewRow`(`match` = `TacticalMatchInputV2.fromWire`)·`TacticalExcelRawCell` | fixture 왕복(`toWire` = 원 payload), 음성 29종(+ commit 결과 7종) |
+| 그룹 8키 · 제안 3변형 모두 `requires_confirmation` true · 일반 Map 없음 | `TacticalExcelStringGroup`(places = record), sealed `TacticalExcelSuggestion`, 변형 섞임 거부 | "success payloads…"(확인 false·점수 1.5·섞인 변형), "typed variants…" |
+| summary 7, 버튼 분모 = eligible_rows(고정 41/46 없음) | `TacticalExcelSummary` + 주석 | fixture 왕복, Mock·E2E 수치 |
+| 성공 7키, `rules_saved` = 내용 변경, 공개 v2 상태 DTO 그대로 | `TacticalExcelCommitResult`, 상태 DTO 변경 0 | E2E(규칙 같으면 false·revision 그대로, 비공개 규칙·receipt가 든 v2 파일을 strict 상태 DTO로 읽음) |
+| 오류 `import_interpretation_changed` 추가, 기존 코드 재사용 | allowlist +2(아래) | "FB-7 and reused tactical codes…", E2E 실제 수신 |
+| 원본 바이트·해석 맥락이 commit을 묶음, 정확한 재요청은 원본 재독·revision 검사 전 원 응답, 원자 batch, 자동 v1 이관 없음 | Process는 그대로 전달. Mock 순서 같음 | E2E(원본 삭제 뒤·재시작 뒤 원 응답, `import_source_changed`·`import_interpretation_changed`, v1 프로필 `legacy_migration_required`·revision 0) |
+| 프론트 후속: DTO·validator·위임·Mock·guarded 실제 E2E(XLSX/CSV 원본 보존, resolution 변경, 원본 없는 재요청, 중복, 규칙, 옛 프로필 read-only) | CSV 전부 + 중복은 replay(재가져오기 0)까지. XLSX·같은 파일 행끼리 중복은 미검증(아래) | E2E |
+
+### allowlist 확인
+
+- 추가 2: `import_interpretation_changed`(handoff 명시 신규), `import_source_unreadable` — handoff는 "기존 재사용"이라 했지만 Dart `_methodErrorCodes['tactical']`에 없었다(fb6-dart 8개 목록 밖). 근거: `backend/core/tactical_excel_store.py:41`(`RepositoryError('import_source_unreadable', …, details={'reason': …})`), E2E에서 실제 수신(reason `source_unavailable`). 발견 3.
+- 이미 있던 재사용 코드 확인(추가 0): `import_source_changed`·`import_review_required`·`legacy_migration_required`·`opponent_alias_required`·`link_conflict`·`lineage_conflict`·`invalid_payload`·`revision_conflict`·`idempotency_conflict`·`persistence_failed`·`profile_not_found`·`repository_busy`·`unknown_method`.
+- 단위: 위 14코드 모두 `tactical.v2.excel.commit` 응답에서 `BackendRemoteException`(연결 유지), `details.reason` 보존, 집합 밖 코드는 `BackendProtocolException`.
+- 실제 백엔드에서 받은 것: `import_review_required`·`import_interpretation_changed`·`idempotency_conflict`·`import_source_unreadable`·`import_source_changed`·`legacy_migration_required`.
+
+### process E2E 내용
+
+- 임시 저장소 `ba_planner_fb7_rpc_*`(fb6과 같은 inline `-c` 가드, prefix만 다름), 원본 CSV는 별도 임시 폴더 `ba_planner_fb7_src_*`, 둘 다 끝에 지움. 실제 사용자 프로필·게임·공용 저장소 접근 0.
+- 프로필 + 보유 학생 6. UTF-8 BOM CSV(영문 머리글 19 + 날짜 행 + 확인 필요 행(`공격`·`승(3트)`·빈 시도·오타 학생 `shirok`) + 빈 행).
+- 매핑 없는 미리보기 = 후보 1(19열, 모호 0)·`mapping_confirmation_required`·행 0 → 후보를 확인한 매핑으로 미리보기: 행 `unresolved, unresolved, empty`, 그룹 상대(2칸, raw_key `{"type":"str","value":"라이벌"}`)·학생(`student_unknown`)·시도·결과(제안 win/3) → 미해결 commit `import_review_required`.
+- resolution 4(새 상대 `rival-one`, 학생 `shiroko`, 3행만 결과·시도) → 그룹 0, eligible 2(날짜 행 `date` `2026-10-14T00:00:00+09:00` 시도 2, 시각 행 `instant` UTC 12:10 시도 3) → 옛 해석 지문 commit `import_interpretation_changed` → commit = revision 1·가져옴 2·규칙 저장 true.
+- 원본 바이트 그대로. 같은 요청 = 원 응답, 원본 삭제 뒤도 원 응답, 같은 key 다른 내용 `idempotency_conflict`, 미리보기 `import_source_unreadable`(reason `source_unavailable`).
+- v2 상태: 기록 2(`csv_import`, source_record_id = 행 ID, 시도 [2, 3], 메모 그대로), 상대 `rival-one`, 가져오기 묶음 1(원본 지문).
+- 같은 바이트를 다시 두면 두 행 `replay`(대상 = 가져온 기록), eligible 0, rules revision 1, 저장 매핑 = 매핑 → commit = revision 1 그대로·건너뜀 2·규칙 저장 false. 원본을 바꾸면 `import_source_changed`, on_conflict만 바꾸면 `import_interpretation_changed`(쓰기 0).
+- v1 기록이 있는 두 번째 프로필: 미리보기 `legacy_migration_required` true·이슈(source revision 1), commit `legacy_migration_required`, v2 revision 0.
+- 재시작 뒤 같은 상태, 원본 없이 원 commit 재전송 = 원 응답, 기록 2 그대로. 백엔드 프로세스 2개 모두 exit 0.
+
+### Mock 차이(`mock_tactical_v2_excel.dart` 머리 주석과 같다)
+
+- 같은 것: 매핑 null = 후보 + `mapping_confirmation_required`(머리글 이름표 · 필수 3개 이상 기준 같음), typed raw_key(`str`·모자란 칸 `NoneType`), resolution 우선순위(행 → 전역 → 저장 규칙), 그룹(필드·원값·코드), 날짜·결과·양수 시도·`승(n트)` 제안, 쓰이지 않은 resolution·행 결정 `invalid_payload`, receipt·source_record_id `replay`, 행 결정 3종·on_conflict, commit 순서(캐시 → revision → 원본 재독 → 지문 → 해석 지문 → v1 → 검토), revision 1회(변화 없으면 그대로), 원본 삭제 뒤 재요청 원 응답, 규칙 = 행·skip 제외 전역 resolution + 매핑(내용이 같으면 저장 안 함).
+- 다른 것: 파일을 읽지 않는다(`debugSetTacticalExcelSource`로 넣은 행). CSV만 — `.csv`가 아니면 `format_unsupported`, 없는 경로 `source_unavailable`, 시트 null·`CSV`만. 수식·인코딩·구분자 해석 없음. 지문은 FNV 결정값(sha256 아님), 해석 지문 맥락에 카탈로그 없음. 학생 카탈로그·보유·역할 검사 없음 — 소문자 ASCII ID면 받고 그 밖은 `student_unknown`(학생 제안 없음). 충돌은 의미 키가 정확히 같을 때만(같은 날·빈칸 coarse 충돌 없음, coarse면 자동 덮어쓰기 안 함은 같음). instant는 Dart UTC 표기(`…Z`, fb6 Mock과 같음). 가져오기 묶음(`import_batches`)을 남기지 않는다.
+- 기존 Mock 동작 변화 0: `_no_change`는 FB-7 apply만 돌려준다. `_applyMatch` 옮김은 수동 기록 규칙 그대로(tactical_fb6_dart Mock 테스트 +14, tactical_page·jokbo_panel·design_review seed 테스트 통과).
+
+### golden 변화 0 근거
+
+- `lib/ui/**` 수정 0. Mock 변화는 새 FB-7 메서드를 부를 때만 생기고, `_applyMatch` 옮김은 같은 결과다. golden 테스트·harness에 `TacticalExcel`·`excel` 0건(grep). golden 테스트는 돌리지 않았다.
+- CF gate 예상: analyze 0. 새 두 테스트 파일 모두 `ProcessAppService` 문자열을 포함해 process 묶음 → process **+13**(tactical_fb7_dart 12 + E2E 1), 일반 변화 0(단 Lane A FE9-e가 끝나기 전이면 `tactical_page_test` 1건 RED — Lane A 몫), golden 변화 0.
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1`·golden 비교·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, `810a15f2` 커밋 메시지의 main1345 OK만 읽음).
+- XLSX 실제 백엔드 E2E: **미실행** — 계약 fixture에 XLSX 바이트가 없다(프롬프트 조건). 수식 캐시·네이티브 시각 칸·여러 시트·탭 구분자도 실제 백엔드에서 보지 않았다.
+- 실제 백엔드의 같은 파일 행끼리 충돌·coarse(날짜·빈칸) 충돌·덮어쓰기 commit·`opponent_alias_required`·`saved_opponent_identity_missing`: **미실행**(Mock·단위만).
+- 위 목록 밖 Flutter 테스트(Lane A 통계·계획, 스캐너·스캔 화면, 나머지 process E2E): **미실행**.
+- 화면 연결(FE9-f)·Windows release 빌드: **미실행**.
+
+### 발견 사항
+
+1. **schema와 backend 길이 단위 차이**: `excelResolution.raw` `maxLength` 8192는 JSON Schema상 글자 수인데 backend `validate_resolutions`는 UTF-8 바이트 8192다. Dart는 바이트(더 엄격) — 한글 2731자 raw는 schema 통과·backend 거부. XB 요청 후보(schema 주석 또는 단위 통일).
+2. **schema가 표현하지 않는 backend 거부 3개**: 매핑 열 중복, 같은 (행, 필드, 원값) resolution 중복, 같은 행 결정 중복. Dart validator는 backend처럼 거부한다(보내기 전 `FormatException`). 응답 매핑(`saved_mapping`·`column_mapping`)도 열 중복을 거부하고 후보(`mapping_candidates`)는 schema대로 검사하지 않는다. XB 확인 후보.
+3. **`import_source_unreadable` 누락**: handoff는 "기존 코드 재사용"으로 적었지만 Dart allowlist에 없었다(추가함). fb6-dart allowlist 8은 FB-6 코드만이었다.
+4. **변화 없는 commit도 key를 쓴다**: 가져올 행·바뀐 규칙이 없으면 revision은 그대로지만 idempotency 캐시에는 남는다(backend `_no_change`). FE9-f는 다음 commit에 새 key를 써야 한다(Mock 같음).
+5. **미리보기 응답에 구분자·on_conflict 메아리가 없다**: 해석 지문이 묶으므로 FE9-f는 미리보기에 쓴 선택(`TacticalExcelImportChoices`)을 그대로 들고 commit해야 한다(바꾸면 `import_interpretation_changed`).
+6. **행 이슈 `field`는 의미 필드 밖 값 `deck`도 온다**(덱 검사 실패, backend interpreter 431줄). schema가 자유 문자열이라 DTO도 `String?`로 두었다 — FE9-f 표시 몫.
+7. **Lane A 동시 편집 영향**: 작업 중 `app_shell.dart:476` 컴파일 오류(이후 해소)와 `tactical_page_test` "sub views analysis and slots are disabled" 실패(FE9-e가 분석 하위 화면을 켬, 미커밋)는 이 slice와 무관하다. CF gate 때 Lane A 상태를 따른다.
+8. **fe_gate 분류**: `tactical_fb7_dart_test.dart`는 가짜 프로세스로 `ProcessAppService`를 만들어 process(직렬) 묶음에 들어간다(12건, 약 2초). fb6 선례와 같이 두었다.
+9. **E2E 진입점**: fb6과 같이 inline `-c`. XB 공용 FB-7 진입점이 생기면 옮긴다(XB 판단).
+10. 워커 재량 FD: FD-131 — 권장안(Python 파서·.xlsx+.csv·시트 선택·분모 = 가져올 건수·규칙 프로필별 저장)이 backend에 이미 들어가 있어 Dart는 그대로 연결만 했다. "스캔 파일 가져오기" 숨김은 FE9-f 화면 몫. FD-128은 확정 (a).
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fb7dart/pre/<경로>`(고친 기존 5파일 + 이 문서). WIP 있는 파일이 없어 `post/`·`post_dir` 없음.
+- `debug/frontend_fb7dart/commit.json`: slice `fb7dart`, modified 5, added 3, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`, `status=false`. message(ASCII) 근거: XB `810a15f2`, `dart-handoff-final.md`, FD-128·FD-131.
+- 인계: `debug/frontend_fb7dart/output.md`. 로그 `debug/frontend_fb7dart/logs/`.
+
+### 다음 행동
+
+- fb7-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE9-e)가 멈춘 뒤 gate 1회(예상: analyze 0, process +13, 일반 변화 0, golden 변화 0) → `fe_commit.ps1 -Slice fb7dart`(공유 3파일은 WIP 없음, 삽입만).
+- 발견 1·2는 XB 요청 후보, 4·5·6은 FE9-f 입력, 7은 Lane A, 3·8·9는 CF 판단.

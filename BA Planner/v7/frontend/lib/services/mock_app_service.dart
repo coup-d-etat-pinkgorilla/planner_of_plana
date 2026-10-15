@@ -46,6 +46,7 @@ class MockAppService
         TacticalService,
         TacticalEvidenceWriteService,
         TacticalEvidenceReadService,
+        TacticalExcelImportService,
         DiagnosticsService {
   MockAppService({
     AppServiceState? initialState,
@@ -2942,6 +2943,39 @@ class MockAppService
     profileId: profileId,
     expectedSourceRevision: expectedSourceRevision,
     expectedFingerprint: expectedFingerprint,
+    expectedRevision: expectedRevision,
+    idempotencyKey: idempotencyKey,
+  );
+
+  // FB-7: 엑셀·CSV 가져오기 Mock(mock_tactical_v2_excel.dart, CSV 한 형식 최소 의미). 파일을 읽지 않고
+  // debugSetTacticalExcelSource로 넣은 행을 그 경로의 CSV로 쓴다. 같은 v2 저장·revision·idempotency를 쓴다.
+  late final _tacticalExcel = MockTacticalV2Excel(_tacticalV2);
+
+  /// [sourcePath]에 CSV 행(머리글 포함)을 둔다. null이면 지운다(원본 파일 삭제).
+  @visibleForTesting
+  void debugSetTacticalExcelSource(
+    String sourcePath,
+    List<List<String>>? rows,
+  ) => _tacticalExcel.setSource(sourcePath, rows);
+
+  @override
+  Future<TacticalExcelPreview> previewTacticalExcelImport(
+    TacticalExcelImportChoices choices,
+  ) async => _tacticalExcel.preview(choices);
+
+  @override
+  Future<TacticalExcelCommitResult> commitTacticalExcelImport({
+    required TacticalExcelImportChoices choices,
+    required bool saveRules,
+    required String expectedFingerprint,
+    required String expectedInterpretationFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => _tacticalExcel.commit(
+    choices: choices,
+    saveRules: saveRules,
+    expectedFingerprint: expectedFingerprint,
+    expectedInterpretationFingerprint: expectedInterpretationFingerprint,
     expectedRevision: expectedRevision,
     idempotencyKey: idempotencyKey,
   );

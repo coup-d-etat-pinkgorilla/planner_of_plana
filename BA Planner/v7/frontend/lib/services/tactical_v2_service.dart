@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 bool _exactV2(Map<String, dynamic> value, Set<String> keys) =>
@@ -2830,6 +2832,29 @@ class TacticalMatchInputV2 {
     );
   }
 
+  /// FB-7 미리보기 행의 `match`(`fb6MatchInput` 13키)를 그대로 받는다.
+  factory TacticalMatchInputV2.fromWire(Map<String, dynamic> value) {
+    if (!_validFb6MatchInputV2(value)) {
+      throw const FormatException('Invalid tactical v2 match input');
+    }
+    TacticalDeckV2 deck(String key) =>
+        TacticalDeckV2.fromWire(Map<String, dynamic>.from(value[key] as Map));
+    return TacticalMatchInputV2(
+      id: value['match_id'] as String,
+      kind: value['kind'] as String,
+      occurredAt: value['occurred_at'] as String?,
+      occurredPrecision: value['occurred_precision'] as String,
+      season: value['season'] as String,
+      opponentIdentityId: value['opponent_identity_id'] as String,
+      opponentDisplayName: value['opponent_display_name'] as String,
+      result: value['result'] as String,
+      attackDeck: deck('attack_deck'),
+      defenseDeck: deck('defense_deck'),
+      notes: value['notes'] as String,
+      attemptCount: value['attempt_count'] as int,
+    );
+  }
+
   final String id, kind, occurredPrecision, season;
   final String opponentIdentityId, opponentDisplayName, result, notes;
   final String? occurredAt;
@@ -3109,6 +3134,1215 @@ class TacticalLegacyCommitResult {
   }
 }
 
+// FB-7: 전술 엑셀·UTF-8 CSV 가져오기(contracts/tactical-protocol-v2.schema.json `excel*`, contracts/README.md
+// "FB7 Excel / UTF-8 CSV import"). Flutter는 파일을 읽지 않는다 — 경로와 명시적 선택만 보내고 해석·지문은 백엔드가
+// 만든다. 후보 매핑·저장된 매핑·제안(suggestion)은 사용자가 확인해 요청에 넣기 전까지 적용되지 않는다.
+
+/// 스칼라 의미 필드 7.
+const tacticalExcelScalarFields = <String>[
+  'date',
+  'kind',
+  'opponent',
+  'season',
+  'result',
+  'attempts',
+  'notes',
+];
+
+/// 슬롯 의미 필드 12(내 덱 `own_*` · 상대 덱 `opponent_*`, 위치는 1부터). 빈 슬롯은 모름으로 남고, 와일드카드는
+/// 명시 resolution(`wildcard`)으로만 생긴다.
+const tacticalExcelSlotFields = <String>[
+  'own_striker_1',
+  'own_striker_2',
+  'own_striker_3',
+  'own_striker_4',
+  'own_special_1',
+  'own_special_2',
+  'opponent_striker_1',
+  'opponent_striker_2',
+  'opponent_striker_3',
+  'opponent_striker_4',
+  'opponent_special_1',
+  'opponent_special_2',
+];
+
+const tacticalExcelFields = <String>[
+  ...tacticalExcelScalarFields,
+  ...tacticalExcelSlotFields,
+];
+
+/// 확정 매핑에 반드시 있어야 하는 필드(날짜·결과·양수 시도 횟수는 행마다 풀려야 하고 now·1·0으로 채우지 않는다).
+const tacticalExcelRequiredFields = <String>{
+  'date',
+  'kind',
+  'opponent',
+  'result',
+  'attempts',
+};
+
+const _excelResolutionActionsV2 = {
+  'value',
+  'wildcard',
+  'notes',
+  'ignore',
+  'skip',
+};
+const _excelRowActionsV2 = {'skip', 'keep_separate', 'overwrite'};
+const _excelOnConflictV2 = {'skip', 'overwrite'};
+const _excelRowStatusesV2 = {
+  'empty',
+  'skipped',
+  'unresolved',
+  'eligible',
+  'overwrite',
+  'conflict',
+  'conflict_skipped',
+  'replay',
+};
+const _excelChoiceKeysV2 = {
+  'profile_id',
+  'source_path',
+  'sheet_name',
+  'delimiter',
+  'column_mapping',
+  'resolutions',
+  'row_decisions',
+  'on_conflict',
+};
+const _excelCommitKeysV2 = {
+  'save_rules',
+  'expected_fingerprint',
+  'expected_interpretation_fingerprint',
+  'expected_revision',
+  'idempotency_key',
+};
+
+bool _profileIdV2(Object? value) =>
+    value is String && RegExp(r'^[0-9a-f]{24}$').stringMatch(value) == value;
+
+bool _excelColumnV2(Object? value) => value is int && value >= 1 && value <= 64;
+
+bool _excelRowNumberV2(Object? value) =>
+    value is int && value >= 1 && value <= 10000;
+
+/// 셀 값(문자열·수·불리언·null). 날짜·시각 셀은 백엔드가 ISO 문자열로 준다.
+bool _excelScalarV2(Object? value) =>
+    value == null || value is String || value is num || value is bool;
+
+bool _excelIdV2(String prefix, Object? value) =>
+    value is String &&
+    RegExp('^$prefix-[0-9a-f]{32}\$').stringMatch(value) == value;
+
+List<T> _excelListV2<T>(Object? raw, T Function(Map<String, dynamic>) item) {
+  if (raw is! List) {
+    throw const FormatException('Invalid tactical Excel list');
+  }
+  return List.unmodifiable(
+    raw.map((entry) => item(Map<String, dynamic>.from(entry as Map))),
+  );
+}
+
+/// `excelColumns`(필드 → 1부터 센 열). [mapping]이면 필수 5필드와 한 열 = 한 필드(백엔드 `validate_mapping`).
+Map<String, int> _excelColumnsV2(Object? raw, {required bool mapping}) {
+  if (raw is! Map) {
+    throw const FormatException('Invalid tactical Excel columns');
+  }
+  final columns = Map<String, dynamic>.from(raw);
+  if (!tacticalExcelFields.toSet().containsAll(columns.keys) ||
+      !columns.values.every(_excelColumnV2) ||
+      (mapping &&
+          (!columns.keys.toSet().containsAll(tacticalExcelRequiredFields) ||
+              columns.values.toSet().length != columns.length))) {
+    throw const FormatException('Invalid tactical Excel columns');
+  }
+  return Map<String, int>.unmodifiable(columns.cast<String, int>());
+}
+
+/// 사용자가 확인한 열 매핑(`excelMapping`). 후보(`mapping_candidates`)·저장된 매핑(`saved_mapping`)을 쓰려면 확인한 뒤
+/// 이 값으로 요청에 넣는다.
+@immutable
+class TacticalExcelColumnMapping {
+  TacticalExcelColumnMapping({
+    required this.headerRow,
+    required Map<String, int> columns,
+  }) : columns = _excelColumnsV2(columns, mapping: true) {
+    if (!_excelRowNumberV2(headerRow)) {
+      throw const FormatException('Invalid tactical Excel header row');
+    }
+  }
+
+  /// 머리글 행(1부터). 데이터는 그 아래 행부터 읽는다.
+  final int headerRow;
+
+  /// 의미 필드([tacticalExcelFields]) → 1부터 센 열.
+  final Map<String, int> columns;
+
+  factory TacticalExcelColumnMapping.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {'header_row', 'columns'}) ||
+        value['header_row'] is! int) {
+      throw const FormatException('Invalid tactical Excel column mapping');
+    }
+    return TacticalExcelColumnMapping(
+      headerRow: value['header_row'] as int,
+      columns: _excelColumnsV2(value['columns'], mapping: true),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'header_row': headerRow,
+    'columns': {...columns},
+  };
+}
+
+bool _validExcelMappingV2(Object? raw) {
+  if (raw is! Map) return false;
+  try {
+    TacticalExcelColumnMapping.fromWire(Map<String, dynamic>.from(raw));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// resolution `value`: 문자열(학생 ID·기존 상대 ID·결과·종류·날짜 같은 해석 값) · 정수(시도 횟수) · 새 상대
+/// `{identity_id, display_name}`. 별칭·유사 이름은 제안일 뿐이라 사용자가 고른 값만 넣는다.
+sealed class TacticalExcelResolutionValue {
+  const TacticalExcelResolutionValue();
+
+  Object toWire();
+
+  static TacticalExcelResolutionValue? fromWire(Object? raw) {
+    if (raw == null) return null;
+    if (raw is String) return TacticalExcelTextValue(raw);
+    if (raw is int) return TacticalExcelIntegerValue(raw);
+    if (raw is Map) {
+      final value = Map<String, dynamic>.from(raw);
+      if (_exactV2(value, {'identity_id', 'display_name'}) &&
+          value['identity_id'] is String &&
+          value['display_name'] is String) {
+        return TacticalExcelNewOpponentValue(
+          identityId: value['identity_id'] as String,
+          displayName: value['display_name'] as String,
+        );
+      }
+    }
+    throw const FormatException('Invalid tactical Excel resolution value');
+  }
+}
+
+final class TacticalExcelTextValue extends TacticalExcelResolutionValue {
+  const TacticalExcelTextValue(this.text);
+  final String text;
+
+  @override
+  Object toWire() => text;
+}
+
+final class TacticalExcelIntegerValue extends TacticalExcelResolutionValue {
+  const TacticalExcelIntegerValue(this.value);
+  final int value;
+
+  @override
+  Object toWire() => value;
+}
+
+/// 명시적으로 새로 만드는 상대 identity. 기존 identity에 다른 이름을 붙이면 `opponent_alias_required`다.
+final class TacticalExcelNewOpponentValue extends TacticalExcelResolutionValue {
+  TacticalExcelNewOpponentValue({
+    required this.identityId,
+    required this.displayName,
+  }) {
+    if (!_recordIdV2(identityId) || displayName.isEmpty) {
+      throw const FormatException('Invalid tactical Excel opponent value');
+    }
+  }
+  final String identityId, displayName;
+
+  @override
+  Object toWire() => {'identity_id': identityId, 'display_name': displayName};
+}
+
+/// `value` 행동은 null도 받는다(빈 슬롯 = 모름, 빈 메모). 형식 밖 값은 fromWire가 거부한다.
+bool _validExcelResolutionValueV2(Object? raw) {
+  try {
+    TacticalExcelResolutionValue.fromWire(raw);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool _validExcelResolutionV2(Object? raw) {
+  if (raw is! Map) return false;
+  final value = Map<String, dynamic>.from(raw);
+  const required = {'field', 'raw', 'action', 'value'};
+  final keys = value.keys.toSet();
+  final field = value['field'];
+  final action = value['action'];
+  final resolved = value['value'];
+  if (!keys.containsAll(required) || !{...required, 'row'}.containsAll(keys)) {
+    return false;
+  }
+  try {
+    return tacticalExcelFields.contains(field) &&
+        value['raw'] is String &&
+        utf8.encode(value['raw'] as String).length <= 8192 &&
+        _excelResolutionActionsV2.contains(action) &&
+        (action != 'wildcard' || tacticalExcelSlotFields.contains(field)) &&
+        (action == 'value'
+            ? _validExcelResolutionValueV2(resolved)
+            : resolved == null) &&
+        (!keys.contains('row') || _excelRowNumberV2(value['row']));
+  } catch (_) {
+    return false;
+  }
+}
+
+/// 미리보기의 문자열 그룹·행 이슈에 대한 사용자 결정(`excelResolution`). [raw]는 미리보기가 준 typed `raw_key`
+/// 그대로다. [row]가 없으면 그 필드·원값 전체에 적용되고(commit의 `save_rules`로 프로필 규칙이 될 수 있다), 있으면
+/// 그 행에만 적용된다. `skip` 행동·행별 결정은 규칙으로 저장되지 않는다.
+@immutable
+class TacticalExcelResolution {
+  TacticalExcelResolution({
+    required this.field,
+    required this.raw,
+    required this.action,
+    required this.value,
+    this.row,
+  }) {
+    if (!_validExcelResolutionV2(toWire())) {
+      throw const FormatException('Invalid tactical Excel resolution');
+    }
+  }
+
+  final String field, raw;
+
+  /// `value`·`wildcard`(슬롯만)·`notes`·`ignore`·`skip`. `value` 밖의 행동은 [value]가 null이다.
+  final String action;
+  final TacticalExcelResolutionValue? value;
+  final int? row;
+
+  factory TacticalExcelResolution.fromWire(Map<String, dynamic> value) {
+    if (!_validExcelResolutionV2(value)) {
+      throw const FormatException('Invalid tactical Excel resolution');
+    }
+    return TacticalExcelResolution(
+      field: value['field'] as String,
+      raw: value['raw'] as String,
+      action: value['action'] as String,
+      value: TacticalExcelResolutionValue.fromWire(value['value']),
+      row: value['row'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'field': field,
+    'raw': raw,
+    'action': action,
+    'value': value?.toWire(),
+    if (row != null) 'row': row,
+  };
+}
+
+bool _validExcelRowDecisionV2(Object? raw) {
+  if (raw is! Map) return false;
+  final value = Map<String, dynamic>.from(raw);
+  final target = value['target_match_id'];
+  return _exactV2(value, {'row', 'action', 'target_match_id'}) &&
+      _excelRowNumberV2(value['row']) &&
+      _excelRowActionsV2.contains(value['action']) &&
+      (value['action'] == 'overwrite' ? _recordIdV2(target) : target == null);
+}
+
+/// 행 결정(`excelRowDecision`): `skip`·`keep_separate`·`overwrite`. 덮어쓰기는 실제로 충돌한 기록 ID가 있어야 한다.
+@immutable
+class TacticalExcelRowDecision {
+  TacticalExcelRowDecision({
+    required this.row,
+    required this.action,
+    required this.targetMatchId,
+  }) {
+    if (!_validExcelRowDecisionV2(toWire())) {
+      throw const FormatException('Invalid tactical Excel row decision');
+    }
+  }
+  final int row;
+  final String action;
+  final String? targetMatchId;
+
+  factory TacticalExcelRowDecision.fromWire(Map<String, dynamic> value) {
+    if (!_validExcelRowDecisionV2(value)) {
+      throw const FormatException('Invalid tactical Excel row decision');
+    }
+    return TacticalExcelRowDecision(
+      row: value['row'] as int,
+      action: value['action'] as String,
+      targetMatchId: value['target_match_id'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'row': row,
+    'action': action,
+    'target_match_id': targetMatchId,
+  };
+}
+
+/// 미리보기·commit 공통 선택 8키. 같은 (행, 필드, 원값) resolution과 같은 행 결정은 두 번 넣지 않는다(백엔드
+/// `invalid_payload`와 같은 검사).
+bool _validExcelChoicesV2(Map<String, dynamic> payload) {
+  final sheet = payload['sheet_name'];
+  final mapping = payload['column_mapping'];
+  final resolutions = payload['resolutions'];
+  final decisions = payload['row_decisions'];
+  if (!_profileIdV2(payload['profile_id']) ||
+      payload['source_path'] is! String ||
+      (payload['source_path'] as String).isEmpty ||
+      (sheet != null && (sheet is! String || sheet.isEmpty)) ||
+      !{',', '\t'}.contains(payload['delimiter']) ||
+      (mapping != null && !_validExcelMappingV2(mapping)) ||
+      resolutions is! List ||
+      resolutions.length > 4096 ||
+      !resolutions.every(_validExcelResolutionV2) ||
+      decisions is! List ||
+      decisions.length > 10000 ||
+      !decisions.every(_validExcelRowDecisionV2) ||
+      !_excelOnConflictV2.contains(payload['on_conflict'])) {
+    return false;
+  }
+  final identities = {
+    for (final item in resolutions)
+      jsonEncode([(item as Map)['row'], item['field'], item['raw']]),
+  };
+  final rows = {for (final item in decisions) (item as Map)['row']};
+  return identities.length == resolutions.length &&
+      rows.length == decisions.length;
+}
+
+/// FB-7 미리보기·commit 공통 선택(`excelPreviewRequest` payload). [sheetName]은 null(첫 보이는 시트·CSV) 또는 정확한
+/// 이름, [delimiter]는 쉼표·탭(CSV에만 의미), [columnMapping]이 null이면 미리보기는 후보만 주고
+/// `mapping_confirmation_required` 이슈를 낸다. [onConflict]는 `skip`·`overwrite`.
+@immutable
+class TacticalExcelImportChoices {
+  TacticalExcelImportChoices({
+    required this.profileId,
+    required this.sourcePath,
+    required this.sheetName,
+    required this.delimiter,
+    required this.columnMapping,
+    required List<TacticalExcelResolution> resolutions,
+    required List<TacticalExcelRowDecision> rowDecisions,
+    required this.onConflict,
+  }) : resolutions = List.unmodifiable(resolutions),
+       rowDecisions = List.unmodifiable(rowDecisions) {
+    if (!_validExcelChoicesV2(toWire())) {
+      throw const FormatException('Invalid tactical Excel import choices');
+    }
+  }
+
+  final String profileId, sourcePath, delimiter, onConflict;
+  final String? sheetName;
+  final TacticalExcelColumnMapping? columnMapping;
+  final List<TacticalExcelResolution> resolutions;
+  final List<TacticalExcelRowDecision> rowDecisions;
+
+  factory TacticalExcelImportChoices.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, _excelChoiceKeysV2) || !_validExcelChoicesV2(value)) {
+      throw const FormatException('Invalid tactical Excel import choices');
+    }
+    final mapping = value['column_mapping'];
+    return TacticalExcelImportChoices(
+      profileId: value['profile_id'] as String,
+      sourcePath: value['source_path'] as String,
+      sheetName: value['sheet_name'] as String?,
+      delimiter: value['delimiter'] as String,
+      columnMapping: mapping == null
+          ? null
+          : TacticalExcelColumnMapping.fromWire(
+              Map<String, dynamic>.from(mapping as Map),
+            ),
+      resolutions: _excelListV2(
+        value['resolutions'],
+        TacticalExcelResolution.fromWire,
+      ),
+      rowDecisions: _excelListV2(
+        value['row_decisions'],
+        TacticalExcelRowDecision.fromWire,
+      ),
+      onConflict: value['on_conflict'] as String,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'profile_id': profileId,
+    'source_path': sourcePath,
+    'sheet_name': sheetName,
+    'delimiter': delimiter,
+    'column_mapping': columnMapping?.toWire(),
+    'resolutions': [for (final item in resolutions) item.toWire()],
+    'row_decisions': [for (final item in rowDecisions) item.toWire()],
+    'on_conflict': onConflict,
+  };
+}
+
+/// 미리보기 이슈(`excelIssue`). [code] 말고는 모두 선택 키다(있던 키만 [toWire]로 되돌린다). 행 이슈의 [field]는
+/// 의미 필드 또는 덱 검사 실패 `deck`, 파일 이슈에는 `mapping_confirmation_required`·`legacy_migration_required`
+/// (v1 [sourceRevision]·[sourceFingerprint]) 같은 코드가 온다.
+@immutable
+class TacticalExcelIssue {
+  const TacticalExcelIssue._({
+    required this.code,
+    required this.field,
+    required this.column,
+    required this.rawKey,
+    required this.raw,
+    required this.message,
+    required this.fromSavedRule,
+    required this.sourceRevision,
+    required this.sourceFingerprint,
+    required this.wireKeys,
+  });
+
+  final String code;
+  final String? field, rawKey, message, sourceFingerprint;
+  final int? column, sourceRevision;
+
+  /// 셀 원값(문자열·수·불리언·null).
+  final Object? raw;
+
+  /// 저장된 프로필 규칙을 적용하다 생긴 이슈인가.
+  final bool? fromSavedRule;
+
+  /// 응답에 실제로 있던 키(null 값과 없는 키를 구분해 그대로 되돌린다).
+  final Set<String> wireKeys;
+
+  factory TacticalExcelIssue.fromWire(Map<String, dynamic> value) {
+    const optional = {
+      'field',
+      'column',
+      'raw_key',
+      'raw',
+      'message',
+      'from_saved_rule',
+      'source_revision',
+      'source_fingerprint',
+    };
+    final keys = value.keys.toSet();
+    final column = value['column'];
+    final rawKey = value['raw_key'];
+    if (!keys.contains('code') ||
+        !{'code', ...optional}.containsAll(keys) ||
+        value['code'] is! String ||
+        (value['code'] as String).isEmpty ||
+        (keys.contains('field') && value['field'] is! String) ||
+        (column != null && !_excelColumnV2(column)) ||
+        (rawKey != null && rawKey is! String) ||
+        !_excelScalarV2(value['raw']) ||
+        (keys.contains('message') && value['message'] is! String) ||
+        (keys.contains('from_saved_rule') &&
+            value['from_saved_rule'] is! bool) ||
+        (keys.contains('source_revision') &&
+            !_countV2(value['source_revision'])) ||
+        (keys.contains('source_fingerprint') &&
+            !_sha256V2(value['source_fingerprint']))) {
+      throw const FormatException('Invalid tactical Excel issue');
+    }
+    return TacticalExcelIssue._(
+      code: value['code'] as String,
+      field: value['field'] as String?,
+      column: column as int?,
+      rawKey: rawKey as String?,
+      raw: value['raw'],
+      message: value['message'] as String?,
+      fromSavedRule: value['from_saved_rule'] as bool?,
+      sourceRevision: value['source_revision'] as int?,
+      sourceFingerprint: value['source_fingerprint'] as String?,
+      wireKeys: Set.unmodifiable(keys),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'code': code,
+    if (wireKeys.contains('field')) 'field': field,
+    if (wireKeys.contains('column')) 'column': column,
+    if (wireKeys.contains('raw_key')) 'raw_key': rawKey,
+    if (wireKeys.contains('raw')) 'raw': raw,
+    if (wireKeys.contains('message')) 'message': message,
+    if (wireKeys.contains('from_saved_rule')) 'from_saved_rule': fromSavedRule,
+    if (wireKeys.contains('source_revision')) 'source_revision': sourceRevision,
+    if (wireKeys.contains('source_fingerprint'))
+      'source_fingerprint': sourceFingerprint,
+  };
+}
+
+/// 행의 의미 필드 하나에 해당하는 셀(`excelRawCell`). 매핑하지 않은 필드는 [column]이 null이다. 수식 셀은
+/// [formula]와 캐시 값 [cachedValue]가 오고, 캐시 값도 명시적으로 받아들이기 전에는 적용되지 않는다.
+@immutable
+class TacticalExcelRawCell {
+  const TacticalExcelRawCell._({
+    required this.field,
+    required this.column,
+    required this.raw,
+    required this.rawKey,
+    required this.formula,
+    required this.cachedValue,
+  });
+  final String field;
+  final int? column;
+  final Object? raw, cachedValue;
+
+  /// resolution `raw`에 그대로 넣는 typed 원값 키.
+  final String rawKey;
+  final String? formula;
+
+  factory TacticalExcelRawCell.fromWire(Map<String, dynamic> value) {
+    final column = value['column'];
+    final formula = value['formula'];
+    if (!_exactV2(value, {
+          'field',
+          'column',
+          'raw',
+          'raw_key',
+          'formula',
+          'cached_value',
+        }) ||
+        !tacticalExcelFields.contains(value['field']) ||
+        (column != null && !_excelColumnV2(column)) ||
+        !_excelScalarV2(value['raw']) ||
+        value['raw_key'] is! String ||
+        (formula != null && formula is! String) ||
+        !_excelScalarV2(value['cached_value'])) {
+      throw const FormatException('Invalid tactical Excel raw cell');
+    }
+    return TacticalExcelRawCell._(
+      field: value['field'] as String,
+      column: column as int?,
+      raw: value['raw'],
+      rawKey: value['raw_key'] as String,
+      formula: formula as String?,
+      cachedValue: value['cached_value'],
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'field': field,
+    'column': column,
+    'raw': raw,
+    'raw_key': rawKey,
+    'formula': formula,
+    'cached_value': cachedValue,
+  };
+}
+
+/// 미리보기 행(`excelPreviewRow`). [status]: `empty`·`skipped`·`unresolved`·`eligible`·`overwrite`·`conflict`·
+/// `conflict_skipped`·`replay`(이미 가져온 원본 행). [match]는 해석이 끝난 행의 FB-6 입력(그대로 v2 기록이 된다),
+/// [targetMatchId]는 덮어쓸 기록 또는 replay의 기존 기록.
+@immutable
+class TacticalExcelPreviewRow {
+  TacticalExcelPreviewRow._({
+    required this.rowId,
+    required this.rowNumber,
+    required List<TacticalExcelRawCell> rawCells,
+    required this.status,
+    required List<TacticalExcelIssue> issues,
+    required this.match,
+    required this.targetMatchId,
+  }) : rawCells = List.unmodifiable(rawCells),
+       issues = List.unmodifiable(issues);
+  final String rowId, status;
+  final int rowNumber;
+  final List<TacticalExcelRawCell> rawCells;
+  final List<TacticalExcelIssue> issues;
+  final TacticalMatchInputV2? match;
+  final String? targetMatchId;
+
+  factory TacticalExcelPreviewRow.fromWire(Map<String, dynamic> value) {
+    final match = value['match'];
+    final target = value['target_match_id'];
+    if (!_exactV2(value, {
+          'row_id',
+          'row_number',
+          'raw_cells',
+          'status',
+          'issues',
+          'match',
+          'target_match_id',
+        }) ||
+        !_excelIdV2('excel-row', value['row_id']) ||
+        !_excelRowNumberV2(value['row_number']) ||
+        !_excelRowStatusesV2.contains(value['status']) ||
+        (match != null && match is! Map) ||
+        (target != null && !_recordIdV2(target))) {
+      throw const FormatException('Invalid tactical Excel preview row');
+    }
+    return TacticalExcelPreviewRow._(
+      rowId: value['row_id'] as String,
+      rowNumber: value['row_number'] as int,
+      rawCells: _excelListV2(value['raw_cells'], TacticalExcelRawCell.fromWire),
+      status: value['status'] as String,
+      issues: _excelListV2(value['issues'], TacticalExcelIssue.fromWire),
+      match: match == null
+          ? null
+          : TacticalMatchInputV2.fromWire(
+              Map<String, dynamic>.from(match as Map),
+            ),
+      targetMatchId: target as String?,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'row_id': rowId,
+    'row_number': rowNumber,
+    'raw_cells': [for (final item in rawCells) item.toWire()],
+    'status': status,
+    'issues': [for (final item in issues) item.toWire()],
+    'match': match?.toWire(),
+    'target_match_id': targetMatchId,
+  };
+}
+
+/// 문자열 그룹 제안(`excelSuggestion`, 세 변형). 모두 확인이 필요하다 — resolution으로 넣기 전에는 적용되지 않는다.
+sealed class TacticalExcelSuggestion {
+  const TacticalExcelSuggestion();
+
+  Map<String, dynamic> toWire();
+
+  static TacticalExcelSuggestion fromWire(Map<String, dynamic> value) {
+    if (value['requires_confirmation'] == true) {
+      if (_exactV2(value, {
+            'student_id',
+            'display_name',
+            'score',
+            'requires_confirmation',
+          }) &&
+          value['student_id'] is String &&
+          (value['student_id'] as String).isNotEmpty &&
+          value['display_name'] is String &&
+          value['score'] is num &&
+          (value['score'] as num) >= 0 &&
+          (value['score'] as num) <= 1) {
+        return TacticalExcelStudentSuggestion._(
+          studentId: value['student_id'] as String,
+          displayName: value['display_name'] as String,
+          score: value['score'] as num,
+        );
+      }
+      if (_exactV2(value, {
+            'identity_id',
+            'display_name',
+            'requires_confirmation',
+          }) &&
+          _recordIdV2(value['identity_id']) &&
+          value['display_name'] is String) {
+        return TacticalExcelOpponentSuggestion._(
+          identityId: value['identity_id'] as String,
+          displayName: value['display_name'] as String,
+        );
+      }
+      if (_exactV2(value, {
+            'result',
+            'attempt_count',
+            'requires_confirmation',
+          }) &&
+          {'win', 'loss'}.contains(value['result']) &&
+          value['attempt_count'] is int &&
+          (value['attempt_count'] as int) >= 1) {
+        return TacticalExcelResultSuggestion._(
+          result: value['result'] as String,
+          attemptCount: value['attempt_count'] as int,
+        );
+      }
+    }
+    throw const FormatException('Invalid tactical Excel suggestion');
+  }
+}
+
+/// 학생 이름 후보(유사도 [score] 0~1, 확률이 아니다).
+final class TacticalExcelStudentSuggestion extends TacticalExcelSuggestion {
+  const TacticalExcelStudentSuggestion._({
+    required this.studentId,
+    required this.displayName,
+    required this.score,
+  });
+  final String studentId, displayName;
+  final num score;
+
+  @override
+  Map<String, dynamic> toWire() => {
+    'student_id': studentId,
+    'display_name': displayName,
+    'score': score,
+    'requires_confirmation': true,
+  };
+}
+
+/// 기존 상대 identity 후보(표시 이름·별칭이 같다).
+final class TacticalExcelOpponentSuggestion extends TacticalExcelSuggestion {
+  const TacticalExcelOpponentSuggestion._({
+    required this.identityId,
+    required this.displayName,
+  });
+  final String identityId, displayName;
+
+  @override
+  Map<String, dynamic> toWire() => {
+    'identity_id': identityId,
+    'display_name': displayName,
+    'requires_confirmation': true,
+  };
+}
+
+/// `승(3트)` 같은 결과 칸에서 읽은 결과·시도 횟수 후보.
+final class TacticalExcelResultSuggestion extends TacticalExcelSuggestion {
+  const TacticalExcelResultSuggestion._({
+    required this.result,
+    required this.attemptCount,
+  });
+  final String result;
+  final int attemptCount;
+
+  @override
+  Map<String, dynamic> toWire() => {
+    'result': result,
+    'attempt_count': attemptCount,
+    'requires_confirmation': true,
+  };
+}
+
+/// 그룹이 나온 칸(행·열, 매핑하지 않은 필드는 열 null).
+typedef TacticalExcelPlace = ({int row, int? column});
+
+/// 같은 필드·원값·이슈 코드의 확인 필요 칸 묶음(`excelStringGroup`). [rawKey]를 resolution `raw`로 쓴다.
+@immutable
+class TacticalExcelStringGroup {
+  TacticalExcelStringGroup._({
+    required this.groupId,
+    required this.field,
+    required this.rawKey,
+    required this.raw,
+    required this.code,
+    required this.count,
+    required List<TacticalExcelPlace> places,
+    required List<TacticalExcelSuggestion> suggestions,
+  }) : places = List.unmodifiable(places),
+       suggestions = List.unmodifiable(suggestions);
+  final String groupId, field, rawKey, code;
+  final Object? raw;
+  final int count;
+  final List<TacticalExcelPlace> places;
+  final List<TacticalExcelSuggestion> suggestions;
+
+  factory TacticalExcelStringGroup.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, {
+          'group_id',
+          'field',
+          'raw_key',
+          'raw',
+          'code',
+          'count',
+          'places',
+          'suggestions',
+        }) ||
+        !_excelIdV2('excel-group', value['group_id']) ||
+        !tacticalExcelFields.contains(value['field']) ||
+        value['raw_key'] is! String ||
+        !_excelScalarV2(value['raw']) ||
+        value['code'] is! String ||
+        !_countV2(value['count'])) {
+      throw const FormatException('Invalid tactical Excel string group');
+    }
+    return TacticalExcelStringGroup._(
+      groupId: value['group_id'] as String,
+      field: value['field'] as String,
+      rawKey: value['raw_key'] as String,
+      raw: value['raw'],
+      code: value['code'] as String,
+      count: value['count'] as int,
+      places: _excelListV2(value['places'], (place) {
+        final column = place['column'];
+        if (!_exactV2(place, {'row', 'column'}) ||
+            !_excelRowNumberV2(place['row']) ||
+            (column != null && !_excelColumnV2(column))) {
+          throw const FormatException('Invalid tactical Excel place');
+        }
+        return (row: place['row'] as int, column: column as int?);
+      }),
+      suggestions: _excelListV2(
+        value['suggestions'],
+        TacticalExcelSuggestion.fromWire,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'group_id': groupId,
+    'field': field,
+    'raw_key': rawKey,
+    'raw': raw,
+    'code': code,
+    'count': count,
+    'places': [
+      for (final place in places) {'row': place.row, 'column': place.column},
+    ],
+    'suggestions': [for (final item in suggestions) item.toWire()],
+  };
+}
+
+/// 기존 기록·같은 파일의 다른 행과 겹칠 수 있는 행(`excelConflict`). 날짜·상대만 같다고 합치지 않는다.
+@immutable
+class TacticalExcelConflict {
+  TacticalExcelConflict._({
+    required this.rowId,
+    required this.rowNumber,
+    required List<String> matchIds,
+    required List<int> peerRows,
+    required this.ambiguous,
+  }) : matchIds = List.unmodifiable(matchIds),
+       peerRows = List.unmodifiable(peerRows);
+  final String rowId;
+  final int rowNumber;
+  final List<String> matchIds;
+  final List<int> peerRows;
+
+  /// 덮어쓰기에 명시적 기록 ID가 필요한가(정밀도·빈칸·여러 후보·같은 파일 행).
+  final bool ambiguous;
+
+  factory TacticalExcelConflict.fromWire(Map<String, dynamic> value) {
+    final ids = value['match_ids'];
+    final peers = value['peer_rows'];
+    if (!_exactV2(value, {
+          'row_id',
+          'row_number',
+          'match_ids',
+          'peer_rows',
+          'ambiguous',
+        }) ||
+        !_excelIdV2('excel-row', value['row_id']) ||
+        !_excelRowNumberV2(value['row_number']) ||
+        ids is! List ||
+        !ids.every(_recordIdV2) ||
+        peers is! List ||
+        !peers.every(_excelRowNumberV2) ||
+        value['ambiguous'] is! bool) {
+      throw const FormatException('Invalid tactical Excel conflict');
+    }
+    return TacticalExcelConflict._(
+      rowId: value['row_id'] as String,
+      rowNumber: value['row_number'] as int,
+      matchIds: ids.cast<String>(),
+      peerRows: peers.cast<int>(),
+      ambiguous: value['ambiguous'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'row_id': rowId,
+    'row_number': rowNumber,
+    'match_ids': [...matchIds],
+    'peer_rows': [...peerRows],
+    'ambiguous': ambiguous,
+  };
+}
+
+/// 머리글 후보(`excelMappingCandidate`). 확인 전에는 쓰지 않는다 — 고르면 [TacticalExcelColumnMapping]으로 보낸다.
+@immutable
+class TacticalExcelMappingCandidate {
+  TacticalExcelMappingCandidate._({
+    required this.headerRow,
+    required this.columns,
+    required List<String> ambiguousFields,
+  }) : ambiguousFields = List.unmodifiable(ambiguousFields);
+  final int headerRow;
+  final Map<String, int> columns;
+
+  /// 같은 머리글 이름이 여러 열에 있어 고르지 못한 필드.
+  final List<String> ambiguousFields;
+
+  factory TacticalExcelMappingCandidate.fromWire(Map<String, dynamic> value) {
+    final ambiguous = value['ambiguous_fields'];
+    if (!_exactV2(value, {
+          'header_row',
+          'columns',
+          'ambiguous_fields',
+          'requires_confirmation',
+        }) ||
+        !_excelRowNumberV2(value['header_row']) ||
+        ambiguous is! List ||
+        !ambiguous.every(tacticalExcelFields.contains) ||
+        value['requires_confirmation'] != true) {
+      throw const FormatException('Invalid tactical Excel mapping candidate');
+    }
+    return TacticalExcelMappingCandidate._(
+      headerRow: value['header_row'] as int,
+      columns: _excelColumnsV2(value['columns'], mapping: false),
+      ambiguousFields: ambiguous.cast<String>(),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'header_row': headerRow,
+    'columns': {...columns},
+    'ambiguous_fields': [...ambiguousFields],
+    'requires_confirmation': true,
+  };
+}
+
+/// 미리보기 행 수. 가져오기 버튼의 분모는 [eligibleRows](결정 반영 뒤 commit 대상)다 — 고정 예시 분모가 아니다.
+/// 빈 행([emptyRows])은 건너뛴 기록 행([skippedRows])과 따로 센다.
+@immutable
+class TacticalExcelSummary {
+  const TacticalExcelSummary._({
+    required this.readRows,
+    required this.emptyRows,
+    required this.skippedRows,
+    required this.parsedRows,
+    required this.unresolvedRows,
+    required this.conflictRows,
+    required this.eligibleRows,
+  });
+  final int readRows, emptyRows, skippedRows, parsedRows;
+  final int unresolvedRows, conflictRows, eligibleRows;
+
+  static const _keys = [
+    'read_rows',
+    'empty_rows',
+    'skipped_rows',
+    'parsed_rows',
+    'unresolved_rows',
+    'conflict_rows',
+    'eligible_rows',
+  ];
+
+  factory TacticalExcelSummary.fromWire(Map<String, dynamic> value) {
+    if (!_exactV2(value, _keys.toSet()) ||
+        !_keys.every((key) => _countV2(value[key]))) {
+      throw const FormatException('Invalid tactical Excel summary');
+    }
+    return TacticalExcelSummary._(
+      readRows: value['read_rows'] as int,
+      emptyRows: value['empty_rows'] as int,
+      skippedRows: value['skipped_rows'] as int,
+      parsedRows: value['parsed_rows'] as int,
+      unresolvedRows: value['unresolved_rows'] as int,
+      conflictRows: value['conflict_rows'] as int,
+      eligibleRows: value['eligible_rows'] as int,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'read_rows': readRows,
+    'empty_rows': emptyRows,
+    'skipped_rows': skippedRows,
+    'parsed_rows': parsedRows,
+    'unresolved_rows': unresolvedRows,
+    'conflict_rows': conflictRows,
+    'eligible_rows': eligibleRows,
+  };
+}
+
+/// FB-7 미리보기 결과(`excelPreviewResponse`). commit에는 [fingerprint](원본 바이트)·[interpretationFingerprint]
+/// (선택·규칙·카탈로그·프로필·형식 맥락)·[currentRevision]을 `expected_*`로 넣는다. 원본·저장소는 바뀌지 않는다.
+@immutable
+class TacticalExcelPreview {
+  TacticalExcelPreview._({
+    required this.fingerprint,
+    required this.interpretationFingerprint,
+    required this.format,
+    required List<String> sheetNames,
+    required this.selectedSheet,
+    required List<TacticalExcelMappingCandidate> mappingCandidates,
+    required this.savedMapping,
+    required this.columnMapping,
+    required List<TacticalExcelPreviewRow> rows,
+    required List<TacticalExcelStringGroup> stringGroups,
+    required List<TacticalExcelConflict> conflicts,
+    required this.summary,
+    required List<TacticalExcelIssue> issues,
+    required this.currentRevision,
+    required this.rulesRevision,
+    required this.legacyMigrationRequired,
+  }) : sheetNames = List.unmodifiable(sheetNames),
+       mappingCandidates = List.unmodifiable(mappingCandidates),
+       rows = List.unmodifiable(rows),
+       stringGroups = List.unmodifiable(stringGroups),
+       conflicts = List.unmodifiable(conflicts),
+       issues = List.unmodifiable(issues);
+
+  final String fingerprint, interpretationFingerprint, format, selectedSheet;
+  final List<String> sheetNames;
+  final List<TacticalExcelMappingCandidate> mappingCandidates;
+
+  /// 프로필에 저장된 매핑(제안일 뿐, 확인 전에는 [columnMapping]이 아니다).
+  final TacticalExcelColumnMapping? savedMapping;
+  final TacticalExcelColumnMapping? columnMapping;
+  final List<TacticalExcelPreviewRow> rows;
+  final List<TacticalExcelStringGroup> stringGroups;
+  final List<TacticalExcelConflict> conflicts;
+  final TacticalExcelSummary summary;
+  final List<TacticalExcelIssue> issues;
+  final int currentRevision, rulesRevision;
+
+  /// v1 기록이 남아 있어 FB-6 명시 이관이 먼저다(commit은 `legacy_migration_required`).
+  final bool legacyMigrationRequired;
+
+  factory TacticalExcelPreview.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'fingerprint',
+      'interpretation_fingerprint',
+      'format',
+      'sheet_names',
+      'selected_sheet',
+      'mapping_candidates',
+      'saved_mapping',
+      'column_mapping',
+      'rows',
+      'string_groups',
+      'conflicts',
+      'summary',
+      'issues',
+      'current_revision',
+      'rules_revision',
+      'legacy_migration_required',
+    };
+    final sheets = value['sheet_names'];
+    final selected = value['selected_sheet'];
+    TacticalExcelColumnMapping? mapping(Object? raw) => raw == null
+        ? null
+        : TacticalExcelColumnMapping.fromWire(
+            Map<String, dynamic>.from(raw as Map),
+          );
+    if (!_exactV2(value, fields) ||
+        !_sha256V2(value['fingerprint']) ||
+        !_sha256V2(value['interpretation_fingerprint']) ||
+        !{'xlsx', 'csv'}.contains(value['format']) ||
+        sheets is! List ||
+        sheets.isEmpty ||
+        !sheets.every((item) => item is String && item.isNotEmpty) ||
+        selected is! String ||
+        selected.isEmpty ||
+        value['summary'] is! Map ||
+        !_countV2(value['current_revision']) ||
+        !_countV2(value['rules_revision']) ||
+        value['legacy_migration_required'] is! bool) {
+      throw const FormatException('Invalid tactical Excel preview');
+    }
+    return TacticalExcelPreview._(
+      fingerprint: value['fingerprint'] as String,
+      interpretationFingerprint: value['interpretation_fingerprint'] as String,
+      format: value['format'] as String,
+      sheetNames: sheets.cast<String>(),
+      selectedSheet: selected,
+      mappingCandidates: _excelListV2(
+        value['mapping_candidates'],
+        TacticalExcelMappingCandidate.fromWire,
+      ),
+      savedMapping: mapping(value['saved_mapping']),
+      columnMapping: mapping(value['column_mapping']),
+      rows: _excelListV2(value['rows'], TacticalExcelPreviewRow.fromWire),
+      stringGroups: _excelListV2(
+        value['string_groups'],
+        TacticalExcelStringGroup.fromWire,
+      ),
+      conflicts: _excelListV2(
+        value['conflicts'],
+        TacticalExcelConflict.fromWire,
+      ),
+      summary: TacticalExcelSummary.fromWire(
+        Map<String, dynamic>.from(value['summary'] as Map),
+      ),
+      issues: _excelListV2(value['issues'], TacticalExcelIssue.fromWire),
+      currentRevision: value['current_revision'] as int,
+      rulesRevision: value['rules_revision'] as int,
+      legacyMigrationRequired: value['legacy_migration_required'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'fingerprint': fingerprint,
+    'interpretation_fingerprint': interpretationFingerprint,
+    'format': format,
+    'sheet_names': [...sheetNames],
+    'selected_sheet': selectedSheet,
+    'mapping_candidates': [for (final item in mappingCandidates) item.toWire()],
+    'saved_mapping': savedMapping?.toWire(),
+    'column_mapping': columnMapping?.toWire(),
+    'rows': [for (final item in rows) item.toWire()],
+    'string_groups': [for (final item in stringGroups) item.toWire()],
+    'conflicts': [for (final item in conflicts) item.toWire()],
+    'summary': summary.toWire(),
+    'issues': [for (final item in issues) item.toWire()],
+    'current_revision': currentRevision,
+    'rules_revision': rulesRevision,
+    'legacy_migration_required': legacyMigrationRequired,
+  };
+}
+
+/// FB-7 commit 결과(`excelCommitResponse`). [rulesSaved]는 규칙 내용이 실제로 바뀌었는지다(같은 규칙이면 false).
+/// 가져올 행·바뀐 규칙이 없으면 [revision]은 그대로다.
+@immutable
+class TacticalExcelCommitResult {
+  TacticalExcelCommitResult._({
+    required this.revision,
+    required this.importedCount,
+    required this.overwrittenCount,
+    required this.skippedCount,
+    required List<String> skippedRowIds,
+    required this.rulesSaved,
+    required List<String> matchIds,
+  }) : skippedRowIds = List.unmodifiable(skippedRowIds),
+       matchIds = List.unmodifiable(matchIds);
+  final int revision, importedCount, overwrittenCount, skippedCount;
+  final List<String> skippedRowIds;
+  final bool rulesSaved;
+
+  /// 새로 만든 기록 ID 다음 덮어쓴 기록 ID.
+  final List<String> matchIds;
+
+  factory TacticalExcelCommitResult.fromWire(Map<String, dynamic> value) {
+    const fields = {
+      'revision',
+      'imported_count',
+      'overwritten_count',
+      'skipped_count',
+      'skipped_row_ids',
+      'rules_saved',
+      'match_ids',
+    };
+    final skipped = value['skipped_row_ids'];
+    final ids = value['match_ids'];
+    if (!_exactV2(value, fields) ||
+        !_countV2(value['imported_count']) ||
+        !_countV2(value['overwritten_count']) ||
+        !_countV2(value['skipped_count']) ||
+        skipped is! List ||
+        !skipped.every((item) => _excelIdV2('excel-row', item)) ||
+        value['rules_saved'] is! bool ||
+        ids is! List ||
+        !ids.every(_recordIdV2)) {
+      throw const FormatException('Invalid tactical Excel commit result');
+    }
+    return TacticalExcelCommitResult._(
+      revision: _revisionV2(value),
+      importedCount: value['imported_count'] as int,
+      overwrittenCount: value['overwritten_count'] as int,
+      skippedCount: value['skipped_count'] as int,
+      skippedRowIds: skipped.cast<String>(),
+      rulesSaved: value['rules_saved'] as bool,
+      matchIds: ids.cast<String>(),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'revision': revision,
+    'imported_count': importedCount,
+    'overwritten_count': overwrittenCount,
+    'skipped_count': skippedCount,
+    'skipped_row_ids': [...skippedRowIds],
+    'rules_saved': rulesSaved,
+    'match_ids': [...matchIds],
+  };
+}
+
 /// FB-6 요청 payload를 보내기 전에 strict 검사한다(schema `fb6*Request`). 아니면 [FormatException].
 Map<String, dynamic> checkedTacticalV2Request(
   String method,
@@ -3170,6 +4404,43 @@ abstract interface class TacticalEvidenceWriteService {
     required String idempotencyKey,
   });
 }
+
+/// FB-7 엑셀·CSV 가져오기 capability(Process·Mock). 미리보기 → 사용자가 매핑·resolution·행 결정을 명시 → 같은
+/// 선택으로 다시 미리보기 → commit(그 미리보기의 `fingerprint`·`interpretation_fingerprint`·`current_revision`).
+/// 원본 바이트·해석 맥락이 바뀌면 `import_source_changed`·`import_interpretation_changed`, 미해결·충돌 행이나 파일
+/// 이슈가 남으면 `import_review_required`(details `row_ids`), v1 기록이 남았으면 `legacy_migration_required`.
+/// 원본을 못 읽으면 `import_source_unreadable`(details `reason`). 같은 key·같은 내용 재요청은 원본을 다시 읽거나
+/// revision을 보기 전에 원 응답이고, 다른 내용은 `idempotency_conflict`.
+abstract interface class TacticalExcelImportService {
+  Future<TacticalExcelPreview> previewTacticalExcelImport(
+    TacticalExcelImportChoices choices,
+  );
+  Future<TacticalExcelCommitResult> commitTacticalExcelImport({
+    required TacticalExcelImportChoices choices,
+    required bool saveRules,
+    required String expectedFingerprint,
+    required String expectedInterpretationFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  });
+}
+
+/// FB-7 commit payload(선택 8키 + 13키). Process·Mock이 같은 모양으로 만든다.
+Map<String, dynamic> tacticalExcelCommitPayload({
+  required TacticalExcelImportChoices choices,
+  required bool saveRules,
+  required String expectedFingerprint,
+  required String expectedInterpretationFingerprint,
+  required int expectedRevision,
+  required String idempotencyKey,
+}) => {
+  ...choices.toWire(),
+  'save_rules': saveRules,
+  'expected_fingerprint': expectedFingerprint,
+  'expected_interpretation_fingerprint': expectedInterpretationFingerprint,
+  'expected_revision': expectedRevision,
+  'idempotency_key': idempotencyKey,
+};
 
 /// FE9-b1 읽기 capability(Process·Mock): 전술 화면이 쓰는 v2 읽기 묶음 — 상태 읽기 · 통계 · 추이 · 추천.
 /// 공유 · v6 가져오기 · 로비 쓰기 · 예측 저장은 [TacticalEvidenceService](Process만)에 남는다. Mock 결과도 같은
@@ -3630,6 +4901,23 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
             payload['expected_source_revision'] >= 0 &&
             _sha256V2(payload['expected_fingerprint']);
       }
+      if (method == 'tactical.v2.excel.preview') {
+        return _exactV2(payload, _excelChoiceKeysV2) &&
+            _validExcelChoicesV2(payload);
+      }
+      if (method == 'tactical.v2.excel.commit') {
+        return _exactV2(payload, {
+              ..._excelChoiceKeysV2,
+              ..._excelCommitKeysV2,
+            }) &&
+            _validExcelChoicesV2(payload) &&
+            payload['save_rules'] is bool &&
+            _sha256V2(payload['expected_fingerprint']) &&
+            _sha256V2(payload['expected_interpretation_fingerprint']) &&
+            _countV2(payload['expected_revision']) &&
+            payload['idempotency_key'] is String &&
+            (payload['idempotency_key'] as String).isNotEmpty;
+      }
       return false;
     }
     if (payload.containsKey('error')) {
@@ -3762,6 +5050,14 @@ bool isValidTacticalV2ProtocolMessage(Object? input) {
     }
     if (method == 'tactical.v2.legacy.commit') {
       TacticalLegacyCommitResult.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.excel.preview') {
+      TacticalExcelPreview.fromWire(payload);
+      return true;
+    }
+    if (method == 'tactical.v2.excel.commit') {
+      TacticalExcelCommitResult.fromWire(payload);
       return true;
     }
     return false;

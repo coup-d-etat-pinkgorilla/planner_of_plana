@@ -35,6 +35,7 @@ class ProcessAppService
         TacticalEvidenceService,
         TacticalEvidenceWriteService,
         TacticalEvidenceReadService,
+        TacticalExcelImportService,
         DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
@@ -819,6 +820,36 @@ class ProcessAppService
       'expected_source_revision': expectedSourceRevision,
       'expected_fingerprint': expectedFingerprint,
     }),
+  );
+
+  // FB-7: 엑셀·CSV 가져오기. 경로와 명시적 선택만 보내고 해석은 백엔드가 한다(Flutter는 파일을 읽지 않는다).
+  @override
+  Future<TacticalExcelPreview> previewTacticalExcelImport(
+    TacticalExcelImportChoices choices,
+  ) async => TacticalExcelPreview.fromWire(
+    await _tacticalV2Write('tactical.v2.excel.preview', choices.toWire()),
+  );
+
+  @override
+  Future<TacticalExcelCommitResult> commitTacticalExcelImport({
+    required TacticalExcelImportChoices choices,
+    required bool saveRules,
+    required String expectedFingerprint,
+    required String expectedInterpretationFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalExcelCommitResult.fromWire(
+    await _tacticalV2Write(
+      'tactical.v2.excel.commit',
+      tacticalExcelCommitPayload(
+        choices: choices,
+        saveRules: saveRules,
+        expectedFingerprint: expectedFingerprint,
+        expectedInterpretationFingerprint: expectedInterpretationFingerprint,
+        expectedRevision: expectedRevision,
+        idempotencyKey: idempotencyKey,
+      ),
+    ),
   );
 
   @override

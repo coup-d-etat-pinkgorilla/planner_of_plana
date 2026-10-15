@@ -15,6 +15,9 @@ import 'planning_protocol_client.dart' show BackendRemoteException;
 import 'tactical_service.dart';
 import 'tactical_v2_service.dart';
 
+// FB-7 엑셀·CSV 가져오기 Mock(같은 v2 저장·revision·idempotency를 쓴다).
+part 'mock_tactical_v2_excel.dart';
+
 Map<String, dynamic> _copy(Object? value) =>
     Map<String, dynamic>.from(jsonDecode(jsonEncode(value)) as Map);
 
@@ -169,7 +172,10 @@ class MockTacticalV2Writes {
       );
     }
     final changed = apply(value);
-    value['revision'] = (value['revision'] as int) + 1;
+    // FB-7: 가져올 행·바뀐 규칙이 없는 commit은 revision을 올리지 않는다(백엔드 `_no_change`).
+    if (changed.remove('_no_change') != true) {
+      value['revision'] = (value['revision'] as int) + 1;
+    }
     final response = {'revision': value['revision'], ...changed};
     cache[idempotencyKey] = {'fingerprint': fingerprint, 'response': response};
     _values[profileId] = value;
@@ -397,97 +403,109 @@ class MockTacticalV2Writes {
       {'method': 'match.upsert', 'match': input},
       (value) {
         _ensureWriteMode(profileId, value);
-        final opponents = (value['opponents'] as List)
-            .cast<Map<String, dynamic>>();
-        final opponent = opponents
-            .where(
-              (item) => item['identity_id'] == input['opponent_identity_id'],
-            )
-            .firstOrNull;
-        if (opponent != null &&
-            !{
-              opponent['current_display_name'],
-              ...(opponent['aliases'] as List),
-            }.contains(input['opponent_display_name'])) {
-          throw _error(
-            'opponent_alias_required',
-            'name must match explicit identity or recorded alias',
-          );
-        }
-        final matches = (value['matches'] as List).cast<Map<String, dynamic>>();
-        final old = matches
-            .where((item) => item['match_id'] == input['match_id'])
-            .firstOrNull;
-        final record = {
-          ..._metadata('manual:${input['match_id']}'),
-          ..._copy(input),
-          'observed_at': null,
-        };
-        if (old != null) {
-          for (final field in [
-            'created_at',
-            'imported_at',
-            'import_batch_id',
-            'source_record_id',
-          ]) {
-            record[field] = old[field];
-          }
-          record['source_label'] = 'manual_edit';
-        }
-        final attack = record['attack_deck'] as Map<String, dynamic>;
-        final defense = record['defense_deck'] as Map<String, dynamic>;
-        record['review_status'] = _reviewed(attack) && _reviewed(defense)
-            ? 'confirmed'
-            : 'review_required';
-        if (opponent == null) {
-          opponents.add({
-            'version': 2,
-            'identity_id': input['opponent_identity_id'],
-            'current_display_name': input['opponent_display_name'],
-            'aliases': [input['opponent_display_name']],
-            'first_observed_at': input['occurred_at'],
-            'last_observed_at': input['occurred_at'],
-            'review_status': 'confirmed',
-            'name_template_ids': <String>[],
-          });
-        }
-        value['matches'] = [
-          ...matches.where((item) => item['match_id'] != input['match_id']),
-          record,
-        ];
-        final snapshots = [
-          ...(value['snapshots'] as List).cast<Map<String, dynamic>>().where(
-            (item) => item['match_id'] != input['match_id'],
-          ),
-        ];
-        // 확인된 완전 방어 덱만 관측 스냅샷이 된다(부분·와일드카드 덱은 만들지 않는다).
-        if (record['kind'] == 'attack' &&
-            record['review_status'] == 'confirmed' &&
-            _completeConfirmed(defense)) {
-          snapshots.add({
-            'version': 2,
-            'snapshot_id': _stableId('snapshot', [
-              'fb6',
-              input['match_id'] as String,
-            ]),
-            'opponent_identity_id': record['opponent_identity_id'],
-            'occurred_at': record['occurred_at'],
-            'observed_at': null,
-            'imported_at': record['imported_at'],
-            'source': 'manual',
-            'source_record_id': record['source_record_id'],
-            'confidence': null,
-            'review_status': 'confirmed',
-            'season': record['season'],
-            'deck': _copy(defense),
-            'match_id': record['match_id'],
-          });
-        }
-        value['snapshots'] = snapshots;
-        return {'match': record, 'jokbo_ids': _derivedJokbo(value, record)};
+        return _applyMatch(value, input);
       },
     );
     return TacticalMatchUpsertResult.fromWire(response);
+  }
+
+  /// 기록 하나를 [value](사본)에 적용한다(backend `apply_match`). [recordMetadata]가 있으면(FB-7 원본 행) 출처를
+  /// 그것으로 두고 덮어쓸 때 `created_at`만 유지한다. 없으면 수동 기록의 원래 출처 규칙 그대로다.
+  Map<String, dynamic> _applyMatch(
+    Map<String, dynamic> value,
+    Map<String, dynamic> input, {
+    Map<String, dynamic>? recordMetadata,
+  }) {
+    final opponents = (value['opponents'] as List).cast<Map<String, dynamic>>();
+    final opponent = opponents
+        .where((item) => item['identity_id'] == input['opponent_identity_id'])
+        .firstOrNull;
+    if (opponent != null &&
+        !{
+          opponent['current_display_name'],
+          ...(opponent['aliases'] as List),
+        }.contains(input['opponent_display_name'])) {
+      throw _error(
+        'opponent_alias_required',
+        'name must match explicit identity or recorded alias',
+      );
+    }
+    final matches = (value['matches'] as List).cast<Map<String, dynamic>>();
+    final old = matches
+        .where((item) => item['match_id'] == input['match_id'])
+        .firstOrNull;
+    final record = {
+      ...(recordMetadata == null
+          ? _metadata('manual:${input['match_id']}')
+          : _copy(recordMetadata)),
+      ..._copy(input),
+      'observed_at': null,
+    };
+    if (old != null) {
+      for (final field
+          in recordMetadata == null
+              ? [
+                  'created_at',
+                  'imported_at',
+                  'import_batch_id',
+                  'source_record_id',
+                ]
+              : ['created_at']) {
+        record[field] = old[field];
+      }
+      if (recordMetadata == null) record['source_label'] = 'manual_edit';
+    }
+    final attack = record['attack_deck'] as Map<String, dynamic>;
+    final defense = record['defense_deck'] as Map<String, dynamic>;
+    record['review_status'] = _reviewed(attack) && _reviewed(defense)
+        ? 'confirmed'
+        : 'review_required';
+    if (opponent == null) {
+      opponents.add({
+        'version': 2,
+        'identity_id': input['opponent_identity_id'],
+        'current_display_name': input['opponent_display_name'],
+        'aliases': [input['opponent_display_name']],
+        'first_observed_at': input['occurred_at'],
+        'last_observed_at': input['occurred_at'],
+        'review_status': 'confirmed',
+        'name_template_ids': <String>[],
+      });
+    }
+    value['matches'] = [
+      ...matches.where((item) => item['match_id'] != input['match_id']),
+      record,
+    ];
+    final snapshots = [
+      ...(value['snapshots'] as List).cast<Map<String, dynamic>>().where(
+        (item) => item['match_id'] != input['match_id'],
+      ),
+    ];
+    // 확인된 완전 방어 덱만 관측 스냅샷이 된다(부분·와일드카드 덱은 만들지 않는다).
+    if (record['kind'] == 'attack' &&
+        record['review_status'] == 'confirmed' &&
+        _completeConfirmed(defense)) {
+      snapshots.add({
+        'version': 2,
+        'snapshot_id': _stableId('snapshot', [
+          'fb6',
+          input['match_id'] as String,
+        ]),
+        'opponent_identity_id': record['opponent_identity_id'],
+        'occurred_at': record['occurred_at'],
+        'observed_at': null,
+        'imported_at': record['imported_at'],
+        'source': 'manual',
+        'source_record_id': record['source_record_id'],
+        'confidence': null,
+        'review_status': 'confirmed',
+        'season': record['season'],
+        'deck': _copy(defense),
+        'match_id': record['match_id'],
+      });
+    }
+    value['snapshots'] = snapshots;
+    return {'match': record, 'jokbo_ids': _derivedJokbo(value, record)};
   }
 
   TacticalMatchDeleteResult deleteMatch({
