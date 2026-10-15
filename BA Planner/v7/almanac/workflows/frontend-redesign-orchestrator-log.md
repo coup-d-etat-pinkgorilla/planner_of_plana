@@ -3480,3 +3480,12 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - XB에 source8 GREEN 회신(backend 02:45) → XB 두 커밋 대기.
 - FE7-j 발견 CF 판단: 1(A6 끝 점 고르기) · 3(차트 모습 통일) → 후속 후보, 2(근거 "나머지 n명 · 모두 보기" 문구) → 그대로.
 - **다음 라운드**: Lane B `debug/frontend_redesign_handoff/fb7dart-worker-prompt-20261016.md`(FB-7 Dart, 짝 gate 없음) · Lane A `debug/frontend_redesign_handoff/fe9e-worker-prompt-20261016.md`(전술 분석 화면 + Analysis-All + seg 머리말 이동(FD-126 (a) 준수 — CF 결정) + 하위 화면 모션). 그다음 Lane B `fb6b-dart`(XB source11 메인 반영과 짝).
+
+## 2026-10-16 08:50 — fb7-dart·FE9-e 검토·gate·커밋, 다음 라운드 배정
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`(각 1벌). SHA 일치(fb7dart 10행, fe9e 14행), 겹침 0, 스캐너 시각부 5파일 그대로. FE9-e `app_shell.dart` +13(`PageHeaderOverride` trailing·backLabel nullable, 다른 탭 영향 0) — 승인.
+- gate ① `20261016_081326`(XB source8 미커밋 그대로 포함): analyze 0, 382 + 392 + 658 + 442, **process 100**, golden RED 5 = 예측(`tactical`·`-jokbo-drag`·`-migration` 머리말 seg·S1 제목 줄만 + 새 `tactical-analysis`·`-analysis-all`) → 검토 승인 ② `-UpdateGoldens` `20261016_082438` **GREEN**(golden 52).
+- 커밋: **fe9e `0eb50921`** → **fb7dart `613ccc24`**(status.md에 commit record가 붙는 문제를 피하려고 status.md를 포함한 fe9e를 먼저). **FB-7 왕복 완료.**
+- CF 판단: FE9-e 발견 5 → **검증 강도 칩 숨김**(FD-127 (a)가 "검증 강도"를 숨길 지표로 명시 — 사용자 결정이 FD-134 워커 재량보다 우선, FE9-d와 일관) → FE9-f에 포함. 발견 2(족보 수 FD-129 vs 시안 A2)·4(방어 유저 수 두 규칙)·6(30일 기간 차이) → 후속 정리 후보. 발견 3(표본 적음 = 관측 5건 미만) 수용. fb7-dart 발견 1·2·4 → XB(backend 08:45).
+- XB: source8 아직 미커밋(GREEN 재확인 회신), FB-6b source11 메인 반영 요청(backend 08:45).
+- **다음 라운드**: Lane B `debug/frontend_redesign_handoff/fb6bdart-worker-prompt-20261016.md`(FD-176 Dart 데이터 계층, **시작 조건 = XB source11 반영 표**) · Lane A `debug/frontend_redesign_handoff/fe9f-worker-prompt-20261016.md`(엑셀 가져오기 모달 + 검증 강도 칩 숨김, 새 컨트롤러 파일 — records controller는 Lane B).
