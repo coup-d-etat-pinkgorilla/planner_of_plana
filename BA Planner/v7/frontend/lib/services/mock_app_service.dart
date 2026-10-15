@@ -188,6 +188,7 @@ class MockAppService
   final Map<String, List<ScannerEvent>> _scannerHistory = {};
   late final Map<String, ScannerCandidate> _scannerCandidates =
       MockScannerCandidateMap(_rememberScannerInventoryKeys);
+  final Set<String> _assignedScannerSlots = {};
   final Map<String, String> _scannerTerminals = {};
   final List<Timer> _scannerTimers = [];
   var _scannerGeneration = 0;
@@ -498,7 +499,19 @@ class MockAppService
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   }) async {
+    final values = payload['values'];
+    if ((confirmedFields ?? const <String>{}).any(
+      (field) =>
+          session.kind != ScannerKind.student ||
+          values is! Map ||
+          !values.containsKey(field),
+    )) {
+      throw StateError(
+        'invalid_payload: confirmed_fields must belong to student values',
+      );
+    }
     final studentRevalidation =
         session.kind == ScannerKind.student &&
         reason == 'edited_and_revalidated_in_scan_page';
@@ -512,6 +525,8 @@ class MockAppService
       evidence: [
         for (final item in candidate.evidence)
           studentRevalidation &&
+                  ((confirmedFields ?? const <String>{}).contains(item.field) ||
+                      item.field == 'student_stat_validation') &&
                   !{
                     'ok',
                     'inferred',
@@ -528,7 +543,23 @@ class MockAppService
                 )
               : item,
       ],
-      reviewRequired: studentRevalidation ? false : candidate.reviewRequired,
+      reviewRequired: studentRevalidation
+          ? candidate.evidence.any(
+              (item) =>
+                  !{
+                    'ok',
+                    'inferred',
+                    'skipped',
+                    'verified',
+                    'deferred',
+                    'shadow',
+                  }.contains(item.status) &&
+                  !(item.field == 'student_stat_validation' ||
+                      (confirmedFields ?? const <String>{}).contains(
+                        item.field,
+                      )),
+            )
+          : candidate.reviewRequired,
       approved: approve,
     );
     _scannerCandidates['${session.id}:${candidate.id}'] = reviewed;
@@ -554,6 +585,102 @@ class MockAppService
     );
     _scannerCandidates['${session.id}:${candidate.id}'] = revised;
     return revised;
+  }
+
+  @override
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  ) async {
+    final key = '${session.id}:${candidate.id}:1';
+    final slots =
+        scannerScenario == MockScannerScenario.inventoryUnknown &&
+            candidate.kind == ScannerKind.inventory &&
+            !_assignedScannerSlots.contains(key)
+        ? [
+            ScannerUnresolvedSlot(
+              slot: 1,
+              profile: InventoryScanProfile.activityReports,
+              width: 1280,
+              height: 720,
+              cropPng: base64Decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL1WQAAAABJRU5ErkJggg==',
+              ),
+              candidates: const [
+                ScannerIdentitySuggestion(
+                  identity: 'Item_Icon_ExpItem_1',
+                  score: 0.81,
+                ),
+              ],
+            ),
+          ]
+        : <ScannerUnresolvedSlot>[];
+    return ScannerUnresolvedSlots(
+      candidateId: candidate.id,
+      candidateRevision: candidate.revision,
+      slots: slots,
+    );
+  }
+
+  @override
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
+  }) async {
+    final current = await getScannerCandidate(session, candidate.id);
+    if (current.revision != candidate.revision) {
+      throw StateError('candidate_revision_conflict');
+    }
+    final key = '${session.id}:${candidate.id}:$slot';
+    if (_assignedScannerSlots.contains(key)) {
+      throw StateError('unresolved_slot_not_found');
+    }
+    final payload = Map<String, dynamic>.from(current.payload);
+    final entries = List<dynamic>.from(payload['entries'] as List? ?? const []);
+    entries.add({
+      'key': identity,
+      'quantity': null,
+      'item_id': identity,
+      'name': identity,
+      'observed_slot': slot,
+      'profile_id': 'activity_reports',
+      'inventory_scan_profile': 'activity_reports',
+    });
+    payload['entries'] = entries;
+    final revised = ScannerCandidate(
+      id: current.id,
+      sessionId: current.sessionId,
+      generation: current.generation,
+      revision: current.revision + 1,
+      kind: current.kind,
+      payload: payload,
+      evidence: [
+        ...current.evidence,
+        ScannerFieldEvidence(
+          field: 'entries[$slot].item_id',
+          status: 'verified',
+          source: 'user_label',
+          confidence: 1,
+        ),
+      ],
+      reviewRequired: true,
+      approved: false,
+      audit: [
+        ...current.audit,
+        {
+          'source': 'user_identity_assignment',
+          'slot': slot,
+          'identity': identity,
+          'persistence': persist ? 'user_confirmed' : 'session',
+        },
+      ],
+    );
+    _assignedScannerSlots.add(key);
+    _scannerCandidates['${session.id}:${candidate.id}'] = revised;
+    return ScannerIdentityAssignmentResult(candidate: revised, slots: const []);
   }
 
   @override

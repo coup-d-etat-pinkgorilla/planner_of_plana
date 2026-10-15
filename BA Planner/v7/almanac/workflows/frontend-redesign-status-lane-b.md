@@ -4263,3 +4263,138 @@ schema = `contracts/tactical-protocol-v2.schema.json`. "키만"은 schema가 원
 
 - FE9-a 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: ① 사고 기록의 7개 파일(Lane A 6 · 스캐너 1) 공백 · 줄바꿈 확인을 해당 레인에 알림 ② Lane A가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에서 tactical_page +19 · revision +5, golden 새 2장 RED → 승인 → `-UpdateGoldens`, 기존 golden 변화 0) ③ `fe_commit.ps1 -Slice fe9a`. 발견 1~4 · 8은 CF/XB 판단, 2는 FE9-e 착수 전에.
+
+## scanwip-func 착수 기록 (2026-10-14)
+
+- 상태: **진행 중 → 완료(아래 scanwip-func 종료 기록), CF candidate gate 미실행**. 범위: 스캐너 frontend WIP(tracked 13 + untracked 2)에서 XB `frontend-functional-hunks-390c194a.md/json`의 FUNCTIONAL hunk만 담은 post 사본(`debug/frontend_scanwipfunc/post/`)을 만들고, `candidate-v4-v7/frontend`를 "커밋 뒤 HEAD frontend"(HEAD tracked frontend + post)로 맞춰 사본에서 analyze · 스캐너 테스트. 근거: 사용자 결정 10:05, backend 로그 08:32 · 15:44 · 16:11(checkbox = 기존 5열 + 편집 중 index5 `FixedColumnWidth(84)`) · 18:37 · 19:32, `cf-gate-handoff.md`.
+- 착수 전 확인: 이 문서 끝에 다른 "scanwip-func 착수 기록" 없음(grep 0건). 막힘: 대장 `열림` 0건.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `d2765e0a0ef6a9c9704d6ebb651420236c9c3239`. 15파일 모두 HEAD 내용 = `390c194a` 내용(HEAD 블롭 SHA = XB json `HEAD390c194a` SHA, 13/13).
+- 15파일 SHA 대조(작업 트리 바이트 SHA-256 앞 12자리 · XB 17:27 캡처 `frontend-390-inputs-actual.json` · hunk json `working_at_capture`/`sha256`):
+
+| 경로 | bytes | 작업 트리 SHA | =17:27 캡처 | =hunk json | 줄바꿈 |
+|---|---:|---|---|---|---|
+| `frontend/lib/services/mock_app_service.dart` | 121253 | `74f5584c3b45` | 일치 | 일치 | CRLF 주 + LF 128 |
+| `frontend/lib/services/planning_protocol_client.dart` | 35678 | `8260f8a84f20` | 일치 | 일치 | CRLF 주 + LF 18 |
+| `frontend/lib/services/process_app_service.dart` | 43479 | `12c955f8e5b1` | 일치 | 일치 | CRLF 주 + LF 24 |
+| `frontend/lib/services/scanner_service.dart` | 34679 | `b5a2ba990262` | 일치 | 일치 | LF |
+| `frontend/lib/ui/pages/scan_page.dart` | 73056 | `287623cc785d` | 일치 | 일치 | LF |
+| `frontend/lib/ui/widgets/scan_companion_dock.dart` | 9269 | `57270a5fefda` | 일치 | 일치 | CRLF |
+| `frontend/lib/ui/widgets/scan_student_review_workspace.dart` | 50455 | `05b0d8bb3623` | 일치 | 일치 | LF |
+| `frontend/test/mock_scanner_service_test.dart` | 3962 | `5625fe9f0fb4` | 일치 | 일치 | CRLF |
+| `frontend/test/scan_companion_dock_test.dart` | 3351 | `c9cb4031ade0` | 일치 | 일치 | CRLF |
+| `frontend/test/scan_page_test.dart` | 29133 | `ea4b2e0299e7` | 일치 | 일치 | LF |
+| `frontend/test/scan_student_review_workspace_test.dart` | 10457 | `5fb0984a834f` | 일치 | 일치 | LF |
+| `frontend/test/scanner_process_e2e_test.dart` | 9926 | `e228a5e8e76f` | 일치 | 일치 | LF |
+| `frontend/test/scanner_protocol_client_test.dart` | 11135 | `ee55a9d1d6cd` | 일치 | 일치 | LF |
+| `frontend/lib/ui/widgets/scan_inventory_identity_review.dart`(untracked) | 8483 | `f7d533462b54` | 일치 | 일치 | LF |
+| `frontend/test/scan_inventory_identity_review_test.dart`(untracked) | 3162 | `b26ccfbff52d` | 일치 | 일치 | LF |
+
+- 메인 `git status --short frontend`: tracked 수정 13(위 표) · untracked = 위 2 + `frontend/assets/item_icons/activity_reports/`(4파일) · `frontend/assets/item_icons/ooparts/Item_Icon_WorkBook_Potential{Attack,HealPower,MaxHP}.png`(3파일). item_icons 7파일은 이 slice 밖(표에만). 그 밖 frontend 파일은 HEAD와 같다.
+- 현재 `git diff -U3` hunk 머리(파일별 개수 · 옛 시작 줄)가 hunk json `head390c194a_line`과 13파일 모두 같다(mock 5 · client 3 · process 3 · scanner_service 6 · scan_page 16 · dock 7 · workspace 27 · 테스트 1/5/2/5/2/1). 목록 밖 hunk 0.
+- 메인 쓰기 계획: `frontend/test/scan_student_review_workspace_test.dart`에 회귀 테스트 추가 1곳만. 그 밖 메인 파일은 이 문서 외 0. git 쓰기 0, `dart format` 0.
+
+## scanwip-func 종료 기록 (2026-10-14, post · candidate 준비 완료 · CF candidate gate 미실행)
+
+스캐너 frontend WIP에서 XB 390c194a 목록의 FUNCTIONAL hunk만 담은 post(tracked 11 + 새 2)를 만들었고, 같은 candidate id 새 revision 회귀 테스트 1건을 post와 메인 WIP 테스트 파일에 똑같이 더했다. `candidate-v4-v7/frontend`를 "커밋 뒤 HEAD frontend"로 맞추고 그 사본에서 analyze · 스캐너 테스트를 돌렸다. HEAD는 착수 때와 같다(`d2765e0a`). git 쓰기 0, `dart format` 0.
+
+### 실행한 명령과 결과
+
+- pre/post 생성: `python debug/frontend_scanwipfunc/tools/build_pre_post.py`(v7 폴더). 파일마다 `git diff -U3` hunk 머리를 hunk json과 대조(13/13 일치)하고, "pre + 모든 hunk = 작업 트리 바이트"를 확인한 뒤 FUNCTIONAL hunk만 작업 트리 바이트 그대로 pre에 이어 붙였다. 결과 `debug/frontend_scanwipfunc/logs/build-report.json`.
+- 메인 `frontend`: `flutter analyze` **No issues found(0)**. `flutter test test/scan_student_review_workspace_test.dart` **+7 −0**(회귀 테스트 추가 뒤, 메인 WIP 위).
+- 남는 것 검증: `python debug/frontend_scanwipfunc/tools/verify_remainder.py` → **PASS**(아래 표, `logs/remainder-check.json`).
+- 3-way 모의(스크래치, LF로 맞춘 뒤 `git merge-file -p`, base = pre · ours = HEAD · theirs = post): 13파일 충돌 0, 병합 결과 = post 13/13(dock 2파일은 HEAD와 같아 변화 없음).
+- candidate 맞추기: `python debug/frontend_scanwipfunc/tools/sync_candidate.py` → 대상 1582(HEAD tracked frontend 1580 중 post 13 대체 + 새 2), **바꾼 파일 43**, 다시 돌리면 0(멱등), HEAD 블롭 대체 0(쓰는 동안 다른 레인 편집과 겹친 파일 없음).
+- candidate `frontend`: `flutter analyze` 1회차는 pub get이 "Building with plugins requires symlink support … enable Developer Mode" 안내를 내고 끝났다 → 2회차 **No issues found(0)**(exit 0). pub get 뒤 tracked 대상 파일 변화 0(sync dry-run 0).
+- candidate 일반 스캐너 테스트 12파일(한 명령, json): **+132 −0** — mock_scanner_commit_history +9, mock_scanner_service +4, scan_companion_dock +3, scan_inventory_identity_review +2, scan_page_pause_fb10a +8, scan_page_revision +14, scan_page +17, scan_student_review_workspace +5, scanner_pause_fb10a +39, scanner_protocol_client +6, scanner_review_images_fb10c +6, scanner_target_metadata_fb4 +19.
+- candidate process E2E(`--concurrency=1`, 파일마다 따로, candidate sibling backend): scanner_process_e2e **+1**, scanner_pause_process_e2e **+1**, scanner_review_images_fb10c_process_e2e **+1**, scanner_target_metadata_process_e2e **+1**. 실행 뒤 candidate backend · contracts에 새로 생기거나 바뀐 파일 0(`__pycache__` 포함). selected30 pins 30/30 그대로(`selected30-paths-sha.md` 대조).
+- 회귀 테스트 변이 확인(candidate, 바로 원복): 위젯의 revision 비교 조건 앞에 `false &&`를 넣으면 workspace 테스트 **+4 −1**(새 테스트만 실패) → 원 바이트로 되돌림, SHA `2acef6b3b65f…` = post 확인.
+- 표시 확인용 임시 테스트(candidate `test/zz_scanwip_probe_tmp_test.dart`, 실행 뒤 삭제): 발견 1.
+- `git diff --check`(메인 테스트 파일 · 이 문서): exit 0. post 15파일: 줄 끝 공백 0 · 끝 개행 하나. 잠금 충돌 0(재시도 없음). 로그는 실패 줄 · json 요약만 확인(`debug/frontend_scanwipfunc/logs/`).
+
+### 15파일 SHA 대조(종료)
+
+착수 표와 같다 — 메인 14파일 바이트 그대로(SHA 14/14 착수 값과 일치). 바뀐 것은 `frontend/test/scan_student_review_workspace_test.dart` 하나: 10457 `5fb0984a834f…` → **13408 `2fd54a892cdb8ea5bf6ad940965dff8b5e4e6c0af52141fb1c15681ec31d7e70`**(회귀 테스트 추가만). `git status --short frontend` 항목 수는 착수 때와 같다(19).
+
+### 파일별 hunk 처리
+
+| 파일 | FUNCTIONAL 적용 | VISUAL 제외 | 나눈 hunk · 방법 | pre 줄바꿈 |
+|---|---|---|---|---|
+| `lib/services/mock_app_service.dart` | 188 · 498 · 512 · 528 · 556 | — | — (FE9-b1 몫은 이미 HEAD, 현재 diff에 없음) | CRLF 3067 + LF 128 |
+| `lib/services/planning_protocol_client.dart` | 194 · 864 · 891 | — | — | CRLF 983 + LF 18 |
+| `lib/services/process_app_service.dart` | 1232 · 1239 · 1252 | — | — | CRLF 1307 + LF 24 |
+| `lib/services/scanner_service.dart` | 1 · 387 · 616 · 795 · 805 · 836 | — | — | LF |
+| `lib/ui/pages/scan_page.dart` | 17 · 76 · 100 · 309 · 417 · 839 · 862 · 879 · 1193 · 1245 · 1473 · 1655 | 703 · 733 · 785 · 1620 | — | LF |
+| `lib/ui/widgets/scan_companion_dock.dart` | — | 1 · 66 · 81 · 97 · 176 · 219 · 307(전부) | — (post = HEAD 내용, commit.json modified 밖) | CRLF |
+| `lib/ui/widgets/scan_student_review_workspace.dart` | 15 · 80 · 89 · 234 · 255 · 484 · 494 · 505 · 554 · 1169 · **1178** · 1221 · 1250 · 1258 · 1297 | 6 · 323 · 785 · 815 · 828 · 911 · 961 · 969 · 1118 · 1131 · 1138 · 1156 | 1178: 실제 내용이 confirmedFields/onConfirmed 필드 · 기존 5열 너비 그대로(값 같음, `const` 맵 → 원소별 `const`) · `if (editing) 5: FixedColumnWidth(84)` · 머리 행 `const` 해제 + 편집 중 '화면 확인' 열뿐이라(media report 구조 0) **통째로 적용**, 쪼갤 것 없음 | LF |
+| `test/mock_scanner_service_test.dart` | 24 | — | — | CRLF |
+| `test/scan_companion_dock_test.dart` | — | 3 · 22 · 57 · 83 · 114(전부) | — (post = HEAD 내용, modified 밖) | CRLF |
+| `test/scan_page_test.dart` | 198 · 250 | — | — | LF |
+| `test/scan_student_review_workspace_test.dart` | 101 · 164 · **39(일부)** | 1 · 181 | 39: 새 줄 중 `testWidgets('review confirms edits and checked fields …')` 블록 + 뒤 빈 줄만 넣고, `test('wide scan report prioritizes …')` 5줄 + 뒤 빈 줄은 뺐다(뺀 바이트 `logs/split-dropped-39.txt`) | LF |
+| `test/scanner_process_e2e_test.dart` | 35 · 124 | — | — | LF |
+| `test/scanner_protocol_client_test.dart` | 220 | — | — | LF |
+| `lib/ui/widgets/scan_inventory_identity_review.dart`(새) | 파일 전체 | — | — | LF |
+| `test/scan_inventory_identity_review_test.dart`(새) | 파일 전체 | — | — | LF |
+
+- pre = HEAD 내용에, 줄마다 작업 트리의 같은 줄 줄바꿈 바이트를 붙였다. 공유 서비스 3파일은 HEAD에 이미 있는 줄 중 LF로만 끝나는 줄이 작업 트리에 128 · 18 · 24줄 있어(예전 slice가 넣은 줄) 파일 전체를 CRLF로 바꾸면 작업 트리와 어긋난다 — 그래서 줄 단위로 맞췄다. WIP가 지운 줄(mock 1줄 · dock 여러 줄)은 앞 줄의 줄바꿈을 따랐다. 모든 pre는 줄바꿈을 LF로 맞추면 HEAD 블롭과 같다(13/13).
+- 목록 밖 hunk 0, 한 줄 안에 기능 · 시각이 섞인 곳 0.
+
+### 추가한 회귀 테스트
+
+- `testWidgets('review resets draft, checked fields and errors when the same candidate gets a new revision')`(workspace 테스트, O1 confirmation 테스트 바로 뒤): 같은 id `safety`의 revision 1에서 편집 → level 91 입력 · weapon_level 화면 확인 체크 · bond_rank `bad`(정수 오류 문구 보임, 체크 켜짐) → 같은 id revision 2(level 80)로 다시 그림 → 오류 문구 없음 · 체크 꺼짐 → 재검증하면 `confirmedFields` 빈 집합 · 보낸 values = revision 2 값(`level 80 · bond_rank 20 · weapon_level 60`, 91 아님).
+- post와 메인에 같은 바이트(LF)로 같은 자리(confirmation 테스트 뒤)에 넣었다. 메인에서는 그 뒤에 시각부 wide report 테스트가 그대로 이어진다.
+
+### "작업 트리 − post = 시각부" 검증
+
+`git diff --no-index -U0 <post> <메인>`(원 바이트, 줄바꿈 필터 없음)의 지운/더한 줄 묶음을, HEAD → 메인 diff에서 VISUAL hunk에 속한 줄(+ hunk39에서 뺀 wide 테스트 줄)과 비교했다. 줄바꿈만 다른 줄 0.
+
+| 파일 | VISUAL hunk | post→메인 −/+ | 기대(시각부) −/+ | 일치 |
+|---|---:|---|---|---|
+| `mock_app_service.dart` · `planning_protocol_client.dart` · `process_app_service.dart` · `scanner_service.dart` | 0 | 0/0 (바이트 같음) | 0/0 | 예 |
+| `scan_page.dart` | 4 | 42/12 | 42/12 | 예 |
+| `scan_companion_dock.dart` | 7 | 254/56 | 254/56 | 예 |
+| `scan_student_review_workspace.dart` | 12 | 56/121 | 56/121 | 예 |
+| `mock_scanner_service_test.dart` · `scan_page_test.dart` · `scanner_process_e2e_test.dart` · `scanner_protocol_client_test.dart` | 0 | 0/0 (바이트 같음) | 0/0 | 예 |
+| `scan_companion_dock_test.dart` | 5 | 40/14 | 40/14 | 예 |
+| `scan_student_review_workspace_test.dart` | 2 + hunk39 일부 | 0/90 | 0/90(import 1 · wide 테스트 6 · hunk181 83) | 예 |
+| 새 2파일 | — | 바이트 같음 | — | 예 |
+
+### candidate frontend
+
+- 대상 = 메인 HEAD tracked frontend 1580(post에 있는 13은 post로) + 새 2 = 1582. HEAD 내용과 같은 메인 작업 트리 바이트를 그대로 썼다(= 작업 트리 줄바꿈).
+- 바꾼 43(경로 · bytes · SHA · 이전 SHA: `debug/frontend_scanwipfunc/candidate-frontend-pins.json`, 전체 대상 목록 `logs/candidate-target-manifest.json`, 바꾸기 전 `logs/candidate-before.json`):
+  - post 5: `scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · `scan_companion_dock_test.dart` · `scan_student_review_workspace_test.dart`(시각부가 빠짐 · 회귀 테스트). 나머지 post 10은 이미 같았다.
+  - 17:27 캡처 뒤 커밋(FE7-i `48f5e0ad` · FE9-a `f1422164`) 내용 14 + 새 4(`lib/ui/tactical/tactical_workspace.dart`, `test/goldens/fe9a_tactical_golden_test.dart`, golden `tactical.png` · `tactical-migration.png`). 통계 golden 4장 · `fe7a_statistics_golden_test.dart` 포함.
+  - 줄바꿈만 다른 16(candidate는 CRLF, 메인 작업 트리는 LF 또는 다른 섞임): `.metadata` · `README.md` · `dart_test.yaml` · `tool/` 7(`fe_commit.ps1` 등, `fe_gate.ps1`은 이미 같음) · `windows/` 9. lib · test · assets · pubspec은 줄바꿈 차이 없었다.
+- 대상 밖(`debug/frontend_scanwipfunc/candidate-extra.txt` 189항목, 지우지 않음 — CF 판단): `test/zz_fe7i_measure_tmp_test.dart` · `test/zz_fe7i_render_tmp_test.dart`(17:27 캡처 때 있던 임시 테스트, 메인에는 지금 없음 — **candidate `fe_gate.ps1`이 일반 테스트로 실행한다**), untracked 자산 7(`assets/item_icons/activity_reports/` 4 · `ooparts/Item_Icon_WorkBook_Potential*.png` 3, 메인에도 untracked로 있음), `test/goldens/failures/` 180(gitignore 대상 gate 출력). 내 analyze가 만든 생성물: `.dart_tool/` · `.flutter-plugins-dependencies` · `windows/flutter/ephemeral/`(목록에 없음).
+- candidate backend · contracts · frontend 밖: 쓰기 0.
+
+### 메인 작업 트리 변경 확인
+
+- 바꾼 메인 파일: `frontend/test/scan_student_review_workspace_test.dart`(추가만) + 이 문서. 그 밖 메인 frontend · backend · contracts · `frontend/tool/**`: 0(WIP 14파일 SHA 그대로, `git status --short frontend` 19항목 그대로, HEAD `d2765e0a` 그대로).
+
+### 미검증(미실행)
+
+- candidate 전체 `fe_gate.ps1`(golden 비교 · 전체 일반 테스트 · 나머지 process E2E · almanac · diff check): **미실행**(CF 몫).
+- golden 비교: **미실행**. 아래 발견 2의 이유로 candidate의 `scan-student-review` 장면은 RED일 수 있다(예측, 확인 안 함).
+- 메인에서 스캐너 테스트 전체: **미실행**(workspace 1파일만).
+- 실제 백엔드에 붙인 화면 · 실제 게임 스캔: **미실행**.
+
+### 발견 사항
+
+1. **같은 id 새 revision 뒤 편집 칸 표시**: draft · 체크 · 오류는 비워지지만, 편집 중이던 칸(`TextFormField`, key `scan-student-field-<field>`)은 `initialValue`가 처음 만들 때만 쓰여 예전에 친 글자(`91` · `bad`)를 계속 보여 준다. 재검증은 새 revision 값(80)을 보낸다 — 화면 값과 보내는 값이 다를 수 있다. 편집 상태(`_editing`)도 revision이 바뀌어도 유지된다. 이 slice는 WIP 바이트를 그대로 옮기므로 고치지 않았다(key에 revision을 넣으면 풀림) — FE8-f1 컨트롤러 추출 때 CF 판단.
+2. **golden 기준선이 시각부를 포함했을 가능성**: `scan-student-review.png`는 FE1-g/FE1-c(2026-10-06)에 스캐너 WIP 전체(시각부 포함)가 작업 트리에 있는 상태에서 만들어졌고, 그 장면은 결과 목록(시각 hunk 969 `_CandidateResultRow` · 1118~1156 상태 틀 · 323 · 785 보고 너비)을 그린다. 편집 상태가 아니라 기능부(체크 열 · 안내 문구)는 그려지지 않는다. 그래서 candidate(시각부 없음)에서 이 장면이 HEAD 기준선과 다를 수 있다. 다르면: 커밋될 코드(시각부 없음)에 맞춘 새 기준선을 승인하면 메인 작업 트리(시각부 있음)에서는 FE8-g2까지 이 장면이 RED가 된다 — CF 판단. 다른 golden 장면은 스캐너 위젯을 쓰지 않는다(grep).
+3. **HEAD 단독 불일치**: HEAD의 `fe1g_baseline_golden_test.dart:1233`은 이미 4인자 `onRevalidate: (_, _, _, _)`인데 HEAD typedef는 3인자다 — 깨끗한 HEAD checkout에서는 golden 테스트가 컴파일되지 않는다. 이 slice(4인자 typedef)를 커밋하면 맞아진다.
+4. candidate의 `zz_fe7i_*_tmp_test.dart` 2개는 candidate gate에 섞여 돈다(위). 지울지 CF 판단.
+5. candidate pub get이 Developer Mode(심볼릭 링크) 안내를 냈다 — `windows/flutter/ephemeral/.plugin_symlinks`가 비어 있다. analyze · 테스트에는 영향이 없었다. Windows 빌드는 이 사본에서 하지 않는다.
+6. checkbox hunk 1178은 16:11 정정 그대로의 내용만 담고 있어 쪼갤 필요가 없었다. FE9-b1 위임 · interface는 현재 diff에 없다(HEAD에 이미 있음).
+
+### 사본 · commit.json
+
+- pre(13, HEAD 내용): `debug/frontend_scanwipfunc/pre/<경로>`. post(15 = tracked 13 + 새 2, dock 2파일은 HEAD 내용): `debug/frontend_scanwipfunc/post/<경로>`. 도구: `debug/frontend_scanwipfunc/tools/`.
+- `debug/frontend_scanwipfunc/commit.json`: slice `scanwipfunc`, modified 11(dock 2파일 제외), added 2, `post_dir` = `debug/frontend_scanwipfunc/post`, `status=false`, `whole` = [이 문서]. pre 내용 = HEAD라 커밋 결과 = post(3-way 모의 확인).
+- 인계: `debug/frontend_scanwipfunc/output.md`.
+
+### 다음 행동
+
+- Lane B는 여기서 멈춘다.
+- CF: ① candidate `frontend/tool/fe_gate.ps1`(발견 2 · 4 확인) → ② 결과(summary 경로 · stamp · source30 unchanged pin · 최종 frontend pin = `candidate-frontend-pins.json`)를 backend 로그로 XB에 회신 → ③ XB source30 커밋 → ④ CF `fe_commit.ps1 -Slice scanwipfunc` → ⑤ FE8-f1(발견 1 반영 여부 포함).

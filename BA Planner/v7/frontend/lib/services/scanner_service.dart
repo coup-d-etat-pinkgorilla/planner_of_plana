@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'app_service.dart';
 import 'planning_protocol_client.dart';
@@ -387,6 +389,140 @@ class ScannerCandidate {
       );
 }
 
+class ScannerIdentitySuggestion {
+  const ScannerIdentitySuggestion({
+    required this.identity,
+    required this.score,
+  });
+
+  final String identity;
+  final double score;
+
+  factory ScannerIdentitySuggestion.fromWire(Map<String, dynamic> wire) {
+    final identity = wire['identity'];
+    final score = wire['score'];
+    if (identity is! String || identity.isEmpty || score is! num) {
+      throw const FormatException('Invalid scanner identity suggestion');
+    }
+    return ScannerIdentitySuggestion(
+      identity: identity,
+      score: score.toDouble(),
+    );
+  }
+}
+
+class ScannerUnresolvedSlot {
+  ScannerUnresolvedSlot({
+    required this.slot,
+    required this.profile,
+    required this.width,
+    required this.height,
+    required Uint8List cropPng,
+    required List<ScannerIdentitySuggestion> candidates,
+  }) : cropPng = Uint8List.fromList(cropPng),
+       candidates = List.unmodifiable(candidates);
+
+  final int slot;
+  final InventoryScanProfile profile;
+  final int width;
+  final int height;
+  final Uint8List cropPng;
+  final List<ScannerIdentitySuggestion> candidates;
+
+  factory ScannerUnresolvedSlot.fromWire(Map<String, dynamic> wire) {
+    final resolution = wire['resolution'];
+    final encoded = wire['crop_png_base64'];
+    final candidates = wire['candidates'];
+    if (wire['slot'] is! int ||
+        resolution is! Map ||
+        resolution['width'] is! int ||
+        resolution['height'] is! int ||
+        encoded is! String ||
+        encoded.isEmpty ||
+        candidates is! List) {
+      throw const FormatException('Invalid unresolved scanner slot');
+    }
+    try {
+      return ScannerUnresolvedSlot(
+        slot: wire['slot'] as int,
+        profile: InventoryScanProfile.fromWire(wire['profile'] as String),
+        width: resolution['width'] as int,
+        height: resolution['height'] as int,
+        cropPng: base64Decode(encoded),
+        candidates: candidates
+            .map(
+              (item) => ScannerIdentitySuggestion.fromWire(
+                Map<String, dynamic>.from(item as Map),
+              ),
+            )
+            .toList(growable: false),
+      );
+    } on ArgumentError catch (error) {
+      throw FormatException('Invalid unresolved scanner slot: $error');
+    }
+  }
+}
+
+class ScannerUnresolvedSlots {
+  ScannerUnresolvedSlots({
+    required this.candidateId,
+    required this.candidateRevision,
+    required List<ScannerUnresolvedSlot> slots,
+  }) : slots = List.unmodifiable(slots);
+
+  final String candidateId;
+  final int candidateRevision;
+  final List<ScannerUnresolvedSlot> slots;
+
+  factory ScannerUnresolvedSlots.fromWire(Map<String, dynamic> wire) {
+    final slots = wire['slots'];
+    if (wire['candidate_id'] is! String ||
+        wire['candidate_revision'] is! int ||
+        slots is! List) {
+      throw const FormatException('Invalid unresolved scanner slots response');
+    }
+    return ScannerUnresolvedSlots(
+      candidateId: wire['candidate_id'] as String,
+      candidateRevision: wire['candidate_revision'] as int,
+      slots: slots
+          .map(
+            (item) => ScannerUnresolvedSlot.fromWire(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class ScannerIdentityAssignmentResult {
+  ScannerIdentityAssignmentResult({
+    required this.candidate,
+    required List<ScannerUnresolvedSlot> slots,
+  }) : slots = List.unmodifiable(slots);
+
+  final ScannerCandidate candidate;
+  final List<ScannerUnresolvedSlot> slots;
+
+  factory ScannerIdentityAssignmentResult.fromWire(Map<String, dynamic> wire) {
+    final candidate = ScannerCandidate.fromWire(
+      Map<String, dynamic>.from(wire['candidate'] as Map),
+    );
+    final remaining = ScannerUnresolvedSlots.fromWire({
+      'candidate_id': candidate.id,
+      'candidate_revision': wire['candidate_revision'],
+      'slots': wire['slots'],
+    });
+    if (remaining.candidateRevision != candidate.revision) {
+      throw const FormatException('Identity assignment revision mismatch');
+    }
+    return ScannerIdentityAssignmentResult(
+      candidate: candidate,
+      slots: remaining.slots,
+    );
+  }
+}
+
 class ScannerEvent {
   ScannerEvent({
     required this.sessionId,
@@ -616,11 +752,23 @@ abstract interface class ScannerService {
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   });
   Future<ScannerCandidate> revalidateScannerCandidate(
     ScannerSession session,
     ScannerCandidate candidate, {
     Map<int, int>? relationshipRanks,
+  });
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  );
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
   });
   Future<Map<String, dynamic>> commitScannerCandidate(
     ScannerSession session,
@@ -795,6 +943,7 @@ class ScannerProtocolClient implements ScannerService {
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   }) async => ScannerCandidate.fromWire(
     Map<String, dynamic>.from(
       (await _client.send('scanner.candidate.review', {
@@ -805,6 +954,8 @@ class ScannerProtocolClient implements ScannerService {
             'candidate_payload': payload,
             'approve': approve,
             'reason': reason,
+            if (confirmedFields != null)
+              'confirmed_fields': confirmedFields.toList()..sort(),
             if (relationshipRanks != null)
               'relationship_ranks': {
                 for (final entry in relationshipRanks.entries)
@@ -834,6 +985,35 @@ class ScannerProtocolClient implements ScannerService {
           }))['candidate']
           as Map,
     ),
+  );
+  @override
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  ) async => ScannerUnresolvedSlots.fromWire(
+    await _client.send('scanner.review.unresolved_slots', {
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': candidate.id,
+    }),
+  );
+  @override
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
+  }) async => ScannerIdentityAssignmentResult.fromWire(
+    await _client.send('scanner.review.assign_identity', {
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': candidate.id,
+      'expected_candidate_revision': candidate.revision,
+      'slot': slot,
+      'identity': identity,
+      'persist': persist,
+    }),
   );
   @override
   Future<Map<String, dynamic>> commitScannerCandidate(

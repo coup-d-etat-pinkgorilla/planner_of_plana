@@ -15,6 +15,7 @@ typedef ScanCandidateEditAction =
       ScannerCandidate candidate,
       Map<String, dynamic> candidatePayload,
       Map<int, int> relationshipRanks,
+      Set<String> confirmedFields,
     );
 
 List<ScannerCandidate> orderScanResultCandidatesByGroup(
@@ -80,6 +81,8 @@ class _ScanStudentReviewWorkspaceState
   final Map<String, Map<String, dynamic>> _drafts = {};
   final Map<String, String> _localErrors = {};
   final Map<String, Map<int, String>> _relationshipRankInputs = {};
+  final Map<String, Set<String>> _confirmedFields = {};
+  final Map<String, Set<String>> _invalidFields = {};
 
   @override
   void didUpdateWidget(ScanStudentReviewWorkspace oldWidget) {
@@ -89,6 +92,20 @@ class _ScanStudentReviewWorkspaceState
     _drafts.removeWhere((id, _) => !ids.contains(id));
     _localErrors.removeWhere((id, _) => !ids.contains(id));
     _relationshipRankInputs.removeWhere((id, _) => !ids.contains(id));
+    _confirmedFields.removeWhere((id, _) => !ids.contains(id));
+    _invalidFields.removeWhere((id, _) => !ids.contains(id));
+    for (final candidate in widget.candidates) {
+      final previous = oldWidget.candidates
+          .where((item) => item.id == candidate.id)
+          .firstOrNull;
+      if (previous != null && previous.revision != candidate.revision) {
+        _drafts.remove(candidate.id);
+        _confirmedFields.remove(candidate.id);
+        _invalidFields.remove(candidate.id);
+        _localErrors.remove(candidate.id);
+        _relationshipRankInputs.remove(candidate.id);
+      }
+    }
     if (_selectedId == null || !ids.contains(_selectedId)) {
       _selectedId = widget.candidates.isEmpty
           ? null
@@ -234,6 +251,7 @@ class _ScanStudentReviewWorkspaceState
   }
 
   Future<void> _revalidate(ScannerCandidate candidate) async {
+    if (_invalidFields[candidate.id]?.isNotEmpty ?? false) return;
     final payload = Map<String, dynamic>.from(candidate.payload);
     payload['values'] = Map<String, dynamic>.from(_draft(candidate));
     final relationshipRanks = <int, int>{};
@@ -255,7 +273,14 @@ class _ScanStudentReviewWorkspaceState
       relationshipRanks[id] = rank;
     }
     setState(() => _localErrors.remove(candidate.id));
-    await widget.onRevalidate(candidate, payload, relationshipRanks);
+    final original = _values(candidate);
+    final draft = _draft(candidate);
+    final confirmed = <String>{
+      ...?_confirmedFields[candidate.id],
+      for (final field in draft.keys)
+        if (draft[field] != original[field]) field,
+    };
+    await widget.onRevalidate(candidate, payload, relationshipRanks, confirmed);
     if (mounted) setState(() => _editing.remove(candidate.id));
   }
 
@@ -484,6 +509,10 @@ class _ScanStudentReviewWorkspaceState
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.xs),
+            if (_editing.contains(candidate.id))
+              const Text(
+                '수정한 항목은 자동으로 확인됩니다. 바꾸지 않은 항목은 게임 화면과 대조한 뒤 화면 확인을 선택하세요.',
+              ),
             if (wide)
               _ComparisonTable(
                 fields: ordered,
@@ -494,6 +523,9 @@ class _ScanStudentReviewWorkspaceState
                 statToField: statToField,
                 editing: _editing.contains(candidate.id),
                 onChanged: (field, value) => _edit(candidate, field, value),
+                confirmedFields: _confirmedFields[candidate.id] ?? const {},
+                onConfirmed: (field, checked) =>
+                    _confirm(candidate, field, checked),
               )
             else
               for (final field in ordered)
@@ -505,6 +537,9 @@ class _ScanStudentReviewWorkspaceState
                   delta: _calculatedDelta(field, delta, statToField),
                   editing: _editing.contains(candidate.id),
                   onChanged: (value) => _edit(candidate, field, value),
+                  confirmed:
+                      _confirmedFields[candidate.id]?.contains(field) ?? false,
+                  onConfirmed: (checked) => _confirm(candidate, field, checked),
                 ),
             if (_localErrors[candidate.id] case final error?)
               Padding(
@@ -554,16 +589,48 @@ class _ScanStudentReviewWorkspaceState
   void _edit(ScannerCandidate candidate, String field, String text) {
     final original = _values(candidate)[field];
     dynamic value = text;
-    if (original is int || _potentialFields.contains(field)) {
+    if (original is int ||
+        _potentialFields.contains(field) ||
+        {
+          'level',
+          'bond_rank',
+          'weapon_level',
+          'equip1_level',
+          'equip2_level',
+          'equip3_level',
+        }.contains(field)) {
       value = int.tryParse(text);
       if (value == null) {
-        setState(() => _localErrors[candidate.id] = '$field 값은 정수여야 합니다.');
+        setState(() {
+          _invalidFields.putIfAbsent(candidate.id, () => <String>{}).add(field);
+          _localErrors[candidate.id] = '$field 값은 정수여야 합니다.';
+        });
         return;
       }
     }
     setState(() {
       _draft(candidate)[field] = value;
-      _localErrors.remove(candidate.id);
+      _invalidFields[candidate.id]?.remove(field);
+      if (_invalidFields[candidate.id]?.isNotEmpty ?? false) {
+        _localErrors[candidate.id] = '입력 오류를 수정한 뒤 재검증하세요.';
+      } else {
+        _localErrors.remove(candidate.id);
+      }
+    });
+  }
+
+  void _confirm(ScannerCandidate candidate, String field, bool checked) {
+    if (!_draft(candidate).containsKey(field)) return;
+    setState(() {
+      final fields = _confirmedFields.putIfAbsent(
+        candidate.id,
+        () => <String>{},
+      );
+      if (checked) {
+        fields.add(field);
+      } else {
+        fields.remove(field);
+      }
     });
   }
 
@@ -1169,6 +1236,8 @@ class _ComparisonTable extends StatelessWidget {
     required this.statToField,
     required this.editing,
     required this.onChanged,
+    required this.confirmedFields,
+    required this.onConfirmed,
   });
   final List<String> fields;
   final Map<String, dynamic> current;
@@ -1178,25 +1247,29 @@ class _ComparisonTable extends StatelessWidget {
   final Map<String, String> statToField;
   final bool editing;
   final void Function(String field, String value) onChanged;
+  final Set<String> confirmedFields;
+  final void Function(String field, bool checked) onConfirmed;
 
   @override
   Widget build(BuildContext context) => Table(
     border: TableBorder.all(color: AppColors.outline),
-    columnWidths: const {
-      0: FlexColumnWidth(1.25),
-      1: FlexColumnWidth(),
-      2: FlexColumnWidth(),
-      3: FlexColumnWidth(),
-      4: FlexColumnWidth(),
+    columnWidths: {
+      0: const FlexColumnWidth(1.25),
+      1: const FlexColumnWidth(),
+      2: const FlexColumnWidth(),
+      3: const FlexColumnWidth(),
+      4: const FlexColumnWidth(),
+      if (editing) 5: const FixedColumnWidth(84),
     },
     children: [
-      const TableRow(
+      TableRow(
         children: [
           _TableCellText('필드', header: true),
           _TableCellText('현재 확정값', header: true),
           _TableCellText('스캔값', header: true),
           _TableCellText('계산값', header: true),
           _TableCellText('차이', header: true),
+          if (editing) const _TableCellText('화면 확인', header: true),
         ],
       ),
       for (final field in fields)
@@ -1221,6 +1294,12 @@ class _ComparisonTable extends StatelessWidget {
             _TableCellText(
               '${_ScanStudentReviewWorkspaceState._calculatedDelta(field, delta, statToField) ?? '—'}',
             ),
+            if (editing)
+              Checkbox(
+                key: ValueKey('scan-student-confirm-$field'),
+                value: confirmedFields.contains(field),
+                onChanged: (value) => onConfirmed(field, value ?? false),
+              ),
           ],
         ),
     ],
@@ -1250,6 +1329,8 @@ class _ComparisonCard extends StatelessWidget {
     required this.delta,
     required this.editing,
     required this.onChanged,
+    required this.confirmed,
+    required this.onConfirmed,
   });
   final String field;
   final Object? current;
@@ -1258,6 +1339,8 @@ class _ComparisonCard extends StatelessWidget {
   final Object? delta;
   final bool editing;
   final ValueChanged<String> onChanged;
+  final bool confirmed;
+  final ValueChanged<bool> onConfirmed;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -1297,6 +1380,18 @@ class _ComparisonCard extends StatelessWidget {
                   Text('스캔 ${scanned ?? '—'}'),
                 Text('계산 ${calculated ?? '—'}'),
                 Text('차이 ${delta ?? '—'}'),
+                if (editing)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        key: ValueKey('scan-student-confirm-$field'),
+                        value: confirmed,
+                        onChanged: (value) => onConfirmed(value ?? false),
+                      ),
+                      const Text('화면 확인'),
+                    ],
+                  ),
               ],
             ),
           ],

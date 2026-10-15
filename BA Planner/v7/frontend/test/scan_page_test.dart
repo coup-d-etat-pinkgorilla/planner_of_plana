@@ -198,6 +198,38 @@ void main() {
     },
   );
 
+  testWidgets('inventory unknown slot is labeled inside the scan workspace', (
+    tester,
+  ) async {
+    final service = MockAppService(
+      scannerScenario: MockScannerScenario.inventoryUnknown,
+    );
+    addTearDown(service.dispose);
+    await tester.pumpWidget(_subject(service));
+    await tester.pumpAndSettle();
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.text('재고'));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('scan-inventory-profile')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump();
+
+    final card = find.byKey(const ValueKey('inventory-unresolved-1'));
+    await _reveal(tester, card);
+    expect(find.textContaining('Item_Icon_ExpItem_1 81%'), findsOneWidget);
+    await tester.tap(find.byType(ChoiceChip));
+    await tester.pump();
+    await tester.tap(find.text('이번 세션만'));
+    await tester.pumpAndSettle();
+
+    expect(card, findsNothing);
+    expect(find.textContaining('이번 실행의 세션 은행'), findsOneWidget);
+  });
+
   testWidgets(
     'student problem result stays in scan workspace and revalidates green',
     (tester) async {
@@ -250,6 +282,16 @@ void main() {
         find.byKey(const ValueKey('scan-student-apply-mock-candidate-1')),
         findsNothing,
       );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-edit-mock-candidate-1')),
+      );
+      await tester.pump();
+      final levelConfirmation = find.byKey(
+        const ValueKey('scan-student-confirm-level'),
+      );
+      await _reveal(tester, levelConfirmation);
+      await tester.tap(levelConfirmation);
+      await _reveal(tester, revalidate);
       await tester.tap(revalidate);
       await tester.pump(const Duration(milliseconds: 100));
       expect(

@@ -1232,6 +1232,7 @@ class ProcessAppService
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   }) => _scanner.reviewScannerCandidate(
     session,
     candidate,
@@ -1239,6 +1240,7 @@ class ProcessAppService
     approve: approve,
     reason: reason,
     relationshipRanks: relationshipRanks,
+    confirmedFields: confirmedFields,
   );
 
   @override
@@ -1250,6 +1252,27 @@ class ProcessAppService
     session,
     candidate,
     relationshipRanks: relationshipRanks,
+  );
+
+  @override
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  ) => _scanner.scannerUnresolvedSlots(session, candidate);
+
+  @override
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
+  }) => _scanner.assignScannerIdentity(
+    session,
+    candidate,
+    slot: slot,
+    identity: identity,
+    persist: persist,
   );
 
   @override

@@ -35,7 +35,7 @@ void main() {
         arguments: [
           if (Platform.isWindows && usesPyLauncher) '-3.11',
           '-m',
-          'tests.scanner_e2e_backend',
+          'tests.scanner_o1_e2e_backend',
         ],
         workingDirectory: backendDirectory.absolute.path,
         environment: {
@@ -124,23 +124,63 @@ void main() {
         editedPayload['values'] = {
           ...Map<String, dynamic>.from(original.payload['values'] as Map),
           'level': 91,
+          'bond_rank': 26,
         };
-        final edited = await service.reviewScannerCandidate(
+        final unchecked = await service.reviewScannerCandidate(
           session,
           original,
           editedPayload,
           approve: false,
           reason: 'edited_and_revalidated_in_scan_page',
         );
-        expect(edited.revision, original.revision + 1);
+        expect(unchecked.reviewRequired, isTrue);
+        final samples = Directory('${storageRoot.path}/recognition_samples');
+        expect(
+          samples.existsSync()
+              ? samples.listSync(recursive: true).whereType<File>().length
+              : 0,
+          4 * (cycle - 1),
+        );
+        final edited = await service.reviewScannerCandidate(
+          session,
+          unchecked,
+          editedPayload,
+          approve: false,
+          reason: 'edited_and_revalidated_in_scan_page',
+          confirmedFields: {'level', 'bond_rank'},
+        );
+        expect(edited.revision, unchecked.revision + 1);
         expect(edited.reviewRequired, isFalse);
         expect(edited.payload['values']['level'], 91);
+        expect(edited.payload['values']['bond_rank'], 26);
+        final savedFiles = <String, List<int>>{
+          for (final file
+              in samples.listSync(recursive: true).whereType<File>())
+            file.path: file.readAsBytesSync(),
+        };
+        expect(savedFiles.length, 4 * cycle);
+        final repeated = await service.reviewScannerCandidate(
+          session,
+          edited,
+          editedPayload,
+          approve: false,
+          reason: 'edited_and_revalidated_in_scan_page',
+          confirmedFields: {'level', 'bond_rank'},
+        );
+        final afterRepeat = samples
+            .listSync(recursive: true)
+            .whereType<File>()
+            .toList();
+        expect(afterRepeat.length, savedFiles.length);
+        for (final file in afterRepeat) {
+          expect(file.readAsBytesSync(), orderedEquals(savedFiles[file.path]!));
+        }
 
         final revalidated = await service.revalidateScannerCandidate(
           session,
-          edited,
+          repeated,
         );
-        expect(revalidated.revision, edited.revision + 1);
+        expect(revalidated.revision, repeated.revision + 1);
         expect(
           revalidated.evidence
               .singleWhere((item) => item.field == 'student_stat_validation')

@@ -194,6 +194,11 @@ class PlanningProtocolClient {
       'region_missing',
       'asset_manifest_invalid',
       'asset_version_mismatch',
+      'unresolved_slot_not_found',
+      'invalid_identity',
+      'identity_conflict',
+      'assignment_unavailable',
+      'sample_storage_failed',
       'unknown_method',
     },
   };
@@ -864,6 +869,18 @@ class PlanningProtocolClient {
       'scanner.candidate.revalidate' => _validScannerCandidate(
         payload['candidate'],
       ),
+      'scanner.review.unresolved_slots' =>
+        payload.keys.toSet().length == 3 &&
+            payload['candidate_id'] is String &&
+            payload['candidate_revision'] is int &&
+            _validScannerUnresolvedSlots(payload['slots']),
+      'scanner.review.assign_identity' =>
+        payload.keys.toSet().length == 3 &&
+            _validScannerCandidate(payload['candidate']) &&
+            payload['candidate_revision'] is int &&
+            (payload['candidate'] as Map)['revision'] ==
+                payload['candidate_revision'] &&
+            _validScannerUnresolvedSlots(payload['slots']),
       'scanner.candidate.commit' =>
         payload['candidate_id'] is String &&
             payload['candidate_revision'] is int &&
@@ -889,6 +906,57 @@ class PlanningProtocolClient {
         value['review_required'] is bool &&
         value['approved'] is bool &&
         value['audit'] is List;
+  }
+
+  bool _validScannerUnresolvedSlots(Object? value) {
+    if (value is! List || value.length > 500) return false;
+    const profiles = {
+      'equipment',
+      'activity_reports',
+      'tech_notes',
+      'tactical_bd',
+      'ooparts',
+      'presents',
+      'student_elephs',
+    };
+    return value.every((raw) {
+      if (raw is! Map || raw.keys.toSet().length != 5) return false;
+      final resolution = raw['resolution'];
+      final candidates = raw['candidates'];
+      if (raw['slot'] is! int ||
+          (raw['slot'] as int) < 0 ||
+          !profiles.contains(raw['profile']) ||
+          resolution is! Map ||
+          resolution.keys.toSet().difference(const {
+            'width',
+            'height',
+          }).isNotEmpty ||
+          resolution['width'] is! int ||
+          (resolution['width'] as int) < 1 ||
+          resolution['height'] is! int ||
+          (resolution['height'] as int) < 1 ||
+          raw['crop_png_base64'] is! String ||
+          (raw['crop_png_base64'] as String).isEmpty ||
+          candidates is! List ||
+          candidates.length > 3) {
+        return false;
+      }
+      try {
+        base64Decode(raw['crop_png_base64'] as String);
+      } on FormatException {
+        return false;
+      }
+      return candidates.every(
+        (candidate) =>
+            candidate is Map &&
+            candidate.keys.toSet().length == 2 &&
+            candidate['identity'] is String &&
+            (candidate['identity'] as String).isNotEmpty &&
+            candidate['score'] is num &&
+            (candidate['score'] as num) >= 0 &&
+            (candidate['score'] as num) <= 1,
+      );
+    });
   }
 
   void _fatalProtocolError(String message, int generation) {

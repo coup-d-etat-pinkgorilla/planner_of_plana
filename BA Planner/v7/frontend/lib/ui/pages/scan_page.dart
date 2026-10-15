@@ -17,6 +17,7 @@ import '../widgets/account_section_cluster.dart'
 import '../widgets/diagonal_section.dart';
 import '../widgets/repository_profile_panel.dart';
 import '../widgets/scan_companion_dock.dart';
+import '../widgets/scan_inventory_identity_review.dart';
 import '../widgets/scan_student_review_workspace.dart';
 
 enum _SessionStage { idle, starting, running, cancelling, terminal }
@@ -76,9 +77,11 @@ class _ScanPageState extends State<ScanPage> {
   int _applyIntentSequence = 0;
   Future<void> _applyQueue = Future<void>.value();
   Map<String, StudentCatalogEntry> _studentCatalog = const {};
+  List<InventoryCatalogEntry> _inventoryCatalog = const [];
   String? _targetId;
   ScannerKind _kind = ScannerKind.student;
   StudentScanMode _studentScanMode = StudentScanMode.single;
+  InventoryScanProfile _inventoryScanProfile = InventoryScanProfile.techNotes;
   bool _targetsLoading = true;
   bool _readinessLoading = true;
   bool _recovering = false;
@@ -100,6 +103,11 @@ class _ScanPageState extends State<ScanPage> {
   final List<ScannerRecentSummary> _recent = [];
   final Set<String> _busyCandidateIds = {};
   final Map<String, String> _candidateErrors = {};
+  final Map<String, List<ScannerUnresolvedSlot>> _unresolvedSlots = {};
+  final Set<String> _unresolvedLoading = {};
+  final Set<String> _identityBusy = {};
+  final Set<String> _identitySkipped = {};
+  final Map<String, String> _identityErrors = {};
   String? _candidateNotice;
   bool _companionActive = false;
   bool _exportingStudentDiagnostic = false;
@@ -309,13 +317,16 @@ class _ScanPageState extends State<ScanPage> {
       final results = await Future.wait<Object>([
         retryRepositoryBusy(() => repository.loadRepositoryState(profile.id)),
         widget.service.listStudents(),
+        widget.service.listInventoryItems(),
       ]);
       if (!mounted || _profile?.id != profile.id) return;
       final state = results[0] as RepositoryState;
       final catalog = results[1] as List<StudentCatalogEntry>;
+      final inventoryCatalog = results[2] as InventoryCatalogResult;
       setState(() {
         _acceptRepositoryState(state);
         _studentCatalog = {for (final item in catalog) item.studentId: item};
+        _inventoryCatalog = inventoryCatalog.items;
       });
     } catch (error) {
       if (mounted && _profile?.id == profile.id) {
@@ -417,6 +428,9 @@ class _ScanPageState extends State<ScanPage> {
         target.id,
         profileId: _profile?.id,
         studentScanMode: _studentScanMode,
+        inventoryScanProfile: _kind == ScannerKind.inventory
+            ? _inventoryScanProfile
+            : null,
       );
       if (!mounted) return;
       setState(() {
@@ -839,7 +853,97 @@ class _ScanPageState extends State<ScanPage> {
     final current = _candidates[candidate.id];
     if (current == null || candidate.revision > current.revision) {
       _candidates[candidate.id] = candidate;
+      if (candidate.kind == ScannerKind.inventory &&
+          !_unresolvedSlots.containsKey(candidate.id) &&
+          !_unresolvedLoading.contains(candidate.id)) {
+        unawaited(
+          Future<void>.microtask(() => _loadUnresolvedSlots(candidate)),
+        );
+      }
     }
+  }
+
+  String _identitySlotKey(String candidateId, int slot) => '$candidateId:$slot';
+
+  Future<void> _loadUnresolvedSlots(ScannerCandidate candidate) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null || session == null || !mounted) return;
+    setState(() {
+      _unresolvedLoading.add(candidate.id);
+      _candidateErrors.remove(candidate.id);
+    });
+    try {
+      final result = await scanner.scannerUnresolvedSlots(session, candidate);
+      if (!mounted) return;
+      final current = _candidates[candidate.id];
+      if (current == null || current.revision != result.candidateRevision) {
+        return;
+      }
+      setState(() => _unresolvedSlots[candidate.id] = result.slots);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _candidateErrors[candidate.id] = '미식별 슬롯을 불러오지 못했습니다: $error';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _unresolvedLoading.remove(candidate.id));
+    }
+  }
+
+  Future<void> _assignInventoryIdentity(
+    ScannerCandidate candidate,
+    ScannerUnresolvedSlot slot,
+    String identity,
+    bool persist,
+  ) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null || session == null) return;
+    final key = _identitySlotKey(candidate.id, slot.slot);
+    setState(() {
+      _identityBusy.add(key);
+      _identityErrors.remove(key);
+      _candidateNotice = null;
+    });
+    try {
+      final result = await scanner.assignScannerIdentity(
+        session,
+        candidate,
+        slot: slot.slot,
+        identity: identity,
+        persist: persist,
+      );
+      if (!mounted) return;
+      setState(() {
+        _keepCandidate(result.candidate);
+        _unresolvedSlots[candidate.id] = result.slots;
+        _identitySkipped.remove(key);
+        _identityErrors.remove(key);
+        _candidateNotice = persist
+            ? '슬롯 ${slot.slot + 1} identity를 영구 승인 샘플로 저장했습니다.'
+            : '슬롯 ${slot.slot + 1} identity를 이번 실행의 세션 은행에 추가했습니다.';
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _identityErrors[key] = 'identity 지정 실패: $error';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _identityBusy.remove(key));
+    }
+  }
+
+  Future<void> _skipInventoryIdentity(
+    ScannerCandidate candidate,
+    ScannerUnresolvedSlot slot,
+  ) async {
+    setState(() {
+      _identitySkipped.add(_identitySlotKey(candidate.id, slot.slot));
+      _candidateNotice = '슬롯 ${slot.slot + 1}을 건너뛰었습니다. 후보는 partial 상태로 유지됩니다.';
+    });
   }
 
   ScannerSession? _sessionFor(ScannerCandidate candidate) {
@@ -862,6 +966,7 @@ class _ScanPageState extends State<ScanPage> {
     ScannerCandidate candidate,
     Map<String, dynamic> payload,
     Map<int, int> relationshipRanks,
+    Set<String> confirmedFields,
   ) async {
     final scanner = _scanner;
     final session = _sessionFor(candidate);
@@ -879,6 +984,7 @@ class _ScanPageState extends State<ScanPage> {
         approve: false,
         reason: 'edited_and_revalidated_in_scan_page',
         relationshipRanks: relationshipRanks,
+        confirmedFields: confirmedFields,
       );
       if (!mounted) return;
       setState(() {
@@ -1193,9 +1299,12 @@ class _ScanPageState extends State<ScanPage> {
     _terminalError = null;
     _candidates.clear();
     _liveFeedbackStudentId = null;
-    _liveFeedbackValues = {};
-    _liveFeedbackAwaitingStudent = false;
     _candidateErrors.clear();
+    _unresolvedSlots.clear();
+    _unresolvedLoading.clear();
+    _identityBusy.clear();
+    _identitySkipped.clear();
+    _identityErrors.clear();
   }
 
   void _recordRecent() {
@@ -1245,9 +1354,15 @@ class _ScanPageState extends State<ScanPage> {
       _outcome = item.outcome;
       _terminalError = item.terminalError;
       _candidateErrors.clear();
-      _candidates
-        ..clear()
-        ..addEntries(item.candidates.map((item) => MapEntry(item.id, item)));
+      _unresolvedSlots.clear();
+      _unresolvedLoading.clear();
+      _identityBusy.clear();
+      _identitySkipped.clear();
+      _identityErrors.clear();
+      _candidates.clear();
+      for (final candidate in item.candidates) {
+        _keepCandidate(candidate);
+      }
       _sessionError = null;
     });
   }
@@ -1473,6 +1588,30 @@ class _ScanPageState extends State<ScanPage> {
                           }
                         }),
                 ),
+                if (_kind == ScannerKind.inventory)
+                  SizedBox(
+                    width: 240,
+                    child: DropdownButtonFormField<InventoryScanProfile>(
+                      key: const ValueKey('scan-inventory-profile'),
+                      initialValue: _inventoryScanProfile,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: '재고 스캔 프로필'),
+                      items: [
+                        for (final profile in InventoryScanProfile.values)
+                          DropdownMenuItem(
+                            value: profile,
+                            child: Text(profile.wireName),
+                          ),
+                      ],
+                      onChanged:
+                          _stage == _SessionStage.running ||
+                              _stage == _SessionStage.cancelling ||
+                              _stage == _SessionStage.starting
+                          ? null
+                          : (value) =>
+                                setState(() => _inventoryScanProfile = value!),
+                    ),
+                  ),
                 FilledButton.icon(
                   key: const ValueKey('scan-start'),
                   onPressed: _canStart ? _start : null,
@@ -1655,6 +1794,48 @@ class _ScanPageState extends State<ScanPage> {
               candidate: candidate,
               onHandoff: () => _handoff(candidate),
             ),
+            if (candidate.kind == ScannerKind.inventory) ...[
+              if (_unresolvedLoading.contains(candidate.id))
+                const LinearProgressIndicator(),
+              if ((_unresolvedSlots[candidate.id] ?? const [])
+                      .where(
+                        (slot) => !_identitySkipped.contains(
+                          _identitySlotKey(candidate.id, slot.slot),
+                        ),
+                      )
+                      .toList(growable: false)
+                  case final slots when slots.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: ScanInventoryIdentityReview(
+                    slots: slots,
+                    catalog: _inventoryCatalog,
+                    busySlots: {
+                      for (final slot in slots)
+                        if (_identityBusy.contains(
+                          _identitySlotKey(candidate.id, slot.slot),
+                        ))
+                          slot.slot,
+                    },
+                    errors: {
+                      for (final slot in slots)
+                        slot.slot:
+                            ?_identityErrors[_identitySlotKey(
+                              candidate.id,
+                              slot.slot,
+                            )],
+                    },
+                    onAssign: (slot, identity, persist) =>
+                        _assignInventoryIdentity(
+                          candidate,
+                          slot,
+                          identity,
+                          persist,
+                        ),
+                    onSkip: (slot) => _skipInventoryIdentity(candidate, slot),
+                  ),
+                ),
+            ],
           ],
         ],
       ),

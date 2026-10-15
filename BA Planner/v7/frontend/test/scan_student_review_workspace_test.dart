@@ -39,6 +39,171 @@ ScannerCandidate _candidate(String id, String studentId) => ScannerCandidate(
 );
 
 void main() {
+  testWidgets(
+    'review confirms edits and checked fields without learning other values',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1500, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final candidate = ScannerCandidate(
+        id: 'safety',
+        sessionId: 'session',
+        generation: 1,
+        revision: 1,
+        kind: ScannerKind.student,
+        payload: {
+          'version': 1,
+          'student_id': 'aru',
+          'values': {'level': 90, 'bond_rank': 20, 'weapon_level': 60},
+        },
+        evidence: const [
+          ScannerFieldEvidence(
+            field: 'bond_rank',
+            status: 'uncertain',
+            source: 'fixture',
+          ),
+        ],
+        reviewRequired: true,
+        approved: false,
+      );
+      Set<String>? fields;
+      Map<String, dynamic>? sent;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ScanStudentReviewWorkspace(
+              candidates: [candidate],
+              currentStudents: const {},
+              catalog: {'aru': _catalog('aru', 'aru')},
+              busyCandidateIds: const {},
+              candidateErrors: const {},
+              singleScan: true,
+              onRevalidate: (_, payload, _, confirmed) async {
+                sent = payload;
+                fields = confirmed;
+              },
+              onHold: (_) async {},
+              onDiscard: (_) async {},
+              onApply: (_) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('scan-student-edit-safety')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('scan-student-field-bond_rank')),
+        'bad',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-revalidate-safety')),
+      );
+      await tester.pump();
+      expect(fields, isNull);
+      await tester.enterText(
+        find.byKey(const ValueKey('scan-student-field-bond_rank')),
+        '26',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-confirm-level')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-revalidate-safety')),
+      );
+      await tester.pump();
+      expect(fields, {'bond_rank', 'level'});
+      expect(sent!['values']['bond_rank'], 26);
+      expect(fields, isNot(contains('weapon_level')));
+    },
+  );
+
+  testWidgets(
+    'review resets draft, checked fields and errors when the same candidate gets a new revision',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1500, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      ScannerCandidate candidateAt(int revision, int level) => ScannerCandidate(
+        id: 'safety',
+        sessionId: 'session',
+        generation: 1,
+        revision: revision,
+        kind: ScannerKind.student,
+        payload: {
+          'version': 1,
+          'student_id': 'aru',
+          'values': {'level': level, 'bond_rank': 20, 'weapon_level': 60},
+        },
+        evidence: const [
+          ScannerFieldEvidence(
+            field: 'bond_rank',
+            status: 'uncertain',
+            source: 'fixture',
+          ),
+        ],
+        reviewRequired: true,
+        approved: false,
+      );
+      Set<String>? fields;
+      Map<String, dynamic>? sent;
+      Widget workspace(ScannerCandidate candidate) => MaterialApp(
+        home: Scaffold(
+          body: ScanStudentReviewWorkspace(
+            candidates: [candidate],
+            currentStudents: const {},
+            catalog: {'aru': _catalog('aru', 'aru')},
+            busyCandidateIds: const {},
+            candidateErrors: const {},
+            singleScan: true,
+            onRevalidate: (_, payload, _, confirmed) async {
+              sent = payload;
+              fields = confirmed;
+            },
+            onHold: (_) async {},
+            onDiscard: (_) async {},
+            onApply: (_) async {},
+          ),
+        ),
+      );
+      bool checked(String field) => tester
+          .widget<Checkbox>(
+            find.byKey(ValueKey('scan-student-confirm-$field')),
+          )
+          .value!;
+
+      await tester.pumpWidget(workspace(candidateAt(1, 90)));
+      await tester.tap(find.byKey(const ValueKey('scan-student-edit-safety')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const ValueKey('scan-student-field-level')),
+        '91',
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-confirm-weapon_level')),
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('scan-student-field-bond_rank')),
+        'bad',
+      );
+      await tester.pump();
+      expect(find.text('bond_rank 값은 정수여야 합니다.'), findsOneWidget);
+      expect(checked('weapon_level'), isTrue);
+
+      await tester.pumpWidget(workspace(candidateAt(2, 80)));
+      await tester.pump();
+      expect(find.text('bond_rank 값은 정수여야 합니다.'), findsNothing);
+      expect(checked('weapon_level'), isFalse);
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-revalidate-safety')),
+      );
+      await tester.pump();
+      expect(fields, isEmpty);
+      expect(sent!['values'], {
+        'level': 80,
+        'bond_rank': 20,
+        'weapon_level': 60,
+      });
+    },
+  );
+
   test('full scan keeps every outfit of one character vertically adjacent', () {
     final ordered = orderScanResultCandidatesByGroup(
       [
@@ -101,7 +266,7 @@ void main() {
                 busyCandidateIds: const {},
                 candidateErrors: const {},
                 singleScan: true,
-                onRevalidate: (_, _, _) async {},
+                onRevalidate: (_, _, _, _) async {},
                 onHold: (_) async {},
                 onDiscard: (_) async {},
                 onApply: (_) async {},
@@ -164,7 +329,7 @@ void main() {
             busyCandidateIds: const {},
             candidateErrors: const {},
             singleScan: true,
-            onRevalidate: (_, _, _) async {},
+            onRevalidate: (_, _, _, _) async {},
             onHold: (_) async {},
             onDiscard: (_) async {},
             onApply: (_) async {},
