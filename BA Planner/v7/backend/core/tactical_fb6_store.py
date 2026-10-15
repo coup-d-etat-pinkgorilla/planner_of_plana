@@ -104,10 +104,10 @@ def derived_jokbo(value, match):
     return [identity]
 
 
-def ensure_v2_write_mode(store, profile_id, value):
+def ensure_v2_write_mode(store, profile_id, value, *, read_only=False):
     if 'legacy_v1' in value:
         return
-    state, fingerprint, converted = legacy_convert(store, profile_id)
+    state, fingerprint, converted = legacy_convert(store, profile_id, read_only=read_only)
     if state['matches'] or state['jokbo']:
         raise RepositoryError('legacy_migration_required', 'preview and migrate existing v1 records before a new v2 record write')
     # With no legacy rows, the first v2 write atomically claims the sole write
@@ -123,30 +123,42 @@ def put_match(store, profile_id, raw, revision, key):
     def apply(value):
         owned_path(store.root, store._path(profile_id))
         ensure_v2_write_mode(store, profile_id, value)
-        owned = {s['student_id'] for s in store.repository.get_state(profile_id)['students']}
-        canonical_deck(item['attack_deck'] if item['kind'] == 'attack' else item['defense_deck'], owned=owned)
-        opponent = next((o for o in value['opponents'] if o['identity_id'] == item['opponent_identity_id']), None)
-        if opponent is not None and item['opponent_display_name'] not in {opponent['current_display_name'], *opponent['aliases']}:
-            raise RepositoryError('opponent_alias_required', 'name must match explicit identity or recorded alias')
-        for linked in value['lobby_candidates']:
-            if linked['match_id'] == item['match_id'] and (item['kind'] != 'attack' or linked['opponent_identity_id'] != item['opponent_identity_id'] or linked['public_signature'] != store._match_signature(item)):
-                raise RepositoryError('link_conflict', 'unlink the lobby candidate before changing its match identity/signature')
-        old = next((m for m in value['matches'] if m['match_id'] == item['match_id']), None)
-        record = {**metadata('manual:' + item['match_id']), **item, 'observed_at': None}
-        if old is not None:
-            for field in ('created_at', 'imported_at', 'import_batch_id', 'source_record_id'):
-                record[field] = old[field]
-            record['source_label'] = 'manual_edit'
-        record['review_status'] = 'confirmed' if reviewed(item['attack_deck']) and reviewed(item['defense_deck']) else 'review_required'
-        if opponent is None:
-            value['opponents'].append({'version': 2, 'identity_id': item['opponent_identity_id'], 'current_display_name': item['opponent_display_name'], 'aliases': [item['opponent_display_name']], 'first_observed_at': item['occurred_at'], 'last_observed_at': item['occurred_at'], 'review_status': 'confirmed', 'name_template_ids': []})
-        value['matches'] = [m for m in value['matches'] if m['match_id'] != item['match_id']] + [record]
-        value['snapshots'] = [s for s in value['snapshots'] if s.get('match_id') != item['match_id']]
-        if record['kind'] == 'attack' and record['review_status'] == 'confirmed' and complete_confirmed_deck(record['defense_deck']):
-            value['snapshots'].append({'version': 2, 'snapshot_id': _stable_id('snapshot', 'fb6', item['match_id']), 'opponent_identity_id': record['opponent_identity_id'], 'occurred_at': record['occurred_at'], 'observed_at': None, 'imported_at': record['imported_at'], 'source': 'manual', 'source_record_id': record['source_record_id'], 'confidence': None, 'review_status': 'confirmed', 'season': record['season'], 'deck': deepcopy(record['defense_deck']), 'match_id': record['match_id']})
-        return {'match': record, 'jokbo_ids': derived_jokbo(value, record)}
+        return apply_match(store, profile_id, value, item)
 
     return store._mutation(profile_id, revision, key, operation, apply)
+
+
+def apply_match(store, profile_id, value, item, *, record_metadata=None, owned=None):
+    """Apply one canonical match to caller-owned memory; never persist a row.
+
+    The caller holds the root/v2 guard and owns the sole atomic replacement.
+    Manual upsert keeps its original provenance and behavior. FB7 can supply
+    explicit source-row metadata while retaining the original creation time.
+    """
+    if owned is None:
+        owned = {s['student_id'] for s in store.repository.get_state(profile_id)['students']}
+    canonical_deck(item['attack_deck'] if item['kind'] == 'attack' else item['defense_deck'], owned=owned)
+    opponent = next((o for o in value['opponents'] if o['identity_id'] == item['opponent_identity_id']), None)
+    if opponent is not None and item['opponent_display_name'] not in {opponent['current_display_name'], *opponent['aliases']}:
+        raise RepositoryError('opponent_alias_required', 'name must match explicit identity or recorded alias')
+    for linked in value['lobby_candidates']:
+        if linked['match_id'] == item['match_id'] and (item['kind'] != 'attack' or linked['opponent_identity_id'] != item['opponent_identity_id'] or linked['public_signature'] != store._match_signature(item)):
+            raise RepositoryError('link_conflict', 'unlink the lobby candidate before changing its match identity/signature')
+    old = next((m for m in value['matches'] if m['match_id'] == item['match_id']), None)
+    record = {**(metadata('manual:' + item['match_id']) if record_metadata is None else deepcopy(record_metadata)), **item, 'observed_at': None}
+    if old is not None:
+        for field in (('created_at', 'imported_at', 'import_batch_id', 'source_record_id') if record_metadata is None else ('created_at',)):
+            record[field] = old[field]
+        if record_metadata is None:
+            record['source_label'] = 'manual_edit'
+    record['review_status'] = 'confirmed' if reviewed(item['attack_deck']) and reviewed(item['defense_deck']) else 'review_required'
+    if opponent is None:
+        value['opponents'].append({'version': 2, 'identity_id': item['opponent_identity_id'], 'current_display_name': item['opponent_display_name'], 'aliases': [item['opponent_display_name']], 'first_observed_at': item['occurred_at'], 'last_observed_at': item['occurred_at'], 'review_status': 'confirmed', 'name_template_ids': []})
+    value['matches'] = [m for m in value['matches'] if m['match_id'] != item['match_id']] + [record]
+    value['snapshots'] = [s for s in value['snapshots'] if s.get('match_id') != item['match_id']]
+    if record['kind'] == 'attack' and record['review_status'] == 'confirmed' and complete_confirmed_deck(record['defense_deck']):
+        value['snapshots'].append({'version': 2, 'snapshot_id': _stable_id('snapshot', 'fb6', item['match_id']), 'opponent_identity_id': record['opponent_identity_id'], 'occurred_at': record['occurred_at'], 'observed_at': None, 'imported_at': record['imported_at'], 'source': 'manual', 'source_record_id': record['source_record_id'], 'confidence': None, 'review_status': 'confirmed', 'season': record['season'], 'deck': deepcopy(record['defense_deck']), 'match_id': record['match_id']})
+    return {'match': record, 'jokbo_ids': derived_jokbo(value, record)}
 
 
 def delete_match(store, profile_id, match_id, revision, key):
@@ -202,11 +214,11 @@ def delete_jokbo(store, profile_id, jokbo_id, revision, key):
     return store._mutation(profile_id, revision, key, {'method': 'jokbo.delete', 'jokbo_id': jokbo_id}, apply)
 
 
-def legacy_convert(store, profile_id):
+def legacy_convert(store, profile_id, *, read_only=False):
     legacy = TacticalStore(store.root, store.repository)
     path = legacy._path(profile_id)
     owned_path(store.root, path)
-    state = legacy._read(profile_id)
+    state = legacy._read(profile_id) if not read_only else legacy._read(profile_id, migrate_profile=False)
     raw = path.read_bytes() if path.exists() else canonical_json(state).encode('utf-8')
     fingerprint = hashlib.sha256(raw).hexdigest()
     converted = {'matches': [], 'jokbo': [], 'opponents': [], 'issues': []}

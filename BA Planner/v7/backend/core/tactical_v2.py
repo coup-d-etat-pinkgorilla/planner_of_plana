@@ -25,6 +25,8 @@ METHODS = frozenset({
     "tactical.v2.jokbo.delete",
     "tactical.v2.legacy.preview",
     "tactical.v2.legacy.commit",
+    "tactical.v2.excel.preview",
+    "tactical.v2.excel.commit",
     "tactical.v2.state.get",
     "tactical.v2.import.preview",
     "tactical.v2.import.commit",
@@ -436,8 +438,11 @@ class TacticalV2Store:
         }
 
     @locked(RepositoryError)
-    def _read(self, profile_id: str) -> dict[str, Any]:
-        self.repository.get_state(profile_id)
+    def _read(self, profile_id: str, *, migrate_profile: bool = True) -> dict[str, Any]:
+        if migrate_profile:
+            self.repository.get_state(profile_id)
+        else:
+            self.repository._profile(profile_id)
         path = self._path(profile_id)
         if not path.exists():
             return self._empty(profile_id)
@@ -446,6 +451,8 @@ class TacticalV2Store:
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             raise RepositoryError("corrupt_data", "tactical v2 state cannot be read") from error
         legacy = {"version", "profile_id", "revision", "matches", "jokbo", "opponents", "snapshots", "import_batches", "idempotency"}
+        private = {key: value.pop(key) for key in ('excel_import_rules', 'excel_import_receipts')
+                   if isinstance(value, dict) and key in value}
         p9_shape = legacy | {"lobby_scans", "lobby_candidates"}
         required = p9_shape | {"predictions"}
         if isinstance(value, dict) and "legacy_v1" in value:
@@ -470,6 +477,22 @@ class TacticalV2Store:
                 opponent.setdefault("name_template_ids", [])
         if not isinstance(value["idempotency"], dict):
             raise RepositoryError("corrupt_data", "tactical v2 idempotency is invalid")
+        if 'excel_import_rules' in private:
+            from core.tactical_excel_interpreter import validate_rules
+            try:
+                if private['excel_import_rules'] is None:
+                    raise RepositoryError('invalid_payload', 'private rules cannot be null')
+                validate_rules(private['excel_import_rules'])
+            except RepositoryError as error:
+                raise RepositoryError('corrupt_data', 'private Excel rules are invalid') from error
+        if 'excel_import_receipts' in private:
+            receipts = private['excel_import_receipts']
+            if not isinstance(receipts, dict) or any(
+                not isinstance(key, str) or re.fullmatch(r'excel-row-[0-9a-f]{32}', key) is None
+                or not isinstance(mid, str) or _RECORD_ID.fullmatch(mid) is None
+                for key, mid in receipts.items()):
+                raise RepositoryError('corrupt_data', 'private Excel row receipts are invalid')
+        value.update(private)
         return value
 
     def state(self, profile_id: str) -> dict[str, Any]:
@@ -500,13 +523,14 @@ class TacticalV2Store:
     def _mutation(
         self, profile_id: str, expected_revision: int, idempotency_key: str,
         operation: dict[str, Any], apply: Callable[[dict[str, Any]], dict[str, Any]],
+        *, migrate_profile: bool = True,
     ) -> dict[str, Any]:
         expected_revision = _revision(expected_revision)
         idempotency_key = _text(idempotency_key, "idempotency_key", required=True)
         fingerprint = hashlib.sha256(canonical_json(operation).encode()).hexdigest()
         descriptor = self._lock()
         try:
-            value = self._read(profile_id)
+            value = self._read(profile_id) if migrate_profile else self._read(profile_id, migrate_profile=False)
             cached = value["idempotency"].get(idempotency_key)
             if cached is not None:
                 if cached.get("fingerprint") != fingerprint:
@@ -981,6 +1005,9 @@ class TacticalProtocolV2:
         return {"protocol": 1, "id": request["id"], "type": "response", "method": request["method"], "payload": payload}
 
     def _dispatch(self, method: str, payload: object) -> dict[str, Any]:
+        if method in {'tactical.v2.excel.preview', 'tactical.v2.excel.commit'}:
+            from core.tactical_excel_store import dispatch
+            return dispatch(self.store, method, payload)
         if method in {
             "tactical.v2.match.upsert", "tactical.v2.match.delete",
             "tactical.v2.jokbo.upsert", "tactical.v2.jokbo.delete",

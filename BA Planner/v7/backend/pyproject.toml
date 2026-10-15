@@ -3,7 +3,7 @@ name = "ba-planner-v7-backend"
 version = "0.1.0"
 description = "Headless Python backend for BA Planner v7"
 requires-python = ">=3.11"
-dependencies = ["Pillow>=10,<13", "UnityPy>=1.24,<2"]  # UnityPy: local asset extraction (C5e-6a-0, D24)
+dependencies = ["Pillow>=10,<13", "UnityPy>=1.24,<2", "openpyxl==3.1.5", "defusedxml==0.7.1"]  # UnityPy: local asset extraction (C5e-6a-0, D24)
 
 [project.optional-dependencies]
 test = ["jsonschema>=4.18,<5"]

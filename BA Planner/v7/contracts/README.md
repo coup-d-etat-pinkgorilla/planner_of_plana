@@ -1299,3 +1299,54 @@ Before new v2 match/jokbo upserts, existing v1 rows require explicit migration
 the empty legacy migration marker in the same atomic replacement, disabling
 future v1 writes. legacy.preview also returns v1_writes_disabled so the client
 can avoid proposing another migration after the sole v2 write store is active.
+
+## FB7 Excel / UTF-8 CSV import (isolated candidate)
+
+`tactical.v2.excel.preview` reads .xlsx and UTF-8/BOM .csv without modifying the
+source or the durable store. Explicit sheet/delimiter and column mapping are
+required choices; candidates and saved mappings are suggestions only. Resolutions
+bind semantic field, typed raw key and optionally source row. Canonical exact
+student names must be unique and role-valid; fuzzy names and opponent display
+names require explicit canonical/identity selections. Blank slots preserve unknown;
+an explicit wildcard remains distinct. Missing date/result/positive attempts is an
+issue. Date-only values retain `occurred_precision=date` (KST midnight transport);
+zoned instants retain `instant`. No default now, attempt one or inferred outcome rows.
+
+`tactical.v2.excel.commit` binds the source bytes and interpretation fingerprints,
+expected v2 revision and exact idempotency payload. Cached original retries return
+before source reread/revision checking. Every unresolved/conflict row must be
+resolved or explicitly skipped. All accepted rows, derived lineage/snapshots,
+private rules/row receipts and one batch record use one atomic replacement and one
+revision increment. Existing v1 records need explicit FB6 migration first.
+
+Duplicates compare kind + occurred value/precision + explicit opponent identity +
+season + ordered attack/defense decks. Result, attempts and notes are correction
+fields. Date+opponent alone never collapses separate battles. Coarse/ambiguous
+overwrite requires an explicit conflicting match ID; same-workbook duplicates need
+explicit keep-separate/skip/target decisions. Original file/sheet/row receipts avoid
+re-importing a previously imported row, including after manual deletion. Skip keeps
+existing records intact. Summary counts actual rows and commit-eligible decisions;
+blank rows are separate from skipped record rows.
+
+Rules (`excel_import_rules`) and row receipts (`excel_import_receipts`) are private
+fields inside the existing profile v2 file, not new deletion paths or public state
+DTOs. Rules store only explicit mappings/resolutions, never workbook paths/bytes.
+Stale student/opponent IDs or role mismatch remain review issues. Record source is
+the existing `manual` category with `xlsx_import`/`csv_import` source_label and an
+explicit source-row ID; observed_at is never invented. The candidate pins
+openpyxl 3.1.5 + defusedxml 0.7.1 (et_xmlfile transitively) and includes the existing
+HEAD UnityPy dependency missing from its old lock. Existing main project WIP and
+runtime stay intact. Parser libraries must load from the copied runtime in smoke
+verification; native Windows publication and CF paired gate remain separate.
+
+FB7 reads profile existence/current ownership under the existing root guard without
+automatically adding a missing active plan. Preview, rejected commit, accepted
+commit and exact cached retry leave planning profile/catalog bytes untouched.
+Existing v1/v2 callers retain their default plan-read behavior. Merged saved rules
+are validated against the same 4096-entry bound before any row application; overflow
+rejects the whole operation and retains every prior rule. Native time-only and
+duration cells keep their typed raw identity and a JSON-safe text representation;
+they remain review issues until explicitly resolved, with no invented battle date.
+The interpretation fingerprint also binds profile ownership and reader format/
+CSV delimiter; identical bytes or owned rosters do not authorize switching these
+choices after preview.

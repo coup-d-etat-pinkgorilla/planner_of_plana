@@ -162,8 +162,11 @@ class TacticalStore:
         return {item["student_id"] for item in self.repository.get_state(profile_id)["students"]}
 
     @locked(RepositoryError)
-    def _read(self, profile_id: str) -> dict[str, Any]:
-        self.repository.get_state(profile_id)  # profile existence is authoritative
+    def _read(self, profile_id: str, *, migrate_profile: bool = True) -> dict[str, Any]:
+        if migrate_profile:
+            self.repository.get_state(profile_id)  # profile existence is authoritative
+        else:
+            self.repository._profile(profile_id)  # validation only; never migrate plan data
         path = self._path(profile_id)
         if not path.exists():
             return self._empty(profile_id)

@@ -107,6 +107,18 @@
     },
     {
       "$ref": "#/$defs/fb6LegacyCommitResponse"
+    },
+    {
+      "$ref": "#/$defs/excelPreviewRequest"
+    },
+    {
+      "$ref": "#/$defs/excelCommitRequest"
+    },
+    {
+      "$ref": "#/$defs/excelPreviewResponse"
+    },
+    {
+      "$ref": "#/$defs/excelCommitResponse"
     }
   ],
   "$defs": {
@@ -3294,6 +3306,1215 @@
                 },
                 "v1_writes_disabled": {
                   "const": true
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "excelColumns": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "date": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "kind": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "season": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "result": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "notes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_striker_1": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_striker_2": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_striker_3": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_striker_4": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_special_1": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "own_special_2": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_striker_1": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_striker_2": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_striker_3": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_striker_4": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_special_1": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "opponent_special_2": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelMapping": {
+      "type": "object",
+      "required": [
+        "header_row",
+        "columns"
+      ],
+      "properties": {
+        "header_row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "columns": {
+          "$ref": "#/$defs/excelColumns",
+          "required": [
+            "date",
+            "kind",
+            "opponent",
+            "result",
+            "attempts"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelResolution": {
+      "type": "object",
+      "required": [
+        "field",
+        "raw",
+        "action",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "date",
+            "kind",
+            "opponent",
+            "season",
+            "result",
+            "attempts",
+            "notes",
+            "own_striker_1",
+            "own_striker_2",
+            "own_striker_3",
+            "own_striker_4",
+            "own_special_1",
+            "own_special_2",
+            "opponent_striker_1",
+            "opponent_striker_2",
+            "opponent_striker_3",
+            "opponent_striker_4",
+            "opponent_special_1",
+            "opponent_special_2"
+          ]
+        },
+        "raw": {
+          "type": "string",
+          "maxLength": 8192
+        },
+        "action": {
+          "enum": [
+            "value",
+            "wildcard",
+            "notes",
+            "ignore",
+            "skip"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "integer",
+                "null"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "identity_id",
+                "display_name"
+              ],
+              "properties": {
+                "identity_id": {
+                  "$ref": "#/$defs/recordId"
+                },
+                "display_name": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "wildcard"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "field": {
+                "enum": [
+                  "own_striker_1",
+                  "own_striker_2",
+                  "own_striker_3",
+                  "own_striker_4",
+                  "own_special_1",
+                  "own_special_2",
+                  "opponent_striker_1",
+                  "opponent_striker_2",
+                  "opponent_striker_3",
+                  "opponent_striker_4",
+                  "opponent_special_1",
+                  "opponent_special_2"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "enum": [
+                  "wildcard",
+                  "notes",
+                  "ignore",
+                  "skip"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "excelRowDecision": {
+      "type": "object",
+      "required": [
+        "row",
+        "action",
+        "target_match_id"
+      ],
+      "properties": {
+        "row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "action": {
+          "enum": [
+            "skip",
+            "keep_separate",
+            "overwrite"
+          ]
+        },
+        "target_match_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/recordId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action": {
+                "const": "overwrite"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "target_match_id": {
+                "$ref": "#/$defs/recordId"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "target_match_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "excelPreviewRequest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseRequest"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "tactical.v2.excel.preview"
+            },
+            "payload": {
+              "type": "object",
+              "required": [
+                "profile_id",
+                "source_path",
+                "sheet_name",
+                "delimiter",
+                "column_mapping",
+                "resolutions",
+                "row_decisions",
+                "on_conflict"
+              ],
+              "properties": {
+                "profile_id": {
+                  "$ref": "#/$defs/profileId"
+                },
+                "source_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "delimiter": {
+                  "enum": [
+                    ",",
+                    "\t"
+                  ]
+                },
+                "column_mapping": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/excelMapping"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "resolutions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelResolution"
+                  },
+                  "maxItems": 4096
+                },
+                "row_decisions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelRowDecision"
+                  },
+                  "maxItems": 10000
+                },
+                "on_conflict": {
+                  "enum": [
+                    "skip",
+                    "overwrite"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "excelCommitRequest": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseRequest"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "tactical.v2.excel.commit"
+            },
+            "payload": {
+              "type": "object",
+              "required": [
+                "profile_id",
+                "source_path",
+                "sheet_name",
+                "delimiter",
+                "column_mapping",
+                "resolutions",
+                "row_decisions",
+                "on_conflict",
+                "save_rules",
+                "expected_fingerprint",
+                "expected_interpretation_fingerprint",
+                "expected_revision",
+                "idempotency_key"
+              ],
+              "properties": {
+                "profile_id": {
+                  "$ref": "#/$defs/profileId"
+                },
+                "source_path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sheet_name": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "delimiter": {
+                  "enum": [
+                    ",",
+                    "\t"
+                  ]
+                },
+                "column_mapping": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/excelMapping"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "resolutions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelResolution"
+                  },
+                  "maxItems": 4096
+                },
+                "row_decisions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelRowDecision"
+                  },
+                  "maxItems": 10000
+                },
+                "on_conflict": {
+                  "enum": [
+                    "skip",
+                    "overwrite"
+                  ]
+                },
+                "save_rules": {
+                  "type": "boolean"
+                },
+                "expected_fingerprint": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "expected_interpretation_fingerprint": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "expected_revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "excelIssue": {
+      "type": "object",
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field": {
+          "type": "string"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "from_saved_rule": {
+          "type": "boolean"
+        },
+        "source_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelRawCell": {
+      "type": "object",
+      "required": [
+        "field",
+        "column",
+        "raw",
+        "raw_key",
+        "formula",
+        "cached_value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "date",
+            "kind",
+            "opponent",
+            "season",
+            "result",
+            "attempts",
+            "notes",
+            "own_striker_1",
+            "own_striker_2",
+            "own_striker_3",
+            "own_striker_4",
+            "own_special_1",
+            "own_special_2",
+            "opponent_striker_1",
+            "opponent_striker_2",
+            "opponent_striker_3",
+            "opponent_striker_4",
+            "opponent_special_1",
+            "opponent_special_2"
+          ]
+        },
+        "column": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "raw_key": {
+          "type": "string"
+        },
+        "formula": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cached_value": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelPreviewRow": {
+      "type": "object",
+      "required": [
+        "row_id",
+        "row_number",
+        "raw_cells",
+        "status",
+        "issues",
+        "match",
+        "target_match_id"
+      ],
+      "properties": {
+        "row_id": {
+          "type": "string",
+          "pattern": "^excel-row-[0-9a-f]{32}$"
+        },
+        "row_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "raw_cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/excelRawCell"
+          }
+        },
+        "status": {
+          "enum": [
+            "empty",
+            "skipped",
+            "unresolved",
+            "eligible",
+            "overwrite",
+            "conflict",
+            "conflict_skipped",
+            "replay"
+          ]
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/excelIssue"
+          }
+        },
+        "match": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/fb6MatchInput"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_match_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/recordId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelSuggestion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "student_id",
+            "display_name",
+            "score",
+            "requires_confirmation"
+          ],
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "requires_confirmation": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "identity_id",
+            "display_name",
+            "requires_confirmation"
+          ],
+          "properties": {
+            "identity_id": {
+              "$ref": "#/$defs/recordId"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "requires_confirmation": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "result",
+            "attempt_count",
+            "requires_confirmation"
+          ],
+          "properties": {
+            "result": {
+              "enum": [
+                "win",
+                "loss"
+              ]
+            },
+            "attempt_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "requires_confirmation": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "excelStringGroup": {
+      "type": "object",
+      "required": [
+        "group_id",
+        "field",
+        "raw_key",
+        "raw",
+        "code",
+        "count",
+        "places",
+        "suggestions"
+      ],
+      "properties": {
+        "group_id": {
+          "type": "string",
+          "pattern": "^excel-group-[0-9a-f]{32}$"
+        },
+        "field": {
+          "type": "string",
+          "enum": [
+            "date",
+            "kind",
+            "opponent",
+            "season",
+            "result",
+            "attempts",
+            "notes",
+            "own_striker_1",
+            "own_striker_2",
+            "own_striker_3",
+            "own_striker_4",
+            "own_special_1",
+            "own_special_2",
+            "opponent_striker_1",
+            "opponent_striker_2",
+            "opponent_striker_3",
+            "opponent_striker_4",
+            "opponent_special_1",
+            "opponent_special_2"
+          ]
+        },
+        "raw_key": {
+          "type": "string"
+        },
+        "raw": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "places": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "row",
+              "column"
+            ],
+            "properties": {
+              "row": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "column": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/excelSuggestion"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelConflict": {
+      "type": "object",
+      "required": [
+        "row_id",
+        "row_number",
+        "match_ids",
+        "peer_rows",
+        "ambiguous"
+      ],
+      "properties": {
+        "row_id": {
+          "type": "string",
+          "pattern": "^excel-row-[0-9a-f]{32}$"
+        },
+        "row_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "match_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recordId"
+          }
+        },
+        "peer_rows": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "ambiguous": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelMappingCandidate": {
+      "type": "object",
+      "required": [
+        "header_row",
+        "columns",
+        "ambiguous_fields",
+        "requires_confirmation"
+      ],
+      "properties": {
+        "header_row": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "columns": {
+          "$ref": "#/$defs/excelColumns"
+        },
+        "ambiguous_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "date",
+              "kind",
+              "opponent",
+              "season",
+              "result",
+              "attempts",
+              "notes",
+              "own_striker_1",
+              "own_striker_2",
+              "own_striker_3",
+              "own_striker_4",
+              "own_special_1",
+              "own_special_2",
+              "opponent_striker_1",
+              "opponent_striker_2",
+              "opponent_striker_3",
+              "opponent_striker_4",
+              "opponent_special_1",
+              "opponent_special_2"
+            ]
+          }
+        },
+        "requires_confirmation": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "excelPreviewResponse": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseResponse"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "tactical.v2.excel.preview"
+            },
+            "payload": {
+              "type": "object",
+              "required": [
+                "fingerprint",
+                "interpretation_fingerprint",
+                "format",
+                "sheet_names",
+                "selected_sheet",
+                "mapping_candidates",
+                "saved_mapping",
+                "column_mapping",
+                "rows",
+                "string_groups",
+                "conflicts",
+                "summary",
+                "issues",
+                "current_revision",
+                "rules_revision",
+                "legacy_migration_required"
+              ],
+              "properties": {
+                "fingerprint": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "interpretation_fingerprint": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "format": {
+                  "enum": [
+                    "xlsx",
+                    "csv"
+                  ]
+                },
+                "sheet_names": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                },
+                "selected_sheet": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mapping_candidates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelMappingCandidate"
+                  }
+                },
+                "saved_mapping": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/excelMapping"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "column_mapping": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/excelMapping"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelPreviewRow"
+                  }
+                },
+                "string_groups": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelStringGroup"
+                  }
+                },
+                "conflicts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelConflict"
+                  }
+                },
+                "summary": {
+                  "type": "object",
+                  "required": [
+                    "read_rows",
+                    "empty_rows",
+                    "skipped_rows",
+                    "parsed_rows",
+                    "unresolved_rows",
+                    "conflict_rows",
+                    "eligible_rows"
+                  ],
+                  "properties": {
+                    "read_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "empty_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "skipped_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "parsed_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unresolved_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "conflict_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "eligible_rows": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/excelIssue"
+                  }
+                },
+                "current_revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "rules_revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "legacy_migration_required": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "excelCommitResponse": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseResponse"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "tactical.v2.excel.commit"
+            },
+            "payload": {
+              "type": "object",
+              "required": [
+                "revision",
+                "imported_count",
+                "overwritten_count",
+                "skipped_count",
+                "skipped_row_ids",
+                "rules_saved",
+                "match_ids"
+              ],
+              "properties": {
+                "revision": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "imported_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "overwritten_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "skipped_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "skipped_row_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^excel-row-[0-9a-f]{32}$"
+                  }
+                },
+                "rules_saved": {
+                  "type": "boolean"
+                },
+                "match_ids": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/recordId"
+                  }
                 }
               },
               "additionalProperties": false
