@@ -3674,3 +3674,16 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - XB source6(FB-7 계약 주석 2 + M3 CLI 4) 메인 반영·Python 전체 PASS·gate 요청 → 같은 gate에 포함(6/6).
 - gate ① `20261017_012144`: 모두 PASS(process 101), golden RED 3 = FE9-b2 예측(`tactical`·`-jokbo-drag`·`-import-excel` — 목록 seed 행) → 승인, `scan-student-review` 변화 0(FE8-f1 동작 보존 확인) ② `-UpdateGoldens` `20261017_013824` **GREEN**(golden 53).
 - 커밋: **fe8f1 `6456049d`** → **fe9b2 `9dbf906b`**. XB에 source6 GREEN·스캐너 동결 창 종료 회신(backend 02:00).
+
+## 2026-10-17 02:10 — 다음 라운드 배정: Lane A FE8-f2, Lane B FE9-g
+
+- **Lane A** `debug/frontend_redesign_handoff/fe8f2-worker-prompt-20261017.md`: 머리글 연결 칩 자리 스캔 진행/일시정지 표시(FD-148 우선순위), 탭 `스캔` 분홍 점, 완료 토스트 — 셸 소유 `ScanSessionController` 값(FB-10 고정 범위)만. 기존 golden 변화 0 목표, 새 장면 최대 1(`header-scan-progress`).
+- **Lane B** `debug/frontend_redesign_handoff/fe9g-worker-prompt-20261017.md`: 전술 슬롯 통계 화면(Tactical-Slots) — S1 내 방어 덱(FD-133), S2 모집단 지표 빈 상태(FD-127), S3 내 기록 기반 카운터·유도 덱·안정성(FD-176 null 상대 규칙), seg "슬롯" 활성·모션. 새 장면 최대 1(`tactical-slots`).
+- 겹침 0(Lane A 셸 머리글·scan / Lane B tactical). 머리말 seg 위젯은 `lib/ui/tactical/tactical_sub_screen.dart`(Lane B), 셸 머리글 칩은 Lane A.
+
+## 2026-10-17 03:35 — FE8-f2·FE9-g 검토·gate·커밋
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8f2 8행, fe9g 10행), 겹침 0. FE8-f2 `app_shell.dart` +106 −7(머리글 칩·탭 점·토스트 연결 — 이 slice 몫으로 승인), 새 golden 테스트 파일 `fe8f2_header_scan_progress_golden_test.dart`. FE9-g: 슬롯 화면·seg "슬롯" 활성, 숨긴 지표는 FD-127.
+- gate ① `20261017_030250`(XB source6 미커밋 그대로 포함): 모두 PASS(process 101), golden RED 8 = 예측(전술 6장 seg 자리 ~1.6k px + 새 2) → 새 장면 검토 승인 ② `-UpdateGoldens` `20261017_031611` **GREEN**(golden 55).
+- 커밋: **fe8f2 `fc7a8839`** → **fe9g `cd991c03`**. frontend 작업 트리 깨끗.
+- FE9-g 발견 1(seed 방어 기록 시각 모름 → 최근 10전·연패 '—')·3(S3 칸 의존)·4(30일 기간 없음)·5(S2 막대 = 내 기록 비율) → 후속 정리 후보. FE8-f2 → 다음 FE8-g1.
