@@ -76,6 +76,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",
             "scenario-protocol-v1.schema.json",
             "student-scan-diagnostic-v1.schema.json",
+            "scanner-student-progress-fe8g2-v1.schema.json",
             "tactical-protocol-v1.schema.json", "tactical-protocol-v2.schema.json",
             "tactical-share-v1.schema.json",
             "animation-spectrum-v1.schema.json",

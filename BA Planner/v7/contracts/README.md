@@ -1361,3 +1361,33 @@ responses remain supported. This tightens validation only: runtime responses,
 statistics definitions and Dart behavior are unchanged. Actual read responses
 are frozen in fixtures/tactical_typed_read_responses_v2.json and recomputed by
 test_tactical_typed_reads.py without altering their canonical bytes.
+
+
+## FB-10 FE8-g2 fixed student progress subset (2026-10-15)
+
+`scanner-student-progress-fe8g2-v1.schema.json` references the existing scanner
+event definition without adding or changing wire keys. The synthetic timeline is
+`fixtures/scanner_student_progress_fe8g2_v1.json`. This fixes the previously
+accepted FE8-g2 baseline, not the entire FB-10 scanner or item/result redesign.
+
+- Envelope protocol/type/method and payload session_id/generation/sequence/
+  scan_kind/event_kind retain their existing meanings; discard stale/replayed
+  events and request a snapshot on sequence gaps. Terminal closes the stream.
+- `progress.current` is the producer's nonnegative counter, not approved/changed
+  student count; `total=null` means unknown. Preserve a known zero as zero.
+  UI estimates are explicitly separate (FD-154); never invent a server total.
+- `phase`/`message_key` are extensible strings. `feedback.student_id/field/values`
+  describe observed progress; identify feedback currently has `values={}`.
+  Resolve display names from canonical metadata; no producer display-name key.
+  Treat missing live growth/KPI values as unknown. A feedback event is not a
+  persisted record or an approvable candidate. Candidate events retain the
+  existing batch-final/context-complete behavior and their separate revision.
+- Pause requests remain requests until the `paused` event/snapshot. `paused`
+  carries user/input_detected/target_minimized; `resumed.reason` is explicit null.
+  Existing candidate review/partial commit/crop ownership contracts are unchanged.
+- History attribution remains `contracts/scan-commit-history-context-v1.schema.json`.
+
+No new Dart method or runtime producer is required for this agreed baseline.
+Dart consumers may add comparisons against this fixture later. Live five growth
+values, early candidate streaming, credits/eligma capture, and full FE8-g3/g4/g5
+format closure remain separate tasks; this declaration does not promise them.
