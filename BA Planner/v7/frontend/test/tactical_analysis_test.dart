@@ -1,6 +1,6 @@
 // FE9-e: 전술대항전 분석 화면(시안 Tactical-Analysis S1~S3) · 족보 전체 보기 팝업(Tactical-Analysis-All) · 하위 화면 전환.
 //
-// - 셸 머리말: 제목 "전술대항전" 옆 하위 seg "기록 · 분석 · 슬롯"(FD-126 (a)), 부제는 하위 화면마다, 슬롯은 "준비 중",
+// - 셸 머리말: 제목 "전술대항전" 옆 하위 seg "기록 · 분석 · 슬롯"(FD-126 (a)), 부제는 하위 화면마다, 슬롯은 FE9-g부터 열림,
 //   다른 탭 머리말에는 seg가 없다. 같은 탭을 다시 눌러도 하위 화면은 그대로다(복귀 칩 없음).
 // - 전환 모션: 앞 절반에 기록 섹션이 outro 방향으로 빠지고 뒤 절반에 분석 섹션이 intro 방향으로 들어온다(FD-130 아래).
 // - Studio 3섹션 꼭짓점 · 섹션 안 요소 rect(시안 ±2px).
@@ -396,13 +396,13 @@ void main() {
         expect(seg.left, greaterThan(title.right));
         expect((seg.center.dy - title.center.dy).abs(), lessThan(4));
         expect(seg.bottom, lessThan(_header));
-        final slots = find.ancestor(
-          of: find.byKey(const ValueKey('tactical-view-slots')),
-          matching: find.byType(Tooltip),
-        );
+        // FE9-g: 슬롯도 열린다(흐림 · "준비 중" 툴팁 없음 — 슬롯 화면은 tactical_slots_test).
         expect(
-          tester.widget<Tooltip>(slots).message,
-          tacticalSubScreenPendingText,
+          find.ancestor(
+            of: find.byKey(const ValueKey('tactical-view-slots')),
+            matching: find.byType(Tooltip),
+          ),
+          findsNothing,
         );
 
         await tester.tap(find.byKey(const ValueKey('tactical-view-analysis')));

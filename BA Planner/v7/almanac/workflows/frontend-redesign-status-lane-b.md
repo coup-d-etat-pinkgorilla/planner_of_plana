@@ -5015,3 +5015,165 @@ FD-176을 기록 화면에서 쓸 수 있게 했다 — S3 시도 '모름' 저�
 
 - FE9-b2 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-f1)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 +14(`tactical_fe9b2_test`) · 기존 수 변화 0, process 변화 0, golden `tactical` · `tactical-jokbo-drag` RED, `tactical-import-excel` RED 가능, 나머지 GREEN) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9b2`.
+
+## FE9-g 착수 기록 (2026-10-17)
+
+- 상태: **진행 중**. 범위: FE9-g 전술대항전 슬롯 통계 화면(시안 Tactical-Slots) — 머리말 seg "슬롯" 켜기, S1 내 방어 덱(FD-133 권장안: 가장 최근 방어 기록의 덱, 다른 방어 기록 덱으로 바꿔 보기 · 저장 없음), S2 슬롯 통계(모집단 · 리프트 · 보정 방어는 FD-127 빈 상태 설명, 내 방어 기록에서 센 값만), S3 카운터 · 유도 덱 · 덱 안정성(내 방어 기록, FD-176 상대 없는 기록은 상대별 묶음에서만 뺌), 기록 ↔ 분석 ↔ 슬롯 모션(FD-130 가운데 아래).
+- 착수 전 확인: 이 문서에 다른 "FE9-g 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약" FE9-g 행 = FD-126 · FD-127, 둘 다 `확정 2026-10-06`(현재 `열림` 0건) → 시작. 워커 재량 FD-130 · FD-133은 권장안대로.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `921b6bfe4a59ce231a72936f15f76c6cda85492d`.
+- 고칠(수 있는) 기존 파일 — 착수 사본 `debug/frontend_fe9g/pre/<v7 기준 경로>`(모두 cmp 일치), WIP(`git status --short <경로>` 0줄)는 모두 **없음**, 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/tactical_page.dart`(작업 트리 CRLF), `frontend/lib/ui/tactical/tactical_sub_screen.dart` · `frontend/lib/ui/studio/tactical_studio_layout.dart`(LF).
+  - `frontend/lib/tactical/tactical_records_controller.dart` · `frontend/lib/services/design_review/tactical_records_data.dart`(LF, 꼭 필요할 때만 — 지금 계획은 고치지 않음).
+  - 테스트(LF): `frontend/test/tactical_analysis_test.dart`(슬롯 "준비 중" 툴팁 기대) · `frontend/test/tactical_page_test.dart`(필요할 때만) · `frontend/test/goldens/fe9a_tactical_golden_test.dart`(장면 1 추가 · 주석).
+  - 이 문서(LF, commit.json `whole`).
+- 새 파일(예정): `frontend/lib/ui/tactical/tactical_slots_view.dart`(위젯 없는 모델) · `frontend/lib/ui/tactical/tactical_slots_workspace.dart`(3섹션 그리기) · `frontend/test/tactical_slots_test.dart`.
+- 고치지 않음: `lib/services/**`(design_review 제외), `lib/ui/app_shell.dart` · `lib/ui/scan/**` · 스캔 파일(Lane A FE8-f2), `lib/ui/widgets/page_header_override.dart`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend/** · contracts/**, 택틱 소유 파일.
+
+## FE9-g 종료 기록 (2026-10-17, 코드 작성 완료 · CF gate 미실행)
+
+전술대항전 슬롯 통계 화면(시안 Tactical-Slots S1~S3)을 만들고 머리말 seg "슬롯"을 켰다. 값은 모두 컨트롤러의 내 방어 기록에서 센 관측 값이다(서비스 질의 0). 상위 500위 모집단 통계 · 리프트 · 보정 방어 · 신뢰도는 FD-127대로 자리에 이유 한 줄(또는 KPI '—'). HEAD는 착수 때와 같다(`921b6bfe`), git 쓰기 0회, 파일 삭제는 내가 만든 임시 렌더 파일 1개뿐(아래).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze lib/ui/tactical lib/ui/pages/tactical_page.dart lib/ui/studio/tactical_studio_layout.dart`: ① error 4(`InfoPopoverText` 기본 생성자는 span 목록 — 문장은 `.plain`) → ② **No issues found(0)**. 테스트 포함 경로별 다시 0. 마지막 전체 `flutter analyze`: **No issues found(0)**(`debug/frontend_fe9g/logs/analyze_final.log`). `pubspec.yaml` · `pubspec.lock` 변경 0.
+- 새 `flutter test test/tactical_slots_test.dart`: **+17 −0**(첫 실행).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `top-tab-pvp` · `AppSection.pvp` · `tactical_sub_screen` · `tactical_studio_layout` · `tactical-view` · `MockDesignReviewScenario` · `tactical_records_data` · `BAPlannerApp(`), 일반 30파일 한 명령(`--exclude-tags golden`): **+334 −0**(`logs/general_1.log`) — tactical_slots +17, tactical_analysis(슬롯 툴팁 기대를 "툴팁 없음"으로 고침) 포함. 그 시점 Lane A 작업 중인 scan_header_progress_fe8f2 · scan_session_controller도 통과.
+- process 묶음(`ProcessAppService` 문자열) 중 걸리는 것: `flutter test --concurrency=1 test/tactical_fe9b1_read_test.dart` **+12 −0**.
+- 일회성 렌더: `test/goldens/zz_fe9g_render_tmp_test.dart`(golden 파일 사본에서 `@Tags(['golden'])` · `expectGoldenScene` 0건을 grep으로 확인, `toImage` → scratchpad PNG) 2회 — ① +7이지만 내 Dart raw 문자열 실수로 파일 이름이 한 장으로 겹침 ② **+7**. 매번 실행 직후 삭제(`test/goldens/zz_*` 0건 확인). `tactical-slots` 모양을 눈으로 확인했다. 기준 이미지와의 픽셀 비교는 하지 않았다(PIL 없음, golden 비교는 CF 몫).
+- `dart format`: 고친 · 새 8파일을 하나씩(디렉터리 인자 0), 마지막 `--set-exit-if-changed` 0.
+- `git diff --check`(고친 기존 5파일): exit 0. 새 3파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. `tactical_page.dart`는 CRLF 그대로(1553줄 모두 CRLF — CRLF를 지키는 스크립트로 고침), 나머지 LF.
+- 잠금 충돌 0(재시도 없음). 로그는 실패 줄 · 끝 줄만 읽었다.
+
+### 고친 파일 · 새 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF, +75 −9) | 머리 주석, 슬롯 문구 2(`tacticalSlotsMigrationText` · `tacticalSlotsEmptyText`), 상태 `_slotsDeckKey` · `_slotsSlot`(저장 안 함), `_slotsPanel()`(분석과 같은 막힘 순서 → 방어 기록 → 덱 묶음 → 고른 덱 · 칸), 하위 화면 builder `switch`(기록 · 분석 · 슬롯), `_openScreen`의 `available` 검사 삭제 |
+| `frontend/lib/ui/tactical/tactical_sub_screen.dart`(+14 −24) | `TacticalSubScreen.available` · `tacticalSubScreenPendingText` 삭제(사용처 = 페이지 1 · 테스트 1, grep), seg 칸 툴팁 삭제 — 세 칸 모두 누를 수 있음 |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart`(+200 −4) | 슬롯 3섹션 Studio 문서 `tacticalSlotsStudioDocument`, 섹션 ID 3, `TacticalSlotsMetrics`(시안 좌표), `tacticalSectionMotion`에 슬롯 왼쪽 · 가운데(FD-130) 추가 |
+| `frontend/test/tactical_analysis_test.dart`(+7 −7) | 셸 테스트의 슬롯 "준비 중" 툴팁 기대 → 툴팁 없음, 머리 주석 |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart`(+38) | 장면 `tactical-slots` 추가 + `_openSlots` 도우미, 머리 주석. 다른 장면 · 조작 변화 0 |
+| 새 `frontend/lib/ui/tactical/tactical_slots_view.dart` | 위젯 없는 모델: 방어 기록 · 덱 묶음 · 기본 칸, 칸 사용, 자리별 배치 · 비교, 뚫은 공격 학생, 공개 칸 범위 · 유도 덱, 덱 안정성, 조사 "와/과", 날짜 구간, %p |
+| 새 `frontend/lib/ui/tactical/tactical_slots_workspace.dart` | 3섹션 그리기 · 이유 문구 상수 · 패널 값 |
+| 새 `frontend/test/tactical_slots_test.dart` | 17건(아래) |
+
+고치지 않음(착수 사본과 cmp 일치): `lib/tactical/tactical_records_controller.dart`(방어 기록 · 순서가 이미 있음 — 꼭 필요한 변경 없음), `lib/services/design_review/tactical_records_data.dart`(seed 방어 기록 3건이 이미 있어 화면이 보인다 — 보강 안 함, 발견 1), `test/tactical_page_test.dart`. `lib/services/**` · `app_shell.dart` · `lib/ui/scan/**` · `page_header_override.dart` · `lib/ui/kit/**` · golden harness · `frontend/tool/**` · backend · contracts · 택틱 소유 파일: 열지도 고치지도 않았다.
+
+### 처리한 FD
+
+- **FD-126 (a)**: 머리말 seg "슬롯"을 켰다(흐림 · "준비 중" 툴팁 제거). 부제 "슬롯별 사용률 · 위치 선호 · 궁합 · 카운터"(FE9-e 그대로).
+- **FD-127 (a)**: 관측 지표만. 숨긴 지표는 아래 표.
+- **FD-130(워커 재량, 권장안)**: 슬롯 S2 주 부착면 = 아래(intro 80° · outro 260°), Studio spec face bottom.
+- **FD-133(워커 재량, 권장안)**: 내 방어 덱 = 가장 최근 방어 기록의 덱. 다른 방어 기록 덱으로 바꿔 볼 수 있고 저장하지 않는다(테스트: 바꾼 뒤 revision · 기록 수 그대로).
+- **FD-176**: 상대 없는 방어 기록은 평균 방어 · 뚫은 공격 학생 · 유도 덱에 들고, 재도전 방어 · 뚫린 상대(상대별 묶음)에서만 빠진다. 시도 횟수는 이 화면에서 쓰지 않는다.
+
+### 섹션별 구현 · 빈 상태 문구
+
+- **3섹션 좌표**(기준 콘텐츠 캔버스, 테스트로 고정): S1 (0,2,30,94) 왼쪽 사다리꼴 — 시안과 같음. S2 rect (19,2,56,94) 아래 면 평행사변형(faceStart 7 · faceSpan 72 · height 96) — 꼭짓점 아랫변 615.6→1735.6 · 윗변 824.1→1944.1, 시안(615.4→1736.0 · 824.0→1944.5)과 0.4px 안(정수 grid 탐색 최소 오차). S3 (66,2,30,94) 오른쪽 사다리꼴 — 시안과 같음. 그리기 순서 S2 → S1 → S3(시안). 섹션 안 요소 rect 22개를 시안 ±2px로 테스트한다.
+- **S1 내 방어 덱**: 제목 "내 방어 덱 · 슬롯 클릭", 덱 6칸(108 · 사이 10 · 초상 108×87.4 · 구분선 1×97, 고른 칸 분홍 테두리 3 #ff72b6 · 위치 · 이름 #ff9ccf, 학생을 모르는 칸은 누를 수 없음), 칩 "n번 학생 선택"(분홍) · "내 방어 기록 n건"(회색), 캡션 "내 방어 기록의 덱 (최근 순 · 바꿔 봐도 저장하지 않습니다)", 공용 사선 스크롤 목록(resize, 행 56 · 간격 6, 첫 행 (14, 498.2, 713×56) = 시안 대체 학생 첫 행 자리): 행 = 초상 36×29 여섯 칸 · "방어 n전 a승 b패" · 기간("10/1 ~ 10/4", 시각 모름이면 "시각 모름"), 고른 덱 분홍 레일. 빈 상태: 방어 기록 없음 `tacticalSlotsEmptyText` "아직 방어 기록이 없습니다. 기록 작성에서 방어 기록을 저장하면 가장 최근 방어 기록의 덱이 여기에 내 방어 덱으로 나타납니다.", 이관 전 `tacticalSlotsMigrationText` "이전 형식 기록을 가져온 뒤에 슬롯 통계를 볼 수 있습니다. 기록 화면에서 "가져오기"를 눌러 주십시오.", 계정 없음 · 읽는 중 · 읽기 실패 · 서비스 없음은 기록 화면 문구.
+- **S2 슬롯별 통계**: 제목 "슬롯별 통계" + (i)(팝오버 3문장 — 내 방어 기록 기준 · 자리별 배치 · 숨긴 지표) + 제목 옆 한 줄 `tacticalSlotsPopulationText` "상위 500위 방어 덱 통계는 데이터원이 없어 보이지 않습니다. 아래는 내 방어 기록에서 센 값입니다."(시안 "신뢰도 보통" 칩 자리). 사용 막대(시안 5행 자리): 고른 칸에 놓였던 학생 — 초상 86×70 · 이름 · 막대(그 칸 학생을 아는 내 방어 기록 중 비율) · "100.0%" · "내 방어 n전 a승 b패"(그 슬롯 학생이 있던 내 방어 기록 수 · 승패, 시안 "지난주 대비" 자리). "선택한 캐릭터의 자리별 배치 통계 · 이름" + 자리 막대(스트라이커 1~4번, 스페셜 SP1 · SP2). "위치별 방어 성공률 · 배치 민감도" KPI 5칸: 고른 자리(관측 성공률 · n경기) · 다른 자리(기록이 가장 많은 다른 자리, 없으면 "다른 자리" '—') · 차이(%p) · 배치 민감도 '—' · 기대 대비 '—'. "n번 메타 집중도" + 한 줄 `tacticalSlotsMetaHiddenText` "메타 집중도는 상위 500위 방어 덱 자료가 있어야 셀 수 있어 보이지 않습니다.". 덱 없음: `tacticalSlotsPickText` "왼쪽에서 내 방어 덱의 칸을 고르면 슬롯별 통계와 카운터가 보입니다.", 학생을 아는 칸이 없는 덱: `tacticalSlotsNoSlotText` "이 덱에는 학생을 아는 칸이 없습니다. 기록 작성에서 내 방어 덱 칸을 채우면 슬롯별 통계가 보입니다.".
+- **S3 궁합 · 카운터**: "<학생>와/과 자주 같이 쓰이는 학생 (리프트)" + 한 줄 `tacticalSlotsLiftHiddenText` "같이 쓰이는 학생(리프트)은 상위 500위 방어 덱 자료가 있어야 셀 수 있어 보이지 않습니다.". "이 방어 덱을 가장 자주 뚫은 공격 학생" 3행(초상 · 이름 · 막대 · %, 없으면 "이 덱이 뚫린 기록이 없습니다."). "공개 슬롯이 유도하는 상대 공격 덱 · Top 3" + "내 방어 n전" · 3행(순위 · 덱 42×34 · "상대 공격 중 n%" · "내 방어 a승 b패" · 칩 "방어 n%" 초록 ≥50% · 빨강 <50%, 없으면 "이 공개 슬롯으로 방어한 기록이 없습니다."). "덱 안정성 · 방어 결과 기준" KPI 4칸: 평균 방어(n전 a승) · 최근 10전(a승 b패, 시각 모름 n건 제외) · 최장 연패(n회 · 기간) · 재도전 방어(% · 뚫린 상대 n명). 덱이 없으면 제목만.
+
+### 숨긴 지표(FD-127 (a)) · 대체 표시
+
+| 시안 | 처리 | 근거 |
+|---|---|---|
+| S1 칩 "최근 30일" · "상위 500위" | "내 방어 기록 n건" 칩 하나로 바꿈 | 모집단 범위 표시. 내 기록은 30일로 자르지 않는다(발견 4) |
+| S1 "이 자리의 대체 학생 (나머지 5명 동일 기준)" 3행 · "보정 방어 54.1" 칩 | 그리지 않음 — 그 자리에 내 방어 기록의 덱 목록(FD-133) | 상위 500위 자료 · 보정(모델) 지표 |
+| S1 각주 "표본 34경기 · 신뢰도 낮음 …" | 그리지 않음 | 신뢰도 판단 |
+| S2 칩 "신뢰도 보통" | 이유 한 줄로 바꿈 | 신뢰도 판단 |
+| S2 사용 막대 5행(상위 500위 1번 슬롯 사용률) | **내 방어 기록의 그 칸 학생 비율**로 그림 | 관측 값(분모 = 그 칸 학생을 아는 내 방어 기록) |
+| S2 "지난주 대비 ±n%p" | "내 방어 n전 a승 b패"로 바꿈 | 모집단 추이 |
+| S2 자리별 배치(상위 500위) | 내 방어 기록의 자리 비율로 그림 | 관측 값 |
+| S2 위치별 방어 성공률 1번 · 2번 · 차이 | 고른 자리 · 다른 자리 관측 성공률 · 차이 | 관측 값(승 / (승 + 패)) |
+| S2 "배치 민감도 높음" · "기대 대비 +3.8%p 초과 성과" | 칸은 두고 '—' | 판단 · 모델 지표 |
+| S2 "1번 메타 집중도 · 상위 3명 78%" + 쌓은 막대 | 캡션 "n번 메타 집중도" + 이유 한 줄 | 상위 500위 자료 |
+| S3 리프트 4행("동시 31%" · "1.72") | 이유 한 줄 | 상위 500위 자료 · 모델 지표 |
+| S3 "최근 30일 방어 34전" | "내 방어 n전"(공개 칸 범위 기록 수) | 기간 없음(위와 같은 이유) |
+| S3 뚫은 공격 학생 · 유도 덱 · 덱 안정성 | 관측 값으로 그림 | 내 방어 기록 |
+
+### 정한 규칙
+
+- **방어 기록**: kind `defense`, 내 덱 = `defenseDeck`, 상대 덱 = `attackDeck`, 결과 승 = 방어 성공. 승 · 패만 센다.
+- **덱 묶음**: 덱 identity(`tacticalDeckSignatureText` — 위치 · 학생 · 모름 · 빈칸). 순서 = 컨트롤러 순서(시각 최신 순, 시각 모름은 뒤 · ID 순)에서 처음 나온 자리. 첫 덱 = 가장 최근 방어 기록의 덱(FD-133 기본). 바꾼 덱이 사라지면 첫 덱.
+- **고른 칸**: 기본 1번. 고른 칸의 학생을 모르는 덱이면 학생을 아는 첫 칸을 보인다(고른 값은 남겨 두어 다른 덱으로 돌아가면 다시 쓴다). 모르는 칸은 누를 수 없다.
+- **S2 범위**: 내 방어 기록 전체(덱과 무관). **S3 범위**: 뚫은 공격 학생 · 안정성 = 고른 덱(같은 identity)의 기록, 유도 덱 = 고른 덱의 공개 칸(1번 · SP1 · SP2) 학생이 같은 방어 기록 전부(공개 칸 학생을 하나라도 모르면 같은 덱 기록). 칸을 바꾸면 S3은 리프트 캡션의 이름만 바뀐다(나머지는 덱 단위 — 발견 3).
+- **정렬**: 칸 사용 = 많은 순 → 승 많은 순 → 처음 나온 순. 뚫은 공격 학생 = 많은 순 → 처음 나온 순(한 기록 안 같은 학생은 한 번). 유도 덱 = 만난 횟수 → 패 많은 순 → 처음 나온 순.
+- **시간 순서 값**(최근 10전 · 최장 연패 · 재도전 방어)은 시각을 아는 기록(정밀도 date · instant)만 쓴다. 쓸 기록이 없으면 '—', 시각 모름이 있으면 최근 10전 보조 "시각 모름 n건 제외". 최장 연패 0이면 "0회"(기간 없음). 재도전 방어 = 상대를 아는 패배 뒤 같은 상대의 다음 시각 있는 기록이 승인 비율, 뚫린 상대 = 패배가 있는 상대 identity 수(시각 무관).
+- **표시**: S2 사용 비율 · 위치별 성공률은 소수 한 자리(시안 "34.2%" · "56.3%"), 자리 막대 · S3 비율은 정수(시안 "61%" · "29%"), 차이 "+7.2%p"(음수 "−"). 조사 "와/과"는 끝 괄호를 빼고 받침으로(시안 "리오(무장)와").
+- **전환 모션**: FE9-e 문법 그대로, `tacticalSectionMotion`에 슬롯 S1 0/180 · S2 80/260(FD-130) · S3 180/0. 기록 ↔ 분석 ↔ 슬롯 어느 쌍이든 같다(테스트: 기록 → 슬롯 · 분석 → 슬롯).
+
+### golden 변화 예상(비교 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `tactical` | **바뀜** — 머리말 seg "슬롯" 칸이 흐림 → 보통 밝기. 나머지 같음 | seg 활성 |
+| `tactical-jokbo-drag` | **바뀜** — 같은 seg 칸만 | 같음 |
+| `tactical-migration` | **바뀜** — 같은 seg 칸만(이관 전이어도 seg는 켜짐) | 같음 |
+| `tactical-analysis` | **바뀜** — 같은 seg 칸만 | 같음 |
+| `tactical-analysis-all` | **바뀜** — 스크림(.35) 뒤 같은 seg 칸만(스크림이 머리말을 덮으면 차이가 작음) | 같음 |
+| `tactical-import-excel` | **바뀜** — 스크림(.62) 뒤 같은 seg 칸만(차이가 작음) | 같음 |
+| 새 `tactical-slots`(optional_added) | 아래 | 새 장면 |
+| 그 밖 | 변화 0 | 전술 탭을 여는 golden은 이 파일뿐, 셸 · 키트 · seed 수정 0 |
+
+새 `tactical-slots` 기대 모습(일회성 렌더로 확인): 머리말 부제 "슬롯별 사용률 · 위치 선호 · 궁합 · 카운터", seg 슬롯 분홍. S1 덱 히나(분홍 테두리 · 글자) · 이오리 · 아루 · 하루카 | 히비키 · 아코, 칩 "1번 히나 선택" · "내 방어 기록 3건", 캡션, 목록 1행(분홍 레일, 초상 6 · "방어 3전 2승 1패" · "시각 모름"). S2 제목 + (i) + 이유 한 줄, 막대 1행(히나 100.0% · 내 방어 3전 2승 1패, 그 아래 4행 자리는 빈 자리), "선택한 캐릭터의 자리별 배치 통계 · 히나", 1번 100% · 2~4번 0%, KPI 1번 66.7% · 3경기 / 다른 자리 — / 차이 — / 배치 민감도 — / 기대 대비 —, "1번 메타 집중도" + 이유 한 줄. S3 "궁합 · 카운터", "히나와 자주 같이 쓰이는 학생 (리프트)" + 이유 한 줄, 뚫은 공격 학생 아루 · 하루나 · 히비키 100%, "공개 슬롯이 유도하는 상대 공격 덱 · Top 3 · 내 방어 3전", 1 아비도스 공격 덱(빗금 2 · 빈칸 1) "상대 공격 중 67% · 내 방어 1승 1패" 방어 50%(초록), 2 상대 없는 기록의 공격 덱 33% · 1승 0패 · 방어 100%, 안정성 67%(3전 2승) · —(시각 모름 3건 제외) · — · —(뚫린 상대 1명).
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 위 목록 밖 Flutter 테스트(통계 · 계획 · 인벤토리 단독, 실제 백엔드 process E2E): **미실행**(`lib/services/**` · 컨트롤러 변경 0).
+- 실제 백엔드 · 실제 사용자 기록(방어 덱이 많을 때 목록 스크롤, 시각 있는 방어 기록의 안정성 값)으로 본 화면: **미실행**(Mock · 테스트 seed만).
+- 기준 이미지와 렌더 픽셀 비교, Windows release 빌드, 사용자 시각 검수: **미실행**.
+
+### 검수표(mock 모드 design-review 시나리오 · 기준 viewport 최대화 → 전술대항전 탭)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| seg | 머리말 "전술대항전" 옆 | 슬롯 칸이 흐리지 않고 툴팁 없음 |
+| 전환 | seg "슬롯" | 기록 섹션이 부착면 쪽으로 빠지고 슬롯 S1은 왼쪽 · S2는 아래(FD-130) · S3은 오른쪽에서 들어옴, 부제 바뀜. 분석 → 슬롯도 같은 문법 |
+| S1 | 슬롯 화면 | 덱 6칸(1번 분홍), 칩 2, 덱 목록 1행 "방어 3전 2승 1패 · 시각 모름", 시안의 "최근 30일" · "상위 500위" · 대체 학생 · 각주 없음 |
+| 칸 누르기 | SP1 히비키 | 칩 "SP1 히비키 선택", S2 막대 · 자리 막대 SP1 · SP2 · KPI "SP1", 메타 캡션 "SP1 메타 집중도", S3 리프트 캡션 이름 |
+| S2 | 같은 화면 | 제목 옆 이유 한 줄 · (i) 팝오버, 막대 "내 방어 n전 a승 b패", KPI 배치 민감도 · 기대 대비 '—', 메타 집중도 이유 한 줄 |
+| S3 | 같은 화면 | 리프트 이유 한 줄, 뚫은 공격 학생 3, 유도 덱 2, 안정성 67% · '—' 셋(seed 방어 기록이 시각 모름) |
+| 덱 바꾸기 | 기록 화면에서 다른 덱으로 시각 있는 방어 기록을 하나 저장 → 슬롯 | 새 덱이 첫 행 · 기본, 둘째 행을 누르면 그 덱으로 바뀌고 기록 목록 · revision 변화 없음 |
+| 빈 상태 | 기본 Mock(design-review 아님) | S1 "아직 방어 기록이 없습니다. …", S2 "왼쪽에서 내 방어 덱의 칸을 고르면 …" |
+| 작은 창 | 1280×720 | 넘침 없음, 목록 스크롤 |
+
+### 테스트(새 · 고친)
+
+- 새 `tactical_slots_test.dart`(17): Studio 3섹션 꼭짓점 · 모션 방향, 모델 5(덱 묶음 · 기본 덱 · 기본 칸 / 칸 사용 · 자리별 배치 · 비교 · %p / 뚫은 학생 · 공개 칸 범위 · 유도 덱 / 안정성(seed 시각 모름 · 시각 있는 기록 연패 · 재도전 · FD-176) / 조사 · 표시), 셸 2(seg 켜짐 · 부제 · 같은 탭 다시 누르기, 1280×720 넘침 0), 화면 8(시안 rect 22 + seed 값 + 숨긴 지표 없음, 칸 누르기, 덱 바꾸기 저장 없음, 기록 → 슬롯 · 분석 → 슬롯 모션, 기본 Mock 안내, 이관 전 안내, 1280×536 · 1440×716 넘침 0).
+- 고친 `tactical_analysis_test.dart`: 셸 테스트의 "슬롯 준비 중 툴팁" 기대 → "툴팁 없음"(지운 테스트 0, 수 20 그대로).
+- 고친 `goldens/fe9a_tactical_golden_test.dart`: 장면 1 추가(`tactical-slots`), 다른 장면 조작 변화 0.
+
+### WIP 보존 확인
+
+- 고친 기존 5파일 + 이 문서는 착수 때 WIP 없음 → `post_dir` 없음. 사본 `debug/frontend_fe9g/pre/<경로>`(고친 5 + 이 문서 + 확인만 한 3: 컨트롤러 · seed 데이터 · `tactical_page_test.dart` — 이 3개는 끝에도 pre와 cmp 일치).
+- Lane A 작업 중 파일(`app_shell.dart` · `lib/ui/scan/**` — 작업 트리에 Lane A 미커밋 변경 있음): 열지도 고치지도 않았다. `dart format`은 이 slice 파일 경로만. git 쓰기 0회. 임시 렌더 파일 삭제 확인(`test/goldens/zz_*` 0건).
+
+### 키트 승격 후보(Lane A 판단)
+
+- KPI 칸(캡션 11 · 값 26 · 보조 11, '—' 흐림)이 셋째 사본이다(분석 `_KpiRow` · 족보 KPI · 슬롯 `_kpi`) — 키트 `kpi_tile.dart`와 합칠 후보.
+- 덱 초상 줄 사본이 늘었다(`_DeckListRowContent` · `_InducedContent` 안 초상 6칸). 고른 칸 테두리가 있는 큰 덱 줄(`_MyDeckRow`, 108)은 `TacticalDeckSlotRow`(92)에 폭 · 선택 칸 옵션으로 합칠 수 있다.
+
+### 발견 사항
+
+1. **design-review seed 방어 기록이 모두 시각 모름**: 그래서 seed · golden에서 최근 10전 · 최장 연패 · 재도전 방어가 '—'다. 시각 있는 방어 기록을 seed에 더하면 값이 보이지만 기록 목록 순서 · 행 수가 바뀌어 `tactical` · `-jokbo-drag` · `-import-excel` golden과 seed 수에 묶인 테스트(8파일)가 함께 바뀐다 — 이번에는 하지 않았다. CF 판단.
+2. **S1 덱 바꾸기 UI**: 시안에 없다(FD-133 "바꿔 볼 수 있다"). 시안 "이 자리의 대체 학생"(상위 500위 · 보정 방어, FD-127로 숨김) 자리를 같은 행 문법의 덱 목록으로 썼다. 캡션은 시안에 없는 문구다. CF 판단.
+3. **S3의 칸 의존**: 시안에서 칸을 따르는 S3 묶음은 리프트뿐이라(숨김), 칸을 바꾸면 S3은 리프트 캡션 이름만 바뀐다. 뚫은 공격 학생을 "그 칸 학생이 있던 기록"으로 좁힐지는 CF 판단(지금은 시안 문구 "이 방어 덱"대로 덱 단위).
+4. **30일 기간 없음**: 분석 화면은 최근 30일만 쓰지만(FE9-e 발견 6), 슬롯은 기간을 두지 않았다 — 시안 "최근 30일" 칩은 모집단 범위 표시이고, seed 방어 기록은 시각 모름이라 30일로 자르면 모두 빠진다. 두 화면 기간 규칙 통일은 CF 판단.
+5. **S2 사용 막대의 뜻**: 시안은 상위 500위 사용률이지만 같은 자리에 내 방어 기록의 비율을 그렸다(이유 한 줄 · (i)로 밝힘). 모집단 데이터원이 생기면 이 자리를 모집단으로 되돌리고 내 기록은 보조 글자로 남기는 안이 있다. CF 판단.
+6. **유도 덱 범위**: "공개 슬롯이 유도하는" 문구대로 공개 칸 학생이 같은 다른 덱의 방어 기록도 센다(덱 목록의 "방어 n전"과 유도 덱 캡션 "내 방어 n전"이 다를 수 있다).
+7. **공개 symbol 삭제**: `TacticalSubScreen.available` · `tacticalSubScreenPendingText`(사용처 페이지 1 · 테스트 1, grep). 다른 레인 사용 0.
+8. 워커 재량 FD: FD-130 · FD-133(둘 다 권장안). 열림 FD 0.
+9. fe_gate 분류: `tactical_slots_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음(+17, 약 15초).
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9g/commit.json`: slice `fe9g`, modified 5(이 문서는 `whole`), added 3, `post_dir` 없음, `status=true`, `whole` = 이 문서 + `frontend/test/goldens/baseline/tactical.png` · `tactical-jokbo-drag.png` · `tactical-migration.png` · `tactical-analysis.png` · `tactical-analysis-all.png` · `tactical-import-excel.png`, `optional_added` = `frontend/test/goldens/baseline/tactical-slots.png`. message(ASCII) 근거: Tactical-Slots artboard, G-pvp §4, FD-126 · FD-127 · FD-130 · FD-133 · FD-176.
+- 인계: `debug/frontend_fe9g/output.md`. 로그 `debug/frontend_fe9g/logs/`.
+
+### 다음 행동
+
+- FE9-g 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-f2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 +17(`tactical_slots_test`) · 기존 수 변화 0, process 변화 0, golden 전술 6장면 RED(seg "슬롯" 칸만) · 새 `tactical-slots` 기준 없음 · 나머지 GREEN) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9g`.
+- 발견 1 · 2 · 3 · 4 · 5는 CF 판단.

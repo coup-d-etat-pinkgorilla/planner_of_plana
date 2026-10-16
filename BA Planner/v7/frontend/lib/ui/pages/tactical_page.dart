@@ -20,6 +20,9 @@
 //   [TacticalExcelImportController] — 미리보기 · 처리 방법 · commit). 가져오면 모달을 닫고 컨트롤러 `reload()`로 기록을 다시
 //   읽는다. 이관 전(v1 기록이 남음)에는 버튼을 끄고 이유를 보인다(백엔드 `legacy_migration_required`와 같은 뜻). 분석 S2 "검증 강도"
 //   칩은 FD-127 (a)로 숨긴다(FD-134 등급 함수는 남긴다).
+// - FE9-g: 머리말 seg "슬롯"을 켠다. 슬롯 통계 화면(시안 Tactical-Slots)은 컨트롤러의 내 방어 기록만 센다(서비스 질의 없음,
+//   FD-127 — 상위 500위 모집단 통계 · 리프트 · 보정 방어는 빈 상태 설명). 내 방어 덱은 가장 최근 방어 기록의 덱이고, 다른 방어
+//   기록의 덱으로 바꿔 볼 수 있지만 저장하지 않는다(FD-133). 덱 칸을 누르면 S2 · S3이 그 학생 기준으로 바뀐다.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -40,6 +43,8 @@ import '../tactical/tactical_jokbo_all_panel.dart';
 import '../tactical/tactical_jokbo_view.dart';
 import '../tactical/tactical_pickers.dart';
 import '../tactical/tactical_records_view.dart';
+import '../tactical/tactical_slots_view.dart';
+import '../tactical/tactical_slots_workspace.dart';
 import '../tactical/tactical_sub_screen.dart';
 import '../tactical/tactical_workspace.dart';
 import '../widgets/account_section_cluster.dart'
@@ -78,6 +83,12 @@ const tacticalAnalysisNoOpponentText = '이 시그니처로 최근 30일에 기�
 const tacticalAnalysisReadErrorText = '분석 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다.';
 const tacticalAnalysisCopyHint =
     '기록 화면으로 돌아가 내 공격 덱 초안에 이 족보 덱을 복사합니다. 저장은 따로 합니다.';
+
+/// 슬롯 통계 화면 문구(FE9-g).
+const tacticalSlotsMigrationText =
+    '이전 형식 기록을 가져온 뒤에 슬롯 통계를 볼 수 있습니다. 기록 화면에서 "가져오기"를 눌러 주십시오.';
+const tacticalSlotsEmptyText =
+    '아직 방어 기록이 없습니다. 기록 작성에서 방어 기록을 저장하면 가장 최근 방어 기록의 덱이 여기에 내 방어 덱으로 나타납니다.';
 
 /// 엑셀 가져오기 문구(FE9-f).
 const tacticalExcelHint = '엑셀(.xlsx) · CSV 파일의 전술 기록을 확인한 뒤 가져옵니다.';
@@ -225,6 +236,13 @@ class _TacticalPageState extends State<TacticalPage> {
   /// 마지막으로 그린 분석 화면(팝업이 쓴다).
   TacticalAnalysisPanel? _lastAnalysis;
 
+  // --- 슬롯 통계(FE9-g) ---
+  /// 바꿔 본 내 방어 덱(덱 identity). null이면 가장 최근 방어 기록의 덱(FD-133). 저장하지 않는다.
+  String? _slotsDeckKey;
+
+  /// 고른 칸(0~5). 고른 덱에서 학생을 모르는 칸이면 학생을 아는 첫 칸을 보인다.
+  int? _slotsSlot;
+
   // --- 엑셀 가져오기(FE9-f) ---
   TacticalExcelImportController? _excel;
   final _excelModal = BaModalController();
@@ -267,7 +285,7 @@ class _TacticalPageState extends State<TacticalPage> {
   }
 
   void _openScreen(TacticalSubScreen screen) {
-    if (!screen.available || screen == _screen || !mounted) return;
+    if (screen == _screen || !mounted) return;
     _allModal.close();
     if (screen != TacticalSubScreen.analysis) _syncAnalysisQuery(null);
     setState(() => _screen = screen);
@@ -1121,6 +1139,48 @@ class _TacticalPageState extends State<TacticalPage> {
     );
   }
 
+  // --- 슬롯 통계 (FE9-g) ---------------------------------------------------------
+
+  /// 슬롯 통계 화면 값. 계정 · 서비스가 없거나 이관 전이면 안내 문구만(분석 화면과 같은 순서).
+  TacticalSlotsPanel _slotsPanel() {
+    final controller = _controller;
+    String? blocked;
+    if (_error != null) {
+      blocked = _error;
+    } else if (controller == null) {
+      blocked = tacticalNoServiceText;
+    } else if (_profile == null) {
+      blocked = _loading ? tacticalLoadingText : tacticalNoProfileText;
+    } else if (controller.error?.code == 'load_failed') {
+      blocked = controller.error?.message;
+    } else if (_migrationRequired) {
+      blocked = tacticalSlotsMigrationText;
+    }
+    if (blocked != null || controller == null) {
+      return TacticalSlotsPanel(message: blocked ?? tacticalNoServiceText);
+    }
+    final defense = tacticalDefenseMatches(controller.matches);
+    final decks = tacticalSlotsDecks(defense);
+    final deck =
+        decks.where((item) => item.key == _slotsDeckKey).firstOrNull ??
+        decks.firstOrNull;
+    if (deck == null) {
+      return TacticalSlotsPanel(
+        message: controller.loading
+            ? tacticalLoadingText
+            : tacticalSlotsEmptyText,
+      );
+    }
+    return TacticalSlotsPanel(
+      defense: defense,
+      decks: decks,
+      selectedDeckKey: deck.key,
+      onSelectDeck: (key) => setState(() => _slotsDeckKey = key),
+      slotIndex: tacticalSlotsDefaultSlot(deck.deck, _slotsSlot),
+      onSelectSlot: (index) => setState(() => _slotsSlot = index),
+    );
+  }
+
   // --- 엑셀 가져오기 (FE9-f) -----------------------------------------------------
 
   /// 엑셀 가져오기를 열 수 없는 이유(null = 열 수 있다).
@@ -1360,14 +1420,20 @@ class _TacticalPageState extends State<TacticalPage> {
   Widget build(BuildContext context) {
     final stage = TacticalSubScreenStage(
       screen: _screen,
-      builder: (screen, offset) => screen == TacticalSubScreen.analysis
-          ? TacticalAnalysisWorkspace(
-              panel: _lastAnalysis = _analysisPanel(),
-              studentName: (id) => _names[id] ?? id,
-              allButtonKey: _allButtonKey,
-              sectionOffset: offset,
-            )
-          : _recordsWorkspace(offset),
+      builder: (screen, offset) => switch (screen) {
+        TacticalSubScreen.analysis => TacticalAnalysisWorkspace(
+          panel: _lastAnalysis = _analysisPanel(),
+          studentName: (id) => _names[id] ?? id,
+          allButtonKey: _allButtonKey,
+          sectionOffset: offset,
+        ),
+        TacticalSubScreen.slots => TacticalSlotsWorkspace(
+          panel: _slotsPanel(),
+          studentName: (id) => _names[id] ?? id,
+          sectionOffset: offset,
+        ),
+        TacticalSubScreen.records => _recordsWorkspace(offset),
+      },
     );
     return BaModal(
       controller: _studentModal,

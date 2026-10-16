@@ -2,10 +2,11 @@
 //
 // - seg(FD-126 (a), CF 결정 2026-10-16): 셸 머리말 제목 "전술대항전" 옆(`PageHeaderOverride.trailing`). 부제는 하위 화면마다
 //   시안 문구(기록 "전술대항전 기록과 편성" · 분석 "공개 방어 시그니처별 족보 분석" · 슬롯 "슬롯별 사용률 · 위치 선호 · 궁합 ·
-//   카운터"). 슬롯은 FE9-g 전까지 흐림 + "준비 중" 툴팁.
+//   카운터"). FE9-g부터 세 화면 모두 열린다(슬롯 = 시안 Tactical-Slots).
 // - 전환 모션(FE9-a 발견 10): 인벤토리 분석 ↔ 티어(FE6-e)와 같은 문법 — 앞 절반에 지금 화면 섹션이 outro 방향으로 빠지고,
 //   뒤 절반에 새 화면 섹션이 intro 방향으로 들어온다(`sectionExitOffset` · `sectionEntryOffset`, 곡선 `AppMotion.sectionCurve`,
-//   전체 `AppMotion.section` × 2). 방향은 `tacticalSectionMotion`(부착면 표, 분석 가운데는 FD-130 아래). 움직이는 동안은 누를 수 없다.
+//   전체 `AppMotion.section` × 2). 방향은 `tacticalSectionMotion`(부착면 표, 분석 · 슬롯 가운데는 FD-130 아래). 움직이는 동안은
+//   누를 수 없다. 기록 ↔ 분석 ↔ 슬롯 어느 쌍이든 같은 문법이다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -26,15 +27,9 @@ enum TacticalSubScreen {
 
   /// 머리말 부제(시안 그대로).
   final String subtitle;
-
-  /// 열 수 있는가(슬롯은 FE9-g).
-  bool get available => this != TacticalSubScreen.slots;
 }
 
-/// 꺼진 하위 화면 툴팁(통계 "준비 중"과 같은 문구).
-const tacticalSubScreenPendingText = '준비 중';
-
-/// 머리말 하위 화면 seg(FD-126 (a)). 칸마다 따로 그려 꺼진 칸에만 툴팁을 단다.
+/// 머리말 하위 화면 seg(FD-126 (a)). 칸마다 따로 그린다(칸마다 key — 테스트 · golden이 누른다).
 class TacticalSubScreenSegments extends StatelessWidget {
   const TacticalSubScreenSegments({
     super.key,
@@ -49,21 +44,16 @@ class TacticalSubScreenSegments extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onChanged = this.onChanged;
-    Widget segment(TacticalSubScreen screen) {
-      final seg = SkewSegmented<TacticalSubScreen>(
-        key: ValueKey('tactical-view-${screen.name}'),
-        height: 32,
-        fontSize: AppType.bodySmallSize,
-        horizontalPadding: 14,
-        segments: [SkewSegment(value: screen, label: screen.label)],
-        selected: screen == selected ? screen : null,
-        onChanged: screen.available && onChanged != null ? onChanged : null,
-      );
-      return screen.available
-          ? seg
-          : Tooltip(message: tacticalSubScreenPendingText, child: seg);
-    }
+    Widget segment(TacticalSubScreen screen) =>
+        SkewSegmented<TacticalSubScreen>(
+          key: ValueKey('tactical-view-${screen.name}'),
+          height: 32,
+          fontSize: AppType.bodySmallSize,
+          horizontalPadding: 14,
+          segments: [SkewSegment(value: screen, label: screen.label)],
+          selected: screen == selected ? screen : null,
+          onChanged: onChanged,
+        );
 
     return Row(
       key: const ValueKey('tactical-view-segments'),

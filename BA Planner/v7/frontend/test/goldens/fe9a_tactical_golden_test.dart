@@ -31,6 +31,14 @@
 //   읽기" → 문자열 5종 처리(기존 상대 합치기 · "?" 빈칸으로 두기 · "승(2트)" 결과 · 시도로 나누기 · 새 상대 저장 · "수영복 히나"
 //   학생 검색 → 히나(수영복)) 뒤 찍는다. 스크림 .62, 패널 (500, 348, 1560, 880), "모두 처리됨 5 / 5", 미리보기 분홍 줄 3, "4건
 //   가져오기".
+// - FE9-g: 머리말 seg "슬롯"이 켜진다(흐림 · "준비 중" → 보통). seg를 그리는 장면(`tactical` · `-jokbo-drag` · `-migration` ·
+//   `-analysis` · `-analysis-all` · `-import-excel`)은 seg "슬롯" 칸 밝기만 바뀐다.
+// - `tactical-slots`(FE9-g, 시안 "슬롯 1 선택"): 같은 seed · 고정 시계에서 머리말 seg "슬롯"을 눌러 모션이 끝난 뒤 찍는다. S1 내 방어
+//   덱 = 가장 최근 방어 기록의 덱(FD-133 — seed 방어 3건이 모두 히나 · 이오리 · 아루 · 하루카 | 히비키 · 아코, 1번 히나 분홍 선택),
+//   칩 "1번 히나 선택" · "내 방어 기록 3건", 덱 목록 1행("방어 3전 2승 1패" · "시각 모름"). S2 제목 옆 모집단 없음 한 줄, 1번 사용
+//   막대 1행(히나 100.0% · 내 방어 3전 2승 1패), 자리별 배치 1번 100%, KPI 1번 66.7% · 나머지 '—', 메타 집중도 이유 한 줄. S3 리프트
+//   이유 한 줄, 뚫은 공격 학생 3행(아루 · 하루나 · 히비키 100%), 유도 덱 2행(67% 방어 50% · 33% 방어 100%), 안정성 67% · '—' 셋
+//   (seed 방어 기록은 모두 시각 모름).
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -72,6 +80,18 @@ Future<void> _openAnalysis(WidgetTester tester) async {
   await pumpUntilFound(
     tester,
     find.byKey(const ValueKey('tactical-analysis-slot-memory')),
+  );
+}
+
+/// 머리말 seg "슬롯"을 눌러 모션이 끝날 때까지 기다린다(슬롯 화면은 서비스 질의가 없다).
+Future<void> _openSlots(WidgetTester tester) async {
+  final seg = find.byKey(const ValueKey('tactical-view-slots'));
+  expect(seg, findsOneWidget, reason: 'header sub view seg');
+  await tester.tap(seg);
+  await tester.pumpAndSettle();
+  await pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey('tactical-slots-slot-stability')),
   );
 }
 
@@ -203,6 +223,24 @@ void main() {
     expect(find.byKey(const ValueKey('tactical-jokbo-all')), findsOneWidget);
     expect(find.textContaining(' · 보는 중'), findsOneWidget);
     await expectGoldenScene(tester, 'tactical-analysis-all');
+  }, variant: goldenPlatform);
+
+  testWidgets('tactical-slots', (tester) async {
+    final service = _ClockedMockAppService();
+    addTearDown(service.dispose);
+    await _seedV2(service);
+    await _openTactical(tester, service);
+    await _openSlots(tester);
+    expect(find.text('슬롯별 사용률 · 위치 선호 · 궁합 · 카운터'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('tactical-slots-selected-chip')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('tactical-slots-deck-row-0')),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'tactical-slots');
   }, variant: goldenPlatform);
 
   testWidgets('tactical-import-excel', (tester) async {

@@ -1,7 +1,8 @@
 import 'section_studio_document.dart';
 import 'section_template.dart';
 
-/// 전술대항전 기록 화면 4-Section(FE9-a, 시안 Tactical, G 보고서 §1.1). 분석 화면 3-Section(FE9-e)은 이 파일 아래.
+/// 전술대항전 기록 화면 4-Section(FE9-a, 시안 Tactical, G 보고서 §1.1). 분석 화면 3-Section(FE9-e) · 슬롯 통계 화면
+/// 3-Section(FE9-g)은 이 파일 아래.
 ///
 /// 기준 viewport 2560×1392(헤더 아래 2560×1208, y=184부터)에서 시안 path 꼭짓점에 맞춘다. 96 grid 한 칸은
 /// 가로 26.67px, 세로 12.58px다(`gx = x/2560·96`, `gy = (y−184)/1208·96`).
@@ -385,13 +386,15 @@ SectionCanvasElement tacticalAnalysisSection(String id) =>
     );
 
 /// 하위 화면 전환 모션 방향(§1.4 부착면 표, FE9-a 발견 10): 왼쪽 0/180 · 위 260/80 · 아래 80/260 · 오른쪽 180/0.
-/// 분석 가운데 족보 상세는 위 · 아래 모두 닿아 주 부착면 아래(FD-130)를 따른다.
+/// 분석 가운데 족보 상세 · 슬롯 가운데 슬롯별 통계는 위 · 아래 모두 닿아 주 부착면 아래(FD-130)를 따른다.
 ({double intro, double outro}) tacticalSectionMotion(String id) => switch (id) {
   tacticalRecordsSectionId ||
-  tacticalAnalysisSignaturesSectionId => (intro: 0, outro: 180),
+  tacticalAnalysisSignaturesSectionId ||
+  tacticalSlotsDeckSectionId => (intro: 0, outro: 180),
   tacticalLobbySectionId => (intro: 260, outro: 80),
   tacticalEditorSectionId ||
-  tacticalAnalysisJokboSectionId => (intro: 80, outro: 260),
+  tacticalAnalysisJokboSectionId ||
+  tacticalSlotsStatsSectionId => (intro: 80, outro: 260),
   _ => (intro: 180, outro: 0),
 };
 
@@ -525,6 +528,199 @@ abstract final class TacticalAnalysisMetrics {
 
   /// 순위 행 덱 칸 40×32.
   static const allRowPortrait = (width: 40.0, height: 32.0);
+}
+
+/// 전술대항전 슬롯 통계 화면 3-Section(FE9-g, 시안 Tactical-Slots, G 보고서 §4.1).
+///
+/// - 왼쪽 내 방어 덱 `tactical-slots-deck` (0, 209.2, 800, 1182.8): 왼쪽 면 사다리꼴, 0~30칸. 윗변 0→800, 아랫변 0→591.4.
+///   시안과 같다(기록 목록과 같은 칸).
+/// - 가운데 슬롯별 통계 `tactical-slots-stats` (615.4, 209.2, 1329.1, 1182.8): 위 · 아래 모두 닿는 평행사변형. 주 부착면은
+///   아래다(FD-130 워커 재량 — intro 80° · outro 260°, 분석 가운데와 같다). rect 19~75칸 안에서 아래 면 구간을 7+72칸으로 골랐다.
+///   꼭짓점 아랫변 615.6→1735.6, 윗변 824.1→1944.1. 시안(615.4→1736.0, 824.0→1944.5)과 0.4px 안. rect 나머지는 path 밖이라
+///   그리지 않는다.
+/// - 오른쪽 궁합 · 카운터 `tactical-slots-counter` (1760, 209.2, 800, 1182.8): 오른쪽 면 사다리꼴, 66~96칸. 분석 상대 카드와 같은 칸.
+/// 시안 그리기 순서는 슬롯별 통계 → 내 방어 덱 → 궁합 · 카운터다(서로 겹치지 않는다).
+final SectionStudioDocument tacticalSlotsStudioDocument = SectionStudioDocument(
+  headerRows: 12,
+  viewport: 'standard',
+  showGrid: false,
+  showSafeArea: true,
+  selectedElementId: tacticalSlotsStatsSectionId,
+  placementGap: 0,
+  elements: const [
+    SectionCanvasElement(
+      id: tacticalSlotsStatsSectionId,
+      label: '슬롯별 통계',
+      rect: SectionGridRect(19, 2, 56, 94),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.parallelogram,
+        face: SectionAttachmentFace.bottom,
+        faceStart: 7,
+        faceSpan: 72,
+        height: 96,
+      ),
+    ),
+    SectionCanvasElement(
+      id: tacticalSlotsDeckSectionId,
+      label: '내 방어 덱',
+      rect: SectionGridRect(0, 2, 30, 94),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.left,
+        faceSpan: 96,
+        height: 96,
+      ),
+    ),
+    SectionCanvasElement(
+      id: tacticalSlotsCounterSectionId,
+      label: '궁합 · 카운터',
+      rect: SectionGridRect(66, 2, 30, 94),
+      spec: AttachedSectionSpec(
+        mode: SectionShapeMode.trapezoid,
+        face: SectionAttachmentFace.right,
+        faceSpan: 96,
+        height: 96,
+      ),
+    ),
+  ],
+);
+
+/// 왼쪽 내 방어 덱(슬롯 클릭 · 내 방어 기록의 덱 목록).
+const tacticalSlotsDeckSectionId = 'tactical-slots-deck';
+
+/// 가운데 슬롯별 통계(주 부착면 아래, FD-130).
+const tacticalSlotsStatsSectionId = 'tactical-slots-stats';
+
+/// 오른쪽 궁합 · 카운터.
+const tacticalSlotsCounterSectionId = 'tactical-slots-counter';
+
+SectionCanvasElement tacticalSlotsSection(String id) =>
+    tacticalSlotsStudioDocument.elements.firstWhere(
+      (element) => element.id == id,
+    );
+
+/// 슬롯 통계 화면 섹션 안 좌표(시안 Tactical-Slots 값, 각 섹션 윗변 기준). 작은 창 규칙은 [TacticalMetrics.scaleFor]와 같다.
+abstract final class TacticalSlotsMetrics {
+  // --- 왼쪽 내 방어 덱 ---------------------------------------------------------
+
+  /// 제목 줄(시안 (20, 229.2)): "내 방어 덱 · 슬롯 클릭" 18px.
+  static const deckTitle = TacticalSlotSpec(
+    top: 20,
+    height: 36,
+    leftGap: 20,
+    rightGap: 24,
+  );
+
+  /// 덱 6칸(시안 (20, 279.2), `.deck` 폭 108 · 사이 10 · 초상 108×87.4, 4번과 SP1 사이 구분선 1×97).
+  static const deckRow = TacticalSlotSpec(
+    top: 70,
+    height: 122,
+    leftGap: 20,
+    rightGap: 24,
+  );
+  static const deckSlotWidth = 108.0;
+  static const deckSlotGap = 10.0;
+  static const deckPortrait = (width: 108.0, height: 87.4);
+  static const deckDividerHeight = 97.0;
+
+  /// 칩 줄(시안 (20, 426.2), 칩 24).
+  static const deckChips = TacticalSlotSpec(
+    top: 217,
+    height: 24,
+    leftGap: 20,
+    rightGap: 24,
+  );
+
+  /// 목록 캡션(시안 `.cap` (20, 472.2) — 시안 "이 자리의 대체 학생" 자리, FD-133 내 방어 기록의 덱 목록).
+  static const deckListCaption = TacticalSlotSpec(
+    top: 263,
+    height: 20,
+    leftGap: 20,
+    rightGap: 24,
+  );
+
+  /// 덱 목록 viewport: 첫 행 (14, 498.2), 행 오른쪽은 행 윗변 높이 사선에서 22(시안 첫 행 폭 713 = viewport − 18).
+  static const listTop = 289.0;
+  static const listLeft = 14.0;
+  static const listRailGap = 4.0;
+  static const listBottomGap = 18.0;
+
+  /// 덱 목록 행(시안 `button.btn.ghost` 56, 간격 6), 안쪽 왼쪽 16 · 오른쪽 21.9, 초상 36×29.
+  static const rowHeight = 56.0;
+  static const rowGap = 6.0;
+  static const rowScrollbarReserve = 18.0;
+  static const rowContentLeft = 16.0;
+  static const rowContentRight = 21.9;
+  static const rowPortrait = (width: 36.0, height: 29.0);
+
+  // --- 가운데 슬롯별 통계(평행사변형: 행 왼쪽 = 행 아래 높이의 왼쪽 사선 + 24, 오른쪽 = 행 위 높이의 오른쪽 사선 − 23.5) ---
+
+  static TacticalSlotSpec _stats(double top, double height) =>
+      TacticalSlotSpec(top: top, height: height, leftGap: 24, rightGap: 23.5);
+
+  static TacticalSlotSpec _statsCaption(double top, [double height = 24]) =>
+      TacticalSlotSpec(top: top, height: height, leftGap: 26, rightGap: 25.5);
+
+  /// 제목 줄(시안 (847.3, 229.2, 1060.6×36)): "슬롯별 통계" 19px · (i) · 칩 자리.
+  static const statsTitle = TacticalSlotSpec(
+    top: 20,
+    height: 36,
+    leftGap: 33,
+    rightGap: 32.7,
+  );
+
+  /// 사용 막대 행(시안 첫 행 (821.9, 281.2, 1086×76), 안쪽 23.4, 간격 4) 5행, 초상 86×70.
+  static const usageRowTop = 72.0;
+  static const usageRowHeight = 76.0;
+  static const usageRowStep = 80.0;
+  static const usageRowCount = 5;
+  static const usageRowPadding = 23.4;
+  static const usagePortrait = (width: 86.0, height: 70.0);
+  static TacticalSlotSpec usageRow(int index) =>
+      _stats(usageRowTop + index * usageRowStep, usageRowHeight);
+
+  /// "선택한 캐릭터의 자리별 배치 통계"(시안 (759.4, 689.2, 1074.6×34), 안쪽 16, 초상 36×29) · 자리 막대(시안 (748.6, 729.2,
+  /// 1080.3×44), 안쪽 17.8, 묶음 폭 230).
+  static final positionCaption = _statsCaption(480, 34);
+  static final positionRow = _stats(520, 44);
+
+  /// "위치별 방어 성공률 · 배치 민감도"(시안 (744.2, 785.2)) · KPI 5칸(시안 (728.8, 815.2, 1084.9×70), 안쪽 22.3).
+  static final resultCaption = _statsCaption(576);
+  static final resultRow = _stats(606, 70);
+
+  /// "n번 메타 집중도"(시안 (724.5, 897.2)) · 쌓은 막대(시안 (716.1, 927.2, 1077.9×30), 안쪽 15.3).
+  static final metaCaption = _statsCaption(688);
+  static final metaRow = _stats(718, 30);
+
+  // --- 오른쪽 궁합 · 카운터(왼쪽 = 행 아래 높이의 왼쪽 사선 + 24, 오른쪽 22) ---------------
+
+  static TacticalSlotSpec _counter(double top, double height) =>
+      TacticalSlotSpec(top: top, height: height, leftGap: 24, rightGap: 22);
+
+  /// 제목(시안 `.plain` (1982.7, 229.2, 555.3×36), 안쪽 18.3).
+  static final counterTitle = _counter(20, 36);
+
+  /// "…와 자주 같이 쓰이는 학생 (리프트)"(시안 (1976.7, 275.2)) · 행 44 간격 6(시안 첫 행 (1967.9, 305.2)) 4행.
+  static final liftCaption = _counter(66, 24);
+  static TacticalSlotSpec liftRow(int index) => _counter(96 + index * 50, 44);
+
+  /// "이 방어 덱을 가장 자주 뚫은 공격 학생"(시안 (1934.7, 513.2)) · 행 44 간격 6(시안 첫 행 (1925.9, 543.2)) 3행.
+  static final breakerCaption = _counter(304, 24);
+  static const breakerRowCount = 3;
+  static TacticalSlotSpec breakerRow(int index) =>
+      _counter(334 + index * 50, 44);
+
+  /// "공개 슬롯이 유도하는 상대 공격 덱 · Top 3"(시안 (1901.6, 701.2)) · 행 78 간격 6(시안 첫 행 (1886.8, 731.2), 안쪽 25.8) 3행,
+  /// 덱 초상 42×34.
+  static final inducedCaption = _counter(492, 24);
+  static const inducedRowCount = 3;
+  static const inducedPortrait = (width: 42.0, height: 34.0);
+  static TacticalSlotSpec inducedRow(int index) =>
+      _counter(522 + index * 84, 78);
+
+  /// "덱 안정성 · 방어 결과 기준"(시안 (1850.4, 991.2)) · KPI 4칸(시안 (1837.0, 1021.2, 701×70), 안쪽 24.3).
+  static final stabilityCaption = _counter(782, 24);
+  static final stabilityRow = _counter(812, 70);
 }
 
 /// 엑셀 가져오기 · 해석 결과 확인 모달(FE9-f, 시안 Tactical-Import-Excel, G 보고서 §5.1).
