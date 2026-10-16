@@ -27,6 +27,7 @@ import 'pages/statistics_page.dart';
 import 'pages/tactical_page.dart';
 import 'scan/connected_target_controller.dart';
 import 'scan/header_connection_chip.dart';
+import 'scan/scan_session_controller.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
@@ -137,6 +138,21 @@ class _AppShellState extends State<AppShell>
   late final ConnectedTargetController _connectedTarget =
       ConnectedTargetController.forService(widget.service);
 
+  /// 스캔 세션(FE8-f1). 탭을 옮겨도 살아 있고, 계정을 바꾸면 스캔 화면과 함께 새로 만든다.
+  late ScanSessionController _scanSession = _createScanSession();
+
+  ScanSessionController _createScanSession() => ScanSessionController(
+    service: widget.service,
+    connectedTarget: _connectedTarget,
+    onRecentChanged: (recent) {
+      setState(() => _recentScans = recent);
+    },
+    onCompanionChanged: (companion) {
+      if (!mounted) return;
+      _scanCompanion.value = companion;
+    },
+  );
+
   @override
   void initState() {
     super.initState();
@@ -168,6 +184,7 @@ class _AppShellState extends State<AppShell>
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
     _connectedTarget.rebindService(widget.service);
+    _scanSession.updateService(widget.service);
     _loadSelectedProfile();
   }
 
@@ -176,6 +193,7 @@ class _AppShellState extends State<AppShell>
     _profileLoadGeneration += 1;
     widget.service.state.removeListener(_handleConnectionChanged);
     _homeEntranceController.dispose();
+    _scanSession.dispose();
     _scanCompanion.dispose();
     _recentStudents.dispose();
     _studentFilter.dispose();
@@ -309,7 +327,13 @@ class _AppShellState extends State<AppShell>
     _studentFilter
       ..discardDraft()
       ..applied = StudentFilterSelection.empty;
+    // 예전 스캔 화면이 프레임 끝에 dispose되던 시점과 맞춘다(새 화면이 새 세션으로 준비를 읽은 뒤).
+    final previousScanSession = _scanSession;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => previousScanSession.dispose(),
+    );
     setState(() {
+      _scanSession = _createScanSession();
       _profileGeneration += 1;
       _homeReloadToken += 1;
       _statisticsReloadToken += 1;
@@ -490,13 +514,7 @@ class _AppShellState extends State<AppShell>
                                   key: ValueKey('scan-$_profileGeneration'),
                                   service: widget.service,
                                   onCandidateHandoff: _handoffCandidate,
-                                  onRecentChanged: (recent) {
-                                    setState(() => _recentScans = recent);
-                                  },
-                                  onCompanionChanged: (companion) {
-                                    if (!mounted) return;
-                                    _scanCompanion.value = companion;
-                                  },
+                                  controller: _scanSession,
                                   active: _section == AppSection.scan,
                                   connectedTarget: _connectedTarget,
                                 ),

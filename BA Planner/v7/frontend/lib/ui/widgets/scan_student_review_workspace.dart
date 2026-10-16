@@ -6,9 +6,13 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../scan/scan_student_review_logic.dart';
 import 'diagonal_media_list_item.dart';
 import 'diagonal_section.dart';
 import 'scroll_viewport_fog.dart';
+
+export '../scan/scan_student_review_logic.dart'
+    show orderScanResultCandidatesByGroup;
 
 typedef ScanCandidateAction = Future<void> Function(ScannerCandidate candidate);
 typedef ScanCandidateEditAction =
@@ -18,31 +22,6 @@ typedef ScanCandidateEditAction =
       Map<int, int> relationshipRanks,
       Set<String> confirmedFields,
     );
-
-List<ScannerCandidate> orderScanResultCandidatesByGroup(
-  List<ScannerCandidate> candidates,
-  Map<String, StudentCatalogEntry> catalog,
-) {
-  final groupOrder = <String, int>{};
-  final indexed = candidates.indexed.toList(growable: false);
-  for (final entry in indexed) {
-    final studentId = entry.$2.payload['student_id'] as String? ?? 'unknown';
-    final group = catalog[studentId]?.group ?? studentId;
-    groupOrder.putIfAbsent(group, () => groupOrder.length);
-  }
-  indexed.sort((left, right) {
-    String group((int, ScannerCandidate) entry) {
-      final studentId = entry.$2.payload['student_id'] as String? ?? 'unknown';
-      return catalog[studentId]?.group ?? studentId;
-    }
-
-    final groupComparison = groupOrder[group(left)]!.compareTo(
-      groupOrder[group(right)]!,
-    );
-    return groupComparison != 0 ? groupComparison : left.$1.compareTo(right.$1);
-  });
-  return indexed.map((entry) => entry.$2).toList(growable: false);
-}
 
 class ScanStudentReviewWorkspace extends StatefulWidget {
   const ScanStudentReviewWorkspace({
@@ -122,48 +101,20 @@ class _ScanStudentReviewWorkspaceState
     return widget.candidates.firstOrNull;
   }
 
-  static const _safeStatuses = {
-    'ok',
-    'inferred',
-    'skipped',
-    'verified',
-    'deferred',
-    'shadow',
-  };
-
-  static const _potentialFields = {'stat_hp', 'stat_atk', 'stat_heal'};
-
   bool _hasProblem(ScannerCandidate candidate) =>
-      candidate.reviewRequired ||
-      widget.candidateErrors.containsKey(candidate.id) ||
-      _localErrors.containsKey(candidate.id) ||
-      candidate.evidence.any(
-        (evidence) => !_safeStatuses.contains(evidence.status),
+      scanStudentCandidateHasProblem(
+        candidate,
+        applyFailed: widget.candidateErrors.containsKey(candidate.id),
+        invalidEdit: _localErrors.containsKey(candidate.id),
       );
 
-  String _status(ScannerCandidate candidate) {
-    if (widget.candidateErrors.containsKey(candidate.id)) return 'apply failed';
-    if (_localErrors.containsKey(candidate.id)) return 'invalid edit';
-    if (candidate.evidence.any((item) => item.status == 'deferred')) {
-      return '다른 의상 랭크 적용 대기';
-    }
-    for (final priority in const [
-      'suspicious',
-      'dependency_missing',
-      'partial',
-      'failed',
-      'uncertain',
-      'region_missing',
-    ]) {
-      if (candidate.evidence.any((item) => item.status == priority)) {
-        return priority.replaceAll('_', ' ');
-      }
-    }
-    return candidate.reviewRequired ? 'review required' : 'verified';
-  }
+  String _status(ScannerCandidate candidate) => scanStudentCandidateStatus(
+    candidate,
+    applyFailed: widget.candidateErrors.containsKey(candidate.id),
+    invalidEdit: _localErrors.containsKey(candidate.id),
+  );
 
-  String _studentId(ScannerCandidate candidate) =>
-      candidate.payload['student_id'] as String? ?? 'unknown';
+  String _studentId(ScannerCandidate candidate) => scanStudentId(candidate);
 
   String _displayName(ScannerCandidate candidate) {
     final id = _studentId(candidate);
@@ -171,46 +122,20 @@ class _ScanStudentReviewWorkspaceState
   }
 
   Map<String, dynamic> _values(ScannerCandidate candidate) =>
-      Map<String, dynamic>.from(
-        candidate.payload['values'] as Map? ?? const {},
-      );
+      scanStudentValues(candidate);
 
   Map<String, dynamic> _draft(ScannerCandidate candidate) =>
       _drafts.putIfAbsent(candidate.id, () => _values(candidate));
 
-  Map<String, dynamic> _expected(ScannerCandidate candidate) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final expected = evidence.details?['expected'];
-      if (expected is Map) return Map<String, dynamic>.from(expected);
-    }
-    return const {};
-  }
+  Map<String, dynamic> _expected(ScannerCandidate candidate) =>
+      scanStudentExpectedStats(candidate);
 
-  Map<String, dynamic> _delta(ScannerCandidate candidate) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final delta = evidence.details?['delta'];
-      if (delta is Map) return Map<String, dynamic>.from(delta);
-    }
-    return const {};
-  }
+  Map<String, dynamic> _delta(ScannerCandidate candidate) =>
+      scanStudentStatDelta(candidate);
 
   List<Map<String, dynamic>> _relationshipContributions(
     ScannerCandidate candidate,
-  ) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final rows = evidence.details?['relationship_contributions'];
-      if (rows is List) {
-        return rows
-            .whereType<Map>()
-            .map((row) => Map<String, dynamic>.from(row))
-            .toList(growable: false);
-      }
-    }
-    return const [];
-  }
+  ) => scanStudentRelationshipContributions(candidate);
 
   List<_ResultListEntry> _resultEntries() {
     if (!widget.singleScan) {
@@ -245,7 +170,7 @@ class _ScanStudentReviewWorkspaceState
           firstInGroup: true,
         ),
         for (final row in _relationshipContributions(candidate))
-          if (row['kind'] == 'alternate' && row['owned'] == true)
+          if (scanStudentIsOwnedAlternate(row))
             _ResultListEntry.relationship(candidate, row),
       ],
     ];
@@ -257,15 +182,15 @@ class _ScanStudentReviewWorkspaceState
     payload['values'] = Map<String, dynamic>.from(_draft(candidate));
     final relationshipRanks = <int, int>{};
     for (final row in _relationshipContributions(candidate)) {
-      if (row['kind'] != 'alternate' || row['owned'] != true) continue;
+      if (!scanStudentIsOwnedAlternate(row)) continue;
       final id = row['schaledb_id'];
       if (id is! int) continue;
       final raw =
           _relationshipRankInputs[candidate.id]?[id] ??
           row['rank']?.toString() ??
           '';
-      final rank = int.tryParse(raw);
-      if (rank == null || rank < 1 || rank > 100) {
+      final rank = scanStudentRelationshipRank(raw);
+      if (rank == null) {
         setState(
           () => _localErrors[candidate.id] = '다른 보유 의상의 인연 랭크를 1~100으로 입력하세요.',
         );
@@ -276,11 +201,11 @@ class _ScanStudentReviewWorkspaceState
     setState(() => _localErrors.remove(candidate.id));
     final original = _values(candidate);
     final draft = _draft(candidate);
-    final confirmed = <String>{
-      ...?_confirmedFields[candidate.id],
-      for (final field in draft.keys)
-        if (draft[field] != original[field]) field,
-    };
+    final confirmed = scanStudentConfirmedFields(
+      original: original,
+      draft: draft,
+      checked: _confirmedFields[candidate.id],
+    );
     await widget.onRevalidate(candidate, payload, relationshipRanks, confirmed);
     if (mounted) setState(() => _editing.remove(candidate.id));
   }
@@ -388,19 +313,11 @@ class _ScanStudentReviewWorkspaceState
     final expected = _expected(candidate);
     final delta = _delta(candidate);
     final relationshipContributions = _relationshipContributions(candidate);
-    final fields = <String>{...current.keys, ...scanned.keys};
-    if ((scanned['level'] as int? ?? 0) >= 90 &&
-        (scanned['student_star'] as int? ?? 0) >= 5) {
-      fields.addAll(_potentialFields);
-    }
-    const statToField = {
-      'MaxHP': 'combat_hp',
-      'AttackPower': 'combat_atk',
-      'DefensePower': 'combat_def',
-      'HealPower': 'combat_heal',
-    };
-    fields.addAll(statToField.values.where((field) => expected.isNotEmpty));
-    final ordered = fields.toList()..sort();
+    final ordered = scanStudentComparisonFields(
+      current: current,
+      scanned: scanned,
+      expected: expected,
+    );
     final busy = widget.busyCandidateIds.contains(candidate.id);
     return DiagonalSection(
       child: Padding(
@@ -519,12 +436,13 @@ class _ScanStudentReviewWorkspaceState
               ),
             if (wide)
               _ComparisonTable(
+                // 같은 후보의 새 revision이면 편집 칸을 새 값으로 다시 만든다(scanwip-func 발견 1).
+                key: ValueKey('scan-student-comparison-${candidate.revision}'),
                 fields: ordered,
                 current: current,
                 scanned: scanned,
                 expected: expected,
                 delta: delta,
-                statToField: statToField,
                 editing: _editing.contains(candidate.id),
                 onChanged: (field, value) => _edit(candidate, field, value),
                 confirmedFields: _confirmedFields[candidate.id] ?? const {},
@@ -534,11 +452,14 @@ class _ScanStudentReviewWorkspaceState
             else
               for (final field in ordered)
                 _ComparisonCard(
+                  key: ValueKey(
+                    'scan-student-comparison-${candidate.revision}-$field',
+                  ),
                   field: field,
                   current: current[field],
                   scanned: scanned[field],
-                  calculated: _calculated(field, expected, statToField),
-                  delta: _calculatedDelta(field, delta, statToField),
+                  calculated: scanStudentCalculatedValue(field, expected),
+                  delta: scanStudentCalculatedDelta(field, delta),
                   editing: _editing.contains(candidate.id),
                   onChanged: (value) => _edit(candidate, field, value),
                   confirmed:
@@ -593,16 +514,7 @@ class _ScanStudentReviewWorkspaceState
   void _edit(ScannerCandidate candidate, String field, String text) {
     final original = _values(candidate)[field];
     dynamic value = text;
-    if (original is int ||
-        _potentialFields.contains(field) ||
-        {
-          'level',
-          'bond_rank',
-          'weapon_level',
-          'equip1_level',
-          'equip2_level',
-          'equip3_level',
-        }.contains(field)) {
+    if (scanStudentFieldNeedsInteger(field, original)) {
       value = int.tryParse(text);
       if (value == null) {
         setState(() {
@@ -636,28 +548,6 @@ class _ScanStudentReviewWorkspaceState
         fields.remove(field);
       }
     });
-  }
-
-  static Object? _calculated(
-    String field,
-    Map<String, dynamic> expected,
-    Map<String, String> statToField,
-  ) {
-    for (final entry in statToField.entries) {
-      if (entry.value == field) return expected[entry.key];
-    }
-    return null;
-  }
-
-  static Object? _calculatedDelta(
-    String field,
-    Map<String, dynamic> delta,
-    Map<String, String> statToField,
-  ) {
-    for (final entry in statToField.entries) {
-      if (entry.value == field) return delta[entry.key];
-    }
-    return null;
   }
 }
 
@@ -1293,12 +1183,12 @@ class _DiagonalStatusBorderPainter extends CustomPainter {
 
 class _ComparisonTable extends StatelessWidget {
   const _ComparisonTable({
+    super.key,
     required this.fields,
     required this.current,
     required this.scanned,
     required this.expected,
     required this.delta,
-    required this.statToField,
     required this.editing,
     required this.onChanged,
     required this.confirmedFields,
@@ -1309,7 +1199,6 @@ class _ComparisonTable extends StatelessWidget {
   final Map<String, dynamic> scanned;
   final Map<String, dynamic> expected;
   final Map<String, dynamic> delta;
-  final Map<String, String> statToField;
   final bool editing;
   final void Function(String field, String value) onChanged;
   final Set<String> confirmedFields;
@@ -1354,10 +1243,10 @@ class _ComparisonTable extends StatelessWidget {
                   )
                 : _TableCellText('${scanned[field] ?? '—'}'),
             _TableCellText(
-              '${_ScanStudentReviewWorkspaceState._calculated(field, expected, statToField) ?? '—'}',
+              '${scanStudentCalculatedValue(field, expected) ?? '—'}',
             ),
             _TableCellText(
-              '${_ScanStudentReviewWorkspaceState._calculatedDelta(field, delta, statToField) ?? '—'}',
+              '${scanStudentCalculatedDelta(field, delta) ?? '—'}',
             ),
             if (editing)
               Checkbox(
@@ -1387,6 +1276,7 @@ class _TableCellText extends StatelessWidget {
 
 class _ComparisonCard extends StatelessWidget {
   const _ComparisonCard({
+    super.key,
     required this.field,
     required this.current,
     required this.scanned,

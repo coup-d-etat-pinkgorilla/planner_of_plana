@@ -205,6 +205,90 @@ void main() {
     },
   );
 
+  // FE8-f1(scanwip-func 발견 1): 편집 칸은 initialValue를 처음 만들 때만 쓴다. 같은 id의 새 revision이 오면
+  // 예전에 친 글자가 아니라 새 revision 값을 보여야 한다(넓은 표 · 좁은 카드 모두).
+  for (final (label, width) in const [('table', 1500.0), ('card', 800.0)]) {
+    testWidgets(
+      'review edit fields show the new revision values for the same candidate ($label)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(Size(width, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        ScannerCandidate candidateAt(int revision, int level) =>
+            ScannerCandidate(
+              id: 'safety',
+              sessionId: 'session',
+              generation: 1,
+              revision: revision,
+              kind: ScannerKind.student,
+              payload: {
+                'version': 1,
+                'student_id': 'aru',
+                'values': {'level': level, 'bond_rank': 20},
+              },
+              evidence: const [
+                ScannerFieldEvidence(
+                  field: 'bond_rank',
+                  status: 'uncertain',
+                  source: 'fixture',
+                ),
+              ],
+              reviewRequired: true,
+              approved: false,
+            );
+        Widget workspace(ScannerCandidate candidate) => MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ScanStudentReviewWorkspace(
+                candidates: [candidate],
+                currentStudents: const {},
+                catalog: {'aru': _catalog('aru', 'aru')},
+                busyCandidateIds: const {},
+                candidateErrors: const {},
+                singleScan: true,
+                onRevalidate: (_, _, _, _) async {},
+                onHold: (_) async {},
+                onDiscard: (_) async {},
+                onApply: (_) async {},
+              ),
+            ),
+          ),
+        );
+        String shown(String field) => tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(ValueKey('scan-student-field-$field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text;
+
+        await tester.pumpWidget(workspace(candidateAt(1, 90)));
+        await tester.tap(
+          find.byKey(const ValueKey('scan-student-edit-safety')),
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const ValueKey('scan-student-field-level')),
+          '91',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('scan-student-field-bond_rank')),
+          'bad',
+        );
+        await tester.pump();
+        expect(shown('level'), '91');
+        expect(shown('bond_rank'), 'bad');
+
+        await tester.pumpWidget(workspace(candidateAt(2, 80)));
+        await tester.pump();
+        expect(shown('level'), '80');
+        expect(shown('bond_rank'), '20');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   test('wide scan report prioritizes the central result section', () {
     expect(scanResultReportWidth(920), 484);
     expect(scanResultReportWidth(1200), 744);

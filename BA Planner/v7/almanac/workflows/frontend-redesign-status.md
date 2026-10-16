@@ -9409,3 +9409,134 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_203646\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE8-f1 착수 기록 (2026-10-17, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-f1 종료 기록), CF gate 미실행**. 범위: FE8-f1 스캔 세션 컨트롤러 추출(동작 보존) — `_ScanPageState`의 세션 · 이벤트 커서 · 후보 · 최근 · companion · dock · revision/generation · 학생/인벤토리 검토 흐름을 `lib/ui/scan/scan_session_controller.dart`로, 학생 검토 순수 로직을 `lib/ui/scan/scan_student_review_logic.dart`로. AppShell이 컨트롤러를 소유. 허용 동작 변화 1건: scanwip-func 발견 1(같은 id 새 revision 뒤 편집 칸 글자 유지) 최소 수정 + 회귀 테스트.
+- 착수 전 확인: 이 문서 끝에 다른 "FE8-f1 착수 기록" 없음. 막힘: 대장 "slice별 막힘 요약" FE8-f1 행 = —, 현재 `열림` 0건.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `9cf5f0a5766ce484111f9affecf7bd91b8955066`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8f1/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/scan_page.dart`: WIP 없음. LF.
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. LF(최소 diff).
+  - `frontend/lib/ui/widgets/scan_student_review_workspace.dart`: WIP 없음. LF(순수 로직 호출부 + 발견 1 key만).
+  - `frontend/test/scan_student_review_workspace_test.dart`: WIP 없음. LF(회귀 테스트 추가).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_session_controller.dart`, `frontend/lib/ui/scan/scan_student_review_logic.dart`, `frontend/test/scan_session_controller_test.dart`, `frontend/test/scan_student_review_logic_test.dart`.
+- 고치지 않는 것: `lib/services/**`(읽기만), `lib/ui/pages/tactical_page.dart` · `lib/ui/tactical/**` · `lib/tactical/**`(Lane B), `lib/ui/kit/**`, golden harness · golden 테스트, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일. 기존 스캐너 테스트 기대값.
+
+## FE8-f1 종료 기록 (2026-10-17, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+`_ScanPageState`의 세션 · 이벤트 · 후보 · 최근 · companion · dock · revision/generation · 학생/인벤토리 검토 흐름을 `ScanSessionController`(ChangeNotifier)로 옮겼고, 학생 검토 순수 규칙을 `scan_student_review_logic.dart`로 뺐다. AppShell이 컨트롤러를 소유한다. 허용된 동작 변화는 scanwip-func 발견 1(같은 id 새 revision 뒤 편집 칸 글자) 하나다. HEAD는 착수 때와 같다(`9cf5f0a5`). git 쓰기 0, 파일 삭제 0.
+
+### 실행한 명령과 결과
+
+- `flutter analyze`(frontend 전체, 마지막 손질 뒤): **No issues found(0)**. pubspec 변경 0.
+- 일반 테스트 37파일 한 명령(`flutter test <파일들> --reporter json`, 마지막 손질 뒤): **+407 −0**. 파일별: scan_session_controller **+7**(새) · scan_student_review_logic **+5**(새) · scan_page +17 · scan_page_revision +14 · scan_page_pause_fb10a +8 · scanner_review_images_fb10c +6 · scan_student_review_workspace **+9**(기존 7 + 새 2) · scan_companion_dock +3 · scan_inventory_identity_review +2 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_target_metadata_fb4 +19 · mock_scanner_commit_history +9 · mock_scanner_service +4 · student_scan_diagnostic +2 · tactical_lobby_scanner_service +2 · repository_history_scan_latest +48 · account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · inventory_shell_lazy +1 · profile_delete_fb2d +17 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · title_page +25 · widget_test +16 · inventory_analysis_page +8 · inventory_page +9 · student_page +9. (고른 기준: `ScanPage`/`AppShell`/`BAPlannerApp`을 띄우는 테스트, 후보 인계(`CandidateContext` · `onCandidateHandoff` · `recentScans`)를 쓰는 테스트, scan_* · scanner_* · mock_scanner_* 일반 테스트 — grep.)
+- process E2E(`--concurrency=1`, 파일마다 따로): scanner_process_e2e **+1**, scanner_pause_process_e2e **+1**, scanner_review_images_fb10c_process_e2e **+1**, scanner_target_metadata_process_e2e **+1**.
+- 중간 실행(AppShell 수정 직후, 위 목록 + tactical_analysis · tactical_excel_import): tactical_analysis +19 −1, tactical_excel_import +12 −2. 실패 3건은 같은 시각 Lane B(FE9-b2)가 고치고 있던 미커밋 파일(`tactical_excel_import_view.dart` · `tactical_page.dart` 등, 이 slice는 손대지 않음) 때문이라 마지막 실행 목록에서 뺐다(→ 발견 3).
+- 회귀 테스트 변이 확인: 워크스페이스의 비교 표/카드 key에서 `${candidate.revision}`을 `0`으로 바꾸면 workspace 테스트 **+7 −2**(새 2건만 실패) → 원 바이트로 되돌림(SHA-256 `b1336b6d58ae…` 전후 같음).
+- `dart format`: 이 slice 파일 경로만 하나씩. `app_shell.dart` · `scan_student_review_workspace_test.dart`는 HEAD부터 format이 맞지 않은 줄이 있어 format이 무관한 줄(각 1곳)을 바꿨고, 그 줄은 원래대로 되돌렸다(→ 발견 4).
+- `git diff --check`(고친 기존 5파일): exit 0. 새 4파일 · 고친 파일 모두 LF, 끝 개행 하나, 줄 끝 공백 0(바이트 검사). 잠금 충돌 0. 로그는 실패 줄 · json 요약만 봤다(`debug/frontend_fe8f1/logs/`).
+
+### 옮긴 책임 (전 → 후)
+
+| 책임 | 전 (`_ScanPageState`) | 후 |
+|---|---|---|
+| 준비(인식 준비 · 창 목록 · 새로고침) | `_refreshPreparation` | `ScanSessionController.refreshPreparation` |
+| 앱 전역 창 연결 따르기 · 창 고르기 · 최근 기록의 창 | `_adoptConnectedTarget` · `_chooseTarget` · `_recentTargetId` · didUpdateWidget | 컨트롤러 `chooseTarget` · `updateConnectedTarget`(화면 didUpdateWidget은 자기 컨트롤러에만 넘김) |
+| 스캔 종류 · 학생 모드 · 재고 프로필 | 화면 setState | `selectKind` · `selectInventoryScanProfile` |
+| 계정 · 권위 revision(FB-1b) · state 다시 읽기 | `_selectProfile` · `_acceptRepositoryState` · `_acceptCommittedRevision` · `_reloadRepositoryState` | 컨트롤러(같은 이름 · 공개는 `selectProfile`) |
+| 세션 시작 · 취소 · 일시정지 · 이어서 · 스냅숏 복구 · 진단 추출 | `_start` · `_cancel` · `_pause` · `_resume` · `_recoverSnapshot` · `_exportStudentDiagnostic` | `start` · `cancel` · `pause` · `resume` · `recoverSnapshot` · `exportStudentDiagnostic` |
+| 이벤트 구독 · 시작 전 버퍼 · 세션/generation 커서 · 투영 | `_handleEvent` · `_handleStreamError` · `_applyEvent` · `_resetProjection` | 컨트롤러(private 그대로). 구독은 `ensureStarted` |
+| 후보 revision 유지 · 미식별 칸 · identity 지정/건너뛰기 | `_keepCandidate` · `_loadUnresolvedSlots` · `_assignInventoryIdentity` · `_skipInventoryIdentity` | 컨트롤러(`assignInventoryIdentity` · `skipInventoryIdentity`) |
+| 학생 재검증 · 보류 · 폐기 · 순차 적용(FD-144) · idempotency key · 실패 분류 · crop 해제(FB-10c) | `_revalidateStudentCandidate` … `_applyStudentCandidateInOrder` · `_newApplyKey` · `_releaseStudentCandidateImages` | 컨트롤러(공개 4개 + private 그대로). key 규칙 `scan-apply-<id>-<revision>-<now36>-<seq>` 그대로 |
+| 최근 스캔(최대 8) · 열기 | `_recordRecent` · `_openRecent` | 컨트롤러 `recent` · `openRecent`, 바뀌면 `onRecentChanged` |
+| dock(`dockBeside` · `restore`) · companion 상태 | `_publishCompanion` · `_closeCompanion` | 컨트롤러(같은 시점에 `onCompanionChanged`) |
+| 인계 검사(세션 · 종류 · payload) | `_handoff` · `_payloadMatchesKind` | 컨트롤러 `handoffSession`(검사 · 오류) + 화면 `_handoff`(부모 콜백 호출) |
+| Esc = 중지 등록 | `_syncEscape` | 화면에 남김(`widget.active` · `context`가 필요) |
+| 학생 검토 규칙(문제 판정 · 상태 글자 · 비교 필드 · 계산값/차이 · 정수 필드 · 확인 필드 · 인연 랭크 · 그룹 순서) | `ScanStudentReviewWorkspace` 안 private · `orderScanResultCandidatesByGroup` | `lib/ui/scan/scan_student_review_logic.dart`(워크스페이스는 호출만, `orderScanResultCandidatesByGroup`은 워크스페이스가 re-export) |
+
+화면(`scan_page.dart`)의 build · `_buildSession` · `_buildRecent` · `_StatusChip` · `_CandidateSummary`는 읽는 곳만 `_controller.<이름>`으로 바꿨다(원래 build와 `_controller.`를 지워 비교한 diff = 위 호출 이름 · `setState` 대신 메서드 호출 · format 줄바꿈만).
+
+### 컨트롤러 공개 API (`lib/ui/scan/scan_session_controller.dart`)
+
+- 생성: `ScanSessionController({required AppService service, ConnectedTargetController? connectedTarget, WindowDockService windowDockService = const WindowsWindowDockService(), StudentScanDiagnosticFileService studentScanDiagnosticFileService = const NativeStudentScanDiagnosticFileService(), DateTime Function() now = DateTime.now, onRecentChanged, onCompanionChanged})`. 생성자는 부작용 0.
+- 수명: `ensureStarted()`(첫 화면이 붙을 때 한 번 — 연결 · 전역 창 리스너, 이벤트 구독, 준비 읽기; 두 번째부터 0), `updateService(service)`(호출 대상만, 구독은 그대로 — 예전 화면과 같음), `updateConnectedTarget(controller)`(알림 없음), `dispose()`(dock이 열려 있으면 `restore`, 리스너 · 구독 해제; 뒤로는 알림 · 상태 변경 0).
+- 바꿀 수 있는 필드: `windowDockService` · `studentScanDiagnosticFileService` · `now` · `onRecentChanged` · `onCompanionChanged`.
+- 준비 · 선택: `refreshPreparation()` · `chooseTarget(id)` · `selectKind(kind, {studentScanMode})` · `selectInventoryScanProfile(p)` · `selectProfile(profile)`.
+- 세션: `start()` · `cancel()` · `pause()` · `resume()` · `recoverSnapshot()` · `exportStudentDiagnostic()`.
+- 검토 · 인계: `revalidateStudentCandidate(c, payload, ranks, confirmed)` · `holdStudentCandidate(c)` · `discardStudentCandidate(c)` · `applyStudentCandidate(c)` · `assignInventoryIdentity(c, slot, identity, persist)` · `skipInventoryIdentity(c, slot)` · `openRecent(item)` · `handoffSession(c) → ScannerSession?`.
+- 읽기: `stage`(`ScanSessionStage` idle/starting/running/cancelling/terminal — `name`이 화면 칩 · dock 글자) · `session` · `sessionError` · `phase` · `progressCurrent` · `progressTotal` · `messageKey` · `diagnostic` · `outcome` · `terminalError` · `control` · `pauseReason` · `controlBusy` · `pausedLabel` · `candidates`(읽기 전용 맵) · `recent`(읽기 전용 목록) · `busyCandidateIds` · `candidateErrors` · `candidateNotice` · `companionActive` · `exportingStudentDiagnostic` · `recovering` · `unresolvedLoading(id)` · `unresolvedSlots(id)` · `identitySkipped/identityBusy/identityError(id, slot)` · `canStart` · `canExportStudentDiagnostic` · `connected` · `recognitionReady` · `readiness` · `readinessLoading` · `readinessError` · `targets` · `targetsLoading` · `targetError` · `targetId` · `selectedTarget` · `profile` · `repositoryState` · `studentCatalog` · `inventoryCatalog` · `kind` · `studentScanMode` · `inventoryScanProfile` · `scannerAvailable` · `repositoryAvailable` · `service` · `connectedTarget`.
+- `ScanPage`에 `controller`(nullable) 추가. 주면 화면은 그 컨트롤러를 쓰고 dispose하지 않는다. 없으면 화면이 자기 인자로 만들고 dispose한다(기존 테스트 · 생성자 그대로). `onCandidateHandoff`는 여전히 화면 인자(인계는 셸 콜백).
+
+### AppShell 소유 구조 (`app_shell.dart` +25 −7)
+
+- `late ScanSessionController _scanSession = _createScanSession();` — 예전 `ScanPage`에 넘기던 `onRecentChanged`(셸 `setState(_recentScans)`) · `onCompanionChanged`(`mounted` 확인 뒤 `_scanCompanion.value`) 클로저를 컨트롤러 생성으로 옮겼다. `connectedTarget` = 셸의 `_connectedTarget`. dock · 진단 서비스 · now는 예전처럼 기본값.
+- `ScanPage(... controller: _scanSession, active:, connectedTarget:)` — `connectedTarget`은 `connected_target_fe8d_test`가 `ScanPage.connectedTarget`을 읽으므로 그대로 넘긴다(컨트롤러가 있으면 화면은 쓰지 않음).
+- 계정 변경(`_profileChanged`): 예전에는 `ValueKey('scan-$_profileGeneration')`로 화면이 새로 만들어지며 세션이 버려졌다. 같은 동작을 위해 새 컨트롤러를 만들고, 예전 컨트롤러는 `addPostFrameCallback`으로 dispose한다 — 예전 화면 dispose(finalizeTree)와 같은 프레임 · 같은 순서(새 화면의 준비 읽기 → 예전 세션의 `restore`/구독 해제).
+- 서비스 교체(`didUpdateWidget`): `_scanSession.updateService(widget.service)` 1줄 — 예전 화면이 `widget.service`를 그때그때 읽던 것과 같다.
+- `dispose`: `_scanSession.dispose()`(자식 화면 dispose 뒤). 탭 이동: 스캔 화면은 원래도 `AnimatedSectionStack`(Offstage)에 늘 붙어 있어 세션이 살아 있었고, 이제 화면이 없어도 셸 컨트롤러로 이어진다(FE8-g2 전제).
+- 이유: FE8-g2(백그라운드 학생 진행) · FE8-f2(머리글 진행 · 토스트)가 스캔 화면 밖에서 같은 세션을 읽어야 한다. diff는 import 1 · 필드/생성 함수 14 · 서비스 교체 1 · dispose 1 · 계정 변경 6 · ScanPage 인자 −7 +1.
+
+### 바꾼 테스트와 이유
+
+- 기존 테스트 기대값 변경 **0**, 지운 테스트 **0**.
+- `scan_student_review_workspace_test.dart`: 회귀 테스트 추가만(+84, 2건 = 넓은 표 · 좁은 카드). 같은 id `safety` revision 1에서 편집(level `91` · bond_rank `bad`) → revision 2(level 80)로 다시 그리면 편집 칸이 `80` · `20`을 보인다.
+- 새 `scan_session_controller_test.dart`(7): ensureStarted 한 번 · 화면 없이 스캔 · 최근 기록, 다른 세션/generation · 끝난 뒤 이벤트 버림, 전체 학생 dock · companion · restore, dispose 뒤 알림 0 · 늦은 응답 버림 · dock restore, 인계 거절, 셸 소유(탭 이동에도 같은 컨트롤러, 홈에 있는 동안 스캔한 최근 기록이 홈에 닿음, 계정 변경 시 새 컨트롤러 · 예전 것 dispose).
+- 새 `scan_student_review_logic_test.dart`(5): 상태 글자 우선순위, 문제 판정, 비교 필드, 계산값/차이 · 인연 행, 정수 필드 · 인연 랭크 · 확인 필드.
+
+### 발견 1 수정(허용된 동작 변화)
+
+- `_ComparisonTable`에 `key: ValueKey('scan-student-comparison-<revision>')`, `_ComparisonCard`에 `key: ValueKey('scan-student-comparison-<revision>-<field>')`(두 위젯에 `super.key`). 같은 후보의 revision이 바뀌면 편집 칸(`TextFormField`)이 새로 만들어져 `initialValue` = 새 revision 값. 편집 칸 key `scan-student-field-<field>`는 그대로라 기존 테스트 · 찾기 0 변화. 편집 상태(`_editing`)가 revision 뒤에도 남는 것은 그대로 뒀다(아래 표 5).
+
+### 발견한 기존 버그(고치지 않음 — FE8-f2 · g 입력)
+
+| # | 위치(지금) | 내용 | 영향 |
+|---|---|---|---|
+| 1 | `scan_page.dart` `_CandidateSummary._payloadSummary` | 전술 로비 요약 문구가 `'Tactical lobby 쨌 current rank … 쨌 …'` — `·`가 깨진 글자(인코딩 사고)로 들어 있다 | 전술 로비 후보 요약에 깨진 글자. 문구 변화 0 규칙이라 그대로 |
+| 2 | 컨트롤러 `updateService` | 서비스가 바뀌어도 이벤트 구독 · 연결 리스너는 처음 서비스에 남고, dispose는 새 서비스에서 리스너를 지운다(예전 화면과 같은 동작) | 실제 앱은 서비스를 바꾸지 않아 영향 없음. g 단계에서 재구독 여부 결정 |
+| 3 | 컨트롤러 `recoverSnapshot` | 스냅숏 복구 뒤 companion을 다시 내지 않는다 | 전체 학생 dock이 다음 이벤트까지 옛 진행을 보인다(FE8-g3 dock 재작성 때) |
+| 4 | 화면/컨트롤러 dispose · 계정 변경 | dock이 열린 채 세션이 버려지면 `restore`만 하고 `onCompanionChanged(null)`을 부르지 않는다 | 셸의 dock overlay가 남을 수 있다(계정 변경 중 전체 학생 스캔). FE8-g2/g3 |
+| 5 | 워크스페이스 `didUpdateWidget` | 같은 id 새 revision이면 draft · 체크 · 오류는 지우지만 `_editing`은 남는다 | 편집 모드가 유지된 채 새 값이 보인다(이제 칸 글자는 새 값). FE8-g4 |
+| 6 | 컨트롤러 `selectProfile` | 같은 화면의 계정 패널에서 다른 계정을 고르면 이전 계정 세션의 후보 · 최근이 남고, 적용은 지금 계정 id로 보낸다 | 백엔드가 세션 계정 불일치를 거절하는지 미확인. 셸의 계정 변경은 컨트롤러를 새로 만들어 해당 없음. FE8-g1 고르기 화면 설계 때 확인 |
+| 7 | 컨트롤러 `_handleEvent`(starting) | 시작 응답 전에는 모든 세션의 이벤트를 버퍼에 넣고, 시작이 실패하면 버퍼를 다음 시작까지 비우지 않는다 | 메모리만, 다음 시작에서 비움 |
+| 8 | 컨트롤러 `openRecent` | 최근 기록을 열 때 `_control` · `_pauseReason` · 실시간 학생 표시를 되돌리지 않는다 | 단계가 terminal이라 보이는 곳 0(companion만 이전 값) |
+
+### golden 변화 0 근거
+
+- golden 테스트는 실행하지 않았다(규칙). 스캔 탭을 여는 장면 0(`test/goldens/*` grep: `top-tab-scan` · `AppSection.scan` 0건). 셸 장면들은 스캔 화면을 Offstage로만 만들고, 화면 트리 · 문구는 같다.
+- `scan-student-review` 장면: `ScanStudentReviewWorkspace`를 편집 아닌 상태로 그린다. 바뀐 것은 ① 규칙 함수 호출(같은 계산 — 순수 함수로 옮김, 새 단위 테스트), ② `_ComparisonTable`에 key(그리기 0), ③ `statToField` 인자 제거(값은 상수 그대로). 상태 글자 · 필드 순서 · 계산값 계산이 같아 픽셀 변화 0 예상.
+- 그 밖의 golden harness · golden 테스트 파일 수정 0. `commit.json` `whole` = [].
+
+### 미검증(미실행)
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 테스트 · 나머지 process 테스트 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교(`scan-student-review` 포함): **미실행**.
+- Lane B 작업 중인 tactical 테스트: 마지막 실행에서 **미실행**(중간 RED 3건은 Lane B 미커밋 파일 원인 추정, 확인 안 함).
+- 실제 백엔드 · 실제 게임 창 스캔 · Windows release 빌드 · `dockBeside` 실제 창: **미실행**.
+- Python 테스트: **미실행**(backend 변경 0).
+
+### 발견 사항
+
+1. **파일 소유권 문단과의 관계**: 워크플로 "파일 소유권"은 `scan_student_review_workspace.dart`를 스캐너 세션 소유(수정 금지)로 두지만, 이 프롬프트가 순수 규칙 추출(호출부)과 발견 1 key 수정을 허용해 그 범위만 고쳤다(+46 −156, 위젯 구조 · 문구 0). 같은 문단의 "추출한 로직 파일 위치를 스캐너 오케스트레이터 로그에 알린다"는 워커가 로그를 쓰지 않으므로 **CF 몫**: `lib/ui/scan/scan_session_controller.dart` · `lib/ui/scan/scan_student_review_logic.dart`.
+2. **`ScanPage` 인자 중복**: 컨트롤러가 있으면 `onRecentChanged` · `onCompanionChanged` · `windowDockService` · `studentScanDiagnosticFileService` · `now` · `connectedTarget`을 쓰지 않는다. 셸은 테스트(`connected_target_fe8d_test`)가 읽는 `connectedTarget`만 계속 넘긴다. 새 스캔 탭(FE8-g1)이 `ScanPage`를 대체할 때 정리.
+3. **Lane B 동시 작업**: 중간 실행에서 tactical_analysis −1 · tactical_excel_import −2(Lane B 미커밋 tactical 파일). 이 slice 파일과 겹침 0(`git status --short frontend`: 이 slice 4 + 새 4, 나머지는 tactical · design_review · goldens/fe9a — Lane B).
+4. **format이 맞지 않은 HEAD 파일**: `app_shell.dart`(`_TopTab` fontWeight 줄) · `scan_student_review_workspace_test.dart`(`checked` 함수 줄)는 HEAD부터 `dart format` 결과와 다르다. 이 slice는 그 줄을 되돌려 diff를 최소로 뒀다. fe_gate는 format을 검사하지 않는다(analyze만).
+5. **계정 변경 dispose 시점**: 예전 컨트롤러는 `addPostFrameCallback`으로 dispose한다. 프레임이 오지 않고 셸이 먼저 사라지는 경우에도 콜백이 dispose한다(중복 dispose 0 — 셸 dispose는 지금 것만).
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8f1/pre/<경로>` 5파일. 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8f1/commit.json`: slice `fe8f1`, modified 5(이 문서 포함), added 4, `whole` = [], `status=true`.
+- 인계: `debug/frontend_fe8f1/output.md`. 로그 `debug/frontend_fe8f1/logs/`.
+
+### 다음 행동
+
+- FE8-f1 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(FE9-b2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 scan_session_controller +7 · scan_student_review_logic +5 · workspace +2 추가, process 스캐너 4 GREEN, golden 전 장면 GREEN — `scan-student-review` 포함) → `fe_commit.ps1 -Slice fe8f1`. 스캐너 오케스트레이터 로그에 추출 파일 위치 알림(발견 1).
+- FE8-f2 입력: 머리글 칩 · 탭 점은 셸 `_scanSession`을 듣고 `stage`(running/cancelling = 진행, `control`/`pausedLabel` = 일시정지) · `progressCurrent`/`progressTotal`/`messageKey`를 읽으면 된다. 완료 토스트는 `stage`가 terminal로 바뀌는 순간이 필요하다 — 지금 컨트롤러에는 전이 신호가 없으므로 f2에서 이전 단계를 기억해 비교하거나 `onTerminal` 같은 콜백을 더한다(동작 추가 slice). 계정 변경 때 `_scanSession`이 새 인스턴스로 바뀌므로 듣는 쪽은 다시 붙어야 한다. 위 버그 표 3 · 4는 f2/g3에서 dock · 칩을 다룰 때 함께 판단.
+
+### fe8f1 commit record (2026-10-17 01:55, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261017_013824\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
