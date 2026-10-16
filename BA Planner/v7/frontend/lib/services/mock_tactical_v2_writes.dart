@@ -7,6 +7,8 @@
 //   레코드를 되살리지 않는다. 실패한 쓰기는 아무것도 바꾸지 않는다(사본에 적용한 뒤 성공할 때만 바꾼다).
 // - 시도 횟수·시각 정밀도는 받은 그대로 둔다. v1 이관 기록은 시도 횟수 null, 날짜는 `date`(KST 자정 표기),
 //   날짜가 없으면 `unknown`.
+// - FB-6b(FD-176): 시도 횟수 null(모름)을 그대로 저장한다(1로 채우지 않는다). 상대 모르는 방어 기록(identity·이름
+//   null 쌍)은 상대 identity·별칭을 만들지 않는다. 이관 기록의 null 시도를 고쳐 저장해도(null 그대로 포함) 된다.
 // - Mock에는 학생 카탈로그·보유 학생 검사, 로비 후보 연결(`link_conflict`)이 없고 자동 족보 이름은 학생 ID를 쓴다.
 //   ID 해시는 백엔드 sha256과 다른 결정적 값이다(같은 입력 → 같은 ID).
 import 'dart:convert';
@@ -460,7 +462,8 @@ class MockTacticalV2Writes {
     record['review_status'] = _reviewed(attack) && _reviewed(defense)
         ? 'confirmed'
         : 'review_required';
-    if (opponent == null) {
+    // FD-176: 상대 모르는 방어 기록(null 쌍)은 상대 identity·별칭을 만들지 않는다(backend `apply_match`).
+    if (opponent == null && input['opponent_identity_id'] != null) {
       opponents.add({
         'version': 2,
         'identity_id': input['opponent_identity_id'],

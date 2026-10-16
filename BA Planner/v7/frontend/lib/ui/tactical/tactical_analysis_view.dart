@@ -168,10 +168,13 @@ TacticalHiddenChange? tacticalLatestHiddenChange(
   return latest;
 }
 
+/// 상대별 묶음. 상대를 모르는 기록(FD-176 방어 null 쌍)은 한 상대로 묶지 않고 뺀다(전체 수에는 호출처가 남긴다).
 Map<String, List<TacticalMatchV2>> _byOpponent(List<TacticalMatchV2> matches) {
   final groups = <String, List<TacticalMatchV2>>{};
   for (final match in matches) {
-    (groups[match.opponentIdentityId] ??= []).add(match);
+    final id = match.opponentIdentityId;
+    if (id == null) continue;
+    (groups[id] ??= []).add(match);
   }
   return groups;
 }
@@ -415,10 +418,11 @@ TacticalJokboAnalysis tacticalJokboAnalysis({
       if (_sameComposition(match, jokbo)) match,
   ]..sort(_newestFirst);
   final defense = tacticalDeckIdentity(jokbo.defenseDeck);
+  // 서로 다른 상대 수: 상대를 모르는 기록은 한 명으로 세지 않는다(FD-176).
   final defenseUsers = {
     for (final match in matches)
       if (listEquals(tacticalDeckIdentity(match.defenseDeck), defense))
-        match.opponentIdentityId,
+        ?match.opponentIdentityId,
   }.length;
   final known = [
     for (final match in records)
@@ -440,7 +444,7 @@ TacticalJokboAnalysis tacticalJokboAnalysis({
     opponents.add(
       TacticalJokboOpponentResult(
         identityId: id,
-        name: group.first.opponentDisplayName,
+        name: group.first.opponentDisplayName ?? '—',
         wins: wins,
         losses: group.length - wins,
         lastAt: group.first.occurredAt,
@@ -679,7 +683,7 @@ TacticalOpponentAnalysis? tacticalOpponentAnalysis({
   });
   return TacticalOpponentAnalysis(
     identityId: identityId,
-    name: (records.firstOrNull ?? mine.first).opponentDisplayName,
+    name: (records.firstOrNull ?? mine.first).opponentDisplayName ?? '—',
     records: List.unmodifiable(records),
     periods: List.unmodifiable(periods.reversed),
     hidden: List.unmodifiable(hidden),

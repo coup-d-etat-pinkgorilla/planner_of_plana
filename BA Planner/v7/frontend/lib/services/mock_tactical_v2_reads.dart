@@ -8,6 +8,9 @@
 // - 덱 시그니처 = 스트라이커 4칸을 `,`로 이은 뒤 `|` + 스페셜 2칸. 칸 값은 학생 ID, 와일드카드 `*`, 빈칸 `empty`, 모름 `?`.
 // - 기간 필터는 `occurred_at`(없으면 `observed_at`)으로 거르고, 기간을 주면 시각 없는 기록은 빠진다. 예측(`prediction`)
 //   출처 기록은 관측에서 뺀다.
+// - FB-6b(FD-176): 상대 모르는 방어 기록(identity null)은 전체 · 방어 수에 남고 상대별 행 · `opponent_count` ·
+//   `distinct_opponent_count`에서 빠진다. 중복 의심 지문에서도 서로 다른 기록으로 센다. 추천은 대상 상대가 있는 공격
+//   기록 · 스냅샷만 쓰므로 그대로다.
 // Mock 차이(백엔드보다 단순하다. status-lane-b "FE9-b1 종료 기록 · Mock 차이"):
 // - Mock에는 로비 스캔 · 후보가 없다. 통계의 노출 · 선택 · 연결 수는 0, 공개 시그니처 목록은 빈 목록이고, 공개 시그니처
 //   필터를 주면 기록이 0건이다. 추이는 빈 구조(로비 관측이 없는 백엔드 응답과 같은 모양), 추천의 숨은 칸은 빈 목록이다.
@@ -163,7 +166,8 @@ Map<String, dynamic> mockTacticalStatisticsWire(
         rows.where((item) => item.result == 'loss').length,
       );
 
-  final opponentIds = {for (final item in matches) item.opponentIdentityId};
+  // FD-176: 상대 모르는 방어 기록은 전체 · 방어 집계에는 남고, 상대별 행 · 서로 다른 상대 수에서는 빠진다.
+  final opponentIds = {for (final item in matches) ?item.opponentIdentityId};
   final opponentRows = <Map<String, dynamic>>[];
   for (final id in opponentIds) {
     final own = [
@@ -233,9 +237,10 @@ Map<String, dynamic> mockTacticalStatisticsWire(
   final dated = matches.where((item) => _recordTime(item) != null).length;
   final fingerprints = <String, int>{};
   for (final item in matches) {
+    // 상대 모르는 기록끼리는 같은 상대로 보지 않는다(backend `("unknown-match", match_id)`).
     final key = [
       item.kind,
-      item.opponentIdentityId,
+      item.opponentIdentityId ?? '\u0001unknown-match\u0001${item.id}',
       item.occurredAt,
       item.result,
       mockTacticalDeckSignature(item.attackDeck),

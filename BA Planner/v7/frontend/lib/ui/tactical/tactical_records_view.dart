@@ -138,7 +138,8 @@ class TacticalRecordDraft {
       kind: match.kind,
       result: match.result,
       attemptCount: match.attemptCount,
-      opponentName: match.opponentDisplayName,
+      // FD-176 상대 모르는 방어 기록은 빈 이름 → FD-132 "내 방어덱"(가짜 이름을 만들지 않는다).
+      opponentName: match.opponentDisplayName ?? '',
       opponentIdentityId: match.opponentIdentityId,
       myDeck: attack ? match.attackDeck : match.defenseDeck,
       opponentDeck: attack ? match.defenseDeck : match.attackDeck,

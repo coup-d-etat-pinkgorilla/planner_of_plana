@@ -522,7 +522,8 @@ void main() {
             reason: '$at $precision',
           );
         }
-        // 읽은 기록에서 입력을 만들 때 모르는 시도 횟수와 키가 없던 정밀도를 추측하지 않는다.
+        // 읽은 기록에서 입력을 만들 때 키가 없던 정밀도를 추측하지 않는다. 모르는 시도 횟수는 FD-176(fb6b-dart)부터
+        // null 그대로 옮긴다(1로 채우지 않는다).
         final old = TacticalMatchV2.fromWire(_matchRecord());
         expect(
           () => TacticalMatchInputV2.fromRecord(old),
@@ -532,6 +533,13 @@ void main() {
           () => TacticalMatchInputV2.fromRecord(old, attemptCount: 2),
           throwsFormatException,
         );
+        final unknownAttempt = TacticalMatchInputV2.fromRecord(
+          old,
+          occurredPrecision: 'instant',
+        );
+        expect(unknownAttempt.attemptCount, isNull);
+        expect(unknownAttempt.toWire().containsKey('attempt_count'), isTrue);
+        expect(unknownAttempt.toWire()['attempt_count'], isNull);
         final edited = TacticalMatchInputV2.fromRecord(
           old,
           attemptCount: 2,

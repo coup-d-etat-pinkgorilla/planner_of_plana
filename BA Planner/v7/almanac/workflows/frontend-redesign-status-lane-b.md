@@ -4709,3 +4709,175 @@ FB-7 엑셀·UTF-8 CSV 가져오기의 Dart 연결을 끝냈다. 새 메서드 2
 - fb7-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE9-e)가 멈춘 뒤 gate 1회(예상: analyze 0, process +13, 일반 변화 0, golden 변화 0) → `fe_commit.ps1 -Slice fb7dart`(공유 3파일은 WIP 없음, 삽입만).
 - 발견 1·2는 XB 요청 후보, 4·5·6은 FE9-f 입력, 7은 Lane A, 3·8·9는 CF 판단.
+
+## fb6b-dart 착수 기록 — BLOCKED (2026-10-16 15:24)
+
+- 상태: **BLOCKED(시작 조건 미충족)**. 코드·테스트 수정 0, pre/ 사본 0, flutter 명령 실행 0.
+- 시작 SHA: `77e3e6e5`(브랜치 `scanner-consolidation`). 이 파일 끝에 다른 "fb6b-dart 착수 기록" 없음을 확인했다.
+- 시작 조건: XB가 FB-6b **source11**을 메인에 반영하고 `backend-orchestrator-log.md`에 반영 표(경로·bytes·SHA)를 게시했어야 한다(CF 요청 2026-10-16 08:45).
+  - `backend-orchestrator-log.md`(2799줄, mtime 08:39)의 마지막 항목은 CF 08:45 요청 자체다. 그 뒤 XB의 source11 메인 반영 항목·반영 표 **없음**.
+  - 대신 XB 격리 manifest `debug/xb_fb6b_isolated_20261015/artifacts/final-source11-manifest.json`(11경로)을 메인 파일과 대조했다: **일치 0/11**.
+
+| 경로 | source11 bytes | 메인 bytes | 결과 |
+| --- | ---: | ---: | --- |
+| `backend/core/tactical_fb6.py` | 6787 | 6798 | 다름 |
+| `backend/core/tactical_fb6_store.py` | 21502 | 21222 | 다름 |
+| `backend/core/tactical_stats_v2.py` | 18197 | 17980 | 다름 |
+| `backend/core/tactical_share_v1.py` | 30956 | 30760 | 다름 |
+| `contracts/tactical-protocol-v2.schema.json` | 132069 | 129508 | 다름 |
+| `contracts/README.md` | 97788 | 96717 | 다름 |
+| `backend/tests/test_tactical_fb6_primitives.py` | 6217 | 6166 | 다름 |
+| `backend/tests/test_tactical_fb6b.py` | 12178 | — | 메인에 없음 |
+| `contracts/fixtures/tactical_fb6b_nulls_v2.json` | 56078 | — | 메인에 없음 |
+| `contracts/fixtures/tactical_fb6_writes_v2.json` | 38146 | 39342 | 다름 |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | 4446 | 다름(SHA) |
+
+- 메인 `contracts/README.md`·`tactical-protocol-v2.schema.json`의 미커밋 변경은 source8(typed-read·FB-10) 쪽으로 보이며 source11 내용이 아니다(새 fixture 부재로 확인).
+- 판단: 표가 없고 대조도 전부 다르므로 프롬프트 규칙대로 코드를 고치지 않고 멈춘다. 격리본(`candidate/`)을 기준으로 먼저 구현하는 것은 "메인 기준" 규칙과 맞지 않아 하지 않았다.
+- 고칠 예정이던 파일(WIP 확인만, 모두 미커밋 변경 없음): `frontend/lib/services/tactical_v2_service.dart`, `mock_tactical_v2_writes.dart`, `mock_tactical_v2_reads.dart`, `frontend/lib/tactical/tactical_records_controller.dart`, `frontend/test/tactical_fb6_dart_test.dart`·`tactical_fb6_process_e2e_test.dart`·`tactical_records_controller_test.dart`(+ 새 테스트 파일 예정).
+
+### 다음 행동
+
+- XB: source11 메인 반영 → 표준 Python 전체 → 반영 표(경로·bytes·SHA, 예상 RED Dart 테스트 목록) 게시.
+- CF: 표 게시 뒤 같은 프롬프트로 fb6b-dart를 새 세션에 다시 배정한다(이 세션 기록은 BLOCKED로 남김 — 재배정 세션은 이 BLOCKED 기록을 "다른 착수 기록"으로 보지 않도록 CF가 프롬프트에 적어 주면 좋다).
+
+## fb6b-dart 착수 기록 (2026-10-16)
+
+- 상태: **진행 중**. 범위: FD-176의 Dart 데이터 계층(strict request validator · read DTO · Mock 쓰기/읽기 · 컨트롤러 테스트 · fixture 대조 · process E2E 1) + 기존 화면의 null 안전 최소 호환(XB 15:40 정적 영향 목록 경로만). 새 화면 기능(S3 시도 '모름' 저장 · 상대 없는 방어 저장 UI)은 다음 slice.
+- 착수 전 확인: 이 문서 끝의 "fb6b-dart 착수 기록 — BLOCKED (2026-10-16 15:24)"는 이전 세션(코드 0) 기록이라 다른 착수 기록으로 보지 않는다(CF 프롬프트). 그 밖의 "fb6b-dart 착수 기록" 없음.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `a5e179faaf6f9467f1ec8469f0b6d47c383e3420`.
+- XB source11 반영 표(backend-orchestrator-log 2026-10-16 15:51) 대조 — 메인 작업 트리 bytes/SHA256 **11/11 일치**:
+
+| 경로 | 표 bytes | 메인 bytes | SHA256 일치 |
+| --- | ---: | ---: | --- |
+| `backend/core/tactical_fb6.py` | 6787 | 6787 | 예 |
+| `backend/core/tactical_fb6_store.py` | 21502 | 21502 | 예 |
+| `backend/core/tactical_stats_v2.py` | 18197 | 18197 | 예 |
+| `backend/core/tactical_share_v1.py` | 30956 | 30956 | 예 |
+| `contracts/tactical-protocol-v2.schema.json` | 132069 | 132069 | 예 |
+| `contracts/README.md` | 97788 | 97788 | 예 |
+| `backend/tests/test_tactical_fb6_primitives.py` | 6217 | 6217 | 예 |
+| `backend/tests/test_tactical_fb6b.py` | 12178 | 12178 | 예 |
+| `contracts/fixtures/tactical_fb6b_nulls_v2.json` | 56078 | 56078 | 예 |
+| `contracts/fixtures/tactical_fb6_writes_v2.json` | 38146 | 38146 | 예 |
+| `backend/tests/test_tactical_excel_contract.py` | 4446 | 4446 | 예 |
+
+- 막힘: 대장 "slice별 막힘 요약" 현재 `열림` 0건. FD-176 확정(2026-10-15, 사용자 선택: (A) null 허용 · (B) 방어 한정 null 쌍), FD-128 확정, FD-132 워커 재량(기존 "내 방어덱" 표기 그대로).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fb6bdart/pre/<v7 기준 경로>`, 모두 cmp 일치)과 WIP(`git status --short`), 줄바꿈(작업 트리 바이트 셈):
+  - `frontend/lib/services/tactical_v2_service.dart`: WIP 없음. LF.
+  - `frontend/lib/services/mock_tactical_v2_writes.dart`: WIP 없음. LF.
+  - `frontend/lib/services/mock_tactical_v2_reads.dart`: WIP 없음. LF.
+  - `frontend/lib/ui/tactical/tactical_analysis_view.dart`: WIP 없음(XB addendum bytes/SHA 25919 `fae4b076…`와 같음). LF.
+  - `frontend/lib/ui/tactical/tactical_records_view.dart`: WIP 없음(addendum 17446 `f4708a46…`와 같음). LF.
+  - `frontend/test/tactical_fb6_dart_test.dart`: WIP 없음. LF.
+  - 이 문서: WIP 있음(위 BLOCKED 기록, 이 문서는 commit.json `whole`). LF.
+- 확인만 하고 고치지 않을 예정: `frontend/lib/ui/pages/tactical_page.dart`(**FE9-f WIP 있음**, CRLF, addendum 736행은 지금 783행 — 초안의 `opponentIdentityId`는 이미 `String?`라 타입 영향 없음, 970~973행 분석 상대 선택은 공격 기록만 받음), `tactical_records_controller.dart`(null 필드를 그대로 전달 — 새 거부 코드 없음: 백엔드 거부는 기존 `invalid_payload`). 고쳐야 하면 그때 pre(FE9-f 포함)·post·post_dir를 남긴다.
+- 새 파일(예정): `frontend/test/tactical_fb6b_dart_test.dart`(FD-176 fixture 13 · DTO · Mock · 컨트롤러 · 화면 집계), `frontend/test/tactical_fb6b_process_e2e_test.dart`(실제 백엔드, 임시 `BA_PLANNER_STORAGE_ROOT`).
+- 고치지 않음: backend/**·contracts/**, FE9-f 줄, 스캐너 시각부 5파일, `scanner_service.dart`, 택틱 소유 파일, golden harness·golden 테스트, frontend/tool/**, app_shell.dart.
+
+## fb6b-dart 종료 기록 (2026-10-16, 코드 작성 완료 · CF gate 미실행)
+
+FD-176의 Dart 데이터 계층과 기존 화면의 null 안전 최소 호환을 끝냈다. 시도 횟수 null(모름) 요청·읽기, 방어 기록 한정 상대 identity·이름 null 쌍, Mock 쓰기·읽기 의미, 계약 fixture 대조, 실제 백엔드 process E2E. 새 화면 기능(S3 '모름' 저장 · 상대 없는 방어 저장 UI)은 하지 않았다. HEAD는 착수 때와 같다(`a5e179fa`), git 쓰기 0회.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`: 첫 실행(서비스 DTO를 nullable로 바꾼 직후) **error 4** — `tactical_analysis_view.dart` 174·443·682, `tactical_records_view.dart` 141(XB addendum이 짚은 곳과 같음). 고친 뒤 **No issues found(0)**, 포맷 뒤 마지막 실행도 0(`logs/analyze_final.log`). 실행 시점의 FE9-f 미커밋 파일도 함께 분석됐고 이슈 0.
+- `flutter test test/tactical_fb6_dart_test.dart`: 갱신 뒤 **+14 −0**(XB 15:29 예상 RED "shared FB-6 fixture has matching Dart validation results"의 `unknown_manual_attempt`를 validator 수정으로 맞춤. 수정 전 RED는 이 세션에서 돌려 보지 않았다 — null attempt를 거부하던 validator라 코드상 RED였다).
+- 새 `flutter test test/tactical_fb6b_dart_test.dart`: ① **+8 −1**(테스트 쪽: 분석 대상 기록은 공개 칸이 `visible_lobby`여야 하는데 테스트 덱이 `manual`) → ② **+9 −0**.
+- 새 `flutter test --concurrency=1 test/tactical_fb6b_process_e2e_test.dart`: ① **−1**(테스트 쪽: 상대 덱 학생 역할이 카탈로그와 다름 — 백엔드 `invalid_payload` "slot student combat class does not match role") → ② **+1**(fb6 E2E와 같은 검증된 편성을 양쪽에 씀).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalMatchV2`·`TacticalMatchInputV2`·`tactical_v2_service`·`mock_tactical_v2`·`TacticalRecordsController`·`tactical_analysis_view`·`tactical_records_view`·`tactical_page`·`MockDesignReviewScenario`·`queryTacticalStatistics`·`upsertTacticalMatchV2` + 전술 v1·Mock 공용 몇 개):
+  - 일반(17파일 한 번에): **+172 −0** — design_review_tactical_seed, mock_design_review_scenario, tactical_analysis, tactical_excel_import(FE9-f), tactical_fb6b_dart, tactical_fe9b1_read, tactical_jokbo_panel, tactical_page_revision, tactical_page, tactical_records_controller, tactical_share_v1_contract, tactical_v2_service, tactical_service, tactical_lobby_scanner_service, profile_delete_fb2d, home_app_shell, widget_test(`logs/general_1.log`).
+  - process(`--concurrency=1`, 파일마다 따로): tactical_fb6_dart **+14**, tactical_fb7_dart **+12**, planning_protocol_client **+24**, tactical_fb6_process_e2e **+1**, tactical_fb6b_process_e2e **+1**, tactical_fb7_process_e2e **+1**, tactical_v2_process_e2e **+1**, tactical_process_e2e **+1**, profile_delete_fb2d_process_e2e **+1**. 모두 −0(`logs/proc_*.log`).
+- `dart format`: 고친·새 파일 8개를 하나씩. pre 6개는 이미 포맷 상태(`--set-exit-if-changed` 0), 마지막 포맷은 8개 모두 변경 0.
+- `git diff --check`(고친 6파일): exit 0. 고친·새 8파일 모두 LF(CR 0)·줄 끝 공백 0·끝 개행 하나. `pubspec.yaml`·`pubspec.lock` 변경 0.
+- 3-way 병합 모의(스크래치, LF로 맞춘 뒤 `git merge-file`, base = pre · ours = HEAD · theirs = post): 고친 6파일 모두 HEAD = pre(WIP 없음), 충돌 0, 병합 결과 = 끝 파일.
+- FE9-f 고정본 `debug/frontend_fe9f/post/`의 13파일을 작업 트리와 cmp: **13/13 같음**(FE9-f 줄 수정 0, `tactical_page.dart` SHA `46f89a5e…` 그대로).
+- 잠금 충돌 0(재시도 없음). 로그는 실패 줄·요약 줄만 확인했다.
+
+### source11 대조
+
+- 착수(위 착수 기록 표)와 종료 두 번 XB 15:51 반영 표 11경로 bytes/SHA256 **11/11 일치**. 이 slice는 backend/**·contracts/**를 읽기만 했다.
+- handoff(`dart-handoff.md`)·addendum과 메인 schema·코드 차이: 없음. 메인 schema에서 nullable이 된 것은 `$defs/match`·`$defs/fb6MatchInput`의 상대 쌍(allOf: null이면 kind = defense, 다른 쪽도 null)과 `attempt_count`(null | 정수 ≥ 1)뿐이다. 통계 `opponents` 행·스냅샷·로비·추천 필터의 상대 ID는 여전히 non-null record ID라 그 DTO는 넓히지 않았다(handoff 3행과 같음). 백엔드 거부 코드는 기존 `invalid_payload`뿐이라 allowlist·컨트롤러 문구 표 변경 0.
+
+### 고친 파일
+
+- `frontend/lib/services/tactical_v2_service.dart`(WIP 없음, LF): 새 `_validOpponentPairV2`(둘 다 있거나 방어에 한해 둘 다 null, 한쪽 null·빈 문자열·공격 null 거부)를 read DTO `TacticalMatchV2.fromWire`와 요청 `_validFb6MatchInputV2`가 같이 쓴다. 요청 `attempt_count`는 키 required(exact) + null 또는 int ≥ 1(0·bool·음수·실수·문자열 거부). `TacticalMatchV2`·`TacticalMatchInputV2`의 `opponentIdentityId`·`opponentDisplayName`은 `String?`, 입력 `attemptCount`는 `required int?`. `fromWire`(FB-7 행 포함)는 `as String?`·`as int?`. `fromRecord`는 모르는 시도를 null 그대로 옮긴다(예외 제거). 정밀도 추측 금지는 그대로.
+- `frontend/lib/services/mock_tactical_v2_writes.dart`(WIP 없음, LF): `_applyMatch`가 상대 identity null이면 상대 identity·별칭을 만들지 않는다(backend `apply_match` 158행과 같은 조건). 머리 주석 3줄.
+- `frontend/lib/services/mock_tactical_v2_reads.dart`(WIP 없음, LF): 통계 상대 ID 집합에서 null 제외(상대별 행·`opponent_count`·`distinct_opponent_count`), 중복 의심 지문은 null 상대를 기록 ID별 키로(backend `("unknown-match", match_id)`). 머리 주석 3줄.
+- `frontend/lib/ui/tactical/tactical_analysis_view.dart`(WIP 없음, LF): `_byOpponent`가 null ID를 묶지 않음(171·174), `defenseUsers`가 null을 한 명으로 세지 않음(417~), 이름은 `?? '—'`(443·682 — null ID는 묶음에서 빠지므로 실제로는 오지 않는다). 전체 기록 수(`sampleCount`·`records`)에는 남는다.
+- `frontend/lib/ui/tactical/tactical_records_view.dart`(WIP 없음, LF): `fromMatch`가 null 이름을 빈 문자열로(141) → 기존 FD-132 "내 방어덱" 표기·초안 identity null. 180행 `opponentName` 필드 타입(String)은 그대로.
+- `frontend/test/tactical_fb6_dart_test.dart`(WIP 없음, LF): `fromRecord` 기대를 FD-176으로 갱신(모르는 시도 = null 그대로, 정밀도 추측 금지는 유지). 그 밖 0.
+- 새 `frontend/test/tactical_fb6b_dart_test.dart`(9): FD-176 fixture 13 대조(유효 3은 `fromWire → toWire` = 원 입력), writes fixture `unknown_manual_attempt` 유효, 입력·read DTO 음성, Mock 쓰기·이관 기록 null 편집·통계, 컨트롤러, 기록 목록 행·분석 집계.
+- 새 `frontend/test/tactical_fb6b_process_e2e_test.dart`(1): 아래.
+- 확인만 하고 고치지 않음: `lib/ui/pages/tactical_page.dart`(FE9-f WIP — addendum 736행 = 지금 783행: `current.opponentIdentityId`는 초안 필드라 이미 `String?`, 이름도 ID도 없으면 추천 질의를 보내지 않는다. 970~973행 분석 상대 선택은 `tacticalAnalysisMatches`가 공격 기록만 넘겨 null이 오지 않는다), `tactical_records_controller.dart`(입력 DTO를 그대로 보내므로 null도 그대로 — 코드 변경 0), `tactical_workspace.dart`·`design_review/tactical_records_data.dart`(FE9-f WIP, 컴파일 영향 0), `process_app_service.dart`·`mock_app_service.dart`·`planning_protocol_client.dart`(새 메서드·키·코드 0).
+
+### handoff 목록 행별 검수(`dart-handoff.md` + `dart-ui-static-addendum.json`)
+
+| 행 | 처리 | 근거 테스트 |
+|---|---|---|
+| `_validFb6MatchInputV2`: 13키 required, attempt null 또는 양의 int(누락·0·bool·음수 거부), 방어만 상대 null 쌍, 공격·한쪽 null·빈 문자열 거부 | 위 "고친 파일". 실수 1.5·문자열 "1"도 거부(fixture `float`·`text`) | fb6b "FD-176 fixture: 13 cases…", "input DTO…" |
+| `TacticalMatchInputV2`/fromRecord/toWire: `required int?`·`required String?` 쌍, fromRecord 강제 입력 오류 제거, null을 1/0으로 대체 안 함, "지정 안 함 vs 명시적 null" 판단 | sentinel 없이: `fromRecord(attemptCount:)`는 주면 바꾸고 안 주면 기록 값(null 포함) 그대로, 아는 값을 '모름'으로 바꾸려면 생성자에 `attemptCount: null`(문서 주석). 키는 늘 보낸다 | fb6 "input DTOs…", fb6b "migrated null attempt can be edited…" |
+| read DTO: attempt nullable(기존), legacy 키 없음과 FD-176 required write 구분, 상대 쌍 `String?`, opponent/snapshot/prediction DTO는 넓히지 않음 | read는 `attempt_count` optional 그대로(키 없음 = 구 v2), 쓰기 입력은 required. 상대 쌍만 nullable | fb6 "read DTOs accept only…", fb6b "read DTO…" |
+| Mock writes: null attempt 보존, 익명 방어에 상대·별칭·가짜 identity 0, revision·idempotency·원자성 보존, legacy null 편집 | `_applyMatch` 조건 하나 | fb6b Mock 두 테스트, fb6 Mock 6건 그대로 |
+| Mock reads stats: 전체·방어 집계 포함, 상대별 행·상대 수·이름 재사용 제외, unknown을 공통 상대로 만들지 않음, 추이·추천 범위 유지 | 상대 ID 집합 null 제외, 중복 지문 기록별. 추이(Mock 빈 구조)·추천(대상 상대 필수) 변경 0 | fb6b "statistics keep anonymous rows…" |
+| 테스트: FD-176 fixture 13, required-vs-null, 익명 방어, 재시도, legacy edit, Mock parity, `unknown_manual_attempt` 유효, 기존 positive fixture 동일 | fixture 13 + writes fixture 11 일치 | fb6 "shared FB-6 fixture…"(+14), fb6b 9, E2E 1 |
+| 컴파일 점검 대상(controller·records_view·workspace·page·design_review data·테스트) | records_view만 수정, 나머지 컴파일 0 · 동작 확인 | analyze 0, 일반 +172 |
+| addendum `tactical_analysis_view.dart` 171·174·417·443·682 | 수정(위) | fb6b "analysis aggregates exclude unknown opponents…" |
+| addendum `tactical_records_view.dart` 141·180 | 141 수정, 180은 String 유지(빈 이름 → "내 방어덱") | fb6b "controller saves null attempt…"(행 표기) |
+| addendum `tactical_page.dart` 736 | 확인만(지금 783, 가짜 ID 없음) | tactical_page·page_revision(일반 묶음) |
+
+### process E2E 내용(`tactical_fb6b_process_e2e_test.dart`)
+
+- 임시 저장소 `Directory.systemTemp/ba_planner_fb6_rpc_*`(실제 경로로 풀어서 `BA_PLANNER_STORAGE_ROOT`, 끝에 지움), fb6 E2E와 같은 inline guarded 진입점. 실제 게임·사용자 프로필·공용 저장소 접근 0.
+- 프로필 + 보유 학생 6. 시도 모르는 공격 기록(상대 opponent-one) → revision 1, 시도 null, 자동 족보 1. 상대 없는 방어 기록(시도 null) → revision 2, 상대 쌍 null, 족보 없음. 같은 key 재요청 = 원 응답(revision 2 · 같은 `created_at`). 같은 내용 두 번째 익명 방어(다른 ID) → revision 3.
+- 읽기: 기록 3, 상대 identity는 opponent-one 하나(별칭 `['Rival']`), 익명 행 2(kind defense · 이름 null · 시도 null), 익명 행 스냅샷 0.
+- 통계: match 3 · attack 1 · defense 2 · `opponent_count` 1 · 상대 행 1(opponent-one, match 1) · `distinct_opponent_count` 1 · `match_kind_counts` {attack 1, defense 2} · `suspected_duplicate_count` 0(같은 내용 익명 2건이 중복으로 묶이지 않음). 추이 strict 읽기 성공(신선도 0).
+- 익명 방어를 시도 2로 고침 → revision 4(상대는 여전히 null). 재시작 뒤 revision 4, 원 익명 요청 재전송 = 원 응답(revision 2 · 시도 null)이고 저장값(시도 2)을 되돌리지 않음. 상대 identity 1 그대로. 백엔드 프로세스 2개 exit 0.
+
+### Mock 차이(파일 머리 주석과 같다)
+
+- 백엔드와 같음: null 시도 저장, 익명 방어에 상대 identity·별칭 없음, 익명 행은 상대별 통계·상대 수 제외·전체/방어 수 포함, 중복 지문에서 익명 행은 기록마다 다른 키.
+- 남은 차이(기존과 같음): Mock 추이는 늘 빈 구조, 공유(share) Mock 없음(백엔드는 상대 없는 기록 공유를 `not_shareable` — 방어 기록은 원래 공유 대상이 아니다), Mock은 카탈로그·역할·보유 검사 없음(E2E 첫 실패 원인이 바로 이 차이), 지문 키 표기(문자열 vs Python 튜플)는 의미만 같다.
+- 기존 Mock 동작 변화 0: 상대가 있는 기록은 같은 경로(조건 `input['opponent_identity_id'] != null`은 상대 있는 기록에 늘 참), 통계도 null이 없으면 같은 집합·같은 키. fb6 Mock 6건·fe9b1 12건·controller 14건 그대로 통과.
+
+### 다음 화면 slice에 넘길 것(S3)
+
+1. 시도 '모름'으로 저장: 지금 `_saveBlocker`가 `_draft.attemptCount == null`이면 `tacticalNeedAttemptHint`로 막고, `TacticalRecordDraft.toInput`도 시도 null이면 `StateError`. FD-176에 맞춰 '모름' 선택 UI와 저장 허용이 필요하다(이관 기록 고치기 포함 — 지금은 이관 기록을 고치려면 시도를 정해야 한다).
+2. 상대 없는 방어 저장: 지금 상대 이름이 비면 `tacticalNeedOpponentHint`로 막고, `toInput(identityId: String)`이 non-null identity를 요구한다. 방어 기록에 한해 이름·identity를 둘 다 비워 저장하는 UI(공격은 지금처럼 필수)가 필요하다. 익명 방어 기록을 열면 상대 칸이 비어 있고 지금은 저장할 수 없다(읽기·목록 표시만 됨).
+3. 목록 표기: 익명 방어 = "내 방어덱"(FD-132), 시도 모름 = '—'·"시도 횟수 모름" — 이 slice에서 확인한 현재 표기를 유지하면 된다.
+4. FE9-f `tacticalExcelResultText`(`tactical_excel_import_view.dart` 502)는 `${match.attemptCount}회`라 null이면 "null회"가 된다. 지금 백엔드 엑셀은 빈 시도를 review-required로 막아 행 `match`에 null이 오지 않지만, 주석("시도 없으면 결과만")과 맞추려면 FE9-f 또는 다음 slice에서 null 분기가 필요하다(FE9-f 줄이라 고치지 않음).
+
+### golden 변화 0 근거
+
+- design-review seed(`tactical_records_data.dart`)의 v2 기록 4건은 모두 상대 identity·이름·시도가 있다(84~132행). golden 테스트(`fe9a_tactical_golden_test.dart`)도 상대 있는 기록만 쓴다. 바뀐 화면 코드는 null일 때만 다른 값을 낸다(`?? ''`·`?? '—'`·null ID 제외). golden 테스트·harness는 돌리지 않았고 고치지 않았다.
+- CF gate 예상: analyze 0, 일반 **+9**(`tactical_fb6b_dart_test` — process 패턴 문자열 0), process **+1**(`tactical_fb6b_process_e2e_test`), 기존 수 변화 0(`tactical_fb6_dart_test` 14 그대로), golden 변화 0.
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1`·golden 비교·`codealmanac validate`·저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- Python 전체 테스트: **미실행**(XB 몫, XB 15:51 1384 OK 보고만 읽음).
+- 위 목록 밖 Flutter 테스트(Lane A·스캐너·통계·계획, 나머지 process E2E): **미실행**.
+- 실제 백엔드가 공격 null 쌍·한쪽 null·0/bool 시도를 거부하는지: Dart가 보내기 전에 막아서 이 slice E2E로는 **미실행**(XB Python `test_tactical_fb6b.py` 몫).
+- 실제 백엔드 추천(`recommend`)·공유(`share`)에 익명 행이 섞였을 때: **미실행**(추천은 대상 상대가 필요해 익명 행이 쓰이지 않고, 공유는 방어 기록이 원래 대상 밖).
+- 수정 전 `tactical_fb6_dart_test`의 RED: **미실행**(코드로만 판단).
+- Windows release 빌드·사용자 시각 검수: **미실행**.
+
+### 발견 사항
+
+1. `fromRecord` API(handoff "CF 판단"): sentinel 없이 두었다 — 아는 시도를 '모름'으로 바꾸는 편집은 생성자로 만든다. S3 화면이 `fromRecord`를 쓰게 되면 다시 볼 것(지금 lib 호출처 0, 화면은 `TacticalRecordDraft.toInput`).
+2. 위 "다음 화면 slice" 4(FE9-f 엑셀 결과 글자 null 분기) — FE9-f·CF 판단.
+3. `tactical_page.dart` 970~973: 분석 대상이 공격 기록만이라 지금은 안전하지만, 나중에 방어 기록을 분석에 넣으면 `summary.matches.firstOrNull?.opponentIdentityId`가 null을 고를 수 있다(그때 추천 질의를 보내지 않을 뿐 가짜 ID는 없다).
+4. 착수 기록 줄바꿈: 이 세션 첫 바이트 셈(Git Bash grep의 CR 셈)이 틀려 CRLF로 적을 뻔했다가 Python 바이트 셈으로 고쳐 LF로 적었다(파일은 처음부터 LF, 바뀐 것 없음). `tactical_page.dart`만 CRLF.
+5. handoff·메인 schema·코드 차이 없음(XB 요청 후보 0). 워커 재량 FD: FD-132(기존 "내 방어덱" 표기를 익명 방어에 그대로).
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fb6bdart/pre/<경로>`(고친 기존 6파일 + 이 문서). 고친 코드 파일에 WIP가 없어 `post/`·`post_dir` 없음(이 문서는 `whole`).
+- `debug/frontend_fb6bdart/commit.json`: slice `fb6bdart`, modified 6, added 2, `whole = [almanac/workflows/frontend-redesign-status-lane-b.md]`, `status=false`. message(ASCII) 근거: FD-176, XB source11 반영 표(backend 로그 15:51), `dart-handoff.md`·`dart-ui-static-addendum.json`.
+- 인계: `debug/frontend_fb6bdart/output.md`. 로그 `debug/frontend_fb6bdart/logs/`.
+
+### 다음 행동
+
+- fb6b-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: FE9-f와 같은 소스로 gate 1회(예상: analyze 0, 일반 +9, process +1, golden 변화 0, FE9-f 몫은 FE9-f 기록대로) → XB source11 exact11 커밋 → `fe_commit.ps1 -Slice fe9f`·`-Slice fb6bdart`(두 slice가 겹치는 파일 0 — FE9-f post 13파일과 이 slice 8파일은 서로 다르다).
+- 다음 화면 slice(S3 '모름' 저장 · 상대 없는 방어 저장)는 위 "다음 화면 slice에 넘길 것" 1~3을 입력으로.

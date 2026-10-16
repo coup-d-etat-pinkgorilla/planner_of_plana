@@ -299,6 +299,15 @@ void _provenanceV2(Map<String, dynamic> value) {
   }
 }
 
+/// FD-176 상대 쌍: identity(record ID)와 이름(빈 문자열 아님)이 둘 다 있거나, 방어 기록에 한해 둘 다 null이다.
+/// 한쪽만 null·빈 문자열·공격 기록의 null은 거부한다(schema `match`·`fb6MatchInput` allOf).
+bool _validOpponentPairV2(Map<String, dynamic> value) {
+  final id = value['opponent_identity_id'];
+  final name = value['opponent_display_name'];
+  if (id == null && name == null) return value['kind'] == 'defense';
+  return _recordIdV2(id) && name is String && name.isNotEmpty;
+}
+
 @immutable
 class TacticalMatchV2 {
   const TacticalMatchV2({
@@ -326,12 +335,15 @@ class TacticalMatchV2 {
   });
   final String id, kind, importedAt, createdAt, source, sourceLabel;
   final String importBatchId, sourceRecordId, reviewStatus, season;
-  final String opponentIdentityId, opponentDisplayName, result, notes;
+  final String result, notes;
+
+  /// FD-176: 방어 기록은 상대를 모르면 identity·이름이 둘 다 null이다(공격 기록은 늘 둘 다 있다). 가짜 상대로 바꾸지 않는다.
+  final String? opponentIdentityId, opponentDisplayName;
   final String? occurredAt, observedAt;
   final double? confidence;
   final TacticalDeckV2 attackDeck, defenseDeck;
 
-  /// FB-6 시도 횟수. null = 모름(구 v2 기록·v7-v1 이관 기록). 1로 채우지 않는다.
+  /// FB-6 시도 횟수. null = 모름(구 v2 기록·v7-v1 이관 기록·FD-176 '모름' 저장). 1로 채우지 않는다.
   final int? attemptCount;
 
   /// FB-6 `date`·`instant`·`unknown`. 구 v2 기록에 키가 없으면 `unknown`이다. `date`의 `occurredAt`은
@@ -373,9 +385,7 @@ class TacticalMatchV2 {
         !_recordIdV2(value['match_id']) ||
         !{'attack', 'defense'}.contains(value['kind']) ||
         value['season'] is! String ||
-        !_recordIdV2(value['opponent_identity_id']) ||
-        value['opponent_display_name'] is! String ||
-        (value['opponent_display_name'] as String).isEmpty ||
+        !_validOpponentPairV2(value) ||
         !{'win', 'loss'}.contains(value['result']) ||
         value['notes'] is! String) {
       throw const FormatException('Invalid tactical v2 match');
@@ -395,8 +405,8 @@ class TacticalMatchV2 {
       confidence: (value['confidence'] as num?)?.toDouble(),
       reviewStatus: value['review_status'] as String,
       season: value['season'] as String,
-      opponentIdentityId: value['opponent_identity_id'] as String,
-      opponentDisplayName: value['opponent_display_name'] as String,
+      opponentIdentityId: value['opponent_identity_id'] as String?,
+      opponentDisplayName: value['opponent_display_name'] as String?,
       result: value['result'] as String,
       attackDeck: TacticalDeckV2.fromWire(
         Map<String, dynamic>.from(value['attack_deck'] as Map),
@@ -2698,6 +2708,8 @@ class TacticalShareAnalyticsResult {
 
 // FB-6: 전술 v2 기록·족보 쓰기와 명시적 v7-v1 이관(contracts/tactical-protocol-v2.schema.json `fb6*`,
 // contracts/README.md "FB-6a tactical v2 writes and explicit v7-v1 migration").
+// FB-6b(FD-176, README "FB-6b FD-176 unknown attempts and anonymous defense"): 기록 입력·읽기의 `attempt_count`는
+// null(모름) 또는 양의 정수, 방어 기록만 상대 identity·이름 null 쌍을 허용한다.
 
 bool _validFb6DeckV2(Object? raw) {
   if (raw is! Map) return false;
@@ -2739,15 +2751,13 @@ bool _validFb6MatchInputV2(Object? raw) {
             ? value['occurred_at'] == null
             : _timestampV2(value['occurred_at'], nullable: false) != null) &&
         value['season'] is String &&
-        _recordIdV2(value['opponent_identity_id']) &&
-        value['opponent_display_name'] is String &&
-        (value['opponent_display_name'] as String).isNotEmpty &&
+        _validOpponentPairV2(value) &&
         {'win', 'loss'}.contains(value['result']) &&
         _validFb6DeckV2(value['attack_deck']) &&
         _validFb6DeckV2(value['defense_deck']) &&
         value['notes'] is String &&
-        attempt is int &&
-        attempt >= 1;
+        // FD-176: 키는 required(위 exact 검사), 값은 null(모름) 또는 양의 정수. 0·bool·음수·실수·문자열은 거부.
+        (attempt == null || (attempt is int && attempt >= 1));
   } catch (_) {
     return false;
   }
@@ -2803,19 +2813,16 @@ class TacticalMatchInputV2 {
     }
   }
 
-  /// 읽은 기록에서 입력 13키만 옮긴다. 모르는 시도 횟수(null)와 키가 없던 정밀도(`unknown`인데 시각이
-  /// 있음)는 추측하지 않으므로 [attemptCount]·[occurredPrecision]을 직접 넘겨야 한다.
+  /// 읽은 기록에서 입력 13키만 옮긴다. [attemptCount]를 주면 그 값으로 바꾸고, 주지 않으면 기록 값을 그대로 둔다
+  /// (FD-176: 모르는 시도 횟수 null은 null 그대로 보낸다 — 1로 채우지 않는다). 아는 값을 '모름'으로 바꾸려면
+  /// 생성자에 `attemptCount: null`을 직접 넘긴다. 키가 없던 정밀도(`unknown`인데 시각이 있음)는 추측하지 않으므로
+  /// [occurredPrecision]을 직접 넘겨야 한다.
   factory TacticalMatchInputV2.fromRecord(
     TacticalMatchV2 record, {
     int? attemptCount,
     String? occurredPrecision,
   }) {
     final count = attemptCount ?? record.attemptCount;
-    if (count == null) {
-      throw const FormatException(
-        'Unknown tactical attempt count must be entered explicitly',
-      );
-    }
     return TacticalMatchInputV2(
       id: record.id,
       kind: record.kind,
@@ -2845,21 +2852,26 @@ class TacticalMatchInputV2 {
       occurredAt: value['occurred_at'] as String?,
       occurredPrecision: value['occurred_precision'] as String,
       season: value['season'] as String,
-      opponentIdentityId: value['opponent_identity_id'] as String,
-      opponentDisplayName: value['opponent_display_name'] as String,
+      opponentIdentityId: value['opponent_identity_id'] as String?,
+      opponentDisplayName: value['opponent_display_name'] as String?,
       result: value['result'] as String,
       attackDeck: deck('attack_deck'),
       defenseDeck: deck('defense_deck'),
       notes: value['notes'] as String,
-      attemptCount: value['attempt_count'] as int,
+      attemptCount: value['attempt_count'] as int?,
     );
   }
 
   final String id, kind, occurredPrecision, season;
-  final String opponentIdentityId, opponentDisplayName, result, notes;
+  final String result, notes;
+
+  /// FD-176: 방어 기록에 한해 둘 다 null(상대 모름). 공격 기록·한쪽만 null·빈 문자열은 생성자가 거부한다.
+  final String? opponentIdentityId, opponentDisplayName;
   final String? occurredAt;
   final TacticalDeckV2 attackDeck, defenseDeck;
-  final int attemptCount;
+
+  /// FD-176: null = 모름(키는 늘 보낸다), 아니면 1 이상.
+  final int? attemptCount;
 
   Map<String, dynamic> toWire() => {
     'version': 2,
