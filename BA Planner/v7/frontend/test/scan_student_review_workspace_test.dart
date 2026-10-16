@@ -1,6 +1,7 @@
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/widgets/diagonal_media_list_item.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -204,6 +205,12 @@ void main() {
     },
   );
 
+  test('wide scan report prioritizes the central result section', () {
+    expect(scanResultReportWidth(920), 484);
+    expect(scanResultReportWidth(1200), 744);
+    expect(scanResultReportWidth(1600), 780);
+  });
+
   test('full scan keeps every outfit of one character vertically adjacent', () {
     final ordered = orderScanResultCandidatesByGroup(
       [
@@ -346,5 +353,88 @@ void main() {
       find.byKey(const ValueKey('scan-student-edit-shadow-only')),
       findsNothing,
     );
+    final summary = tester.widget<DiagonalMediaListItem>(
+      find.byKey(const ValueKey('scan-student-result-shadow-only')),
+    );
+    expect(summary.data.weaponLevel.value, '-');
+    expect(summary.data.stats.value, '-/-/-');
+  });
+
+  testWidgets('scan report row exposes the image-reference student summary', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final candidate = ScannerCandidate(
+      id: 'summary-row',
+      sessionId: 'session',
+      generation: 1,
+      revision: 1,
+      kind: ScannerKind.student,
+      payload: {
+        'version': 1,
+        'student_id': 'aru',
+        'values': {
+          'level': 90,
+          'student_star': 5,
+          'weapon_star': 3,
+          'weapon_level': 50,
+          'bond_rank': 24,
+          'ex_skill': 5,
+          'skill1': 10,
+          'skill2': 7,
+          'skill3': 10,
+          'equip1': 'T10',
+          'equip1_level': 70,
+          'equip2': 'T9',
+          'equip2_level': 65,
+          'equip3': 'T8',
+          'equip3_level': 60,
+          'equip4': 'T2',
+          'stat_hp': 25,
+          'stat_atk': 20,
+          'stat_heal': 15,
+        },
+      },
+      evidence: const [],
+      reviewRequired: false,
+      approved: false,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ScanStudentReviewWorkspace(
+            candidates: [candidate],
+            currentStudents: const <String, ConfirmedStudentState>{},
+            catalog: {'aru': _catalog('aru', 'aru')},
+            busyCandidateIds: const {},
+            candidateErrors: const {},
+            singleScan: false,
+            onRevalidate: (_, _, _, _) async {},
+            onHold: (_) async {},
+            onDiscard: (_) async {},
+            onApply: (_) async {},
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('scan-student-result-report-section')),
+      findsOneWidget,
+    );
+    final tile = tester.widget<DiagonalMediaListItem>(
+      find.byKey(const ValueKey('scan-student-result-summary-row')),
+    );
+    expect(tile.data.order, 1);
+    expect(tile.data.studentLevel.value, 'Lv.90');
+    expect(tile.data.skills.value, '5/10/7/10');
+    expect(tile.data.equipment.map((item) => item.tier.value), [
+      'T10',
+      'T9',
+      'T8',
+    ]);
+    expect(tile.data.bondRank.value, '24');
+    expect(tile.data.stats.value, '25/20/15');
   });
 }

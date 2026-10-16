@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import 'diagonal_media_list_item.dart';
 import 'diagonal_section.dart';
 import 'scroll_viewport_fog.dart';
 
@@ -348,11 +349,14 @@ class _ScanStudentReviewWorkspaceState
           );
           if (wide) {
             return SizedBox(
-              height: 590,
+              height: 640,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(width: 340, child: list),
+                  SizedBox(
+                    width: scanResultReportWidth(constraints.maxWidth),
+                    child: list,
+                  ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(child: detail),
                 ],
@@ -852,6 +856,16 @@ double scanResultRowLeft({
     (viewportHeight - (rowTop + rowHeight - scrollOffset)) /
         math.tan(80 * math.pi / 180);
 
+double scanResultReportWidth(double workspaceWidth) {
+  const detailMinimum = 420.0;
+  const gap = AppSpacing.md;
+  final preferred = workspaceWidth * 0.62;
+  return math.max(
+    420,
+    math.min(780, math.min(preferred, workspaceWidth - detailMinimum - gap)),
+  );
+}
+
 class _ResultList extends StatefulWidget {
   const _ResultList({
     required this.entries,
@@ -882,7 +896,7 @@ class _ResultList extends StatefulWidget {
 
 class _ResultListState extends State<_ResultList> {
   static const _verticalInset = 8.0;
-  static const _candidateHeight = 74.0;
+  static const _candidateHeight = 96.0;
   static const _relationshipHeight = 82.0;
   static const _rowGap = 8.0;
   final ScrollController _controller = ScrollController();
@@ -895,6 +909,7 @@ class _ResultListState extends State<_ResultList> {
 
   @override
   Widget build(BuildContext context) => DiagonalSection(
+    key: const ValueKey('scan-student-result-report-section'),
     child: Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 24, 14),
       child: Column(
@@ -978,6 +993,11 @@ class _ResultListState extends State<_ResultList> {
                       )
                     : _CandidateResultRow(
                         entry: entry,
+                        order: index + 1,
+                        catalog:
+                            widget.catalog[entry.candidate.payload['student_id']
+                                    as String? ??
+                                'unknown'],
                         selected: entry.candidate.id == widget.selectedId,
                         problem: widget.hasProblem(entry.candidate),
                         displayName: widget.displayName(entry.candidate),
@@ -1028,6 +1048,8 @@ class _ResultListState extends State<_ResultList> {
 class _CandidateResultRow extends StatelessWidget {
   const _CandidateResultRow({
     required this.entry,
+    required this.order,
+    required this.catalog,
     required this.selected,
     required this.problem,
     required this.displayName,
@@ -1036,11 +1058,84 @@ class _CandidateResultRow extends StatelessWidget {
   });
 
   final _ResultListEntry entry;
+  final int order;
+  final StudentCatalogEntry? catalog;
   final bool selected;
   final bool problem;
   final String displayName;
   final String status;
   final VoidCallback onSelected;
+
+  Map<String, dynamic> get _values => Map<String, dynamic>.from(
+    entry.candidate.payload['values'] as Map? ?? const {},
+  );
+
+  int? _integer(String key) => _values[key] as int?;
+
+  String _number(String key) => _integer(key)?.toString() ?? '-';
+
+  String _level(String key) {
+    final value = _integer(key);
+    return value == null ? '-' : 'Lv.$value';
+  }
+
+  String _tier(int slot) {
+    final raw = _values['equip$slot'] ?? _values['equip${slot}_tier'];
+    if (raw is int) return raw > 0 ? 'T$raw' : '-';
+    final text = raw?.toString() ?? '';
+    return RegExp(r'^T\d+$').hasMatch(text) ? text : '-';
+  }
+
+  String _equipmentAsset(int slot) {
+    final type = switch (slot) {
+      1 => catalog?.equipmentSlot1,
+      2 => catalog?.equipmentSlot2,
+      _ => catalog?.equipmentSlot3,
+    };
+    final tier = int.tryParse(_tier(slot).replaceFirst('T', ''));
+    if (type != null && tier != null && tier >= 1 && tier <= 10) {
+      return 'assets/item_icons/equipment/'
+          'Equipment_Icon_${type}_Tier$tier.png';
+    }
+    return switch (slot) {
+      1 => 'assets/equipment_icons/hat_t10.png',
+      2 => 'assets/equipment_icons/hairpin_t10.png',
+      _ => 'assets/equipment_icons/watch_t10.png',
+    };
+  }
+
+  String _favoriteItem() {
+    final value = _values['equip4']?.toString() ?? '';
+    return const {'T1', 'T2'}.contains(value) ? value : '-';
+  }
+
+  DiagonalMediaListItemData _data(String id) => DiagonalMediaListItemData(
+    order: order,
+    mediaAssetPath: 'assets/student_portraits/$id.png',
+    title: '$displayName · $status',
+    studentStars: _integer('student_star') ?? 0,
+    weaponStars: _integer('weapon_star') ?? 0,
+    studentLevel: DiagonalMediaValue(_level('level')),
+    weaponLevel: DiagonalMediaValue(_level('weapon_level')),
+    skills: DiagonalMediaValue(
+      '${_number('ex_skill')}/${_number('skill1')}/'
+      '${_number('skill2')}/${_number('skill3')}',
+    ),
+    equipment: [
+      for (var slot = 1; slot <= 3; slot++)
+        DiagonalMediaEquipment(
+          assetPath: _equipmentAsset(slot),
+          tier: DiagonalMediaValue(_tier(slot)),
+          level: DiagonalMediaValue(_level('equip${slot}_level')),
+        ),
+    ],
+    favoriteItem: DiagonalMediaValue(_favoriteItem()),
+    bondRank: DiagonalMediaValue(_number('bond_rank')),
+    stats: DiagonalMediaValue(
+      '${_number('stat_hp')}/${_number('stat_atk')}/'
+      '${_number('stat_heal')}',
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -1048,58 +1143,16 @@ class _CandidateResultRow extends StatelessWidget {
     return _ResultStateFrame(
       problem: problem,
       selected: selected,
-      child: DiagonalSection(
-        child: InkWell(
+      mediaRow: true,
+      child: Semantics(
+        label: '$displayName, $status',
+        button: true,
+        selected: selected,
+        child: DiagonalMediaListItem(
           key: ValueKey('scan-student-result-${entry.candidate.id}'),
+          data: _data(id),
+          highlighted: selected,
           onTap: onSelected,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 7, 24, 7),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/student_portraits/$id.png',
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox(
-                      width: 52,
-                      height: 52,
-                      child: Icon(Icons.person_outline),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        status,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: problem ? AppColors.danger : AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  problem ? Icons.error_outline : Icons.check_circle,
-                  color: problem ? AppColors.danger : AppColors.success,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -1185,11 +1238,13 @@ class _ResultStateFrame extends StatelessWidget {
     required this.problem,
     required this.child,
     this.selected = false,
+    this.mediaRow = false,
   });
 
   final bool problem;
   final Widget child;
   final bool selected;
+  final bool mediaRow;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -1198,6 +1253,7 @@ class _ResultStateFrame extends StatelessWidget {
       foregroundPainter: _DiagonalStatusBorderPainter(
         problem ? AppColors.danger : AppColors.success,
         selected ? 3.2 : 2.0,
+        mediaRow: mediaRow,
       ),
       child: child,
     ),
@@ -1205,13 +1261,20 @@ class _ResultStateFrame extends StatelessWidget {
 }
 
 class _DiagonalStatusBorderPainter extends CustomPainter {
-  const _DiagonalStatusBorderPainter(this.color, this.width);
+  const _DiagonalStatusBorderPainter(
+    this.color,
+    this.width, {
+    this.mediaRow = false,
+  });
   final Color color;
   final double width;
+  final bool mediaRow;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = const DiagonalSectionClipper().getClip(size);
+    final path = mediaRow
+        ? diagonalMediaListItemPath(size)
+        : const DiagonalSectionClipper().getClip(size);
     canvas.drawPath(
       path,
       Paint()
@@ -1223,7 +1286,9 @@ class _DiagonalStatusBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DiagonalStatusBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.width != width;
+      oldDelegate.color != color ||
+      oldDelegate.width != width ||
+      oldDelegate.mediaRow != mediaRow;
 }
 
 class _ComparisonTable extends StatelessWidget {

@@ -717,7 +717,7 @@ class _ScanPageState extends State<ScanPage> {
         modeLabel: '전체 학생',
         stageLabel: _stage.name,
         phase: _phase,
-        recognizedCount: _candidates.length,
+        recognizedCount: _progressCurrent ?? 0,
         progressCurrent: _progressCurrent,
         progressTotal: _progressTotal,
         messageKey: _messageKey,
@@ -747,34 +747,15 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   ScanDockStudentFeedback? get _liveStudentFeedback {
-    if (_liveFeedbackAwaitingStudent) return null;
-    final eventValues = _liveFeedbackValues;
     final studentId = _liveFeedbackStudentId;
-    if (studentId != null) {
-      return ScanDockStudentFeedback(
-        studentId: studentId,
-        displayName: _studentCatalog[studentId]?.displayName ?? studentId,
-        values: eventValues,
-      );
-    }
-    final students = _candidates.values.where(
-      (item) => item.kind == ScannerKind.student,
-    );
-    if (students.isEmpty) return null;
-    final candidate = students.last;
-    final values = candidate.payload['values'];
-    final id = candidate.payload['student_id'];
-    if (id is! String || values is! Map) return null;
+    if (studentId == null) return null;
     return ScanDockStudentFeedback(
-      studentId: id,
-      displayName: _studentCatalog[id]?.displayName ?? id,
-      values: Map<String, dynamic>.from(values),
+      studentId: studentId,
+      displayName: _studentCatalog[studentId]?.displayName ?? studentId,
     );
   }
 
   String? _liveFeedbackStudentId;
-  Map<String, dynamic> _liveFeedbackValues = {};
-  bool _liveFeedbackAwaitingStudent = false;
 
   Future<void> _closeCompanion() async {
     if (!_companionActive) return;
@@ -799,20 +780,8 @@ class _ScanPageState extends State<ScanPage> {
       case ScannerEventKind.feedback:
         final studentId = event.payload['student_id'];
         final field = event.payload['field'];
-        final values = event.payload['values'];
-        if (field == '__student_exit__') {
-          _liveFeedbackStudentId = null;
-          _liveFeedbackValues = {};
-          _liveFeedbackAwaitingStudent = true;
-          break;
-        }
-        if (studentId is String && values is Map) {
-          if (_liveFeedbackStudentId != studentId) {
-            _liveFeedbackValues = {};
-          }
+        if (field == 'student_id' && studentId is String) {
           _liveFeedbackStudentId = studentId;
-          _liveFeedbackValues.addAll(Map<String, dynamic>.from(values));
-          _liveFeedbackAwaitingStudent = false;
         }
         break;
       case ScannerEventKind.diagnostic:
@@ -1759,12 +1728,13 @@ class _ScanPageState extends State<ScanPage> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Semantics(
-            label: progress == null
-                ? 'Scan progress indeterminate'
-                : 'Scan progress ${_progressCurrent ?? 0} of $_progressTotal',
-            child: LinearProgressIndicator(value: progress),
-          ),
+          if (!_companionActive)
+            Semantics(
+              label: progress == null
+                  ? 'Scan progress indeterminate'
+                  : 'Scan progress ${_progressCurrent ?? 0} of $_progressTotal',
+              child: LinearProgressIndicator(value: progress),
+            ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             _progressCurrent == null
