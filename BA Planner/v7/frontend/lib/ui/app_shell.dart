@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -26,7 +27,8 @@ import 'pages/student_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/tactical_page.dart';
 import 'scan/connected_target_controller.dart';
-import 'scan/header_connection_chip.dart';
+import 'scan/scan_end_toast.dart';
+import 'scan/scan_header_progress.dart';
 import 'scan/scan_session_controller.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
@@ -141,6 +143,14 @@ class _AppShellState extends State<AppShell>
   /// 스캔 세션(FE8-f1). 탭을 옮겨도 살아 있고, 계정을 바꾸면 스캔 화면과 함께 새로 만든다.
   late ScanSessionController _scanSession = _createScanSession();
 
+  /// 완료 토스트(FE8-f2, FD-148). 다른 탭에 있을 때 끝난 세션마다(id + generation) 한 번 띄운다.
+  ScanEndNotice? _scanEndNotice;
+  Timer? _scanEndNoticeTimer;
+  String? _lastScanEndKey;
+
+  /// 학생 · 인벤토리 탭에서 적용한 스캔 후보([scanCandidateKey]). 탭 점의 검토 대기에서 뺀다.
+  Set<String> _scanAppliedElsewhere = const {};
+
   ScanSessionController _createScanSession() => ScanSessionController(
     service: widget.service,
     connectedTarget: _connectedTarget,
@@ -173,6 +183,7 @@ class _AppShellState extends State<AppShell>
     }
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
+    _scanSession.addListener(_scanSessionChanged);
     _loadSelectedProfile();
   }
 
@@ -193,7 +204,10 @@ class _AppShellState extends State<AppShell>
     _profileLoadGeneration += 1;
     widget.service.state.removeListener(_handleConnectionChanged);
     _homeEntranceController.dispose();
-    _scanSession.dispose();
+    _scanEndNoticeTimer?.cancel();
+    _scanSession
+      ..removeListener(_scanSessionChanged)
+      ..dispose();
     _scanCompanion.dispose();
     _recentStudents.dispose();
     _studentFilter.dispose();
@@ -236,6 +250,7 @@ class _AppShellState extends State<AppShell>
   }
 
   void _open(AppSection section) {
+    if (section == AppSection.scan) _dismissScanEndNotice();
     // 같은 탭을 다시 누르면 탭 안 모드에서 나온다(FD-161 (a)).
     if (section == _section && _headerOverride.back(section)) return;
     setState(() {
@@ -311,12 +326,42 @@ class _AppShellState extends State<AppShell>
     });
   }
 
+  /// 세션이 새로 끝나면(스캔 탭 밖에서만) 완료 토스트를 띄운다. 끝은 이벤트 · 스냅숏 응답에서만 오므로 빌드 중이 아니다.
+  void _scanSessionChanged() {
+    final notice = ScanEndNotice.of(_scanSession);
+    if (!mounted || notice == null || notice.sessionKey == _lastScanEndKey) {
+      return;
+    }
+    _lastScanEndKey = notice.sessionKey;
+    // 스캔 탭에서는 화면이 끝과 결과를 바로 보인다.
+    if (_section == AppSection.scan) return;
+    _scanEndNoticeTimer?.cancel();
+    _scanEndNoticeTimer = Timer(scanEndToastDuration, _dismissScanEndNotice);
+    setState(() => _scanEndNotice = notice);
+  }
+
+  void _dismissScanEndNotice() {
+    _scanEndNoticeTimer?.cancel();
+    _scanEndNoticeTimer = null;
+    if (!mounted || _scanEndNotice == null) return;
+    setState(() => _scanEndNotice = null);
+  }
+
+  void _markScanCandidateApplied(ScannerCandidate committed) => setState(
+    () => _scanAppliedElsewhere = {
+      ..._scanAppliedElsewhere,
+      scanCandidateKey(committed),
+    },
+  );
+
   void _clearStudentCandidate(ScannerCandidate committed) {
+    _markScanCandidateApplied(committed);
     if (_studentCandidate?.candidate.id != committed.id) return;
     setState(() => _studentCandidate = null);
   }
 
   void _clearInventoryCandidate(ScannerCandidate committed) {
+    _markScanCandidateApplied(committed);
     if (_inventoryCandidate?.candidate.id != committed.id) return;
     setState(() => _inventoryCandidate = null);
   }
@@ -328,12 +373,16 @@ class _AppShellState extends State<AppShell>
       ..discardDraft()
       ..applied = StudentFilterSelection.empty;
     // 예전 스캔 화면이 프레임 끝에 dispose되던 시점과 맞춘다(새 화면이 새 세션으로 준비를 읽은 뒤).
-    final previousScanSession = _scanSession;
+    final previousScanSession = _scanSession
+      ..removeListener(_scanSessionChanged);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => previousScanSession.dispose(),
     );
+    _scanEndNoticeTimer?.cancel();
     setState(() {
-      _scanSession = _createScanSession();
+      _scanSession = _createScanSession()..addListener(_scanSessionChanged);
+      _scanEndNotice = null;
+      _scanAppliedElsewhere = const {};
       _profileGeneration += 1;
       _homeReloadToken += 1;
       _statisticsReloadToken += 1;
@@ -395,6 +444,8 @@ class _AppShellState extends State<AppShell>
                                 profile: _selectedProfile,
                                 developmentPanelVisible: _showDevelopmentPanel,
                                 connectedTarget: _connectedTarget,
+                                scanSession: _scanSession,
+                                scanAppliedElsewhere: _scanAppliedElsewhere,
                                 onSelected: _open,
                                 onOpenTargetPicker: _openTargetPicker,
                                 onToggleDevelopmentPanel: () {
@@ -594,6 +645,18 @@ class _AppShellState extends State<AppShell>
               },
             ),
           ),
+          if (_scanEndNotice case final notice?)
+            Positioned(
+              top: 192,
+              right: 26,
+              child: BaModalBackdropExclude(
+                child: ScanEndToast(
+                  notice: notice,
+                  onOpen: () => _open(AppSection.scan),
+                  onClose: _dismissScanEndNotice,
+                ),
+              ),
+            ),
           ValueListenableBuilder<ScanCompanionState?>(
             valueListenable: _scanCompanion,
             builder: (context, companion, child) => companion == null
@@ -620,6 +683,8 @@ class _CompoundPageHeader extends StatelessWidget {
     required this.profile,
     required this.developmentPanelVisible,
     required this.connectedTarget,
+    required this.scanSession,
+    required this.scanAppliedElsewhere,
     required this.onSelected,
     required this.onOpenTargetPicker,
     required this.onToggleDevelopmentPanel,
@@ -635,6 +700,8 @@ class _CompoundPageHeader extends StatelessWidget {
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
   final ConnectedTargetController connectedTarget;
+  final ScanSessionController scanSession;
+  final Set<String> scanAppliedElsewhere;
   final ValueChanged<AppSection> onSelected;
   final VoidCallback onOpenTargetPicker;
   final VoidCallback onToggleDevelopmentPanel;
@@ -693,7 +760,12 @@ class _CompoundPageHeader extends StatelessWidget {
                   top: 4,
                   width: shelfWidth - 8,
                   height: 44,
-                  child: _TopTabs(selected: section, onSelected: onSelected),
+                  child: _TopTabs(
+                    selected: section,
+                    onSelected: onSelected,
+                    scanSession: scanSession,
+                    scanAppliedElsewhere: scanAppliedElsewhere,
+                  ),
                 ),
                 Positioned(
                   left: 4,
@@ -745,7 +817,9 @@ class _CompoundPageHeader extends StatelessWidget {
                             profile: profile,
                             developmentPanelVisible: developmentPanelVisible,
                             connectedTarget: connectedTarget,
+                            scanSession: scanSession,
                             onOpenTargetPicker: onOpenTargetPicker,
+                            onOpenScan: () => onSelected(AppSection.scan),
                             onToggleDevelopmentPanel: onToggleDevelopmentPanel,
                           ),
                         ),
@@ -772,10 +846,17 @@ const _topTabMinWidth = 76.0;
 const _topTabGap = 2.0;
 
 class _TopTabs extends StatefulWidget {
-  const _TopTabs({required this.selected, required this.onSelected});
+  const _TopTabs({
+    required this.selected,
+    required this.onSelected,
+    required this.scanSession,
+    required this.scanAppliedElsewhere,
+  });
 
   final AppSection selected;
   final ValueChanged<AppSection> onSelected;
+  final ScanSessionController scanSession;
+  final Set<String> scanAppliedElsewhere;
 
   @override
   State<_TopTabs> createState() => _TopTabsState();
@@ -841,6 +922,13 @@ class _TopTabsState extends State<_TopTabs> {
                     section: section,
                     selected: section == visibleSelection,
                     onTap: () => widget.onSelected(section),
+                    indicator: section == AppSection.scan
+                        ? ScanTabDot(
+                            controller: widget.scanSession,
+                            appliedElsewhere: widget.scanAppliedElsewhere,
+                            onScanTab: section == visibleSelection,
+                          )
+                        : null,
                   ),
               ],
             ),
@@ -901,11 +989,15 @@ class _TopTab extends StatelessWidget {
     required this.section,
     required this.selected,
     required this.onTap,
+    this.indicator,
   });
 
   final AppSection section;
   final bool selected;
   final VoidCallback onTap;
+
+  /// 라벨 뒤 표시(탭 `스캔` 점, FE8-f2).
+  final Widget? indicator;
 
   @override
   Widget build(BuildContext context) {
@@ -968,6 +1060,7 @@ class _TopTab extends StatelessWidget {
                               : AppType.medium,
                         ),
                       ),
+                      ?indicator,
                     ],
                   ),
                 ),
@@ -990,7 +1083,9 @@ class _AppHeader extends StatelessWidget {
     required this.profile,
     required this.developmentPanelVisible,
     required this.connectedTarget,
+    required this.scanSession,
     required this.onOpenTargetPicker,
+    required this.onOpenScan,
     required this.onToggleDevelopmentPanel,
   });
 
@@ -1002,7 +1097,9 @@ class _AppHeader extends StatelessWidget {
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
   final ConnectedTargetController connectedTarget;
+  final ScanSessionController scanSession;
   final VoidCallback onOpenTargetPicker;
+  final VoidCallback onOpenScan;
   final VoidCallback onToggleDevelopmentPanel;
 
   @override
@@ -1129,10 +1226,12 @@ class _AppHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.lg),
                 ],
-                HeaderConnectionChip(
+                HeaderStatusChip(
                   backend: state.connection,
                   connectedTarget: connectedTarget,
+                  scanSession: scanSession,
                   onOpenTargetPicker: onOpenTargetPicker,
+                  onOpenScan: onOpenScan,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Tooltip(

@@ -107,6 +107,7 @@ class ScanSessionController extends ChangeNotifier {
   bool _companionActive = false;
   bool _exportingStudentDiagnostic = false;
   String? _liveFeedbackStudentId;
+  ScannerSession? _lastEndedSession;
 
   /// FB-10a 세션 제어(진행 단계 안의 하위 상태). pause 응답의 `pauseRequested`는 수락일 뿐이고,
   /// `paused` 이벤트를 받아야 멈춘 것으로 본다.
@@ -169,6 +170,10 @@ class ScanSessionController extends ChangeNotifier {
   ScannerControlState get control => _control;
   ScannerPauseReason? get pauseReason => _pauseReason;
   bool get controlBusy => _controlBusy;
+
+  /// 이 컨트롤러에서 마지막으로 끝난 세션(실시간 terminal 이벤트 · 스냅숏 복구로 최근 기록에 넣을 때). 최근 기록
+  /// 열기로는 바뀌지 않는다. 셸의 완료 토스트가 같은 세션(id + generation)에 한 번만 뜨도록 읽는다(FE8-f2).
+  ScannerSession? get lastEndedSession => _lastEndedSession;
 
   /// 지금 세션(또는 연 최근 기록)의 후보. id → 가장 높은 revision.
   Map<String, ScannerCandidate> get candidates => _candidatesView;
@@ -1373,6 +1378,7 @@ class ScanSessionController extends ChangeNotifier {
     final session = _session;
     final target = selectedTarget;
     if (session == null) return;
+    _lastEndedSession = session;
     _recent.removeWhere(
       (item) =>
           item.sessionId == session.id && item.generation == session.generation,

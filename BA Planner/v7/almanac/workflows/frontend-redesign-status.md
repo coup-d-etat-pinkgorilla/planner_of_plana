@@ -9545,3 +9545,128 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261017_013824\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE8-f2 착수 기록 (2026-10-17, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-f2 종료 기록), CF gate 미실행**. 범위: FE8-f2 머리글 스캔 진행 표시 · 탭 `스캔` 점 · 완료 토스트(FD-148). 스캔 탭 화면 · dock 동작은 바꾸지 않는다(FE8-g1~g3 몫).
+- 착수 전 확인: 이 문서 끝에 다른 "FE8-f2 착수 기록" 없음. 막힘: 대장 "slice별 막힘 요약" FE8-f1 / FE8-f2 행 = —, 현재 `열림` 0건. FD-148은 `워커 재량`(권장안대로).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `921b6bfe4a59ce231a72936f15f76c6cda85492d`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8f2/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. LF(최소 diff — 머리글 칩 자리 · 탭 점 · 토스트 자리 · 컨트롤러 리스너).
+  - `frontend/lib/ui/scan/scan_session_controller.dart`: WIP 없음. LF(읽기 값 1개 — 마지막으로 끝난 세션).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_header_progress.dart`(머리글 진행 칩 · 탭 점 상태), `frontend/lib/ui/scan/scan_end_toast.dart`(완료 토스트), `frontend/test/scan_header_progress_fe8f2_test.dart`, `frontend/test/goldens/fe8f2_header_scan_progress_golden_test.dart`(새 장면 `header-scan-progress` 1장 — 기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/services/**`, `lib/ui/pages/tactical_page.dart` · `lib/ui/tactical/**` · `lib/tactical/**`(Lane B), `scan_page.dart` 화면 · dock, 홈 · 통계 · 학생 · 계획 · 인벤토리 화면, `lib/ui/kit/**`, `header_connection_chip.dart`(감싸서 씀), golden harness, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일. 기존 테스트 기대값은 바뀐 동작에 걸릴 때만.
+
+## FE8-f2 종료 기록 (2026-10-17, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+머리글 연결 칩 자리에 스캔 진행 · 일시정지 칩을 끼우고(백엔드 끊김 > 스캔 > 게임 창, FD-148), 탭 `스캔`에 분홍 점, 세션이 다른 탭에서 끝나면 앱 안 완료 토스트(누르면 스캔 탭)를 띄운다. 값은 모두 셸 소유 `ScanSessionController`의 FB-10 고정 범위(`progress.current/total|null`, `paused`/`resumed`, terminal `outcome`)에서 읽는다. 스캔 탭 화면 · dock 동작은 그대로다. HEAD는 착수 때와 같다(`921b6bfe`). git 쓰기 0, 저장소 파일 삭제 0(일회성 렌더 사본 1개만 만들고 지움).
+
+### 실행한 명령과 결과
+
+모두 `frontend` 폴더. 로그 `debug/frontend_fe8f2/logs/`(실패 줄 · json 요약만 봤다).
+
+- `flutter analyze`(frontend 전체, 마지막 손질 뒤): **No issues found(0, info 포함)**. 중간 실행 한 번은 Lane B 작업 중 파일(`tactical_page.dart:270` `available`, `tactical_analysis_test.dart:405`) error 2건 — 이 slice 파일이 아님. Lane B 파일이 컴파일된 뒤(30초 간격 확인 3회째) 0.
+- 새 테스트 `flutter test test/scan_header_progress_fe8f2_test.dart`: **+7 −0**(첫 실행 +5 −2: 진행 이벤트 뒤 프레임 하나 부족, 스캔 탭의 기존 무한 진행 막대로 `pumpAndSettle` 시간 초과 → 시험 쪽 고정 프레임 `_settle`로 고침. 제품 코드 변경 없음).
+- 관련 일반 테스트 38파일 한 명령(`flutter test <파일들> --reporter json`): **+403 −0** — scan_header_progress_fe8f2 **+7**(새) · scan_session_controller +7 · scan_student_review_logic +5 · scan_page +17 · scan_page_revision +14 · scan_page_pause_fb10a +8 · scanner_review_images_fb10c +6 · scan_student_review_workspace +9 · scan_companion_dock +3 · scan_inventory_identity_review +2 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_target_metadata_fb4 +19 · mock_scanner_commit_history +9 · mock_scanner_service +4 · student_scan_diagnostic +2 · tactical_lobby_scanner_service +2 · repository_history_scan_latest +48 · account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · inventory_shell_lazy +1 · profile_delete_fb2d +17 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · title_page +25 · inventory_analysis_page +8 · inventory_page +9 · student_page +9. 따로 `widget_test` **+16 −0**. 합계 **+419 −0**. (고른 기준: FE8-f1이 고른 셸 · `ScanPage` · 후보 인계 · scan_* · scanner_* · mock_scanner_* 37파일 + `home_page` + 새 파일. grep `BAPlannerApp(|AppShell(|ScanPage(|header-connection-chip|top-tab-`로 걸리는 파일 중 tactical_analysis · tactical_excel_import는 Lane B 작업 중이라 뺐다.)
+- process E2E(`--concurrency=1`, 파일마다 따로): scanner_process_e2e **+1**, scanner_pause_process_e2e **+1**, scanner_review_images_fb10c_process_e2e **+1**, scanner_target_metadata_process_e2e **+1**.
+- 변이 확인: 셸 `_scanSessionChanged`의 "스캔 탭이면 토스트 없음" 줄을 빼면 새 테스트 **+6 −1**(토스트 시험만 실패) → 원 바이트로 되돌림(SHA-256 `012646e0c625…` 전후 같음).
+- 일회성 렌더: 새 golden 테스트 사본에서 `@Tags(['golden'])` · `library;` · `expectGoldenScene` 호출을 뺀 `test/goldens/fe8f2_oneoff_render_test.dart`(grep 0건 확인)를 한 번 돌려 **+1**(2560×1392, 칩 `학생 스캔 34 / 128` · 점 · 예외 0) → 바로 지움. golden 비교는 돌리지 않았다.
+- `dart format`: 이 slice 파일 경로만 하나씩. `app_shell.dart`는 HEAD부터 format이 맞지 않은 `_TopTab` fontWeight 줄(FE8-f1 발견 4)만 바뀌어 그 줄을 되돌렸다(이 slice의 줄은 format 결과 그대로).
+- `git diff --check`(고친 기존 2 코드 파일): exit 0. 새 4파일 · 고친 파일 모두 LF(CR 0), 끝 개행 하나, 줄 끝 공백 0(바이트 검사). 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-148**(워커 재량, 권장안대로): 칩 우선순위 · 분홍 진행 칩 · wn 일시정지 · 누르면 스캔 탭 · 탭 `스캔` 분홍 점 · 완료 시 앱 안 토스트(누르면 검토). 아래 표와 규칙.
+- FD-142(확정 (a)): 일시정지는 `paused` 이벤트로만 칩을 wn으로 바꾼다(`pauseRequested`는 진행 그대로). 버튼은 이 slice 범위 밖.
+- FD-117 · FD-116: 백엔드 끊김 · 연결 중이 스캔보다 앞선다(FE8-d `HeaderConnectionChip`을 그대로 감싸 씀, 그 파일 수정 0). 게임 창 칸은 FE8-e처럼 홈 창 선택 패널.
+
+### 칩 우선순위 표 (머리글 연결 칩 자리)
+
+| 백엔드 | 스캔 세션(`stage` · `control`) | 칩 | 누르면 |
+|---|---|---|---|
+| 끊김 | (무엇이든) | 빨강 `백엔드 끊김`(FE8-d) | 누를 수 없음(복구 배너) |
+| 연결 중 | (무엇이든) | 주황 `백엔드 연결 중`(FE8-d) | 누를 수 없음 |
+| 연결됨 | starting · running · cancelling, 진행 값 없음 | 분홍 `학생 스캔`(아이콘 · 막대 없음) | 스캔 탭 |
+| 연결됨 | running, `progress` 34/128 | 분홍 `학생 스캔 34 / 128` + 막대 60×5(27%) | 스캔 탭 |
+| 연결됨 | running, total null | 분홍 `학생 스캔 34`(막대 없음, 0으로 채우지 않음) | 스캔 탭 |
+| 연결됨 | running + `paused` 이벤트 | wn `학생 스캔 일시정지 · 34 / 128`(채움 #ffc66d .14, 선 .55, 글자 #ffd08a, 막대 #ffc66d) | 스캔 탭 |
+| 연결됨 | running + `pauseRequested` | 분홍(진행 그대로) | 스캔 탭 |
+| 연결됨 | idle · terminal(검토 대기 포함) | 게임 창 녹 `연결됨 · Blue Archive` / 회 `연결 안 됨`(FE8-d·e) | 홈 창 선택 패널(FE8-e) |
+
+- 종류 글자: 학생 `학생 스캔`, 인벤토리 `아이템 스캔`(시안 Scan-Item-Run `아이템 스캔`), 전술 로비 `전술대항전 스캔`. 종류는 `session.kind`(시작 전에는 고른 종류).
+- 모양(시안 Scan-Student-Run 머리글 `.conn` 인라인 스타일): 채움 #f2b3ef .14, 안쪽 선 .55, 글자 #f7c9f4, 간격 8, 스캔 아이콘 14(탭과 같은 `AppSection.scan.icon`), 12px w600, 여백 6/10, 반경 999, 막대 60×5 r3 바탕 흰 .12. 최대 폭 340(FE8-d와 같음), 글자 한 줄 · 말줄임.
+
+### 점 · 토스트 규칙
+
+- 탭 `스캔` 점(7×7 r4 #f2b3ef, 라벨 뒤 5px = 시안 간격 7 − margin 2, 의미 이름 `스캔 진행 중` / `스캔 일시정지` / `스캔 결과 검토 대기`):
+  - 진행 · 일시정지: **어느 탭에서나**(스캔 탭 포함). 근거: 시안 Scan-Student-Run은 스캔 탭이 선택된(`.nt.on`) 화면에 점이 있다.
+  - 검토 대기(세션이 끝났고 적용하지 않은 후보가 있음): **스캔 탭 밖에서만**. 근거: 시안 Scan-Student-Review · Scan-Item-Review(스캔 탭, 적용 전 결과)에는 점이 없다 — 검토 화면 자체가 그 상태를 보인다.
+  - "적용함": 스캔 화면 적용 · 폐기(컨트롤러가 후보를 지움) + 학생 · 인벤토리 탭의 적용(셸 `onCandidateCommitted`에서 후보 열쇠 `session#generation#id`를 기억). 계정 변경 때 비움.
+- 완료 토스트:
+  - **스캔 탭 밖에 있을 때만** 띄운다. 근거: 시안 각주 "다른 탭으로 옮겨도 계속됩니다 … 끝나면 알림으로 결과 검토를 엽니다"(Scan-Student-Run S2)와 FD-148 "완료 시 앱 안 토스트(누르면 검토)" — 알림은 떠나 있는 사용자를 위한 것이고, 스캔 탭에서는 화면이 끝과 결과를 바로 보인다.
+  - 한 세션(id + generation)에 한 번: 컨트롤러 `lastEndedSession`이 바뀔 때만(실시간 terminal · 스냅숏 복구로 최근 기록에 넣을 때, 최근 기록 열기로는 바뀌지 않음). 셸이 마지막 열쇠를 기억해 같은 세션을 다시 기록해도(스냅숏 복구) 다시 띄우지 않는다. 계정 변경 때 예전 컨트롤러의 리스너를 먼저 떼고 토스트를 닫는다.
+  - 문구(완료 · 중지 · 실패 구분, `~습니다`): 제목 `학생 스캔을 마쳤습니다` / `학생 스캔을 중지했습니다` / `학생 스캔이 실패했습니다`(모름 `… 끝났습니다`). 설명: 결과가 있으면 `읽은 결과 N건이 있습니다. 누르면 결과 검토를 엽니다.`, 없으면 완료 `새로 읽은 결과가 없습니다. 누르면 스캔 탭을 엽니다.` · 실패 `누르면 스캔 탭에서 오류를 확인합니다.` · 중지 `누르면 스캔 탭을 엽니다.` 표지 막대: 완료 분홍 · 실패 빨강 · 중지 회색.
+  - 모양(워커 재량 — 시안에 토스트 그림이 없다): 부유 패널이라 사선 아닌 둥근 사각형(FD-019), 바탕 · 링 · 그림자는 키트 팝오버(`AppColors.popover` .96, 링 #71c7f4 .38, `kitOverlayShadows(y 12, blur 32, .45)`), 반경 12, 폭 380(좁으면 줄임), 왼쪽 사선 표지 6×22, 제목 14 w700 한 줄 · 설명 12 두 줄 말줄임, 닫기 ×. 자리: 셸 오른쪽 위, 머리글 칩 아래(top 192 · right 26). 220ms 페이드 + 8px 내려옴.
+  - 닫힘: 누름(스캔 탭으로 + 닫힘), × , 8초(`scanEndToastDuration`), 스캔 탭으로 이동(어떤 경로든 `_open(scan)`), 계정 변경. 셸 dispose 때 타이머 취소.
+
+### 컨트롤러에 더한 읽기 값 (`scan_session_controller.dart` +6 −0)
+
+- `ScannerSession? lastEndedSession` — `_recordRecent`에서 세션을 기록할 때 같이 둔다. 이유: 완료 토스트는 "끝난 순간"이 필요한데 `stage == terminal`은 최근 기록 열기(`openRecent`)로도 되므로 전이 비교로는 실시간 끝과 구별할 수 없다. 후보 · crop은 담지 않는다(FB-10c 보관물 규칙). 나머지(칩 · 점)는 기존 `stage` · `control` · `progressCurrent/Total` · `session` · `kind` · `candidates` · `outcome`만 읽는다. 동작 변화 0(알림 횟수 그대로).
+
+### `app_shell.dart` diff (+106 −7, 이유)
+
+- import +3 −1: `dart:async`(토스트 타이머), `scan/scan_end_toast.dart` · `scan/scan_header_progress.dart`. `header_connection_chip.dart` import는 셸이 더 쓰지 않아 뺐다(새 `HeaderStatusChip`이 감싼다).
+- `_AppShellState` 상태 +8: `_scanEndNotice` · `_scanEndNoticeTimer` · `_lastScanEndKey` · `_scanAppliedElsewhere`(주석 포함).
+- 수명 +6 −1: initState 리스너 1, dispose 타이머 취소 + 리스너 떼기, 계정 변경 때 리스너 옮기기 · 토스트 닫기 · 적용 열쇠 비우기.
+- 메서드 +30: `_scanSessionChanged`(토스트 판단) · `_dismissScanEndNotice` · `_markScanCandidateApplied`, `_open(scan)`이면 토스트 닫기 1줄, `_clearStudentCandidate` · `_clearInventoryCandidate`에 적용 열쇠 1줄씩.
+- 토스트 자리 +12: 바깥 `Stack`에서 스캔 dock 바로 앞(dock이 덮는다), `BaModalBackdropExclude`.
+- 머리글 전달 +30 −3: `_CompoundPageHeader` · `_TopTabs` · `_AppHeader`에 `scanSession`(+ 탭 줄에 `scanAppliedElsewhere`, 머리글에 `onOpenScan`) 인자 · 필드, `_TopTab`에 `indicator`(라벨 뒤 `?indicator` 1줄), 스캔 탭만 `ScanTabDot`, `HeaderConnectionChip(…)` → `HeaderStatusChip(…)`.
+- 이유: 머리글 칩 · 탭 줄 · 셸 전역 토스트는 셸에만 있다(FE8-f1이 컨트롤러를 셸 소유로 둔 목적). `app_section.dart` · 다른 화면은 고치지 않았다.
+
+### golden 변화 0 근거 + 새 장면
+
+- 기존 장면은 스캔을 시작하지 않는다(`test/goldens/*`에서 세션 시작 · 스캔 탭 0건, FE8-f1과 같음) → `ScanHeaderStatus.idle`: 칩은 같은 `HeaderConnectionChip` 위젯(감싼 `ScanHeaderStatusBuilder`는 그리기 0), 탭 점은 `SizedBox.shrink()`(크기 0, `Row(min)` 배치 변화 0), 토스트 없음. 셸 머리글 · 탭 줄의 나머지 트리 · 문구 · 색 변경 0. 기존 기준 이미지 · golden harness · 기존 golden 테스트 수정 0.
+- **새 장면 `header-scan-progress`**(`test/goldens/fe8f2_header_scan_progress_golden_test.dart`, 기준 이미지 없음 → CF `-UpdateGoldens`로 생성): 2560×1392, 홈 탭. 게임 창(`mock-window`)을 골라 홈 메뉴가 연결 메뉴(첫 버튼 `스캔`, FE8-e)로 안착한 뒤 학생 스캔 시작, 진행 이벤트 34/128(시안 값). 기대 모습: 머리글 오른쪽 칩이 분홍 `학생 스캔 34 / 128` + 오른쪽 60×5 막대 27% 채움(개발 패널 버튼 왼쪽), 탭 줄 `스캔` 라벨 뒤 분홍 점 7px, 나머지는 `home` 장면과 같은 홈(메뉴는 연결 메뉴). 토스트 · dock 없음.
+
+### 미검증(미실행)
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 테스트 · 나머지 process 테스트 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지 생성: **미실행**(CF `-UpdateGoldens`).
+- tactical_analysis · tactical_excel_import(Lane B 작업 중): **미실행**.
+- 실제 백엔드 · 실제 게임 창 스캔(실제 total 값, 최소화 일시정지 사유), Windows release 빌드, 개발 패널을 연 상태의 토스트 위치 육안 확인: **미실행**.
+- Python 테스트: **미실행**(backend 변경 0).
+
+### 검수표 (artboard → 앱에서 여는 방법 → 확인 포인트)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scan-Student-Run(머리글 · 탭 줄) | mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 기준 viewport 최대화. 스캔 탭에서 Mock 창 선택 → 학생(전체) 시작 → 홈 · 학생 탭으로 이동. (mock은 학생 total이 null이고 30ms 안에 끝나므로 진행 칩은 `학생 스캔 1`로 잠깐만 보인다 — 34/128 모습은 golden `header-scan-progress`로 본다) | 칩이 연결 칩 자리에서 분홍 `학생 스캔 …`, 막대(total 있을 때), 탭 `스캔` 점, 칩 누르면 스캔 탭 |
+| Scan-Student-Run 각주(알림) | 위처럼 다른 탭에서 스캔이 끝나게 둔다 | 오른쪽 위 토스트 `학생 스캔을 마쳤습니다` · `읽은 결과 1건이 있습니다…`, 누르면 스캔 탭, 8초 뒤 닫힘, 같은 세션에 다시 뜨지 않음 |
+| Scan-Student-Review(점 없음) | 끝난 뒤 스캔 탭 ↔ 다른 탭 | 스캔 탭에서는 점 없음, 다른 탭에서는 결과를 적용하기 전까지 점 |
+| (FD-148 우선순위) | 진행 중 개발 패널의 연결 상태를 끊김으로 | 칩이 빨강 `백엔드 끊김`, 다시 붙으면 진행 칩 |
+
+### 발견 사항
+
+1. **스캔 탭 진행 막대와 pumpAndSettle**: `scan_page.dart`의 세션 막대는 진행 값을 모르면(학생 total null, 스냅숏 복구 뒤) 끝난 뒤에도 값 없는 `LinearProgressIndicator`(끝없는 애니메이션)를 그린다. 그래서 스캔 탭을 띄운 채 `pumpAndSettle`이 끝나지 않는다(새 테스트는 고정 프레임으로 피함). 끝난 세션에 무한 막대를 그리는 것이 맞는지는 FE8-g2(진행 화면 재작성)에서.
+2. **전술 로비 후보의 검토 대기**: 전술 로비 후보는 인계(`_handoffCandidate` → 전술대항전 탭)에 적용 콜백이 없어, 그런 세션이 끝나면 다음 스캔을 시작할 때까지 탭 점이 검토 대기로 남는다. FD-121/FE9-c(전술 스캔은 전술대항전 탭)와 FE8-g5(`_handoffCandidate` 분기 제거) 때 정리.
+3. **토스트 자리 · 개발 패널**: 토스트는 셸 바깥 `Stack` 오른쪽 위(머리글 칩 아래)라 넓은 창에서 개발 패널(오른쪽 330)이 열려 있으면 패널 위에 겹친다. 개발용 패널이라 그대로 뒀다. 키트 승격 후보: `ScanEndToast`(앱 공용 토스트 — 지금은 페이지마다 Material `SnackBar`, I-scan §3.3) · `HeaderScanProgressChip`의 칩 짜임(FE8-d `.conn` 칩과 같은 몸체). 승격은 Lane A 키트 slice에서.
+4. **mock 학생 total**: Mock 학생 진행은 `total: null`이라 앱에서 `/ 128`과 막대를 볼 수 없다(FD-154 "없으면 보유 수에 약" 은 FE8-g2 진행 화면 몫이고, 머리글 칩은 FB-10 값만 쓴다 — 지어내지 않음). 실제 백엔드가 학생 전체 스캔에 total을 주는지는 미확인.
+5. **FE8-f1 버그 표 3 · 4**: 이 slice는 dock을 건드리지 않아 그대로(FE8-g2/g3). 4(계정 변경 중 dock overlay 남음)와 같은 경로에서 토스트는 닫힌다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8f2/pre/<경로>` 3파일. 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8f2/commit.json`: slice `fe8f2`, modified 3(이 문서 포함), added 4, `whole` = [], `optional_added` = [`frontend/test/goldens/baseline/header-scan-progress.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe8f2/output.md`. 로그 `debug/frontend_fe8f2/logs/`.
+
+### 다음 행동
+
+- FE8-f2 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(FE9-g)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 scan_header_progress_fe8f2 +7 추가, process 스캐너 4 GREEN, 기존 golden 전 장면 GREEN, 새 `header-scan-progress`는 기준 없음 → 실패 이미지 검토 → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8f2`.
+- **FE8-g1 입력**: 스캔 탭 골격은 셸의 `_scanSession`(계정 변경 때 새 인스턴스)을 그대로 쓰고, 머리글 칩 · 탭 점 · 토스트는 `ScanHeaderStatus.of(controller)`(진행/일시정지/검토 대기)와 `lastEndedSession`만 본다 — g1이 `ScanPage`를 `ScanTabPage`로 바꿔도 이 셋은 손대지 않아도 된다. 칩 · 토스트를 누르면 셸이 `_open(AppSection.scan)`만 하므로, g1/g4가 "진행 화면 / 검토 화면" 중 무엇을 먼저 보일지 정하면(I-R-1: 진행 중 = 진행, 끝난 뒤 = 검토) 그 선택을 스캔 탭 안에서 하면 된다. 검토 대기의 "적용함"은 지금 컨트롤러가 후보를 지우는 것(스캔 탭 적용 · 폐기)과 셸 `onCandidateCommitted`(학생 · 인벤토리 인계) 두 길이다 — g4/g5가 인계를 없애면 셸 `_scanAppliedElsewhere`도 함께 뺀다. 발견 1(끝난 세션의 무한 막대)은 g2 진행 화면 때.
+
+### fe8f2 commit record (2026-10-17 03:30, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261017_031611\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
