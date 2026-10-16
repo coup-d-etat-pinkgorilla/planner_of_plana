@@ -42,17 +42,53 @@ def _atomic_write(path: Path, content: bytes) -> None:
             os.unlink(temporary)
 
 
+def load_store_pairs(reader, kind):
+    # Verify both documents before the caller can write either target.
+    loaded = []
+    for source_name, target_name, dto in PAIRS:
+        raw = reader.read_extract('jp', kind, source_name)
+        parsed = dto.from_dict(json.loads(raw))
+        loaded.append((source_name, target_name, raw, parsed))
+    return loaded
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--extracted", type=Path, default=ROOT.parent / "data" / "extracted")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--extracted', type=Path)
+    source.add_argument('--from-store', metavar='KIND')
+    parser.add_argument('--lock', type=Path, default=ROOT.parent / 'ba-data.lock')
+    parser.add_argument('--store-root', type=Path)
+    parser.add_argument('--output-dir', type=Path, default=TARGET_DIR)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     loaded = []
-    for source_name, target_name, dto in PAIRS:
-        source = args.extracted / source_name
-        raw = source.read_bytes()
-        parsed = dto.from_dict(json.loads(raw))          # raises on any contract violation
-        loaded.append((source, TARGET_DIR / target_name, raw, parsed))
+    provenance = None
+    if args.from_store:
+        from core.client_data_store import ClientDataStore
+        import hashlib
+        from datetime import datetime, timezone
+        reader = ClientDataStore(args.lock, args.store_root)
+        if args.output_dir.resolve().is_relative_to(reader.root):
+            raise ValueError('sync output must be outside the read-only store')
+        pairs = load_store_pairs(reader, args.from_store)
+        stamp = datetime.now(timezone.utc).isoformat()
+        provenance = {}
+        for source_name, target_name, raw, parsed in pairs:
+            loaded.append((source_name, args.output_dir / target_name, raw, parsed))
+            value = json.loads(raw)
+            row_sha = hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
+                separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+            provenance[target_name] = {'value': value, 'provenance': {'kind': args.from_store,
+                'versionId': reader.lock['pins']['jp']['version_id'], 'table': source_name,
+                'rowSha': row_sha, 'tool': 'sync-student-stats-store-v1', 'extractedAt': stamp}}
+    else:
+        extracted = args.extracted or ROOT.parent / 'data' / 'extracted'
+        for source_name, target_name, dto in PAIRS:
+            source = extracted / source_name
+            raw = source.read_bytes()
+            parsed = dto.from_dict(json.loads(raw))
+            loaded.append((source, args.output_dir / target_name, raw, parsed))
     catalog, formula = loaded[0][3], loaded[1][3]
     print(f"catalog: {len(catalog.students)} students, {len(catalog.equipment)} equipment rows "
           f"({catalog.source.get('students', '?')})")
@@ -63,6 +99,9 @@ def main() -> int:
     for source, target, raw, _ in loaded:
         _atomic_write(target, raw)
         print(f"wrote {target} <- {source}")
+    if provenance is not None:
+        _atomic_write(args.output_dir / 'store-provenance.json',
+            (json.dumps(provenance, ensure_ascii=False, indent=2) + '\n').encode())
     return 0
 
 
