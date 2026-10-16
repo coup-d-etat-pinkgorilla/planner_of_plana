@@ -1409,3 +1409,30 @@ Storage remains version2 and the same profile file/path, with no automatic
 rewriting of existing records, aliases or shared tombstones. This is an additive
 nullable field extension requiring paired strict Dart request/read DTO and Mock
 updates. Main adoption waits for CF fb6b-dart same-source gate.
+
+
+## FB-7 explicit runtime constraints (CF review 2026-10-16)
+
+`excelResolution.raw` is the exact typed raw key from preview, bounded by
+**8192 UTF-8 bytes** in both Python and Dart. JSON Schema `maxLength: 8192`
+counts characters and is only a necessary upper bound, not a complete byte
+validator. Non-ASCII requests must also pass encoded-byte length validation.
+No character-count allowance overrides that runtime limit.
+
+These contextual uniqueness constraints are checked by the runtime in addition
+to the schema shapes: mapped semantic fields must use distinct column numbers;
+resolutions must have distinct `(row-or-global, field, raw)` identities even if
+their actions/values differ; row decisions must have distinct row numbers even
+if their actions/targets differ. Violations reject the entire request with
+`invalid_payload` before application. This describes existing behavior.
+
+`excelIssue.field` is diagnostic context, not the `excelResolution.field` input
+enum. It may be null or `deck` (for cross-deck/record validation) in addition to
+an individual semantic field. Consumers must not construct a resolution from
+such a diagnostic label automatically.
+
+A successful no-change Excel commit still consumes its idempotency key and
+stores the original response; its revision remains unchanged. An exact retry
+returns that response. A different payload with that key conflicts, so each new
+user commit attempt uses a new key even after a no-change result. Preview does
+not consume a key. These notes add no request/response keys or DTO changes.

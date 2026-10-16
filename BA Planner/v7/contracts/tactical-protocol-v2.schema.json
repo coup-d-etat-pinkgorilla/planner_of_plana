@@ -3528,7 +3528,8 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "$comment": "Runtime additionally requires distinct column numbers for all mapped semantic fields; schema property types alone do not express this cross-property constraint."
     },
     "excelResolution": {
       "type": "object",
@@ -3565,7 +3566,8 @@
         },
         "raw": {
           "type": "string",
-          "maxLength": 8192
+          "maxLength": 8192,
+          "description": "Exact typed raw key from preview. Runtime and Dart require at most 8192 UTF-8 bytes; maxLength is only the looser JSON Schema character-count bound. Check encoded bytes before sending, including for non-ASCII text."
         },
         "action": {
           "enum": [
@@ -3662,7 +3664,8 @@
             }
           }
         }
-      ]
+      ],
+      "$comment": "Within one resolutions array, (optional row or omitted/global, field, raw) must be unique even when action/value differ. Runtime rejects duplicate resolution identities."
     },
     "excelRowDecision": {
       "type": "object",
@@ -3720,7 +3723,8 @@
             }
           }
         }
-      ]
+      ],
+      "$comment": "Within one row_decisions array each row may appear at most once, even when action/target differ. Runtime rejects duplicate rows."
     },
     "excelPreviewRequest": {
       "allOf": [
@@ -3925,7 +3929,8 @@
           "minLength": 1
         },
         "field": {
-          "type": "string"
+          "type": "string",
+          "description": "Diagnostic context, not an input semantic-field enum. May be null or a context such as deck; do not feed it into resolution.field without explicit mapping."
         },
         "column": {
           "anyOf": [
