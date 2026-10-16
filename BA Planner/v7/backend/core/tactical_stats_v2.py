@@ -255,7 +255,7 @@ class TacticalStatisticsV2:
             })
         signature_rows.sort(key=lambda item: (-item["exposure_count"], item["public_signature"]))
 
-        opponent_ids = {item["opponent_identity_id"] for item in candidates} | {item["opponent_identity_id"] for item in matches}
+        opponent_ids = {item["opponent_identity_id"] for item in candidates if item["opponent_identity_id"] is not None} | {item["opponent_identity_id"] for item in matches if item["opponent_identity_id"] is not None}
         opponent_rows: list[dict[str, Any]] = []
         for identity_id in opponent_ids:
             exposed = [item for item in candidates if item["opponent_identity_id"] == identity_id]
@@ -306,7 +306,7 @@ class TacticalStatisticsV2:
         dated = sum((item.get("occurred_at") or item.get("observed_at")) is not None for item in matches)
         fingerprints = Counter(
             (
-                item["kind"], item["opponent_identity_id"], item.get("occurred_at"), item["result"],
+                item["kind"], item["opponent_identity_id"] if item["opponent_identity_id"] is not None else ("unknown-match", item["match_id"]), item.get("occurred_at"), item["result"],
                 deck_signature(item["attack_deck"]), deck_signature(item["defense_deck"]), item["source"],
             )
             for item in matches
@@ -335,7 +335,7 @@ class TacticalStatisticsV2:
             "quality": {
                 "dated_match_count": dated, "undated_match_count": len(matches) - dated,
                 "date_coverage": dated / len(matches) if matches else None,
-                "distinct_opponent_count": len({item["opponent_identity_id"] for item in matches}),
+                "distinct_opponent_count": len({item["opponent_identity_id"] for item in matches if item["opponent_identity_id"] is not None}),
                 "match_kind_counts": {"attack": len(attack_matches), "defense": len(defense_matches)},
                 "source_counts": dict(sorted(source_counts.items())),
                 "suspected_duplicate_count": sum(count - 1 for count in fingerprints.values() if count > 1),

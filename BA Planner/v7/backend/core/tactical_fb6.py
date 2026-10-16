@@ -20,7 +20,7 @@ def invalid(message):
 
 
 def canonical_attempt_count(value, *, legacy=False):
-    if legacy and value is None:
+    if value is None:
         return None
     if type(value) is not int or value < 1:
         invalid('attempt_count must be an explicit positive integer')

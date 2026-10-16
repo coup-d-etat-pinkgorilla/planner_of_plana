@@ -78,9 +78,12 @@ def request_match(raw):
         if parsed.tzinfo is None or (precision == 'date' and (parsed.time().isoformat() != '00:00:00' or parsed.utcoffset() != timedelta(hours=9))):
             raise RepositoryError('invalid_payload', 'date precision requires KST midnight; instant requires timezone')
         occurred = parsed.isoformat() if precision == 'date' else parsed.astimezone(timezone.utc).isoformat()
+    anonymous = data['kind'] == 'defense' and data['opponent_identity_id'] is None and data['opponent_display_name'] is None
+    opponent_id = None if anonymous else _record_id(data['opponent_identity_id'], 'opponent_identity_id')
+    opponent_name = None if anonymous else _text(data['opponent_display_name'], 'opponent_display_name', required=True)
     return {**deepcopy(data), 'match_id': _record_id(data['match_id'], 'match_id'),
-            'opponent_identity_id': _record_id(data['opponent_identity_id'], 'opponent_identity_id'),
-            'opponent_display_name': _text(data['opponent_display_name'], 'opponent_display_name', required=True),
+            'opponent_identity_id': opponent_id,
+            'opponent_display_name': opponent_name,
             'season': _text(data['season'], 'season'), 'notes': _text(data['notes'], 'notes'),
             'occurred_at': occurred, 'attempt_count': canonical_attempt_count(data['attempt_count']),
             'attack_deck': canonical_deck(data['attack_deck']), 'defense_deck': canonical_deck(data['defense_deck'])}
@@ -152,7 +155,7 @@ def apply_match(store, profile_id, value, item, *, record_metadata=None, owned=N
         if record_metadata is None:
             record['source_label'] = 'manual_edit'
     record['review_status'] = 'confirmed' if reviewed(item['attack_deck']) and reviewed(item['defense_deck']) else 'review_required'
-    if opponent is None:
+    if opponent is None and item['opponent_identity_id'] is not None:
         value['opponents'].append({'version': 2, 'identity_id': item['opponent_identity_id'], 'current_display_name': item['opponent_display_name'], 'aliases': [item['opponent_display_name']], 'first_observed_at': item['occurred_at'], 'last_observed_at': item['occurred_at'], 'review_status': 'confirmed', 'name_template_ids': []})
     value['matches'] = [m for m in value['matches'] if m['match_id'] != item['match_id']] + [record]
     value['snapshots'] = [s for s in value['snapshots'] if s.get('match_id') != item['match_id']]

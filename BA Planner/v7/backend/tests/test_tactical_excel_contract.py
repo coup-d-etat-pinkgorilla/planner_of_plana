@@ -55,7 +55,7 @@ class ExcelContractTests(unittest.TestCase):
             if change == 'raw_extra': bad['payload']['rows'][0]['raw_cells'][0]['unexpected'] = True
             if change == 'summary_type': bad['payload']['summary']['eligible_rows'] = True
             if change == 'status': bad['payload']['rows'][0]['status'] = 'auto_accepted'
-            if change == 'match_type': bad['payload']['rows'][0]['match']['attempt_count'] = None
+            if change == 'match_type': bad['payload']['rows'][0]['match']['attempt_count'] = True
             with self.subTest(change=change): self.assertTrue(list(self.validator.iter_errors(bad)))
 
     def test_resolution_and_mapping_invalid_shapes_are_rejected(self):

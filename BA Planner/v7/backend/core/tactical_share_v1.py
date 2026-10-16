@@ -276,6 +276,8 @@ class TacticalShareV1Store:
             raise RepositoryError("match_not_found", "tactical match was not found")
         if match.get("kind") != "attack" or match.get("source") == "prediction":
             raise RepositoryError("not_shareable", "only observed attack matches can be shared")
+        if not isinstance(match.get("opponent_identity_id"), str) or not match["opponent_identity_id"]:
+            raise RepositoryError("not_shareable", "a known opponent identity is required")
         if match.get("occurred_at") is None:
             raise RepositoryError("not_shareable", "actual occurred_at is required")
         candidate = next((item for item in tactical["lobby_candidates"] if item.get("match_id") == match_id), None)

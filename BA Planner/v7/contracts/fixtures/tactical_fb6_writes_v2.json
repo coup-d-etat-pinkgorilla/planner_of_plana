@@ -544,7 +544,7 @@
     },
     {
       "name": "unknown_manual_attempt",
-      "valid": false,
+      "valid": true,
       "message": {
         "protocol": 1,
         "type": "request",

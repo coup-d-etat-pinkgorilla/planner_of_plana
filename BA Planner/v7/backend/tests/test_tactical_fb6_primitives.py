@@ -97,7 +97,8 @@ class TacticalFB6PrimitivesTests(unittest.TestCase):
     def test_attempt_count_has_no_invented_default_or_outcomes(self):
         self.assertEqual(3, canonical_attempt_count(3))
         self.assertIsNone(canonical_attempt_count(None, legacy=True))
-        for value in (None, False, True, 0, -1, 1.0, '1'):
+        self.assertIsNone(canonical_attempt_count(None))
+        for value in (False, True, 0, -1, 1.0, '1'):
             with self.subTest(value=value), self.assertRaises(RepositoryError):
                 canonical_attempt_count(value)
 

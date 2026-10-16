@@ -1391,3 +1391,21 @@ No new Dart method or runtime producer is required for this agreed baseline.
 Dart consumers may add comparisons against this fixture later. Live five growth
 values, early candidate streaming, credits/eligma capture, and full FE8-g3/g4/g5
 format closure remain separate tasks; this declaration does not promise them.
+
+
+## FB-6b FD-176 unknown attempts and anonymous defense (isolated proposal)
+
+The write attempt_count key remains required; null is unknown, never zero/one,
+while known values remain positive integers (bool/zero/negative rejected).
+Defense alone permits both opponent_identity_id and opponent_display_name null;
+attack, half-null and blank names/IDs remain invalid. No fake opponent/alias is
+created. Anonymous defense records stay in overall counts but do not form an
+opponent or duplicate-person cohort. Existing trends/recommendation evidence
+and observed-attack sharing boundaries remain intact; shared identities never
+come from stringifying null. Old retry responses and legacy unknown attempts
+are preserved. Excel imports still require explicit attempts/review.
+
+Storage remains version2 and the same profile file/path, with no automatic
+rewriting of existing records, aliases or shared tombstones. This is an additive
+nullable field extension requiring paired strict Dart request/read DTO and Mock
+updates. Main adoption waits for CF fb6b-dart same-source gate.

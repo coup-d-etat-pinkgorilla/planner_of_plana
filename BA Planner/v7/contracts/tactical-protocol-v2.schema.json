@@ -345,11 +345,25 @@
           "type": "string"
         },
         "opponent_identity_id": {
-          "$ref": "#/$defs/recordId"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/recordId"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "opponent_display_name": {
-          "type": "string",
-          "minLength": 1
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "result": {
           "enum": [
@@ -385,7 +399,53 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "opponent_identity_id"
+            ],
+            "properties": {
+              "opponent_identity_id": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "defense"
+              },
+              "opponent_display_name": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "opponent_display_name"
+            ],
+            "properties": {
+              "opponent_display_name": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "defense"
+              },
+              "opponent_identity_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     },
     "jokbo": {
       "type": "object",
@@ -2713,11 +2773,25 @@
           "type": "string"
         },
         "opponent_identity_id": {
-          "$ref": "#/$defs/recordId"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/recordId"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "opponent_display_name": {
-          "type": "string",
-          "minLength": 1
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "result": {
           "enum": [
@@ -2735,7 +2809,10 @@
           "type": "string"
         },
         "attempt_count": {
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 1
         }
       },
@@ -2761,6 +2838,50 @@
               "occurred_at": {
                 "type": "string",
                 "format": "date-time"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "opponent_identity_id"
+            ],
+            "properties": {
+              "opponent_identity_id": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "defense"
+              },
+              "opponent_display_name": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "opponent_display_name"
+            ],
+            "properties": {
+              "opponent_display_name": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "defense"
+              },
+              "opponent_identity_id": {
+                "type": "null"
               }
             }
           }
