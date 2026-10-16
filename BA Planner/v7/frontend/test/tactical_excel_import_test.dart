@@ -82,7 +82,7 @@ Future<void> _seedV2(MockAppService service) async {
   }
 }
 
-/// design-review seed(기록 4) + CSV 원본.
+/// design-review seed(기록 6 — FE9-b2) + CSV 원본.
 Future<_RecordingMock> _service() async {
   final service = _RecordingMock();
   await _seedV2(service);
@@ -500,13 +500,14 @@ void main() {
       final preview = controller.preview!;
       expect(await controller.commit(), isTrue);
       expect(service.commits.single.fingerprint, preview.fingerprint);
-      expect(service.commits.single.revision, 4);
+      final seeded = designReviewTacticalMatches().length;
+      expect(service.commits.single.revision, seeded);
       final result = controller.result!;
       expect(result.importedCount, 4);
       expect(result.rulesSaved, isTrue);
-      expect(result.revision, 5);
+      expect(result.revision, seeded + 1);
       final state = await service.loadTacticalEvidenceState(_profileId);
-      expect(state.matches, hasLength(8));
+      expect(state.matches, hasLength(seeded + 4));
       expect(
         state.opponents.where((item) => item.currentDisplayName == 'C 유저'),
         hasLength(1),
@@ -517,7 +518,11 @@ void main() {
       expect(service.commits, hasLength(2));
       expect(service.commits[0].key, isNot(service.commits[1].key));
       expect(controller.error!.code, 'revision_conflict');
-      expect(controller.preview!.currentRevision, 5, reason: 're-previewed');
+      expect(
+        controller.preview!.currentRevision,
+        seeded + 1,
+        reason: 're-previewed',
+      );
       expect(
         [for (final row in controller.preview!.rows) row.status],
         ['replay', 'replay', 'replay', 'replay', 'empty'],
@@ -742,7 +747,7 @@ void main() {
       expect(find.text('엑셀에서 기록 4건을 가져왔습니다. 처리 방법을 저장했습니다.'), findsOneWidget);
       expect(
         (await service.loadTacticalEvidenceState(_profileId)).matches,
-        hasLength(8),
+        hasLength(designReviewTacticalMatches().length + 4),
       );
     });
 

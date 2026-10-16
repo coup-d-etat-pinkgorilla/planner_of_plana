@@ -1,9 +1,10 @@
 // FE9-a golden: 전술대항전 기록 화면(시안 Tactical — S1 기록 목록 · S3 기록 작성, S2 로비 스캔은 "준비 중" 자리,
 // S4 이 시그니처의 족보는 FE9-d).
 //
-// 앱 셸 → 전술대항전 탭. Mock(전체 학생 카탈로그 — 초상 · 한글 이름)에 design-review seed 기록 4개
-// (`services/design_review/tactical_records_data.dart`: 게헨나 선도부 공격 2 · 아비도스 대책위원회 공격 1 · 방어 1)를 v2 쓰기로
-// 넣는다. 화면은 가장 최근 기록(공격 · 승리 · 시도 1, 2026-10-04 21:10)을 고른 채 열린다 — 시안 상태 "기록 1개 선택 ·
+// 앱 셸 → 전술대항전 탭. Mock(전체 학생 카탈로그 — 초상 · 한글 이름)에 design-review seed 기록 6개
+// (`services/design_review/tactical_records_data.dart`: 게헨나 선도부 공격 2 · 아비도스 대책위원회 공격 1 · 방어 2 · 상대 없는 방어 1)를
+// v2 쓰기로 넣는다. FE9-b2(FD-176): 다섯째 행은 시도 모름 방어("내 방어덱 · vs 아비도스 대책위원회", "— · —"), 여섯째 행은 상대
+// 없는 방어("내 방어덱", "2회 · —")다 — 시각 모름이라 넷째 방어 행 뒤에 붙고, 방어 기록이라 자동 족보 · 분석은 그대로다. 화면은 가장 최근 기록(공격 · 승리 · 시도 1, 2026-10-04 21:10)을 고른 채 열린다 — 시안 상태 "기록 1개 선택 ·
 // 공격 · 승리 · 시도 1". 그 기록의 편성은 자동 족보로 이어져 S3 아래에 "같은 시그니처 족보에 자동 연결됨"이 보인다.
 // - `tactical`: 위 상태. 하위 seg "기록"(분석 · 슬롯 흐림), 필터 "전체", 이관 안내 없음. FE9-d: 게헨나 방어 덱의 로비 공개 칸
 //   (1번 · SP1 · SP2 = 히나 · 히비키 · 아코)이 공개 시그니처라 S4에 대상 방어 덱 줄, KPI(방어 유저 — · 연결 족보 2개 · 최신 검증 — ·
@@ -86,7 +87,7 @@ Future<void> _openTactical(WidgetTester tester, MockAppService service) async {
   await tester.pumpAndSettle();
 }
 
-/// design-review seed를 v2 쓰기로 넣는다(기록 4 · 자동 족보 2).
+/// design-review seed를 v2 쓰기로 넣는다(기록 6 · 자동 족보 2).
 Future<void> _seedV2(MockAppService service) async {
   for (final (index, match) in designReviewTacticalMatches().indexed) {
     await service.upsertTacticalMatchV2(
@@ -138,7 +139,7 @@ void main() {
     await _waitJokbo(tester);
     expect(find.text('공격 기록 · 2026-10-04 21:10'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('tactical-records-row-3')),
+      find.byKey(const ValueKey('tactical-records-row-5')),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('tactical-migration-band')), findsNothing);

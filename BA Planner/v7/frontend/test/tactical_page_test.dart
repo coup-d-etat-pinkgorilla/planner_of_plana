@@ -30,6 +30,9 @@ const _canvas = Size(2560, 1208);
 const _header = 184.0;
 const _profileId = '000000000000000000000001';
 
+/// design-review seed 기록 수(FE9-b2: 6 — 시도 모름 방어 · 상대 없는 방어 포함). seed 뒤 v2 revision과 같다.
+final _seedCount = designReviewTacticalMatches().length;
+
 void _expectPoint(Offset actual, double x, double y, {double tolerance = 1}) {
   expect(actual.dx, closeTo(x, tolerance), reason: 'x of $actual');
   expect(actual.dy, closeTo(y - _header, tolerance), reason: 'y of $actual');
@@ -54,7 +57,7 @@ void _expectRect(
 List<Offset> _polygon(String id) =>
     sectionCanvasElementPolygon(_canvas, tacticalSection(id));
 
-/// design-review seed 기록 4개를 v2 쓰기로 넣는다(revision 0 → 4).
+/// design-review seed 기록 6개를 v2 쓰기로 넣는다(revision 0 → 6).
 Future<void> _seedV2(MockAppService service) async {
   final matches = designReviewTacticalMatches();
   for (final (index, match) in matches.indexed) {
@@ -167,6 +170,8 @@ void main() {
         'vs 게헨나 선도부',
         'vs 아비도스 대책위원회',
         '내 방어덱 · vs 아비도스 대책위원회',
+        '내 방어덱 · vs 아비도스 대책위원회',
+        '내 방어덱',
       ]);
       expect(rows[0].metaText, '1회 · 2026-10-04 21:10');
       expect(rows[2].metaText, '— · 2026-10-02');
@@ -389,7 +394,7 @@ void main() {
             notes: 'A deliberately long note that must remain clipped. ' * 4,
             attemptCount: 12,
           ),
-          expectedRevision: 4,
+          expectedRevision: _seedCount,
           idempotencyKey: 'long-seed',
         );
         await _pump(tester, service, size: size);
@@ -451,17 +456,25 @@ void main() {
         '2회 · 2026-10-02',
       );
       expect(_text(tester, 'tactical-record-v2:dr-match-4-meta'), '1회 · —');
+      // FE9-b2 seed: 시도 모름 방어 · 상대 없는 방어(시각 모름끼리는 ID 순이라 dr-match-4 뒤).
+      expect(
+        find.byKey(const ValueKey('tactical-records-row-5')),
+        findsOneWidget,
+      );
+      expect(_text(tester, 'tactical-record-v2:dr-match-5-meta'), '— · —');
+      expect(_text(tester, 'tactical-record-v2:dr-match-6-opponent'), '내 방어덱');
+      expect(_text(tester, 'tactical-record-v2:dr-match-6-meta'), '2회 · —');
       // 공격 기록 3개가 자동 족보 2개로 이어졌다.
       expect(_text(tester, 'tactical-editor-status'), tacticalLinkedText);
       expect(_text(tester, 'tactical-opponent-meta'), '순위 — · 최근 대전 2회');
 
       await _tapKey(tester, 'tactical-filter-defense');
       expect(
-        find.byKey(const ValueKey('tactical-records-row-0')),
+        find.byKey(const ValueKey('tactical-records-row-2')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('tactical-records-row-1')),
+        find.byKey(const ValueKey('tactical-records-row-3')),
         findsNothing,
       );
       await _tapKey(tester, 'tactical-filter-all');
@@ -471,7 +484,11 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('tactical-records-row-1')),
+        find.byKey(const ValueKey('tactical-record-v2:dr-match-5')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('tactical-records-row-2')),
         findsNothing,
       );
       await _tapKey(tester, 'tactical-filter-loss');
@@ -480,11 +497,11 @@ void main() {
       await _tapKey(tester, 'tactical-opponent-option-아비도스 대책위원회');
       expect(find.text('상대: 아비도스 대책위원회'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('tactical-records-row-1')),
+        find.byKey(const ValueKey('tactical-records-row-2')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('tactical-records-row-2')),
+        find.byKey(const ValueKey('tactical-records-row-3')),
         findsNothing,
       );
 
@@ -563,13 +580,13 @@ void main() {
         await _seedV2(service);
         await _pump(tester, service);
 
-        // 첫 행(게헨나 공격)을 고쳐 저장: 같은 ID, expected = v2 revision 4.
+        // 첫 행(게헨나 공격)을 고쳐 저장: 같은 ID, expected = v2 revision(seed 수).
         await tester.tap(find.text('패배'));
         await tester.pumpAndSettle();
         await _tapKey(tester, 'tactical-save');
         final saved = service.upserts.single;
         expect(saved.match.id, 'dr-match-1');
-        expect(saved.expected, 4);
+        expect(saved.expected, _seedCount);
         expect(saved.match.opponentIdentityId, designReviewTacticalOpponentA);
         // Mock은 instant를 UTC 표기로 돌려준다(fb6-dart 발견 3) — 같은 시각인지만 본다.
         expect(
@@ -611,7 +628,7 @@ void main() {
       );
       expect(
         (await service.loadTacticalEvidenceState(_profileId)).matches,
-        hasLength(5),
+        hasLength(_seedCount + 1),
       );
 
       await tester.tap(
@@ -630,7 +647,7 @@ void main() {
       await _tapKey(tester, 'tactical-delete');
       await _tapKey(tester, 'tactical-delete-confirm');
       expect(service.deletes.single.id, 'dr-match-2');
-      expect(service.deletes.single.expected, 5);
+      expect(service.deletes.single.expected, _seedCount + 1);
       final state = await service.loadTacticalEvidenceState(_profileId);
       expect(
         state.matches.map((match) => match.id),
@@ -773,16 +790,13 @@ void main() {
         findsNothing,
       );
 
-      // 이관 기록은 시도 횟수를 모른다: 정해야 저장할 수 있다.
+      // 이관 기록은 시도 횟수를 모른다: FE9-b2(FD-176)부터 모름 그대로 고쳐 저장한다(시도를 정하게 하지 않는다).
       expect(_text(tester, 'tactical-editor-header'), '공격 기록 · 2026-07-23');
       expect(_text(tester, 'tactical-attempt-value'), '—');
-      expect(_text(tester, 'tactical-editor-status'), tacticalNeedAttemptHint);
-      await _tapKey(tester, 'tactical-save');
-      expect(service.upserts, isEmpty);
-      await _tapKey(tester, 'tactical-attempt-increase');
+      expect(_text(tester, 'tactical-attempt-note'), '시도 횟수 모름');
       await _tapKey(tester, 'tactical-save');
       expect(service.upserts.single.match.id, migrated.id);
-      expect(service.upserts.single.match.attemptCount, 1);
+      expect(service.upserts.single.match.attemptCount, isNull);
       expect(service.upserts.single.match.occurredPrecision, 'date');
       expect(tester.takeException(), isNull);
     });

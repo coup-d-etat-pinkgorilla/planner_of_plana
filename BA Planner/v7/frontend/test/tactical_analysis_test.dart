@@ -829,7 +829,7 @@ void main() {
       // 저장하지 않았다.
       final after = await service.loadTacticalEvidenceState(_profileId);
       expect(after.revision, state.revision);
-      expect(after.matches, hasLength(4));
+      expect(after.matches, hasLength(designReviewTacticalMatches().length));
     });
 
     testWidgets('S2 copy keeps an editable attack draft and its opponent', (

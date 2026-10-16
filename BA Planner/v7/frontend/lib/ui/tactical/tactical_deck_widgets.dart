@@ -392,7 +392,8 @@ class TacticalSourceLegend extends StatelessWidget {
   );
 }
 
-/// 시도 횟수 스테퍼(시안 `.stp` − 값 +, 값 22px). 1부터, 모르면 '—'(+를 누르면 1). − 는 1에서 멈춘다.
+/// 시도 횟수 스테퍼(시안 `.stp` − 값 +, 값 22px). 값은 '—'(모름) · 1 · 2 …: 모름에서 +는 1, 1에서 −는 모름이다
+/// (FE9-b2 · FD-176 — 모름도 저장하는 값이라 고를 수 있다). 모름에서 −는 꺼진다.
 class TacticalAttemptStepper extends StatelessWidget {
   const TacticalAttemptStepper({
     super.key,
@@ -403,8 +404,8 @@ class TacticalAttemptStepper extends StatelessWidget {
   /// null = 모름.
   final int? value;
 
-  /// null이면 비활성.
-  final ValueChanged<int>? onChanged;
+  /// 새 값(null = 모름). 이 콜백이 null이면 비활성.
+  final ValueChanged<int?>? onChanged;
 
   static const maximum = 99;
 
@@ -420,10 +421,10 @@ class TacticalAttemptStepper extends StatelessWidget {
           text: '−',
           look: StepButtonLook.prototype,
           semanticLabel: '시도 횟수 줄이기',
-          enabled: onChanged != null && value != null && value > 1,
+          enabled: onChanged != null && value != null,
           onTap: () {
-            if (onChanged != null && value != null && value > 1) {
-              onChanged(value - 1);
+            if (onChanged != null && value != null) {
+              onChanged(value > 1 ? value - 1 : null);
             }
           },
         ),

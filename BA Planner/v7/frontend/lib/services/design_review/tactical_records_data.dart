@@ -1,4 +1,4 @@
-// FE9-b1: design-review 검수 시나리오의 전술 v2 seed(기록 4 · 자동 족보 2 · 이관 완료 상태).
+// FE9-b1: design-review 검수 시나리오의 전술 v2 seed(기록 6 · 자동 족보 2 · 이관 완료 상태).
 //
 // 계정에 v1 기록이 없으므로 첫 v2 기록 저장이 같은 쓰기에서 v2를 유일한 저장소로 만든다(이관 미리보기
 // `v1_writes_disabled` = true). 기록은 시각 정밀도 세 가지(instant · date · unknown)와 시도 횟수 1 · 2 · 3, 모름 칸 · 빈칸이
@@ -9,6 +9,9 @@
 // 아비도스 대책위원회의 방어 덱이 같은 공개 시그니처(히나 | 히비키 | 아코)라, 게헨나 기록을 고르면 S4에 족보 2개(완전 덱 ·
 // 부분 덱, FD-129 합집합)가 보인다. 아비도스 방어 덱은 2번이 기록, 3번이 모름, 4번이 확인된 빈칸이다. 방어 기록의 덱(내 방어 덱 ·
 // 상대 공격 덱)은 공개 칸이 없다.
+// FE9-b2(FD-176): 방어 기록 2개를 더한다 — 시도 횟수를 모르는 아비도스 방어 기록(`dr-match-5`)과 상대를 모르는 방어
+// 기록(`dr-match-6`, identity · 이름 null 쌍). 둘 다 시각 모름이라 목록에서 `dr-match-4` 뒤(시각 모름끼리는 ID 순)에 붙고,
+// 방어 기록이라 자동 족보 · 분석(공격 기록만)은 그대로다.
 import '../tactical_v2_service.dart';
 
 const designReviewTacticalOpponentA = 'dr-opponent-gehenna';
@@ -64,6 +67,10 @@ final _abydosDefense = _deck(
 );
 final _myDefense = _deck(['hina', 'iori', 'aru', 'haruka'], ['hibiki', 'ako']);
 final _abydosAttack = _deck(['aru', 'haruna', null, null], ['hibiki', 'empty']);
+final _anonymousAttack = _deck(
+  ['mutsuki', 'kayoko', null, null],
+  ['ayane', null],
+);
 final _attackA = _deck(
   ['hoshino', 'izuna', 'mika', 'kayoko'],
   ['ayane', 'hanae'],
@@ -130,6 +137,34 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
     defenseDeck: _myDefense,
     notes: '',
     attemptCount: 1,
+  ),
+  TacticalMatchInputV2(
+    id: 'dr-match-5',
+    kind: 'defense',
+    occurredAt: null,
+    occurredPrecision: 'unknown',
+    season: '10',
+    opponentIdentityId: designReviewTacticalOpponentB,
+    opponentDisplayName: '아비도스 대책위원회',
+    result: 'loss',
+    attackDeck: _abydosAttack,
+    defenseDeck: _myDefense,
+    notes: '',
+    attemptCount: null,
+  ),
+  TacticalMatchInputV2(
+    id: 'dr-match-6',
+    kind: 'defense',
+    occurredAt: null,
+    occurredPrecision: 'unknown',
+    season: '10',
+    opponentIdentityId: null,
+    opponentDisplayName: null,
+    result: 'win',
+    attackDeck: _anonymousAttack,
+    defenseDeck: _myDefense,
+    notes: '상대 이름을 확인하지 못했습니다.',
+    attemptCount: 2,
   ),
 ];
 

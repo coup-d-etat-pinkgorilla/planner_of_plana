@@ -496,10 +496,12 @@ List<TacticalExcelPreviewItem> tacticalExcelPreviewItems(
   ];
 }
 
-/// 미리보기 줄 결과 글자("승 · 2회", 시도 없으면 결과만, 해석 전 '—').
+/// 미리보기 줄 결과 글자("승 · 2회", 시도 모름(FD-176 null)이면 결과만, 해석 전 '—').
 String tacticalExcelResultText(TacticalMatchInputV2? match) {
   if (match == null) return '—';
-  return '${_resultText(match.result)} · ${match.attemptCount}회';
+  final attempt = match.attemptCount;
+  final result = _resultText(match.result);
+  return attempt == null ? result : '$result · $attempt회';
 }
 
 /// 미리보기 줄 날짜("9/22", KST 기준, 모르면 '—').

@@ -4881,3 +4881,137 @@ FD-176의 Dart 데이터 계층과 기존 화면의 null 안전 최소 호환을
 - fb6b-dart 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: FE9-f와 같은 소스로 gate 1회(예상: analyze 0, 일반 +9, process +1, golden 변화 0, FE9-f 몫은 FE9-f 기록대로) → XB source11 exact11 커밋 → `fe_commit.ps1 -Slice fe9f`·`-Slice fb6bdart`(두 slice가 겹치는 파일 0 — FE9-f post 13파일과 이 slice 8파일은 서로 다르다).
 - 다음 화면 slice(S3 '모름' 저장 · 상대 없는 방어 저장)는 위 "다음 화면 slice에 넘길 것" 1~3을 입력으로.
+
+## FE9-b2 착수 기록 (2026-10-17)
+
+- 상태: **진행 중**. 범위: FD-176을 기록 화면에서 쓸 수 있게 — S3 시도 '모름' 저장 · 방어 기록 상대 없이 저장(identity · 이름 null 쌍) · 목록 · S4 · 분석 · 엑셀 결과 글자의 null 표시 정리 · design-review seed 2행 추가.
+- 착수 전 확인: 이 문서에 다른 "FE9-b2 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약" 현재 `열림` 0건(FE9-b 행 FD-128 확정). FD-176 확정(2026-10-15, (A) null 허용 · (B) 방어 한정 null 쌍). FD-132 워커 재량 → 권장안("내 방어덱 · vs …", 상대 없으면 "내 방어덱").
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `9cf5f0a5766ce484111f9affecf7bd91b8955066`.
+- 고칠(수 있는) 기존 파일 — 착수 사본 `debug/frontend_fe9b2/pre/<v7 기준 경로>`(모두 cmp 일치), WIP(`git status --short`)는 모두 **없음**, 줄바꿈은 Python 바이트 셈:
+  - `frontend/lib/ui/pages/tactical_page.dart`(CRLF), `frontend/lib/ui/tactical/tactical_records_view.dart` · `tactical_deck_widgets.dart` · `tactical_workspace.dart` · `tactical_excel_import_view.dart` · `tactical_excel_import_panel.dart`(LF), `frontend/lib/tactical/tactical_records_controller.dart`(LF, 꼭 필요할 때만), `frontend/lib/services/design_review/tactical_records_data.dart`(LF).
+  - 테스트(LF): `frontend/test/tactical_page_test.dart` · `tactical_page_revision_test.dart` · `tactical_records_controller_test.dart` · `tactical_analysis_test.dart` · `tactical_jokbo_panel_test.dart` · `tactical_excel_import_test.dart` · `mock_design_review_scenario_test.dart` · `design_review_tactical_seed_test.dart` · `test/goldens/fe9a_tactical_golden_test.dart`(조작 · 주석만).
+  - 이 문서(LF, commit.json `whole`).
+- 새 파일(예정): `frontend/test/tactical_fe9b2_test.dart`(저장 판정 · 표시 · 화면 흐름).
+- 고치지 않음: `lib/services/**`(design_review 제외), 스캔 파일(Lane A FE8-f1), `app_shell.dart`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend/** · contracts/**, 택틱 소유 파일.
+
+## FE9-b2 종료 기록 (2026-10-17, 코드 작성 완료 · CF gate 미실행)
+
+FD-176을 기록 화면에서 쓸 수 있게 했다 — S3 시도 '모름' 저장, 방어 기록 상대 없이 저장(identity · 이름 null 쌍), null 행의 표시 정리, design-review seed 2행. HEAD는 착수 때와 같다(`9cf5f0a5`), git 쓰기 0회.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`: ① 이 slice 몫 error 1(`tactical_page_test.dart` — 지운 `tacticalNeedAttemptHint` 참조) + 그 시점 Lane A FE8-f1 작업 중 파일(`scan_page.dart` · `lib/ui/scan/**`)의 error · info 13(이 slice 무관) → ② 고친 뒤 **No issues found(0)**, 마지막 실행도 0(`logs/analyze_final.log`, 그때는 Lane A 파일 포함 전체 0).
+- `flutter test test/tactical_page_test.dart test/design_review_tactical_seed_test.dart test/tactical_fb6b_dart_test.dart`: ① **+24 −7**(모두 seed 수 4 → 6에 묶인 기대: 행 수 · revision · 긴 이름 seed의 expected 4) → ② **+31 −0**.
+- 새 `flutter test test/tactical_fe9b2_test.dart`: ① −1(테스트 쪽: S4 대상 글자는 "상대 공격 덱\n—" 한 Text) → ② **+14 −0**(행 위치 검사를 더한 뒤 다시 +14).
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `tactical_records_view` · `tactical_deck_widgets` · `tactical_workspace` · `tactical_excel_import_view/panel` · `tactical_records_data` · `designReviewTactical` · `MockDesignReviewScenario` · `top-tab-pvp` · `AppSection.pvp` + 셸 · 전술 서비스 묶음), 일반 20파일 한 번에: ① **+198 −6**(`logs/general_1.log` — 모두 seed 수: excel commit revision · 기록 수 2, controller revision · 순서, jokbo panel revision 2, analysis 기록 수) → ② **+203 −1**(excel 재미리보기 revision 5) → excel 단독 **+14** → 마지막 20파일 **+204 −0**(`logs/general_final.log`): design_review_tactical_seed, home_page, mock_design_review_scenario, tactical_analysis, tactical_excel_import, tactical_fb6b_dart, tactical_fe9b2, tactical_jokbo_panel, tactical_page_revision, tactical_page, tactical_records_controller, tactical_v2_service, tactical_service, tactical_share_v1_contract, tactical_lobby_scanner_service, app_navigation_fe7d, app_navigation_tidy1, home_app_shell, widget_test, profile_delete_fb2d.
+- process 묶음(`ProcessAppService` 문자열) 중 seed를 쓰는 것: `flutter test --concurrency=1 test/tactical_fe9b1_read_test.dart` ① −1(seed 4건 기대) → ② **+12 −0**. 실제 백엔드 process E2E는 `lib/services/**` 변경 0이라 돌리지 않았다(미실행).
+- 일회성 렌더: `test/goldens/zz_fe9b2_render_tmp_test.dart`(`@Tags` · `expectGoldenScene` grep 0건, `toImage` → scratchpad PNG) +1, 실행 직후 삭제. 첫 시도는 PNG 경로 문자열 실수로 한 장만 엉뚱한 이름으로 남아(그 파일 삭제) 고쳐 다시 돌렸다 +1, 삭제(`test/goldens/zz_*` 0건). 장면 `tactical`과 6행을 고른 화면을 눈으로 확인했다.
+- `dart format`: 고친 · 새 15파일을 하나씩. 마지막 `--set-exit-if-changed` 모두 0.
+- `git diff --check`(고친 14파일): exit 0. 줄바꿈: `tactical_page.dart` CRLF 그대로(모든 줄 CRLF), 나머지 LF, 끝 개행 하나, 줄 끝 공백 0. `pubspec.yaml` · `pubspec.lock` 변경 0.
+- 잠금 충돌 0(재시도 없음). 로그는 실패 줄 · 요약 줄만 읽었다.
+
+### 고친 파일 · 새 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/tactical/tactical_records_view.dart` | `tacticalDraftSaveBlocker`(공격 + 상대 없음만 막음) · `tacticalNeedOpponentHint`(페이지에서 옮김, 문구 그대로) · `TacticalRecordDraft.anonymous` · `opponentLabel`(FD-132, 행과 지우기 확인이 같이 씀) · `toInput(identityId: String?)` — 상대 없는 방어면 identity · 이름 null 쌍, 시도 null 그대로, 이름이 있는데 identity가 없거나 공격 + 상대 없음이면 `StateError` |
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF) | `tacticalNeedAttemptHint` 삭제, `_saveBlocker`가 `tacticalDraftSaveBlocker(_current)`(지금 종류로 판정), 저장 때 상대가 없으면 identity를 만들지 않음, 스테퍼 null 반영(`clearAttempt`), 지우기 확인 문구가 `opponentLabel` |
+| `frontend/lib/ui/tactical/tactical_deck_widgets.dart` | `TacticalAttemptStepper`: `ValueChanged<int?>`, 1에서 − = '—'(모름), '—'에서 + = 1, '—'에서 −는 꺼짐 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | `onAttempt` 타입 `ValueChanged<int?>?` |
+| `frontend/lib/ui/tactical/tactical_excel_import_view.dart` | `tacticalExcelResultText`: 시도 null이면 결과만("패") — fb6b-dart 인계 4 · FE9-f 발견 7 |
+| `frontend/lib/ui/tactical/tactical_excel_import_panel.dart` | 미리보기 줄 상대: 해석 전 "n행", 상대 없는 방어 '—'(전에는 "n행"으로 보였을 자리) |
+| `frontend/lib/services/design_review/tactical_records_data.dart` | seed `dr-match-5`(방어 · 아비도스 · 패 · 시도 null · 시각 모름) · `dr-match-6`(방어 · 상대 null 쌍 · 승 · 시도 2 · 시각 모름 · 메모 "상대 이름을 확인하지 못했습니다.") + 그 상대 공격 덱(무츠키 · 카요코 · 모름 · 모름 / 아야네 · 모름) |
+| 테스트 7 | `tactical_page_test`(seed 수 `_seedCount`, 행 라벨 6, 필터 기대, 이관 기록은 시도 '—' 그대로 저장), `tactical_records_controller_test` · `tactical_analysis_test` · `tactical_jokbo_panel_test` · `tactical_excel_import_test` · `tactical_fe9b1_read_test`(seed 수 · 순서 · 시도 집합 · 전체 수 6 · 상대 행 2), `goldens/fe9a_tactical_golden_test`(주석 + 존재 확인 `row-3` → `row-5`만, 장면 · 조작 동일) |
+| 새 `frontend/test/tactical_fe9b2_test.dart`(14) | 저장 판정 12조합, null 쌍 입력, 이름 있는 기록, 예외 2, 라벨, 엑셀 결과 글자, seed, 분석은 공격만 · 족보 2 · 상대 identity 2, 스테퍼, 새 방어 기록 상대 없이 · 모름 저장, 종류 전환 상대 보존 · 저장 시점 판정, seed null 행 고쳐 저장(지우기 문구 · S4 '—' · 6행이 기준 캔버스 안), 1280×720 · 1440×900 넘침 0 |
+
+확인만 하고 고치지 않음: `lib/tactical/tactical_records_controller.dart`(입력 DTO를 그대로 보냄 — 변경 0, pre와 같음), `tactical_analysis_view.dart`(fb6b-dart에서 null 처리 끝 · 분석은 공격 기록만), `tactical_jokbo_*`(대상 이름 `name.isEmpty ? '—'`), `lib/services/**`.
+
+### 처리한 FD
+
+- **FD-176**(확정): (A) 시도 null 저장 — 스테퍼에서 '모름'을 고를 수 있고 저장을 막지 않는다, 0 · 1로 바꾸지 않는다. (B) 방어 한정 null 쌍 — 상대 이름이 비면 identity · 이름 둘 다 null, 공격은 그대로 필수.
+- **FD-132**(워커 재량 → 권장안): 방어 "내 방어덱 · vs <상대>", 상대 없으면 "내 방어덱". 지우기 확인도 같은 표기(전에는 "내 방어덱 · vs  · …"였을 자리).
+- FD-128: 쓰기는 지금처럼 v2 컨트롤러 하나.
+
+### 저장 판정 표(저장할 때의 종류 기준. 읽기 전용 · 이관 전 이유는 기존 그대로 먼저 본다)
+
+| 종류 | 상대 이름 | 시도 | 저장 | 이유 문구 / 보내는 값 |
+|---|---|---|---|---|
+| 공격 | 있음 | 있음 | 가능 | identity = 이름으로 찾은 것 또는 새 ID |
+| 공격 | 있음 | 모름 | 가능 | `attempt_count` null |
+| 공격 | 없음(공백 포함) | 있음 · 모름 | **불가** | "상대 이름을 입력해 주십시오."(그대로) |
+| 방어 | 있음 | 있음 · 모름 | 가능 | 이름 · identity 있음, 시도 그대로 |
+| 방어 | 없음(공백 포함) | 있음 · 모름 | 가능 | `opponent_identity_id` · `opponent_display_name` null 쌍(가짜 identity 0) |
+
+종류를 바꿔도 상대 입력 칸 글자는 그대로다(공격 → 방어 → 공격으로 돌아오면 같은 이름, 비워 둔 채 공격으로 오면 다시 막힘).
+
+### 화면별 null 표시
+
+| 화면 | 시도 모름 | 상대 없음(방어) |
+|---|---|---|
+| S1 목록 행 | "— · <시각>"(seed `dr-match-5` "— · —") | "내 방어덱", 메타 "2회 · —" |
+| S3 작성 | 스테퍼 '—' + "시도 횟수 모름", 저장 가능 | 상대 칸 비어 있음(힌트 "상대 이름"), "순위 — · 최근 대전 —", 저장 가능 |
+| 지우기 확인 | — | "\"내 방어덱 · —\" 기록을 지웁니다. …" |
+| S4 족보 패널 | — | 대상 "상대 공격 덱 / —", 공개 칸이 없으면 시그니처 안내(질의 없음) |
+| 분석 | 공격 기록의 모름은 기존 known/unknown 분모(fb6b-dart) | 분석 대상은 공격 기록만이라 나오지 않음(확장 안 함, fb6b-dart 발견 3) |
+| 엑셀 미리보기 | 결과만("패") | 상대 '—'(해석 전은 "n행") |
+
+### design-review seed 변화
+
+- 4건 → **6건**(revision 6). 새 두 건은 방어 기록이라 자동 족보 2개 그대로, 분석 대상(공격 3건) 그대로, 통계 상대 행 2 그대로(상대 없는 행은 전체 수에만 든다). 시각 모름끼리는 ID 순이라 목록 순서 1 · 2 · 3 · 4 · 5 · 6(기존 네 행 위치 변화 0). 기준 캔버스에서 6행 아래 끝 ≤ 1208(스크롤 없이 보임 — 테스트로 고정).
+- 게헨나 선도부 "최근 대전 2회" 그대로(새 행은 아비도스 · 상대 없음).
+
+### golden 변화 예상(비교 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `tactical` | **바뀜** — S1 목록 아래에 행 2개: "패 · 내 방어덱 · vs 아비도스 대책위원회 · — · —", "승 · 내 방어덱 · 2회 · —"(일회성 렌더로 확인). S2 · S3 · S4 변화 0 | seed 6건 |
+| `tactical-jokbo-drag` | **바뀜** — 같은 목록 2행 추가(고스트 · 힌트 자리 그대로) | 같은 seed |
+| `tactical-import-excel` | **바뀔 수 있음** — 스크림(.62) 뒤 S1 목록 왼쪽(패널 x 500 왼쪽)에 같은 2행. 패널 내용("4건 가져오기" · 5/5)은 테스트로 그대로 확인 | 같은 seed(프롬프트 예측에 없던 장면 → 발견 1) |
+| `tactical-analysis` · `-analysis-all` | 변화 0 | 분석은 공격 기록만, Mock 공개 시그니처 통계는 빈 목록 |
+| `tactical-migration` | 변화 0 | seed 미사용(v1 기록만), 스테퍼 '—' 표시 같음 |
+| 그 밖 | 변화 0 | 다른 golden은 전술 탭 · seed를 쓰지 않음 |
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 백엔드 process E2E(tactical_fb6/fb6b/fb7/v2 process, planning_protocol_client): **미실행**(`lib/services/**` 변경 0 — 보내는 null 쌍 · null 시도는 fb6b-dart E2E가 실제 백엔드로 확인).
+- 실제 백엔드에서 상대 있던 기록을 상대 없는 방어로 고쳐 저장(identity → null): **미실행**(Mock만 — fb6b-dart E2E는 null → null 편집만).
+- 위 목록 밖 Flutter 테스트(Lane A 통계 · 계획 · 스캔 등): **미실행**.
+- Windows release 빌드 · 사용자 시각 검수: **미실행**.
+
+### 검수표(mock 모드 design-review 시나리오 · 기준 viewport 최대화 → 전술대항전 탭)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 목록 | 탭 열기 | 5행 "내 방어덱 · vs 아비도스 대책위원회 · — · —"(패), 6행 "내 방어덱 · 2회 · —"(승), 기존 4행 그대로 |
+| 상대 없는 방어 | 6행 누르기 | 머리 "방어 기록 · —", 상대 칸 비어 있음, S4 대상 '—' + 시그니처 안내, 저장 가능(상태 문구 없음) |
+| 시도 모름 | 5행 누르기 | 스테퍼 '—' · "시도 횟수 모름", 저장 가능 |
+| 새 방어 | "새 기록" → 방어 칩 → 이름 비움 → − 한 번 | '—' · "시도 횟수 모름", 저장 → 맨 위 "내 방어덱 · — · <시각>" |
+| 공격 필수 | "새 기록"(공격), 이름 비움 | "상대 이름을 입력해 주십시오.", 저장 꺼짐 → 방어로 바꾸면 풀림 → 공격으로 돌아오면 다시 |
+| 지우기 | 6행 → "지우기" | "\"내 방어덱 · —\" 기록을 지웁니다." |
+
+### WIP 보존 확인
+
+- 고친 14파일 + 이 문서는 착수 때 WIP 없음 → `post_dir` 없음. 사본 `debug/frontend_fe9b2/pre/<경로>`(고친 14 + 이 문서 + 확인만 한 4: controller · page_revision_test · design_review_tactical_seed_test · mock_design_review_scenario_test — 이 4개는 끝에도 pre와 같음). `tactical_fe9b1_read_test.dart` 사본은 고치기 직전에 만들었다(WIP 없음 확인).
+- 고친 14파일 모두 HEAD = pre(`tactical_page.dart`는 CR만 다름 — 저장소 LF · 작업 트리 CRLF). 3-way 병합 충돌 없음 예상.
+- Lane A 파일(`scan_page.dart` · `lib/ui/scan/**` · `app_shell.dart`): 열지도 고치지도 않았다. `dart format`은 이 slice 파일 경로만. 임시 렌더 파일 삭제 확인. git 쓰기 0회.
+
+### 발견 사항
+
+1. **golden `tactical-import-excel`**: 프롬프트 예측(`tactical` · `tactical-jokbo-drag`)에 없지만 같은 seed를 넣고 스크림 뒤 S1 목록이 보여 바뀔 수 있다 — CF가 failures 이미지로 확인. commit.json `whole`에 넣었다(안 바뀌면 빼면 된다).
+2. **스테퍼 '모름' 고르기**(새 모호점, 권장안으로 처리): 시안 스테퍼는 −/값/+뿐이라 '모름'을 고르는 자리가 없다. 1에서 −를 누르면 '—'(모름)이 되게 했다(FE9-a의 "−는 1에서 멈춤"을 바꿈). 실수로 모름이 되면 보조 문구 "시도 횟수 모름"이 보인다. 별도 '모름' 버튼이 필요하면 CF 판단.
+3. **상대 칸 안내**: 방어 기록에서 상대를 비워도 된다는 안내는 상시 띄우지 않았다(힌트 "상대 이름" 그대로, 사용법 문장 규칙). (i) 팝오버 문구 보강 여부는 CF 판단.
+4. **S4 추천 질의 상대**: `_jokboPanel`은 이름이 비어도 초안의 기존 identity(`current.opponentIdentityId`)로 추천을 묻는다 — 상대 있던 기록의 이름을 지운 경우에만 해당, 가짜 ID는 없다. 동작 변경 범위 밖이라 고치지 않았다.
+5. **seed 시각**: 새 두 행은 기존 행 순서를 지키려고 시각 모름으로 두었다(시각이 있으면 `dr-match-4`보다 위로 올라가 기존 테스트 · golden 행 위치가 바뀐다).
+6. 워커 재량 FD: FD-132(권장안). 열림 FD 0.
+7. fe_gate 분류: `tactical_fe9b2_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음(+14).
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9b2/commit.json`: slice `fe9b2`, modified 14, added 1, `status=true`, `whole` = 이 문서 + `frontend/test/goldens/baseline/tactical.png` · `tactical-jokbo-drag.png` · `tactical-import-excel.png`. message(ASCII) 근거: FD-176 · FD-132, fb6b-dart 인계.
+- 인계: `debug/frontend_fe9b2/output.md`. 로그 `debug/frontend_fe9b2/logs/`.
+
+### 다음 행동
+
+- FE9-b2 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-f1)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 +14(`tactical_fe9b2_test`) · 기존 수 변화 0, process 변화 0, golden `tactical` · `tactical-jokbo-drag` RED, `tactical-import-excel` RED 가능, 나머지 GREEN) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9b2`.

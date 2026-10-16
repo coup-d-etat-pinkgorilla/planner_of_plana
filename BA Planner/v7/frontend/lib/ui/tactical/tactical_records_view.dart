@@ -5,8 +5,10 @@
 // - 칸을 고치지 않으면 읽은 관측(상태 · 출처 · 와일드카드)을 그대로 되보낸다. 학생을 고르면 `manual` 관측, "빈칸"을
 //   고르면 `unknown`(모름 — 빗금)이다. 확인된 빈칸(`empty`)은 읽은 그대로만 보인다.
 // - v1 기록(이관 전)은 읽기 전용 초안 · 행으로만 보인다(저장 · 삭제 없음).
-// - 방어 기록 행 표기(FD-132 권장안): "내 방어덱 · vs <상대>"(v2는 상대 이름이 늘 있다).
+// - 방어 기록 행 표기(FD-132 권장안): "내 방어덱 · vs <상대>", 상대를 모르면 "내 방어덱".
 // - 시각: `date` 정밀도는 날짜만, `instant`는 KST, 모르면 '—'(컨트롤러 [tacticalOccurredText]). 시도 횟수를 모르면 '—'.
+// - FE9-b2(FD-176): 시도 '모름'(null)도 그대로 저장한다(0 · 1로 바꾸지 않는다). 방어 기록은 상대 이름을 비우면 상대 없이
+//   (identity · 이름 null 쌍) 저장한다. 공격은 상대 이름이 있어야 한다. 판정은 저장할 때의 종류로 한다([tacticalDraftSaveBlocker]).
 import 'package:flutter/foundation.dart';
 
 import '../../services/tactical_service.dart';
@@ -176,7 +178,7 @@ class TacticalRecordDraft {
   final String? id;
   final String kind, result;
 
-  /// 시도 횟수. null = 모름(이관 기록) — 정해야 저장할 수 있다(계약: 1 이상).
+  /// 시도 횟수. null = 모름(이관 기록 등) — 모름 그대로 저장한다(FD-176, 아는 값은 1 이상).
   final int? attemptCount;
   final String opponentName;
   final String? opponentIdentityId;
@@ -236,31 +238,45 @@ class TacticalRecordDraft {
     occurredPrecision: 'unknown',
   );
 
-  /// 저장 입력. 새 기록은 [newId] · [now](UTC, `instant`)를 쓴다. [identityId]는 이름으로 고른 상대 identity다.
+  /// 상대 이름이 비었는가(앞뒤 공백 무시).
+  bool get anonymous => opponentName.trim().isEmpty;
+
+  /// 저장 입력. 새 기록은 [newId] · [now](UTC, `instant`)를 쓴다. [identityId]는 이름으로 고른 상대 identity이고,
+  /// 상대 없는 방어 기록([anonymous])이면 무시하고 identity · 이름을 둘 다 null로 보낸다(FD-176). 시도 모름은 null 그대로다.
   TacticalMatchInputV2 toInput({
     required String Function() newId,
-    required String identityId,
+    required String? identityId,
     required DateTime now,
   }) {
-    final attempt = attemptCount;
-    if (attempt == null || readOnly) {
+    if (readOnly || tacticalDraftSaveBlocker(this) != null) {
       throw StateError('draft is not savable');
     }
     final name = opponentName.trim();
+    final identity = anonymous ? null : identityId;
+    if (!anonymous && identity == null) {
+      throw StateError('opponent identity is required for a named opponent');
+    }
     return TacticalMatchInputV2(
       id: id ?? newId(),
       kind: kind,
       occurredAt: isNew ? tacticalUtcInstant(now) : occurredAt,
       occurredPrecision: isNew ? 'instant' : occurredPrecision,
       season: season,
-      opponentIdentityId: identityId,
-      opponentDisplayName: name,
+      opponentIdentityId: identity,
+      opponentDisplayName: anonymous ? null : name,
       result: result,
       attackDeck: attack ? myDeck : opponentDeck,
       defenseDeck: attack ? opponentDeck : myDeck,
       notes: notes,
-      attemptCount: attempt,
+      attemptCount: attemptCount,
     );
+  }
+
+  /// FD-132 상대 표기: 공격 "vs <상대>", 방어 "내 방어덱 · vs <상대>", 상대를 모르는 방어 "내 방어덱".
+  String get opponentLabel {
+    final name = opponentName.trim();
+    if (attack) return name.isEmpty ? 'vs —' : 'vs $name';
+    return name.isEmpty ? '내 방어덱' : '내 방어덱 · vs $name';
   }
 
   /// 머리 줄: "공격 기록 · 2026-10-04 21:10", 새 기록은 "새 공격 기록".
@@ -278,6 +294,14 @@ String tacticalUtcInstant(DateTime now) {
   return '${utc.year.toString().padLeft(4, '0')}-${two(utc.month)}-'
       '${two(utc.day)}T${two(utc.hour)}:${two(utc.minute)}:${two(utc.second)}Z';
 }
+
+/// 공격 기록에 상대 이름이 없을 때의 저장 불가 이유.
+const tacticalNeedOpponentHint = '상대 이름을 입력해 주십시오.';
+
+/// 초안 내용만으로 저장할 수 없는 이유(없으면 null). 공격은 상대 이름이 있어야 하고, 방어는 상대를 비워도 되며, 시도 모름은
+/// 막지 않는다(FD-176). 종류를 바꿔도 상대 이름은 초안에 남으므로 저장할 때의 종류로 판정한다.
+String? tacticalDraftSaveBlocker(TacticalRecordDraft draft) =>
+    draft.attack && draft.anonymous ? tacticalNeedOpponentHint : null;
 
 /// 시각 표시(정밀도 규칙). v1 날짜(`legacy-date`)는 저장된 문자열 그대로다.
 String occurredText(String? occurredAt, String precision) =>
@@ -318,12 +342,8 @@ class TacticalRecordRow {
   String get season => draft.season;
   String get opponentName => draft.opponentName;
 
-  /// FD-132: 공격 "vs <상대>", 방어 "내 방어덱 · vs <상대>". 상대 이름이 없으면(v1) "내 방어덱".
-  String get opponentLabel {
-    final name = draft.opponentName.trim();
-    if (draft.attack) return name.isEmpty ? 'vs —' : 'vs $name';
-    return name.isEmpty ? '내 방어덱' : '내 방어덱 · vs $name';
-  }
+  /// FD-132: 공격 "vs <상대>", 방어 "내 방어덱 · vs <상대>". 상대를 모르는 방어(FD-176)는 "내 방어덱".
+  String get opponentLabel => draft.opponentLabel;
 
   /// "1회 · 2026-10-04 21:10"(시도 모름은 '—').
   String get metaText {

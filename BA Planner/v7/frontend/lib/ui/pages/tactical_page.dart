@@ -54,8 +54,6 @@ const tacticalEmptyText = '아직 저장한 기록이 없습니다. 기록 작�
 const tacticalDisconnectedText = '백엔드 연결이 끊어졌습니다.';
 const tacticalOtherProfileText = '선택 계정과 다른 계정의 응답을 받았습니다.';
 const tacticalReadOnlyHint = '이전 형식 기록은 가져온 뒤에 고칠 수 있습니다.';
-const tacticalNeedOpponentHint = '상대 이름을 입력해 주십시오.';
-const tacticalNeedAttemptHint = '시도 횟수를 정해 주십시오.';
 const tacticalInvalidInputText = '입력한 기록을 저장할 수 없습니다. 칸과 이름을 확인해 주십시오.';
 
 /// S4 · 족보 복사 문구(FE9-d).
@@ -546,9 +544,8 @@ class _TacticalPageState extends State<TacticalPage> {
     if (_migrationRequired) {
       return tacticalRecordsErrorMessages['legacy_migration_required'];
     }
-    if (_opponentText.text.trim().isEmpty) return tacticalNeedOpponentHint;
-    if (_draft.attemptCount == null) return tacticalNeedAttemptHint;
-    return null;
+    // FD-176: 시도 모름은 막지 않고, 방어는 상대를 비워도 된다(지금 종류로 판정).
+    return tacticalDraftSaveBlocker(_current);
   }
 
   void _updateDraft(
@@ -581,9 +578,11 @@ class _TacticalPageState extends State<TacticalPage> {
     try {
       input = draft.toInput(
         newId: () => _newId('match'),
-        identityId:
-            tacticalIdentityForName(state.opponents, draft.opponentName) ??
-            _newId('opponent'),
+        // 상대 없는 방어 기록은 identity를 만들지 않는다(FD-176 — 가짜 identity 금지).
+        identityId: draft.anonymous
+            ? null
+            : tacticalIdentityForName(state.opponents, draft.opponentName) ??
+                  _newId('opponent'),
         now: appClockNow(widget.service),
       );
     } on Object {
@@ -1307,8 +1306,7 @@ class _TacticalPageState extends State<TacticalPage> {
     final draft = _current;
     final when = occurredText(draft.occurredAt, draft.occurredPrecision);
     return TacticalDeletePanel(
-      label:
-          '${draft.attack ? '' : '내 방어덱 · '}vs ${draft.opponentName} · $when',
+      label: '${draft.opponentLabel} · $when',
       busy: _busy,
       onCancel: _deleteModal.close,
       onConfirm: _confirmDelete,
@@ -1457,8 +1455,10 @@ class _TacticalPageState extends State<TacticalPage> {
       onKind: (kind) => _updateDraft((draft) => draft.copyWith(kind: kind)),
       onResult: (result) =>
           _updateDraft((draft) => draft.copyWith(result: result)),
-      onAttempt: (value) =>
-          _updateDraft((draft) => draft.copyWith(attemptCount: value)),
+      onAttempt: (value) => _updateDraft(
+        (draft) =>
+            draft.copyWith(attemptCount: value, clearAttempt: value == null),
+      ),
       onSlotTap: _openSlotPicker,
       onOpenOpponentPicker: () =>
           _openOpponentPicker(_OpponentPickerMode.editor),

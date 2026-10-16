@@ -822,15 +822,16 @@ void main() {
     });
 
     test(
-      'design-review has 4 records, 2 derived jokbo and a finished migration',
+      'design-review has 6 records, 2 derived jokbo and a finished migration',
       () async {
         final service = MockDesignReviewScenario();
         addTearDown(service.dispose);
         final state = await service.loadTacticalEvidenceState(
           designReviewProfileId,
         );
-        expect(state.revision, 4);
-        expect(state.matches, hasLength(4));
+        // FE9-b2: 시도 모름 방어 · 상대 없는 방어(FD-176)가 더해졌다.
+        expect(state.revision, 6);
+        expect(state.matches, hasLength(6));
         expect(state.matches.map((item) => item.occurredPrecision).toSet(), {
           'instant',
           'date',
@@ -840,6 +841,7 @@ void main() {
           1,
           2,
           3,
+          null,
         });
         expect(state.jokbo, hasLength(2));
         expect(
@@ -855,7 +857,8 @@ void main() {
           designReviewProfileId,
           const TacticalStatsFilters(),
         );
-        expect(stats.population.matchCount, 4);
+        // 상대 없는 방어 기록은 전체 수에는 들고 상대별 행에서는 빠진다.
+        expect(stats.population.matchCount, 6);
         expect(stats.opponents, hasLength(2));
         final recommendation = await service.queryTacticalRecommendations(
           designReviewProfileId,

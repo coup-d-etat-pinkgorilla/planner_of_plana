@@ -1747,7 +1747,10 @@ class _PreviewRow extends StatelessWidget {
           SizedBox(
             width: 60,
             child: Text(
-              match?.opponentDisplayName ?? '${row.rowNumber}행',
+              // 해석 전은 행 번호, 상대 없는 방어 기록(FD-176)은 '—'.
+              match == null
+                  ? '${row.rowNumber}행'
+                  : match.opponentDisplayName ?? '—',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: _body(13, color: AppColors.text, weight: FontWeight.w700),

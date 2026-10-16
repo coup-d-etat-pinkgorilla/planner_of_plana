@@ -650,8 +650,9 @@ void main() {
       expect(status, contains('보유하지 않은 학생 1명'));
       // 저장하지 않는다(초안만).
       final state = await service.loadTacticalEvidenceState(_profileId);
-      expect(state.revision, 4);
-      expect(state.matches, hasLength(4));
+      final seeded = designReviewTacticalMatches().length;
+      expect(state.revision, seeded);
+      expect(state.matches, hasLength(seeded));
       expect(tester.takeException(), isNull);
     });
 
@@ -713,7 +714,10 @@ void main() {
             .selected,
         isTrue,
       );
-      expect((await service.loadTacticalEvidenceState(_profileId)).revision, 4);
+      expect(
+        (await service.loadTacticalEvidenceState(_profileId)).revision,
+        designReviewTacticalMatches().length,
+      );
       expect(tester.takeException(), isNull);
     });
 

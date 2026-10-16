@@ -229,7 +229,9 @@ class TacticalWorkspace extends StatelessWidget {
   final String opponentMeta;
   final ValueChanged<String>? onKind;
   final ValueChanged<String>? onResult;
-  final ValueChanged<int>? onAttempt;
+
+  /// 시도 횟수(null = 모름).
+  final ValueChanged<int?>? onAttempt;
 
   /// (내 덱인가, 칸 0~5).
   final void Function(bool mine, int index)? onSlotTap;
