@@ -9219,3 +9219,193 @@ mock 실행(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 기준 view
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_082438\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE9-f 착수 기록 (2026-10-16 15:30, Lane A)
+
+- 상태: **진행 중**. 범위: A. 엑셀 가져오기 모달(시안 Tactical-Import-Excel — S1 "엑셀 가져오기" 켜기 → 파일 선택 → `tactical.v2.excel.preview` → 승인 모달 → `commit` → 기록 다시 읽기), B. 분석 화면 S2 "검증 강도" 칩 숨김(FE9-e 발견 5, CF 결정 2026-10-16 — FD-127 (a)).
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-f 착수 기록" 없음(grep 0건). 막힘 요약 FE9-f 행 FD-128 확정(열림 0건). 워커 재량 FD-131은 권장안으로 처리한다.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `a5e179faaf6f9467f1ec8469f0b6d47c383e3420`(프롬프트 작성 뒤 XB 커밋 2개 `a1bae239` · `a5e179fa`가 더 있음 — 이 slice 파일은 건드리지 않음).
+- 고칠 기존 파일(모두 착수 때 WIP 없음 — `git status --short` 빈 줄, 사본 `debug/frontend_fe9f/pre/<경로>`):
+
+| 파일 | 줄바꿈 | WIP |
+|---|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart` | CRLF | 없음 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | LF | 없음 |
+| `frontend/lib/ui/tactical/tactical_analysis_workspace.dart` | LF | 없음 |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart` | LF | 없음 |
+| `frontend/lib/services/design_review/tactical_records_data.dart`(Mock CSV 행) | LF | 없음 |
+| `frontend/test/tactical_page_test.dart` | LF | 없음 |
+| `frontend/test/tactical_analysis_test.dart` | LF | 없음 |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart` | LF | 없음 |
+| 이 문서 | LF | 없음 |
+
+- 새 파일(예정): `frontend/lib/tactical/tactical_excel_import_controller.dart`, `frontend/lib/ui/tactical/tactical_excel_import_view.dart`, `frontend/lib/ui/tactical/tactical_excel_import_panel.dart`, `frontend/test/tactical_excel_import_test.dart`.
+- 고치지 않음: `lib/services/**`(design_review 제외, Lane B fb6b-dart), `lib/tactical/tactical_records_controller.dart`(Lane B), 스캐너 시각부 5파일, `app_shell.dart`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 소유 파일.
+
+## FE9-f 종료 기록 (2026-10-16 16:40, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리보기 → 엑셀 가져오기 모달(시안 Tactical-Import-Excel) → commit → 기록 다시 읽기를 붙였다. 흐름은 새 `lib/tactical/tactical_excel_import_controller.dart`(ChangeNotifier), 모달은 새 `lib/ui/tactical/tactical_excel_import_panel.dart` · 모델 `tactical_excel_import_view.dart`. B. 분석 S2 "검증 강도" 칩을 숨겼다(FD-127 (a), FE9-e 발견 5 · CF 결정 2026-10-16). HEAD는 착수 때와 같다(`a5e179fa`), git 쓰기 0회.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze`(작성 중 경로별 여러 번 · 전체 3회): 마지막 전체 **No issues found(0)**. `pubspec.yaml` · `pubspec.lock` 변경 0(analyze의 pub get 뒤에도 git status 빈 줄). 새 의존성 0.
+- 새 `flutter test test/tactical_excel_import_test.dart`: ① +12 −2(테스트 쪽 1: 슬롯 필드 순서(내 덱이 먼저)를 잘못 셈 / 구현 쪽 1: 1280×720에서 문자열 표가 42px로 눌려 넘침) → 낮은 창 한 스크롤 배치 → ② +13 −1(구현 쪽: 학생 검색 패널(약 454px)이 패널 안 426px에서 28px 넘침 → 검색 패널을 패널 밖 화면 전체 위로) → ③ **+14**.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `tactical_workspace` · `tactical_studio_layout` · `tactical_analysis_workspace` · `AppSection.pvp` · `top-tab-pvp` · `BAPlannerApp(` · `tactical_records_data` · `designReviewTactical` · `MockDesignReviewScenario` · `TacticalExcel` · `tactical-import-excel` · `tactical_excel` · `tactical-analysis-grade` · `tacticalVerificationGrade` + `test/tactical_*` · `widget_test`), 일반 30파일 한 명령(`--exclude-tags golden`, json): **+303 −0** — account_editor_fe8c 9, account_manager_fe8b 6, app_navigation_fe7d 14, app_navigation_tidy1 11, connected_target_fe8d 8, design_review_tactical_seed 2, growth_calculator_view 24, home_app_shell 1, home_connect_fe8e 10, home_page 5, inventory_shell_lazy 1, mock_design_review_scenario 11, profile_delete_fb2d 17, section_template_studio 15, statistics_app_shell 2, statistics_filter 10, student_filter_followups 4, student_filter_modal 8, tactical_analysis 20, tactical_excel_import 14, tactical_jokbo_panel 17, tactical_lobby_scanner_service 2, tactical_page_revision 5, tactical_page 20, tactical_records_controller 14, tactical_service 6, tactical_share_v1_contract 1, tactical_v2_service 5, title_page 25, widget 16.
+- 마지막 패널 손질(소제목 줄 · 간격 · 머리 줄 · 아래 줄 정렬) 뒤 다시 8파일: tactical_excel_import 14 · tactical_page 20 · tactical_analysis 20 · tactical_jokbo_panel 17 · tactical_page_revision 5 · widget 16 · design_review_tactical_seed 2 · mock_design_review_scenario 11 = **+105 −0**. 전체 `flutter analyze` 다시 **0**.
+- process 묶음 분류(`--concurrency=1`, 파일마다): tactical_fb7_dart **+12**, tactical_fe9b1_read **+12**, tactical_fb7_process_e2e **+1**(실제 백엔드, 임시 폴더), tactical_fb6_dart **+13 −1** — 실패 `contract shared FB-6 fixture has matching Dart validation results`(`unknown_manual_attempt`)는 `contracts/fixtures/tactical_fb6_writes_v2.json`의 XB 미커밋 FB-6b(시도 null) 변경 때문이다(`git status`: ` M contracts/fixtures/tactical_fb6_writes_v2.json`, `?? contracts/fixtures/tactical_fb6b_nulls_v2.json`). 이 slice는 서비스 · 계약을 고치지 않았다 — Lane B fb6b-dart 몫(→ 발견 8).
+- 일회성 렌더(임시 `test/goldens/zz_fe9f_render_tmp_test.dart` = golden 파일 사본에서 `@Tags(['golden'])` · `expectGoldenScene` 0건을 grep으로 확인한 뒤 `toImage` → scratchpad PNG, 실행마다 바로 삭제, `test/goldens/zz_*` 0건 확인): 4회(① +5 −1 — 내 렌더 경로 오타 + golden 흐름에서 "?" 줄이 표 아래로 가려 메뉴를 못 엶 ② +6 ③ +1 ④ **+6**). 렌더를 보고 고친 것: 원문 칸 `monospace` 글꼴이 앱 자산에 없어 네모로 보임 → 본문 글꼴, 기준 창 문자열 표 265px < 5줄 282px → 묶음 간격 18 → 14 · 소제목 줄 20, 머리 줄 닫기와 아래 버튼이 오른쪽에 붙지 않음(Flexible + Spacer) → Expanded, golden 처리 도우미에 `ensureVisible`. 마지막 렌더: 패널 rect = (500, 348, 1560, 880), 표 5줄이 스크롤 없이 보임(목록 285px), "4건 가져오기" 오른쪽 끝 2032.
+- `dart format`: 이 slice 파일 경로만 하나씩(디렉터리 인자 0). `tactical_page.dart`는 포맷 변화 0이고 CRLF 그대로(1487줄 모두 CRLF), 나머지 LF.
+- `git diff --check -- frontend almanac/workflows/frontend-redesign-status.md`: exit 0. 새 4파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나.
+- 잠금 충돌 0(재시도 없음). 로그 `debug/frontend_fe9f/logs/`(json 요약 · 실패 줄만 확인).
+
+### 고친 파일 · 새 파일
+
+| 파일 | 내용 |
+|---|---|
+| `frontend/lib/ui/pages/tactical_page.dart`(CRLF) | 엑셀 컨트롤러 붙이기(서비스가 `TacticalExcelImportService`일 때), 버튼 막는 이유, 파일 고르기 → 모달 열기, 모달 닫힘 = 흐름 닫기(가져오는 중에 닫히면 기록 다시 읽기), commit 성공 → 모달 닫기 · `controller.reload()` · 상태 문구, 작업 영역 rect, `BaModal`(scrim excel, 스크림 눌러 닫기 꺼짐). 분석 패널에 검증 강도를 넘기지 않음 |
+| `frontend/lib/ui/tactical/tactical_workspace.dart` | S1 "엑셀 가져오기" `onImportExcel` · `importExcelHint`(툴팁) |
+| `frontend/lib/ui/tactical/tactical_analysis_workspace.dart` | S2 "검증 강도" 칩 삭제(필드 `verificationGrade`는 남김, 주석) |
+| `frontend/lib/ui/studio/tactical_studio_layout.dart` | `TacticalExcelImportMetrics`(패널 1560×880 · 여백 · 표 6열 · 상자 · 미리보기 · 버튼) — 추가만 |
+| `frontend/lib/services/design_review/tactical_records_data.dart` | 검수 · golden용 Mock CSV 경로 · 행(`designReviewTacticalExcelPath` · `designReviewTacticalExcelRows`) — 추가만 |
+| `frontend/test/tactical_page_test.dart` | "excel import is pending" → "is on"(툴팁 = `tacticalExcelHint`) |
+| `frontend/test/tactical_analysis_test.dart` | 검증 강도 칩 → 없음(`findsNothing`) |
+| `frontend/test/goldens/fe9a_tactical_golden_test.dart` | 장면 `tactical-import-excel` 추가 + 파일 대화상자 대역 · 처리 도우미, 머리 주석 |
+| 새 `frontend/lib/tactical/tactical_excel_import_controller.dart` | 파일 고르기 interface(`file_selector`) · 테스트 대역 전역, 오류 문구 표, 처리 방법 · 그룹 줄 모델, 흐름 컨트롤러 |
+| 새 `frontend/lib/ui/tactical/tactical_excel_import_view.dart` | 열 글자 · 열 연결 칸 · 필드 이름 · 플래너가 본 것 · 처리 방법 메뉴 · 근거 · 미리보기 줄 고르기 |
+| 새 `frontend/lib/ui/tactical/tactical_excel_import_panel.dart` | 모달 그리기(머리 줄 · KPI · 열 연결 · 열 바꾸기 편집기 · 문자열 표 · 메뉴 · 학생 검색 · 미리보기 · 아래 줄) |
+| 새 `frontend/test/tactical_excel_import_test.dart` | 14건(아래) |
+
+고치지 않음: `lib/tactical/tactical_records_controller.dart`(HEAD와 cmp 일치 — 기록 다시 읽기는 기존 `reload()`), `lib/services/**`(design_review 데이터 추가 말고 0), 스캐너 시각부 5파일, `app_shell.dart`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 소유 파일.
+
+### 흐름
+
+| 단계 | 동작 | 서비스 호출 |
+|---|---|---|
+| 버튼 | 계정 · v2 읽기 끝, 이관 전 아님, 읽기 · 저장 중 아님일 때만 켬. 아니면 흐림 + 이유 툴팁 | — |
+| 파일 고르기 | `file_selector` `openFile`(.xlsx · .csv). 취소면 아무것도 안 함 | — |
+| 첫 미리보기 | 모달을 열고 열 연결 **없이**(null) 미리보기 → 후보 · 저장한 열 연결은 흐리게 보이고 보내지 않음 | `tactical.v2.excel.preview`(mapping null) |
+| 열 연결 확인 | "이 열 연결로 읽기"(후보 · 저장한 연결) 또는 "열 바꾸기" 편집기(머리글 행 · 필드별 열, 필수 5 · 열 중복 검사) → 처리 방법 · 행 결정 비움 | preview(mapping) |
+| 결정 | 처리 방법 · "모두 적용" · 행 결정(건너뛰기 · 따로 두기 · 덮어쓰기) · 덮어쓰기 체크(on_conflict) · 시트 seg마다 | preview(같은 선택 + 바뀐 것, 세대 번호로 늦은 응답 버림) |
+| 규칙 저장 체크 | commit에만 쓰므로 다시 읽지 않음 | — |
+| 가져오기 | "n건 가져오기"(n = 마지막 미리보기 `eligible_rows`). 막는 이유가 없을 때만 켬(툴팁에 이유) | `tactical.v2.excel.commit`(마지막 미리보기의 선택 객체 그대로 · `fingerprint` · `interpretation_fingerprint` · `current_revision`, **매번 새 key** `tactical-excel-commit-<µs>-<순번>`) |
+| 성공 | 모달 닫기 → `TacticalRecordsController.reload()` → S3 상태 문구 "엑셀에서 기록 n건을 가져왔습니다. [덮어쓴 기록 m건.] [건너뛴 행 k건.] [처리 방법을 저장했습니다.]" | v2 상태 읽기 |
+| commit 오류 | 문구를 모달 머리 아래에 보이고 `import_interpretation_changed` · `import_source_changed` · `revision_conflict` · `idempotency_conflict` · `import_review_required`면 같은 선택으로 다시 미리보기(문구는 남김) | preview |
+| 닫기 | 닫기 · 취소 · Esc(열린 메뉴 · 검색 · 편집기가 있으면 그것만 먼저 닫음). 고른 처리 방법은 버림 | — |
+
+### 오류 문구(`tacticalExcelImportErrorMessages`)
+
+| 코드 | 문구 |
+|---|---|
+| `import_interpretation_changed` | 미리보기 뒤에 해석 조건(열 연결 · 처리 방법 · 저장한 규칙 · 기록)이 바뀌어 가져오지 않았습니다. 미리보기를 다시 읽었습니다. |
+| `import_source_changed` | 미리보기 뒤에 파일 내용이 바뀌어 가져오지 않았습니다. 미리보기를 다시 읽었습니다. |
+| `import_source_unreadable` | 파일을 읽지 못했습니다. + reason `source_unavailable` "파일이 없거나 열 수 없습니다." · `format_unsupported` ".xlsx · .csv 파일만 가져올 수 있습니다." · `sheet_not_found` "고른 시트가 파일에 없습니다." |
+| `import_review_required` | 처리 방법을 고르지 않은 문자열이나 결정하지 않은 행이 있어 가져오지 않았습니다. 표에서 처리 방법을 골라 주십시오. |
+| `legacy_migration_required` | 이전 형식의 전술 기록을 새 형식으로 옮긴 뒤에 엑셀 기록을 가져올 수 있습니다. 기록 화면에서 "가져오기"를 눌러 주십시오.(버튼 흐림 이유와 같음) |
+| `opponent_alias_required` | 상대 이름이 이 상대에 저장된 이름과 다릅니다. 새 상대로 저장하거나 그 행을 건너뛰어 주십시오. |
+| `link_conflict` · `lineage_conflict` | 가져올 기록이 이미 있는 기록 연결과 겹쳐 가져오지 않았습니다. · 자동으로 만든 족보의 편성과 겹쳐 가져오지 않았습니다. |
+| `invalid_payload` | 가져오기 선택이 파일 내용과 맞지 않습니다. 열 연결과 처리 방법을 다시 확인해 주십시오. |
+| `revision_conflict` · `idempotency_conflict` | 미리보기 뒤에 전술 기록이 바뀌어 … · 같은 요청 번호로 다른 내용이 와서 … 가져오지 않았습니다. 미리보기를 다시 읽었습니다. |
+| `persistence_failed` · `profile_not_found` · `repository_busy` | 가져온 기록을 저장하지 못했습니다. · 선택한 계정을 찾지 못했습니다. · 저장소가 다른 작업을 하는 중입니다. 잠시 뒤 다시 시도해 주십시오. |
+| 표 밖 백엔드 코드 · 연결 끊김 · 보내기 전 검사 실패 | 엑셀 가져오기를 하지 못했습니다. · 백엔드의 답을 받지 못했습니다. 다시 연결한 뒤 다시 시도해 주십시오. · 고른 처리 방법을 보낼 수 없습니다. 처리 방법을 다시 골라 주십시오. |
+
+### 파일 선택 방식
+
+- 기존 의존성 `file_selector ^1.1.0`(pubspec에 이미 있음, `section_studio_file_service.dart` 선례) `openFile(acceptedTypeGroups: [엑셀 · CSV — xlsx, csv])` → `XFile.path`. 새 패키지 0, 경로 입력 대체 불필요.
+- 테스트 · golden은 `@visibleForTesting debugTacticalExcelFilePicker`(셸을 거쳐 띄운 화면에서도 바꿀 수 있게 전역 하나, tearDown에서 null)로 대역을 넣는다.
+
+### 처리한 FD
+
+- **FD-131(워커 재량, 권장안)**: 파서 = Python(Dart는 경로 · 선택만), .xlsx + .csv, 시트가 여럿이면 머리 줄에 시트 seg(바꾸면 열 연결 비우고 다시 읽음), 미리보기 분모 = 가져올 건수(`eligible_rows`), 덮어쓰기 키는 백엔드 의미 키(체크 문구는 시안 그대로), 처리 규칙 = 프로필별(commit `save_rules`), "스캔 파일 가져오기" 숨김 그대로.
+- **FD-127 (a)**: 분석 S2 "검증 강도" 칩 숨김(팝업에는 원래 그 값이 없음). FD-134 `tacticalVerificationGrade`와 `TacticalAnalysisPanel.verificationGrade`는 지우지 않고 넘기지 않게만 했다(되살리기 = 페이지에서 추천 `confidenceGrade`를 다시 넘기고 칩 한 덩이 복원).
+- FD-128 (a): 가져온 기록은 v2 기록(백엔드 commit)이고 화면은 v2 다시 읽기만 한다. FD-176: 시도 횟수를 채우지 않는다(시도 그룹은 사용자가 고른 값만, 결과 · 시도로 나누기는 제안을 확인했을 때만).
+
+### 정한 규칙
+
+- **처리 방법 → resolution**: 학생으로 연결(제안 · 검색) · 기존 상대로 합치기 · 새 상대로 저장(원문 이름, identity `opponent-<µs>-<순번>`을 고를 때 한 번 만듦 — 다시 미리보기해도 해석 지문이 바뀌지 않게) · 결과 승/패 · 공격/방어 · 시도 n회(1~9) = `value`, 빈칸으로 두기 = `wildcard`(슬롯만, 시안 "빗금 빈칸으로 저장"), 메모로 옮기기 = `notes`, 이 칸 무시 = `ignore`, 이 행 건너뛰기 = `skip`. 결과 · 시도로 나누기 = 결과 `value` + 그 그룹이 나온 행마다 시도 칸 `value`(행 지정). 필드마다 풀 수 있는 것만 메뉴에 둔다(필수 필드에 무시 · 메모 없음, 날짜는 건너뛰기만 — 지금 시각으로 채우지 않음).
+- **"모두 적용"**(기본 켬): 켜면 행 없는 전역 resolution(규칙 저장 대상), 끄면 그룹이 나온 행마다 행 지정 resolution(규칙에 저장되지 않음).
+- **제안은 확인 전 미적용**: 그룹을 처음 보면 처리 방법이 비어 있고("처리 방법 고르기", 노랑 테두리), 제안은 메뉴 첫 줄 · 근거 "추천 있음 · 확인해 주십시오"로만 보인다.
+- **표 줄 유지**: 처리 방법을 고른 그룹은 다음 미리보기에서 사라져도 남고(완료 = 고름 + 사라짐 → "모두 처리됨 k / n"), 고르지 않은 그룹이 다른 처리로 사라지면(예: 나누기가 시도 빈칸을 채움) 뺀다. 고른 뒤에도 남으면 테두리 노랑 + 근거 "… · 아직 풀리지 않음". 열 연결 · 시트를 바꾸면 표 · 행 결정을 비운다.
+- **건너뛴 행**: 행 결정이 건너뛰기인 행만 가리키는 resolution은 보내지 않는다(쓰이지 않은 resolution = `invalid_payload`).
+- **미리보기 줄**: 결정이 필요한 행(겹침 · 표 밖 행 이슈 · 결정한 행) 전부 + 가져올 기록 3줄(처리 반영 분홍 먼저). 부제 "<eligible>건 중 <보인 가져올 기록>건 · 분홍 줄 = 위 처리 방법이 적용된 기록". 칩: 처리 반영(분홍) · 그대로(회색) · 덮어쓰기(노랑) · 건너뜀(회색) · 결정 필요(빨강) · 확인 필요(노랑). 덮어쓰기는 겹친 기존 기록이 하나일 때만 고를 수 있다(여럿이면 흐림 + 이유).
+- **KPI**: 읽은 행(`read_rows`, 열 연결 확인 전 '—') · 기록으로 인식(`parsed_rows`) · 확인 필요 문자열(표 줄 수 "n종", 칸 합) · 건너뜀(빈 행 + 건너뛴 행, 보조 "빈 행 e · 건너뛴 행 s").
+- **열 연결 칸**: 시안 8칸 그대로, 시즌을 연결했을 때만 아홉째. 덱은 여섯 열이 이어지면 "D–I", 아니면 열 글자를 '·'로 잇고 모르면 '—'.
+- **자리**: 화면 작업 영역(셸 머리말 아래) 가운데 1560×880, 작은 창은 가장자리 16 안. 패널 높이 < 800이면 묶음 간격 10, 열 연결 · 표 · 미리보기를 한 스크롤로(공용 사선 스크롤바 · 포그). 학생 검색 패널은 패널보다 클 수 있어 화면 전체 위 가운데.
+- **기준 창 간격**: 시안 묶음 간격 18이면 표 5줄이 다 보이지 않아(17px 모자람) 14로 줄였다(→ 발견 3).
+- 원문 칸은 시안의 고정폭 대신 본문 글꼴(앱에 고정폭 글꼴 자산이 없음).
+- 가져오는 중에는 닫기 · 취소 · 체크가 꺼진다. 가져오는 중에 모달이 닫히면(Esc) 결과를 모르므로 기록을 다시 읽는다. 스크림을 눌러도 닫히지 않는다(고른 처리 방법 보호).
+
+### golden 변화 예상(비교 미실행 · 일회성 렌더로 모양 확인)
+
+- `tactical`: **바뀜** — S1 "엑셀 가져오기"가 흐림 → 보통 밝기. 나머지 같음.
+- `tactical-jokbo-drag`: **바뀜** — 같은 버튼 밝기. 끌기 고스트 · 알약 · 강조 같음.
+- `tactical-analysis`: **바뀜** — S2 제목 줄 "검증 강도 B" 칩이 사라짐. 나머지 같음.
+- `tactical-analysis-all`: **바뀜** — 스크림 뒤 S2 칩이 사라짐. 팝업 자체는 같음.
+- `tactical-migration`: **변화 0 예상** — 이관 전이라 버튼은 흐림 그대로(툴팁 글자만 바뀜, 그림에 없음).
+- 새 `tactical-import-excel`(optional_added): 기록 화면 위 스크림 .62, 패널 (500, 348, 1560, 880). 머리 "엑셀 가져오기 · 해석 결과 확인" + "전술대항전_기록_9월.csv · CSV" + 닫기(오른쪽 끝). KPI 5 · 4(초록) · 5종(분홍, 8칸) · 1(빈 행 1 · 건너뛴 행 0). 열 연결 A 날짜 · B 공격/방어 · C 상대 유저 · D–I 상대 덱 6칸 · J–O 내 덱 6칸 · P 승/패 · Q 시도 횟수 · R 메모 + "열 바꾸기". 표 "· 5종" + "모두 처리됨 5 / 5"(초록), 5줄: C 유저 → "새 상대 'C 유저'로 저장" · 게헨나 선도부(3칸) → "기존 상대 '게헨나 선도부'로 합치기"(추천) · 수영복 히나 → 초상 + "학생: 히나(수영복)" · ?(상대 덱 4번 · 2칸, "빈칸 표시로 보임") → 빗금 + "빈칸으로 두기" · 승(2트) → "결과 '승' + 시도 2회로 나누기", 모두 적용 체크, 범례 7. 미리보기 "4건 중 3건 · …" 분홍 3줄(9/22 게헨나 승 · 2회, 9/22 게헨나 패 · 1회, 9/21 C 유저 방어 승 · 1회, 모두 "처리 반영"). 체크 "이 처리 방법을 저장…"(켬) · "같은 날짜 · 상대 … 덮어쓰기"(끔), "취소" · "4건 가져오기"(분홍, 체크 아이콘, 오른쪽 끝).
+- 다른 장면: 변화 0 예상(전술 탭을 여는 golden은 이 파일뿐, 셸 · 키트 수정 0).
+
+### 미검증(미실행)
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 실제 백엔드에 붙인 모달: **미실행** — 실제 .xlsx(시트 여럿 · 수식 캐시 · 날짜 칸), 백엔드 학생 이름 제안 점수 · 상대 별칭 제안, coarse 충돌(같은 날 · 빈칸), `saved_opponent_identity_missing`, 실제 `rules_saved`. Mock CSV로만 확인.
+- 실제 `file_selector` 대화상자(Windows): **미실행**(대역으로만). Windows release 빌드: **미실행**.
+- 위 목록 밖 Flutter 테스트(통계 · 계획 · 인벤토리 · 스캔 단독, process E2E 3 — tactical_process_e2e · tactical_v2_process_e2e · tactical_fb6_process_e2e): **미실행**(서비스 수정 0).
+
+### 검수표(시안 Tactical-Import-Excel, mock 모드 · 기준 viewport 최대화)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 버튼 | design-review 시나리오 → 전술대항전 탭 | S1 "엑셀 가져오기" 밝음 · 툴팁 "엑셀(.xlsx) · CSV 파일의 전술 기록을 확인한 뒤 가져옵니다." / v1 기록이 있는 계정이면 흐림 + 이관 문구 |
+| 파일 | 버튼 → 파일 대화상자(.xlsx · .csv만) | 취소하면 그대로. **Mock은 파일을 읽지 않아** 실제 파일은 "파일을 읽지 못했습니다. 파일이 없거나 열 수 없습니다." — 모달 모양 검수는 golden 장면 `tactical-import-excel`(→ 발견 1) |
+| 열 연결 | 첫 화면 | 후보 칸 흐림 + "머리글 1행에서 찾은 열 연결입니다. 확인해야 기록을 읽습니다." + "이 열 연결로 읽기", KPI '—' |
+| 표 | 열 연결 확인 뒤 | 노랑 테두리 "처리 방법 고르기", "처리 필요 n / n", 메뉴(필드별 항목, Esc는 메뉴만), 학생 검색 패널 |
+| 처리 | 다섯 문자열 처리 | 초록 "모두 처리됨 5 / 5", 근거 문구, 미리보기 분홍 줄, "4건 가져오기" |
+| 겹침 | 같은 내용 파일을 다시 가져오기(메모만 다르게) | 덮어쓰기 체크 끔 = 건너뜀(가져올 기록 0) / 켬 = "결정 필요" + 건너뛰기 · 따로 두기 · 덮어쓰기 |
+| 가져오기 | "n건 가져오기" | 모달 닫힘, 목록에 새 기록, S3 상태 "엑셀에서 기록 n건을 가져왔습니다. …" |
+| 열 바꾸기 | "열 바꾸기" | 머리글 행 · 19필드 열 −/+, 겹침 · 필수 문구, "이 열 연결로 읽기" |
+| 분석 | 머리말 seg "분석" | S2 제목 줄에 "검증 강도" 칩 없음 |
+| 작은 창 | 1280×720 | 모달이 화면 안, 가운데 한 스크롤, 넘침 없음 |
+
+### 테스트(새 · 고친)
+
+- 새 `tactical_excel_import_test.dart`(14): 모델 3(열 글자 · 칸 8 · 부분 연결, 필드별 처리 방법, 오류 문구), 컨트롤러 6(첫 미리보기 = 열 연결 없음 · 후보만, 처리 → resolution · 모두 적용 끔 = 행 지정 · 미리보기 분홍, commit = 마지막 지문 · revision · 매번 새 key · 같은 미리보기 재commit = `revision_conflict` → 다시 읽기(replay), 원본 바뀜 `import_source_changed`, 겹침 행 결정(저장 규칙 · 저장한 열 연결 적용 확인 포함), 이관 전 막힘), 화면 4(버튼 켬 · 취소 · 이관 전 흐림 + 이유, 전체 흐름 → 닫힘 · 다시 읽기 · 상태 문구, 닫기 · 취소 · Esc(메뉴 먼저), 열 바꾸기 편집기 겹침 · 없음 · 다시 읽기), 셸 1(2560×1392 패널 rect · 1280×720 화면 안 · 넘침 0).
+- 고친 `tactical_page_test.dart`: "S1 title has no sub view seg and excel import is pending" → "… is on"(툴팁 `tacticalExcelHint`). 지운 테스트 0.
+- 고친 `tactical_analysis_test.dart`: 검증 강도 칩 정규식 검사 → 칩 · "검증 강도" 글자 없음. 등급 함수 모델 테스트는 그대로.
+
+### WIP 보존 확인
+
+- 고친 기존 8파일 + 이 문서는 착수 때 WIP 없음 → `post_dir` 없음. pre 사본 `debug/frontend_fe9f/pre/<경로>`(9파일).
+- 스캐너 시각부 5파일(`scan_page.dart` · `scan_companion_dock.dart` · `scan_student_review_workspace.dart` · 그 테스트 2): 열지도 고치지도 않았다(` M` 그대로). `lib/tactical/tactical_records_controller.dart`: HEAD와 cmp 일치. `dart format`은 이 slice 파일 경로만. git 쓰기 0회. 임시 렌더 파일은 매번 삭제(`test/goldens/zz_*` 0건).
+
+### 키트 승격 후보(Lane A 판단)
+
+- 패널 안 드롭다운 메뉴(`_TreatmentBox` + 앵커 메뉴 + `KitOverlayEscape`) — 키트에 드롭다운이 없다(FE9-a는 Material 드롭다운을 없앴다). `_Check`(체크 상자 + 글자) · `_ColumnStepper`(−/값/+) · `_SectionTitle`(분홍 사선 막대 소제목)도 다른 화면과 겹친다.
+
+### 발견 사항
+
+1. **Mock 검수 경로**: Mock CSV는 `debugSetTacticalExcelSource`로 넣은 경로만 읽는다. design-review 시나리오 설정(`lib/services/**` — Lane B 소유)이 `designReviewTacticalExcelPath`/`Rows`를 넣지 않아, 사용자가 mock 앱에서 실제 파일을 고르면 "파일을 읽지 못했습니다"가 보인다. 검수용으로 시나리오가 그 행을 넣거나(어떤 경로든 시나리오 CSV를 돌려주는 Mock 옵션) — Lane B · CF 판단.
+2. **미리보기 응답에 머리글 글자가 없다**: 시안 "A · '날짜'"의 머리글 원문을 그릴 수 없어 열 글자만 보인다. 머리글 행 글자(열 → 문자열)를 미리보기 DTO에 더하려면 XB 계약 additive 요청 후보.
+3. **시안 높이 합이 880을 넘는다**: 시안 간격 18 · 줄 높이로 계산하면 표 5줄 + 미리보기 3줄이 패널에 들어가지 않는다(글꼴 줄 높이 차이 추정). 간격 14 · 소제목 20으로 맞췄다 — 시안과 몇 px씩 다르다. CF 판단.
+4. **덮어쓰기 체크 문구 vs 의미**: 시안 문구 "같은 날짜 · 상대 기록이 이미 있으면 덮어쓰기"를 그대로 썼지만 백엔드 겹침 키는 종류 · 시각 · 정밀도 · 상대 · 시즌 · 두 덱이고, 날짜 정밀도 기록은 덮어쓰기에도 명시 대상(행 결정)이 필요하다(체크만으로는 "결정 필요"가 된다). 문구 조정 여부 CF 판단.
+5. **겹친 기존 기록이 여럿**: 덮어쓰기 대상을 고르는 UI를 만들지 않았다(하나일 때만 덮어쓰기). 여럿이면 건너뛰기 · 따로 두기만.
+6. **idempotency key**: 프롬프트대로 commit마다 새 key다. 답을 못 받은 commit(연결 끊김)을 다시 누르면 새 key라 같은 key 재전송(원 응답 재사용)이 일어나지 않는다 — 원본이 그대로면 `revision_conflict` → 다시 읽기(replay)로 수렴한다. 기록 컨트롤러(같은 key 재사용)와 규칙이 다르다. CF 판단.
+7. **`attemptCount` 표시**: 미리보기 "승 · 2회"는 `TacticalMatchInputV2.attemptCount`를 그대로 쓴다. Lane B fb6b-dart가 null 허용(FD-176)으로 바꾸면 '—' 처리가 필요하다(지금은 non-null이라 null 검사를 넣으면 analyze 경고).
+8. **tactical_fb6_dart_test 1건 RED**: `contracts/fixtures/tactical_fb6_writes_v2.json` XB 미커밋 FB-6b 변경(`unknown_manual_attempt`)이 Dart validator(시도 필수)와 맞지 않는다. 이 slice와 무관 — fb6b-dart가 Dart 쪽을 맞출 때 풀린다. CF gate 시점 상태에 따른다.
+9. **학생 검색 후보**: 슬롯 역할(스트라이커 · 스페셜)로 거르고 내 덱은 보유 학생만(기록 작성 피커 규칙). 백엔드 학생 이름 제안은 메뉴 첫 줄 "학생: 이름"으로만 보인다(점수는 확률이 아니라 숨김).
+10. fe_gate 분류: `tactical_excel_import_test.dart`에 `ProcessAppService` 문자열이 없어 일반 묶음(+14, 약 20초).
+
+### 사본 · commit.json
+
+- `debug/frontend_fe9f/commit.json`: slice `fe9f`, modified 9(이 문서 포함), added 4, `post_dir` 없음(WIP 없음), `whole` = `tactical.png` · `tactical-jokbo-drag.png` · `tactical-analysis.png` · `tactical-analysis-all.png`, `optional_added` = `tactical-import-excel.png`, `status=true`.
+- 인계: `debug/frontend_fe9f/output.md`. 로그 `debug/frontend_fe9f/logs/`.
+
+### 다음 행동
+
+- FE9-f 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(fb6b-dart)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 tactical_excel_import +14, process tactical_fb6_dart는 fb6b-dart 상태에 따름, golden `tactical` · `tactical-jokbo-drag` · `tactical-analysis` · `tactical-analysis-all` RED · 새 `tactical-import-excel` 기준 없음 · `tactical-migration` 등 나머지 GREEN) → 실패 이미지 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9f`.
+- 발견 1(검수 시나리오 CSV)은 Lane B/CF, 2는 XB 요청 후보, 3 · 4 · 5 · 6은 CF 판단, 7은 fb6b-dart 입력.
+
+### fe9f commit record (2026-10-16 20:49, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261016_203646\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

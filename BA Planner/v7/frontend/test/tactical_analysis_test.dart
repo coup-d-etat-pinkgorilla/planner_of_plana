@@ -4,7 +4,8 @@
 //   다른 탭 머리말에는 seg가 없다. 같은 탭을 다시 눌러도 하위 화면은 그대로다(복귀 칩 없음).
 // - 전환 모션: 앞 절반에 기록 섹션이 outro 방향으로 빠지고 뒤 절반에 분석 섹션이 intro 방향으로 들어온다(FD-130 아래).
 // - Studio 3섹션 꼭짓점 · 섹션 안 요소 rect(시안 ±2px).
-// - 모델(관측 값만, FD-127): 30일 기간, 시그니처 행, 족보 시도 지표, 상대 카드, 변경 감지, 정렬, 검증 강도(FD-134).
+// - 모델(관측 값만, FD-127): 30일 기간, 시그니처 행, 족보 시도 지표, 상대 카드, 변경 감지, 정렬, 검증 강도(FD-134 — 등급
+//   함수만, 칩은 FE9-f부터 FD-127 (a)로 숨김).
 // - 팝업: 버튼에 붙은 940 패널 · 꼬리, 정렬, 표본 적음 흐림, 줄 → S2 족보, "공격 기록에 복사" → 기록 화면 내 덱 초안(저장 없음).
 // - 1280×720 · 1440×900에서 넘침 예외 0.
 import 'package:ba_planner_v7/app/app.dart';
@@ -658,15 +659,12 @@ void main() {
         ),
         findsOneWidget,
       );
-      final grade = tester
-          .widget<Text>(
-            find.descendant(
-              of: find.byKey(const ValueKey('tactical-analysis-grade')),
-              matching: find.byType(Text),
-            ),
-          )
-          .data!;
-      expect(grade, matches(RegExp(r'^검증 강도 [ABC—]$')));
+      // FE9-f: "검증 강도" 칩은 FD-127 (a)로 숨긴다(등급 함수는 위 모델 테스트가 지킨다).
+      expect(
+        find.byKey(const ValueKey('tactical-analysis-grade')),
+        findsNothing,
+      );
+      expect(find.textContaining('검증 강도'), findsNothing);
     });
 
     testWidgets('jokbo seg and opponent rows change S2 and S3', (tester) async {

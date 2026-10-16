@@ -132,3 +132,47 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
     attemptCount: 1,
   ),
 ];
+
+/// FE9-f: 엑셀 가져오기 검수 · golden용 Mock CSV 경로(`MockAppService.debugSetTacticalExcelSource`로 넣는다).
+const designReviewTacticalExcelPath = r'C:\fixtures\전술대항전_기록_9월.csv';
+
+/// FE9-f: 엑셀 가져오기 검수 · golden용 CSV 행(머리글 1행 + 기록 4 + 빈 행 1). 머리글은 Mock 머리글 이름표와 맞아 열 연결 후보가
+/// 시안처럼 A 날짜 · B 구분 · C 상대 · D–I 상대 덱 · J–O 내 덱 · P 결과 · Q 시도 · R 비고가 된다(덱 열은 Mock이 필드 이름 머리글만
+/// 알아본다). 확인 필요 문자열 5종(+ 결과 · 시도로 나누면 사라지는 시도 빈칸 1종): 기존 상대 이름 "게헨나 선도부"(3칸, 기존 상대
+/// 제안), 상대 덱 4번 "?"(2칸), 결과 "승(2트)"(제안 승 · 2회), 학생 이름 "수영복 히나"(Mock은 학생 이름을 읽지 않음), 새 상대
+/// "C 유저". 시안 숫자(48행 · 41건 등)는 예시라 맞추지 않는다.
+List<List<String>> designReviewTacticalExcelRows() => const [
+  [
+    '날짜', '구분', '상대', //
+    'opponent_striker_1', 'opponent_striker_2', 'opponent_striker_3',
+    'opponent_striker_4', 'opponent_special_1', 'opponent_special_2',
+    'own_striker_1', 'own_striker_2', 'own_striker_3', 'own_striker_4',
+    'own_special_1', 'own_special_2', //
+    '결과', '시도', '비고',
+  ],
+  [
+    '2026-09-22', '공격', '게헨나 선도부', //
+    'hina', 'iori', 'aru', '?', 'hibiki', 'ako', //
+    'hoshino', 'izuna', 'mika', 'kayoko', 'ayane', 'hanae', //
+    '승(2트)', '', '',
+  ],
+  [
+    '2026-09-22', '공격', '게헨나 선도부', //
+    '수영복 히나', 'iori', 'aru', 'haruka', 'hibiki', 'ako', //
+    'hoshino', 'izuna', 'mika', 'kayoko', 'ayane', 'hanae', //
+    '패', '1', '',
+  ],
+  [
+    '2026-09-21', '방어', 'C 유저', //
+    'aru', 'haruna', '', '?', 'hibiki', '', //
+    'hina', 'iori', 'aru', 'haruka', 'hibiki', 'ako', //
+    '승', '1', '상대 2번 확인 못 함',
+  ],
+  [
+    '2026-09-20', '공격', '게헨나 선도부', //
+    'hina', 'iori', 'aru', 'haruka', 'hibiki', 'ako', //
+    'hoshino', 'izuna', 'mika', 'kayoko', 'ayane', 'hanae', //
+    '승', '1', '',
+  ],
+  ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+];

@@ -526,3 +526,64 @@ abstract final class TacticalAnalysisMetrics {
   /// 순위 행 덱 칸 40×32.
   static const allRowPortrait = (width: 40.0, height: 32.0);
 }
+
+/// 엑셀 가져오기 · 해석 결과 확인 모달(FE9-f, 시안 Tactical-Import-Excel, G 보고서 §5.1).
+///
+/// 기준 viewport에서 패널 (500, 348, 1560, 880)은 헤더 아래 작업 영역(y 184~1392)의 가운데다(가운데 (1280, 788)). 작은 창에서는
+/// 작업 영역 가장자리 [margin] 안으로 줄이고(가운데 그대로), 안쪽 문자열 표 · 미리보기가 줄어든 높이를 나눠 스크롤한다.
+/// 직사각 패널(FD-019 예외), 스크림 rgba(5,9,14,.62)(`BaScrim.excel`), 패널 `BaModalPanel.sheet`(#0f1822 r14, 안쪽 24 28).
+abstract final class TacticalExcelImportMetrics {
+  static const panelWidth = 1560.0;
+  static const panelHeight = 880.0;
+
+  /// 작은 창에서 작업 영역 가장자리와 패널 사이.
+  static const margin = 16.0;
+
+  /// 패널 안 묶음 사이. 시안 gap은 18이지만 그대로면 기준 창에서 문자열 표 5줄(시안 상태)이 다 보이지 않아(17px 모자람) 14로
+  /// 줄였다(FE9-f 발견). 패널 높이가 [compactHeight]보다 낮으면 [compactGap].
+  static const sectionGap = 14.0;
+  static const compactGap = 10.0;
+  static const compactHeight = 800.0;
+
+  /// 머리 줄 닫기 버튼(32×32).
+  static const closeSize = 32.0;
+
+  /// 요약 KPI 칸 안쪽(시안 10 16 10 20, 사선 −10°).
+  static const kpiGap = 14.0;
+
+  /// 열 연결 칸(시안 안쪽 8 10, r7, 사이 8) · "열 바꾸기" 28.
+  static const columnTileGap = 8.0;
+  static const columnButtonHeight = 28.0;
+
+  /// 문자열 표 6열(시안 grid 150 / 150 / 1fr / 266 / 190 / 120, 사이 12, 좌우 안쪽 12).
+  static const rawWidth = 150.0;
+  static const placeWidth = 150.0;
+  static const treatmentWidth = 266.0;
+  static const evidenceWidth = 190.0;
+  static const applyAllWidth = 120.0;
+  static const gridGap = 12.0;
+  static const gridPadding = 12.0;
+
+  /// 처리 방법 상자(시안 250×34, 분홍 테두리 .7) · 초상 28×23.
+  static const treatmentBoxWidth = 250.0;
+  static const treatmentBoxHeight = 34.0;
+  static const treatmentPortrait = (width: 28.0, height: 23.0);
+
+  /// 표 한 줄(안쪽 위아래 8 + 34) · 줄 사이 8.
+  static const groupRowHeight = 50.0;
+  static const groupRowGap = 8.0;
+
+  /// 처리 방법 메뉴 한 줄 · 폭.
+  static const menuRowHeight = 32.0;
+  static const menuWidth = 300.0;
+
+  /// 미리보기 한 줄(안쪽 6 12, 사이 14, 초상 32×26) · 줄 사이 8 · 보이는 가져올 기록 줄 수(시안 3).
+  static const previewRowHeight = 38.0;
+  static const previewRowGap = 8.0;
+  static const previewPortrait = (width: 32.0, height: 26.0);
+  static const previewSampleRows = 3;
+
+  /// 아래 버튼(시안 높이 42, 안쪽 18 · 22) · 체크 상자 16.
+  static const footerButtonHeight = 42.0;
+  static const checkSize = 16.0;
+}

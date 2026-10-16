@@ -3,10 +3,11 @@
 // - S1 공개 방어 시그니처(왼쪽 사다리꼴): 제목 + "최근 30일" 칩, 공용 사선 스크롤 목록(resize 모드, 행 86 · 간격 8, 공용 스크롤바 ·
 //   포그). 행 = 공개 칸 초상 3(1번 | SP1 · SP2) · 최근 관측("6h") · 방어 유저 · 족보 · 칩("변경 의심 n" · "표본 적음").
 //   시안의 "최다 채택 족보 X"는 FD-127로 그리지 않는다.
-// - S2 족보 상세(가운데 평행사변형, 주 부착면 아래 FD-130): 족보 이름 · 편집(준비 중) · "검증 강도 X"(FD-134), 상대 방어 덱 6칸 +
+// - S2 족보 상세(가운데 평행사변형, 주 부착면 아래 FD-130): 족보 이름 · 편집(준비 중), 상대 방어 덱 6칸 +
 //   "이 방어 덱 사용 n명", 족보 seg(상위 4) + "전체 보기 (n)", 공격 덱 6칸 + "공격 기록에 복사" · "내 보유로 대체 찾기"(준비 중),
 //   KPI 6칸(채택률 · 독립 재현은 '—'), N회 내 누적 돌파율 막대 3, 상대별 결과 4행(누르면 S3 상대가 바뀐다), 수명 · 신선도(관측 부분).
-//   "널리 알려짐 · 변경 위험" 칩 · 대체 학생 허용도는 그리지 않는다(FD-127).
+//   "널리 알려짐 · 변경 위험" 칩 · 대체 학생 허용도는 그리지 않는다(FD-127). "검증 강도 X" 칩(FD-134)도 FD-127 (a)가 숨길 지표로
+//   적었으므로 그리지 않는다(FE9-f, CF 결정 2026-10-16 — [verificationGrade] 값과 등급 함수는 FD-127이 바뀔 때를 위해 남긴다).
 // - S3 상대 카드(오른쪽 사다리꼴): 이름 · 순위 —, 공개 방어 이력, 2~4번 학생 관측 비율 · 근거, 변경 감지, 이 상대에게 친 족보 2행,
 //   기억 카드(관측 부분). "방어 변경 성향" 칩 · 변경 확률은 그리지 않는다(FD-127).
 // 좌표는 `tactical_studio_layout.dart`의 [tacticalAnalysisStudioDocument]와 [TacticalAnalysisMetrics]다. 작은 창 규칙은 기록 화면과 같다.
@@ -114,6 +115,8 @@ class TacticalAnalysisPanel {
   final List<TacticalJokboAnalysis> jokbo;
   final String? selectedJokboId;
   final ValueChanged<String>? onSelectJokbo;
+
+  /// 검증 강도 A/B/C/—(FD-134). FD-127 (a)로 지금은 그리지 않는다(FE9-f).
   final String verificationGrade;
   final VoidCallback? onOpenAll;
 
@@ -322,7 +325,6 @@ class TacticalAnalysisWorkspace extends StatelessWidget {
       ]);
     }
     final card = selected.card;
-    final grade = panel.verificationGrade;
     final shown = _segmentCards(selected);
     final onSelectJokbo = panel.onSelectJokbo;
     final onSelectOpponent = panel.onSelectOpponent;
@@ -358,17 +360,6 @@ class TacticalAnalysisWorkspace extends StatelessWidget {
                   fontSize: AppType.bodySmallSize,
                   onPressed: null,
                 ),
-              ),
-              const SizedBox(width: 10),
-              BaChip(
-                key: const ValueKey('tactical-analysis-grade'),
-                label: '검증 강도 $grade',
-                tone: switch (grade) {
-                  'A' => AppTones.ok,
-                  'B' => AppTones.info,
-                  'C' => AppTones.warn,
-                  _ => AppTones.gray,
-                },
               ),
               if (readError != null) ...[
                 const SizedBox(width: 10),

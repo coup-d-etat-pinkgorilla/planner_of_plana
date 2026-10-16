@@ -23,6 +23,13 @@
 //   결과), S3 게헨나 선도부 카드(이력 · 2~4번 관측 비율 · 변경 관측 없음 · 유효한 족보 · 기억 카드).
 // - `tactical-analysis-all`(FE9-e, 시안 "성공률 정렬 · 족보 A 보는 중"): 위 화면에서 "전체 보기 (2)"를 눌러 연 팝업(스크림 .35,
 //   940 패널 · 꼬리). 1위 아비도스 족보 100%, 2위 게헨나 족보 50% "보는 중", 두 줄 모두 표본 적음(흐림 + 칩).
+// - FE9-f: S1 "엑셀 가져오기"가 켜진다(`tactical` · `tactical-jokbo-drag`는 버튼이 흐림 → 보통, `tactical-migration`은 이관 전이라
+//   흐림 그대로). 분석 S2 "검증 강도" 칩은 FD-127 (a)로 숨긴다(`tactical-analysis` · `-all`).
+// - `tactical-import-excel`(FE9-f, 시안 "모든 문자열 처리됨, 승인 직전"): `tactical`과 같은 seed에 Mock CSV(design-review
+//   `designReviewTacticalExcelRows`)를 두고, 파일 대화상자 대역이 그 경로를 돌려준다. "엑셀 가져오기" → 열 연결 후보 "이 열 연결로
+//   읽기" → 문자열 5종 처리(기존 상대 합치기 · "?" 빈칸으로 두기 · "승(2트)" 결과 · 시도로 나누기 · 새 상대 저장 · "수영복 히나"
+//   학생 검색 → 히나(수영복)) 뒤 찍는다. 스크림 .62, 패널 (500, 348, 1560, 880), "모두 처리됨 5 / 5", 미리보기 분홍 줄 3, "4건
+//   가져오기".
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -35,6 +42,7 @@ import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/design_review/tactical_records_data.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/tactical_service.dart';
+import 'package:ba_planner_v7/tactical/tactical_excel_import_controller.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_jokbo_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_workspace.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +103,25 @@ Future<void> _waitJokbo(WidgetTester tester) => pumpUntilFound(
   tester,
   find.byKey(const ValueKey('tactical-jokbo-kpi-diversity-detail')),
 );
+
+/// 파일 대화상자 대역(Mock CSV 경로를 돌려준다).
+class _FixturePicker implements TacticalExcelFilePicker {
+  const _FixturePicker();
+
+  @override
+  Future<String?> pick() async => designReviewTacticalExcelPath;
+}
+
+/// 엑셀 가져오기 모달의 문자열 한 줄 처리 방법을 고른다.
+Future<void> _treat(WidgetTester tester, String group, String option) async {
+  final box = find.byKey(ValueKey('tactical-excel-group-$group-treatment'));
+  await tester.ensureVisible(box);
+  await tester.pumpAndSettle();
+  await tester.tap(box);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(ValueKey('tactical-excel-option-$option')));
+  await tester.pumpAndSettle();
+}
 
 TacticalDeck _legacyDeck(List<String?> strikers, List<String?> specials) =>
     TacticalDeck(strikers: strikers, specials: specials);
@@ -175,6 +202,47 @@ void main() {
     expect(find.byKey(const ValueKey('tactical-jokbo-all')), findsOneWidget);
     expect(find.textContaining(' · 보는 중'), findsOneWidget);
     await expectGoldenScene(tester, 'tactical-analysis-all');
+  }, variant: goldenPlatform);
+
+  testWidgets('tactical-import-excel', (tester) async {
+    final service = MockAppService(fullStudentCatalog: true);
+    addTearDown(service.dispose);
+    await _seedV2(service);
+    service.debugSetTacticalExcelSource(
+      designReviewTacticalExcelPath,
+      designReviewTacticalExcelRows(),
+    );
+    debugTacticalExcelFilePicker = const _FixturePicker();
+    addTearDown(() => debugTacticalExcelFilePicker = null);
+    await _openTactical(tester, service);
+    await _waitJokbo(tester);
+    await tester.tap(find.byKey(const ValueKey('tactical-import-excel')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('tactical-excel-mapping-confirm')),
+    );
+    await tester.pumpAndSettle();
+    await _treat(
+      tester,
+      'opponent-게헨나 선도부',
+      'opponent:$designReviewTacticalOpponentA',
+    );
+    await _treat(tester, 'opponent_striker_4-?', 'wildcard');
+    await _treat(tester, 'result-승(2트)', 'split:win:2');
+    await _treat(tester, 'opponent-C 유저', 'opponent-new');
+    await _treat(tester, 'opponent_striker_1-수영복 히나', 'student-search');
+    await tester.enterText(
+      find.byKey(const ValueKey('tactical-student-picker-search')),
+      '히나',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('tactical-student-picker-hina_swimsuit')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('모두 처리됨 5 / 5'), findsOneWidget);
+    expect(find.text('4건 가져오기'), findsOneWidget);
+    await expectGoldenScene(tester, 'tactical-import-excel');
   }, variant: goldenPlatform);
 
   testWidgets('tactical-migration', (tester) async {

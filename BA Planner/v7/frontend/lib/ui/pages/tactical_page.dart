@@ -16,6 +16,10 @@
 //   고른 시그니처 · 상대)을 읽어 관측 값만 보인다(FD-127). "전체 보기"는 버튼에 꼬리를 단 앵커 팝업 모달이다. 분석의 "공격 기록에
 //   복사"는 기록 화면으로 돌아가 내 덱 초안을 채운다(FE9-d 복사 규칙, 저장하지 않는다 — 고칠 수 없는 초안이면 새 공격 초안).
 //   하위 화면을 바꾸면 섹션이 부착면 방향으로 빠지고 들어온다(`tactical_sub_screen.dart`).
+// - FE9-f: S1 "엑셀 가져오기" → 파일 고르기(`file_selector`, .xlsx · .csv) → 엑셀 가져오기 모달(시안 Tactical-Import-Excel,
+//   [TacticalExcelImportController] — 미리보기 · 처리 방법 · commit). 가져오면 모달을 닫고 컨트롤러 `reload()`로 기록을 다시
+//   읽는다. 이관 전(v1 기록이 남음)에는 버튼을 끄고 이유를 보인다(백엔드 `legacy_migration_required`와 같은 뜻). 분석 S2 "검증 강도"
+//   칩은 FD-127 (a)로 숨긴다(FD-134 등급 함수는 남긴다).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -25,11 +29,13 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/tactical_service.dart';
 import '../../services/tactical_v2_service.dart';
+import '../../tactical/tactical_excel_import_controller.dart';
 import '../../tactical/tactical_records_controller.dart';
 import '../app_section.dart';
 import '../kit/ba_modal.dart';
 import '../tactical/tactical_analysis_view.dart';
 import '../tactical/tactical_analysis_workspace.dart';
+import '../tactical/tactical_excel_import_panel.dart';
 import '../tactical/tactical_jokbo_all_panel.dart';
 import '../tactical/tactical_jokbo_view.dart';
 import '../tactical/tactical_pickers.dart';
@@ -74,6 +80,22 @@ const tacticalAnalysisNoOpponentText = '이 시그니처로 최근 30일에 기�
 const tacticalAnalysisReadErrorText = '분석 통계를 읽지 못했습니다. 기록에서 센 값만 보입니다.';
 const tacticalAnalysisCopyHint =
     '기록 화면으로 돌아가 내 공격 덱 초안에 이 족보 덱을 복사합니다. 저장은 따로 합니다.';
+
+/// 엑셀 가져오기 문구(FE9-f).
+const tacticalExcelHint = '엑셀(.xlsx) · CSV 파일의 전술 기록을 확인한 뒤 가져옵니다.';
+const tacticalExcelNoServiceText = '엑셀 가져오기 서비스가 제공되지 않습니다.';
+const tacticalExcelBusyText = '기록을 읽거나 저장하는 중에는 가져올 수 없습니다.';
+
+/// 가져온 뒤 상태 문구.
+String tacticalExcelImportedText(TacticalExcelCommitResult result) {
+  final parts = [
+    '엑셀에서 기록 ${result.importedCount}건을 가져왔습니다.',
+    if (result.overwrittenCount > 0) '덮어쓴 기록 ${result.overwrittenCount}건.',
+    if (result.skippedCount > 0) '건너뛴 행 ${result.skippedCount}건.',
+    if (result.rulesSaved) '처리 방법을 저장했습니다.',
+  ];
+  return parts.join(' ');
+}
 
 /// S4 질의 디바운스(고른 기록 · 공개 칸이 잇따라 바뀔 때 마지막 것만 묻는다).
 const tacticalJokboQueryDelay = Duration(milliseconds: 200);
@@ -205,6 +227,16 @@ class _TacticalPageState extends State<TacticalPage> {
   /// 마지막으로 그린 분석 화면(팝업이 쓴다).
   TacticalAnalysisPanel? _lastAnalysis;
 
+  // --- 엑셀 가져오기(FE9-f) ---
+  TacticalExcelImportController? _excel;
+  final _excelModal = BaModalController();
+
+  /// 화면 작업 영역(엑셀 모달을 그 가운데 둔다).
+  final _pageKey = GlobalKey(debugLabel: 'tactical-page-area');
+
+  /// 가져온 뒤 상태 문구(다음 초안 변경까지).
+  String? _excelNotice;
+
   @override
   void initState() {
     super.initState();
@@ -212,6 +244,7 @@ class _TacticalPageState extends State<TacticalPage> {
     widget.service.state.addListener(_connection);
     _opponentText.addListener(_textChanged);
     _notesText.addListener(_textChanged);
+    _excelModal.addListener(_excelModalChanged);
     _reload();
     // 머리말은 셸의 다른 부분이라 빌드가 끝난 뒤 건다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -251,6 +284,12 @@ class _TacticalPageState extends State<TacticalPage> {
         now: () => appClockNow(service),
       )..addListener(_controllerChanged);
     }
+    if (service is TacticalExcelImportService) {
+      _excel = TacticalExcelImportController(
+        service as TacticalExcelImportService,
+        now: () => appClockNow(service),
+      );
+    }
   }
 
   void _detach() {
@@ -258,6 +297,9 @@ class _TacticalPageState extends State<TacticalPage> {
       ?..removeListener(_controllerChanged)
       ..dispose();
     _controller = null;
+    _excelModal.close();
+    _excel?.dispose();
+    _excel = null;
   }
 
   @override
@@ -300,6 +342,9 @@ class _TacticalPageState extends State<TacticalPage> {
     _opponentModal.dispose();
     _deleteModal.dispose();
     _allModal.dispose();
+    _excelModal
+      ..removeListener(_excelModalChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -459,6 +504,7 @@ class _TacticalPageState extends State<TacticalPage> {
     _draft = draft;
     _localError = null;
     _copyNotice = null;
+    _excelNotice = null;
     _selectedJokboId = null;
     _opponentText.text = draft.opponentName;
     _notesText.text = draft.notes;
@@ -513,6 +559,7 @@ class _TacticalPageState extends State<TacticalPage> {
     setState(() {
       _localError = null;
       _copyNotice = notice;
+      _excelNotice = null;
       _draft = change(_draft);
     });
   }
@@ -977,12 +1024,8 @@ class _TacticalPageState extends State<TacticalPage> {
             signatureMatches: summary.matches,
             cards: cards,
           );
-    final recommendation =
-        reads != null &&
-            reads.query.signature == summary.signature &&
-            reads.query.opponentId == opponentId
-        ? reads.recommendation
-        : null;
+    // FD-127 (a): "검증 강도"(추천 신뢰 등급, FD-134 [tacticalVerificationGrade])는 숨길 지표라 넘기지 않는다(FE9-f, CF 결정
+    // 2026-10-16). FD-127이 바뀌면 고른 시그니처 · 상대의 추천 `confidenceGrade`를 다시 `verificationGrade`로 넘긴다.
     final copyBlocker = _analysisCopyBlocker;
     return TacticalAnalysisPanel(
       now: now,
@@ -997,9 +1040,6 @@ class _TacticalPageState extends State<TacticalPage> {
       jokbo: analyses,
       selectedJokboId: jokboId,
       onSelectJokbo: (id) => setState(() => _analysisJokboId = id),
-      verificationGrade: tacticalVerificationGrade(
-        recommendation?.confidenceGrade,
-      ),
       onOpenAll: analyses.isEmpty ? null : _allModal.open,
       onCopy: copyBlocker != null || analyses.isEmpty
           ? null
@@ -1078,6 +1118,90 @@ class _TacticalPageState extends State<TacticalPage> {
         onCopy: copyBlocker == null ? _copyFromAnalysis : null,
         copyHint: copyBlocker ?? tacticalAnalysisCopyHint,
         onClose: _allModal.close,
+      ),
+    );
+  }
+
+  // --- 엑셀 가져오기 (FE9-f) -----------------------------------------------------
+
+  /// 엑셀 가져오기를 열 수 없는 이유(null = 열 수 있다).
+  String? get _excelBlocker {
+    if (_excel == null) return tacticalExcelNoServiceText;
+    if (_profile == null) {
+      return _error ?? (_loading ? tacticalLoadingText : tacticalNoProfileText);
+    }
+    if (!_available) return _error ?? tacticalLoadingText;
+    if (_controller?.error?.code == 'load_failed') {
+      return _controller?.error?.message;
+    }
+    if (_migrationRequired) {
+      return tacticalExcelImportErrorMessages['legacy_migration_required'];
+    }
+    if (_busy) return tacticalExcelBusyText;
+    return null;
+  }
+
+  /// 파일을 고르고 모달을 연다(첫 미리보기는 열 연결 없이 — 후보만 받는다).
+  Future<void> _openExcel() async {
+    final excel = _excel;
+    final profileId = _profile?.id;
+    if (excel == null || profileId == null || _excelBlocker != null) return;
+    final path = await tacticalExcelFilePicker().pick();
+    if (!mounted || path == null || _excel != excel) return;
+    if (_profile?.id != profileId || _excelBlocker != null) return;
+    _controller?.clearError();
+    _excelModal.open();
+    await excel.open(profileId: profileId, sourcePath: path);
+  }
+
+  /// 모달이 닫히면(닫기 · 취소 · Esc · 가져오기 성공) 흐름도 닫는다. 가져오는 중에 닫혔으면 결과를 모르므로 기록을 다시 읽는다.
+  void _excelModalChanged() {
+    final excel = _excel;
+    if (_excelModal.isOpen || excel == null || !excel.isOpen) return;
+    final committing = excel.committing;
+    excel.close();
+    if (committing) _controller?.reload();
+  }
+
+  Future<void> _commitExcel() async {
+    final excel = _excel;
+    if (excel == null) return;
+    final imported = await excel.commit();
+    final result = excel.result;
+    if (!mounted || !imported || result == null || _excel != excel) return;
+    _excelModal.close();
+    await _controller?.reload();
+    if (!mounted) return;
+    setState(() => _excelNotice = tacticalExcelImportedText(result));
+  }
+
+  /// 화면 작업 영역(오버레이 좌표). 아직 그려지지 않았으면 null(오버레이 전체 가운데).
+  Rect? _pageArea(BuildContext overlayContext) {
+    final page = _pageKey.currentContext?.findRenderObject();
+    final overlay = Overlay.maybeOf(overlayContext)?.context.findRenderObject();
+    if (page is! RenderBox ||
+        overlay is! RenderBox ||
+        !page.attached ||
+        !page.hasSize) {
+      return null;
+    }
+    return page.localToGlobal(Offset.zero, ancestor: overlay) & page.size;
+  }
+
+  Widget _excelPanel(BuildContext context) {
+    final excel = _excel;
+    if (excel == null) return const SizedBox.shrink();
+    return SizedBox.expand(
+      child: TacticalExcelImportPanel(
+        controller: excel,
+        workArea: _pageArea(context),
+        catalog: _catalog,
+        ownedIds: {
+          ...?_repositoryState?.students.map((item) => item.studentId),
+        },
+        studentName: (id) => _names[id] ?? id,
+        onClose: _excelModal.close,
+        onCommit: _commitExcel,
       ),
     );
   }
@@ -1219,7 +1343,7 @@ class _TacticalPageState extends State<TacticalPage> {
       return (text: local, tone: TacticalEditorStatusTone.error);
     }
     if (!_available) return (text: null, tone: TacticalEditorStatusTone.none);
-    final notice = _copyNotice;
+    final notice = _copyNotice ?? _excelNotice;
     if (notice != null) {
       return (text: notice, tone: TacticalEditorStatusTone.hint);
     }
@@ -1267,9 +1391,17 @@ class _TacticalPageState extends State<TacticalPage> {
             scrim: BaScrim.anchored,
             label: '족보 전체',
             builder: _allPanel,
-            child: KeyedSubtree(
-              key: const ValueKey('tactical-page'),
-              child: stage,
+            child: BaModal(
+              controller: _excelModal,
+              scrim: BaScrim.excel,
+              label: '엑셀 가져오기 해석 결과',
+              // 고른 처리 방법을 잃지 않게 스크림을 눌러 닫지 않는다(닫기 · 취소 · Esc).
+              barrierDismissible: false,
+              builder: _excelPanel,
+              child: KeyedSubtree(
+                key: const ValueKey('tactical-page'),
+                child: KeyedSubtree(key: _pageKey, child: stage),
+              ),
             ),
           ),
         ),
@@ -1308,6 +1440,8 @@ class _TacticalPageState extends State<TacticalPage> {
           ? () => _openOpponentPicker(_OpponentPickerMode.filter)
           : null,
       onNewRecord: _available && !_busy ? _onNewRecord : null,
+      onImportExcel: _excelBlocker == null ? _openExcel : null,
+      importExcelHint: _excelBlocker ?? tacticalExcelHint,
       listMessage:
           _listMessage ?? (filtered.isEmpty ? '조건에 맞는 기록이 없습니다.' : null),
       onRetry: _error != null || controller?.error?.code == 'load_failed'

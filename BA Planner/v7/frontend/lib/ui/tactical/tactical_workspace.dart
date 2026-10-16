@@ -1,6 +1,7 @@
 // FE9-a: 전술대항전 기록 화면 4섹션(시안 Tactical, G 보고서 §1).
 //
-// - S1 기록 목록(왼쪽 사다리꼴): 제목 "기록" + "새 기록" + "엑셀 가져오기"(FE9-f, 비활성). 하위 seg "기록 · 분석 · 슬롯"은
+// - S1 기록 목록(왼쪽 사다리꼴): 제목 "기록" + "새 기록" + "엑셀 가져오기"(FE9-f — 누르면 파일 고르기 · 가져오기 모달, 못 열면
+//   흐림 + 이유 툴팁). 하위 seg "기록 · 분석 · 슬롯"은
 //   FE9-e부터 셸 머리말 제목 옆이다(FD-126 (a), `tactical_sub_screen.dart`).
 //   필터 칩(전체 · 공격 · 방어 · 승 · 패 · 이번 시즌 · 상대), 이관 안내 띠(v1 기록이 남았을 때만), 공용 사선 스크롤 목록
 //   (resize 모드 — 행 폭이 사선을 따라 준다, 공용 스크롤바 · 포그).
@@ -163,6 +164,8 @@ class TacticalWorkspace extends StatelessWidget {
     required this.seasonAvailable,
     required this.onOpenOpponentFilter,
     required this.onNewRecord,
+    this.onImportExcel,
+    this.importExcelHint = tacticalPendingText,
     required this.listMessage,
     required this.onRetry,
     required this.migration,
@@ -203,6 +206,10 @@ class TacticalWorkspace extends StatelessWidget {
   final bool seasonAvailable;
   final VoidCallback? onOpenOpponentFilter;
   final VoidCallback? onNewRecord;
+
+  /// "엑셀 가져오기"(FE9-f). null이면 흐림이고 이유는 [importExcelHint]다.
+  final VoidCallback? onImportExcel;
+  final String importExcelHint;
 
   /// 목록 대신 보일 문구(읽는 중 · 오류 · 빈 목록 · 계정 없음). null이면 목록.
   final String? listMessage;
@@ -327,14 +334,14 @@ class TacticalWorkspace extends StatelessWidget {
                 onPressed: onNewRecord,
               ),
               const SizedBox(width: 8),
-              const Tooltip(
-                message: tacticalPendingText,
+              Tooltip(
+                message: importExcelHint,
                 child: TonalButton(
-                  key: ValueKey('tactical-import-excel'),
+                  key: const ValueKey('tactical-import-excel'),
                   label: '엑셀 가져오기',
                   height: 36,
                   fontSize: AppType.bodySmallSize,
-                  onPressed: null,
+                  onPressed: onImportExcel,
                 ),
               ),
             ],

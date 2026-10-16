@@ -401,7 +401,7 @@ void main() {
       });
     }
 
-    testWidgets('S1 title has no sub view seg and excel import is pending', (
+    testWidgets('S1 title has no sub view seg and excel import is on', (
       tester,
     ) async {
       final service = MockAppService();
@@ -413,11 +413,12 @@ void main() {
         findsNothing,
       );
       expect(find.byKey(const ValueKey('tactical-view-records')), findsNothing);
+      // FE9-f: 엑셀 가져오기는 켜져 있다(흐림 · 이관 전 이유는 tactical_excel_import_test).
       final excel = find.ancestor(
         of: find.byKey(const ValueKey('tactical-import-excel')),
         matching: find.byType(Tooltip),
       );
-      expect(tester.widget<Tooltip>(excel).message, tacticalPendingText);
+      expect(tester.widget<Tooltip>(excel).message, tacticalExcelHint);
     });
   });
 
