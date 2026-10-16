@@ -2031,7 +2031,7 @@
                 "public_signatures": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "$ref": "#/$defs/typedPublicSignatureAggregate"
                   }
                 },
                 "public_signature_total": {
@@ -2041,7 +2041,7 @@
                 "opponents": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "$ref": "#/$defs/typedOpponentAggregate"
                   }
                 },
                 "opponent_total": {
@@ -2300,7 +2300,7 @@
                 "freshness": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "$ref": "#/$defs/typedFreshnessRow"
                   }
                 },
                 "freshness_total": {
@@ -2421,12 +2421,7 @@
                   }
                 },
                 "evidence_summary": {
-                  "type": "object",
-                  "required": [
-                    "included_snapshot_count",
-                    "distinct_opponent_count",
-                    "excluded_undated_snapshot_count"
-                  ]
+                  "$ref": "#/$defs/typedEvidenceSummary"
                 },
                 "scenarios": {
                   "type": "array",
@@ -2508,21 +2503,11 @@
                 "hidden_slots": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "required": [
-                      "position",
-                      "candidates"
-                    ]
+                    "$ref": "#/$defs/typedHiddenSlot"
                   }
                 },
                 "ambiguity": {
-                  "type": "object",
-                  "required": [
-                    "grade",
-                    "variant_defense_possible",
-                    "top_evidence_weight_share",
-                    "public_known_slot_count"
-                  ]
+                  "$ref": "#/$defs/typedAmbiguity"
                 },
                 "confidence": {
                   "type": "object",
@@ -2535,24 +2520,7 @@
                 "recommendations": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "required": [
-                      "attack_signature",
-                      "score",
-                      "score_components",
-                      "observed_match_count",
-                      "wins",
-                      "losses",
-                      "observed_win_rate",
-                      "wilson95_low",
-                      "evidence_scope",
-                      "source_counts",
-                      "last_observed_at",
-                      "required_student_ids",
-                      "missing_student_ids",
-                      "all_known_students_owned",
-                      "deck"
-                    ]
+                    "$ref": "#/$defs/typedRecommendationRow"
                   }
                 },
                 "recommendation_total": {
@@ -4522,6 +4490,674 @@
           }
         }
       ]
+    },
+    "typedObservedResults": {
+      "type": "object",
+      "required": [
+        "count",
+        "wins",
+        "losses",
+        "observed_win_rate",
+        "wilson95_low",
+        "wilson95_high"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "losses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_win_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_low": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_high": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedAttackDeckAggregate": {
+      "type": "object",
+      "required": [
+        "signature",
+        "count",
+        "wins",
+        "losses",
+        "observed_win_rate",
+        "wilson95_low",
+        "wilson95_high"
+      ],
+      "properties": {
+        "signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "losses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_win_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_low": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_high": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedFullDefenseAggregate": {
+      "type": "object",
+      "required": [
+        "signature",
+        "count"
+      ],
+      "properties": {
+        "signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedPublicSignatureAggregate": {
+      "type": "object",
+      "required": [
+        "public_signature",
+        "exposure_count",
+        "opponent_count",
+        "selected_count",
+        "linked_match_count",
+        "wins",
+        "losses",
+        "observed_win_rate",
+        "wilson95_low",
+        "wilson95_high",
+        "source_counts",
+        "attack_decks",
+        "attack_deck_total",
+        "full_defenses",
+        "full_defense_total"
+      ],
+      "properties": {
+        "public_signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exposure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "opponent_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "linked_match_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "losses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_win_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_low": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_high": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_counts": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "attack_decks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typedAttackDeckAggregate"
+          }
+        },
+        "attack_deck_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "full_defenses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typedFullDefenseAggregate"
+          }
+        },
+        "full_defense_total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedOpponentAggregate": {
+      "type": "object",
+      "required": [
+        "opponent_identity_id",
+        "display_name",
+        "exposure_count",
+        "selected_count",
+        "match_count",
+        "attack_results",
+        "defense_results",
+        "latest_public",
+        "latest_full"
+      ],
+      "properties": {
+        "opponent_identity_id": {
+          "$ref": "#/$defs/recordId"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "exposure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "match_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attack_results": {
+          "$ref": "#/$defs/typedObservedResults"
+        },
+        "defense_results": {
+          "$ref": "#/$defs/typedObservedResults"
+        },
+        "latest_public": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "public_signature",
+                "observed_at",
+                "snapshot_id"
+              ],
+              "properties": {
+                "public_signature": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "snapshot_id": {
+                  "$ref": "#/$defs/recordId"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latest_full": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "deck_signature",
+                "observed_at",
+                "snapshot_id"
+              ],
+              "properties": {
+                "deck_signature": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "snapshot_id": {
+                  "$ref": "#/$defs/recordId"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedFreshnessRow": {
+      "type": "object",
+      "required": [
+        "opponent_identity_id",
+        "public_signature",
+        "attack_signature",
+        "is_current_public_signature",
+        "last_battle_at",
+        "last_success_at",
+        "last_failure_at",
+        "latest_public_observed_at",
+        "latest_public_change_at",
+        "verified_after_latest_public",
+        "verified_after_latest_change",
+        "age_hours",
+        "freshness_weight",
+        "stale"
+      ],
+      "properties": {
+        "opponent_identity_id": {
+          "$ref": "#/$defs/recordId"
+        },
+        "public_signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attack_signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "is_current_public_signature": {
+          "type": "boolean"
+        },
+        "last_battle_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_success_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "last_failure_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "latest_public_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "latest_public_change_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "verified_after_latest_public": {
+          "type": "boolean"
+        },
+        "verified_after_latest_change": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "age_hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "freshness_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedRecommendationRow": {
+      "type": "object",
+      "required": [
+        "attack_signature",
+        "score",
+        "score_components",
+        "observed_match_count",
+        "wins",
+        "losses",
+        "observed_win_rate",
+        "wilson95_low",
+        "evidence_scope",
+        "source_counts",
+        "last_observed_at",
+        "required_student_ids",
+        "missing_student_ids",
+        "all_known_students_owned",
+        "deck"
+      ],
+      "properties": {
+        "attack_signature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "score_components": {
+          "type": "object",
+          "required": [
+            "observed_outcome",
+            "recency",
+            "sample",
+            "opponent_specificity",
+            "source_quality"
+          ],
+          "properties": {
+            "observed_outcome": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "recency": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "sample": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "opponent_specificity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "source_quality": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "observed_match_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "losses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_win_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wilson95_low": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_scope": {
+          "type": "object",
+          "required": [
+            "exact_defense_count",
+            "same_opponent_count",
+            "same_public_signature_count"
+          ],
+          "properties": {
+            "exact_defense_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "same_opponent_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "same_public_signature_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_counts": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "last_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "required_student_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "missing_student_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "all_known_students_owned": {
+          "type": "boolean"
+        },
+        "deck": {
+          "$ref": "#/$defs/deck"
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedHiddenSlot": {
+      "type": "object",
+      "required": [
+        "position",
+        "candidates"
+      ],
+      "properties": {
+        "position": {
+          "type": "string",
+          "pattern": "^(striker:[0-3]|special:[0-1])$"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "evidence_weight_share",
+              "supporting_snapshot_count"
+            ],
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_weight_share": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "supporting_snapshot_count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedAmbiguity": {
+      "type": "object",
+      "required": [
+        "grade",
+        "variant_defense_possible",
+        "top_evidence_weight_share",
+        "public_known_slot_count"
+      ],
+      "properties": {
+        "grade": {
+          "enum": [
+            "unavailable",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "variant_defense_possible": {
+          "type": "boolean"
+        },
+        "top_evidence_weight_share": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "public_known_slot_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        }
+      },
+      "additionalProperties": false
+    },
+    "typedEvidenceSummary": {
+      "type": "object",
+      "required": [
+        "included_snapshot_count",
+        "distinct_opponent_count",
+        "excluded_undated_snapshot_count"
+      ],
+      "properties": {
+        "included_snapshot_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distinct_opponent_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_undated_snapshot_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

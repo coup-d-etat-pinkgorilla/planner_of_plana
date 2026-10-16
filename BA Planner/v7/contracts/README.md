@@ -1350,3 +1350,14 @@ they remain review issues until explicitly resolved, with no invented battle dat
 The interpretation fingerprint also binds profile ownership and reader format/
 CSV delimiter; identical bytes or owned rosters do not authorize switching these
 choices after preview.
+
+
+## Typed tactical read arrays (2026-10-15)
+
+Statistics public signatures/opponents, trend freshness, and recommendation rows,
+hidden-slot candidates, ambiguity and evidence summary have explicit nested
+properties and reject unknown keys. Null rates/timestamps and unavailable
+responses remain supported. This tightens validation only: runtime responses,
+statistics definitions and Dart behavior are unchanged. Actual read responses
+are frozen in fixtures/tactical_typed_read_responses_v2.json and recomputed by
+test_tactical_typed_reads.py without altering their canonical bytes.
