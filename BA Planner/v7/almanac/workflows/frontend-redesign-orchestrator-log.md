@@ -3604,3 +3604,9 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 
 - XB exact11 `4be19b52` → CF **fb6bdart `80577f4a`**(DryRun 통과분 그대로). 동결 해제 회신(backend 21:20).
 - 사용자 PR 요청(21:00경): 미커밋 17,8xx 경로(생성물·다른 레인 WIP·대기 slice)를 한꺼번에 커밋할 수 없고 push는 사용자 몫(헌장·deny 설정)이라 PR을 만들지 않았다. 원격 `scanner-consolidation`은 PR #4 병합 뒤 삭제 상태, 브랜치는 `main`보다 219 커밋 앞섬 — 사용자가 push하면 CF가 `gh pr create`로 열기로 안내.
+
+## 2026-10-17 00:05 — 스캐너 시각부 WIP 커밋(사용자 결정), 다음 라운드 배정
+
+- 사용자 결정: 스캐너 시각부 미커밋 5파일(dock live 값·progress·결과 report·portrait·summary와 테스트)을 **그대로 커밋** — 메인 `scan-student-review` 기준 이미지가 이미 이 모습이고 gate `20261016_203646`이 이 바이트로 GREEN. CF slice `scanwipvisual` = **`8f17fd0a`**(whole 5, 293+ 392−). frontend 작업 트리 깨끗(미추적 `assets/item_icons/**` 7 제외).
+- FE9-d·e·f 워크플로 행 완료 표기.
+- **배정**: Lane A `debug/frontend_redesign_handoff/fe8f1-worker-prompt-20261017.md`(FE8-f1 스캔 세션 컨트롤러 추출·AppShell 소유·동작 보존 + scanwip-func 발견 1 편집 칸 revision 버그 1건) · Lane B `debug/frontend_redesign_handoff/fe9b2-worker-prompt-20261017.md`(FE9-b2 S3 시도 '모름' 저장·상대 없는 방어 저장·null 표시·seed). 겹침 0(스캔 / 전술).

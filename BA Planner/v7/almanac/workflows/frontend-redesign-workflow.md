@@ -380,9 +380,9 @@ FE8-f1~f3은 이 조건 없이 진행한다. 형식이 요청서와 다르게 �
 | FE9-a 기록 화면 v1 이식 | 4섹션 배치, 목록·필터·작성·저장·복제. 기존 `_reload/_mutation` 재사용, `_DeckEditor`·AlertDialog 폐기, 하위 화면 전환 UI | FD-126 — **범위 변경 2026-10-14(CF)**: v1 이식 대신 FE9-b1 컨트롤러(v2) 위에 새 화면, v1 쓰기 4곳 전환·이관 안내 포함. 배정 2026-10-14(Lane B) — **완료 2026-10-14**: 커밋 `f1422164`, gate `20261014_191520`(새 `tactical`·`tactical-migration`). 4섹션(S2·S4 "준비 중"), seg는 S1 제목 줄(FD-126 — 셸 머리말 자리는 FE9-e 판단), 덱 6칸, 이관은 띠 "가져오기"로만 |
 | FE9-b v2 데이터 계층 | `TacticalEvidenceService` 소비, 버려지던 wire 필드 Dart DTO 확장, mock v2 | FB-6, FD-128 — **순서 변경 2026-10-14(CF)**: FB-6 완료로 FE9-a보다 먼저. **FE9-b1**(read DTO 확장·좁은 읽기 interface Process+Mock·`lib/tactical/tactical_records_controller.dart`·design-review seed, 화면 0) 배정 2026-10-14(Lane B). **FE9-b1 완료 2026-10-14**: 커밋 `390c194a`, gate `20261014_164359`(golden 변화 0). `TacticalEvidenceReadService`(Process·Mock), `TacticalRecordsController`. FE9-a는 이 컨트롤러 위에 새 화면(v1 caller 4곳 전환 포함) |
 | FE9-c 로비 스캔 섹션 | 스캔 → 후보 → `commitTacticalLobby` → 카드 선택 → 자동 채움 → 저장 시 링크. `app_shell._handoffCandidate` 인계 수정 | FD-127 |
-| FE9-d 시그니처 족보 패널 | stats/recommend/freshness, 드래그로 공격 덱 복사 | FD-127 |
-| FE9-e 분석 + 전체 보기 | Analysis S1~S3, 족보 전체 보기 팝업 | FD-126, FD-127 |
-| FE9-f 엑셀 가져오기 | 파일 선택 → preview → 승인 모달(열 연결, 모르는 문자열 처리, 미리보기) → commit | FB-7 |
+| FE9-d 시그니처 족보 패널 | stats/recommend/freshness, 드래그로 공격 덱 복사 | FD-127 — **완료 2026-10-16**: 커밋 `627bb249`, gate `20261016_023150`(`tactical` 갱신 + 새 `tactical-jokbo-drag`) |
+| FE9-e 분석 + 전체 보기 | Analysis S1~S3, 족보 전체 보기 팝업 | FD-126, FD-127 — **완료 2026-10-16**: 커밋 `0eb50921`, gate `20261016_082438`(머리말 seg + 새 `tactical-analysis`·`-analysis-all`). 검증 강도 칩은 FE9-f에서 숨김(FD-127) |
+| FE9-f 엑셀 가져오기 | 파일 선택 → preview → 승인 모달(열 연결, 모르는 문자열 처리, 미리보기) → commit | FB-7  — **완료 2026-10-16**: 커밋 `cf47aca7`(fb7-dart `613ccc24` 위), gate `20261016_203646`(새 `tactical-import-excel`) |
 | FE9-g 슬롯 통계 | 내 기록 기반 부분만. 모집단 통계는 데이터원 결정 전 빈 상태 | FD-126, FD-127 |
 
 ### 개발자 도구 화면 (CF, 헌장 2026-10-10)
@@ -578,3 +578,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-16(02:45): FE9-d `627bb249`(전술 S4 족보 패널·복사) · FE7-j `863e5524`(A6 구간 순위·갤러리), gate `20261016_023150` GREEN. XB FB-7 `810a15f2` 커밋, source8 gate GREEN 회신(XB 두 커밋 대기). 배정: Lane B fb7-dart · Lane A FE9-e. 다음: fb6b-dart(XB source11 짝) · FE8-f1(스캐너 시각부 보존 규칙) · FE9-f(엑셀 가져오기 모달, fb7-dart 뒤).
 - 2026-10-16(08:50): FE9-e `0eb50921`(분석 화면·전체 보기·머리말 seg) · fb7-dart `613ccc24`(FB-7 왕복 완료), gate `20261016_082438` GREEN. 배정: Lane B fb6b-dart(XB source11 반영 뒤 시작) · Lane A FE9-f + 검증 강도 칩 숨김. 다음: fb6b 화면(S3 시도 모름·상대 없는 방어 저장) · FE9-c(로비 스캔) · FE9-g(슬롯) · FE8-f1.
 - 2026-10-16(21:20): FE9-f `cf47aca7`(엑셀 가져오기 모달·검증 강도 칩 숨김) · XB FB-6b `4be19b52` → CF fb6bdart `80577f4a`(FD-176 Dart), gate `20261016_203646` GREEN. FB-6b 왕복 완료. 다음 후보: FE9-b2(S3 시도 '모름'·상대 없는 방어 저장 UI) · FE9-c(로비 스캔) · FE9-g(슬롯) · FE8-f1(스캐너 시각부 보존) · A6 끝 점 고르기.
+- 2026-10-17(00:05): 사용자 결정 — 스캐너 시각부 WIP 5파일을 그대로 커밋(`8f17fd0a`, 기준 이미지가 이미 그 모습). 작업 트리 깨끗. 배정: Lane A FE8-f1(스캔 세션 컨트롤러 추출, 동작 보존) · Lane B FE9-b2(S3 시도 모름·상대 없는 방어 저장 UI). FE9-f 완료 `cf47aca7`.
