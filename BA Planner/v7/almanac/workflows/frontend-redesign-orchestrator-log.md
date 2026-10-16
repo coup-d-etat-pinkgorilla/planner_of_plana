@@ -3610,3 +3610,67 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 사용자 결정: 스캐너 시각부 미커밋 5파일(dock live 값·progress·결과 report·portrait·summary와 테스트)을 **그대로 커밋** — 메인 `scan-student-review` 기준 이미지가 이미 이 모습이고 gate `20261016_203646`이 이 바이트로 GREEN. CF slice `scanwipvisual` = **`8f17fd0a`**(whole 5, 293+ 392−). frontend 작업 트리 깨끗(미추적 `assets/item_icons/**` 7 제외).
 - FE9-d·e·f 워크플로 행 완료 표기.
 - **배정**: Lane A `debug/frontend_redesign_handoff/fe8f1-worker-prompt-20261017.md`(FE8-f1 스캔 세션 컨트롤러 추출·AppShell 소유·동작 보존 + scanwip-func 발견 1 편집 칸 revision 버그 1건) · Lane B `debug/frontend_redesign_handoff/fe9b2-worker-prompt-20261017.md`(FE9-b2 S3 시도 '모름' 저장·상대 없는 방어 저장·null 표시·seed). 겹침 0(스캔 / 전술).
+
+
+## 2026-10-17 00:49 — 세션 시작·메인 반영 계획(XB): FB7 주석2 + M3 CLI4
+
+- CF21:20의 FB6b 왕복 완료·동결 해제(XB4be19b52/CF80577f4a)와 CF00:05의 다음 작업 허용을 확인했다. 현재 HEAD `9cf5f0a5766ce484111f9affecf7bd91b8955066`, index empty. 격리 source6 SHA6/6·기존4 main/HEAD 기준 일치·신규2 부재·Frozen11 보존을 확인했다.
+- **이 계획 게시 뒤** FB7 계약 주석 exact2 → M3 CLI exact4를 메인에 반영한다. 기존4 원 bytes를 backup하고 정확6만 복사한 뒤 대상 밖 보호 입력과 scanner 소스의 변화가 0인지 확인한다. FB7은 schema annotation5/README 설명뿐이며 검증 키워드와 producer는 동일하다. M3는 opt-in preview/explicit crosswalk/stats --from-store만 추가하고 기존 경로를 보존한다. M2 JSON/Dart DTO 변경은 없다.
+- 반영 후 집중 회귀 → 실제 main 표준 Python 전체(heavy 시작/종료 알림) → 경로/bytes/SHA 표와 **CF gate 요청** 순서다. 둘 다 Dart 영향0이므로 CF가 한 gate로 검증할 수 있으며, 새 같은 소스 GREEN 뒤 **FB7 exact2 → M3 exact4**로 별도 커밋한다. 아직 stage/commit/push하지 않는다.
+- FE8-f1을 위해 **scanner wire·schema·scanner_session/protocol producer를 변경하지 않는다**. 기존 인식/C6/config WIP와 CF frontend를 보존한다. M3 독립 Schale 제거 비교는 여전히 BLOCKED/diff=null(원천kind·승인 매핑·stats kind 필요); 현재 catalog/generated/gift/bond/Schale 코드는 변경하지 않는다. 공용 store/lock/pipeline 쓰기는 CM 승인+사용자 실행만이다.
+- 근거 debug/xb_fb7notes_m3_main_20261017/input.md 및 artifacts/plan.json. 기존 설치본 자산 회귀만 명시 허용 범위로 실행하며 키/게임 프로세스/연구 원본/Viewer/Arena/외부holdout 접근은 금지다.
+
+
+## 2026-10-17 00:50 — FB7 주석2·M3 CLI4 메인 복사 완료, 검증 시작 예정(XB)
+
+- 계획대로 exact6만 반영했고 SHA6/6 일치, 대상 밖 backend/contracts/tool 변화0·scanner 변화0·frontend 변화0·Frozen11 보존을 확인했다. 기존4 backup은 artifacts/before에 있다. 표준 전체가 끝나기 전 PASS/새 gate 완료를 선언하지 않는다.
+- source6와 관련 backend/contracts/tool은 검증·CF 같은 소스 gate·선택 커밋까지 추가 변경하지 않는다. FE8-f1의 scanner 동결 요청도 유지한다. 근거 debug/xb_fb7notes_m3_main_20261017/artifacts/applied.json. stage/commit/push0.
+
+
+## 2026-10-17 00:50 — 무거운 Python 시작(XB→CF): FB7 주석2·M3 CLI4 실제 main 전체
+
+- 실제 main에서 `py -3.11 -m unittest discover -s tests -v` 표준 명령을 시작한다. **CF heavy gate는 종료 알림 뒤** 실행해 달라. 집중 M3/Excel 회귀는 PASS이며, source6·scanner·Frozen11 지문을 유지한다. Timeout/skip/exclusion/golden 완화0, stage/commit/push0.
+- frontend 개발은 CF 소유 범위에서 가능하며 외부 변경은 별도로 기록한다. Scanner wire/schema/session/protocol producer는 FE8-f1 커밋까지 그대로다. M3 독립 제거 비교는 BLOCKED/null이고 공용store/lock/pipeline 쓰기0이다.
+
+
+## 2026-10-17 00:52 — XB source6 메인 반영·전체 검증 진행·읽기 전용 preview 확인
+
+- FB6b 왕복/동결 해제 뒤 FB7 주석2·M3 CLI4를 계획대로 exact6 반영했다. SHA6/6·대상 밖 변경0·scanner 변경0·frontend 편집0이다. 실제 main 표준 Python 전체는 진행 중이며 최종 PASS를 아직 선언하지 않았다. CF heavy gate는 종료 알림 뒤다.
+- 새 main CLI로 실제 lock-pinned CharacterExcel 읽기 전용 preview를 실행했다. 후보 265개 중 존재 265개, 검증된 연관0/투영필드0, 독립 Schale 제거 비교는 **BLOCKED/diff=null**이다. Frozen11과 source6는 그대로이며 공용store/lock/pipeline 쓰기0이다. 선물/친화도 원천·승인 매핑·stats kind는 계속 필요하다.
+- FB7 main schema의 UTF8 raw8192/8193와 중복 제약 의미 audit7도 PASS, schema 유효성 확인. 검증 키워드/런타임/DTO 변경0. 근거 debug/xb_fb7notes_m3_main_20261017/artifacts/actual-preview-receipt.json 및 semantic-main-receipt.json.
+- FE8-f1 scanner wire/schema/session/protocol 동결 요청을 유지한다. source6는 새 같은 소스 CF gate 전까지 추가 수정하지 않는다. stage/commit/push0, 전체 M3/Schale 제거 완료 선언0.
+
+
+## 2026-10-17 01:12 — 무거운 Python 종료(XB→CF): PASS_MAIN_FB7NOTES_M3_STANDARD_WHOLE
+
+- 실제 main source6 **1402/1300.781s**, exit0, failures0/errors0/skipped0, core/tools/tests 밖 import0, 보호 입력 변화0, CF 소유 frontend 외부 변경23. 원 로그/receipt는 debug/xb_fb7notes_m3_main_20261017/artifacts/에 보존했다.
+- Heavy 종료. 최종 지문·문서 확인 뒤 source6 같은 소스 CF gate를 요청한다. Scanner 동결과 source6 추가 변경 금지, stage/commit/push0은 유지한다.
+
+
+## 2026-10-17 01:13 — XB 보고·CF gate 요청: FB7 계약 주석2 + M3 CLI4 source6
+
+- **FB6b 왕복 완료 수신**: XB `4be19b52` + CF `80577f4a`, CF21:20 동결 해제. CF00:05에 허용한 다음 두 slice를 계획 게시 후 메인에 반영했다. 아래 source6가 새 gate 대상이며, **FB7 exact2 → M3 exact4**의 두 커밋으로 나눌 예정이다. 아직 stage/commit/push하지 않았다.
+- **실제 main 표준 Python 1402/1300.781s OK**. 집중 23개와 FB7 의미 audit7도 PASS. Errors/failures/skips0, core/tools/tests 밖 import0, backend/contracts/tool 입력 변화0이다. CF 소유 frontend의 실행 중 외부 변경 23경로는 보존했고 XB는 frontend를 수정하지 않았다. Timeout/검사항목/skip/exclusion/golden 완화0. 원 로그와 process별 모듈 출처를 artifacts에 보존했다.
+- **FB7 주석2**: UTF8 raw8192바이트 제한, mapping 열·resolution(row/field/raw)·row decision 행의 중복 거부, issue.field의 deck/null 진단 문맥, no-change commit의 idempotency 의미를 설명한다. JSON schema annotation5와 README만 바뀌며 annotation을 제외한 모든 검증 키워드는 동일하다. Runtime/producer/fixture/요청·응답 DTO 바이트 형식 변경0, **Dart 변경 필요0**이다.
+- **M3 CLI4**: `export_canonical_metadata.py --from-store --preview` 읽기 전용 preview, exact lock/catalog 해시에 묶인 explicit crosswalk와 stats `--from-store KIND`를 opt-in으로 추가했다. 기본 기존 경로는 유지하며 M2 JSON/API/Dart DTO 변화0이다. 기존 source4와 동일한 bytes로 반영했다.
+- 새 main CLI로 실제 고정된 자료를 읽기 전용 검증한 결과 후보 265/265개 존재, verified association0·projected fields0이다. **독립 Schale 제거 비교는 BLOCKED/diff=null**이며 selected field 차이0 또는 Frozen11 copy 일치와 구별한다. Gift/affinity 원천 kind·승인 identity/enum/merge crosswalk·stats kind가 필요하다. Frozen11과 canonical/generated/gift/bond/Schale 파일을 보존했고 공용 store/lock/pipeline 쓰기0이다. M3 전체/Schale 제거 완료를 선언하지 않는다. 제거 선언은 CM 몫이다.
+- **CF gate 요청**: 두 slice 모두 Dart 영향0이므로 현재 FE8-f1·FE9-b2의 작업이 끝나면 source6 SHA를 확인하고 한 gate로 함께 검증해 달라. XB heavy Python은 종료했다. 새 같은 소스 GREEN 전 커밋0, gate 이후 위 exact2→exact4 순서로 커밋한다. 근거 artifacts/selected-commit-plan.json.
+- **FE8-f1 scanner 동결 창 준수**: scanner wire/schema·scanner_session/protocol producer 변경0. FE8-f1 커밋 전까지 이 제한을 유지한다. Source6와 관련 backend/contracts/tool도 새 gate/선택 커밋까지 추가 변경하지 않는다. 기존 인식/C6/config WIP와 CF frontend를 보존했다. Almanac45·whole-v7 diff-check PASS·index empty·push0.
+- 남은 외부 입력은 M3 원천/승인 매핑과 FB10d 크레딧·엘리그마 원본 PNG다. 공용 저장소·live lock·pipeline 단계는 기게시 명령 초안을 CM 승인+사용자 실행으로 넘긴다. 키/게임 프로세스/연구 원본/Viewer/Arena/외부holdout 접근0. 기존 설치본 자산 회귀는 명시 허용된 표준 검증 범위에서만 실행했다. 전체 P0-P6/native/M3 완료를 선언하지 않았다.
+- 인계: `debug/xb_fb7notes_m3_main_20261017/output.md`, 실제 selected6·before4·receipt·로그·출처 기록은 같은 폴더의 artifacts에 있다. 이전 격리/커밋 패키지는 수정하지 않았다.
+
+| Main exact path | Bytes | SHA256 |
+|---|---:|---|
+| `contracts/tactical-protocol-v2.schema.json` | 138308 | `28498d1dc0828b8ee671b3e9b1a56d97dc34b6b63d359f678e518975856bb7a9` |
+| `contracts/README.md` | 99343 | `372011c7ed3bb5185dc9c6156dba5b1bb8ba22b5035fc3df2351c5725afbbcef` |
+| `backend/tools/metadata_store_preview.py` | 5106 | `f7b40e790581b7be295ced4f51dbfa44e1fc0fcc17b8889be4ac27ee691801ad` |
+| `backend/tools/export_canonical_metadata.py` | 2741 | `144a5565898f485e3e5830101e6daf855f232172806b9d71ff73eb2a53379e7f` |
+| `backend/tools/sync_student_stats_from_extracted.py` | 4804 | `32c2c92d19f95b652d987c99b0d9723f99b5c562d938a4372345574b51c366ea` |
+| `backend/tests/test_metadata_store_m3.py` | 11472 | `e9ac5c5a1d024233359bf90f55f3f6738500bd55eb974c58d7d6dfa94d2cb84d` |
+
+## 2026-10-17 02:00 — FE8-f1·FE9-b2 검토·gate·커밋, XB source6 gate GREEN
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8f1 9행, fe9b2 17행), 겹침 0. FE8-f1: `scan_page.dart` −1410 +221(로직을 `lib/ui/scan/scan_session_controller.dart`·`scan_student_review_logic.dart`로), `app_shell.dart` +25 −7(셸이 컨트롤러 소유, 계정 변경 시 새 컨트롤러 — 이전 화면 key 재생성과 같은 동작), 기존 테스트 기대 변경 0·삭제 0, 발견 1(같은 id 새 revision 편집 칸) 수정 + 변이 확인. FE9-b2: 시도 모름·상대 없는 방어 저장, seed 2행.
+- XB source6(FB-7 계약 주석 2 + M3 CLI 4) 메인 반영·Python 전체 PASS·gate 요청 → 같은 gate에 포함(6/6).
+- gate ① `20261017_012144`: 모두 PASS(process 101), golden RED 3 = FE9-b2 예측(`tactical`·`-jokbo-drag`·`-import-excel` — 목록 seed 행) → 승인, `scan-student-review` 변화 0(FE8-f1 동작 보존 확인) ② `-UpdateGoldens` `20261017_013824` **GREEN**(golden 53).
+- 커밋: **fe8f1 `6456049d`** → **fe9b2 `9dbf906b`**. XB에 source6 GREEN·스캐너 동결 창 종료 회신(backend 02:00).
