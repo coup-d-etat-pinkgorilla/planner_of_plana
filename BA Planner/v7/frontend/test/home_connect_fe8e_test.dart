@@ -447,7 +447,7 @@ void main() {
       );
       expect(scale, greaterThan(0));
 
-      // 연결된 뒤 `스캔`은 스캔 팝업(FE8-f3) 전까지 스캔 탭으로 간다.
+      // 스캔 세션이 없는 단독 홈에서 연결된 `스캔`은 스캔 탭으로 간다(셸에서는 스캔 팝업, FE8-f3).
       await tester.tap(find.byKey(const ValueKey('home-menu-scan')));
       await tester.pump();
       expect(harness.opened, [AppSection.scan]);
@@ -564,11 +564,11 @@ void main() {
       expect(chip.data, '연결됨 · Blue Archive');
       expect(chip.style?.color, AppColors.success);
 
+      // 연결된 `스캔`은 홈 스캔 팝업(FE8-f3)을 연다. 팝업 안내의 스캔 탭 이동은 home_scan_popup_fe8f3_test.
       await tester.tap(find.byKey(const ValueKey('home-menu-scan')));
       await tester.pumpAndSettle();
-      // 스캔 탭(FE8-g1)은 시작 전 고르기 화면이다(연결됐으니 창 선택 패널은 없다).
-      expect(find.byKey(const ValueKey('scan-tab-page')), findsOneWidget);
-      expect(find.byKey(const ValueKey('scan-pick')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-scan-popup')), findsOneWidget);
+      expect(find.byKey(const ValueKey('home-menu-section')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

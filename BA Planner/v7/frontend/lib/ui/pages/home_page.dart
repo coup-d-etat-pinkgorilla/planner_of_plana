@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -8,7 +9,12 @@ import '../../services/scanner_service.dart';
 import '../app_section.dart';
 import '../home/connect_target_panel.dart';
 import '../home/home_menu_swap.dart';
+import '../home/home_scan_popup.dart';
+import '../kit/ba_modal.dart' show BaScrim;
+import '../kit/kit_overlay.dart' show KitOverlayEscape;
 import '../scan/connected_target_controller.dart';
+import '../scan/scan_pick_logic.dart' show ScanStartBlock, scanStartNote;
+import '../scan/scan_session_controller.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/diagonal_menu.dart';
 import '../widgets/animated_section_stack.dart';
@@ -25,6 +31,8 @@ class HomePage extends StatefulWidget {
     this.entranceAnimation = const AlwaysStoppedAnimation(1),
     this.connectedTarget,
     this.openTargetPickerRequest = 0,
+    this.scanSession,
+    this.scanAppliedElsewhere = const {},
   });
 
   static const menuSectionMaxSize = Size(742, 1018);
@@ -44,7 +52,15 @@ class HomePage extends StatefulWidget {
   /// 셸이 창 선택 패널을 열어 달라고 할 때 올리는 값(머리글 칩, FE8-e).
   final int openTargetPickerRequest;
 
-  /// 첫 버튼: 미연결이면 창 선택 패널을 여는 `싯딤의 상자와 연결`(A), 연결되면 `스캔`(B, Home-Connect-Effect).
+  /// 셸 소유 스캔 세션(FE8-f1). 있으면 연결된 `스캔`이 스캔 팝업을 열고 타일이 이 세션으로 바로 시작한다(FE8-f3,
+  /// FD-140 (a)). 없으면(단독 화면 테스트) 예전처럼 스캔 탭으로 간다.
+  final ScanSessionController? scanSession;
+
+  /// 다른 탭(학생 · 인벤토리)에서 적용한 스캔 후보(FE8-f2). 팝업의 검토 대기 판정에서 뺀다.
+  final Set<String> scanAppliedElsewhere;
+
+  /// 첫 버튼: 미연결이면 창 선택 패널을 여는 `싯딤의 상자와 연결`(A), 연결되면 스캔 팝업을 여는 `스캔`(B,
+  /// Home-Connect-Effect · Home-Connected-Scan).
   static const _featured = _HomeCardData(
     AppSection.scan,
     '싯딤의 상자와 연결',
@@ -100,6 +116,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   bool get _connected => _controller?.isConnected ?? false;
 
+  /// 스캔 팝업(FE8-f3, 시안 Home-Connected-Scan). 열고 닫을 때 페이드 + 살짝 커짐(시안에 연출 없음 — 공용 섹션 모션).
+  late final AnimationController _popupController = AnimationController(
+    vsync: this,
+    duration: AppMotion.section,
+  )..addStatusListener(_popupStatusChanged);
+  bool _popupVisible = false;
+
+  /// 열 때마다 올린다. 타일 그림(시안 무작위)을 고르는 씨앗이다.
+  int _popupSeed = 0;
+
+  /// 마지막으로 누른 타일이 막힌 이유(FE8-g1 시작 판정 글자).
+  String? _popupNote;
+
   @override
   void initState() {
     super.initState();
@@ -116,10 +145,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _panelExitingWithSwap = false;
       _bind(widget.connectedTarget);
     }
+    if (!identical(oldWidget.scanSession, widget.scanSession)) {
+      _hidePopup();
+    }
     if (oldWidget.openTargetPickerRequest != widget.openTargetPickerRequest) {
       // didUpdateWidget 뒤에는 어차피 build가 돈다.
+      _hidePopup();
       _openPanel(rebuilding: true);
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 다른 탭으로 가면(셸 Offstage · TickerMode off) 팝업을 닫는다. 돌아와도 다시 열리지 않는다.
+    if (!TickerMode.valuesOf(context).enabled) _hidePopup();
   }
 
   void _bind(ConnectedTargetController? controller) {
@@ -131,12 +171,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _controller?.removeListener(_connectionChanged);
+    KitOverlayEscape.remove(this);
+    _popupController.dispose();
     _panelController.dispose();
     _swapController.dispose();
     super.dispose();
   }
 
   void _connectionChanged() {
+    // 연결이 끊기면 팝업을 닫는다(메뉴는 해제 연출로 A가 된다).
+    if (!_connected) _closePopup();
     // 연출 중에 다시 바뀌면 지금 연출이 끝난 뒤 이어서 맞춘다.
     if (_timeline == null) _startSwapIfNeeded();
   }
@@ -195,12 +239,88 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _openFeatured() {
-    if (_controller == null || _connected) {
-      // 연결된 뒤의 `스캔`은 스캔 팝업(FE8-f3) 전까지 스캔 탭으로 간다.
+    if (_controller != null && !_connected) {
+      _openPanel();
+      return;
+    }
+    if (_controller == null || widget.scanSession == null) {
+      // 셸 연결 · 스캔 세션이 없으면(단독 화면 테스트) 스캔 탭으로 간다.
       widget.onOpen(AppSection.scan);
       return;
     }
+    _openPopup();
+  }
+
+  // ---- 스캔 팝업(FE8-f3) ----
+
+  void _openPopup() {
+    final scan = widget.scanSession;
+    if (scan == null || _panelExitingWithSwap) return;
+    // 스캔 탭이 아직 붙지 않았어도 준비 상태(창 · 인식 준비 · 계정)를 읽게 한다. 두 번째부터는 아무것도 하지 않는다.
+    scan.ensureStarted();
+    setState(() {
+      _popupVisible = true;
+      _popupSeed += 1;
+      _popupNote = null;
+    });
+    _popupController.forward(from: 0);
+    KitOverlayEscape.push(this, context, _closePopup);
+  }
+
+  void _closePopup() {
+    KitOverlayEscape.remove(this);
+    if (!_popupVisible) return;
+    _popupController.reverse();
+  }
+
+  /// 연출 없이 바로 닫는다(탭 이동 · 셸 요청 · 세션 교체). build 전에 부르므로 setState를 쓰지 않는다.
+  void _hidePopup() {
+    KitOverlayEscape.remove(this);
+    _popupVisible = false;
+    _popupNote = null;
+  }
+
+  void _popupStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && _popupVisible && mounted) {
+      setState(() => _popupVisible = false);
+    }
+  }
+
+  /// 타일 누름(FD-140 (a) · FD-150 (b)): 학생은 홈에 머문 채 백그라운드로, 아이템 · 선물은 컨트롤러의 시작 동작
+  /// 그대로 시작한다. 전술대항전은 탭 이동, 미연결은 창 선택 패널(FE8-e), 막혔으면 이유를 팝업에 쓴다.
+  void _pressTile(HomeScanTile tile) {
+    final scan = widget.scanSession;
+    if (scan == null) return;
+    if (tile is HomeScanTacticalTile) {
+      _closePopup();
+      widget.onOpen(AppSection.pvp);
+      return;
+    }
+    if (!_connected) {
+      _closePopup();
+      _openPanel();
+      return;
+    }
+    final block = homeScanStartTile(scan, tile);
+    switch (block) {
+      case ScanStartBlock.none:
+        _closePopup();
+      case ScanStartBlock.noTarget:
+        _closePopup();
+        _openPanel();
+      default:
+        setState(() => _popupNote = scanStartNote(block, scan));
+    }
+  }
+
+  void _reselectTarget() {
+    _closePopup();
     _openPanel();
+  }
+
+  void _openScanTab() {
+    _closePopup();
+    widget.onOpen(AppSection.scan);
   }
 
   void _useTarget(ScannerTarget target) {
@@ -225,27 +345,118 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   math.max(320, constraints.maxHeight - 36),
                 )
                 .toDouble();
-            return SingleChildScrollView(
-              key: const ValueKey('home-page'),
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: menuHeight,
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([
-                        _swapController,
-                        _panelController,
-                      ]),
-                      builder: (context, _) =>
-                          _buildSections(state.imageLoadState),
-                    ),
-                  ),
-                ],
-              ),
+            final scan = widget.scanSession;
+            // 팝업 층은 늘 같은 Stack 안에 둔다(열고 닫아도 메뉴 · 스크롤 element가 그대로다).
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildPage(state.imageLoadState, menuHeight),
+                if (_popupVisible && scan != null)
+                  _buildPopupLayer(scan, constraints, menuHeight),
+              ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildPage(ImageLoadState imageLoadState, double menuHeight) =>
+      SingleChildScrollView(
+        key: const ValueKey('home-page'),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: menuHeight,
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _swapController,
+                  _panelController,
+                ]),
+                builder: (context, _) => _buildSections(imageLoadState),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  /// 스크림(홈 콘텐츠 영역 — 머리글은 시안처럼 가리지 않는다) + 가운데 팝업. 팝업은 메뉴와 같은 배율이고,
+  /// 창이 좁으면 폭에 맞춰 더 줄여 화면 밖으로 나가지 않는다.
+  Widget _buildPopupLayer(
+    ScanSessionController scan,
+    BoxConstraints constraints,
+    double menuHeight,
+  ) {
+    final width = constraints.maxWidth;
+    final scale = math.max(
+      0.05,
+      math.min(
+        menuHeight / HomePage.menuSectionMaxSize.height,
+        (width - 36) / HomeScanPopup.designSize.width,
+      ),
+    );
+    final size = HomeScanPopup.designSize * scale;
+    final left = math.max(18.0, (width - size.width) / 2);
+    final top = 18 + HomeScanPopup.menuTopOffset * scale;
+    final connected = _controller;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_popupController, scan, ?connected]),
+      builder: (context, _) {
+        final t = AppMotion.sectionCurve.transform(_popupController.value);
+        const scrim = BaScrim.scan;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                key: const ValueKey('home-scan-popup-scrim'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _closePopup,
+                child: Opacity(
+                  opacity: t,
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(
+                      sigmaX: scrim.blur,
+                      sigmaY: scrim.blur,
+                    ),
+                    child: ColoredBox(color: scrim.color),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: left,
+              top: top,
+              width: size.width,
+              height: size.height,
+              child: IgnorePointer(
+                ignoring: _popupController.status == AnimationStatus.reverse,
+                child: Opacity(
+                  opacity: t,
+                  child: Transform.scale(
+                    scale: 0.96 + 0.04 * t,
+                    child: FittedBox(
+                      key: const ValueKey('home-scan-popup-section'),
+                      fit: BoxFit.contain,
+                      child: HomeScanPopup(
+                        controller: scan,
+                        target: connected?.target,
+                        seed: _popupSeed,
+                        appliedElsewhere: widget.scanAppliedElsewhere,
+                        note: _popupNote,
+                        onTile: _pressTile,
+                        onReselect: _reselectTarget,
+                        onClose: _closePopup,
+                        onOpenScanTab: _openScanTab,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -295,7 +506,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ? HomePage._featuredConnected
                             : HomePage._featured,
                         onFeatured: _openFeatured,
-                        featuredSelected: !showsConnected && _panelVisible,
+                        featuredSelected: showsConnected
+                            ? _popupVisible
+                            : _panelVisible,
                         flashOpacity: timeline?.flashOpacity(t) ?? 0,
                       ),
                     ),

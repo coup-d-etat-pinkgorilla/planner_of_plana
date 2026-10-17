@@ -497,6 +497,8 @@ class _AppShellState extends State<AppShell>
                                   entranceAnimation: _homeEntranceController,
                                   connectedTarget: _connectedTarget,
                                   openTargetPickerRequest: _targetPickerRequest,
+                                  scanSession: _scanSession,
+                                  scanAppliedElsewhere: _scanAppliedElsewhere,
                                 ),
                                 StudentPage(
                                   key: ValueKey('students-$_profileGeneration'),

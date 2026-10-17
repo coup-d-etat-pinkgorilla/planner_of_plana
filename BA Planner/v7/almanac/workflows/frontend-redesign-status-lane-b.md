@@ -5318,3 +5318,126 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - tidy3 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-g1)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 수 +1(`tactical_slots` 새 1건 — 나머지 검사는 기존 테스트 안에 더함), process 변화 0, golden `tactical` · `-jokbo-drag` · `-import-excel` · `-slots` RED · 분석 2장면 · `-migration` GREEN 예상) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice tidy3`.
 - 발견 1(분석 `dateFrom` 조건) · 2 · 3은 CF 판단.
+
+## FE8-f3 착수 기록 (2026-10-17)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-f3 종료 기록), CF gate 미실행**. 범위: FE8-f3 홈 스캔 팝업 연결(시안 Home-Connected-Scan). 연결된 홈 `스캔` → 스캔 팝업(학생 2 · 아이템 5 · 기타 3 타일), 학생 · 아이템 · 선물 타일 = 셸 `ScanSessionController`로 그 종류 하나 바로 시작(FD-140 (a)), 전술대항전 타일 = 전술대항전 탭 링크(FD-150 (b)), 선물 타일 = "기타" 줄(FD-151 (a)), 미연결 = 창 선택 패널(FE8-e), 진행 중 · 검토 대기 = 타일 막음 + 문구(FE8-g1 판정 재사용).
+- 착수 전 확인: 이 문서에 다른 "FE8-f3 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약" FE8-f3 행 = FD-140 · FD-151, 둘 다 `확정`(2026-10-06), 현재 `열림` 0건 → 시작. FD-150은 `워커 재량`(권장안 (b) = CF 확정 (b)와 같음).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `e498ea06344c06f3b695cedf45a3de962ba68ed0`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8f3/pre/<v7 기준 경로>`, 모두 HEAD · 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/home_page.dart`: WIP 없음. 작업 트리 CRLF(유지).
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. LF(홈에 스캔 컨트롤러 · 다른 탭 적용 집합을 넘기는 최소 diff).
+  - 바뀐 동작에 걸릴 수 있는 테스트(실제로 고친 것만 commit.json에): `frontend/test/home_connect_fe8e_test.dart`(LF), `home_page_test.dart` · `home_app_shell_test.dart`(LF), `widget_test.dart`(CRLF 유지) — 모두 WIP 없음.
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/home/home_scan_popup.dart`(팝업 위젯 + 판정 함수), `frontend/test/home_scan_popup_fe8f3_test.dart`, `frontend/test/goldens/fe8f3_home_scan_popup_golden_test.dart`(새 장면 `home-scan-popup` — 기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/ui/scan/**`(Lane A 작업 중 — 착수 때 `scan_session_controller.dart` · `scan_tab_sections.dart` · `scan_studio_layout.dart` 수정 중, `scan_run_logic.dart` 새 파일), `lib/ui/pages/scan_page.dart`, `lib/services/**`, `lib/ui/kit/**`, golden harness · 기존 golden 테스트, `frontend/tool/**`, backend · contracts, 전술 · 통계 · 학생 · 계획 · 인벤토리 화면, 택틱 세션 소유 파일. 홈 팝업 좌표는 Studio 문서에 없다(떠 있는 모달 — 아래 종료 기록).
+
+## FE8-f3 종료 기록 (2026-10-17, 코드 작성 완료 · CF gate 미실행)
+
+연결된 홈의 첫 버튼 `스캔`이 시안 Home-Connected-Scan 팝업을 연다. 학생 · 아이템 · 선물 타일은 셸 `ScanSessionController`로 그 종류 하나를 바로 시작하고 홈에 머문다(FD-140 (a)), 전술대항전 타일은 전술대항전 탭으로 간다(FD-150 (b)), 선물은 "기타" 줄 둘째 칸이다(FD-151 (a)). 미연결이면 FE8-e 창 선택 패널, 진행 · 검토 대기면 시작 타일을 막고 이유를 쓴다(FE8-g1 판정 재사용). 컨트롤러 · 스캔 파일은 고치지 않았다. HEAD는 착수 때와 같다(`e498ea06`). git 쓰기 0, 저장소 파일 삭제는 내가 만든 일회성 렌더 · 탐침 사본 2개뿐.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더, 로그 `debug/frontend_fe8f3/logs/` — 실패 줄 · 요약만 봤다)
+
+- `flutter analyze lib/ui/home lib/ui/pages/home_page.dart lib/ui/app_shell.dart`: **No issues found(0)**. 전체 `flutter analyze` 첫 실행: warning 1(새 시험 파일의 안 쓰는 import) → 지움 → 마지막 전체 `flutter analyze`(format 뒤): **No issues found(0, info 포함)**(`logs/analyze_final.log`). `pubspec.yaml` · `pubspec.lock` 변경 0(analyze가 `pub get`만 함).
+- 새 시험 `flutter test test/home_scan_popup_fe8f3_test.dart`: ① **+8 −3**(`logs/popup_1.log`: 글자 `엘레프`가 아이콘 대체 글자와 겹쳐 2개 → `findsWidgets`, 학생 전체 dock 호출 단정 — Lane A 작업 트리 컨트롤러에서 `dockBeside`가 이미 빠져 있음(발견 1) → 단정 뺌, 스캔 탭으로 간 뒤 `pumpAndSettle` 시간 초과 — FE8-f2 발견 1의 끝없는 진행 막대 → 고정 프레임) → ② **+11 −0**(`logs/popup_2.log`). 제품 코드 변경 없이 시험만 고쳤다.
+- 바뀐 동작에 걸리는 기존 시험(grep `BAPlannerApp(|AppShell(|HomePage(|home-menu-|ScanTabPage|ScanPage(|header-connection-chip|top-tab-|home_page.dart|scan_session_controller|onCandidateHandoff|recentScans`, process E2E 제외, 목록 `logs/general_files.txt`) 30파일 한 명령: format 전 **+331 −0**(`logs/general_1.log`), format 뒤 `--reporter json` **+331 −0**(`logs/general_final.json`) — account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · home_scan_popup_fe8f3 **+11**(새) · inventory_shell_lazy +1 · profile_delete_fb2d +17 · scan_header_progress_fe8f2 +7 · scan_page_pause_fb10a +8 · scan_page_revision +14 · scan_page +17 · scan_run_view_fe8g2 +8(Lane A 미추적 새 파일) · scan_session_controller +7 · scan_tab_page_fe8g1 +15 · scanner_review_images_fb10c +6 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · tactical_analysis +20 · tactical_excel_import +14 · tactical_slots +18 · title_page +25 · widget +16.
+- process E2E: **미실행**(grep에 걸린 5개 — final_p6 · inventory_fb3 · inventory_review_fb10b · planning_authoring · planning_document_v2 — 는 홈 `스캔`을 누르지 않는다(grep `home-menu-scan|HomePage` 0건)).
+- 일회성 렌더: 새 golden 시험 사본 `test/goldens/zz_fe8f3_render_tmp_test.dart`(`@Tags(['golden'])` · `library;` 줄을 빼고 `expectGoldenScene` → `settleGoldenScene` + `toImage` → scratchpad PNG, 실행 전 grep 0건) 1회 **+1**, 바로 지움(`test/goldens/zz_*` 0건). 탐침 `test/zz_fe8f3_probe_tmp_test.dart`(Mock 계정 확정 학생 수 확인, 0명) 1회 **+1**, 바로 지움(`test/zz_*` 0건). golden 비교는 돌리지 않았다.
+- `dart format`: 이 slice 파일 6개를 하나씩. `app_shell.dart`(`_TopTab` fontWeight 줄, FE8-f1 발견 4) · `home_connect_fe8e_test.dart`(HEAD부터 format이 맞지 않은 줄 여러 곳)는 무관한 줄이 바뀌어 착수 사본에서 다시 시작해 이 slice 편집만 다시 넣었다. `home_page.dart`는 착수 사본이 이미 format 결과와 같아(사본 format 0 changed) format 결과 그대로다.
+- `git diff --check`(고친 기존 3 코드 · 시험 파일): exit 0. 줄바꿈(바이트 검사): `home_page.dart` 885줄 모두 CRLF(유지), `app_shell.dart` · `home_connect_fe8e_test.dart` · 새 3파일 CR 0, 모두 줄 끝 공백 0 · 끝 개행 하나.
+- 잠금 충돌 0(재시도 없음).
+
+### 처리한 FD
+
+- **FD-140 (a)(확정)**: 팝업 타일 = 그 종류 하나 바로 시작, 같은 셸 컨트롤러. 학생은 홈에 머문다(진행은 머리글 칩 FE8-f2), 아이템 · 선물은 컨트롤러 시작 동작 그대로(dock 변경 0 — FE8-g3 전), 검토는 스캔 탭(FE8-f2 토스트 · 칩, 팝업 안내 줄 `스캔 탭 열기`).
+- **FD-150 (b)(워커 재량 = CF 확정)**: 전술대항전 타일 = 전술대항전 탭 링크(진행 중에도 누를 수 있다). 로비 스캔 시작은 FE9-c.
+- **FD-151 (a)(확정)**: "기타" 줄 = 장비 · 선물 · 전술대항전. 시안 2칸 줄 폭(762.5 → 1897.4)을 그대로 두고 칸 폭만 574.7 → 388.0, 칸 사이 겹침 14.5(사선 간격 12) 그대로.
+- **FD-155 · FD-116**: 미연결이면 타일 대신 FE8-e 창 선택 패널(누름 · `창 다시 선택`), 연결이 끊기면 팝업을 닫고 메뉴는 해제 연출.
+- FD-001(FE8-e 정정): 팝업 칩은 크기를 넣는다(`연결됨 · Blue Archive · 2560×1440`, `connectedTargetLabel` 그대로).
+- FD-013: 스크림 = 키트 `BaScrim.scan`(rgba(6,10,16,.72) + blur 2) 값. FD-148: 진행 · 검토 판정을 머리글과 같은 `ScanHeaderStatus`로.
+- 막는 `열림` FD 0(착수 기록).
+
+### 타일별 동작 표 (타일 × 연결/진행 상태 → 결과)
+
+| 타일 | 게임 창 연결 · 세션 없음/끝남(검토할 후보 없음) | 시작 판정이 막힘(계정 · 인식 준비 · 창 상태 등) | 진행 · 일시정지 · 중지 요청 중 | 검토 대기(적용 · 폐기하지 않은 후보) | 게임 창 미연결 |
+|---|---|---|---|---|---|
+| 전체 학생 · 지금 화면 1명 | `pickStudent` → `startPick`, 팝업 닫힘, **홈에 머묾**(머리글 칩 진행) | 팝업 유지, 안내 줄 노랑 = `scanStartNote(block)`(FE8-g1 글자), 스캔 탭 고르기 원래대로 | 타일 .45 · 누를 수 없음, 안내 줄 `스캔이 진행 중입니다.` + `스캔 탭 열기` | 타일 .45, `검토하지 않은 스캔 결과가 있습니다. 스캔 탭에서 검토한 뒤 시작할 수 있습니다.` + `스캔 탭 열기` | 홈 `스캔` 자체가 A(`싯딤의 상자와 연결`) → 창 선택 패널. 팝업이 열린 채 끊기면 팝업 닫힘 |
+| 오파츠 · 기술 노트 · 전술 교육 BD · 활동 보고서 · 엘레프 · 장비 · 선물 | `pickInventory([종류])` → `startPick`, 팝업 닫힘, 홈에 머묾(머리글 칩 `아이템 스캔`, 진행 창은 FE8-g3) | 위와 같음 | 위와 같음 | 위와 같음 | 위와 같음 |
+| 전술대항전 | 팝업 닫고 전술대항전 탭 | 같음(시작 판정 없음) | **누를 수 있음**(링크) | 누를 수 있음 | — |
+| (판정 `noTarget`) | — | 팝업 닫고 창 선택 패널(FE8-e) | — | — | — |
+
+- 시작 판정은 `homeScanStartTile`: 스캔 탭 고르기를 그 타일로 바꿔 `scanStartBlock`(FE8-g1)을 그대로 받고, `none`이면 `startPick`, 막혔으면 고르기를 원래대로 되돌린다. 시작했으면 스캔 탭 고르기는 시작한 종류로 남는다(발견 2).
+- 진행 · 검토 판정은 `homeScanPopupBusy` = FE8-g1 `scanTabViewFor`(스캔 탭이 고르기 대신 진행 · 검토를 보이는 상태)와 같은 뜻, 둘을 나누는 것은 FE8-f2 `ScanHeaderStatus.activity`. 진행 글자는 `scanStartNote(ScanStartBlock.busy)` 그대로.
+- 닫힘: ×, 스크림 누름, Esc(키트 `KitOverlayEscape`), 타일 시작 · 전술대항전 · `창 다시 선택` · `스캔 탭 열기`, 연결 끊김, 다른 탭으로 이동(TickerMode off — 돌아와도 다시 열리지 않음), 머리글 칩 요청(창 선택 패널), 계정 변경(세션 교체).
+
+### `app_shell.dart` diff (+2 −0, 이유)
+
+- `HomePage(...)`에 `scanSession: _scanSession` · `scanAppliedElsewhere: _scanAppliedElsewhere` 2줄. 이유: 팝업 타일이 셸 소유 세션으로 시작해야 하고(FD-140 "둘 다 같은 컨트롤러"), 검토 대기 판정이 머리글 · 탭 점 · 스캔 탭과 같은 "다른 탭에서 적용한 후보" 집합을 써야 한다. 계정 변경 때는 홈 key(`home-$_profileGeneration`)와 세션이 함께 바뀐다. 셸의 나머지 · `app_section.dart` 수정 0.
+
+### 고친 · 새 파일
+
+- **`frontend/lib/ui/home/home_scan_popup.dart`(새, 1050줄)**: `HomeScanPopup`(설계 1520×780, 시안 rect 원점, 평행사변형 r18 · 채움 .97 · 키트 `SectionSurface` 그림자), 머리 줄(분홍 막대 + `스캔` dsp 26 + (i) 키트 `InfoPopover` 시안 문구 + 크기 칩), `창 다시 선택`(186×40 #3a4b58) · ×(58×40), 줄 라벨 3(80° 계단 134 · 95 · 62), 타일 10(80° r9, 삼각 무늬 = 시안 그림과 같은 `_planElementTexture` 값, 선 .74 1.8px, 막히면 내용 .45, 글자 maxLines 1 · 말줄임), 학생 카드 겹침(전체 3장 −53 · 1명 1장, 보유 학생을 씨앗으로 섞음), 아이템 아이콘(카탈로그 그 종류에서 씨앗으로 하나, 없으면 키트 대체 글자), 전술대항전 칼 아이콘(시안 svg 선 #5d7288), 아래 안내 줄(시안 밖 — 발견 3). 공개 판정 `homeScanPopupBusy` · `homeScanPopupBusyText` · `homeScanStartTile`, 자리 `HomeScanPopup.slots`.
+- **`frontend/lib/ui/pages/home_page.dart`(CRLF 유지, +235 −22)**: 인자 `scanSession` · `scanAppliedElsewhere`. 연결된 `스캔` → 세션이 있으면 팝업(없으면 예전처럼 스캔 탭 — 단독 화면 시험). 팝업 층은 늘 있는 `Stack(fit: expand)` 안(스크롤 · 메뉴 element 그대로): 홈 콘텐츠 영역 스크림(머리글은 가리지 않음, 시안 DOM 순서) + 가운데 팝업(메뉴와 같은 배율, 창이 좁으면 폭에 맞춰 더 줄임 · 왼쪽 18 이상, 위 = 메뉴 위 + 98 × 배율), 360ms 페이드 + 0.96 → 1. 팝업이 열려 있으면 메뉴 `스캔`에 분홍 선택 선(시안 `#f2b3ef` 선). 팝업을 열 때 `ensureStarted()`(두 번째부터 0)로 준비를 읽게 한다. 열 때마다 씨앗 +1.
+- **`frontend/lib/ui/app_shell.dart`**(+2): 위.
+- **`frontend/test/home_connect_fe8e_test.dart`(+4 −4, 기대 · 주석만)**: 셸 시험 끝 — 연결된 `스캔` → 스캔 탭 대신 팝업 열림 · 홈 그대로. 단독 홈(세션 없음)의 스캔 탭 이동 주석.
+- **`frontend/test/home_scan_popup_fe8f3_test.dart`(새, 11건)**: 자리 규칙 1(10칸 순서 · 기타 줄 폭 · 겹침), 셸 7(기준 viewport rect — 팝업 520,300 1520×780 · 학생 2 · 아이템 처음/끝 · 기타 처음/끝 · 버튼 2 ±1px, 칩 크기 글자, 글자 17개, 선택 선, × · 스크림 · Esc 닫힘 / 1명 시작 = single · 홈 머묾 · 스캔 탭 비활성 · 끝까지 / 전체 시작 = full · 홈 머묾 / 아이템 시작 = inventory · 기술 노트 → 진행 중 막힘 · 안내 · 전술대항전만 열림 · `스캔 탭 열기` → 스캔 탭 / 선물 시작 / 검토 대기 막힘 · 글자 / 전술대항전 → 탭, 돌아와도 닫혀 있음 / 1280×720 화면 안 · 말줄임 · `창 다시 선택` → 패널), 단독 2(계정 없음 · 인식 준비 안 됨 이유 글자, 고르기 되돌림, 끊기면 닫힘 / 같은 씨앗 같은 그림).
+- **`frontend/test/goldens/fe8f3_home_scan_popup_golden_test.dart`(새)**: 장면 `home-scan-popup`.
+- 지운 시험 0. `home_page_test.dart` · `home_app_shell_test.dart` · `widget_test.dart`는 사본만 만들고 고치지 않았다(모두 통과, commit.json에 없음).
+
+### 필요하지만 없어서 링크로 둔 API
+
+- 없음. 시작은 공개 `pickStudent` · `pickInventory` · `clearPick` · `startPick` · `pick`, 판정은 `scan_pick_logic.dart`의 `scanStartBlock` · `scanStartNote` · `scanTabViewFor`, `scan_header_progress.dart`의 `ScanHeaderStatus`, 그림은 `repositoryState` · `inventoryCatalog`로 충분했다. 다만 "고르기를 건드리지 않고 한 종류로 시작"하는 API가 있으면 `homeScanStartTile`의 바꿨다 되돌리기가 필요 없다(발견 2).
+
+### golden 변화 예상(비교 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `home` | 변화 0 | 팝업을 열지 않는다. 바뀐 트리는 바깥 `Stack(fit: expand)` 하나(그림 0, 같은 tight 제약), 팝업 층 · 스크림 없음, 선택 선 조건은 메뉴 A + 패널 그대로 |
+| `header-scan-progress` | 변화 0 | 연결 메뉴 뒤 컨트롤러로 바로 시작(홈 `스캔`을 누르지 않음) |
+| 그 밖 | 변화 0 | 홈 `스캔`을 누르는 golden 없음(grep `home-menu-scan` = 새 장면뿐) |
+| **`home-scan-popup`(새)** | 기준 없음 → CF `-UpdateGoldens` | 아래 |
+
+- 새 장면 기대 모습(2560×1392, 일회성 렌더로 확인): 머리글 칩 녹 `연결됨 · Blue Archive`(스크림 밖, 밝게), 홈 메뉴는 연결 메뉴(첫 버튼 `스캔` + 분홍 선택 선)이고 스크림 .72 + blur로 어둡다. 가운데 평행사변형 팝업 520,300 1520×780: 왼쪽 위 분홍 막대 `스캔` · (i) · 녹 칩 `연결됨 · Blue Archive · 2560×1440`, 오른쪽 위 `창 다시 선택` · ×. 학생 줄 `학생 / 학생 화면` + `전체 학생`(카드 3장 겹침) · `지금 화면 1명`(1장) — golden Mock 계정은 확정 학생이 0명이라 카드는 square 틀만(초상 없음, 발견 6). 아이템 줄 `아이템 / 인벤토리 · 종류별` + 오파츠 · 기술 노트 · 활동 보고서 아이콘, 전술 교육 BD · 엘레프는 아이콘 대신 이름 글자(Mock 카탈로그). 기타 줄 `기타` + `장비 / 장비 인벤토리` · `선물 / 선물 인벤토리`(이름 글자 칸) · `전술대항전 / 전술대항전 탭으로 이동`(칼 아이콘). 안내 줄 없음.
+
+### 미검증 항목
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지 생성: **미실행**(CF `-UpdateGoldens`).
+- process E2E · 실제 백엔드 · 실제 게임 창으로 팝업에서 시작(학생 전체 dock 여부는 Lane A 컨트롤러 상태에 따름), Windows release 빌드, 사용자 시각 검수: **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 검수표 (mock 모드 `--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`, 기준 viewport 최대화)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Home-Connected-Scan | 홈 `싯딤의 상자와 연결` → Mock 창 → `선택한 창 사용` → 안착 뒤 `스캔` | 팝업 자리 · 크기, 줄 라벨 80° 계단, 학생 2 · 아이템 5 · 기타 3(선물 둘째), 칩 크기 글자, 메뉴 `스캔` 분홍 선, 머리글은 어둡지 않음. 다시 열면 타일 그림이 바뀜(카탈로그 · 보유 학생이 있을 때) |
+| (FD-140 학생) | 팝업에서 `지금 화면 1명` | 팝업 닫힘, 홈 그대로, 머리글 칩 분홍 `학생 스캔 …`(Mock은 금방 끝남) → 다른 탭이면 토스트, 홈이면 토스트(홈은 스캔 탭이 아님) |
+| (FD-140 아이템 · FD-151) | `기술 노트` 또는 `선물` | 팝업 닫힘, 홈 그대로, 칩 `아이템 스캔`, 끝나면 토스트 → 스캔 탭 검토 |
+| (진행 · 검토 막힘) | 위에서 끝난 뒤 적용 전 다시 `스캔` | 시작 타일 흐림, 안내 `검토하지 않은 스캔 결과가 있습니다…` + `스캔 탭 열기` → 스캔 탭, 전술대항전은 누를 수 있음 |
+| (FD-150) | `전술대항전` 타일 | 전술대항전 탭 |
+| (닫기 · 창) | ×, 스크림, Esc, `창 다시 선택` | 닫힘 / 창 선택 패널 |
+| (작은 창) | 1280×720 | 팝업이 화면 안, 넘침 없음 |
+
+### 발견 사항
+
+1. **Lane A 작업 트리의 학생 전체 dock 제거**: 착수 뒤 Lane A(FE8-g2)가 `scan_session_controller.dart`에서 학생 전체 `dockBeside`를 이미 뺐다(작업 트리, 미커밋). 팝업은 컨트롤러 시작 동작을 그대로 부르므로 HEAD 컨트롤러면 전체 학생이 dock되고, Lane A 변경이 들어가면 백그라운드로 홈에 머문다(FD-140 뜻). 시험은 두 경우 모두 돌게 dock 호출을 단정하지 않는다(dock 채널 응답만 둠). 이 slice와 Lane A 파일 겹침 0.
+2. **팝업 시작이 스캔 탭 고르기를 바꾼다**: 시작 판정을 FE8-g1 함수로 재사용하려고 고르기를 그 타일로 바꾼 뒤 판정한다. 막히면 원래대로 되돌리고, 시작하면 시작한 종류로 남긴다(같은 컨트롤러라 스캔 탭이 지금 실행을 보이는 것이 자연스럽다고 판단, 그리고 g3 큐가 `pick`을 비동기로 읽게 바뀌어도 깨지지 않게). CF 판단: 고르기를 늘 되돌릴지, 컨트롤러에 "고르기와 무관한 한 종류 시작" API를 둘지(Lane A).
+3. **시안에 없는 것(워커 재량)**: ① 아래 안내 줄(막힌 이유 노랑 · 진행/검토 회색 + `스캔 탭 열기` 분홍 밑줄)과 그 글자 `검토하지 않은 스캔 결과가 있습니다. 스캔 탭에서 검토한 뒤 시작할 수 있습니다.` ② 검토 대기에서 시작 막음(새 시작이 컨트롤러 `_resetProjection`으로 검토 전 후보를 지우므로). ③ 전술대항전 타일 설명 `준비 중` → `전술대항전 탭으로 이동`, 흐림 없음(링크라서), 아이콘 색은 시안 그대로. ④ 선물 설명 `선물 인벤토리`(장비 짜임), 기타 줄 순서 장비 · 선물 · 전술대항전(시작 타일을 앞에). ⑤ 팝업 열고 닫기 연출(시안 없음 — 360ms 페이드 + 0.96 → 1), 타일 hover 흰 .05.
+4. **아이템 진행 창**: FD-140 "아이템은 진행 창"은 FE8-g3 전이라 지금 컨트롤러가 아이템에 진행 창을 띄우지 않는다. 팝업에서 시작한 아이템 스캔은 홈에 머물고 머리글 칩으로 진행을 보인다(스캔 탭으로 옮기지 않음). g3에서 컨트롤러가 dock하면 팝업 쪽 변경 없이 따라간다.
+5. **스크림 범위**: 키트 `BaModal`은 앱 overlay 전체(머리글 포함)를 덮는데 시안은 머리글이 스크림 위다. 그래서 홈 콘텐츠 영역에 스크림 · 팝업을 직접 두고 Esc만 키트 `KitOverlayEscape`로 했다. 포커스 가두기 · 머리글 의미 구조 빼기(BaModal 기능)는 없다. 키트에 "범위 지정 모달"이 생기면 옮길 후보(Lane A 키트 판단).
+6. **그림 데이터**: Mock · golden 계정은 확정 학생 0명(`repositoryState.students` 빈 목록, 머리글 42는 `AppServiceState` 수)이라 학생 카드는 틀만 보인다(지어내지 않음 — FE8-g1과 같음). Mock 카탈로그에 전술 교육 BD · 엘레프 · 장비 · 선물 대표 아이콘이 없어 키트 대체 글자. 타일 그림은 "연 횟수" 씨앗이라 앱을 다시 켜면 첫 열기 그림이 같다(golden 고정용, 열 때마다는 바뀐다).
+7. **Studio**: 팝업은 떠 있는 모달이라 Studio 섹션 문서에 넣지 않았다(FD-019 예외, `ConnectTargetPanel`처럼 시안 rect 원점 설계 px 상수). `lib/ui/studio/` 수정 0.
+8. **키트 승격 후보(Lane A 판단)**: 팝업 타일(80° r9 + 삼각 무늬 + 선) · 학생 카드 겹침(FE8-g1 `_StudentCards`와 같은 짜임 — private이라 복사) · 삼각 무늬 값(`plan_element_builder.dart` private `_planElementTexture`와 같은 값 복사) · 연결 칩(FE8-g1 `_ConnectionStatusChip`과 같은 짜임).
+9. **Lane A 시험**: 일반 묶음에 Lane A 미추적 `scan_run_view_fe8g2_test.dart`가 grep에 걸려 함께 돌았고 통과했다(+8). Lane A 로그에는 쓰지 않았다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8f3/pre/<경로>` 7파일(`home_page.dart` · `app_shell.dart` · `home_connect_fe8e_test.dart` · 이 문서 + 고치지 않은 `home_page_test.dart` · `home_app_shell_test.dart` · `widget_test.dart`). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8f3/commit.json`: slice `fe8f3`, modified 4(이 문서 포함), added 3, `whole` = [이 문서](바뀌는 기존 기준 이미지 없음), `optional_added` = [`frontend/test/goldens/baseline/home-scan-popup.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe8f3/output.md`. 로그 `debug/frontend_fe8f3/logs/`.
+
+### 다음 행동
+
+- FE8-f3 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-g2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 home_scan_popup_fe8f3 +11 추가 · home_connect_fe8e 수 그대로, process 변화 0, 기존 golden 전 장면 GREEN, 새 `home-scan-popup`은 기준 없음 → 실패 이미지 검토 → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8f3`.
+- 발견 1(Lane A 컨트롤러 변경이 들어간 뒤 팝업 학생 전체 = 백그라운드 확인) · 2(고르기 되돌림/API) · 3 · 5는 CF 판단.
