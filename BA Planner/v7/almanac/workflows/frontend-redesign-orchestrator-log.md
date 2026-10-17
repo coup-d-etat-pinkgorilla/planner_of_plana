@@ -3687,3 +3687,35 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - gate ① `20261017_030250`(XB source6 미커밋 그대로 포함): 모두 PASS(process 101), golden RED 8 = 예측(전술 6장 seg 자리 ~1.6k px + 새 2) → 새 장면 검토 승인 ② `-UpdateGoldens` `20261017_031611` **GREEN**(golden 55).
 - 커밋: **fe8f2 `fc7a8839`** → **fe9g `cd991c03`**. frontend 작업 트리 깨끗.
 - FE9-g 발견 1(seed 방어 기록 시각 모름 → 최근 10전·연패 '—')·3(S3 칸 의존)·4(30일 기간 없음)·5(S2 막대 = 내 기록 비율) → 후속 정리 후보. FE8-f2 → 다음 FE8-g1.
+
+## 2026-10-17 03:45 — 다음 라운드 배정: Lane A FE8-g1, Lane B tidy3
+
+- **Lane A** `debug/frontend_redesign_handoff/fe8g1-worker-prompt-20261017.md`: 새 스캔 탭 골격 + 고르기(Scan·Scan-Items — S1 준비·최근, S2 학생/아이템 상호 배타·아이템 다중(선물 포함 7)·종류별 마지막 스캔, S3 안내, 미연결 `ConnectTargetPanel`). 한 종류는 지금 컨트롤러로 시작, **아이템 여러 종류 선택은 시작 막고 이유 문구(큐 실행 = FE8-g3)**. 진행·검토 중에는 기존 `ScanPage` 화면. 새 장면 최대 2.
+- **Lane B** `debug/frontend_redesign_handoff/tidy3-worker-prompt-20261017.md`: **CF 결정** — 기록 S4·분석·슬롯 모두 최근 30일(시각 모름은 제외 + 근거 문구), 방어 유저 수 한 함수(통계 행 우선, 없으면 상대 수 — 상대 없는 방어 제외), 슬롯 S3 "뚫은 공격 학생"을 고른 칸 학생이 있던 방어 기록으로 좁힘, seed 방어 기록에 시각 보강.
+- 겹침 0(Lane A scan·셸 / Lane B tactical).
+
+
+## 2026-10-17 03:36 — 세션 시작(XB): source6 같은 소스 GREEN 수신·두 커밋 준비
+
+- CF02:00·03:35 회신과 gate `20261017_031611` GREEN을 확인했다. Source6 SHA6/6, 기존4 HEAD 기준/신규2 부재, index empty, main 전체 Python1402 PASS 때의 backend/contracts/tool 4131개 입력 불변 및 Frozen11 보존을 확인했다.
+- 계획한 **FB7 주석 exact2 → M3 CLI exact4**를 index projection으로 각각 커밋하고 모든 경로·blob SHA를 검증한다. Annotation2는 검증 키워드/런타임 변화0이며 M3CLI4와 서로 의존하지 않는다. 두 커밋 동안 main bytes와 기존 인식/C6/config/CF WIP를 보존하고 push하지 않는다.
+- CF02:00의 FE8-f1 스캐너 동결 창 종료도 수신했다. 두 커밋 뒤 source6 반영 동결을 해제해 회신한다. 현재 별도 scanner/code 변경을 추가하지 않는다. M3 독립 제거 비교는 원천/승인 매핑 결손으로 BLOCKED/null, FB10d PNG 대기다.
+- 근거 debug/xb_source6_exact_commits_20261017/input.md 및 artifacts/preflight.json. 이전 sealed 산출물은 변경하지 않는다.
+
+
+## 2026-10-17 03:39 — 회신(XB): FB7 주석2·M3 CLI4 두 커밋 완료·동결 해제
+
+- **FB7 계약 주석 exact2: `b4a68a40058323186b2edbe0b38d8e3c73ae1b33`**. Schema annotation5/README 설명만 포함하며 검증 키워드·runtime·producer·Dart DTO 변경0이다.
+- **M3 opt-in CLI/test exact4: `b33b7af917a984baf8ab72e999ddf3212b1695da`**, parent는 위 FB7 커밋이다. readonly store preview/명시적 crosswalk/stats --from-store의 도구 3개와 테스트 모듈 1개만 포함했다. 기본 경로와 M2 API/DTO는 보존했다.
+- 두 커밋의 경로는 **exact2/exact4**, working 원본 SHA는 source6 표와 **6/6 일치**하고 commit blob은 Git 표준 정규화 기준으로 6/6 검증했다. CF 같은 소스 gate **`20261017_031611` GREEN**(analyze0/process101/golden55), 실제 main 표준 Python **1402/1300.781s OK**, 집중23·의미audit7이 근거다. 검증 당시 backend/contracts/tool 4131개 입력이 그대로여서 전체를 중복 실행하지 않았다. Almanac45·working/cached diff-check PASS.
+- 첫 index 검사는 schema CRLF 5289행을 잡아 커밋 전에 중단했다. 기존 Git 설정에 따른 clean 변환으로 **schema commit blob만 LF로 정규화**했고 JSON 내용 동일성을 검증했다. Working schema bytes·설정은 바꾸지 않았으며 나머지5 blob은 원 bytes와 동일하다. 원 검사 로그와 raw/commit SHA 표는 artifacts/normalization-proof.json에 보존했다.
+- Main working source와 기존 인식/C6/config/CF WIP를 전수 보존했고 Frozen11도 그대로다. Index empty, **push 없음**. 근거 debug/xb_source6_exact_commits_20261017/output.md 및 artifacts/commit-1.json·commit-2.json.
+- **Source6 반영 동결 해제**. CF02:00의 FE8-f1 스캐너 동결 창 종료도 수신했다. 새 backend/scanner 변경은 별도 계획·검증·같은 소스 CF gate로 진행한다. 이번에 추가 scanner/프로필/골든 변경은 없다.
+- **M3 전체는 아직 미완료**다. 실제 readonly preview 후보265/265·verified0/projected0, 독립 Schale 제거 비교는 **BLOCKED/diff=null**이다. Gift/affinity 원천 kind·승인 identity/enum/merge crosswalk·stats kind가 필요하다. 기게시 cm-review-state.json/CM 명령 초안은 이제 커밋된 CLI4 기준으로 검토할 수 있지만, 공용store/lock/pipeline 쓰기는 CM 승인+사용자 실행만이다. Canonical/generated/Schale 삭제0, 제거 완료 선언CM. FB10d 사용자 원본 PNG도 대기 중이다.
+
+## 2026-10-17 13:40 — FE8-g1·tidy3 검토·gate·커밋, XB source6 커밋 확인
+
+- XB: source6 두 커밋 `b4a68a40`(FB-7 계약 주석)·`b33b7af9`(M3 opt-in store preview·stats sync CLI) — 03:39 회신, 동결 해제.
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8g1 17행, tidy3 19행), 겹침 0. FE8-g1: 셸 스캔 탭 = 새 `ScanTabPage`(진행·검토 중엔 기존 `ScanPage`), `app_shell.dart` +3 −2, 기존 테스트 5파일은 예전 드롭다운·`scan-start` 조작을 새 고르기 화면 조작으로만 바꿈(삭제 0). tidy3: `lib/ui/tactical/tactical_window.dart` 공용(30일·방어 유저 수), 슬롯 S3 칸 의존, seed 시각.
+- gate ① `20261017_131032`: 모두 PASS(process 101), golden RED 6 = 예측(전술 4 + 새 `scan-pick-students`·`scan-pick-items`) → 검토 승인(슬롯: "최근 30일"·"30일 이전 1건 · 시각 모름 1건 제외", 최근 10전·연패 값 / 스캔: 아이템 2종 선택 시 시작 비활성 + 이유) ② `-UpdateGoldens` `20261017_132609` **GREEN**(golden 57).
+- 커밋: **fe8g1 `01679286`** → **tidy3 `37b2548a`**. frontend 작업 트리 깨끗.
