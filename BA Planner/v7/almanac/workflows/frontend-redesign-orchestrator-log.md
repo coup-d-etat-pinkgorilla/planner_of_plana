@@ -3719,3 +3719,17 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8g1 17행, tidy3 19행), 겹침 0. FE8-g1: 셸 스캔 탭 = 새 `ScanTabPage`(진행·검토 중엔 기존 `ScanPage`), `app_shell.dart` +3 −2, 기존 테스트 5파일은 예전 드롭다운·`scan-start` 조작을 새 고르기 화면 조작으로만 바꿈(삭제 0). tidy3: `lib/ui/tactical/tactical_window.dart` 공용(30일·방어 유저 수), 슬롯 S3 칸 의존, seed 시각.
 - gate ① `20261017_131032`: 모두 PASS(process 101), golden RED 6 = 예측(전술 4 + 새 `scan-pick-students`·`scan-pick-items`) → 검토 승인(슬롯: "최근 30일"·"30일 이전 1건 · 시각 모름 1건 제외", 최근 10전·연패 값 / 스캔: 아이템 2종 선택 시 시작 비활성 + 이유) ② `-UpdateGoldens` `20261017_132609` **GREEN**(golden 57).
 - 커밋: **fe8g1 `01679286`** → **tidy3 `37b2548a`**. frontend 작업 트리 깨끗.
+
+## 2026-10-17 13:50 — 다음 라운드 배정: Lane A FE8-g2, Lane B FE8-f3
+
+- FE9-c(로비 스캔)는 같은 셸 `ScanSessionController`(`ScannerKind.tacticalLobby`)와 `app_shell._handoffCandidate`를 쓰므로 FE8-g2와 같은 라운드에 두지 않는다 → 다음 라운드 이후.
+- **Lane A** `debug/frontend_redesign_handoff/fe8g2-worker-prompt-20261017.md`: 학생 스캔 진행 화면(Scan-Student-Run) — FB-10 고정 범위 값만(feedback 관측값, total null이면 생략, live 성장 값 '—'), 일시정지·취소, 학생 전체 `dockBeside` 제거, 백그라운드 유지. **app_shell 수정 금지**(Lane B와 겹침 방지). 새 장면 최대 1.
+- **Lane B** `debug/frontend_redesign_handoff/fe8f3-worker-prompt-20261017.md`: 홈 스캔 팝업 타일 → 셸 컨트롤러로 바로 시작(FD-140 (a)), 전술대항전 타일 = 탭 링크(FD-150), 선물 타일(FD-151), 진행 중·미연결 처리. **`lib/ui/scan/**`·컨트롤러는 읽기만**(API가 없으면 스캔 탭 링크로 두고 status에). app_shell은 Lane B만 최소. 새 장면 최대 1.
+
+## 2026-10-18 01:00 — FE8-g2·FE8-f3 검토·gate·커밋
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8g2 17행, fe8f3 8행), 겹침 0 — Lane A는 app_shell 0, Lane B는 `lib/ui/scan/**` 읽기만(`app_shell.dart` +2, 홈에 컨트롤러 전달).
+- FE8-g2 기존 테스트 5파일: 학생 전체 dock 호출 0·일시정지 조작이 화면 버튼으로·스캔 탭 진행 = 새 `scan-run`으로 기대 변경(삭제 0). XB 요청 후보 4 → backend 01:00.
+- gate ① `20261018_002127`: 모두 PASS(process 101), golden RED 2 = 새 장면만(`scan-student-run`·`home-scan-popup`), 기존 57장 변화 0 ② `-UpdateGoldens` `20261018_003859` **GREEN**(golden 59). 새 장면 검토 승인.
+- 커밋: **fe8g2 `30c9e35f`** → **fe8f3 `463b8f6a`**. frontend 작업 트리 깨끗.
+- 후속 소건: 진행 화면 "학생 탭으로 이동" 버튼은 셸 연결 1줄(`onOpenStudents`)이 필요해 꺼져 있다(FE8-g2 발견 2) — 다음 셸을 만지는 slice에 넣는다.
