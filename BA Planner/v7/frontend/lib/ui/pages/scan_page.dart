@@ -519,7 +519,10 @@ class _ScanPageState extends State<ScanPage> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (!_controller.companionActive)
+          // 끝난 세션에 값 없는 막대(끝없는 애니메이션)는 그리지 않는다(FE8-f2 발견 1, FE8-g2).
+          if (!_controller.companionActive &&
+              !(progress == null &&
+                  _controller.stage == ScanSessionStage.terminal))
             Semantics(
               label: progress == null
                   ? 'Scan progress indeterminate'

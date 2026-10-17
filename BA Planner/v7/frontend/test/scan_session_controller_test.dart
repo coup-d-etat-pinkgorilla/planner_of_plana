@@ -193,7 +193,7 @@ void main() {
   });
 
   testWidgets(
-    'a full student scan docks, publishes the companion and restores at the end',
+    'a full student scan runs in the background without the dock (FE8-g2)',
     (tester) async {
       final service = MockAppService();
       addTearDown(service.dispose);
@@ -208,10 +208,10 @@ void main() {
 
       await _runScan(tester, controller);
       expect(controller.stage, ScanSessionStage.terminal);
-      expect(harness.dock.calls, ['dock:mock-window', 'restore']);
+      // 학생은 백그라운드(시안 Scan-Student-Run): 플래너 창을 줄여 붙이지 않는다(아이템 진행 창은 FE8-g3).
+      expect(harness.dock.calls, isEmpty);
       expect(controller.companionActive, isFalse);
-      expect(harness.companions.first?.modeLabel, '전체 학생');
-      expect(harness.companions.last, isNull);
+      expect(harness.companions, isEmpty);
 
       // 재고를 골라도 학생 모드는 그대로 남는다(화면의 세그먼트 규칙).
       controller.selectKind(
@@ -237,12 +237,13 @@ void main() {
 
     unawaited(controller.start());
     await tester.pump();
-    expect(controller.companionActive, isTrue);
+    expect(controller.stage, ScanSessionStage.running);
+    expect(controller.companionActive, isFalse);
     final beforeDispose = harness.notifications;
     final recentBefore = harness.recent.length;
     controller.dispose();
-    // dock이 열려 있으면 dispose가 창을 되돌린다.
-    expect(harness.dock.calls.last, 'restore');
+    // 학생 전체도 dock을 열지 않으므로(FE8-g2) 되돌릴 창이 없다.
+    expect(harness.dock.calls, isEmpty);
 
     for (var step = 0; step < 6; step += 1) {
       await tester.pump(const Duration(milliseconds: 10));

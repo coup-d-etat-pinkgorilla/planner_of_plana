@@ -454,7 +454,7 @@ void main() {
       expect(controller.stage, ScanSessionStage.terminal);
     });
 
-    testWidgets('session and review show the current ScanPage, then pick', (
+    testWidgets('student run view, then ScanPage review, then pick', (
       tester,
     ) async {
       await _openScanTab(tester);
@@ -463,7 +463,9 @@ void main() {
       await tester.pump();
       await tester.tap(_key('scan-pick-start'));
       await tester.pump();
-      expect(_key('scan-page'), findsOneWidget, reason: 'session view');
+      // 학생 진행은 새 진행 화면(FE8-g2), 지금 ScanPage는 Offstage.
+      expect(_key('scan-run'), findsOneWidget, reason: 'run view');
+      expect(_key('scan-page'), findsNothing);
       expect(_key('scan-pick'), findsNothing);
       // Mock 학생 1명 스캔은 후보 하나로 끝난다 → 검토 대기 = 지금 ScanPage.
       await tester.pump(const Duration(milliseconds: 60));
@@ -471,6 +473,7 @@ void main() {
       expect(controller.stage, ScanSessionStage.terminal);
       expect(controller.candidates, isNotEmpty);
       expect(_key('scan-page'), findsOneWidget, reason: 'review view');
+      expect(_key('scan-run'), findsNothing);
       expect(tester.widget<ScanPage>(find.byType(ScanPage)).active, isTrue);
 
       // 검토를 마치면(폐기) 고르기로 돌아오고, 최근 스캔 행이 그 실행을 보인다.

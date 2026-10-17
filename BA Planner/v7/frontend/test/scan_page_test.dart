@@ -100,7 +100,7 @@ void main() {
     },
   );
 
-  testWidgets('full student scan docks before start and restores on terminal', (
+  testWidgets('full student scan keeps the planner window (no dock, FE8-g2)', (
     tester,
   ) async {
     final service = MockAppService();
@@ -121,13 +121,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('scan-start')));
     await tester.pump();
 
-    expect(dock.dockedTargets, ['mock-window']);
+    expect(dock.dockedTargets, isEmpty);
     expect(dock.restoreCalls, 0);
-    expect(companions.whereType<ScanCompanionState>(), isNotEmpty);
+    expect(companions, isEmpty);
 
     await tester.pump(const Duration(milliseconds: 35));
-    expect(dock.restoreCalls, 1);
-    expect(companions.last, isNull);
+    expect(find.text('Outcome: completed'), findsOneWidget);
+    expect(dock.dockedTargets, isEmpty);
+    expect(dock.restoreCalls, 0);
+    expect(companions, isEmpty);
   });
 
   testWidgets('loading, empty, error, disconnected and refresh are distinct', (

@@ -1,9 +1,10 @@
 // 새 스캔 탭(FE8-g1, 시안 Scan · Scan-Items, FD-140 · FD-149 · FD-151 · FD-155).
 //
 // 시작 전에는 3섹션 고르기 화면([ScanPickWorkspace])이고, 진행(시작 중 · 진행 · 일시정지 · 중지 요청 중)과 검토 대기(끝났고
-// 적용하지 않은 후보)에는 지금 [ScanPage]의 진행 · 검토 화면을 그대로 보인다(FE8-g2~g5 전까지, 내부 동작 변경 0). 판단은
+// 적용하지 않은 후보)에는 지금 [ScanPage]의 진행 · 검토 화면을 그대로 보인다(FE8-g3~g5 전까지, 내부 동작 변경 0). 판단은
 // 머리글 칩 · 탭 점과 같은 [ScanHeaderStatus]라서 칩 · 토스트를 누르면 같은 화면이 열린다(FE8-f2). 검토까지 마치면 고르기로
-// 돌아온다.
+// 돌아온다. 학생 진행만은 새 진행 3섹션([ScanRunWorkspace], FE8-g2 · 시안 Scan-Student-Run)이다 — 세션은 셸 소유라 다른 탭에
+// 다녀와도 같은 진행 화면이고, 끝나면 위 규칙대로 검토 대기(결과 있음) 또는 고르기(결과 없음)다.
 //
 // [ScanPage]는 고르기 화면 동안에도 Offstage로 붙여 둔다: 계정 패널이 컨트롤러에 계정을 넘기고(시작 전제), 셸 · 테스트가
 // 컨트롤러를 그 화면에서 찾는다(FE8-f1 · f2와 같은 경로). 고르기 화면은 컨트롤러의 고르기 값만 바꾸고, 시작은
@@ -23,6 +24,7 @@ import '../../services/scanner_service.dart';
 import '../pages/scan_page.dart';
 import 'connected_target_controller.dart';
 import 'scan_pick_logic.dart';
+import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
 import 'scan_tab_sections.dart';
 
@@ -39,6 +41,7 @@ class ScanTabPage extends StatefulWidget {
     this.connectedTarget,
     this.active = true,
     this.appliedElsewhere = const {},
+    this.onOpenStudents,
   });
 
   final AppService service;
@@ -58,6 +61,9 @@ class ScanTabPage extends StatefulWidget {
 
   /// 학생 · 인벤토리 탭에서 적용한 후보(`scanCandidateKey`). 검토 대기 판단에서 뺀다.
   final Set<String> appliedElsewhere;
+
+  /// 진행 화면 `학생 탭으로 이동`. 없으면 그 버튼을 끈다(셸 연결은 app_shell 몫, FE8-g2 status 요청).
+  final VoidCallback? onOpenStudents;
 
   @override
   State<ScanTabPage> createState() => _ScanTabPageState();
@@ -223,6 +229,8 @@ class _ScanTabPageState extends State<ScanTabPage> {
       appliedElsewhere: widget.appliedElsewhere,
     );
     final sessionShown = view == ScanTabView.session;
+    final runShown = sessionShown && scanRunVisible(_controller);
+    final pageShown = sessionShown && !runShown;
     final connectedTarget = widget.connectedTarget;
     final panelVisible =
         widget.active &&
@@ -233,9 +241,9 @@ class _ScanTabPageState extends State<ScanTabPage> {
       fit: StackFit.expand,
       children: [
         Offstage(
-          offstage: !sessionShown,
+          offstage: !pageShown,
           child: TickerMode(
-            enabled: sessionShown,
+            enabled: pageShown,
             child: ScanPage(
               service: widget.service,
               onCandidateHandoff: widget.onCandidateHandoff,
@@ -245,6 +253,23 @@ class _ScanTabPageState extends State<ScanTabPage> {
             ),
           ),
         ),
+        if (runShown)
+          ScanRunWorkspace(
+            key: const ValueKey('scan-run'),
+            onOpenStudents: widget.onOpenStudents,
+            view: ScanPickView(
+              controller: _controller,
+              service: widget.service,
+              now: appClockNow(widget.service),
+              lastScans: _lastScans,
+              appliedElsewhere: widget.appliedElsewhere,
+              connectedTarget: connectedTarget,
+              panelVisible: false,
+              onOpenPanel: null,
+              onClosePanel: _closePanel,
+              onUseTarget: _useTarget,
+            ),
+          ),
         if (!sessionShown)
           ScanPickWorkspace(
             key: const ValueKey('scan-pick'),

@@ -1,5 +1,6 @@
 // fb10a-dart: 지금 스캔 화면의 최소 FB-10a 연결(FD-142). 일시정지 → paused 사유 → 이어서, Esc = 중지(기존 cancel).
-// 본격 일시정지 화면(머리글 진행·dock 재작성)은 FE8-f2·g2·g3 몫이라 여기서는 기존 버튼·dock만 본다.
+// 본격 일시정지 화면(머리글 진행·dock 재작성)은 FE8-f2·g2·g3 몫이라 여기서는 기존 버튼·dock만 본다. 학생 전체는 FE8-g2부터
+// dock을 쓰지 않는다(백그라운드).
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/services/window_dock_service.dart';
@@ -195,7 +196,7 @@ void main() {
     expect(find.text('Outcome: completed'), findsOneWidget);
   });
 
-  testWidgets('full student scan publishes pause and resume to the dock', (
+  testWidgets('full student scan pauses and resumes without the dock', (
     tester,
   ) async {
     await _tallSurface(tester);
@@ -225,21 +226,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
     }
 
-    final running = companions.whereType<ScanCompanionState>().last;
-    expect(running.paused, isFalse);
-    expect(running.onPause, isNotNull);
-    expect(running.onResume, isNull);
-    running.onPause!();
+    expect(companions, isEmpty);
+    await tester.tap(_key('scan-pause'));
     await tester.pump(const Duration(milliseconds: 15));
 
-    final paused = companions.whereType<ScanCompanionState>().last;
-    expect(paused.paused, isTrue);
-    expect(paused.pausedLabel, startsWith('일시정지했습니다.'));
-    expect(paused.onResume, isNotNull);
-    paused.onResume!();
+    expect(_key('scan-resume'), findsOneWidget);
+    expect(
+      tester.widget<Text>(_key('scan-paused-reason')).data,
+      startsWith('일시정지했습니다.'),
+    );
+    await tester.tap(_key('scan-resume'));
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump();
-    expect(companions.last, isNull);
+    expect(find.text('Outcome: completed'), findsOneWidget);
+    expect(companions, isEmpty);
   });
 
   group('companion dock', () {

@@ -196,6 +196,58 @@ abstract final class ScanMetrics {
   /// 창 선택 패널(FD-155)은 오른쪽 섹션 rect 폭의 719.5 / 640배 자리에 오른쪽 위로 붙는다(홈 패널과 같은 설계 크기).
   static const connectPanelWidthFactor = 719.5 / 640;
 
+  // --- 학생 진행(FE8-g2, 시안 Scan-Student-Run — 섹션 path는 고르기와 같다) -----------------------------
+  // 가운데 줄은 고르기와 같은 규칙(왼쪽은 줄 아래 높이의 사선에서, 오른쪽은 줄 위 높이의 사선에서 같은 간격)이다.
+
+  /// 큰 진행 수치 (628.6, 287.2, 1413.3×70): 사선에서 46.
+  static const runNumbersTop = 78.0;
+  static const runNumbersHeight = 70.0;
+  static const runNumbersEdgeGap = 46.1;
+
+  /// 진행 막대 (619.6, 365.2, 1413.3×16, 막대 h12): 사선에서 41.4.
+  static const runBarTop = 156.0;
+  static const runBarHeight = 16.0;
+  static const runBarTrackHeight = 12.0;
+  static const runBarEdgeGap = 41.4;
+
+  /// 타일 2개 `지금 읽는 학생` (563.5, 405.2, 669.6×230) · `지금까지` (1210.5, 405.2, 826.9×230): 줄 간격 30, 평행사변형 변
+  /// 사이 18.1(학생 칸과 같다), 폭 비율 669.6 : 826.9.
+  static const runTileTop = 196.0;
+  static const runTileHeight = 230.0;
+  static const runLiveTileWidth = 669.6;
+  static const runSoFarTileWidth = 826.9;
+
+  /// `방금 읽은 학생` 머리 (565.2, 665.2, 1413.3×34): 사선에서 43(줄 라벨과 같다).
+  static const runRecentHeaderTop = 456.0;
+
+  /// 행 6개 (538.4, 715.2, 1444.3×62, 피치 70): 사선에서 30.
+  static const runRecentTop = 506.0;
+  static const runRecentHeight = 62.0;
+  static const runRecentPitch = 70.0;
+
+  /// 각주 (481.6, 1141.2, 1413.3×30): 사선에서 43.
+  static const runNoteTop = 932.0;
+  static const runNoteHeight = 30.0;
+
+  /// 오른쪽: 머리 `확인 필요` (2160.8, 231.2)는 [detailHeaderTop], 설명 (2156.0, 283.2, 360×40)은 [detailSummaryTop] 자리.
+  static const runReviewNoteHeight = 40.0;
+
+  /// `백그라운드 스캔` (2115.5, 493.2, h34) · `.plain` 3줄 (2086.6, 539.2, h44, 피치 48 — 왼쪽은 줄 아래 높이의 사선에서 24,
+  /// 오른쪽 22).
+  static const runBackgroundTitleTop = 284.0;
+  static const runBackgroundTop = 330.0;
+  static const runBackgroundHeight = 44.0;
+  static const runBackgroundPitch = 48.0;
+
+  /// `다른 탭에서 보이는 모습` (2078.8, 701.2, h34)과 칩 예시 (2071.5, 747.2, 444.5×70).
+  static const runOtherTabTitleTop = 492.0;
+  static const runOtherTabTop = 538.0;
+  static const runOtherTabHeight = 70.0;
+
+  /// 아래 버튼: ghost `학생 탭으로 이동` (1959.2, 1248, h58)은 아래 끝에서 144, pri `미리 검토` (1947.2, 1316)는
+  /// [detailButtonFromBottom].
+  static const runStudentsButtonFromBottom = 144.0;
+
   /// 낮은 창에서 세로 값을 줄이는 비율(0.4~1).
   static double scaleFor(double sectionHeight) =>
       (sectionHeight / referenceHeight).clamp(0.4, 1.0).toDouble();

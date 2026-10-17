@@ -8,6 +8,8 @@
 //   `게임 창 다시 선택`을 누르면 이 자리에 홈과 같은 [ConnectTargetPanel]을 붙인다(FD-155).
 // 배치는 [scanStudioDocument] 섹션 path와 [ScanMetrics](시안 좌표)에서 계산한다. 창이 낮으면 세로 값만 줄이고 요소는
 // 시안 크기로 배치한 뒤 같은 비율로 줄인다(통계 탭과 같은 규칙).
+// 학생 진행 화면(FE8-g2, 시안 Scan-Student-Run)은 같은 섹션 · 레일을 쓰므로 이 라이브러리의 part(`scan_run_sections.dart`)다.
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart' show ConfirmedStudentState;
 import '../../services/scanner_service.dart';
+import '../app_section.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../home/connect_target_panel.dart';
 import '../kit/ba_chip.dart';
@@ -26,8 +29,10 @@ import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
 import '../kit/kit_glyph.dart';
 import '../kit/kit_pressable.dart';
+import '../kit/kpi_tile.dart';
 import '../kit/section_frame.dart';
 import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
+import '../kit/skew_bar.dart';
 import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/scan_studio_layout.dart';
@@ -36,9 +41,13 @@ import '../widgets/section_template_surface.dart' show sectionCanvasElementRect;
 import '../widgets/student_section_layout.dart' show studentGridCardPath;
 import 'connected_target_controller.dart';
 import 'header_connection_chip.dart';
-import 'scan_header_progress.dart' show scanCandidateKey;
+import 'scan_header_progress.dart'
+    show ScanHeaderActivity, ScanHeaderStatus, scanCandidateKey;
 import 'scan_pick_logic.dart';
+import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
+
+part 'scan_run_sections.dart';
 
 const _muted = AppColors.textMuted;
 
@@ -273,10 +282,17 @@ class _Chevron extends StatelessWidget {
 // --- 왼쪽 레일 ------------------------------------------------------------------
 
 class _RailSection extends StatelessWidget {
-  const _RailSection({required this.size, required this.view});
+  const _RailSection({
+    required this.size,
+    required this.view,
+    this.live = false,
+  });
 
   final Size size;
   final ScanPickView view;
+
+  /// 지금 진행 중인 실행을 최근 스캔 첫 행(`.btn.sel-pink`)으로 넣는다(FE8-g2 진행 화면).
+  final bool live;
 
   @override
   Widget build(BuildContext context) {
@@ -349,8 +365,10 @@ class _RailSection extends StatelessWidget {
       ),
     ];
     final recent = controller.recent;
+    final liveRows = live ? 1 : 0;
     final noteTop =
-        ScanMetrics.recentTop + ScanMetrics.recentPitch * recent.length;
+        ScanMetrics.recentTop +
+        ScanMetrics.recentPitch * (recent.length + liveRows);
     final reselectTop =
         (bottom - top - ScanMetrics.reselectFromBottom * scale) / scale;
     final children = <Widget>[
@@ -425,10 +443,16 @@ class _RailSection extends StatelessWidget {
         rect: text(ScanMetrics.recentCaptionTop, ScanMetrics.captionHeight),
         child: const _Caption('최근 스캔'),
       ),
+      if (live)
+        placed(
+          row(ScanMetrics.recentTop, ScanMetrics.recentHeight),
+          _LiveRecentRow(controller: controller),
+        ),
       for (final (index, item) in recent.indexed)
         placed(
           row(
-            ScanMetrics.recentTop + ScanMetrics.recentPitch * index,
+            ScanMetrics.recentTop +
+                ScanMetrics.recentPitch * (index + liveRows),
             ScanMetrics.recentHeight,
           ),
           _RecentRow(view: view, item: item),
@@ -440,7 +464,7 @@ class _RailSection extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              '이 실행 중 기록 ${recent.length}건 · 앱을 끄면 지워집니다',
+              '이 실행 중 기록 ${recent.length + liveRows}건 · 앱을 끄면 지워집니다',
               key: const ValueKey('scan-recent-note'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -2051,29 +2075,83 @@ class _Steps extends StatelessWidget {
 }
 
 /// 오른쪽 아래 바꾸기 버튼. 시안 모양은 왼쪽 변 80° · 오른쪽 변 수직이라 키트 [RailButton]을 좌우로 뒤집어 바탕만 쓰고
-/// 글자는 위에 올린다(통계 근거 버튼과 같은 방식).
+/// 글자는 위에 올린다(통계 근거 버튼과 같은 방식). 진행 화면(FE8-g2)은 아이콘 · 모양 · key를 바꾸고, 누를 수 없으면 글자도
+/// 흐리게 한다(바탕은 [RailButton]이 흐린다).
 class _DetailButton extends StatelessWidget {
   const _DetailButton({
     required this.title,
     required this.note,
     required this.onPressed,
+    this.icon = Icons.swap_horiz,
+    this.variant = RailButtonVariant.ghost,
+    this.buttonKey = const ValueKey('scan-detail-switch'),
   });
 
   final String title;
   final String? note;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final RailButtonVariant variant;
+  final Key buttonKey;
 
   @override
   Widget build(BuildContext context) {
     final note = this.note;
+    final foreground = variant == RailButtonVariant.primary
+        ? AppColors.onAccent
+        : AppColors.text;
+    final Widget label = Padding(
+      padding: EdgeInsets.only(
+        left: diagonalCutDepth(ScanMetrics.detailButtonHeight) + 12,
+        right: 14,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: foreground),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _body(
+                    AppType.titleSmallSize,
+                    weight: AppType.bold,
+                    color: foreground,
+                    height: 1.2,
+                  ),
+                ),
+                if (note != null)
+                  Text(
+                    note,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _body(
+                      AppType.captionPlusSize,
+                      color: foreground.withValues(alpha: 0.8),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          _Chevron(
+            color: variant == RailButtonVariant.primary ? foreground : null,
+          ),
+        ],
+      ),
+    );
     return Stack(
       fit: StackFit.expand,
       children: [
         Transform.flip(
           flipX: true,
           child: RailButton(
-            key: const ValueKey('scan-detail-switch'),
-            variant: RailButtonVariant.ghost,
+            key: buttonKey,
+            variant: variant,
             height: ScanMetrics.detailButtonHeight,
             semanticLabel: note == null ? title : '$title · $note',
             onPressed: onPressed,
@@ -2082,47 +2160,9 @@ class _DetailButton extends StatelessWidget {
         ),
         IgnorePointer(
           child: ExcludeSemantics(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: diagonalCutDepth(ScanMetrics.detailButtonHeight) + 12,
-                right: 14,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.swap_horiz, size: 16, color: AppColors.text),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _body(
-                            AppType.titleSmallSize,
-                            weight: AppType.bold,
-                            height: 1.2,
-                          ),
-                        ),
-                        if (note != null)
-                          Text(
-                            note,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _body(
-                              AppType.captionPlusSize,
-                              color: AppColors.text.withValues(alpha: 0.8),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const _Chevron(),
-                ],
-              ),
-            ),
+            child: onPressed == null
+                ? Opacity(opacity: kitDisabledOpacity, child: label)
+                : label,
           ),
         ),
       ],

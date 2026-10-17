@@ -8,12 +8,17 @@
 //   안내(시작 전에 · 읽는 항목 · 끝나면), 아이템 7칸(선물 포함).
 // - `scan-pick-items`(Scan-Items): `기술 노트` · `전술 교육 BD`를 고른 상태. 아이템 줄 `2종 선택` + `모두 선택`, 오른쪽
 //   `아이템 2종` 안내(진행 표시 · 끝나면). 여러 종류 차례 스캔은 FE8-g3라 주 버튼은 꺼지고(.45) 옆에 이유 문구다.
+// - `scan-student-run`(Scan-Student-Run, FE8-g2): `전체 학생`으로 시작한 뒤 Mock 진행 이벤트(FB-10 고정 범위)로 학생 34 / 128
+//   진행 중. identify feedback 6명(시안 순서: 노아 · 슌(수영복) · 오토기 · 유우카 · 히나 · 미카, 최근 먼저), 시작부터 130초
+//   (남은 시간 약 6분). 성장 값 · KPI · 학생별 차이 · 확인 필요는 고정 범위 밖이라 '—'.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
 // 비교:                          .\frontend\tool\fe_gate.ps1
 @Tags(['golden'])
 library;
+
+import 'dart:async';
 
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
@@ -64,6 +69,55 @@ class _ScanTabGoldenService extends GoldenMockAppService
   });
 }
 
+/// 세션 시작만 받고 진행 이벤트는 장면이 직접 낸다(끝나지 않는 학생 진행, FE8-g2).
+class _HeldRunGoldenService extends _ScanTabGoldenService {
+  final StreamController<ScannerEvent> events = StreamController.broadcast();
+  ScannerSession? session;
+  var _sequence = 0;
+
+  /// 관측 학생 이름(노아 · 슌(수영복) …)이 카탈로그에 있도록 전체 카탈로그를 쓴다.
+  @override
+  bool get fullStudentCatalog => true;
+
+  @override
+  Stream<ScannerEvent> get scannerEvents => events.stream;
+
+  @override
+  Future<ScannerSession> startScannerSession(
+    ScannerKind kind,
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
+  }) async => session = ScannerSession(
+    id: 'golden-run-session',
+    generation: 1,
+    kind: kind,
+    studentScanMode: studentScanMode,
+  );
+
+  void emit(ScannerEventKind kind, Map<String, dynamic> payload) {
+    final session = this.session!;
+    _sequence += 1;
+    events.add(
+      ScannerEvent(
+        sessionId: session.id,
+        generation: session.generation,
+        sequence: _sequence,
+        kind: session.kind,
+        eventKind: kind,
+        payload: payload,
+      ),
+    );
+  }
+
+  @override
+  Future<void> dispose() async {
+    await events.close();
+    await super.dispose();
+  }
+}
+
 const _target = ScannerTarget(
   id: 'mock-window',
   title: 'Mock Blue Archive',
@@ -74,9 +128,12 @@ const _target = ScannerTarget(
   game: ScannerTargetGame.blueArchive,
 );
 
-Future<ScanTabPage> _openScanTab(WidgetTester tester) async {
+Future<ScanTabPage> _openScanTab(
+  WidgetTester tester, {
+  _ScanTabGoldenService? service,
+}) async {
   setGoldenViewport(tester);
-  final service = _ScanTabGoldenService();
+  service ??= _ScanTabGoldenService();
   addTearDown(service.dispose);
   await tester.pumpWidget(goldenBoundary(BAPlannerApp(service: service)));
   await tester.pumpAndSettle();
@@ -119,5 +176,49 @@ void main() {
       '아이템 2종 스캔 시작',
     );
     await expectGoldenScene(tester, 'scan-pick-items');
+  }, variant: goldenPlatform);
+
+  testWidgets('scan-student-run', (tester) async {
+    final service = _HeldRunGoldenService();
+    final page = await _openScanTab(tester, service: service);
+    final controller = page.controller;
+    final startedAt = DateTime(2026, 10, 4, 11, 57, 50);
+    controller.now = () => startedAt;
+    await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scan-run')), findsOneWidget);
+    controller.now = () => startedAt.add(const Duration(seconds: 130));
+    // 최근 먼저 = 노아 · 슌(수영복) · 오토기 · 유우카 · 히나 · 미카(시안 순서).
+    for (final studentId in [
+      'mika',
+      'hina',
+      'yuuka',
+      'otogi',
+      'shun_swimsuit',
+      'noa',
+    ]) {
+      service.emit(ScannerEventKind.feedback, {
+        'student_id': studentId,
+        'field': 'student_id',
+        'values': <String, dynamic>{},
+      });
+    }
+    service.emit(ScannerEventKind.progress, {
+      'current': 34,
+      'total': 128,
+      'message_key': 'scanner.student.complete',
+    });
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('scan-run-current'))).data,
+      '34',
+    );
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('scan-run-remaining')))
+          .data,
+      '남은 시간 약 6분',
+    );
+    await expectGoldenScene(tester, 'scan-student-run');
   }, variant: goldenPlatform);
 }

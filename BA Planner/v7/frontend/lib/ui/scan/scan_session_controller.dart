@@ -153,6 +153,9 @@ class ScanSessionController extends ChangeNotifier {
   bool _companionActive = false;
   bool _exportingStudentDiagnostic = false;
   String? _liveFeedbackStudentId;
+
+  /// FB-10 `feedback`(field `student_id`)로 관측한 학생(최근 먼저, 같은 학생은 한 번).
+  final List<String> _observedStudentIds = [];
   ScannerSession? _lastEndedSession;
   ScanPick _pick = const ScanPick.student(StudentScanMode.full);
   final Map<String, ScanRecentDetail> _recentDetails = {};
@@ -176,6 +179,9 @@ class ScanSessionController extends ChangeNotifier {
   );
   late final Map<String, String> _candidateErrorsView = UnmodifiableMapView(
     _candidateErrors,
+  );
+  late final List<String> _observedStudentIdsView = UnmodifiableListView(
+    _observedStudentIds,
   );
 
   // ---- 읽기 ----
@@ -225,6 +231,13 @@ class ScanSessionController extends ChangeNotifier {
   /// 이 컨트롤러에서 마지막으로 끝난 세션(실시간 terminal 이벤트 · 스냅숏 복구로 최근 기록에 넣을 때). 최근 기록
   /// 열기로는 바뀌지 않는다. 셸의 완료 토스트가 같은 세션(id + generation)에 한 번만 뜨도록 읽는다(FE8-f2).
   ScannerSession? get lastEndedSession => _lastEndedSession;
+
+  /// 지금 세션에서 마지막으로 관측한 학생(FB-10 `feedback` field `student_id`, 진행 화면 `지금 읽는 학생`). 관측값일 뿐
+  /// 후보 · 저장 기록이 아니다. 모르면 null.
+  String? get liveFeedbackStudentId => _liveFeedbackStudentId;
+
+  /// 지금 세션에서 관측한 학생 id(최근 먼저, 같은 학생은 한 번 — 진행 화면 `방금 읽은 학생`). 관측값일 뿐이다.
+  List<String> get observedStudentIds => _observedStudentIdsView;
 
   /// 지금 세션(또는 연 최근 기록)의 후보. id → 가장 높은 revision.
   Map<String, ScannerCandidate> get candidates => _candidatesView;
@@ -625,17 +638,9 @@ class ScanSessionController extends ChangeNotifier {
       }
       if (_disposed) return;
     }
+    // 학생 스캔은 백그라운드다(FE8-g2, 시안 Scan-Student-Run): 플래너 창을 줄여 붙이지 않고 스캔 탭 진행 화면 · 머리글로
+    // 보인다. 아이템 진행 창(dock)은 FE8-g3.
     try {
-      if (_kind == ScannerKind.student &&
-          _studentScanMode == StudentScanMode.full) {
-        await windowDockService.dockBeside(target.id);
-        if (_disposed) {
-          await windowDockService.restore();
-          return;
-        }
-        _companionActive = true;
-        _publishCompanion();
-      }
       final session = await scanner.startScannerSession(
         _kind,
         target.id,
@@ -986,6 +991,9 @@ class ScanSessionController extends ChangeNotifier {
         final field = event.payload['field'];
         if (field == 'student_id' && studentId is String) {
           _liveFeedbackStudentId = studentId;
+          _observedStudentIds
+            ..remove(studentId)
+            ..insert(0, studentId);
         }
         break;
       case ScannerEventKind.diagnostic:
@@ -1476,6 +1484,7 @@ class ScanSessionController extends ChangeNotifier {
     _terminalError = null;
     _candidates.clear();
     _liveFeedbackStudentId = null;
+    _observedStudentIds.clear();
     _candidateErrors.clear();
     _unresolvedSlots.clear();
     _unresolvedLoading.clear();

@@ -486,7 +486,12 @@ void main() {
           find.byKey(const ValueKey('header-scan-progress-chip-button')),
         );
         await _settle(tester);
-        expect(tester.widget<ScanPage>(find.byType(ScanPage)).active, isTrue);
+        // 학생 진행은 스캔 탭 진행 화면(FE8-g2)이다.
+        expect(
+          tester.widget<ScanTabPage>(find.byType(ScanTabPage)).active,
+          isTrue,
+        );
+        expect(find.byKey(const ValueKey('scan-run')), findsOneWidget);
         expect(_dot, findsOneWidget);
         expect(_progressLabel(tester), '학생 스캔 35');
         expect(tester.takeException(), isNull);
