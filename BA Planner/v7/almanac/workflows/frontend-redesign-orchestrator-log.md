@@ -3733,3 +3733,85 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - gate ① `20261018_002127`: 모두 PASS(process 101), golden RED 2 = 새 장면만(`scan-student-run`·`home-scan-popup`), 기존 57장 변화 0 ② `-UpdateGoldens` `20261018_003859` **GREEN**(golden 59). 새 장면 검토 승인.
 - 커밋: **fe8g2 `30c9e35f`** → **fe8f3 `463b8f6a`**. frontend 작업 트리 깨끗.
 - 후속 소건: 진행 화면 "학생 탭으로 이동" 버튼은 셸 연결 1줄(`onOpenStudents`)이 필요해 꺼져 있다(FE8-g2 발견 2) — 다음 셸을 만지는 slice에 넣는다.
+
+## 2026-10-18 01:10 — 다음 라운드 배정: Lane A FE9-c, Lane B tidy4 · XB에 g3~g5 형식 고정 요청
+
+- FE8-g3·g4·g5는 워크플로 조건 "FB-10 형식 고정 선언"이 g2 subset만 있어 아직 착수 불가 → XB에 재확정·선언 요청(backend 01:10).
+- **Lane A** `debug/frontend_redesign_handoff/fe9c-worker-prompt-20261018.md`: 전술 기록 S2 로비 스캔(셸 컨트롤러 `tacticalLobby` 시작 → `commitTacticalLobby` → 카드·플라이아웃 → 선택 → S3 공개 칸 자동 채움 → 저장 시 `linkTacticalMatch`), `_handoffCandidate` 전술 분기, FE8-g2 발견 2 셸 1줄(`onOpenStudents`).
+- **Lane B** `debug/frontend_redesign_handoff/tidy4-worker-prompt-20261018.md`: 계획 테스트의 미추적 `release/` 의존 제거(추적 원본 또는 test fixture), A6 두 점 고르기(FE7-j 발견 1). 이전 spawn chip(release 의존) 철회.
+- 겹침 0(Lane A tactical·scan 컨트롤러·셸 / Lane B test/plan_*·statistics).
+
+
+## 2026-10-18 01:20 — 세션 시작(XB): CF01:00·01:10 FB10 g3~g5 형식 재확정
+
+- 최신 XB/CF/CM/metadata/P0 상태와 헌장·README를 읽었다. CF는 source6 b4a68a40/b33b7af9 커밋을 확인했고 FE8-g2/FE8-f3가 완료됐다. 현재 HEAD `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`, index empty.
+- 우선 요청은 **FE8-g3~g5용 기존 HEAD 형식 고정 선언**이다. 아이템 진행/일시정지·후보review/commit·부분승인·학생crop·미식별identity·needs_review 영속·프론트종류별큐를 현재HEAD·기존WIP로 나눠 검사하고 이미제공/추가필요/범위밖 표를 작성한다. 확정 가능한 기존형식만 XB/CF 로그 끝에 선언한다.
+- **FE9-c 커밋 완료 전 scanner backend 메인 반영 금지**를 수신했다. 이번 작업은 격리 증거/문서만이며 main backend/contracts/frontend 수정0, stage/commit/push0이다. 진행학생값/earlycandidate/분모/추가pause 4개는 별도 대기열로 검토한다. M3원천/매핑·FB10d사용자PNG 대기 상태도 유지한다.
+- 근거 debug/xb_fb10_g3g5_freeze_20261018/input.md. 키/프로세스/연구원본/Viewer/Arena/외부holdout 접근0·공용store/lock/pipeline쓰기0, 이전sealed 산출물 보존.
+
+
+## 2026-10-18 01:23 — FB10 g3~g5 HEAD 격리 집중 회귀 시작(XB→CF)
+
+- 현재 HEAD `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`의 tracked 소스/계약/fixture만7모듈 집중검증한다. 준비단계에서존재하지않는tests/__init__.py를기대해중단한것은실행전복제목록오류이며, 실제저장소와같은top-level discovery모듈이름으로실행한다. 테스트/제품소스변경0.
+- 합성임시profile·OSmock만사용, mainbackend/contracts·게임원본/키/프로세스/holdout접근0. 전체Python/새제품gate가아닌형식선언증거검증이다. CFheavy는집중종료뒤, timeout/exclusion/test완화0·push0.
+
+
+## 2026-10-18 01:23 — FB10 g3~g5 HEAD 격리 집중 회귀 종료(XB→CF): FAIL_PRESERVED
+
+- 104/11.469s, exit1, failures0/errors52/skip0, HEAD밖core/testsimport0, 메인backend/contracts/tool변경0. 원로그/receipt debug/xb_fb10_g3g5_freeze_20261018/artifacts/. 전체Python/제품새gate주장0. 집중종료뒤형식선언을마무리한다.
+
+
+## 2026-10-18 01:24 — FB10 g3~g5 HEAD 격리 집중 회귀 시작(XB→CF)
+
+- 현재 HEAD `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`의 tracked 소스/계약/fixture만7모듈 집중검증한다. 준비단계에서존재하지않는tests/__init__.py를기대해중단한것은실행전복제목록오류이며, 실제저장소와같은top-level discovery모듈이름으로실행한다. 테스트/제품소스변경0.
+- 합성임시profile·OSmock만사용, mainbackend/contracts·게임원본/키/프로세스/holdout접근0. 전체Python/새제품gate가아닌형식선언증거검증이다. CFheavy는집중종료뒤, timeout/exclusion/test완화0·push0.
+
+
+## 2026-10-18 01:24 — FB10 g3~g5 HEAD 격리 집중 회귀 종료(XB→CF): PASS_HEAD_G3G5_FOCUSED
+
+- 104/8.829s, exit0, failures0/errors0/skip0, HEAD밖core/testsimport0, 메인backend/contracts/tool변경0. 원로그/receipt debug/xb_fb10_g3g5_freeze_20261018/artifacts/. 전체Python/제품새gate주장0. 집중종료뒤형식선언을마무리한다.
+
+
+## 2026-10-18 01:30 — 회신(XB): FB-10 FE8-g3·g4·g5 기존 형식 고정 선언
+
+- CF01:00·01:10 요청을 현재 커밋 **4425512359e55cda77d715cdb5c5b36e9ea2c0bb**의 tracked source/contract 기준으로 확인했다. **아래 기존 형식으로 FE8-g3·g4·g5 착수 가능**을 선언한다. g2 subset만이던 이전 선언에 다음 기존 의존 API를 더한다. 미커밋 scanner/인식 WIP는 근거에 섞지 않았고 이번 backend/contracts/producer/Dart 변경0이다.
+
+| 대상 | 이미 HEAD — 이번 고정 범위 | 더 필요 | 이번 범위 밖 |
+|---|---|---|---|
+| g3 아이템 진행 | `scanner.session.event`의 phase/progress/candidate/diagnostic/terminal, session/generation/sequence, snapshot 복구. 실제 inventory progress는 `current=len(scan.entries)`, `total=null`, `message_key=scanner.inventory.grid` | 기존 값의 프론트 표시. 정확한 전체 분모·실시간 개별 수량이 꼭 필요하면 별도 producer/계약 slice | 방문 타일 수를 current로 해석, 임의 분모·%·ETA, 새 통화 profile |
+| g3 일시정지·dock | FB10a pause/resume/cancel/snapshot, safe-point paused/resumed, 이유 user/input_detected/target_minimized | dock·복귀·Esc와 화면 수명은 CF. accepted 응답 후 paused 확인 필요 | 새 native 동작·백그라운드 전용 pause 이유·자동 재개 |
+| g4/g5 후보·검토·적용 | version1 candidate/evidence, get/review/revalidate/commit, 후보 revision과 repository revision·idempotency 보호 | CF의 행 비교/분류와 순차 일괄 적용. 학생 새 후보의 계산 재검증 | 서버가 주는 new/changed/unchanged 분류·실시간 집계·atomic bulk commit |
+| g5 부분 승인 FD-146/FB10b | review에 적용할 entries subset 전달, 식별된 제외 key 기억, 실제 적용 subset만 merge/history, 전부 제외는 비적용 | CF가 선택 subset과 최신 후보/repository revision을 유지 | 미식별 identity를 만들어 0 저장, 빈 적용 commit, 제외 항목을 정답 학습에 사용 |
+| g4 학생 crop FD-145/FB10c | weapon_level_fallback·weapon_star_fallback의 원 BasicInfo ROI, details의 선택적 PNG/크기, 승인/버림/적용/close의 메모리 수명 | CF의 client 복사본 정리·진단 이미지 제거. 다른 필드 crop/역산값은 별도 slice이며 없으면 — | 전체 필드 crop·폴백 패널 전체 이미지·공개 inverse 값 제공 완료 주장 |
+| g5 미식별 identity R6e | unresolved_slots/assign_identity, crop·해상도·최대 3 후보, revision 검증, persist 선택 | CF에서 기존 identity 검토 컴포넌트 연결, 이후 수량 확인/부분 선택 | identity 지정만으로 수량 판독/확정, 자동 후보 선택 |
+| g5 영속 needs_review | `repository.inventory.review.get`, canonical resource key별 sparse flag, 같은 revision/idempotency/journal 원자적 저장 | CF가 별도 review 조회 응답을 저장된 inventory와 결합 | 기존 inventory DTO에 새 bool 강제, 미식별 슬롯의 가짜 key, 보류만으로 저장 |
+| g3 여러 종류 큐 FD-143 | 한 세션에 한 inventory_scan_profile, 끝난 세션의 후보를 별도 id로 유지 | 프론트 큐·dock 유지·완료 후보 묶기·종류별 순차 시작. **백엔드 변경 필요0** | 여러 profile 배열 start·백엔드 큐 RPC·여러 세션 동시 실행·원자적 묶음 적용 |
+
+- **형식 상세**: debug/xb_fb10_g3g5_freeze_20261018/artifacts/format-freeze.md. 새 공개 요청/응답 키0. Candidate get/review/revalidate/commit, 기존 scanner schema·fixture, repository.inventory.review.get, 내부 contracts/scan-commit-history-context-v1.schema.json을 그대로 사용한다. 이번 선언을 위한 새 백엔드 소스 gate/커밋은 필요하지 않으며 CF의 각 UI slice 검증은 그대로다.
+- **g3 경계**: inventory current는 인식 entry 누계, total=null이다. 분모/%/ETA 숨김. pause의 accepted만으로 paused 처리하지 않고 paused event/snapshot을 기다린다. FD143은 한 profile/session씩 프론트 순차 큐이며 결과를 session/generation/candidate로 유지한다. 서버 다중-profile 요청·동시 활성·atomic bulk가 아니다.
+- **g4/g5 경계**: 후보 수정·identity 배정/재검증 뒤 새 candidate revision을 사용한다. 적용은 completed 세션만, repository revision과 동일 idempotency 요청을 유지한다. 프론트 순차 일괄 적용은 반환 revision으로 다음을 잇고 실패 시 나머지를 보존한다. 종료 후보 분류는 CF 비교값이며 live summary 계약은 아니다.
+- **FD146/needs_review**: 승인 entries subset만 review→commit, 식별된 제외 key는 이전 수량+영속 flag, 미식별은 가짜 key/0/flag 없음. 전부 제외는 비적용이다. 별도 review 조회 응답은 version/profile_id/revision/needs_review_keys, 기존 inventory DTO 변화0. 명시 적용 key는 같은 값이어도 flag 해제, 보류/review/학습만으로 flag 쓰기0.
+- **R6e/FD145**: unresolved identity 선택 뒤 quantity=null이며 최신 revision으로 수량 확인/부분 선택한다. 학생 crop은 weapon_level_fallback·weapon_star_fallback의 원 BasicInfo ROI에만 선택적으로 존재한다. 다른 crop·공개 inverse는 없으므로 —다. 승인/버림/성공 적용/close의 서버 및 CF 복사본 정리·diagnostic 재귀 이미지 제외를 유지한다. 전체 FD145 완료 선언0.
+- **별도 대기열 답**: 우선 live 성장 필드값/신뢰 계약 설계→그다음 early candidate 또는 diff 요약 검토. 현재 identify feedback은 student_id+빈 values, candidate는 batch 반환 뒤 발행이다. full student total도 null(단일 학생 4단계는 전체 분모 아님). 새 background pause 이유는 지금 필수0이다. 이 네 후보는 g3~g5 착수 조건과 분리한다.
+- **향후 Dart 사전 영향 목록**: frontend/lib/services/scanner_service.dart(엄격 DTO/허용 키/event decode), services/mock_app_service.dart(Mock), ui/scan/scan_session_controller.dart(cursor/state), 관련 process/contract/controller/widget 테스트. 향후 새 slice용 후보 목록이며 **이번 기존형식 선언에 Dart 변경 필요0**이다. 실제 키/경로는 최종 계약 전에 재게시하고 같은 CF gate로 묶는다. 이번 frontend 편집0.
+- **증거**: exact HEAD 사본7모듈 집중 **104/8.829s OK**, failures/errors/skips0·사본 밖 core/tests import0, 원 로그 SHA c810588931dca18aa495f99e745637b1b21489604e061d03c359826204645fa8. 정확 tracked 입력173개이며 재수집222 중49개는 pyc cache다. 첫 준비의 absent tests/__init__.py 가정 실패와 초기 errors52 temporary atomic lock 권한 실패는 보존했고 테스트/timeout/OS ACL 변경 없이 필요한 main 실행 권한으로 동일104개 PASS했다. 전체Python·실게임/native·새 CF gate 통과 주장0.
+- **FE9-c 완료 전 scanner backend 메인 반영 금지 유지**. Main backend/contracts/tool 및 기존 인식/C6/config WIP를 보존한다. M3 원천kind/승인 crosswalk/stats kind와 FB10d 사용자 정수/context PNG는 계속 필요하다. Store/lock/pipeline 쓰기0·키/프로세스/연구 원본/Viewer/Arena/외부holdout 접근0, stage/commit/push0. 전체FB10/P0-P6/native/Schale 제거 완료 선언0.
+- 인계 산출물은 debug/xb_fb10_g3g5_freeze_20261018/에 모았다. 문서/변경 보존 최종 확인 후 output.md를 마지막에 작성한다. 이전 sealed 패키지는 변경하지 않았다.
+
+
+## 2026-10-18 01:32 — XB 세션 보고: FB10 g3~g5 형식 고정·증거/동시 작업 보존
+
+- **완료**: CF01:10 요청의 **FB-10 FE8-g3·g4·g5 기존 형식 고정 선언**을 XB/CF 로그에 게시했다. HEAD `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`의 item progress/pause·candidate/review/commit·FD146 부분 승인/영속 needs_review·R6e identity·FD145 전용무기2필드 crop으로 착수 가능하다. FD143은 프론트 순차 큐로 backend 변경0이다. 형식 표·필수 키·수명·제한은 debug/xb_fb10_g3g5_freeze_20261018/artifacts/format-freeze.md.
+- **검증**: exact HEAD tracked173개 일치, 격리7모듈 **104/8.829s OK**(failures/errors/skips0·외부core/tests import0). 메인 backend/contracts/tool **4131개 입력 불변**, index empty·stage/commit/push0. Almanac **45 pages OK**, whole-v7 working/cached diff-check PASS. 새 제품 소스 변경이 없어 표준 전체Python/새 CF gate를 중복 실행하지 않았다. 실제 full/native 검증 주장은 없다.
+- **보존/정정**: CF 동시 frontend 외부 변경 **7경로**를 감지해 그대로 두었다(XB frontend 쓰기0). 최초 final audit은 전체 frontend까지 불변으로 요구해 FAIL로 보존했으며 제품/계약 검증 실패가 아니다. 후속 conservation-review는 HEAD/백엔드 보존과 CF 외부 변경을 구별한다. 초기 sandbox atomic lock 오류52 원 로그도 보존, 동일104개가 필요한 main 권한에서 PASS했고 기대값/timeout/ACL 변경0이다. 두 번째 실행 시작의222개=tracked173+cache49, 종료 후 cache50이며 소스 수는 계속173개다.
+- **진행 중/다음**: CF는 기존 형식으로 g3~g5를 진행할 수 있다. **FE9-c 커밋 전 scanner 메인 반영 금지 유지**. 별도 후보는 live 학생 필드값/신뢰→early candidate/diff 순으로 설계한다. full student/inventory total=null이므로 분모/%/ETA는 숨기며 background 전용 pause 이유는 지금 필수0이다. 향후 Dart DTO/Mock/controller/test 영향 목록을 게시했으며 새 slice 최종 키·경로와 CF 짝 gate는 별도로 확정한다. 이번 frontend/producer/schema 변경0·새커밋0(신규 해시 없음)이다.
+- **차단/필요 입력**: M3는 gift/affinity 원천 kind·승인 identity/enum/merge crosswalk·stats kind가 필요해 독립 제거 비교 BLOCKED/diff=null, Schale 제거 선언CM. FB10d는 보유 정수·아이콘·문맥/client크기를 포함한 사용자 원본 PNG 대기다. 공용store/live lock/pipeline 쓰기는 CM 승인+사용자 실행만. 이번 키/게임 프로세스/연구 원본/Viewer/Arena/외부holdout 접근0, 전체FB10/FD145/P0-P6/native/O3/Schale 제거 완료 선언0.
+- **인계**: debug/xb_fb10_g3g5_freeze_20261018/output.md와 artifacts/manifest.json. Source/receipt/원로그/HEAD anchors·WIP 차이·선언을 함께 보존하며 output.md는 문서검증/manifest 뒤 마지막에 작성한다. 이전 sealed 산출물은 수정하지 않았다.
+
+## 2026-10-18 02:30 — FE9-c·tidy4 검토·gate·커밋, XB g3~g5 형식 고정, 다음 라운드
+
+- XB 01:30: **FB-10 FE8-g3·g4·g5 기존 형식 고정 선언**(HEAD `44255123` 기준, 새 계약 0 — inventory progress total=null, pause는 paused 이벤트 대기, FD-143 프론트 큐, 부분 승인·needs_review·R6e·FD-145 전용무기 2필드 crop). 새 backend 커밋 없음.
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe9c 16행, tidy4 12행), 겹침 0. FE9-c: S2 로비 스캔·`_handoffCandidate` 전술 분기·`onOpenStudents` 1줄. tidy4: 계획 테스트 3건이 `frontend/test/fixtures/studio_sections/`(release json 사본, 추적)를 읽음, A6 두 점 고르기.
+- gate ① `20261018_015932`: 모두 PASS(process 101), golden RED 6 = 예측(전술 4 S2 자리 + `scan-student-run` "학생 탭으로 이동" 켜짐 + 새 `tactical-lobby`) → 승인 ② `-UpdateGoldens` `20261018_021257` **GREEN**(golden 60).
+- 커밋: **fe9c `333bc952`** → **tidy4 `b53b44bd`**. FE9 표 마지막 행(FE9-c) 완료.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g3-worker-prompt-20261018.md`(아이템 진행 창 재작성·여러 종류 큐) · Lane B `debug/frontend_redesign_handoff/fe8g4a-worker-prompt-20261018.md`(학생 결과 검토 보드 **새 파일만**·단독 위젯·가짜 actions — 스캔 탭 연결은 FE8-g4b). g3·g4가 컨트롤러·scan_tab_page를 같이 만지지 않게 나눔.
