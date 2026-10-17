@@ -9675,3 +9675,152 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261017_031611\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE8-g1 착수 기록 (2026-10-17, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-g1 종료 기록), CF gate 미실행**. 범위: FE8-g1 새 스캔 탭 골격 + 고르기(시작 전 화면, 시안 Scan · Scan-Items). 3섹션 `ScanTabPage`(S1 준비 상태 · 최근 스캔 · `게임 창 다시 선택`, S2 학생 ↔ 아이템 상호 배타 · 아이템 다중 선택(선물 포함 7타일) · 종류별 마지막 스캔 막대, S3 시작 전 안내), 미연결이면 시작 비활성 + S3 자리에 `ConnectTargetPanel`. 학생 하나 · 아이템 한 종류는 지금 컨트롤러로 시작, 여러 종류는 시작을 막고 이유 문구(큐는 FE8-g3). 진행 · 검토 중에는 지금 `ScanPage`를 그대로 보인다(내부 동작 변경 0).
+- 착수 전 확인: 이 문서 끝에 다른 "FE8-g1 착수 기록" 없음. 막힘: 대장 "slice별 막힘 요약" FE8-g1 행 = FD-140 · FD-151, 둘 다 확정(2026-10-06 사용자 선택 (a)), 현재 `열림` 0건. 워커 재량 FD-147 · FD-149 · FD-154 · FD-155는 권장안대로.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `b33b7af917a984baf8ab72e999ddf3212b1695da`(세션 시작 때 `fa51f4be` 뒤 XB 커밋 2개 — 이 slice 파일과 겹침 0).
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8g1/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/scan/scan_session_controller.dart`: WIP 없음. LF(고르기 상태 · 최근 기록 보탬 · 처리한 후보 열쇠 — 최소).
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. LF(스캔 탭 자리 `ScanPage` → `ScanTabPage` — 최소).
+  - 바뀐 동작에 걸릴 수 있는 테스트(실제로 고친 것만 commit.json에): `frontend/test/home_app_shell_test.dart` · `connected_target_fe8d_test.dart` · `home_connect_fe8e_test.dart` · `scan_session_controller_test.dart` · `scan_header_progress_fe8f2_test.dart`(모두 WIP 없음, LF), `frontend/test/widget_test.dart`(WIP 없음, 작업 트리 CRLF — 유지).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_tab_page.dart`(+ 하위 위젯 · 순수 규칙 파일), `frontend/lib/ui/studio/scan_studio_layout.dart`, `frontend/test/scan_tab_page_fe8g1_test.dart`, `frontend/test/goldens/fe8g1_scan_tab_golden_test.dart`(새 장면 `scan-pick-students` · `scan-pick-items` — 기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/services/**`(읽기만), `scan_page.dart` 진행 · 검토 동작 · dock, `lib/ui/pages/tactical_page.dart` · `lib/ui/tactical/**` · `lib/tactical/**` · design_review 전술 seed(Lane B — 작업 트리에 Lane B WIP 있음), 홈 스캔 팝업(FE8-f3), `lib/ui/kit/**`, golden harness · 기존 golden 테스트, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일.
+
+## FE8-g1 종료 기록 (2026-10-17, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+스캔 탭 자리에 새 `ScanTabPage`를 넣었다. 시작 전에는 3섹션 고르기 화면(시안 Scan · Scan-Items 좌표, 통계 탭과 같은 섹션 배치)이고, 진행 · 일시정지 · 검토 대기에는 지금 `ScanPage`를 그대로 보인다(그 파일 수정 0). 학생 하나 · 아이템 한 종류는 지금 컨트롤러 `start()`로 시작하고, 아이템 여러 종류는 시작을 막고 이유를 쓴다(큐는 FE8-g3). 미연결이면 시작이 막히고 S3 자리에 홈과 같은 `ConnectTargetPanel`이 붙는다. HEAD는 착수 때와 같다(`b33b7af9`). git 쓰기 0, 저장소 파일 삭제 0(일회성 렌더 사본 1개만 만들고 지움).
+
+### 실행한 명령과 결과
+
+모두 `frontend` 폴더. 로그 `debug/frontend_fe8g1/logs/`(json 요약 · 실패 줄만 봤다).
+
+- `flutter analyze`(frontend 전체, 마지막 손질 뒤): **No issues found(0, info 포함)**.
+- 첫 실행(셸 교체 직후, 7파일): **+59 −7**. 실패 7건은 모두 셸을 띄워 스캔 탭에서 예전 `ScanPage` 고르기 UI(`scan-target` 드롭다운 · `scan-start` · `scan-page`)를 쓰던 시험 — 바뀐 동작이라 시험을 새 탭에 맞췄다(아래 "바꾼 테스트"). 그다음 `connected_target_fe8d` −3은 S2 제목 줄에 머리글 칩 위젯을 재사용해 `header-connection-chip-label` key가 두 개가 된 것 → S2 칩을 key 없는 자체 위젯으로 바꿔 해결(제품 코드).
+- 새 테스트 `flutter test test/scan_tab_page_fe8g1_test.dart`: 첫 실행 **+14 −1**(Mock 아이템 스캔 타이머가 남음 → 시험 쪽에서 1초씩 진행), 이후 **+15 −0**.
+- 관련 일반 테스트 40파일 한 명령(`flutter test <파일들> --reporter json`, 마지막 손질 · format 뒤): **+434 −0** — scan_tab_page_fe8g1 **+15**(새) · scan_header_progress_fe8f2 +7 · scan_session_controller +7 · scan_student_review_logic +5 · scan_page +17 · scan_page_revision +14 · scan_page_pause_fb10a +8 · scanner_review_images_fb10c +6 · scan_student_review_workspace +9 · scan_companion_dock +3 · scan_inventory_identity_review +2 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_target_metadata_fb4 +19 · mock_scanner_commit_history +9 · mock_scanner_service +4 · student_scan_diagnostic +2 · tactical_lobby_scanner_service +2 · repository_history_scan_latest +48 · account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · inventory_shell_lazy +1 · profile_delete_fb2d +17 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · title_page +25 · inventory_analysis_page +8 · inventory_page +9 · student_page +9 · widget_test +16. (고른 기준: FE8-f2가 고른 셸 · `ScanPage` · 후보 인계 · scan_* · scanner_* · mock_scanner_* 38파일 + widget_test + 새 파일. grep `BAPlannerApp(|AppShell(|ScanPage(` 중 tactical_* 는 Lane B가 작업 중이라 뺐다.)
+- process E2E(`--concurrency=1`, 파일마다 따로): scanner_process_e2e **+1**, scanner_pause_process_e2e **+1**, scanner_review_images_fb10c_process_e2e **+1**, scanner_target_metadata_process_e2e **+1**.
+- 일회성 렌더: 새 golden 테스트 사본에서 `@Tags(['golden'])` · `library;` · `expectGoldenScene` 호출을 뺀 `test/goldens/fe8g1_oneoff_render_test.dart`(grep 0건 확인)를 한 번 돌려 **+2**(2560×1392, 예외 0), PNG 두 장을 `debug/frontend_fe8g1/render/`에 남기고 사본은 바로 지웠다. golden 비교는 돌리지 않았다.
+- `dart format`: 이 slice 파일 경로만 하나씩. `app_shell.dart`(`_TopTab` fontWeight 줄, FE8-f1 발견 4) · `home_connect_fe8e_test.dart`(HEAD부터 format이 맞지 않은 줄 여러 곳)는 무관한 줄이 바뀌어, 전자는 그 줄을 되돌리고 후자는 착수 사본에서 다시 시작해 이 slice 편집만 다시 넣었다.
+- `git diff --check`(고친 기존 7 코드 · 시험 파일): exit 0. 새 6파일 · 고친 파일 모두 원래 줄바꿈(LF, `widget_test.dart`만 CRLF 유지), 끝 개행 하나, 줄 끝 공백 0(바이트 검사). 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-140**(확정 (a)): 스캔 탭 = 다중 선택 · 마지막 스캔 · 안내가 있는 본 화면, 같은 셸 컨트롤러로 시작. 홈 팝업(FE8-f3)은 손대지 않았다.
+- **FD-151**(확정 (a)): 아이템 줄 7번째 `선물` 칸. 줄 폭은 시안 6칸 줄 그대로(538.4 → 2002.1), 칸 폭만 257.6 → 223.1.
+- **FD-149**(워커 재량, 권장안 (a)): 최근 스캔 = 앱 실행 기록(컨트롤러 `recent`, 8건). 필드 보탬은 서비스 DTO를 고치지 않고 컨트롤러에 둔다: 시작 시각 · 아이템 종류(`recentDetail`), 적용/폐기(`candidateResolution`). 행 = 제목(`학생 전체 · n명` / `학생 1명 · 이름` / `아이템 · 종류`) · 시각(`오늘|어제 HH:MM` · `n일 전` · `M/D`) · 칩(`검토 n` pk / `확인 n` wn / `확정` ok / `폐기` · `결과 없음` · `중지` gy / `실패` · `실패 · 창 없음`(`target_not_found`) dg). 각주 `이 실행 중 기록 n건 · 앱을 끄면 지워집니다`. 지금 보고 있는 실행은 `.btn.sel-pink`, 누르면 `openRecent`.
+- **FD-155**(워커 재량): 미연결이면 시작 비활성 + S3 자리에 홈과 같은 `ConnectTargetPanel`(설계 크기 그대로, 오른쪽 위 부착 · 섹션 위에서 시작). 취소하면 접고(다시 끊기면 다시 붙음), `게임 창 다시 선택`과 준비 상태 `게임 창` 행이 같은 패널을 연다. 연결은 앱 전역 `ConnectedTargetController.connect`. 스캔 탭이 보일 때만 패널을 만든다(다른 탭 · 시험에 창 목록 읽기를 더하지 않으려고).
+- **FD-147**(워커 재량): 종류별 마지막 스캔 = FB-2b `repository.history.scan_latest`(`include_by_kind`, 쪽 넘김)에서 학생 / 아이템 종류별 가장 늦은 `recorded_at`. 막대 = 지난 날짜 / 14(상한), `최근` ≤ 7일 · `오래됨` · `스캔 없음`(빗금 · `없음`), 읽기 전 · 실패는 '—'. 칸 아래 `마지막 …`도 같은 값. 서비스 수정 0(발견 사항 2).
+- **FD-154**(워커 재량): 시간 = 종류별 기본 상수(학생 전체 약 8분 · 1명 약 10초 · 아이템 종류마다 약 1분 — 시안 값), 칸 수 = 카탈로그 `profileId` 개수(모르면 숨김). 실측 갱신은 FE8-g2/g3.
+- FD-143(워커 재량, FE8-g3): 여러 종류는 시작하지 않는다(아래 시작 판정). FD-148: 화면 전환을 머리글 칩 · 탭 점과 같은 `ScanHeaderStatus`로 판단해 맞물림.
+
+### 화면 상태 표 (스캔 탭에 보이는 것)
+
+| 상태(컨트롤러 · 연결) | 보이는 화면 |
+|---|---|
+| 미연결(앱 전역 게임 창 없음), 세션 없음 · 끝남(검토할 후보 없음) | 고르기 3섹션, S3 자리에 창 선택 패널, 주 버튼 비활성 + `게임 창을 연결하면 시작할 수 있습니다.` |
+| 미연결 + 패널 취소 | 고르기 3섹션 + S3 시작 전 안내(주 버튼 비활성). `게임 창 다시 선택`으로 패널 |
+| 연결됨, 세션 없음(idle) | 고르기(기본 `전체 학생`) |
+| 시작 중 · 진행 · 일시정지 · 중지 요청 중 | 지금 `ScanPage`(진행 화면) |
+| 끝남 + 적용 · 폐기하지 않은 후보(검토 대기, 다른 탭 적용 제외) | 지금 `ScanPage`(검토 화면) |
+| 끝남 + 남은 후보 없음(모두 적용 · 폐기, 결과 없음, 중지, 실패) | 고르기(최근 스캔 첫 행이 그 실행, 분홍) |
+| 최근 기록 열기 | 그 기록에 남은 후보가 있으면 `ScanPage`, 없으면 고르기 |
+
+- `ScanPage`는 고르기 동안에도 Offstage + TickerMode(off)로 붙어 있다(계정 패널이 컨트롤러에 계정을 넘기는 시작 전제, 셸 · 시험 · golden `header-scan-progress`가 그 화면에서 컨트롤러를 찾는다).
+
+### 시작 판정 표 (선택 × 연결 → 주 버튼)
+
+| 고른 것 | 연결 · 준비 | 시작 | `.plain` 글자 |
+|---|---|---|---|
+| 없음(고른 종류 해제 · 마지막 칸 풀기) | 무엇이든 | 불가 | `학생이나 아이템을 고르면 시작할 수 있습니다.` |
+| 아이템 2종 이상 | 무엇이든 | 불가(FE8-g3) | `여러 종류는 차례로 스캔합니다. 차례 스캔은 아직 열리지 않아 지금은 한 종류만 골라 시작할 수 있습니다.` |
+| 학생 1개 모드 · 아이템 1종 | 백엔드 끊김 | 불가 | `백엔드에 연결되어 있지 않습니다.` |
+| 〃 | 스캐너 · 저장소 서비스 없음 | 불가 | `스캐너를 쓸 수 없습니다.` |
+| 〃 | 게임 창 미연결 | 불가 | `게임 창을 연결하면 시작할 수 있습니다.` |
+| 〃 | 창 최소화 · 닫힘 · 미지원 | 불가 | 창 상태별 문구 |
+| 〃 | 계정 아직 없음 | 불가 | `계정을 불러오면 시작할 수 있습니다.` |
+| 〃 | 인식 준비 확인 중 / 안 됨 | 불가 | `인식 준비를 확인하고 있습니다.` / `인식 준비가 끝나지 않았습니다.` |
+| 〃 | 모두 준비(`canStart`) | **가능** → `startPick` = `selectKind`(+ `selectInventoryScanProfile`) → 지금 `start()` | 시안 설명(학생: 백그라운드 문구, 아이템: 플래너 뒤로 문구) |
+
+- 판정 순서 근거: 고르기 → 백엔드 → 게임 창 → 계정 → 인식 준비(사용자가 고칠 수 있는 것부터). 여러 종류에서 "첫 종류만 시작"은 하지 않는다(임의 동작 금지, 프롬프트 2).
+
+### 고친 · 더한 파일
+
+- `lib/ui/scan/scan_tab_page.dart`(새): `ScanTabPage` — 화면 전환(`scanTabViewFor`), 패널 상태, FB-2b 읽기(스캔 탭이 보이고 고르기 화면 · 계정을 알 때, 계정이 바뀌거나 검토를 마치고 돌아오면 다시).
+- `lib/ui/scan/scan_tab_sections.dart`(새): 3섹션(레일 · 고르기 · 시작 전 안내)과 칸 · 체크 · 학생 카드 겹침 · 주 버튼 · 마지막 스캔 카드 · 오른쪽 블록 · 패널 자리.
+- `lib/ui/scan/scan_pick_logic.dart`(새): 순수 규칙(칸 순서 · 이름, 화면 전환, 시작 판정 · 문구, 버튼 글자, 추정치, 시각 글자, by_kind 집계, 최근 행 제목 · 칩).
+- `lib/ui/studio/scan_studio_layout.dart`(새): `scanStudioDocument`(통계와 같은 grid 3섹션) + `ScanMetrics`(시안 좌표 · 가로 규칙).
+- `lib/ui/scan/scan_session_controller.dart`(+122 −0): `ScanPick`(none / student(mode) / inventory(set)) · `ScanRecentDetail`, 읽기 `pick` · `recentDetail` · `candidateResolution`, 메서드 `pickStudent` · `toggleInventoryPick` · `pickInventory` · `clearPick` · `startPick`, `start()`의 시작 시각 기록, 폐기 · 적용 성공 때 결과 기록, `_recordRecent`의 보탬 정리. 기존 동작 · 알림 횟수 변화 0(기존 시험 그대로 통과). 기본 고르기 = `전체 학생`(시안 Scan).
+
+### `app_shell.dart` diff (+3 −2, 이유)
+
+- import `pages/scan_page.dart` → `scan/scan_tab_page.dart`(셸은 `ScanPage`를 직접 쓰지 않게 됨).
+- 스캔 탭 자리 `ScanPage(...)` → `ScanTabPage(...)`(같은 key · 인자) + `appliedElsewhere: _scanAppliedElsewhere` 1줄(다른 탭에서 적용한 후보를 검토 대기에서 빼는 FE8-f2 값 — 칩 · 점과 같은 화면 판단). `app_section.dart` · 머리글 · 토스트 수정 0.
+
+### 바꾼 테스트와 이유 (기대값 · 조작만, 지운 테스트 0)
+
+- `connected_target_fe8d_test.dart`: 스캔 탭에서 창 고르기를 드롭다운 → 창 선택 패널 행 + `선택한 창 사용`으로(`_pickTargetInScanTab` · `_useTargetInPanel`), 새로고침은 패널 `home-connect-panel-refresh`. `scan-start`(FilledButton) → `scan-pick-start`(KitPressable), 연결 해제 뒤 시작 비활성 + 패널 붙음 기대 추가. 드롭다운 값 확인(`scan-target`, skipOffstage false)은 그대로 — 컨트롤러 선택이 같다는 증거.
+- `home_app_shell_test.dart`: 패널에서 창 연결 → `지금 화면 1명` → `scan-pick-start`(예전 기본 학생 1명 모드와 같은 시작). 그 뒤 보류 · 홈 · 학생 탭 기대는 그대로.
+- `home_connect_fe8e_test.dart`: 홈 `스캔` → `scan-page` 대신 `scan-tab-page` · `scan-pick`(연결된 고르기 화면).
+- `scan_header_progress_fe8f2_test.dart`: 결과 없이 중지된 세션의 토스트를 누르면 스캔 탭 = 고르기(`ScanTabPage.active`, `scan-pick`) — 예전 `ScanPage` 보임 기대를 바꿈.
+- `widget_test.dart`(CRLF 유지): 스캔 탭 = `scan-tab-page` · `scan-pick`, 시작 비활성(`Start scan` → `scan-pick-start`), 패널 붙음.
+- 새 `scan_tab_page_fe8g1_test.dart`(15): 규칙 5(시각 · 막대 · 칩, by_kind 집계, 7칸 순서, 버튼 글자 · 추정, 최근 행 제목 · 칩), 컨트롤러 2(상호 배타 · 토글 · 모두 · 해제, 여러 종류 · 없음은 시작 안 함), 화면 8(기준 viewport rect — 학생 칸 2 · 아이템 줄 · 주 버튼 · 카드 · 레일 행 · 오른쪽 머리 · 번호 목록 ±2px, 여러 종류 막음 · 해제 · 상호 배타, 아이템 한 종류 시작 = inventory + 종류 + 시작 기록, 진행 · 검토 = `ScanPage` → 폐기 뒤 고르기 + 최근 행 `폐기` · 각주 1건, 미연결 패널 · 취소 · 다시 선택 · 사용 · 끊김 재부착, 마지막 스캔 `스캔 없음` 8행, 1280×720 넘침 0(패널 · 7칸 · 1명), `ScanPage` Offstage 유지).
+- `scan_session_controller_test.dart`는 사본만 만들고 고치지 않았다(commit.json에 없음).
+
+### golden 변화 0 근거 + 새 장면
+
+- 기존 장면은 스캔 탭을 열지 않는다(`test/goldens/*` grep: `top-tab-scan` 0건, FE8-f1 · f2와 같음). 스캔 탭은 셸에서 Offstage이고, 보이지 않을 때 `ScanTabPage`는 패널을 만들지 않고 FB-2b를 읽지 않는다(서비스 호출 추가 0). 그 안의 `ScanPage`는 예전과 같은 위젯 · 인자로 붙어 있어 `header-scan-progress`(홈에서 `find.byType(ScanPage, skipOffstage: false)`로 컨트롤러를 찾음)도 그대로다. 탭 줄 · 머리글 · 홈 트리 변경 0. 기준 이미지 · golden harness · 기존 golden 테스트 수정 0.
+- **새 장면**(`test/goldens/fe8g1_scan_tab_golden_test.dart`, 기준 이미지 없음 → CF `-UpdateGoldens`): 2560×1392, 게임 창 연결 뒤 스캔 탭. FB-2b by_kind는 시안 값(지금 = 지역 2026-10-04 12:00, `AppClockSource`): 학생 어제 21:40 7% `최근`, 오파츠 9/12 · 활동 보고서 9/20 · 장비 9/10 100% `오래됨`, 기술 노트 · 전술 교육 BD 3일 전 21% `최근`, 엘레프 · 선물 빗금 `없음` `스캔 없음`.
+  - `scan-pick-students`: 학생 `전체 학생` 칸 분홍(보유 n명 · 약 8분 — golden Mock 계정 값), 주 버튼 분홍 `학생 전체 스캔 시작 / 백그라운드 · 약 8분` + 백그라운드 설명, 오른쪽 `전체 학생 · 백그라운드` · 시작 전에 3줄 · 읽는 항목 칩 7 · 끝나면 · 아래 `지금 화면 1명으로 바꾸기`. 레일: 게임 창 `Blue Archive · 2560×1440` · 인식 준비 `준비됨` · 계정 이름, 최근 0건 각주, `게임 창 다시 선택`.
+  - `scan-pick-items`: `기술 노트` · `전술 교육 BD` 칸 분홍 + 체크, 줄 라벨 `2종 선택` + `모두 선택`, 주 버튼 흐림(.45) `아이템 2종 스캔 시작 / 게임 창이 앞으로 나옵니다 · 약 2분` + 노랑 이유 문구, 오른쪽 `아이템 2종 · 포그라운드` · `기술 노트 · 전술 교육 BD` / `약 2분 · 약 n칸`(golden 카탈로그 값) · 시작 전에 · 진행 표시 · 끝나면 · `고른 종류 해제`.
+  - 일회성 렌더 PNG: `debug/frontend_fe8g1/render/scan-pick-students.png` · `scan-pick-items.png`(CF 검토용, 커밋 대상 아님).
+
+### 미검증(미실행)
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 테스트 · 나머지 process 테스트 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지 2장 생성: **미실행**(CF `-UpdateGoldens`).
+- tactical_* 시험(Lane B 작업 중): **미실행**.
+- 실제 백엔드 FB-2b by_kind 값 · 실제 게임 창 연결 · 실제 학생 전체 시작(`dockBeside`) · Windows release 빌드: **미실행**.
+- Python 테스트: **미실행**(backend 변경 0).
+
+### 검수표 (artboard → 앱에서 여는 방법 → 확인 포인트)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scan | mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 기준 viewport 최대화. 홈 `싯딤의 상자와 연결` → Mock 창 사용 → 탭 `스캔` | 3섹션 배치(통계와 같음), 학생 2칸 · 아이템 7칸이 80° 사선을 따라 밀림, `전체 학생` 분홍, 주 버튼 `학생 전체 스캔 시작 · 백그라운드 · 약 8분`, 오른쪽 안내, 종류별 마지막 스캔 8행(Mock은 기록이 없어 `스캔 없음` — 시안 값은 golden `scan-pick-students`) |
+| Scan-Items | 위에서 `기술 노트` · `전술 교육 BD` 누르기 | 학생 선택 풀림, `2종 선택` · `모두 선택`, 주 버튼 `아이템 2종 스캔 시작`(흐림 + 이유 — FE8-g3 전), 오른쪽 포그라운드 안내, `고른 종류 해제` |
+| (FD-155 미연결) | 앱을 새로 켜고 연결 없이 탭 `스캔` | S3 자리에 창 선택 패널, 주 버튼 흐림 + `게임 창을 연결하면…`, 취소 → 안내, `게임 창 다시 선택` → 패널 |
+| (진행 · 검토 전환) | 연결 뒤 `지금 화면 1명` → 시작 | 진행 중 · 검토 대기 동안 예전 스캔 화면(`ScanPage`), 후보를 적용 · 폐기하면 고르기로 돌아오고 최근 스캔 첫 행이 분홍 + `확정`/`폐기` |
+
+### 발견 사항
+
+1. **머리글 부제**: 시안 부제는 `학생 · 아이템 스캔 · 고르기 → 진행 → 결과 검토`인데 앱은 `AppSection.scan` 부제 `화면 스캔과 진행 상태`다. `app_section.dart`는 이 slice 고치는 곳이 아니라 그대로 뒀다(단계별 부제는 g2 · g4와 함께 정하면 된다).
+2. **FB-2b by_kind 의미**: `by_kind`는 scan 적용(commit) 시각이라 결과를 적용하지 않은 스캔은 막대에 안 잡힌다(FD-147 (a) 그대로). 서비스 수정 없이 읽기만 했다. 계정당 by_kind가 200행을 넘으면 10쪽까지 읽는다(`_lastScanMaxPages`).
+3. **인식 준비 값**: 시안 `이 계정 정답 샘플 12개`의 샘플 수는 readiness에 없다(I-scan §2.4, FB-10 요청). 지금은 `준비됨` / `준비 안 됨 · 빠짐 n · 손상 n` / `확인 중`. 행을 누르면 `refreshPreparation`(창 목록 · 준비 다시 읽기, 워커 재량). 계정 행은 누를 수 없다(시안에 동작 없음, I-S-3).
+4. **시안 없는 상태 문구(워커 재량)**: `지금 화면 1명` 고름의 오른쪽 안내(1번 줄 `게임에서 읽을 학생의 정보를 엽니다.`, 버튼 `학생 1명 스캔 시작`, 아래 `전체 학생으로 바꾸기`), 아무것도 고르지 않은 상태(`스캔 시작 / 종류를 고르십시오`, 오른쪽 `학생이나 아이템을 고르면 시작 전 안내가 보입니다.`), 시작 판정 이유 문구 전부, 최근 행 칩 `폐기` · `결과 없음` · `중지`. 기본 고르기는 시안 Scan처럼 `전체 학생`.
+5. **`모두 선택`과 장비 1080(I-I-1)**: 7종 전부 고른다. 해상도별 비활성 칸(FD-124)은 아직 없음 — 여러 종류 시작 자체가 FE8-g3 전이라 지금은 영향 없음.
+6. **보류한 학생 후보**: 보류는 후보를 지우지 않으므로 그 세션은 검토 대기로 남아 스캔 탭이 계속 `ScanPage`다(그 화면에서 다시 시작은 가능). FE8-g4 검토 보드에서 "검토 마침" 기준을 정할 때 함께.
+7. **최근 행 `학생 전체 · n명`**: n은 그 실행의 `progress.current`(모르면 '—'). Mock 학생 진행은 total이 없고 current만 있다.
+8. **FE8-f1 발견 6(같은 화면 계정 패널로 계정 변경)**: 고르기 화면에는 계정 패널이 없어(레일 계정 행은 표시만) 그 경로가 새로 생기지 않는다. 진행 · 검토 중의 `ScanPage` 계정 패널은 그대로라 표의 문제도 그대로다(g2/g4).
+9. **키트 승격 후보(Lane A 판단)**: 고르기 칸(`_KindTile`: tile 모양 + 분홍 선택), 체크 상자, 학생 카드 겹침(`_StudentCards`), 평행사변형 주 버튼(`_StartButton`), 뒤집은 레일 버튼(통계 `_EvidenceButton`과 같은 사본), `_MinBox`(통계 사본). 지금은 화면 파일 안에 둔다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8g1/pre/<경로>` 9파일(고치지 않은 `scan_session_controller_test.dart` 사본 포함 — commit.json에는 없음). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8g1/commit.json`: slice `fe8g1`, modified 8(이 문서 포함), added 6, `whole` = [], `optional_added` = [`frontend/test/goldens/baseline/scan-pick-students.png`, `frontend/test/goldens/baseline/scan-pick-items.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe8g1/output.md`. 로그 `debug/frontend_fe8g1/logs/`, 렌더 `debug/frontend_fe8g1/render/`.
+
+### 다음 행동
+
+- FE8-g1 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(tidy3)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트에 scan_tab_page_fe8g1 +15 추가, process 스캐너 4 GREEN, 기존 golden 전 장면 GREEN, 새 `scan-pick-students` · `scan-pick-items`는 기준 없음 → 실패 이미지 검토 → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8g1`.
+- **FE8-g2 입력**: 진행 화면은 `ScanTabPage`의 `ScanTabView.session` 자리에서 `ScanPage` 대신 새 `ScanRunView`를 보이면 된다(판단 함수 `scanTabViewFor` 그대로, 진행/검토를 나누려면 `ScanHeaderStatus.activity`). 학생 전체의 `dockBeside` 제거는 컨트롤러 `start()`. 최근 행의 시작 시각은 `recentDetail`에 있다. FD-154 실측 시간 갱신도 여기서.
+- **FE8-g3 입력**: 여러 종류 큐는 `controller.pick.inventoryScanProfiles`(칸 순서는 `scanPickOrderedProfiles`)를 차례로 `selectInventoryScanProfile` + `start()` 하면 되고, 지금 `startPick`의 "여러 종류면 시작 안 함" 분기와 시작 판정 `ScanStartBlock.multipleItems`(문구)를 바꾼다. `ScanRecentDetail`은 종류 하나라 큐 세션 묶음 표시(시안 `아이템 · 기술 노트 · BD`)를 위해 확장이 필요하다.
+- FE8-g4/g5: 검토 화면을 바꾸면 `ScanPage`를 Offstage로 붙여 두는 이유(계정 패널 → 컨트롤러 계정, 셸 · 시험이 그 화면에서 컨트롤러를 찾음)를 함께 정리한다 — 계정은 셸 `_selectedProfile`을 `selectProfile`로 넘기면 된다.
+
+### fe8g1 commit record (2026-10-17 13:36, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261017_132609\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

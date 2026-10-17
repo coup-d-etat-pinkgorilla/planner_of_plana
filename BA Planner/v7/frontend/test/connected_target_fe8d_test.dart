@@ -3,6 +3,7 @@ import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/pages/scan_page.dart';
 import 'package:ba_planner_v7/ui/scan/connected_target_controller.dart';
 import 'package:ba_planner_v7/ui/scan/header_connection_chip.dart';
@@ -78,12 +79,17 @@ String _chipText(WidgetTester tester) =>
 Color? _chipColor(WidgetTester tester) =>
     tester.widget<Text>(_chipLabel).style?.color;
 
-Future<void> _pickTargetInScanTab(WidgetTester tester, String text) async {
+/// 스캔 탭(FE8-g1): 미연결이면 오른쪽 섹션 자리에 홈과 같은 창 선택 패널이 붙는다(FD-155). 행을 고르고 `선택한 창 사용`.
+Future<void> _pickTargetInScanTab(WidgetTester tester, String id) async {
   await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('scan-target')));
-  await tester.pumpAndSettle();
-  await tester.tap(find.textContaining(text).last);
+  await _useTargetInPanel(tester, id);
+}
+
+Future<void> _useTargetInPanel(WidgetTester tester, String id) async {
+  await tester.tap(find.byKey(ValueKey('home-connect-panel-row-$id')));
+  await tester.pump();
+  await tester.tap(find.byKey(const ValueKey('home-connect-panel-use')));
   await tester.pumpAndSettle();
 }
 
@@ -463,15 +469,24 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
       await tester.pumpAndSettle();
       expect(_scanDropdownValue(tester), 'mock-window');
-      final start = tester.widget<FilledButton>(
-        find.byKey(const ValueKey('scan-start')),
+      final start = tester.widget<KitPressable>(
+        find.byKey(const ValueKey('scan-pick-start')),
       );
       expect(start.onPressed, isNotNull);
+      expect(find.byKey(const ValueKey('home-connect-panel')), findsNothing);
 
       controller.disconnect();
       await tester.pumpAndSettle();
       expect(_scanDropdownValue(tester), isNull);
       expect(_chipText(tester), '연결 안 됨');
+      // 스캔 탭(FE8-g1, FD-155): 미연결이면 시작이 막히고 창 선택 패널이 붙는다.
+      expect(
+        tester
+            .widget<KitPressable>(find.byKey(const ValueKey('scan-pick-start')))
+            .onPressed,
+        isNull,
+      );
+      expect(find.byKey(const ValueKey('home-connect-panel')), findsOneWidget);
     });
 
     testWidgets('a vanished window and a lost backend release the target', (
@@ -498,12 +513,11 @@ void main() {
 
       // 백엔드 끊김이 게임 창 연결보다 앞서고, 다시 붙으면 미연결로 돌아온다.
       service.targets = const [_ready, _other];
-      await tester.tap(find.byKey(const ValueKey('scan-refresh')));
+      await tester.tap(
+        find.byKey(const ValueKey('home-connect-panel-refresh')),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('scan-target')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('other-window').last);
-      await tester.pumpAndSettle();
+      await _useTargetInPanel(tester, 'other-window');
       expect(_chipText(tester), '연결됨 · Blue Archive');
 
       service.setConnection(BackendConnection.disconnected);

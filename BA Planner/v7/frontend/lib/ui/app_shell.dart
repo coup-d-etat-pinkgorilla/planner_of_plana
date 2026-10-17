@@ -20,7 +20,6 @@ import 'pages/adaptive_sync_page.dart';
 import 'pages/home_page.dart';
 import 'pages/inventory_page.dart';
 import 'pages/planning_page.dart';
-import 'pages/scan_page.dart';
 import 'pages/section_template_studio_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/student_page.dart';
@@ -30,6 +29,7 @@ import 'scan/connected_target_controller.dart';
 import 'scan/scan_end_toast.dart';
 import 'scan/scan_header_progress.dart';
 import 'scan/scan_session_controller.dart';
+import 'scan/scan_tab_page.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
@@ -561,13 +561,14 @@ class _AppShellState extends State<AppShell>
                                   returnToken: _statisticsReturnToken,
                                   studentFilter: _studentFilter,
                                 ),
-                                ScanPage(
+                                ScanTabPage(
                                   key: ValueKey('scan-$_profileGeneration'),
                                   service: widget.service,
                                   onCandidateHandoff: _handoffCandidate,
                                   controller: _scanSession,
                                   active: _section == AppSection.scan,
                                   connectedTarget: _connectedTarget,
+                                  appliedElsewhere: _scanAppliedElsewhere,
                                 ),
                                 SettingsPage(
                                   service: widget.service,

@@ -18,6 +18,52 @@ import 'scan_repository_sync.dart';
 /// 스캔 세션 단계. 이름(`name`)은 스캔 화면 칩과 dock 단계 글자로 그대로 보인다.
 enum ScanSessionStage { idle, starting, running, cancelling, terminal }
 
+/// 스캔 탭 고르기(FE8-g1, 시안 Scan · Scan-Items). 학생 칸(전체/1명)과 아이템 칸은 상호 배타이고, 아이템은 여러 종류를
+/// 고를 수 있다(FD-151 선물 포함). 아무것도 고르지 않은 상태도 있다(고른 종류 해제 · 마지막 아이템 칸 풀기).
+@immutable
+class ScanPick {
+  const ScanPick.none()
+    : studentScanMode = null,
+      inventoryScanProfiles = const {};
+
+  const ScanPick.student(StudentScanMode this.studentScanMode)
+    : inventoryScanProfiles = const {};
+
+  ScanPick.inventory(Iterable<InventoryScanProfile> profiles)
+    : studentScanMode = null,
+      inventoryScanProfiles = Set.unmodifiable(profiles);
+
+  /// 학생 칸을 골랐으면 그 모드, 아니면 null.
+  final StudentScanMode? studentScanMode;
+
+  /// 고른 아이템 종류(학생 칸을 골랐으면 비어 있다).
+  final Set<InventoryScanProfile> inventoryScanProfiles;
+
+  bool get isNone => studentScanMode == null && inventoryScanProfiles.isEmpty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ScanPick &&
+      other.studentScanMode == studentScanMode &&
+      setEquals(other.inventoryScanProfiles, inventoryScanProfiles);
+
+  @override
+  int get hashCode => Object.hash(
+    studentScanMode,
+    Object.hashAllUnordered(inventoryScanProfiles),
+  );
+}
+
+/// 최근 스캔 행이 쓰는 앱 실행 기록 보탬(FD-149 (a)): 시작 시각과 아이템 종류. [ScannerRecentSummary]에는 없는 값이라
+/// 세션(id + generation)마다 컨트롤러가 기억한다.
+@immutable
+class ScanRecentDetail {
+  const ScanRecentDetail({required this.startedAt, this.inventoryScanProfile});
+
+  final DateTime startedAt;
+  final InventoryScanProfile? inventoryScanProfile;
+}
+
 /// 스캔 세션 하나의 상태와 흐름(FE8-f1). 예전 `_ScanPageState`가 갖던 준비(창 · 인식 준비),
 /// 세션 시작 · 이벤트 커서(session id + generation) · 후보(revision) · 최근 스캔 · companion dock ·
 /// 학생/인벤토리 검토 흐름을 그대로 옮겼다. 화면은 이 값을 읽고 메서드를 부른다.
@@ -108,6 +154,11 @@ class ScanSessionController extends ChangeNotifier {
   bool _exportingStudentDiagnostic = false;
   String? _liveFeedbackStudentId;
   ScannerSession? _lastEndedSession;
+  ScanPick _pick = const ScanPick.student(StudentScanMode.full);
+  final Map<String, ScanRecentDetail> _recentDetails = {};
+
+  /// 스캔 화면에서 적용(true) · 폐기(false)한 후보(세션 · generation · id). 최근 스캔 행의 "확정"을 판단한다.
+  final Map<String, bool> _resolvedCandidates = {};
 
   /// FB-10a 세션 제어(진행 단계 안의 하위 상태). pause 응답의 `pauseRequested`는 수락일 뿐이고,
   /// `paused` 이벤트를 받아야 멈춘 것으로 본다.
@@ -180,6 +231,17 @@ class ScanSessionController extends ChangeNotifier {
 
   /// 이 앱 실행의 최근 세션(최신 먼저, 최대 8).
   List<ScannerRecentSummary> get recent => _recentView;
+
+  /// 스캔 탭 고르기(FE8-g1). 시작 전 화면만 쓴다.
+  ScanPick get pick => _pick;
+
+  /// [session]을 시작한 시각 · 아이템 종류(이 컨트롤러로 시작한 세션만, 아니면 null).
+  ScanRecentDetail? recentDetail(ScannerSession session) =>
+      _recentDetails[_sessionKey(session.id, session.generation)];
+
+  /// 스캔 화면에서 적용했으면 true, 폐기했으면 false, 아직이면 null.
+  bool? candidateResolution(ScannerCandidate candidate) =>
+      _resolvedCandidates[_candidateKey(candidate)];
   Set<String> get busyCandidateIds => _busyCandidateIdsView;
   Map<String, String> get candidateErrors => _candidateErrorsView;
   String? get candidateNotice => _candidateNotice;
@@ -333,6 +395,42 @@ class ScanSessionController extends ChangeNotifier {
 
   void selectInventoryScanProfile(InventoryScanProfile profile) =>
       _update(() => _inventoryScanProfile = profile);
+
+  // ---- 스캔 탭 고르기(FE8-g1) ----
+
+  /// 학생 칸(전체/1명). 아이템 선택은 풀린다.
+  void pickStudent(StudentScanMode mode) =>
+      _update(() => _pick = ScanPick.student(mode));
+
+  /// 아이템 칸 하나를 넣거나 뺀다. 학생 선택은 풀린다. 마지막 칸을 빼면 아무것도 고르지 않은 상태다.
+  void toggleInventoryPick(InventoryScanProfile profile) => _update(() {
+    final picked = {..._pick.inventoryScanProfiles};
+    if (!picked.remove(profile)) picked.add(profile);
+    _pick = picked.isEmpty ? const ScanPick.none() : ScanPick.inventory(picked);
+  });
+
+  /// 아이템 [profiles]를 모두 고른다(`모두 선택`).
+  void pickInventory(Iterable<InventoryScanProfile> profiles) =>
+      _update(() => _pick = ScanPick.inventory(profiles));
+
+  /// 고른 종류를 모두 푼다(`고른 종류 해제`).
+  void clearPick() => _update(() => _pick = const ScanPick.none());
+
+  /// 고른 것이 학생 하나 또는 아이템 한 종류면 그 종류로 [start]한다(시작 동작 그대로). 아무것도 고르지 않았거나
+  /// 아이템을 여러 종류 골랐으면 시작하지 않는다(여러 종류 차례 스캔은 FE8-g3, FD-143).
+  Future<void> startPick() async {
+    final pick = _pick;
+    final studentScanMode = pick.studentScanMode;
+    if (studentScanMode != null) {
+      selectKind(ScannerKind.student, studentScanMode: studentScanMode);
+    } else if (pick.inventoryScanProfiles.length == 1) {
+      selectKind(ScannerKind.inventory);
+      selectInventoryScanProfile(pick.inventoryScanProfiles.single);
+    } else {
+      return;
+    }
+    await start();
+  }
 
   void _connectionChanged() {
     if (_disposed) return;
@@ -501,6 +599,7 @@ class ScanSessionController extends ChangeNotifier {
     final scanner = _scanner;
     final target = selectedTarget;
     if (!canStart || scanner == null || target == null) return;
+    final startedAt = now();
     _update(() {
       _stage = ScanSessionStage.starting;
       _session = null;
@@ -549,6 +648,15 @@ class ScanSessionController extends ChangeNotifier {
       if (_disposed) return;
       _update(() {
         _session = session;
+        _recentDetails[_sessionKey(
+          session.id,
+          session.generation,
+        )] = ScanRecentDetail(
+          startedAt: startedAt,
+          inventoryScanProfile: session.kind == ScannerKind.inventory
+              ? _inventoryScanProfile
+              : null,
+        );
         _stage = ScanSessionStage.running;
         final buffered = List<ScannerEvent>.from(_pendingStartEvents);
         _pendingStartEvents.clear();
@@ -1100,6 +1208,7 @@ class ScanSessionController extends ChangeNotifier {
       _update(() {
         _candidates.remove(candidate.id);
         _candidateErrors.remove(candidate.id);
+        _resolvedCandidates[_candidateKey(candidate)] = false;
         _releaseStudentCandidateImages(candidate);
         _candidateNotice = '후보를 폐기했습니다. 확정된 현재값은 변경되지 않았습니다.';
       });
@@ -1283,6 +1392,7 @@ class ScanSessionController extends ChangeNotifier {
           _candidates.remove(candidate.id);
           _candidateErrors.remove(candidate.id);
         }
+        _resolvedCandidates[_candidateKey(candidate)] = true;
         _releaseStudentCandidateImages(candidate);
         _candidateNotice =
             '결과를 repository revision $committedRevision에 적용했습니다.';
@@ -1402,8 +1512,20 @@ class ScanSessionController extends ChangeNotifier {
       ),
     );
     if (_recent.length > 8) _recent.removeRange(8, _recent.length);
+    // 최근 기록에서 밀려난 세션의 보탬은 버린다(지금 세션은 남긴다).
+    final kept = {
+      _sessionKey(session.id, session.generation),
+      for (final item in _recent) _sessionKey(item.sessionId, item.generation),
+    };
+    _recentDetails.removeWhere((key, _) => !kept.contains(key));
     onRecentChanged?.call(List<ScannerRecentSummary>.unmodifiable(_recent));
   }
+
+  static String _sessionKey(String sessionId, int generation) =>
+      '$sessionId#$generation';
+
+  static String _candidateKey(ScannerCandidate candidate) =>
+      '${candidate.sessionId}#${candidate.generation}#${candidate.id}';
 
   void openRecent(ScannerRecentSummary item) {
     final recentTargetId = _recentTargetId(item);

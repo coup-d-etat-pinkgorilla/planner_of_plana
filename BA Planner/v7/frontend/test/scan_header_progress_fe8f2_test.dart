@@ -12,6 +12,7 @@ import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/scan/scan_end_toast.dart';
 import 'package:ba_planner_v7/ui/scan/scan_header_progress.dart';
 import 'package:ba_planner_v7/ui/scan/scan_session_controller.dart';
+import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -560,7 +561,12 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('scan-end-toast-open')));
         await _settle(tester);
         expect(_toast, findsNothing);
-        expect(tester.widget<ScanPage>(find.byType(ScanPage)).active, isTrue);
+        // 검토할 결과가 없으면 스캔 탭은 고르기 화면이다(FE8-g1).
+        expect(
+          tester.widget<ScanTabPage>(find.byType(ScanTabPage)).active,
+          isTrue,
+        );
+        expect(find.byKey(const ValueKey('scan-pick')), findsOneWidget);
 
         // 스캔 탭에서 끝나면 화면이 보이므로 토스트가 없다.
         unawaited(controller.start());

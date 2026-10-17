@@ -34,13 +34,18 @@ void main() {
     await tester.pumpWidget(BAPlannerApp(service: service));
     await tester.pumpAndSettle();
 
+    // 스캔 탭(FE8-g1): 미연결이면 창 선택 패널에서 창을 고르고, `지금 화면 1명`을 골라 시작한다.
     await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scan-target')));
+    await tester.tap(
+      find.byKey(const ValueKey('home-connect-panel-row-mock-window')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('home-connect-panel-use')));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('mock-window').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.tap(find.byKey(const ValueKey('scan-pick-student-single')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
     await tester.pump(const Duration(milliseconds: 35));
     final hold = find.byKey(
       const ValueKey('scan-student-hold-mock-candidate-1'),

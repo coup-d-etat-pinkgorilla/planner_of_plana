@@ -9,6 +9,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/app_shell.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_header.dart';
@@ -589,11 +590,14 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
-    final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Start scan'),
+    // 스캔 탭(FE8-g1): 고르기 화면. 게임 창을 고르기 전에는 시작이 막히고 창 선택 패널이 붙는다(FD-155).
+    expect(find.byKey(const ValueKey('scan-tab-page')), findsOneWidget);
+    expect(find.byKey(const ValueKey('scan-pick')), findsOneWidget);
+    final button = tester.widget<KitPressable>(
+      find.byKey(const ValueKey('scan-pick-start')),
     );
     expect(button.onPressed, isNull);
+    expect(find.byKey(const ValueKey('home-connect-panel')), findsOneWidget);
   });
 
   testWidgets('development panel opens as an overlay in a narrow window', (

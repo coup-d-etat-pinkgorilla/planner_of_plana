@@ -566,7 +566,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('home-menu-scan')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
+      // 스캔 탭(FE8-g1)은 시작 전 고르기 화면이다(연결됐으니 창 선택 패널은 없다).
+      expect(find.byKey(const ValueKey('scan-tab-page')), findsOneWidget);
+      expect(find.byKey(const ValueKey('scan-pick')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
