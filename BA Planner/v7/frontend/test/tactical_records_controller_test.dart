@@ -233,22 +233,25 @@ void main() {
         final controller = _controller(service);
         await controller.load(designReviewProfileId);
         expect(controller.legacyStatus, TacticalLegacyStatus.migrated);
-        // FE9-b2 seed: 시도 모름 방어(dr-match-5) · 상대 없는 방어(dr-match-6)는 시각 모름이라 dr-match-4 뒤(ID 순).
-        expect(controller.revision, 6);
+        // FE9-b2 seed: 시도 모름 방어(dr-match-5) · 상대 없는 방어(dr-match-6). tidy3: 방어 기록 시각(9/28 · 9/24 · 8/28)이
+        // 생겨 시각 순으로 이어지고, 시각 모름인 dr-match-6이 맨 뒤다.
+        expect(controller.revision, 7);
         expect(controller.matches.map((item) => item.id), [
           'dr-match-1',
           'dr-match-2',
           'dr-match-3',
           'dr-match-4',
           'dr-match-5',
+          'dr-match-7',
           'dr-match-6',
         ]);
         expect(controller.matches.map(tacticalOccurredText), [
           '2026-10-04 21:10',
           '2026-10-03 20:30',
           '2026-10-02',
-          '—',
-          '—',
+          '2026-09-28 22:15',
+          '2026-09-24 21:40',
+          '2026-08-28',
           '—',
         ]);
         expect(controller.jokbo, hasLength(2));

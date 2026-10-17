@@ -1,6 +1,6 @@
 // FE9-e: 전술대항전 분석 화면 3섹션(시안 Tactical-Analysis, G 보고서 §2).
 //
-// - S1 공개 방어 시그니처(왼쪽 사다리꼴): 제목 + "최근 30일" 칩, 공용 사선 스크롤 목록(resize 모드, 행 86 · 간격 8, 공용 스크롤바 ·
+// - S1 공개 방어 시그니처(왼쪽 사다리꼴): 제목 + "최근 30일" 칩(+ tidy3 근거 줄 "… 제외"), 공용 사선 스크롤 목록(resize 모드, 행 86 · 간격 8, 공용 스크롤바 ·
 //   포그). 행 = 공개 칸 초상 3(1번 | SP1 · SP2) · 최근 관측("6h") · 방어 유저 · 족보 · 칩("변경 의심 n" · "표본 적음").
 //   시안의 "최다 채택 족보 X"는 FD-127로 그리지 않는다.
 // - S2 족보 상세(가운데 평행사변형, 주 부착면 아래 FD-130): 족보 이름 · 편집(준비 중), 상대 방어 덱 6칸 +
@@ -29,6 +29,7 @@ import 'tactical_deck_widgets.dart';
 import 'tactical_jokbo_view.dart';
 import 'tactical_records_view.dart';
 import 'tactical_section_edges.dart';
+import 'tactical_window.dart';
 
 /// 아직 그리지 않는 버튼 툴팁.
 const tacticalAnalysisPendingText = '준비 중';
@@ -95,6 +96,7 @@ class TacticalAnalysisPanel {
     this.onSelectOpponent,
     this.readError,
     this.onRetry,
+    this.excludedText,
   });
 
   /// 상대 시각 기준(고정 시계).
@@ -103,6 +105,9 @@ class TacticalAnalysisPanel {
   // --- S1 ---
   /// 목록 대신 보일 문구(읽는 중 · 계정 없음 · 빈 목록). null이면 목록.
   final String? listMessage;
+
+  /// 분석 대상 후보(공개 시그니처가 있는 공격 기록) 중 기간에서 빠진 수("30일 이전 n건 · 시각 모름 n건 제외", tidy3). 없으면 null.
+  final String? excludedText;
   final List<TacticalSignatureSummary> signatures;
   final String? selectedSignature;
   final ValueChanged<String>? onSelectSignature;
@@ -256,7 +261,19 @@ class TacticalAnalysisWorkspace extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const BaChip(label: '최근 30일', tone: AppTones.gray),
+            const BaChip(label: tacticalRecentWindowLabel, tone: AppTones.gray),
+            if (panel.excludedText case final excluded?) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  excluded,
+                  key: const ValueKey('tactical-analysis-excluded'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _mutedSmall,
+                ),
+              ),
+            ],
           ],
         ),
       ),

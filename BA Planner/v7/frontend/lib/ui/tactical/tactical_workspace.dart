@@ -11,7 +11,8 @@
 //   메모, 저장 · 복제해서 새 기록 · 지우기 + 상태 문구(자동 연결 · 오류 · 저장할 수 없는 이유). 내 덱 줄은 족보 카드를 받는
 //   놓을 자리다(FE9-d: 끄는 동안 강조 + 힌트 알약 "놓으면 … 덱으로 복사 · 위치 포함", 놓을 수 없으면 이유).
 // - S4 이 시그니처의 족보(오른쪽, FE9-d): 대상 방어 덱 · KPI 4 · 끌기 안내 · 족보 카드(끌 수 있다). 이관 전에는 FE9-a와 같은
-//   제목 + "준비 중".
+//   제목 + "준비 중". tidy3: 공개 시그니처가 있으면 제목 옆에 "최근 30일" 칩(분석 S1 제목 줄과 같은 문법 — 시안 S4에는 기간 자리가
+//   없다)과 빠진 기록 근거 줄("… 제외").
 // 좌표는 `tactical_studio_layout.dart`의 Studio 문서와 [TacticalMetrics]다. 작은 창에서는 요소 세로 위치 · 높이와 내용을 같은
 // 비율로 줄이고 가로는 섹션 사선을 따른다(화면 전체를 한 번에 줄이지 않는다).
 import 'dart:math' as math;
@@ -35,6 +36,7 @@ import 'tactical_jokbo_view.dart';
 import 'tactical_jokbo_widgets.dart';
 import 'tactical_records_view.dart';
 import 'tactical_section_edges.dart';
+import 'tactical_window.dart';
 
 /// 아직 그리지 않는 자리(S2 · S4 · 분석 · 슬롯, 통계 "준비 중"과 같은 문구).
 const tacticalPendingText = '준비 중';
@@ -116,6 +118,7 @@ class TacticalJokboPanel {
     this.message,
     this.readError,
     this.onRetry,
+    this.excludedText,
   }) : pending = false;
 
   /// 이관 전 · 계정 없음: FE9-a와 같은 "준비 중" 자리.
@@ -130,7 +133,8 @@ class TacticalJokboPanel {
       onSelect = null,
       message = null,
       readError = null,
-      onRetry = null;
+      onRetry = null,
+      excludedText = null;
 
   final bool pending;
 
@@ -150,6 +154,9 @@ class TacticalJokboPanel {
   /// 통계 · 추이 · 추천을 읽지 못했을 때 안내 줄 문구(카드는 기록에서 센 값으로 남는다).
   final String? readError;
   final VoidCallback? onRetry;
+
+  /// 이 시그니처 기록 중 기간에서 빠진 수("30일 이전 n건 · 시각 모름 n건 제외", tidy3). 없으면 null.
+  final String? excludedText;
 }
 
 /// 4섹션 화면. 상태는 화면(`TacticalPage`)이 갖고 이 위젯은 그리기와 콜백만 한다.
@@ -553,6 +560,8 @@ class TacticalWorkspace extends StatelessWidget {
       tacticalSection(tacticalJokboSectionId),
     );
     final panel = jokbo;
+    final windowed = !panel.pending && panel.kpis != null;
+    final excluded = windowed ? panel.excludedText : null;
     final title = tacticalPlaced(
       'tactical-slot-jokbo-title',
       edges.slot(TacticalMetrics.jokboTitle, scale),
@@ -561,7 +570,31 @@ class TacticalWorkspace extends StatelessWidget {
         padding: const EdgeInsets.only(left: 18.3, right: 14),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: Text('이 시그니처의 족보', style: _display(18)),
+          child: Row(
+            children: [
+              Text('이 시그니처의 족보', style: _display(18)),
+              if (windowed) ...[
+                const SizedBox(width: 10),
+                const BaChip(
+                  key: ValueKey('tactical-jokbo-window-chip'),
+                  label: tacticalRecentWindowLabel,
+                  tone: AppTones.gray,
+                ),
+              ],
+              if (excluded != null) ...[
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    excluded,
+                    key: const ValueKey('tactical-jokbo-excluded'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _mutedSmall,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

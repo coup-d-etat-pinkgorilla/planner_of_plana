@@ -23,6 +23,9 @@
 // - FE9-g: 머리말 seg "슬롯"을 켠다. 슬롯 통계 화면(시안 Tactical-Slots)은 컨트롤러의 내 방어 기록만 센다(서비스 질의 없음,
 //   FD-127 — 상위 500위 모집단 통계 · 리프트 · 보정 방어는 빈 상태 설명). 내 방어 덱은 가장 최근 방어 기록의 덱이고, 다른 방어
 //   기록의 덱으로 바꿔 볼 수 있지만 저장하지 않는다(FD-133). 덱 칸을 누르면 S2 · S3이 그 학생 기준으로 바뀐다.
+// - tidy3(CF 결정 2026-10-17): 기록 S4 · 분석 · 슬롯이 모두 "최근 30일" 기록만 센다(`tactical_window.dart` — 시각 모름 기록은 빠지고
+//   "… 제외" 근거 줄, S4 통계 · 추이 질의도 분석과 같은 `date_from`). 방어 유저 수는 S4 KPI와 분석 S1이 같은 함수다. 슬롯 S3
+//   "뚫은 공격 학생"은 고른 칸의 학생이 그 자리에 있던 방어 기록에서 센다.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -46,6 +49,7 @@ import '../tactical/tactical_records_view.dart';
 import '../tactical/tactical_slots_view.dart';
 import '../tactical/tactical_slots_workspace.dart';
 import '../tactical/tactical_sub_screen.dart';
+import '../tactical/tactical_window.dart';
 import '../tactical/tactical_workspace.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryProfileWithRevision;
@@ -90,6 +94,12 @@ const tacticalSlotsMigrationText =
 const tacticalSlotsEmptyText =
     '아직 방어 기록이 없습니다. 기록 작성에서 방어 기록을 저장하면 가장 최근 방어 기록의 덱이 여기에 내 방어 덱으로 나타납니다.';
 
+/// 방어 기록은 있지만 최근 30일 안 기록이 없을 때(tidy3). [excluded]는 빠진 기록 근거 줄.
+String tacticalSlotsNoRecentText(String? excluded) =>
+    '최근 30일 동안 시각을 아는 방어 기록이 없습니다.'
+    '${excluded == null ? '' : ' ($excluded)'}'
+    ' 기록 작성에서 방어 기록의 시각을 남기면 여기에 나타납니다.';
+
 /// 엑셀 가져오기 문구(FE9-f).
 const tacticalExcelHint = '엑셀(.xlsx) · CSV 파일의 전술 기록을 확인한 뒤 가져옵니다.';
 const tacticalExcelNoServiceText = '엑셀 가져오기 서비스가 제공되지 않습니다.';
@@ -127,7 +137,8 @@ typedef _AnalysisReads = ({
   TacticalRecommendationResult? recommendation,
 });
 
-/// S4 질의 조건. 하나라도 바뀌면 다시 묻는다(기록 revision이 오르면 통계도 바뀐다).
+/// S4 질의 조건. 하나라도 바뀌면 다시 묻는다(기록 revision이 오르면 통계도 바뀐다). 기간 시작(`date_from`)은 질의할 때
+/// 고정 시계로 만든다(tidy3) — 조건에 넣으면 기기 시계에서 초가 바뀔 때마다 다시 묻고 읽기 오류 문구가 지워진다.
 typedef _JokboQuery = ({
   String profileId,
   String signature,
@@ -705,17 +716,26 @@ class _TacticalPageState extends State<TacticalPage> {
   Future<void> _runJokboQuery(_JokboQuery query, int generation) async {
     final reader = _reader;
     if (reader == null || !mounted || generation != _jokboGeneration) return;
-    final asOf = tacticalUtcInstant(appClockNow(widget.service));
+    final now = appClockNow(widget.service);
+    final asOf = tacticalUtcInstant(now);
+    final dateFrom = tacticalWindowDateFrom(now);
     final opponentId = query.opponentId;
     try {
       final (statistics, trends, recommendation) = await (
         reader.queryTacticalStatistics(
           query.profileId,
-          TacticalStatsFilters(publicSignature: query.signature),
+          TacticalStatsFilters(
+            publicSignature: query.signature,
+            dateFrom: dateFrom,
+          ),
         ),
         reader.queryTacticalTrends(
           query.profileId,
-          TacticalTrendFilters(publicSignature: query.signature, asOf: asOf),
+          TacticalTrendFilters(
+            publicSignature: query.signature,
+            dateFrom: dateFrom,
+            asOf: asOf,
+          ),
         ),
         opponentId == null || query.season.isEmpty
             ? Future<TacticalRecommendationResult?>.value()
@@ -788,6 +808,17 @@ class _TacticalPageState extends State<TacticalPage> {
         message: tacticalJokboNoSignatureText,
       );
     }
+    final now = appClockNow(widget.service);
+    final attacks = [
+      for (final match in controller.matches)
+        if (match.kind == 'attack') match,
+    ];
+    // tidy3: 카드 승 · 패(통계 행이 없을 때) · 마지막 관측은 최근 30일 공격 기록, 방어 유저 · 근거 줄은 이 시그니처 기록.
+    final recent = tacticalRecentMatches(attacks, now).matches;
+    final signatureWindow = tacticalRecentMatches([
+      for (final match in attacks)
+        if (tacticalPublicSignature(match.defenseDeck) == signature) match,
+    ], now);
     _syncJokboQuery((
       profileId: profileId,
       signature: signature,
@@ -804,7 +835,7 @@ class _TacticalPageState extends State<TacticalPage> {
     final cards = tacticalSignatureJokboCards(
       signature: signature,
       jokbo: controller.jokbo,
-      matches: controller.matches,
+      matches: recent,
       statistics: reads?.statistics,
       freshness: reads?.freshness ?? const [],
       recommendations: reads?.recommendation?.recommendations ?? const [],
@@ -817,7 +848,8 @@ class _TacticalPageState extends State<TacticalPage> {
       kpis: tacticalJokboKpis(
         reads: reads,
         cardCount: cards.length,
-        now: appClockNow(widget.service),
+        now: now,
+        matches: signatureWindow.matches,
       ),
       cards: cards,
       selectedId: tacticalEffectiveJokboSelection(
@@ -829,6 +861,7 @@ class _TacticalPageState extends State<TacticalPage> {
       message: cards.isEmpty ? tacticalJokboEmptyText : null,
       readError: error,
       onRetry: error == null ? null : _retryJokbo,
+      excludedText: signatureWindow.excludedText,
     );
   }
 
@@ -963,7 +996,8 @@ class _TacticalPageState extends State<TacticalPage> {
         opponentMessage: '',
       );
     }
-    final matches = tacticalAnalysisMatches(controller.matches, now);
+    final windowed = tacticalAnalysisWindowed(controller.matches, now);
+    final matches = windowed.matches;
     final base = _analysisReads;
     final reads =
         base != null &&
@@ -992,7 +1026,7 @@ class _TacticalPageState extends State<TacticalPage> {
     _syncAnalysisQuery((
       profileId: profileId,
       revision: controller.revision ?? -1,
-      dateFrom: tacticalAnalysisDateFrom(now),
+      dateFrom: tacticalWindowDateFrom(now),
       signature: summary?.signature,
       opponentId: opponentId,
       season: season,
@@ -1006,6 +1040,7 @@ class _TacticalPageState extends State<TacticalPage> {
         opponentMessage: '',
         readError: error,
         onRetry: error == null ? null : _retryAnalysis,
+        excludedText: windowed.excludedText,
       );
     }
     final statistics = reads?.statistics.publicSignatures
@@ -1072,6 +1107,7 @@ class _TacticalPageState extends State<TacticalPage> {
       onSelectOpponent: (id) => setState(() => _analysisOpponentId = id),
       readError: error,
       onRetry: error == null ? null : _retryAnalysis,
+      excludedText: windowed.excludedText,
     );
   }
 
@@ -1159,7 +1195,13 @@ class _TacticalPageState extends State<TacticalPage> {
     if (blocked != null || controller == null) {
       return TacticalSlotsPanel(message: blocked ?? tacticalNoServiceText);
     }
-    final defense = tacticalDefenseMatches(controller.matches);
+    // tidy3: 최근 30일 방어 기록만 센다(기록 S4 · 분석과 같은 규칙).
+    final allDefense = tacticalDefenseMatches(controller.matches);
+    final windowed = tacticalRecentMatches(
+      allDefense,
+      appClockNow(widget.service),
+    );
+    final defense = windowed.matches;
     final decks = tacticalSlotsDecks(defense);
     final deck =
         decks.where((item) => item.key == _slotsDeckKey).firstOrNull ??
@@ -1168,11 +1210,14 @@ class _TacticalPageState extends State<TacticalPage> {
       return TacticalSlotsPanel(
         message: controller.loading
             ? tacticalLoadingText
-            : tacticalSlotsEmptyText,
+            : allDefense.isEmpty
+            ? tacticalSlotsEmptyText
+            : tacticalSlotsNoRecentText(windowed.excludedText),
       );
     }
     return TacticalSlotsPanel(
       defense: defense,
+      excludedText: windowed.excludedText,
       decks: decks,
       selectedDeckKey: deck.key,
       onSelectDeck: (key) => setState(() => _slotsDeckKey = key),

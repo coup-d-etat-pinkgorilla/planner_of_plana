@@ -5177,3 +5177,144 @@ FD-176을 기록 화면에서 쓸 수 있게 했다 — S3 시도 '모름' 저�
 - FE9-g 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-f2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 +17(`tactical_slots_test`) · 기존 수 변화 0, process 변화 0, golden 전술 6장면 RED(seg "슬롯" 칸만) · 새 `tactical-slots` 기준 없음 · 나머지 GREEN) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice fe9g`.
 - 발견 1 · 2 · 3 · 4 · 5는 CF 판단.
+
+## tidy3 착수 기록 (2026-10-17)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 tidy3 종료 기록), CF gate 미실행**. 범위: 전술 화면 세 개(기록 S4 · 분석 · 슬롯)의 기간 · 방어 유저 수 통일, 슬롯 S3 칸 의존, design-review seed 시각 보강(CF 결정 2026-10-17). 시작 SHA `b33b7af9`(세션 시작 때 `fa51f4be`였고 그사이 XB 백엔드 커밋 2개 — frontend 파일 변화 0).
+- 착수 전 확인: 이 문서에 다른 "tidy3 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약"에 tidy3 행은 없고, 근거 slice 행(FE9-d FD-127 · FE9-e FD-126 · FD-127 · FE9-g FD-126 · FD-127)은 모두 `확정` — 막는 `열림` FD 0 → 시작. 워커 재량 FD-129 · FD-133은 권장안 그대로 둔다.
+- 항목별 고칠 파일(예정):
+  1. 기간 통일(FE9-e 발견 6 · FE9-g 발견 4): 새 `frontend/lib/ui/tactical/tactical_window.dart`(공용), `lib/ui/tactical/tactical_analysis_view.dart` · `tactical_analysis_workspace.dart` · `tactical_jokbo_view.dart` · `tactical_workspace.dart` · `tactical_slots_view.dart` · `tactical_slots_workspace.dart`, `lib/ui/pages/tactical_page.dart`.
+  2. 방어 유저 수(FE9-e 발견 4): `tactical_window.dart`, `tactical_analysis_view.dart`, `tactical_jokbo_view.dart`, `tactical_page.dart`.
+  3. 슬롯 S3 칸 의존(FE9-g 발견 3): `tactical_slots_view.dart`, `tactical_slots_workspace.dart`.
+  4. seed 보강(FE9-g 발견 1): `lib/services/design_review/tactical_records_data.dart`.
+  - 테스트: 전술 테스트 중 바뀐 동작 · seed 수에 걸리는 것(grep으로 확정), `test/goldens/fe9a_tactical_golden_test.dart`(조작만, 필요할 때).
+  - `lib/tactical/tactical_records_controller.dart`: 고칠 예정 없음(사본만).
+- 기존 미커밋 변경(WIP): 위 파일 전부 없음(`git status --short` 0줄, 이 문서 포함).
+- 사본: `debug/frontend_tidy3/pre/<v7 기준 경로>` — 위 lib 9파일 + 컨트롤러 + 이 문서 + 전술 테스트 13파일(고칠 수 있는 후보).
+
+## tidy3 종료 기록 (2026-10-17, 코드 작성 완료 · CF gate 미실행)
+
+CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬롯이 같은 "최근 30일" 규칙과 같은 방어 유저 수 함수를 쓰고, 슬롯 S3 뚫은 공격 학생이 고른 칸을 따르며, design-review seed 방어 기록에 시각이 생겼다. HEAD는 착수 때와 같다(`b33b7af9`), git 쓰기 0회, 파일 삭제는 내가 만든 일회성 렌더 파일 1개뿐(아래).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더)
+
+- `flutter analyze lib/ui/tactical`: ① error 1(`[...windowed.matches]..sort` 인자 형이 dynamic으로 추론 — 지역 변수로 받음) → ② **No issues found(0)**. `flutter analyze lib` 0, 마지막 전체 `flutter analyze`: **No issues found(0)**(`debug/frontend_tidy3/logs/analyze_final.log`). `pubspec.yaml` · `pubspec.lock` 변경 0(analyze가 `pub get`만 함).
+- 전술 11파일 한 명령(`--exclude-tags golden`: tactical_slots · tactical_analysis · tactical_jokbo_panel · tactical_page · design_review_tactical_seed · tactical_fe9b2 · tactical_records_controller · tactical_excel_import · tactical_page_revision · mock_design_review_scenario · tactical_fb6b_dart): ① **+124 −19**(`logs/tactical_1.log` — 모두 바뀐 규칙 · seed 수 기대: 슬롯 모델 4 · 화면 2, 족보 모델 2 · 화면 4, 기록 화면 2, fe9b2 4, 컨트롤러 1) → 파일별 고침(slots +17 → 렌더 rect 1건 옮김 → **+18**, jokbo **+17**) → ② +143 −1(fe9b2 revision 7 → 8) → ③ **+144 −0**(`logs/tactical_3.log`). 그 뒤 analysis 테스트에 모델 검사 추가 → `tactical_analysis_test` **+20**.
+- 바뀐 동작에 걸리는 기존 테스트(grep: `TacticalPage` · `top-tab-pvp` · `AppSection.pvp` · `tactical_records_data` · `designReviewTactical` · `MockDesignReviewScenario` · `tactical_slots` · `tactical_analysis` · `tactical_jokbo` · `tactical_workspace` · `tactical_window` · `BAPlannerApp(`, golden 폴더 제외): ① 33파일 **+369 −2**(`logs/general_1.log` — `tactical_fe9b1_read`(process, seed 6 → 7 기대)와 Lane A 미추적 새 파일 `scan_tab_page_fe8g1_test`(`!timersPending` — Lane A 작업 중, 내 변경과 무관)) → fe9b1 고침 → 마지막 일반 32파일(`ProcessAppService` 문자열 파일 제외, 목록 `logs/general_files.txt`): **+359 −0**(`logs/general_final.log`, 이번에는 scan_tab_page_fe8g1도 통과).
+- process 묶음 중 걸리는 것: `flutter test --concurrency=1 test/tactical_fe9b1_read_test.dart` **+12 −0**(`logs/fe9b1_read.log`).
+- 일회성 렌더: `test/goldens/zz_tidy3_render_tmp_test.dart`(golden 테스트 사본에서 `@Tags(['golden'])` 줄을 빼고 `expectGoldenScene`을 `toImage` → scratchpad PNG로 바꿈, 실행 전 grep 0건) 1회 **+7**, 실행 직후 삭제(`test/goldens/zz_*` 0건 확인). 7장면 모양을 눈으로 확인했다(`tactical` · `tactical-slots`는 아래 예상과 같음). 기준 이미지와의 픽셀 비교는 하지 않았다(CF 몫).
+- `dart format`: 고친 · 새 17파일을 하나씩(디렉터리 인자 0), 마지막 `--set-exit-if-changed` 17파일 0 changed.
+- `git diff --check`(고친 기존 16파일): exit 0. 새 1파일: CR 0 · 줄 끝 공백 0 · 끝 개행 하나. 줄바꿈: `tactical_page.dart`만 CRLF(1598줄 모두 CRLF 그대로), 나머지 LF 그대로(pre 사본과 줄바꿈 종류 비교 차이 0).
+- 잠금 충돌 0(재시도 없음). 로그는 실패 줄 · 끝 줄만 읽었다.
+
+### 항목별 결과
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 1. 기간 통일 | **완료** | FE9-e 발견 6 · FE9-g 발견 4. 세 화면 모두 `tacticalRecentMatches`(최근 30일, 시각 모름 · 30일 이전은 빠지고 근거 줄). S4 통계 · 추이 질의 `date_from` = `tacticalWindowDateFrom`(분석과 같은 규칙, 질의할 때 고정 시계로 만듦 — 아래 발견 1) |
+| 2. 방어 유저 수 한 규칙 | **완료** | FE9-e 발견 4, FD-176. `tacticalDefenderCount`: 통계 행 `opponent_count`, 없으면 30일 안 그 시그니처 기록의 서로 다른 상대 수(상대 없는 기록 제외), 기록도 없으면 '—'. S4 KPI(예전 '—') · 분석 S1이 같은 함수 |
+| 3. 슬롯 S3 칸 의존 | **완료** | FE9-g 발견 3. 뚫은 공격 학생 = 고른 칸의 학생이 그 자리에 있던 내 방어 기록(30일 안)의 뚫린 기록. 캡션 오른쪽에 근거 "n번 학생 · 방어 n전"(시안에 없는 문구 — 발견 3). 유도 덱 · 안정성은 그대로(고른 덱 기준) |
+| 4. seed 보강 | **완료** | FE9-g 발견 1. 아래 seed 변화 |
+
+### 공용 함수 위치 · 사용처
+
+- 새 `frontend/lib/ui/tactical/tactical_window.dart`: `tacticalRecentWindow`(30일) · `tacticalRecentWindowLabel`("최근 30일") · `tacticalMatchTime`(분석 view에서 옮김) · `tacticalWindowStart` · `tacticalWindowDateFrom` · `TacticalWindowedMatches`(matches · older · unknownTime · `excludedText`) · `tacticalRecentMatches` · `tacticalDefenderCount` · `tacticalDefenderText`.
+- 사용처: 기록 S4 — `tactical_page.dart` `_jokboPanel`(카드용 30일 공격 기록, 시그니처 기록 창 · 근거 줄) · `_runJokboQuery`(`date_from`), `tactical_jokbo_view.dart` `tacticalSignatureJokboCards`(승 · 패 = 넘긴 기록의 같은 편성 공격 기록) · `tacticalJokboKpis`(방어 유저), `tactical_workspace.dart` S4 제목 칩 · 근거 줄. 분석 — `tactical_analysis_view.dart` `tacticalAnalysisWindowed`(→ `tacticalAnalysisMatches` · `tacticalAnalysisDateFrom`은 같은 함수의 얇은 이름) · `tacticalSignatureSummaries`(방어 유저), `tactical_analysis_workspace.dart` S1 제목 근거 줄, `tactical_page.dart` `_analysisPanel`. 슬롯 — `tactical_page.dart` `_slotsPanel`(30일 방어 기록 · 근거 줄 · 30일 기록 없음 문구), `tactical_slots_workspace.dart` S1 칩 · 근거 줄 · S3 "최근 30일 방어 n전", `tactical_slots_view.dart` `tacticalSlotsBreakerRecords`(항목 3).
+- 같은 편성 판정은 `tactical_jokbo_view.dart` `tacticalMatchesJokboComposition` 하나로 모았다(분석의 `_sameComposition`이 이것을 부른다).
+- 컨트롤러 `lib/tactical/tactical_records_controller.dart`: 고치지 않음(pre와 cmp 일치 — 기록 · 족보 · revision으로 충분).
+
+### 화면별 숫자 대조표(같은 seed · 고정 시계 UTC 2026-10-05 12:00, 일회성 렌더 · 테스트로 확인)
+
+| 값 | 기록 S4(게헨나 기록 선택) | 분석 | 슬롯 |
+|---|---|---|---|
+| 기간 표시 | 제목 옆 "최근 30일"(새 자리) | S1 "최근 30일"(그대로) | S1 "최근 30일" 칩(시안 자리) · S3 "최근 30일 방어 2전" |
+| 빠진 기록 근거 줄 | 없음(시그니처 공격 3건 모두 30일 안) | 없음(같음) | "30일 이전 1건 · 시각 모름 1건 제외" |
+| 방어 유저(시그니처 히나 \| 히비키 · 아코) | **2명**(예전 '—') | **2**(그대로) | — (해당 없음) |
+| 연결 족보 / 족보 | 2개 | 2 | — |
+| 게헨나 족보 승패 | 1승 1패 · 50% | 1승 1패 | — |
+| 아비도스 족보 승패 | 1승 0패 · 100% | 1승 0패 | — |
+| 내 방어 기록 | — | — | 2건(예전 3건 — 시각 모름 3건이었음) |
+| 덱 행 | — | — | 방어 2전 1승 1패 · 9/24 ~ 9/28(예전 3전 2승 1패 · 시각 모름) |
+| S2 1번 히나 | — | — | 100.0% · 내 방어 2전 1승 1패, KPI 1번 50.0% · 2경기(예전 66.7% · 3경기) |
+| S3 뚫은 공격 학생 | — | — | 근거 "1번 히나 · 방어 2전", 아루 · 하루나 · 히비키 100% |
+| S3 유도 덱 | — | — | 1행 100% · 1승 1패 · 방어 50%(예전 2행 67% · 33%) |
+| S3 안정성 | — | — | 50%(2전 1승) · 최근 10전 1승 1패 · 최장 연패 1회(9/24) · 재도전 방어 100%(뚫린 상대 1명). 예전 67% · — · — · — |
+
+### seed 변화(`lib/services/design_review/tactical_records_data.dart`, 6 → 7건, revision 7)
+
+- `dr-match-4`(방어 · 아비도스 · 승 · 시도 1): 시각 모름 → `2026-09-28T22:15:00+09:00` instant.
+- `dr-match-5`(방어 · 아비도스 · 패 · 시도 모름): 시각 모름 → `2026-09-24T21:40:00+09:00` instant(시도 모름은 그대로 — 목록 "— · 2026-09-24 21:40").
+- `dr-match-6`(상대 없는 방어 · 승 · 시도 2): **시각 모름 그대로**(FE9-b2 장면 "내 방어덱 · 2회 · —", 슬롯에서 "시각 모름 1건 제외").
+- 새 `dr-match-7`(방어 · 아비도스 · 승 · 시도 1 · 시즌 10 · `_myDefense` · `_abydosAttack`): `2026-08-28T00:00:00+09:00` date — 30일 밖("30일 이전 1건 제외").
+- 공격 기록 3건(10/2 ~ 10/4)이 가장 최근이라 목록 맨 위 세 행 · 기본 선택(dr-match-1)은 그대로. 목록 순서 1 · 2 · 3 · 4 · 5 · 7 · 6(7행, 기준 캔버스에서 스크롤 없이 보임 — fe9b2 테스트로 고정). 자동 족보 2 · 상대 2 그대로(통계 전체 수 7).
+
+### 처리한 FD
+
+- FD-127 (a): 새 값은 모두 관측 값(기간 · 상대 수 · 승패).
+- FD-129(워커 재량, 권장안 그대로): 연결 족보 · 족보 수는 기간과 무관한 시그니처 족보 합집합. 카드 승 · 패만 30일 기록에서 센다.
+- FD-133(워커 재량, 권장안 그대로): 내 방어 덱 = 30일 안 가장 최근 방어 기록의 덱.
+- FD-176: 방어 유저 수 · 재도전 · 뚫린 상대에서 상대 없는 기록은 세지 않는다. 시각 모름 기록은 30일 판단에서 빠지고 근거 줄에 센다.
+- 막는 `열림` FD 0(착수 기록).
+
+### golden 변화 예상(비교 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `tactical` | **바뀜** — S1 목록 넷째 · 다섯째 행 메타("1회 · 2026-09-28 22:15" · "— · 2026-09-24 21:40"), 여섯째 행 새 8/28 방어("1회 · 2026-08-28"), 일곱째 행 상대 없는 방어("2회 · —"), S4 제목 옆 "최근 30일" 칩, KPI 방어 유저 "2명". 나머지 같음. 고정 시계로 바꿈(조작) | seed · 항목 1 · 2 |
+| `tactical-jokbo-drag` | **바뀜** — 위와 같은 S1 목록 · S4 칩 · KPI(고스트 · 힌트 자리 그대로) | 같음 |
+| `tactical-import-excel` | **바뀜(작음)** — 스크림(.62) 뒤 S1 목록 일곱 행 · S4 칩 · KPI. 패널 내용("4건 가져오기" · 5/5) 그대로 | 같음 |
+| `tactical-slots` | **바뀜** — 위 대조표 슬롯 열(칩 3 + 근거 줄, 덱 행, S2 값, S3 근거 · 유도 덱 1행 · 안정성 값) | 항목 1 · 3 · 4 |
+| `tactical-analysis` | 변화 0 예상 | 분석 대상은 공격 기록(시각 그대로), 빠진 기록 없음 → 근거 줄 없음, 방어 유저 같은 값 2 |
+| `tactical-analysis-all` | 변화 0 예상 | 같음 |
+| `tactical-migration` | 변화 0 예상 | v1 기록만 · S4 "준비 중"(칩 없음) |
+| 그 밖 | 변화 0 | 전술 탭 · seed를 그리는 golden은 이 파일뿐 |
+
+새 장면은 만들지 않았다. commit.json `whole`에는 바뀔 4장면만 넣었다(분석 2장면이 RED면 CF가 더한다).
+
+### 미검증 항목
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` · `codealmanac validate` · 저장소 전체 `git diff --check`: **미실행**(CF 몫).
+- 위 목록 밖 Flutter 테스트(통계 · 계획 · 인벤토리 단독, 실제 백엔드 process E2E): **미실행**(`lib/services/**`는 design-review seed 데이터만 바뀜).
+- 실제 백엔드에서 S4 `date_from` 질의(통계 시그니처 행 · 신선도가 30일로 줄어든 값), 기기 시계로 30일 경계를 넘는 화면: **미실행**.
+- 기준 이미지와 렌더 픽셀 비교, Windows release 빌드, 사용자 시각 검수: **미실행**.
+
+### 검수표(mock 모드 design-review 시나리오 · 기준 viewport 최대화 → 전술대항전 탭)
+
+| 순서 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 기록 S1 | 탭 열기 | 7행, 넷째 · 다섯째 행 시각, 여섯째 8/28 방어, 일곱째 "내 방어덱 · 2회 · —" |
+| 기록 S4 | 첫 행(게헨나 공격) 선택 상태 | 제목 옆 "최근 30일" 칩, KPI 방어 유저 2명 · 연결 족보 2개, 카드 1승 0패 · 1승 1패 |
+| 분석 | seg "분석" | S1 "방어 유저 2" — 기록 S4와 같은 값, 근거 줄 없음 |
+| 슬롯 | seg "슬롯" | 칩 "1번 히나 선택" · "최근 30일" · "내 방어 기록 2건" + "30일 이전 1건 · 시각 모름 1건 제외", 안정성 50% · 1승 1패 · 1회(9/24) · 100% |
+| 칸 누르기 | SP1 히비키 | S3 근거 "SP1 히비키 · 방어 2전"(칸을 바꾸면 근거가 바뀜). 다른 덱이 있는 계정에서는 같은 학생이 다른 덱 같은 자리에 있으면 그 기록도 센다 |
+| 30일 밖만 | 방어 기록이 모두 오래된 계정 | S1 "최근 30일 동안 시각을 아는 방어 기록이 없습니다. (… 제외) …" |
+| 작은 창 | 1280×720 | 넘침 없음(테스트 통과) |
+
+### 테스트(고친 · 새)
+
+- `tactical_slots_test`(+18, 1건 추가 "window keeps the last 30 days …"): 모델 기대를 30일 창 기준으로 다시 셈(덱 A 6건 · 사용 85.7% · −66.7%p · 유도 덱 [3, 2, 1] · 안정성 2승 4패 · 재도전 2/2), `tacticalSlotsBreakerRecords` 검사, 화면 seed 값 · 칩 · 근거 줄 · S3 근거, 칸을 바꾸면 S3 근거 · 빈 줄이 바뀜(1번 호시노 → 3번 아루), 숨긴 낱말 목록에서 "최근 30일" 뺌, 유도 덱 둘째 줄 rect 검사를 덱 바꾸기 테스트로 옮김.
+- `tactical_jokbo_panel_test`(+17): 카드 승패는 넘긴 기록에서(빈 기록 · 방어 기록만이면 0승 0패), `tacticalDefenderCount` 4경우, S4 KPI 2명 · `date_from` · 칩 · 근거 줄 없음, 테스트 서비스에 고정 시계.
+- `tactical_analysis_test`(+20): `tacticalAnalysisWindowed` 빠진 수 · 근거 줄, `tacticalAnalysisDateFrom` = 공용 함수.
+- seed 수 · 시각에 묶인 기대: `tactical_page_test`(행 라벨 7, 메타, 필터 행 수, 편집 머리 시각), `tactical_fe9b2_test`(seed 7, revision 7 · 8, 7행이 캔버스 안, 시도 모름 행 시각), `tactical_records_controller_test`(순서 · 시각 7), `tactical_fe9b1_read_test`(7건 · 전체 수 7).
+- `goldens/fe9a_tactical_golden_test`(조작만): `tactical` · `-jokbo-drag` · `-import-excel`을 고정 시계 서비스로, 존재 확인 `row-5` → `row-6`, 머리 주석. 장면 · 순서 변화 0.
+- 지운 테스트 0.
+
+### 사본 · commit.json
+
+- 고친 기존 16파일 + 이 문서는 착수 때 WIP 없음 → `post_dir` 없음. pre 사본 `debug/frontend_tidy3/pre/<경로>`(고친 16 + 이 문서 + 확인만 한 7: controller · jokbo_widgets · design_review_tactical_seed_test · mock_design_review_scenario_test · tactical_excel_import_test · tactical_page_revision_test · tactical_fb6b_dart_test — 이 7개는 끝에도 pre와 같음).
+- `debug/frontend_tidy3/commit.json`: slice `tidy3`, modified 16, added 1(`tactical_window.dart`), `status=true`, `whole` = 이 문서 + `frontend/test/goldens/baseline/tactical.png` · `tactical-jokbo-drag.png` · `tactical-import-excel.png` · `tactical-slots.png`. 인계 `debug/frontend_tidy3/output.md`, 로그 `debug/frontend_tidy3/logs/`.
+
+### 발견 사항
+
+1. **S4 질의 조건에 `date_from`을 넣지 않았다**(권장안으로 처리): 분석처럼 조건에 넣으면 기기 시계(검수 시나리오 · 실제 앱)에서 초가 바뀐 뒤 다시 그릴 때마다 질의가 새로 나가고 `_jokboError`가 지워진다(S4 읽기 오류 테스트가 실제로 깨졌다). 기간 시작은 질의를 보낼 때 고정 시계로 만든다 — 대신 날이 바뀌어도 시그니처 · revision · 상대 · 시즌이 그대로면 다시 묻지 않는다. **분석 화면의 `_AnalysisQuery.dateFrom`에 같은 문제가 남아 있다**(FE9-e, 이번 범위 밖 — 읽기 오류 문구가 다음 다시 그리기에서 사라질 수 있음). CF 판단.
+2. **S4 기간 칩 자리**: 시안 Tactical S4에는 기간 표시가 없다. 분석 S1 제목 줄 문법(제목 + 회색 칩 + 근거 줄)을 S4 제목 줄에 썼다. 공개 칸이 없거나 이관 전이면 칩을 그리지 않는다. CF 판단.
+3. **슬롯 S3 근거 글자**: "이 방어 덱을 가장 자주 뚫은 공격 학생" 캡션 오른쪽 "n번 학생 · 방어 n전"은 시안에 없는 문구다(칸 의존을 알리려고). 빈 줄 문구도 "이 자리에 이 학생이 있던 방어 기록 중 뚫린 기록이 없습니다."로 바꿨다. 캡션 문구 "이 방어 덱을"은 시안 그대로 두었지만 범위는 덱보다 넓다(같은 학생이 다른 덱 같은 자리에 있으면 센다). CF 판단.
+4. **슬롯 근거 줄 자리**: 시각 모름 · 30일 이전 근거는 S1 칩 줄 끝(화면 단위)에 두었다. 예전 "최근 10전" 보조 "시각 모름 n건 제외"는 창 안 기록이 모두 시각이 있어 이제 나오지 않는다(코드는 남김).
+5. **기기 시계 테스트**: S4가 "지금"에 따라 바뀌므로 S4 값을 보는 테스트(`tactical_jokbo_panel_test`)와 golden 3장면을 고정 시계로 바꿨다. 기기 시계로 S4 값을 보지 않는 다른 테스트(`tactical_page_test` 등)는 S4 rect · 안내만 봐서 날짜가 지나도 깨지지 않는다(grep 확인).
+6. **Lane A 테스트**: 첫 일반 묶음에서 Lane A 미추적 `test/scan_tab_page_fe8g1_test.dart`가 `!timersPending`으로 한 번 실패했고 다음 실행에서는 통과했다(내 변경과 무관 — Lane A 작업 중 파일). Lane A 로그에는 쓰지 않았다.
+
+### 다음 행동
+
+- tidy3 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-g1)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 테스트 수 +1(`tactical_slots` 새 1건 — 나머지 검사는 기존 테스트 안에 더함), process 변화 0, golden `tactical` · `-jokbo-drag` · `-import-excel` · `-slots` RED · 분석 2장면 · `-migration` GREEN 예상) → failures 확인 → `-UpdateGoldens` → `fe_commit.ps1 -Slice tidy3`.
+- 발견 1(분석 `dateFrom` 조건) · 2 · 3은 CF 판단.

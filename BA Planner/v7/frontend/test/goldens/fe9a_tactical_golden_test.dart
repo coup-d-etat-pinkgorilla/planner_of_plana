@@ -39,6 +39,11 @@
 //   막대 1행(히나 100.0% · 내 방어 3전 2승 1패), 자리별 배치 1번 100%, KPI 1번 66.7% · 나머지 '—', 메타 집중도 이유 한 줄. S3 리프트
 //   이유 한 줄, 뚫은 공격 학생 3행(아루 · 하루나 · 히비키 100%), 유도 덱 2행(67% 방어 50% · 33% 방어 100%), 안정성 67% · '—' 셋
 //   (seed 방어 기록은 모두 시각 모름).
+// - tidy3(CF 결정 2026-10-17): 기록 S4 · 분석 · 슬롯이 모두 "최근 30일" 기록만 센다. seed 방어 기록에 시각이 생겼다(`dr-match-4`
+//   9/28 · `dr-match-5` 9/24 · 새 `dr-match-7` 8/28 — 30일 밖, `dr-match-6`은 시각 모름 그대로) — 기록 목록이 7행(넷째 · 다섯째
+//   행 시각, 여섯째 8/28 방어, 일곱째 상대 없는 방어 "2회 · —"). S4는 기간이 "지금"에 따라 바뀌므로 `tactical` ·
+//   `-jokbo-drag` · `-import-excel`도 분석과 같은 고정 시계(UTC 2026-10-05 12:00)로 찍는다. S4 제목 옆 "최근 30일" 칩, KPI 방어
+//   유저 "2명"(통계 행이 없어 기록의 상대 수 — 분석 S1과 같은 함수). 슬롯은 30일 안 방어 기록 2건(9/24 패 · 9/28 승)만 센다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -61,7 +66,7 @@ import 'golden_harness.dart';
 
 const _profileId = '000000000000000000000001';
 
-/// 분석 장면 고정 시계(상대 시각이 실행 시각에 따라 바뀌지 않게).
+/// 전술 장면 고정 시계(상대 시각 · 최근 30일 기간이 실행 시각에 따라 바뀌지 않게).
 class _ClockedMockAppService extends MockAppService implements AppClockSource {
   _ClockedMockAppService() : super(fullStudentCatalog: true);
 
@@ -107,7 +112,7 @@ Future<void> _openTactical(WidgetTester tester, MockAppService service) async {
   await tester.pumpAndSettle();
 }
 
-/// design-review seed를 v2 쓰기로 넣는다(기록 6 · 자동 족보 2).
+/// design-review seed를 v2 쓰기로 넣는다(기록 7 · 자동 족보 2).
 Future<void> _seedV2(MockAppService service) async {
   for (final (index, match) in designReviewTacticalMatches().indexed) {
     await service.upsertTacticalMatchV2(
@@ -151,7 +156,7 @@ void main() {
   setUpAll(loadGoldenFonts);
 
   testWidgets('tactical', (tester) async {
-    final service = MockAppService(fullStudentCatalog: true);
+    final service = _ClockedMockAppService();
     addTearDown(service.dispose);
     await _seedV2(service);
     await _openTactical(tester, service);
@@ -159,7 +164,7 @@ void main() {
     await _waitJokbo(tester);
     expect(find.text('공격 기록 · 2026-10-04 21:10'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('tactical-records-row-5')),
+      find.byKey(const ValueKey('tactical-records-row-6')),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('tactical-migration-band')), findsNothing);
@@ -171,7 +176,7 @@ void main() {
   }, variant: goldenPlatform);
 
   testWidgets('tactical-jokbo-drag', (tester) async {
-    final service = MockAppService(fullStudentCatalog: true);
+    final service = _ClockedMockAppService();
     addTearDown(service.dispose);
     await _seedV2(service);
     final state = await service.loadTacticalEvidenceState(_profileId);
@@ -244,7 +249,7 @@ void main() {
   }, variant: goldenPlatform);
 
   testWidgets('tactical-import-excel', (tester) async {
-    final service = MockAppService(fullStudentCatalog: true);
+    final service = _ClockedMockAppService();
     addTearDown(service.dispose);
     await _seedV2(service);
     service.debugSetTacticalExcelSource(

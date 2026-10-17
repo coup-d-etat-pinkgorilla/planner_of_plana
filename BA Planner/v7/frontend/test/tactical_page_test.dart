@@ -172,10 +172,15 @@ void main() {
         '내 방어덱 · vs 아비도스 대책위원회',
         '내 방어덱 · vs 아비도스 대책위원회',
         '내 방어덱',
+        '내 방어덱 · vs 아비도스 대책위원회',
       ]);
       expect(rows[0].metaText, '1회 · 2026-10-04 21:10');
       expect(rows[2].metaText, '— · 2026-10-02');
-      expect(rows[3].metaText, '1회 · —');
+      // tidy3 seed: 방어 기록 시각(9/28 · 9/24 · 8/28 날짜만), 상대 없는 방어 기록은 시각 모름 그대로.
+      expect(rows[3].metaText, '1회 · 2026-09-28 22:15');
+      expect(rows[4].metaText, '— · 2026-09-24 21:40');
+      expect(rows[5].metaText, '2회 · —');
+      expect(rows[6].metaText, '1회 · 2026-08-28');
       // 방어 기록: 내 덱 = 방어 덱, 상대 덱 = 공격 덱.
       expect(rows[3].draft.myDeck, input[3].defenseDeck);
       expect(rows[3].draft.opponentDeck, input[3].attackDeck);
@@ -455,13 +460,24 @@ void main() {
         _text(tester, 'tactical-record-v2:dr-match-3-meta'),
         '2회 · 2026-10-02',
       );
-      expect(_text(tester, 'tactical-record-v2:dr-match-4-meta'), '1회 · —');
-      // FE9-b2 seed: 시도 모름 방어 · 상대 없는 방어(시각 모름끼리는 ID 순이라 dr-match-4 뒤).
       expect(
-        find.byKey(const ValueKey('tactical-records-row-5')),
+        _text(tester, 'tactical-record-v2:dr-match-4-meta'),
+        '1회 · 2026-09-28 22:15',
+      );
+      // FE9-b2 seed: 시도 모름 방어 · 상대 없는 방어. tidy3: 방어 기록 시각(9/28 · 9/24 · 8/28)이 생겨 시각 순으로 붙고,
+      // 시각 모름인 상대 없는 기록이 맨 뒤(7행).
+      expect(
+        find.byKey(const ValueKey('tactical-records-row-6')),
         findsOneWidget,
       );
-      expect(_text(tester, 'tactical-record-v2:dr-match-5-meta'), '— · —');
+      expect(
+        _text(tester, 'tactical-record-v2:dr-match-5-meta'),
+        '— · 2026-09-24 21:40',
+      );
+      expect(
+        _text(tester, 'tactical-record-v2:dr-match-7-meta'),
+        '1회 · 2026-08-28',
+      );
       expect(_text(tester, 'tactical-record-v2:dr-match-6-opponent'), '내 방어덱');
       expect(_text(tester, 'tactical-record-v2:dr-match-6-meta'), '2회 · —');
       // 공격 기록 3개가 자동 족보 2개로 이어졌다.
@@ -470,11 +486,11 @@ void main() {
 
       await _tapKey(tester, 'tactical-filter-defense');
       expect(
-        find.byKey(const ValueKey('tactical-records-row-2')),
+        find.byKey(const ValueKey('tactical-records-row-3')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('tactical-records-row-3')),
+        find.byKey(const ValueKey('tactical-records-row-4')),
         findsNothing,
       );
       await _tapKey(tester, 'tactical-filter-all');
@@ -497,11 +513,11 @@ void main() {
       await _tapKey(tester, 'tactical-opponent-option-아비도스 대책위원회');
       expect(find.text('상대: 아비도스 대책위원회'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('tactical-records-row-2')),
+        find.byKey(const ValueKey('tactical-records-row-3')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('tactical-records-row-3')),
+        find.byKey(const ValueKey('tactical-records-row-4')),
         findsNothing,
       );
 
@@ -509,7 +525,10 @@ void main() {
         find.byKey(const ValueKey('tactical-record-v2:dr-match-4')),
       );
       await tester.pumpAndSettle();
-      expect(_text(tester, 'tactical-editor-header'), '방어 기록 · —');
+      expect(
+        _text(tester, 'tactical-editor-header'),
+        '방어 기록 · 2026-09-28 22:15',
+      );
       expect(find.text('내 방어 덱 · 위치 포함'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

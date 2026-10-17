@@ -199,16 +199,21 @@ void main() {
 
     test('seed adds an unknown-attempt and an anonymous defense row', () {
       final matches = designReviewTacticalMatches();
-      expect(matches, hasLength(6));
+      // tidy3: 30일 밖 방어 기록 `dr-match-7`이 더해져 7건.
+      expect(matches, hasLength(7));
       final unknown = seed('dr-match-5');
       expect(unknown.kind, 'defense');
       expect(unknown.attemptCount, isNull);
       expect(unknown.opponentIdentityId, designReviewTacticalOpponentB);
+      // tidy3: 시도 모름 기록은 시각이 생겼고(9/24), 상대 없는 기록은 시각 모름 그대로다(FE9-b2 장면).
+      expect(unknown.occurredPrecision, 'instant');
       final anonymous = seed('dr-match-6');
       expect(anonymous.kind, 'defense');
       expect(anonymous.opponentIdentityId, isNull);
       expect(anonymous.opponentDisplayName, isNull);
       expect(anonymous.attemptCount, 2);
+      expect(anonymous.occurredPrecision, 'unknown');
+      expect(anonymous.occurredAt, isNull);
     });
 
     test('analysis keeps attack records only (no defense extension)', () async {
@@ -216,7 +221,7 @@ void main() {
       addTearDown(service.dispose);
       await _seedV2(service);
       final state = await service.loadTacticalEvidenceState(_profileId);
-      expect(state.matches, hasLength(6));
+      expect(state.matches, hasLength(7));
       // 방어 기록에서는 자동 족보가 생기지 않는다(공격 3 → 족보 2 그대로).
       expect(state.jokbo, hasLength(2));
       final picked = tacticalAnalysisMatches(
@@ -292,13 +297,13 @@ void main() {
 
       await _tapKey(tester, 'tactical-save');
       final saved = service.upserts.single;
-      expect(saved.expected, 6);
+      expect(saved.expected, 7);
       expect(saved.match.kind, 'defense');
       expect(saved.match.opponentIdentityId, isNull);
       expect(saved.match.opponentDisplayName, isNull);
       expect(saved.match.attemptCount, isNull);
       final state = await service.loadTacticalEvidenceState(_profileId);
-      expect(state.revision, 7);
+      expect(state.revision, 8);
       // 가짜 상대 identity가 생기지 않는다.
       expect(state.opponents, hasLength(2));
       final stored = state.matches.firstWhere(
@@ -382,9 +387,9 @@ void main() {
       await _seedV2(service);
       await _pump(tester, service);
 
-      // 검수 seed 두 행이 기준 캔버스에서 스크롤 없이 보인다.
+      // 검수 seed 일곱 행(tidy3: 상대 없는 기록이 시각 모름이라 맨 뒤 7행)이 기준 캔버스에서 스크롤 없이 보인다.
       final last = tester.getRect(
-        find.byKey(const ValueKey('tactical-records-row-5')),
+        find.byKey(const ValueKey('tactical-records-row-6')),
       );
       expect(last.bottom, lessThanOrEqualTo(1208));
       // 상대 없는 방어 기록: 상대 칸이 비어 있고 저장할 수 있다.
@@ -405,7 +410,7 @@ void main() {
       await _tapKey(tester, 'tactical-save');
       var saved = service.upserts.last;
       expect(saved.match.id, 'dr-match-6');
-      expect(saved.expected, 6);
+      expect(saved.expected, 7);
       expect(saved.match.result, 'loss');
       expect(saved.match.opponentIdentityId, isNull);
       expect(saved.match.opponentDisplayName, isNull);
@@ -430,11 +435,14 @@ void main() {
       await _tapKey(tester, 'tactical-save');
       saved = service.upserts.last;
       expect(saved.match.id, 'dr-match-5');
-      expect(saved.expected, 7);
+      expect(saved.expected, 8);
       expect(saved.match.attemptCount, isNull);
       expect(saved.match.opponentIdentityId, designReviewTacticalOpponentB);
       expect(saved.match.notes, '메모');
-      expect(_text(tester, 'tactical-record-v2:dr-match-5-meta'), '— · —');
+      expect(
+        _text(tester, 'tactical-record-v2:dr-match-5-meta'),
+        '— · 2026-09-24 21:40',
+      );
       expect(tester.takeException(), isNull);
     });
 

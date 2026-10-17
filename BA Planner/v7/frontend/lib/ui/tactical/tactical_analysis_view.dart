@@ -3,9 +3,10 @@
 // 값은 모두 관측 값이다(FD-127 (a)). 다수 사용자 자료(채택률 · 독립 재현 · 대체 학생 허용도 · 최초 제보자)와 확률 · 보정 · 판단
 // 지표(변경 확률 · 시간 가중 점수 · "널리 알려짐 · 변경 위험" · "방어 변경 성향" · "비추천")는 만들지 않는다.
 // - 분석 대상 기록: 공격 기록 중 시각을 아는(정밀도 date · instant) 최근 30일 기록이고, 상대 방어 덱에 로비 공개 칸이 있는 것
-//   (공개 시그니처, FE9-d [tacticalPublicSignature]). "지금"은 고정 시계(`appClockNow`)다.
-// - S1 시그니처 행: 기록에서 모은 시그니처 + 통계 응답의 시그니처(로비 관측만 있는 것). 방어 유저 = 통계 행 `opponent_count`,
-//   행이 없으면 기록의 상대 수. 족보 = FD-129 시그니처 족보 수. "변경 의심 n" = 2~4번 학생이 기록 사이에 바뀐 상대 수.
+//   (공개 시그니처, FE9-d [tacticalPublicSignature]). "지금"은 고정 시계(`appClockNow`)다. 기간 규칙은 tidy3부터 기록 S4 · 슬롯과
+//   같은 [tacticalRecentMatches](`tactical_window.dart`)이고, 빠진 기록 수는 S1 제목 줄 근거로 보인다.
+// - S1 시그니처 행: 기록에서 모은 시그니처 + 통계 응답의 시그니처(로비 관측만 있는 것). 방어 유저 = [tacticalDefenderCount](통계 행
+//   `opponent_count`, 행이 없으면 기록의 서로 다른 상대 수 — 기록 S4 KPI와 같은 함수). 족보 = FD-129 시그니처 족보 수. "변경 의심 n" = 2~4번 학생이 기록 사이에 바뀐 상대 수.
 //   "표본 적음"(FD-134 워커 재량): 관측 기록 5건 미만(독립 재현은 읽기 capability에 없어 쓰지 않는다 — status 발견 사항).
 // - S2 족보 상세: 족보 = FD-129 시그니처 족보(합집합). 승 · 패는 통계 시그니처 행의 공격 덱 값, 행이 없으면 같은 편성(방어 ·
 //   공격 덱 identity) 기록을 30일 안에서 센 값. 첫 시도 · 평균 시도 · N회 내 누적 돌파율은 그 기록의 `attempt_count`(모름은
@@ -19,19 +20,10 @@ import '../../services/tactical_v2_service.dart';
 import '../../tactical/tactical_records_controller.dart';
 import 'tactical_jokbo_view.dart';
 import 'tactical_records_view.dart';
-
-/// 분석 기간(시안 칩 "최근 30일").
-const tacticalAnalysisWindow = Duration(days: 30);
+import 'tactical_window.dart';
 
 /// "표본 적음" 기준(관측 기록 수, FD-134).
 const tacticalLowSampleThreshold = 5;
-
-/// 기록 시각(정밀도 date · instant만). 모르면 null.
-DateTime? tacticalMatchTime(TacticalMatchV2 match) {
-  if (match.occurredPrecision == 'unknown') return null;
-  final value = match.occurredAt;
-  return value == null ? null : DateTime.tryParse(value);
-}
 
 int _newestFirst(TacticalMatchV2 a, TacticalMatchV2 b) {
   final left = tacticalMatchTime(a);
@@ -43,25 +35,33 @@ int _newestFirst(TacticalMatchV2 a, TacticalMatchV2 b) {
   return order != 0 ? order : a.id.compareTo(b.id);
 }
 
+/// 분석 대상 기록(공격 · 공개 시그니처 있음 · [now] 기준 최근 30일, 최근 순)과 기간에서 빠진 수.
+TacticalWindowedMatches tacticalAnalysisWindowed(
+  List<TacticalMatchV2> matches,
+  DateTime now,
+) {
+  final windowed = tacticalRecentMatches([
+    for (final match in matches)
+      if (match.kind == 'attack' &&
+          tacticalPublicSignature(match.defenseDeck) != null)
+        match,
+  ], now);
+  final ordered = [...windowed.matches]..sort(_newestFirst);
+  return TacticalWindowedMatches(
+    matches: List.unmodifiable(ordered),
+    older: windowed.older,
+    unknownTime: windowed.unknownTime,
+  );
+}
+
 /// 분석 대상 기록(공격 · 시각 있음 · [now] 기준 30일 안 · 공개 시그니처 있음), 최근 순.
 List<TacticalMatchV2> tacticalAnalysisMatches(
   List<TacticalMatchV2> matches,
   DateTime now,
-) {
-  final from = now.toUtc().subtract(tacticalAnalysisWindow);
-  final picked = [
-    for (final match in matches)
-      if (match.kind == 'attack' &&
-          tacticalPublicSignature(match.defenseDeck) != null &&
-          (tacticalMatchTime(match)?.toUtc().isBefore(from) == false))
-        match,
-  ]..sort(_newestFirst);
-  return List.unmodifiable(picked);
-}
+) => tacticalAnalysisWindowed(matches, now).matches;
 
-/// 통계 · 추이 질의의 기간 시작(UTC 초).
-String tacticalAnalysisDateFrom(DateTime now) =>
-    tacticalUtcInstant(now.toUtc().subtract(tacticalAnalysisWindow));
+/// 통계 · 추이 질의의 기간 시작(UTC 초, 세 화면 공용 [tacticalWindowDateFrom]).
+String tacticalAnalysisDateFrom(DateTime now) => tacticalWindowDateFrom(now);
 
 /// 짧은 상대 시각(시안 S1 "6h" · "1d"). 모르면 '—'.
 String tacticalShortAgoText(String? timestamp, DateTime now) {
@@ -246,8 +246,7 @@ List<TacticalSignatureSummary> tacticalSignatureSummaries({
             : ordered.first.defenseDeck,
         matches: List.unmodifiable(ordered),
         lastObservedAt: ordered.isEmpty ? null : ordered.first.occurredAt,
-        defenders:
-            stats?.opponentCount ?? (ordered.isEmpty ? null : opponents.length),
+        defenders: tacticalDefenderCount(statistics: stats, matches: ordered),
         jokboCount: jokbo
             .where(
               (entry) => tacticalDeckMatchesPublicSignature(
@@ -282,14 +281,7 @@ List<TacticalSignatureSummary> tacticalSignatureSummaries({
 // --- S2 족보 상세 -------------------------------------------------------------
 
 bool _sameComposition(TacticalMatchV2 match, TacticalJokboV2 jokbo) =>
-    listEquals(
-      tacticalDeckIdentity(match.defenseDeck),
-      tacticalDeckIdentity(jokbo.defenseDeck),
-    ) &&
-    listEquals(
-      tacticalDeckIdentity(match.attackDeck),
-      tacticalDeckIdentity(jokbo.attackDeck),
-    );
+    tacticalMatchesJokboComposition(match, jokbo);
 
 /// [signature]의 족보 카드(FD-129 합집합, FE9-d 카드 순서). 승 · 패는 통계 행의 공격 덱 값, 없으면 [matches](30일 안)의
 /// 같은 편성 기록.

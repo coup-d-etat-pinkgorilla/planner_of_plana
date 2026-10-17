@@ -1,4 +1,4 @@
-// FE9-b1: design-review 검수 시나리오의 전술 v2 seed(기록 6 · 자동 족보 2 · 이관 완료 상태).
+// FE9-b1: design-review 검수 시나리오의 전술 v2 seed(기록 7 · 자동 족보 2 · 이관 완료 상태).
 //
 // 계정에 v1 기록이 없으므로 첫 v2 기록 저장이 같은 쓰기에서 v2를 유일한 저장소로 만든다(이관 미리보기
 // `v1_writes_disabled` = true). 기록은 시각 정밀도 세 가지(instant · date · unknown)와 시도 횟수 1 · 2 · 3, 모름 칸 · 빈칸이
@@ -12,6 +12,11 @@
 // FE9-b2(FD-176): 방어 기록 2개를 더한다 — 시도 횟수를 모르는 아비도스 방어 기록(`dr-match-5`)과 상대를 모르는 방어
 // 기록(`dr-match-6`, identity · 이름 null 쌍). 둘 다 시각 모름이라 목록에서 `dr-match-4` 뒤(시각 모름끼리는 ID 순)에 붙고,
 // 방어 기록이라 자동 족보 · 분석(공격 기록만)은 그대로다.
+// tidy3(FE9-g 발견 1, CF 결정 2026-10-17): 세 화면이 "최근 30일"만 세므로 방어 기록에 시각을 준다 — `dr-match-4`(9/28 승) ·
+// `dr-match-5`(9/24 패, 시도 모름 그대로)는 검수 시계(10/5 12:00) 기준 30일 안, 새 `dr-match-7`(8/28 승, 날짜만)은 30일 밖이다.
+// `dr-match-6`(상대 없음)은 시각 모름으로 남긴다(FE9-b2 장면). 그래서 슬롯 화면에 최근 10전 · 최장 연패 · 재도전 방어(아비도스가
+// 9/24에 뚫은 뒤 9/28에 다시 와서 막힘)와 "30일 이전 1건 · 시각 모름 1건 제외"가 보인다. 공격 기록 세 개(10/2 ~ 10/4)가 가장
+// 최근이라 기록 목록 맨 위 세 행 · 기본 선택은 그대로다.
 import '../tactical_v2_service.dart';
 
 const designReviewTacticalOpponentA = 'dr-opponent-gehenna';
@@ -127,8 +132,8 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
   TacticalMatchInputV2(
     id: 'dr-match-4',
     kind: 'defense',
-    occurredAt: null,
-    occurredPrecision: 'unknown',
+    occurredAt: '2026-09-28T22:15:00+09:00',
+    occurredPrecision: 'instant',
     season: '10',
     opponentIdentityId: designReviewTacticalOpponentB,
     opponentDisplayName: '아비도스 대책위원회',
@@ -141,8 +146,8 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
   TacticalMatchInputV2(
     id: 'dr-match-5',
     kind: 'defense',
-    occurredAt: null,
-    occurredPrecision: 'unknown',
+    occurredAt: '2026-09-24T21:40:00+09:00',
+    occurredPrecision: 'instant',
     season: '10',
     opponentIdentityId: designReviewTacticalOpponentB,
     opponentDisplayName: '아비도스 대책위원회',
@@ -165,6 +170,20 @@ List<TacticalMatchInputV2> designReviewTacticalMatches() => [
     defenseDeck: _myDefense,
     notes: '상대 이름을 확인하지 못했습니다.',
     attemptCount: 2,
+  ),
+  TacticalMatchInputV2(
+    id: 'dr-match-7',
+    kind: 'defense',
+    occurredAt: '2026-08-28T00:00:00+09:00',
+    occurredPrecision: 'date',
+    season: '10',
+    opponentIdentityId: designReviewTacticalOpponentB,
+    opponentDisplayName: '아비도스 대책위원회',
+    result: 'win',
+    attackDeck: _abydosAttack,
+    defenseDeck: _myDefense,
+    notes: '',
+    attemptCount: 1,
   ),
 ];
 

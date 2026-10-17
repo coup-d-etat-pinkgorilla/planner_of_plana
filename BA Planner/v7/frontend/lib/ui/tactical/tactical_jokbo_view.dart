@@ -7,8 +7,10 @@
 //   상대 · 완전 덱이 달라도 모은다. 공개 칸이 아닌 위치는 아무 학생이나 맞는 것으로 본다.
 // - 관측 승/패(FE9-b1 발견 2, CF 결정 2026-10-15): v2 기록에서 센 값만 쓴다. 통계 응답에 이 시그니처 행이 있으면 그 행의
 //   `attack_decks`(이 시그니처에 연결된 기록을 공격 덱별로 센 값)에서, 행이 없으면(로비에 연결된 기록이 없음 — Mock 포함)
-//   컨트롤러가 같은 편성(방어 · 공격 덱 identity) 기록을 센 값에서 읽는다. `jokbo.wins/losses`(v6 가져오기 집계)는 0이 아니면
-//   보조 글자 "가져온 집계 n승 m패"로만 보인다.
+//   넘겨 받은 기록 중 같은 편성(방어 · 공격 덱 identity) 기록을 센 값에서 읽는다. `jokbo.wins/losses`(v6 가져오기 집계)는 0이
+//   아니면 보조 글자 "가져온 집계 n승 m패"로만 보인다.
+// - tidy3(CF 결정 2026-10-17): S4도 분석 · 슬롯과 같은 "최근 30일" 기록만 센다(`tactical_window.dart`). 화면은 30일 안 기록만
+//   넘기고, 통계 · 추이 질의도 같은 `date_from`이다. 방어 유저 KPI = [tacticalDefenderCount](분석 S1과 같은 함수).
 // - 마지막 관측: 추이 신선도(시그니처 · 공격 덱의 `last_battle_at`) → 추천(`last_observed_at`) → 같은 편성 기록 시각 순.
 // - FD-127 (a): 채택률 · 독립 재현 · 첫 시도 · 평균 · 상대 방어 승률 · 변경 확률 · 보정 방어 · 검증 강도는 만들지 않는다.
 // - 복사: 족보 공격 덱 6칸을 위치 그대로 내 덱 초안에 넣는다(저장하지 않는다). 보유하지 않은 학생 칸은 빗금 빈칸(모름)으로 두고
@@ -18,6 +20,7 @@ import 'package:flutter/foundation.dart';
 import '../../services/tactical_v2_service.dart';
 import '../../tactical/tactical_records_controller.dart';
 import 'tactical_records_view.dart';
+import 'tactical_window.dart';
 
 /// 로비 공개 위치(덱 칸 0~5 기준): 1번 · SP1 · SP2.
 const tacticalPublicSlotIndexes = [0, 4, 5];
@@ -135,7 +138,22 @@ class TacticalJokboCard {
 DateTime? _parse(String? value) =>
     value == null ? null : DateTime.tryParse(value);
 
-/// [signature]의 족보 카드(FD-129 합집합). 승 많은 순 → 패 적은 순 → 이름 순 → ID 순.
+/// [match]가 [jokbo]와 같은 편성(방어 · 공격 덱 identity)의 기록인가.
+bool tacticalMatchesJokboComposition(
+  TacticalMatchV2 match,
+  TacticalJokboV2 jokbo,
+) =>
+    listEquals(
+      tacticalDeckIdentity(match.defenseDeck),
+      tacticalDeckIdentity(jokbo.defenseDeck),
+    ) &&
+    listEquals(
+      tacticalDeckIdentity(match.attackDeck),
+      tacticalDeckIdentity(jokbo.attackDeck),
+    );
+
+/// [signature]의 족보 카드(FD-129 합집합). 승 많은 순 → 패 적은 순 → 이름 순 → ID 순. 통계 행이 없으면 승 · 패는 [matches]
+/// (화면이 넘기는 최근 30일 기록) 중 같은 편성 공격 기록에서 센다.
 List<TacticalJokboCard> tacticalSignatureJokboCards({
   required String signature,
   required List<TacticalJokboEntry> jokbo,
@@ -153,8 +171,14 @@ List<TacticalJokboCard> tacticalSignatureJokboCards({
       continue;
     }
     final attack = tacticalDeckSignatureText(entry.jokbo.attackDeck);
-    var wins = entry.recordWins;
-    var losses = entry.recordLosses;
+    final records = [
+      for (final match in matches)
+        if (match.kind == 'attack' &&
+            tacticalMatchesJokboComposition(match, entry.jokbo))
+          match,
+    ];
+    var wins = records.where((match) => match.result == 'win').length;
+    var losses = records.where((match) => match.result == 'loss').length;
     final stats = statistics;
     if (stats != null) {
       final row = stats.attackDecks
@@ -330,7 +354,8 @@ class TacticalJokboKpis {
     required this.diversityDetail,
   });
 
-  /// 방어 유저(통계 시그니처 행 `opponent_count` — 이 시그니처를 내 로비에서 보인 상대 수).
+  /// 방어 유저(통계 시그니처 행 `opponent_count` — 이 시그니처를 내 로비에서 보인 상대 수, 행이 없으면 최근 30일 기록의 서로
+  /// 다른 상대 수, [tacticalDefenderCount]).
   final String defenders;
 
   /// 연결 족보(FD-129 시그니처 족보 수).
@@ -366,11 +391,12 @@ class TacticalJokboReads {
   final TacticalRecommendationResult? recommendation;
 }
 
-/// [reads]와 카드 수로 KPI를 만든다.
+/// [reads]와 카드 수로 KPI를 만든다. [matches]는 이 시그니처의 최근 30일 기록(방어 유저를 통계 행 없이 셀 때 쓴다).
 TacticalJokboKpis tacticalJokboKpis({
   required TacticalJokboReads? reads,
   required int cardCount,
   required DateTime now,
+  List<TacticalMatchV2> matches = const [],
 }) {
   final statistics = reads?.statistics;
   String? verifiedAt;
@@ -385,7 +411,9 @@ TacticalJokboKpis tacticalJokboKpis({
       ? null
       : tacticalDiversityText(recommendation.ambiguity.grade);
   return TacticalJokboKpis(
-    defenders: statistics == null ? '—' : '${statistics.opponentCount}명',
+    defenders: tacticalDefenderText(
+      tacticalDefenderCount(statistics: statistics, matches: matches),
+    ),
     linked: '$cardCount개',
     verified: tacticalAgoText(verifiedAt, now),
     diversity: diversity ?? '—',

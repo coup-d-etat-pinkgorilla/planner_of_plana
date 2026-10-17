@@ -8,6 +8,7 @@
 //   함수만, 칩은 FE9-f부터 FD-127 (a)로 숨김).
 // - 팝업: 버튼에 붙은 940 패널 · 꼬리, 정렬, 표본 적음 흐림, 줄 → S2 족보, "공격 기록에 복사" → 기록 화면 내 덱 초안(저장 없음).
 // - 1280×720 · 1440×900에서 넘침 예외 0.
+// - tidy3: 기간 · 방어 유저 수는 기록 S4 · 슬롯과 같은 `tactical_window.dart`(빠진 기록 근거 줄, 상대 수 함수).
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/design_review/tactical_records_data.dart';
@@ -23,6 +24,7 @@ import 'package:ba_planner_v7/ui/studio/tactical_studio_layout.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_analysis_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_records_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_sub_screen.dart';
+import 'package:ba_planner_v7/ui/tactical/tactical_window.dart';
 import 'package:ba_planner_v7/ui/widgets/page_header_override.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -233,6 +235,18 @@ void main() {
           isEmpty,
         );
         expect(tacticalAnalysisDateFrom(_now), '2026-09-05T12:00:00Z');
+        expect(tacticalAnalysisDateFrom(_now), tacticalWindowDateFrom(_now));
+        // tidy3: 빠진 공개 시그니처 공격 기록 수(seed는 모두 30일 안이라 없음 → 40일 뒤에는 모두 30일 이전).
+        expect(
+          tacticalAnalysisWindowed(state.matches, _now).excludedText,
+          isNull,
+        );
+        final later = tacticalAnalysisWindowed(
+          state.matches,
+          _now.add(const Duration(days: 40)),
+        );
+        expect((later.older, later.unknownTime), (3, 0));
+        expect(later.excludedText, '30일 이전 3건 제외');
       },
     );
 

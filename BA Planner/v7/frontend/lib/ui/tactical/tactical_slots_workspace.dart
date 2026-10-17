@@ -1,14 +1,16 @@
 // FE9-g: 전술대항전 슬롯 통계 화면 3섹션(시안 Tactical-Slots, G 보고서 §4).
 //
 // - S1 내 방어 덱(왼쪽 사다리꼴): 제목 "내 방어 덱 · 슬롯 클릭", 덱 6칸(108 · 고른 칸 분홍 테두리 · 글자), 칩 "n번 학생 선택" ·
-//   "내 방어 기록 n건", 내 방어 기록의 덱 목록(공용 사선 스크롤 목록, 행 56 · 간격 6) — 행을 누르면 그 덱을 본다(저장하지 않는다,
-//   FD-133). 시안의 "최근 30일" · "상위 500위" 칩, "이 자리의 대체 학생"(보정 방어) 행과 각주는 상위 500위 자료라 그리지 않는다
-//   (FD-127) — 그 자리를 덱 목록이 쓴다.
+//   "최근 30일"(시안 칩 자리, tidy3) · "내 방어 기록 n건"(시안 "상위 500위" 자리) + 근거 줄 "30일 이전 n건 · 시각 모름 n건 제외",
+//   내 방어 기록의 덱 목록(공용 사선 스크롤 목록, 행 56 · 간격 6) — 행을 누르면 그 덱을 본다(저장하지 않는다, FD-133). 시안의
+//   "이 자리의 대체 학생"(보정 방어) 행과 각주는 상위 500위 자료라 그리지 않는다(FD-127) — 그 자리를 덱 목록이 쓴다.
 // - S2 슬롯별 통계(가운데 평행사변형, 주 부착면 아래 FD-130): 제목 · (i), 제목 옆 한 줄 = 모집단 통계가 없는 이유. 고른 칸에
 //   놓였던 학생 막대(내 방어 기록, 시안 5행 자리), 고른 학생의 자리별 배치, 위치별 방어 성공률(관측 2칸 + 차이, 배치 민감도 ·
 //   기대 대비는 '—'), 메타 집중도 자리는 이유 한 줄.
-// - S3 궁합 · 카운터(오른쪽 사다리꼴): 리프트 자리는 이유 한 줄, 이 덱을 뚫은 공격 학생, 공개 슬롯이 유도한 상대 공격 덱 Top 3,
-//   덱 안정성(평균 방어 · 최근 10전 · 최장 연패 · 재도전 방어).
+// - S3 궁합 · 카운터(오른쪽 사다리꼴): 리프트 자리는 이유 한 줄, 뚫은 공격 학생(고른 칸 학생이 그 자리에 있던 방어 기록 — tidy3,
+//   캡션 오른쪽에 "n번 학생 · 방어 n전"), 공개 슬롯이 유도한 상대 공격 덱 Top 3("최근 30일 방어 n전", 시안 문구), 덱 안정성(평균
+//   방어 · 최근 10전 · 최장 연패 · 재도전 방어).
+// - 기간(tidy3): 화면이 넘기는 방어 기록은 최근 30일 기록뿐이다(`tactical_window.dart`, 기록 S4 · 분석과 같은 규칙).
 // 좌표는 `tactical_studio_layout.dart`의 [tacticalSlotsStudioDocument]와 [TacticalSlotsMetrics]다. 작은 창 규칙은 기록 화면과 같다.
 import 'package:flutter/material.dart';
 
@@ -27,6 +29,7 @@ import 'tactical_deck_widgets.dart';
 import 'tactical_records_view.dart';
 import 'tactical_section_edges.dart';
 import 'tactical_slots_view.dart';
+import 'tactical_window.dart';
 
 /// S2 제목 옆 한 줄: 시안 막대 · 지난주 대비 · 신뢰도 칩이 상위 500위 자료라 없는 이유(FD-127).
 const tacticalSlotsPopulationText =
@@ -51,7 +54,7 @@ const tacticalSlotsNoSlotText =
 const tacticalSlotsPickText = '왼쪽에서 내 방어 덱의 칸을 고르면 슬롯별 통계와 카운터가 보입니다.';
 
 /// S3 빈 줄.
-const tacticalSlotsNoBreakText = '이 덱이 뚫린 기록이 없습니다.';
+const tacticalSlotsNoBreakText = '이 자리에 이 학생이 있던 방어 기록 중 뚫린 기록이 없습니다.';
 const tacticalSlotsNoInducedText = '이 공개 슬롯으로 방어한 기록이 없습니다.';
 
 const _muted = AppColors.textMuted;
@@ -116,13 +119,17 @@ class TacticalSlotsPanel {
     this.onSelectDeck,
     this.slotIndex,
     this.onSelectSlot,
+    this.excludedText,
   });
 
   /// S1 덱 대신 보일 문구(읽는 중 · 계정 없음 · 방어 기록 없음). null이면 덱.
   final String? message;
 
-  /// 내 방어 기록 전체(컨트롤러 순서).
+  /// 내 방어 기록 중 최근 30일 기록(컨트롤러 순서).
   final List<TacticalMatchV2> defense;
+
+  /// 기간에서 빠진 방어 기록 근거 줄("30일 이전 n건 · 시각 모름 n건 제외"). 없으면 null.
+  final String? excludedText;
 
   /// 내 방어 덱(첫 덱 = 가장 최근 방어 기록의 덱).
   final List<TacticalSlotsDeck> decks;
@@ -183,7 +190,7 @@ class TacticalSlotsWorkspace extends StatelessWidget {
           ),
           layer(
             tacticalSlotsCounterSectionId,
-            _counterSection(size, scale, deck, studentId),
+            _counterSection(size, scale, deck, slot, studentId),
           ),
         ],
       );
@@ -347,11 +354,29 @@ class TacticalSlotsWorkspace extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
+            const BaChip(
+              key: ValueKey('tactical-slots-window-chip'),
+              label: tacticalRecentWindowLabel,
+              tone: AppTones.gray,
+            ),
+            const SizedBox(width: 8),
             BaChip(
               key: const ValueKey('tactical-slots-defense-chip'),
               label: '내 방어 기록 ${panel.defense.length}건',
               tone: AppTones.gray,
             ),
+            if (panel.excludedText case final excluded?) ...[
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  excluded,
+                  key: const ValueKey('tactical-slots-excluded'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _mutedSmall,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -625,6 +650,7 @@ class TacticalSlotsWorkspace extends StatelessWidget {
     Size size,
     double scale,
     TacticalSlotsDeck? deck,
+    int? slot,
     String? studentId,
   ) {
     const id = tacticalSlotsCounterSectionId;
@@ -647,8 +673,11 @@ class TacticalSlotsWorkspace extends StatelessWidget {
       ),
     );
     if (deck == null) return _frame(id, [title]);
+    final breakerRecords = slot == null || studentId == null
+        ? const <TacticalMatchV2>[]
+        : tacticalSlotsBreakerRecords(panel.defense, slot, studentId);
     final breakers = tacticalSlotBreakers(
-      deck.records,
+      breakerRecords,
     ).take(TacticalSlotsMetrics.breakerRowCount).toList();
     final publicRecords = tacticalSlotsPublicRecords(panel.defense, deck);
     final induced = tacticalInducedDecks(
@@ -678,6 +707,15 @@ class TacticalSlotsWorkspace extends StatelessWidget {
         scale,
         '이 방어 덱을 가장 자주 뚫은 공격 학생',
         left: 16.2,
+        trailing: slot == null || studentId == null
+            ? null
+            : Text(
+                '${tacticalSlotPlaceText(slot)} ${studentName(studentId)} · '
+                '방어 ${breakerRecords.length}전',
+                key: const ValueKey('tactical-slots-breaker-basis'),
+                maxLines: 1,
+                style: _mutedSmall,
+              ),
       ),
       for (final (index, item) in breakers.indexed)
         tacticalPlaced(
@@ -710,7 +748,7 @@ class TacticalSlotsWorkspace extends StatelessWidget {
         '공개 슬롯이 유도하는 상대 공격 덱 · Top 3',
         left: 16.2,
         trailing: Text(
-          '내 방어 ${publicRecords.length}전',
+          '$tacticalRecentWindowLabel 방어 ${publicRecords.length}전',
           key: const ValueKey('tactical-slots-induced-total'),
           maxLines: 1,
           style: _mutedSmall,

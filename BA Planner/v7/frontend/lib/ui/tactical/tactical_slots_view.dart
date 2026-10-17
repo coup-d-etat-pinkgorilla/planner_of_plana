@@ -8,8 +8,12 @@
 //   화면에서 다른 덱으로 바꿔 볼 수 있지만 저장하지 않는다.
 // - 슬롯 통계(S2): 고른 칸(0~5)에 놓였던 학생을 내 방어 기록 전체에서 센다(그 칸 학생을 아는 기록이 분모). 학생의 자리별 배치 ·
 //   자리별 방어 성공률도 내 방어 기록 전체에서 센다.
-// - 궁합 · 카운터(S3): 고른 덱의 방어 기록(같은 덱 identity)에서 뚫린 기록의 공격 학생, 덱 안정성을 센다. 유도 공격 덱은 "공개
-//   슬롯이 유도하는" 덱이라 내 덱의 공개 칸(1번 · SP1 · SP2) 학생이 같은 방어 기록 전부에서 센다(공개 칸 학생을 다 모르면 같은 덱).
+// - 궁합 · 카운터(S3): 덱 안정성은 고른 덱의 방어 기록(같은 덱 identity)에서 센다. 뚫은 공격 학생은 tidy3(CF 결정 2026-10-17,
+//   FE9-g 발견 3)부터 **고른 칸의 학생이 그 자리에 있던 내 방어 기록**의 뚫린 기록에서 센다(칸을 바꾸면 바뀐다,
+//   [tacticalSlotsBreakerRecords]). 유도 공격 덱은 "공개 슬롯이 유도하는" 덱이라 내 덱의 공개 칸(1번 · SP1 · SP2) 학생이 같은 방어
+//   기록 전부에서 센다(공개 칸 학생을 다 모르면 같은 덱).
+// - 기간(tidy3): 화면은 최근 30일 방어 기록만 넘긴다(`tactical_window.dart`, 기록 S4 · 분석과 같은 규칙). 시각 모름 · 30일 이전
+//   기록은 빠지고 S1 칩 줄에 "… 제외"로 알린다.
 // - 상대 없는 방어 기록(FD-176, identity · 이름 null 쌍)은 전체 집계(평균 방어 · 공격 학생 · 유도 덱)에는 들고 상대별 묶음(재도전
 //   방어 · 뚫린 상대)에서만 빠진다. 시도 횟수는 이 화면에서 쓰지 않는다.
 // - 시간 순서가 필요한 값(최근 10전 · 최장 연패 · 재도전 방어)은 시각을 아는 기록(정밀도 date · instant)만 쓴다. 시각 모름 기록을
@@ -20,6 +24,7 @@ import '../../services/tactical_v2_service.dart';
 import 'tactical_analysis_view.dart';
 import 'tactical_jokbo_view.dart';
 import 'tactical_records_view.dart';
+import 'tactical_window.dart';
 
 /// "최근 10전"의 전 수.
 const tacticalSlotsRecentCount = 10;
@@ -288,6 +293,17 @@ class TacticalSlotBreaker {
 
   double get share => losses == 0 ? 0 : count / losses;
 }
+
+/// 뚫은 공격 학생을 셀 방어 기록: [defense] 중 [slotIndex] 칸에 [studentId]가 있던 기록(덱 나머지 칸은 무엇이든).
+List<TacticalMatchV2> tacticalSlotsBreakerRecords(
+  List<TacticalMatchV2> defense,
+  int slotIndex,
+  String studentId,
+) => List.unmodifiable([
+  for (final match in defense)
+    if (tacticalDeckSlots(match.defenseDeck)[slotIndex].studentId == studentId)
+      match,
+]);
 
 /// 뚫린 기록(결과 패)의 공격 덱 학생(많은 순 → 처음 나온 순). 같은 기록 안 같은 학생은 한 번.
 List<TacticalSlotBreaker> tacticalSlotBreakers(List<TacticalMatchV2> records) {

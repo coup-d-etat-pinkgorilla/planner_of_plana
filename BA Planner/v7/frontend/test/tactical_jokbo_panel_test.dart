@@ -5,8 +5,12 @@
 // - 화면: design-review seed(게헨나 · 아비도스 방어 덱이 같은 공개 시그니처) → 카드 2장 · KPI, "족보에서 가져오기" · 끌어 놓기
 //   (고스트 · 힌트 알약), 방어 기록 거부(이유 문구), 디바운스 · 늦은 응답 버리기, 읽기 오류(S4 안 문구 · 다시 읽기), 이관 전
 //   "준비 중", 화면을 닫은 뒤 온 응답.
+// - tidy3: S4는 최근 30일 기록만 센다(분석 · 슬롯과 같은 `tactical_window.dart`) — 화면 테스트 서비스는 고정 시계(UTC 10/5 12:00)다.
+//   카드 승/패 · 방어 유저(통계 행이 없으면 기록의 서로 다른 상대 수)는 넘긴 기록에서, 질의 `date_from` = 30일 전, "최근 30일" 칩 ·
+//   빠진 기록 근거 줄.
 import 'dart:async';
 
+import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/design_review/tactical_records_data.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/mock_tactical_v2_reads.dart';
@@ -19,11 +23,15 @@ import 'package:ba_planner_v7/ui/pages/tactical_page.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_jokbo_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_jokbo_widgets.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_records_view.dart';
+import 'package:ba_planner_v7/ui/tactical/tactical_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _profileId = '000000000000000000000001';
 const _signature = 'hina|hibiki|ako';
+
+/// 화면 테스트의 고정 시계(seed 공격 기록 10/2 ~ 10/4가 30일 안).
+final _now = DateTime.utc(2026, 10, 5, 12);
 
 TacticalSlotObservation _lobby(int position, String studentId) =>
     TacticalSlotObservation(
@@ -204,6 +212,16 @@ String _text(WidgetTester tester, String key) =>
 String _rich(WidgetTester tester, String key) =>
     tester.widget<Text>(find.byKey(ValueKey(key))).textSpan!.toPlainText();
 
+String _chip(WidgetTester tester, String key) => tester
+    .widgetList<Text>(
+      find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(Text),
+      ),
+    )
+    .map((text) => text.data ?? text.textSpan?.toPlainText() ?? '')
+    .join();
+
 List<String> _myDeckNames(WidgetTester tester) => [
   for (var index = 0; index < 6; index++)
     _text(tester, 'tactical-my-deck-slot-$index-name'),
@@ -298,10 +316,11 @@ void main() {
         matches[2].attackDeck,
         recordWins: 5,
       );
+      final records = [for (final match in matches) _match(match)];
       final cards = tacticalSignatureJokboCards(
         signature: _signature,
         jokbo: [a, b, imported, empty, outside],
-        matches: const [],
+        matches: records,
       );
       // 승 많은 순 → 패 적은 순 → 이름 순. 다른 시그니처(E)는 빠진다.
       expect(cards.map((card) => card.id), [
@@ -323,6 +342,23 @@ void main() {
       expect(cards[3].noRecords, isTrue);
       expect(cards[2].noRecords, isFalse);
       expect(cards[0].semanticLabel, '족보 B — 끌어서 내 공격 덱에 놓으면 복사');
+      // tidy3: 승/패는 넘긴 기록(화면은 최근 30일)에서만 센다 — 컨트롤러 전체 집계(recordWins)는 쓰지 않는다.
+      final none = tacticalSignatureJokboCards(
+        signature: _signature,
+        jokbo: [a],
+        matches: const [],
+      );
+      expect(none.single.recordText, '0승 0패');
+      // 방어 기록은 족보 공격 덱과 같아도 세지 않는다.
+      final defenseOnly = tacticalSignatureJokboCards(
+        signature: _signature,
+        jokbo: [a],
+        matches: [
+          for (final match in records)
+            if (match.kind == 'defense') match,
+        ],
+      );
+      expect(defenseOnly.single.recordText, '0승 0패');
     });
 
     test('a statistics row replaces record counts by attack deck', () {
@@ -482,15 +518,9 @@ void main() {
         signature: _signature,
         jokbo: [
           _entry('a', '족보 A', matches[0].defenseDeck, matches[0].attackDeck),
-          _entry(
-            'b',
-            '족보 B',
-            matches[2].defenseDeck,
-            matches[2].attackDeck,
-            recordWins: 1,
-          ),
+          _entry('b', '족보 B', matches[2].defenseDeck, matches[2].attackDeck),
         ],
-        matches: const [],
+        matches: [_match(matches[2])],
       );
       expect(cards.first.id, 'b');
       // 고른 카드 → 지금 내 덱과 같은 카드 → 첫 카드.
@@ -518,6 +548,38 @@ void main() {
       expect(tacticalAgoText(null, now), '—');
       final kpis = tacticalJokboKpis(reads: null, cardCount: 2, now: now);
       expect(kpis.defenders, '—');
+      // tidy3(FE9-e 발견 4): 통계 행이 없으면 기록의 서로 다른 상대 수(상대 없는 기록은 세지 않는다) — 분석 S1과 같은 함수.
+      final seeded = [for (final match in matches) _match(match)];
+      expect(
+        tacticalJokboKpis(
+          reads: null,
+          cardCount: 2,
+          now: now,
+          matches: seeded,
+        ).defenders,
+        '2명',
+      );
+      expect(
+        tacticalDefenderCount(
+          statistics: null,
+          matches: [
+            for (final match in seeded)
+              if (match.id == 'dr-match-6') match,
+          ],
+        ),
+        0,
+      );
+      expect(
+        tacticalDefenderCount(statistics: null, matches: const []),
+        isNull,
+      );
+      expect(
+        tacticalDefenderCount(
+          statistics: _signatureStats(opponents: 6),
+          matches: seeded,
+        ),
+        6,
+      );
       expect(kpis.linked, '2개');
       expect(kpis.verified, '—');
       expect(kpis.diversity, '—');
@@ -593,8 +655,9 @@ void main() {
         _text(tester, 'tactical-jokbo-card-${ids.b}-seen'),
         '마지막 관측 2026-10-02',
       );
-      // Mock은 로비가 없어 통계 시그니처 행 · 신선도가 없다('—'). 추천: 게헨나 완전 방어 덱 1종(모호도 낮음).
-      expect(_text(tester, 'tactical-jokbo-kpi-defenders'), '—');
+      // Mock은 로비가 없어 통계 시그니처 행 · 신선도가 없다. 방어 유저는 최근 30일 기록의 상대 수(게헨나 · 아비도스, tidy3),
+      // 최신 검증 '—'. 추천: 게헨나 완전 방어 덱 1종(모호도 낮음).
+      expect(_text(tester, 'tactical-jokbo-kpi-defenders'), '2명');
       expect(_text(tester, 'tactical-jokbo-kpi-verified'), '—');
       expect(_text(tester, 'tactical-jokbo-kpi-diversity'), '낮음');
       expect(_text(tester, 'tactical-jokbo-kpi-diversity-detail'), '유형 1');
@@ -611,9 +674,18 @@ void main() {
       expect(find.textContaining('독립 재현'), findsNothing);
       expect(service.statisticsCalls, 1);
       expect(service.lastStatistics?.publicSignature, _signature);
+      // tidy3: 분석과 같은 기간 시작(고정 시계 30일 전).
+      expect(service.lastStatistics?.dateFrom, tacticalWindowDateFrom(_now));
+      expect(service.lastStatistics?.dateFrom, '2026-09-05T12:00:00Z');
       expect(
         service.lastRecommendation?.opponentIdentityId,
         designReviewTacticalOpponentA,
+      );
+      expect(_chip(tester, 'tactical-jokbo-window-chip'), '최근 30일');
+      // seed 공격 기록은 모두 30일 안이라 근거 줄이 없다.
+      expect(
+        find.byKey(const ValueKey('tactical-jokbo-excluded')),
+        findsNothing,
       );
       expect(tester.takeException(), isNull);
     });
@@ -808,7 +880,8 @@ void main() {
       // 먼저 보낸 질의의 답이 늦게 오면 버린다.
       service.answer(0, opponents: 7);
       await tester.pumpAndSettle();
-      expect(_text(tester, 'tactical-jokbo-kpi-defenders'), '—');
+      // 늦은 답은 버린다 — 통계 행이 없을 때의 기록 상대 수(게헨나 · 아비도스) 그대로.
+      expect(_text(tester, 'tactical-jokbo-kpi-defenders'), '2명');
       service.answer(1, opponents: 3);
       await tester.pumpAndSettle();
       expect(_text(tester, 'tactical-jokbo-kpi-defenders'), '3명');
@@ -950,8 +1023,11 @@ void main() {
 }
 
 /// 읽기 요청을 세고, 통계 답을 붙잡아 두거나([hold]) 추이를 실패시킨다([failTrends]번).
-class _ReadsService extends MockAppService {
+class _ReadsService extends MockAppService implements AppClockSource {
   _ReadsService({this.hold = false, this.failTrends = 0});
+
+  @override
+  DateTime get clockNow => _now;
 
   final bool hold;
   int failTrends;

@@ -5,6 +5,8 @@
 //   유도 공격 덱(공개 칸 범위), 덱 안정성(시각 모름 제외 · 상대 없는 기록은 상대별 묶음에서만 뺌 — FD-176), 조사 "와/과".
 // - 화면: 시안 rect(±2px) · seed 값, 숨긴 지표(상위 500위 · 신뢰도 · 보정 방어 · 리프트)가 없고 이유 한 줄이 있음, 칸 누르기 → S2 · S3,
 //   덱 바꾸기(저장 없음 — revision 그대로), 기본 Mock · 이관 전 안내, 기록 ↔ 슬롯 · 분석 → 슬롯 모션, 셸 머리말 seg, 작은 창 넘침 0.
+// - tidy3: 화면은 최근 30일 방어 기록만 센다(seed `dr-match-7` 30일 이전 · `dr-match-6` 시각 모름은 빠지고 S1 근거 줄),
+//   "최근 30일" 칩 · "최근 30일 방어 n전", 뚫은 공격 학생은 고른 칸 학생이 그 자리에 있던 기록(칸을 바꾸면 근거 · 값이 바뀐다).
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/design_review/tactical_records_data.dart';
@@ -20,6 +22,7 @@ import 'package:ba_planner_v7/ui/tactical/tactical_analysis_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_slots_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_slots_workspace.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_sub_screen.dart';
+import 'package:ba_planner_v7/ui/tactical/tactical_window.dart';
 import 'package:ba_planner_v7/ui/widgets/page_header_override.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -264,6 +267,7 @@ void main() {
   });
 
   group('model', () {
+    late TacticalWindowedMatches seedWindow;
     late List<TacticalMatchV2> seedDefense;
     late List<TacticalMatchV2> defense;
 
@@ -271,9 +275,13 @@ void main() {
       final seed = _ClockedMock();
       addTearDown(seed.dispose);
       await _seedV2(seed);
-      seedDefense = tacticalDefenseMatches(
-        (await seed.loadTacticalEvidenceState(_profileId)).matches,
+      seedWindow = tacticalRecentMatches(
+        tacticalDefenseMatches(
+          (await seed.loadTacticalEvidenceState(_profileId)).matches,
+        ),
+        _now,
       );
+      seedDefense = seedWindow.matches;
       final timed = _ClockedMock();
       addTearDown(timed.dispose);
       await _seedV2(timed, timed: true);
@@ -295,30 +303,43 @@ void main() {
           }
           return a.id.compareTo(b.id);
         });
-      defense = tacticalDefenseMatches(ordered);
+      // 화면과 같이 최근 30일 기록만(seed 30일 이전 1건 · 시각 모름 1건은 빠진다).
+      defense = tacticalRecentMatches(
+        tacticalDefenseMatches(ordered),
+        _now,
+      ).matches;
+    });
+
+    test('window keeps the last 30 days and counts what it leaves out', () {
+      // seed 방어 기록 4건: 9/28 · 9/24는 30일 안, 8/28은 30일 이전, `dr-match-6`은 시각 모름.
+      expect(
+        [for (final match in seedDefense) match.id],
+        ['dr-match-4', 'dr-match-5'],
+      );
+      expect((seedWindow.older, seedWindow.unknownTime), (1, 1));
+      expect(seedWindow.excludedText, '30일 이전 1건 · 시각 모름 1건 제외');
+      expect(tacticalRecentMatches(const [], _now).excludedText, isNull);
+      expect(tacticalWindowDateFrom(_now), '2026-09-06T12:00:00Z');
     });
 
     test('decks group defense records and the newest deck comes first', () {
-      expect(
-        [for (final match in seedDefense) match.id],
-        ['dr-match-4', 'dr-match-5', 'dr-match-6'],
-      );
       final seedDecks = tacticalSlotsDecks(seedDefense);
       expect(seedDecks, hasLength(1));
-      expect(seedDecks.single.records, hasLength(3));
-      expect((seedDecks.single.wins, seedDecks.single.losses), (2, 1));
-      expect(seedDecks.single.lastAt, isNull);
+      expect(seedDecks.single.records, hasLength(2));
+      expect((seedDecks.single.wins, seedDecks.single.losses), (1, 1));
+      expect(tacticalShortDateText(seedDecks.single.lastAt), '9/28');
 
       final decks = tacticalSlotsDecks(defense);
       expect(decks, hasLength(2));
       // FD-133: 가장 최근 방어 기록(10/5)의 덱이 첫 덱.
       expect(decks.first.records.single.id, 't-5');
-      expect(decks[1].records, hasLength(7));
-      expect(tacticalShortDateText(decks[1].firstAt), '10/1');
+      // 덱 A: 시각 있는 4건(10/1 ~ 10/4) + seed 30일 안 2건(9/24 · 9/28).
+      expect(decks[1].records, hasLength(6));
+      expect(tacticalShortDateText(decks[1].firstAt), '9/24');
       expect(tacticalShortDateText(decks[1].lastAt), '10/4');
       expect(
         tacticalDateRangeText(decks[1].firstAt, decks[1].lastAt),
-        '10/1 ~ 10/4',
+        '9/24 ~ 10/4',
       );
       expect(tacticalSlotsDefaultSlot(_deckA, null), 0);
       expect(tacticalSlotsDefaultSlot(_deckA, 4), 4);
@@ -337,28 +358,28 @@ void main() {
       final seedUsage = tacticalSlotUsage(seedDefense, 0);
       expect(seedUsage.single.studentId, 'hina');
       expect(seedUsage.single.share, 1);
-      expect((seedUsage.single.wins, seedUsage.single.losses), (2, 1));
+      expect((seedUsage.single.wins, seedUsage.single.losses), (1, 1));
 
       final usage = tacticalSlotUsage(defense, 0);
       expect([for (final item in usage) item.studentId], ['hina', 'hoshino']);
-      expect([for (final item in usage) item.count], [7, 1]);
-      expect(usage.first.total, 8);
-      expect((usage.first.wins, usage.first.losses), (3, 4));
-      expect(tacticalPercentOneText(usage.first.share), '87.5%');
+      expect([for (final item in usage) item.count], [6, 1]);
+      expect(usage.first.total, 7);
+      expect((usage.first.wins, usage.first.losses), (2, 4));
+      expect(tacticalPercentOneText(usage.first.share), '85.7%');
 
       final positions = tacticalSlotPositions(defense, 'hina', 0);
       expect([for (final item in positions) item.index], [0, 1, 2, 3]);
-      expect([for (final item in positions) item.count], [7, 1, 0, 0]);
-      expect(positions.first.total, 8);
+      expect([for (final item in positions) item.count], [6, 1, 0, 0]);
+      expect(positions.first.total, 7);
       final compare = tacticalSlotPositionCompare(positions, 0);
-      expect(compare.current.rate, closeTo(3 / 7, 1e-9));
+      expect(compare.current.rate, closeTo(2 / 6, 1e-9));
       expect(compare.other?.index, 1);
       expect(compare.other?.rate, 1);
       expect(
         tacticalPointText(
           tacticalRateDifference(compare.current.rate, compare.other?.rate),
         ),
-        '−57.1%p',
+        '−66.7%p',
       );
       // 스페셜은 SP1 · SP2만.
       expect(
@@ -390,11 +411,20 @@ void main() {
       expect(breakers.first.losses, 4);
       expect(breakers.first.share, 0.5);
 
-      // 공개 칸(히나 | 히비키 · 아코)이 같은 기록 = 덱 A 7건(덱 B는 1번이 호시노라 빠진다).
+      // tidy3: 뚫은 공격 학생은 고른 칸 학생이 그 자리에 있던 기록 — 1번 히나 = 덱 A 6건, 3번 아루 = 덱 A · B 7건,
+      // 1번 호시노 = 덱 B 1건(승뿐이라 뚫은 학생 없음).
+      expect(tacticalSlotsBreakerRecords(defense, 0, 'hina'), hasLength(6));
+      expect(tacticalSlotsBreakerRecords(defense, 2, 'aru'), hasLength(7));
+      final hoshino = tacticalSlotsBreakerRecords(defense, 0, 'hoshino');
+      expect([for (final match in hoshino) match.id], ['t-5']);
+      expect(tacticalSlotBreakers(hoshino), isEmpty);
+      expect(tacticalSlotsBreakerRecords(defense, 1, 'hina'), hasLength(1));
+
+      // 공개 칸(히나 | 히비키 · 아코)이 같은 기록 = 덱 A 6건(덱 B는 1번이 호시노라 빠진다).
       final publicRecords = tacticalSlotsPublicRecords(defense, deckA);
-      expect(publicRecords, hasLength(7));
+      expect(publicRecords, hasLength(6));
       final induced = tacticalInducedDecks(publicRecords);
-      expect([for (final item in induced) item.count], [3, 2, 1, 1]);
+      expect([for (final item in induced) item.count], [3, 2, 1]);
       expect((induced.first.wins, induced.first.losses), (1, 2));
       expect(tacticalSlotsPublicKey(_attackP), isNull);
       // 덱 B 공개 칸 범위에는 덱 B 기록만.
@@ -413,28 +443,34 @@ void main() {
       final seedStability = tacticalDeckStability(
         tacticalSlotsDecks(seedDefense).single.records,
       );
-      expect((seedStability.wins, seedStability.losses), (2, 1));
-      expect(seedStability.unknownTime, 3);
-      expect(seedStability.recentWins, isNull);
-      expect(seedStability.longestLosingStreak, isNull);
-      expect(seedStability.retryRate, isNull);
+      // seed 30일 안 2건: 9/24 아비도스 패 → 9/28 아비도스 승(재도전 막음).
+      expect((seedStability.wins, seedStability.losses), (1, 1));
+      expect(seedStability.unknownTime, 0);
+      expect((seedStability.recentWins, seedStability.recentLosses), (1, 1));
+      expect(seedStability.longestLosingStreak, 1);
+      expect(
+        tacticalDateRangeText(seedStability.streakFrom, seedStability.streakTo),
+        '9/24',
+      );
+      expect((seedStability.retryHeld, seedStability.retryTotal), (1, 1));
       expect(seedStability.brokenOpponents, 1);
 
       final stability = tacticalDeckStability(
         tacticalSlotsDecks(defense)[1].records,
       );
-      // 전체 7건(상대 없는 기록 2건 포함): 3승 4패.
-      expect((stability.wins, stability.losses), (3, 4));
-      expect(stability.unknownTime, 3);
-      expect((stability.recentWins, stability.recentLosses), (1, 3));
-      // 시각 순서 10/1 패 · 10/2 패 · 10/3 승 · 10/4 패 → 최장 연패 2(10/1 ~ 10/2).
+      // 30일 안 6건(상대 없는 기록 1건 포함): 2승 4패.
+      expect((stability.wins, stability.losses), (2, 4));
+      expect(stability.unknownTime, 0);
+      expect((stability.recentWins, stability.recentLosses), (2, 4));
+      // 시각 순서 9/24 패 · 9/28 승 · 10/1 패 · 10/2 패 · 10/3 승 · 10/4 패 → 최장 연패 2(10/1 ~ 10/2).
       expect(stability.longestLosingStreak, 2);
       expect(
         tacticalDateRangeText(stability.streakFrom, stability.streakTo),
         '10/1 ~ 10/2',
       );
-      // 재도전: 10/1 게헨나 패 → 10/3 게헨나 승(막음). 10/2 상대 없음은 상대별 묶음에서 뺀다. 10/4 아비도스 뒤 시각 있는 기록 없음.
-      expect((stability.retryHeld, stability.retryTotal), (1, 1));
+      // 재도전: 9/24 아비도스 패 → 9/28 승, 10/1 게헨나 패 → 10/3 승(둘 다 막음). 10/2 상대 없음은 상대별 묶음에서 뺀다.
+      // 10/4 아비도스 뒤 시각 있는 기록 없음.
+      expect((stability.retryHeld, stability.retryTotal), (2, 2));
       // 뚫은 상대: 게헨나 · 아비도스(상대 없는 패배는 세지 않는다).
       expect(stability.brokenOpponents, 2);
     });
@@ -535,9 +571,14 @@ void main() {
         _chip(tester, 'tactical-slots-selected-chip'),
         '1번 ${names['hina']} 선택',
       );
-      expect(_chip(tester, 'tactical-slots-defense-chip'), '내 방어 기록 3건');
-      expect(_text(tester, 'tactical-slots-deck-row-0-record'), '방어 3전 2승 1패');
-      expect(_text(tester, 'tactical-slots-deck-row-0-range'), '시각 모름');
+      expect(_chip(tester, 'tactical-slots-window-chip'), '최근 30일');
+      expect(_chip(tester, 'tactical-slots-defense-chip'), '내 방어 기록 2건');
+      expect(
+        _text(tester, 'tactical-slots-excluded'),
+        '30일 이전 1건 · 시각 모름 1건 제외',
+      );
+      expect(_text(tester, 'tactical-slots-deck-row-0-record'), '방어 2전 1승 1패');
+      expect(_text(tester, 'tactical-slots-deck-row-0-range'), '9/24 ~ 9/28');
 
       // S2 슬롯별 통계(시안 rect).
       _expectRect(
@@ -598,7 +639,7 @@ void main() {
       );
       _expectRect(tester, 'tactical-slots-slot-meta', 716.1, 927.2, 1077.9, 30);
       expect(_text(tester, 'tactical-slots-usage-0-value'), '100.0%');
-      expect(_text(tester, 'tactical-slots-usage-0-record'), '내 방어 3전 2승 1패');
+      expect(_text(tester, 'tactical-slots-usage-0-record'), '내 방어 2전 1승 1패');
       expect(
         find.byKey(const ValueKey('tactical-slots-slot-usage-1')),
         findsNothing,
@@ -606,8 +647,8 @@ void main() {
       expect(_text(tester, 'tactical-slots-position-0'), '100%');
       expect(_text(tester, 'tactical-slots-position-1'), '0%');
       expect(_text(tester, 'tactical-slots-kpi-current-label'), '1번');
-      expect(_text(tester, 'tactical-slots-kpi-current'), '66.7%');
-      expect(_text(tester, 'tactical-slots-kpi-current-detail'), '3경기');
+      expect(_text(tester, 'tactical-slots-kpi-current'), '50.0%');
+      expect(_text(tester, 'tactical-slots-kpi-current-detail'), '2경기');
       expect(_text(tester, 'tactical-slots-kpi-other-label'), '다른 자리');
       for (final key in ['other', 'difference', 'sensitivity', 'expected']) {
         expect(_text(tester, 'tactical-slots-kpi-$key'), '—', reason: key);
@@ -675,14 +716,7 @@ void main() {
         651.2,
         78,
       );
-      _expectRect(
-        tester,
-        'tactical-slots-slot-induced-1',
-        1872.0,
-        815.2,
-        666.0,
-        78,
-      );
+      // 유도 덱 둘째 줄 rect는 seed 유도 덱이 1개라(tidy3) 덱 바꾸기 테스트(유도 덱 3개)에서 본다.
       _expectRect(
         tester,
         'tactical-slots-slot-stability-caption',
@@ -715,18 +749,28 @@ void main() {
         );
       }
       expect(_text(tester, 'tactical-slots-breaker-0-value'), '100%');
-      expect(_text(tester, 'tactical-slots-induced-total'), '내 방어 3전');
-      expect(_rich(tester, 'tactical-slots-induced-0-share'), '상대 공격 중 67%');
+      expect(
+        _text(tester, 'tactical-slots-breaker-basis'),
+        '1번 ${names['hina']} · 방어 2전',
+      );
+      expect(_text(tester, 'tactical-slots-induced-total'), '최근 30일 방어 2전');
+      expect(_rich(tester, 'tactical-slots-induced-0-share'), '상대 공격 중 100%');
       expect(_text(tester, 'tactical-slots-induced-0-record'), '내 방어 1승 1패');
       expect(_chip(tester, 'tactical-slots-induced-0-rate'), '방어 50%');
-      expect(_rich(tester, 'tactical-slots-induced-1-share'), '상대 공격 중 33%');
-      expect(_chip(tester, 'tactical-slots-induced-1-rate'), '방어 100%');
-      expect(_text(tester, 'tactical-slots-kpi-average'), '67%');
-      expect(_text(tester, 'tactical-slots-kpi-average-detail'), '3전 2승');
-      expect(_text(tester, 'tactical-slots-kpi-recent'), '—');
-      expect(_text(tester, 'tactical-slots-kpi-recent-detail'), '시각 모름 3건 제외');
-      expect(_text(tester, 'tactical-slots-kpi-streak'), '—');
-      expect(_text(tester, 'tactical-slots-kpi-retry'), '—');
+      expect(
+        find.byKey(const ValueKey('tactical-slots-slot-induced-1')),
+        findsNothing,
+      );
+      expect(_text(tester, 'tactical-slots-kpi-average'), '50%');
+      expect(_text(tester, 'tactical-slots-kpi-average-detail'), '2전 1승');
+      expect(_text(tester, 'tactical-slots-kpi-recent'), '1승 1패');
+      expect(
+        find.byKey(const ValueKey('tactical-slots-kpi-recent-detail')),
+        findsNothing,
+      );
+      expect(_text(tester, 'tactical-slots-kpi-streak'), '1회');
+      expect(_text(tester, 'tactical-slots-kpi-streak-detail'), '9/24');
+      expect(_text(tester, 'tactical-slots-kpi-retry'), '100%');
       expect(_text(tester, 'tactical-slots-kpi-retry-detail'), '뚫린 상대 1명');
 
       // FD-127: 상위 500위 · 신뢰도 · 보정 방어 · 리프트 값 · 지난주 대비는 그리지 않는다(이유 한 줄 세 개만 그 낱말을 쓴다).
@@ -741,7 +785,6 @@ void main() {
       };
       for (final hidden in const [
         '상위 500위',
-        '최근 30일',
         '신뢰도 보통',
         '보정 방어',
         '지난주 대비',
@@ -790,6 +833,10 @@ void main() {
         _text(tester, 'tactical-slots-slot-lift-caption-text'),
         '${tacticalWithParticle(names['hibiki']!)} 자주 같이 쓰이는 학생 (리프트)',
       );
+      expect(
+        _text(tester, 'tactical-slots-breaker-basis'),
+        'SP1 ${names['hibiki']} · 방어 2전',
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -811,39 +858,69 @@ void main() {
       );
       expect(_text(tester, 'tactical-slots-deck-row-0-record'), '방어 1전 1승 0패');
       expect(_text(tester, 'tactical-slots-deck-row-0-range'), '10/5');
-      expect(_text(tester, 'tactical-slots-deck-row-1-record'), '방어 7전 3승 4패');
-      expect(_text(tester, 'tactical-slots-deck-row-1-range'), '10/1 ~ 10/4');
-      expect(_chip(tester, 'tactical-slots-defense-chip'), '내 방어 기록 8건');
-      // 덱 B 1번 호시노: 1번 학생 사용은 히나 7 · 호시노 1.
-      expect(_text(tester, 'tactical-slots-usage-0-value'), '87.5%');
-      expect(_text(tester, 'tactical-slots-usage-1-value'), '12.5%');
+      expect(_text(tester, 'tactical-slots-deck-row-1-record'), '방어 6전 2승 4패');
+      expect(_text(tester, 'tactical-slots-deck-row-1-range'), '9/24 ~ 10/4');
+      expect(_chip(tester, 'tactical-slots-defense-chip'), '내 방어 기록 7건');
+      // 덱 B 1번 호시노: 1번 학생 사용은 히나 6 · 호시노 1.
+      expect(_text(tester, 'tactical-slots-usage-0-value'), '85.7%');
+      expect(_text(tester, 'tactical-slots-usage-1-value'), '14.3%');
       expect(_text(tester, 'tactical-slots-kpi-average'), '100%');
       expect(_text(tester, 'tactical-slots-kpi-recent'), '1승 0패');
       expect(_text(tester, 'tactical-slots-kpi-streak'), '0회');
+      // tidy3: 1번 호시노가 있던 기록은 덱 B 1건(승)뿐이라 뚫은 학생이 없다 → 3번 아루로 바꾸면 덱 A · B 7건에서 센다.
+      expect(
+        _text(tester, 'tactical-slots-breaker-basis'),
+        '1번 ${names['hoshino']} · 방어 1전',
+      );
+      expect(
+        _text(tester, 'tactical-slots-breaker-message-text'),
+        tacticalSlotsNoBreakText,
+      );
+      await _tapKey(tester, 'tactical-slots-deck-slot-2');
+      expect(
+        _text(tester, 'tactical-slots-breaker-basis'),
+        '3번 ${names['aru']} · 방어 7전',
+      );
+      expect(
+        find.byKey(const ValueKey('tactical-slots-breaker-message')),
+        findsNothing,
+      );
+      expect(_text(tester, 'tactical-slots-breaker-0-value'), '50%');
 
       // 2번 히나를 고른 뒤 덱 A로 바꾸면 2번이 이오리라 2번 그대로(학생을 아는 칸).
       await _tapKey(tester, 'tactical-slots-deck-slot-1');
       expect(_text(tester, 'tactical-slots-kpi-current-label'), '2번');
       expect(_text(tester, 'tactical-slots-kpi-current'), '100.0%');
       expect(_text(tester, 'tactical-slots-kpi-other-label'), '1번');
-      expect(_text(tester, 'tactical-slots-kpi-difference'), '+57.1%p');
+      expect(_text(tester, 'tactical-slots-kpi-difference'), '+66.7%p');
       await _tapKey(tester, 'tactical-slots-deck-row-1');
       expect(_text(tester, 'tactical-slots-deck-slot-0-name'), names['hina']);
       expect(
         _chip(tester, 'tactical-slots-selected-chip'),
         '2번 ${names['iori']} 선택',
       );
-      expect(_text(tester, 'tactical-slots-kpi-average'), '43%');
-      expect(_text(tester, 'tactical-slots-kpi-average-detail'), '7전 3승');
-      expect(_text(tester, 'tactical-slots-kpi-recent'), '1승 3패');
-      expect(_text(tester, 'tactical-slots-kpi-recent-detail'), '시각 모름 3건 제외');
+      expect(_text(tester, 'tactical-slots-kpi-average'), '33%');
+      expect(_text(tester, 'tactical-slots-kpi-average-detail'), '6전 2승');
+      expect(_text(tester, 'tactical-slots-kpi-recent'), '2승 4패');
       expect(_text(tester, 'tactical-slots-kpi-streak'), '2회');
       expect(_text(tester, 'tactical-slots-kpi-streak-detail'), '10/1 ~ 10/2');
       expect(_text(tester, 'tactical-slots-kpi-retry'), '100%');
       expect(_text(tester, 'tactical-slots-kpi-retry-detail'), '뚫린 상대 2명');
-      expect(_text(tester, 'tactical-slots-induced-total'), '내 방어 7전');
-      expect(_rich(tester, 'tactical-slots-induced-0-share'), '상대 공격 중 43%');
+      expect(_text(tester, 'tactical-slots-induced-total'), '최근 30일 방어 6전');
+      expect(_rich(tester, 'tactical-slots-induced-0-share'), '상대 공격 중 50%');
       expect(_chip(tester, 'tactical-slots-induced-0-rate'), '방어 33%');
+      _expectRect(
+        tester,
+        'tactical-slots-slot-induced-1',
+        1872.0,
+        815.2,
+        666.0,
+        78,
+      );
+      expect(
+        _text(tester, 'tactical-slots-breaker-basis'),
+        '2번 ${names['iori']} · 방어 6전',
+      );
       for (final id in ['mika', 'izuna', 'ayane']) {
         expect(
           find.byKey(ValueKey('tactical-slots-breaker-$id')),
