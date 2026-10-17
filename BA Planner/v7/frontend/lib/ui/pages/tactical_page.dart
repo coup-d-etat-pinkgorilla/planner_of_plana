@@ -26,24 +26,39 @@
 // - tidy3(CF 결정 2026-10-17): 기록 S4 · 분석 · 슬롯이 모두 "최근 30일" 기록만 센다(`tactical_window.dart` — 시각 모름 기록은 빠지고
 //   "… 제외" 근거 줄, S4 통계 · 추이 질의도 분석과 같은 `date_from`). 방어 유저 수는 S4 KPI와 분석 S1이 같은 함수다. 슬롯 S3
 //   "뚫은 공격 학생"은 고른 칸의 학생이 그 자리에 있던 방어 기록에서 센다.
+// - FE9-c: S2 로비 스캔. "지금 스캔"은 셸 [ScanSessionController]로 전술 로비 세션을 시작한다(스캔 탭 · 홈 팝업과 같은 시작 판정,
+//   게임 창이 없으면 S4 자리에 창 선택 패널). 이 화면이 시작한 세션(id + generation)의 후보와 스캔 탭이 넘긴 후보
+//   ([TacticalPage.lobbyHandoff])를 `commitTacticalLobby`로 저장하고(같은 후보는 한 번, 기록 컨트롤러가 읽거나 쓰는 중이면 끝난
+//   뒤), 처리한 후보는 셸에 알려 검토 대기에서 뺀다. 카드를 누르면 `selectTacticalLobbyCandidate` + S3 초안에 상대 이름 · 공개 칸
+//   자동 채움(`visible_lobby`), 그 초안을 저장하면 `linkTacticalMatch(auto)`로 로비 관측과 잇는다(FD-128). 로비 쓰기 오류 · 링크
+//   결과는 S2 제목 줄 글자이고 기록 저장을 되돌리지 않는다. 확률 지표(방어 승률 30일 등)는 그리지 않는다(FD-127).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../services/app_clock.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
+import '../../services/scanner_service.dart';
+import '../../services/tactical_lobby_scanner_service.dart';
 import '../../services/tactical_service.dart';
 import '../../services/tactical_v2_service.dart';
 import '../../tactical/tactical_excel_import_controller.dart';
 import '../../tactical/tactical_records_controller.dart';
 import '../app_section.dart';
+import '../home/connect_target_panel.dart';
 import '../kit/ba_modal.dart';
+import '../scan/connected_target_controller.dart';
+import '../scan/scan_header_progress.dart' show scanSessionKey;
+import '../scan/scan_session_controller.dart';
 import '../tactical/tactical_analysis_view.dart';
 import '../tactical/tactical_analysis_workspace.dart';
 import '../tactical/tactical_excel_import_panel.dart';
 import '../tactical/tactical_jokbo_all_panel.dart';
 import '../tactical/tactical_jokbo_view.dart';
+import '../tactical/tactical_lobby_view.dart';
+import '../tactical/tactical_lobby_widgets.dart';
 import '../tactical/tactical_pickers.dart';
 import '../tactical/tactical_records_view.dart';
 import '../tactical/tactical_slots_view.dart';
@@ -116,6 +131,9 @@ String tacticalExcelImportedText(TacticalExcelCommitResult result) {
   return parts.join(' ');
 }
 
+/// S2 카드에서 나간 뒤 플라이아웃을 닫기까지(카드와 플라이아웃 사이 12px를 지나갈 때 깜빡이지 않게).
+const tacticalLobbyHoverExitDelay = Duration(milliseconds: 150);
+
 /// S4 질의 디바운스(고른 기록 · 공개 칸이 잇따라 바뀔 때 마지막 것만 묻는다).
 const tacticalJokboQueryDelay = Duration(milliseconds: 200);
 
@@ -153,9 +171,29 @@ class TacticalPage extends StatefulWidget {
     required this.service,
     this.reloadToken = 0,
     this.headerOverride,
+    this.scanSession,
+    this.connectedTarget,
+    this.scanAppliedElsewhere = const {},
+    this.lobbyHandoff,
+    this.onLobbyCandidateHandled,
   });
   final AppService service;
   final int reloadToken;
+
+  /// 셸 스캔 세션(FE9-c S2 "지금 스캔"). 없으면 S2 스캔 버튼이 흐리다(화면 단독 테스트).
+  final ScanSessionController? scanSession;
+
+  /// 앱 전역 게임 창 연결(창 선택 패널이 쓴다).
+  final ConnectedTargetController? connectedTarget;
+
+  /// 다른 탭에서 처리한 스캔 후보(검토 대기 판정, 셸 값 그대로).
+  final Set<String> scanAppliedElsewhere;
+
+  /// 스캔 탭에서 넘긴 전술 로비 후보(셸 `_handoffCandidate`). 바뀌면 저장한다.
+  final TacticalLobbyHandoff? lobbyHandoff;
+
+  /// 로비 후보를 처리했을 때(저장했거나 저장할 수 없어 버렸을 때). 셸이 검토 대기에서 뺀다.
+  final ValueChanged<ScannerCandidate>? onLobbyCandidateHandled;
 
   /// 셸 머리말(하위 화면 seg · 부제, FE9-e). 없으면 seg를 그리지 않는다(화면 단독 테스트).
   final PageHeaderOverrideController? headerOverride;
@@ -174,6 +212,12 @@ class _TacticalPageState extends State<TacticalPage> {
   TacticalEvidenceReadService? get _reader =>
       widget.service is TacticalEvidenceReadService
       ? widget.service as TacticalEvidenceReadService
+      : null;
+
+  /// FE9-c 로비 쓰기(로비 commit · 후보 선택 · 기록 링크, Process만).
+  TacticalEvidenceService? get _lobbyService =>
+      widget.service is TacticalEvidenceService
+      ? widget.service as TacticalEvidenceService
       : null;
 
   /// v1 읽기(이관 전 읽기 전용 목록). 쓰기는 하지 않는다.
@@ -264,10 +308,53 @@ class _TacticalPageState extends State<TacticalPage> {
   /// 가져온 뒤 상태 문구(다음 초안 변경까지).
   String? _excelNotice;
 
+  // --- S2 로비 스캔(FE9-c) ---
+  ScanSessionController? _scan;
+
+  /// "지금 스캔"을 눌러 세션 시작 응답을 기다리는 중.
+  bool _lobbyStarting = false;
+
+  /// 이 화면이 시작한 세션(id + generation). 이 세션의 후보만 스스로 저장한다(스캔 탭 세션은 인계로만).
+  String? _lobbyOwnSession;
+
+  /// 끝을 알린 세션(같은 세션의 끝 문구를 두 번 만들지 않는다).
+  String? _lobbyEndedSession;
+
+  /// 처리한 후보([tacticalLobbyCandidateKey]).
+  final Set<String> _lobbyHandled = {};
+
+  /// 저장할 후보(기록 컨트롤러가 읽거나 쓰는 중이면 끝난 뒤 보낸다).
+  ({ScannerCandidate candidate, String key})? _lobbyPending;
+  bool _lobbyDrainScheduled = false;
+  bool _lobbySaving = false;
+
+  /// 이 화면이 마지막으로 저장한 로비 스캔(없으면 가장 늦은 관측).
+  String? _lobbyScanId;
+
+  /// 고른 카드(후보 ID).
+  String? _lobbySelectedId;
+
+  /// 지금 초안을 채운 카드(저장하면 이 로비 관측과 잇는다). 초안을 바꾸면 지운다.
+  String? _lobbyDraftCandidateId;
+
+  /// S2 제목 줄 상태 글자(로비 쓰기 결과 · 오류).
+  ({String text, TacticalLobbyTone tone})? _lobbyNotice;
+  int? _lobbyHover;
+  Timer? _lobbyHoverTimer;
+
+  /// 창 선택 패널(미연결에서 "지금 스캔").
+  bool _lobbyConnectOpen = false;
+
+  /// 로비 응답 세대(계정 · 서비스가 바뀌면 늦은 응답을 버린다).
+  int _lobbyGeneration = 0;
+
   @override
   void initState() {
     super.initState();
     _attach();
+    _scan = widget.scanSession?..addListener(_scanChanged);
+    final handoff = widget.lobbyHandoff;
+    if (handoff != null) _queueLobby(handoff.candidate);
     widget.service.state.addListener(_connection);
     _opponentText.addListener(_textChanged);
     _notesText.addListener(_textChanged);
@@ -345,6 +432,17 @@ class _TacticalPageState extends State<TacticalPage> {
     } else if (old.reloadToken != widget.reloadToken) {
       _reload();
     }
+    if (old.service != widget.service) _resetLobby();
+    if (old.scanSession != widget.scanSession) {
+      old.scanSession?.removeListener(_scanChanged);
+      _scan = widget.scanSession?..addListener(_scanChanged);
+      _lobbyStarting = false;
+      _lobbyOwnSession = null;
+    }
+    final handoff = widget.lobbyHandoff;
+    if (handoff != null && !identical(handoff, old.lobbyHandoff)) {
+      _queueLobby(handoff.candidate);
+    }
     if (old.headerOverride != widget.headerOverride) {
       old.headerOverride?.release(this);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -356,6 +454,9 @@ class _TacticalPageState extends State<TacticalPage> {
   @override
   void dispose() {
     _generation++;
+    _lobbyGeneration++;
+    _lobbyHoverTimer?.cancel();
+    _scan?.removeListener(_scanChanged);
     _jokboGeneration++;
     _jokboTimer?.cancel();
     _analysisGeneration++;
@@ -476,6 +577,7 @@ class _TacticalPageState extends State<TacticalPage> {
       }
       _reconcileSelection();
     });
+    if (_lobbyPending != null) _scheduleLobbyDrain();
   }
 
   // --- 목록 ------------------------------------------------------------------
@@ -529,6 +631,7 @@ class _TacticalPageState extends State<TacticalPage> {
   void _setDraft(String? key, TacticalRecordDraft draft) {
     _selectedKey = key;
     _draft = draft;
+    _lobbyDraftCandidateId = null;
     _localError = null;
     _copyNotice = null;
     _excelNotice = null;
@@ -618,6 +721,8 @@ class _TacticalPageState extends State<TacticalPage> {
       setState(() => _localError = tacticalInvalidInputText);
       return;
     }
+    // FE9-c: 로비 카드로 채운 공격 초안이면 저장한 뒤 로비 관측과 잇는다(저장이 먼저, 링크 실패는 저장을 되돌리지 않는다).
+    final lobbyCandidate = draft.attack ? _lobbyDraftCandidateId : null;
     final saved = await controller.saveMatch(input);
     if (!mounted || !saved) return;
     final row = _rows.where((row) => row.key == 'v2:${input.id}').firstOrNull;
@@ -628,6 +733,7 @@ class _TacticalPageState extends State<TacticalPage> {
         _reconcileSelection();
       }
     });
+    if (lobbyCandidate != null) await _linkLobby(input.id);
   }
 
   void _duplicate() {
@@ -694,6 +800,457 @@ class _TacticalPageState extends State<TacticalPage> {
     if (name.isEmpty) return '순위 — · 최근 대전 —';
     final count = _rows.where((row) => row.opponentName == name).length;
     return '순위 — · 최근 대전 $count회';
+  }
+
+  // --- S2 로비 스캔 (FE9-c) -------------------------------------------------------
+
+  /// 서비스가 바뀌면 로비 흐름을 처음부터(늦은 응답은 세대로 버린다).
+  void _resetLobby() {
+    _lobbyGeneration++;
+    _lobbyStarting = false;
+    _lobbyOwnSession = null;
+    _lobbyEndedSession = null;
+    _lobbyPending = null;
+    _lobbySaving = false;
+    _lobbyScanId = null;
+    _lobbySelectedId = null;
+    _lobbyDraftCandidateId = null;
+    _lobbyNotice = null;
+    _lobbyConnectOpen = false;
+  }
+
+  void _setLobbyNotice(String text, TacticalLobbyTone tone) =>
+      _lobbyNotice = (text: text, tone: tone);
+
+  /// 셸 스캔 세션이 바뀌었다: 이 화면이 시작한 세션을 알아보고, 그 세션의 후보를 저장 대기에 넣고, 끝 문구를 만든다.
+  void _scanChanged() {
+    final scan = _scan;
+    if (!mounted || scan == null) return;
+    // 셸이 다른 탭 화면을 만드는 중에 컨트롤러가 알릴 수 있다(스캔 탭 initState → ensureStarted). 그때는 프레임 뒤에 본다
+    // (FE8-f2 머리글 칩과 같은 규칙).
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => _scanChanged());
+      return;
+    }
+    final session = scan.session;
+    if (_lobbyStarting) {
+      if (session != null && session.kind == ScannerKind.tacticalLobby) {
+        _lobbyStarting = false;
+        _lobbyOwnSession = scanSessionKey(session);
+      } else if (scan.stage == ScanSessionStage.idle) {
+        _lobbyStarting = false;
+        _setLobbyNotice(tacticalLobbyStartFailedText, TacticalLobbyTone.error);
+      }
+    }
+    final own = _lobbyOwnSession;
+    if (own != null && session != null && scanSessionKey(session) == own) {
+      final lobby = [
+        for (final candidate in scan.candidates.values)
+          if (candidate.kind == ScannerKind.tacticalLobby) candidate,
+      ];
+      for (final candidate in lobby) {
+        _queueLobby(candidate);
+      }
+      if (scan.stage == ScanSessionStage.terminal &&
+          _lobbyEndedSession != own) {
+        _lobbyEndedSession = own;
+        if (lobby.isEmpty) {
+          switch (scan.outcome) {
+            case 'cancelled':
+              _setLobbyNotice(
+                tacticalLobbyCancelledText,
+                TacticalLobbyTone.hint,
+              );
+            case 'failed':
+              _setLobbyNotice(tacticalLobbyFailedText, TacticalLobbyTone.error);
+            default:
+              _setLobbyNotice(
+                tacticalLobbyNoResultText,
+                TacticalLobbyTone.warn,
+              );
+          }
+        }
+      }
+    }
+    // 창을 연결했으면 창 선택 패널을 닫는다.
+    if (_lobbyConnectOpen && scan.selectedTarget != null) {
+      _lobbyConnectOpen = false;
+    }
+    setState(() {});
+  }
+
+  /// [candidate]를 저장 대기에 넣는다(처리한 후보 · 같은 대기는 무시).
+  void _queueLobby(ScannerCandidate candidate) {
+    if (candidate.kind != ScannerKind.tacticalLobby) return;
+    final key = tacticalLobbyCandidateKey(candidate);
+    if (_lobbyHandled.contains(key) || _lobbyPending?.key == key) return;
+    _lobbyPending = (candidate: candidate, key: key);
+    _scheduleLobbyDrain();
+  }
+
+  void _scheduleLobbyDrain() {
+    if (_lobbyDrainScheduled) return;
+    _lobbyDrainScheduled = true;
+    scheduleMicrotask(() {
+      _lobbyDrainScheduled = false;
+      if (mounted) unawaited(_drainLobby());
+    });
+  }
+
+  /// 처리한 후보를 셸에 알린다(검토 대기 · 탭 점에서 빠진다).
+  void _lobbyCandidateHandled(ScannerCandidate candidate) =>
+      widget.onLobbyCandidateHandled?.call(candidate);
+
+  /// 대기 중인 후보를 저장한다. 기록 컨트롤러가 아직 읽지 않았거나 읽고 쓰는 중이면 기다린다(끝나면 다시 부른다).
+  Future<void> _drainLobby() async {
+    final pending = _lobbyPending;
+    final controller = _controller;
+    if (pending == null || _lobbySaving || !mounted) return;
+    final lobby = _lobbyService;
+    if (controller == null || lobby == null) {
+      _lobbyPending = null;
+      _lobbyHandled.add(pending.key);
+      setState(
+        () => _setLobbyNotice(
+          tacticalLobbyNoServiceText,
+          TacticalLobbyTone.error,
+        ),
+      );
+      return;
+    }
+    if (_profile == null ||
+        controller.state == null ||
+        controller.loading ||
+        controller.busy) {
+      return;
+    }
+    _lobbyPending = null;
+    _lobbyHandled.add(pending.key);
+    final candidate = pending.candidate;
+    if (controller.migrationRequired) {
+      setState(
+        () =>
+            _setLobbyNotice(tacticalLobbyMigrationText, TacticalLobbyTone.warn),
+      );
+      return;
+    }
+    final TacticalLobbyScanCandidate decoded;
+    try {
+      decoded = TacticalLobbyScanCandidate.fromScannerCandidate(candidate);
+    } on FormatException {
+      setState(
+        () => _setLobbyNotice(tacticalLobbyDecodeText, TacticalLobbyTone.error),
+      );
+      _lobbyCandidateHandled(candidate);
+      return;
+    }
+    final blocker = tacticalLobbyCandidateBlocker(decoded);
+    if (blocker != null) {
+      setState(() => _setLobbyNotice(blocker, TacticalLobbyTone.warn));
+      _lobbyCandidateHandled(candidate);
+      return;
+    }
+    final generation = _lobbyGeneration;
+    final season = tacticalCurrentSeason(_rows) ?? '';
+    setState(() {
+      _lobbySaving = true;
+      _lobbyNotice = null;
+    });
+    final result = await controller.lobbyWrite(
+      'lobby-commit',
+      {'refresh_generation': decoded.refreshGeneration, 'season': season},
+      (profileId, revision, key) => lobby.commitTacticalLobby(
+        profileId: profileId,
+        candidatePayload: candidate.payload,
+        season: season,
+        map: '',
+        identityBindings: const {},
+        expectedRevision: revision,
+        idempotencyKey: key,
+      ),
+    );
+    if (!mounted || generation != _lobbyGeneration) return;
+    final value = result?.value;
+    final error = result?.error;
+    setState(() {
+      _lobbySaving = false;
+      if (result == null) {
+        // 보내지 못했다(다른 쓰기 · 읽기 중): 다시 기다린다.
+        _lobbyHandled.remove(pending.key);
+        _lobbyPending = pending;
+      } else if (value != null) {
+        _lobbyScanId = value.scanId;
+        _lobbySelectedId = null;
+        _setLobbyNotice(
+          tacticalLobbySavedText(value.candidateIds.length),
+          TacticalLobbyTone.ok,
+        );
+      } else if (error != null) {
+        _setLobbyNotice(
+          tacticalLobbyErrorText(TacticalLobbyAction.commit, error),
+          TacticalLobbyTone.error,
+        );
+      }
+    });
+    if (result == null) {
+      _scheduleLobbyDrain();
+    } else {
+      _lobbyCandidateHandled(candidate);
+    }
+  }
+
+  /// 카드를 누를 수 있는가(읽기 · 쓰기 중 · 이관 전 · 로비 서비스 없음이면 아니다).
+  bool get _lobbyCardsEnabled =>
+      _available &&
+      !_busy &&
+      !_migrationRequired &&
+      !_lobbySaving &&
+      _lobbyService != null;
+
+  /// 카드를 고른다: S3에 상대 이름 · 공개 칸을 채우고(고칠 수 있는 새 초안이면 그 초안, 아니면 새 공격 초안) 고른 시각을
+  /// 백엔드에 남긴다(자동 링크의 6시간 창 기준).
+  Future<void> _selectLobbyCard(TacticalLobbyCard card) async {
+    final controller = _controller;
+    final lobby = _lobbyService;
+    if (controller == null || lobby == null || !_lobbyCardsEnabled) return;
+    final base = _draft.isNew && !_draft.readOnly
+        ? _current
+        : TacticalRecordDraft.blank(season: tacticalCurrentSeason(_rows) ?? '');
+    controller.clearError();
+    setState(() {
+      _autoSelect = false;
+      _setDraft(null, tacticalDraftWithLobby(base, card));
+      _lobbyDraftCandidateId = card.candidateId;
+      _lobbySelectedId = card.candidateId;
+      _setLobbyNotice(
+        tacticalLobbyFilledText(card.name),
+        TacticalLobbyTone.hint,
+      );
+    });
+    final generation = _lobbyGeneration;
+    final selectedAt = tacticalUtcInstant(appClockNow(widget.service));
+    final result = await controller.lobbyWrite(
+      'candidate-select',
+      {'candidate_id': card.candidateId, 'selected_at': selectedAt},
+      (profileId, revision, key) => lobby.selectTacticalLobbyCandidate(
+        profileId: profileId,
+        candidateId: card.candidateId,
+        selectedAt: selectedAt,
+        expectedRevision: revision,
+        idempotencyKey: key,
+      ),
+    );
+    final error = result?.error;
+    if (!mounted || generation != _lobbyGeneration || error == null) return;
+    setState(
+      () => _setLobbyNotice(
+        tacticalLobbyErrorText(TacticalLobbyAction.select, error),
+        TacticalLobbyTone.error,
+      ),
+    );
+  }
+
+  /// 저장한 공격 기록 [matchId]를 로비 관측과 잇는다(`auto`). 결과 · 실패는 S2 글자이고 저장한 기록은 그대로다.
+  Future<void> _linkLobby(String matchId) async {
+    final controller = _controller;
+    final lobby = _lobbyService;
+    if (controller == null || lobby == null) return;
+    final generation = _lobbyGeneration;
+    final result = await controller.lobbyWrite(
+      'match-link',
+      {'match_id': matchId, 'mode': 'auto'},
+      (profileId, revision, key) => lobby.linkTacticalMatch(
+        profileId: profileId,
+        matchId: matchId,
+        candidateId: null,
+        mode: 'auto',
+        expectedRevision: revision,
+        idempotencyKey: key,
+      ),
+    );
+    if (!mounted || generation != _lobbyGeneration) return;
+    final value = result?.value;
+    final error = result?.error;
+    setState(() {
+      if (value != null) {
+        final notice = tacticalLobbyLinkNotice(value);
+        _setLobbyNotice(notice.text, notice.tone);
+      } else {
+        _setLobbyNotice(
+          error == null
+              ? tacticalLobbyErrorText(
+                  TacticalLobbyAction.link,
+                  const TacticalRecordsError('save_failed', ''),
+                )
+              : tacticalLobbyErrorText(TacticalLobbyAction.link, error),
+          TacticalLobbyTone.warn,
+        );
+      }
+    });
+  }
+
+  TacticalLobbyStartBlock get _lobbyStartBlock => tacticalLobbyStartBlock(
+    _scan,
+    lobbyAvailable: _lobbyService != null && _controller != null,
+    migrationRequired: _migrationRequired,
+    recordsBusy: !_available || _busy || _lobbySaving,
+    appliedElsewhere: widget.scanAppliedElsewhere,
+  );
+
+  /// "지금 스캔": 게임 창이 없으면 창 선택 패널을 열고, 시작할 수 있으면 셸 세션으로 전술 로비 스캔을 시작한다.
+  void _onLobbyScan() {
+    final scan = _scan;
+    final block = _lobbyStartBlock;
+    if (scan == null) return;
+    if (block == TacticalLobbyStartBlock.noTarget) {
+      if (widget.connectedTarget != null) {
+        setState(() => _lobbyConnectOpen = true);
+      }
+      return;
+    }
+    if (block != TacticalLobbyStartBlock.none) return;
+    scan.selectKind(ScannerKind.tacticalLobby);
+    _lobbyStarting = true;
+    _lobbyNotice = null;
+    unawaited(scan.start());
+    // 시작 판정을 지났는데도 시작하지 않았으면(그사이 상태가 바뀜) 실패로 보인다.
+    if (_lobbyStarting && scan.stage != ScanSessionStage.starting) {
+      _lobbyStarting = false;
+      _setLobbyNotice(tacticalLobbyStartFailedText, TacticalLobbyTone.error);
+    }
+    setState(() {});
+  }
+
+  void _closeLobbyConnect() {
+    setState(() {
+      _lobbyConnectOpen = false;
+      _setLobbyNotice(tacticalLobbyConnectText, TacticalLobbyTone.hint);
+    });
+  }
+
+  void _useLobbyTarget(ScannerTarget target) {
+    widget.connectedTarget?.connect(target);
+    setState(() => _lobbyConnectOpen = false);
+  }
+
+  /// 카드 · 플라이아웃에 들어가면 그 번호, 나가면 null(잠깐 뒤에 닫는다 — 카드와 플라이아웃 사이를 지날 때).
+  void _onLobbyHover(int? index) {
+    _lobbyHoverTimer?.cancel();
+    _lobbyHoverTimer = null;
+    if (index != null) {
+      if (_lobbyHover != index) setState(() => _lobbyHover = index);
+      return;
+    }
+    _lobbyHoverTimer = Timer(tacticalLobbyHoverExitDelay, () {
+      _lobbyHoverTimer = null;
+      if (mounted) setState(() => _lobbyHover = null);
+    });
+  }
+
+  /// "상대 카드 열기 →": 분석 화면에 그 상대 · 시그니처가 있을 때만(최근 30일 공격 기록).
+  VoidCallback? _lobbyOpenOpponent(TacticalLobbyCard card) {
+    final controller = _controller;
+    if (controller == null || _migrationRequired) return null;
+    final windowed = tacticalAnalysisWindowed(
+      controller.matches,
+      appClockNow(widget.service),
+    );
+    final known = windowed.matches.any(
+      (match) =>
+          match.kind == 'attack' &&
+          match.opponentIdentityId == card.identityId &&
+          tacticalPublicSignature(match.defenseDeck) == card.signature,
+    );
+    if (!known) return null;
+    return () {
+      _lobbyHoverTimer?.cancel();
+      setState(() {
+        _lobbyHover = null;
+        _analysisSignature = card.signature;
+        _analysisOpponentId = card.identityId;
+        _analysisJokboId = null;
+      });
+      _openScreen(TacticalSubScreen.analysis);
+    };
+  }
+
+  /// S2 값.
+  TacticalLobbyPanel _lobbyPanel() {
+    final scan = _scan;
+    final controller = _controller;
+    final state = controller?.state;
+    final now = appClockNow(widget.service);
+    final latest = state == null || !_available || _migrationRequired
+        ? null
+        : tacticalLobbyLatestScan(state, preferredScanId: _lobbyScanId);
+    final cards = state == null || latest == null || controller == null
+        ? const <TacticalLobbyCard>[]
+        : tacticalLobbyCards(
+            state: state,
+            scan: latest,
+            jokbo: controller.jokbo,
+            matches: controller.matches,
+            now: now,
+          );
+    final session = scan?.session;
+    final ownRunning =
+        _lobbyStarting ||
+        (scan != null &&
+            session != null &&
+            scanSessionKey(session) == _lobbyOwnSession &&
+            (scan.stage == ScanSessionStage.starting ||
+                scan.stage == ScanSessionStage.running ||
+                scan.stage == ScanSessionStage.cancelling));
+    final notice = _lobbyNotice;
+    final ({String text, TacticalLobbyTone tone}) caption = ownRunning
+        ? (text: tacticalLobbyScanningText, tone: TacticalLobbyTone.hint)
+        : _lobbySaving
+        ? (text: tacticalLobbySavingText, tone: TacticalLobbyTone.hint)
+        : notice ??
+              (
+                text: cards.isEmpty
+                    ? tacticalLobbyCaption
+                    : tacticalLobbyCountCaption(cards.length),
+                tone: TacticalLobbyTone.muted,
+              );
+    final block = _lobbyStartBlock;
+    final canScan =
+        block == TacticalLobbyStartBlock.none ||
+        (block == TacticalLobbyStartBlock.noTarget &&
+            widget.connectedTarget != null);
+    final hover = _lobbyHover;
+    final hovered = hover != null && hover < cards.length ? cards[hover] : null;
+    final connectedTarget = widget.connectedTarget;
+    return TacticalLobbyPanel(
+      caption: caption.text,
+      captionTone: caption.tone,
+      onScan: canScan && !ownRunning ? _onLobbyScan : null,
+      scanHint: tacticalLobbyStartText(block, scan),
+      cards: cards,
+      selectedId: tacticalLobbySelectedId(cards, _lobbySelectedId),
+      onSelect: _lobbyCardsEnabled ? _selectLobbyCard : null,
+      hoveredIndex: hovered == null ? null : hover,
+      onHover: _onLobbyHover,
+      history: hovered == null || state == null || controller == null
+          ? null
+          : tacticalLobbyHistory(
+              card: hovered,
+              state: state,
+              matches: controller.matches,
+            ),
+      onOpenOpponent: hovered == null ? null : _lobbyOpenOpponent(hovered),
+      message: tacticalLobbyEmptyText,
+      connectPanel: _lobbyConnectOpen && connectedTarget != null
+          ? ConnectTargetPanel(
+              key: const ValueKey('tactical-connect-panel'),
+              service: widget.service,
+              connectedTarget: connectedTarget,
+              onCancel: _closeLobbyConnect,
+              onUse: _useLobbyTarget,
+            )
+          : null,
+    );
   }
 
   // --- S4 족보 (FE9-d) ----------------------------------------------------------
@@ -1592,6 +2149,7 @@ class _TacticalPageState extends State<TacticalPage> {
               : tacticalJokboCopyHint),
       dropReason: dropReason,
       onDropJokbo: jokbo.cards.isEmpty ? null : _copyJokbo,
+      lobby: _lobbyPanel(),
       sectionOffset: offset,
     );
   }

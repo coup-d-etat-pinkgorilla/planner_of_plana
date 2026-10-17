@@ -30,6 +30,7 @@ import 'scan/scan_end_toast.dart';
 import 'scan/scan_header_progress.dart';
 import 'scan/scan_session_controller.dart';
 import 'scan/scan_tab_page.dart';
+import 'tactical/tactical_lobby_view.dart' show TacticalLobbyHandoff;
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
@@ -104,6 +105,7 @@ class _AppShellState extends State<AppShell>
   PlanningStudentSeed? _planningSeed;
   StudentCandidateContext? _studentCandidate;
   InventoryCandidateContext? _inventoryCandidate;
+  TacticalLobbyHandoff? _tacticalCandidate;
   List<ScannerRecentSummary> _recentScans = const [];
   var _homeReloadToken = 0;
 
@@ -321,6 +323,10 @@ class _AppShellState extends State<AppShell>
         );
         _section = AppSection.inventory;
       } else {
+        _tacticalCandidate = TacticalLobbyHandoff(
+          session: session,
+          candidate: candidate,
+        );
         _section = AppSection.pvp;
       }
     });
@@ -333,8 +339,12 @@ class _AppShellState extends State<AppShell>
       return;
     }
     _lastScanEndKey = notice.sessionKey;
-    // 스캔 탭에서는 화면이 끝과 결과를 바로 보인다.
-    if (_section == AppSection.scan) return;
+    // 스캔 탭에서는 화면이 끝과 결과를 바로 보인다(전술 로비는 전술대항전 탭 S2가 보인다, FE9-c).
+    if (_section == AppSection.scan ||
+        (_section == AppSection.pvp &&
+            notice.kind == ScannerKind.tacticalLobby)) {
+      return;
+    }
     _scanEndNoticeTimer?.cancel();
     _scanEndNoticeTimer = Timer(scanEndToastDuration, _dismissScanEndNotice);
     setState(() => _scanEndNotice = notice);
@@ -390,6 +400,7 @@ class _AppShellState extends State<AppShell>
       _planningSeed = null;
       _studentCandidate = null;
       _inventoryCandidate = null;
+      _tacticalCandidate = null;
       _recentScans = const [];
       _navigation = null;
       _returnFrom = null;
@@ -551,6 +562,12 @@ class _AppShellState extends State<AppShell>
                                   service: widget.service,
                                   reloadToken: _tacticalReloadToken,
                                   headerOverride: _headerOverride,
+                                  scanSession: _scanSession,
+                                  connectedTarget: _connectedTarget,
+                                  scanAppliedElsewhere: _scanAppliedElsewhere,
+                                  lobbyHandoff: _tacticalCandidate,
+                                  onLobbyCandidateHandled:
+                                      _markScanCandidateApplied,
                                 ),
                                 StatisticsPage(
                                   key: ValueKey(
@@ -567,6 +584,8 @@ class _AppShellState extends State<AppShell>
                                   key: ValueKey('scan-$_profileGeneration'),
                                   service: widget.service,
                                   onCandidateHandoff: _handoffCandidate,
+                                  onOpenStudents: () =>
+                                      _open(AppSection.students),
                                   controller: _scanSession,
                                   active: _section == AppSection.scan,
                                   connectedTarget: _connectedTarget,

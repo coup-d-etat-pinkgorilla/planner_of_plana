@@ -44,6 +44,13 @@
 //   행 시각, 여섯째 8/28 방어, 일곱째 상대 없는 방어 "2회 · —"). S4는 기간이 "지금"에 따라 바뀌므로 `tactical` ·
 //   `-jokbo-drag` · `-import-excel`도 분석과 같은 고정 시계(UTC 2026-10-05 12:00)로 찍는다. S4 제목 옆 "최근 30일" 칩, KPI 방어
 //   유저 "2명"(통계 행이 없어 기록의 상대 수 — 분석 S1과 같은 함수). 슬롯은 30일 안 방어 기록 2건(9/24 패 · 9/28 승)만 센다.
+// - FE9-c: S2 "준비 중" 자리가 로비 스캔 섹션이 된다. 기록 화면 장면(`tactical` · `-jokbo-drag` · `-import-excel` ·
+//   `-migration`)의 S2는 빈 상태 — 제목 줄 "로비 스캔" · 회색 "공개 슬롯 자동 기록" · 흐린 분홍 "지금 스캔"(기본 Mock은 로비 저장
+//   서비스가 없다), 카드 자리 "아직 로비 스캔 기록이 없습니다. 지금 스캔으로 로비의 상대 3명을 읽습니다."(`-import-excel`은 스크림
+//   아래). 분석 · 슬롯 장면은 S2가 없어 변화 0.
+// - `tactical-lobby`(FE9-c, 시안 "로비 카드 3장 · 카드 hover 플라이아웃"): 로비 쓰기가 있는 대역(`tactical_lobby_fe9c_fixture.dart`,
+//   같은 고정 시계)에 같은 seed와 로비 스캔 하나(게헨나 선도부 23위 · 아비도스 대책위원회 31위 · 트리니티 정의실현부 27위)를 넣고
+//   첫 카드를 골라(S3 새 공격 기록에 상대 이름 · 공개 칸 자동 채움) 둘째 카드에 포인터를 올린 채 찍는다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -59,9 +66,11 @@ import 'package:ba_planner_v7/services/tactical_service.dart';
 import 'package:ba_planner_v7/tactical/tactical_excel_import_controller.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_jokbo_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_workspace.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../tactical_lobby_fe9c_fixture.dart';
 import 'golden_harness.dart';
 
 const _profileId = '000000000000000000000001';
@@ -287,6 +296,44 @@ void main() {
     expect(find.text('모두 처리됨 5 / 5'), findsOneWidget);
     expect(find.text('4건 가져오기'), findsOneWidget);
     await expectGoldenScene(tester, 'tactical-import-excel');
+  }, variant: goldenPlatform);
+
+  testWidgets('tactical-lobby', (tester) async {
+    final service = Fe9cLobbyService();
+    addTearDown(service.dispose);
+    await fe9cSeedRecords(service);
+    await service.commitTacticalLobby(
+      profileId: fe9cProfileId,
+      candidatePayload: fe9cLobbyPayload(),
+      season: '10',
+      map: '',
+      identityBindings: const {},
+      expectedRevision: designReviewTacticalMatches().length,
+      idempotencyKey: 'golden-tactical-lobby',
+    );
+    await _openTactical(tester, service);
+    await _waitJokbo(tester);
+    final first = find.byKey(
+      const ValueKey('tactical-lobby-card-scan-1-candidate-0'),
+    );
+    expect(first, findsOneWidget);
+    await tester.tap(first);
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+    expect(find.text('새 공격 기록'), findsOneWidget);
+    // 초상 툴팁이 뜨지 않게 둘째 카드의 제목 줄 높이에 포인터를 둔다.
+    final second = find.byKey(
+      const ValueKey('tactical-lobby-card-scan-1-candidate-1'),
+    );
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    final box = tester.getRect(second);
+    await gesture.moveTo(Offset(box.left + box.width * 0.6, box.top + 20));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('tactical-lobby-flyout')), findsOneWidget);
+    await expectGoldenScene(tester, 'tactical-lobby');
   }, variant: goldenPlatform);
 
   testWidgets('tactical-migration', (tester) async {

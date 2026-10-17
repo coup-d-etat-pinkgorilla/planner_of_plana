@@ -9997,3 +9997,159 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_003859\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE9-c 착수 기록 (2026-10-18, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE9-c 종료 기록), CF gate 미실행**. 범위: FE9-c 전술대항전 기록 화면 S2 로비 스캔 섹션(시안 Tactical S2 · 방어 이력 플라이아웃, G §1). S2 "지금 스캔" → 셸 `ScanSessionController`로 `tacticalLobby` 세션(스캔 탭과 같은 시작 판정, 미연결이면 창 선택 패널), 후보 → `commitTacticalLobby` → 로비 상대 카드 3장(hover → 방어 덱 플라이아웃) → 카드 선택 = `selectTacticalLobbyCandidate` + S3 상대 이름 · 공개 칸(1번 · SP1 · SP2, `visible_lobby`) 자동 채움 → 저장하면 `linkTacticalMatch(auto)`(실패는 기록을 되돌리지 않고 S2 문구), 셸 `_handoffCandidate` 전술 로비 분기 = 전술 탭으로 후보 인계, `ScanTabPage(onOpenStudents:)` 1줄(FE8-g2 발견 2).
+- 착수 전 확인: 이 문서 끝에 다른 "FE9-c 착수 기록" 없음(grep 0건, `debug/frontend_fe9c/`도 없었음). 막힘: 대장 "slice별 막힘 요약" FE9-c 행 = FD-127 — 확정 (a)(2026-10-06), 현재 `열림` 0건. FD-128 (a) · FD-150 (b) · FD-176은 확정 그대로 따른다.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe9c/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/pages/tactical_page.dart`: WIP 없음. 작업 트리 CRLF(유지).
+  - `frontend/lib/ui/tactical/tactical_workspace.dart`: WIP 없음. LF(S2 자리 → 로비 섹션).
+  - `frontend/lib/ui/studio/tactical_studio_layout.dart`: WIP 없음. LF(S2 카드 · 플라이아웃 좌표).
+  - `frontend/lib/tactical/tactical_records_controller.dart`: WIP 없음. LF(로비 쓰기용 공용 쓰기 1개 — 최소).
+  - `frontend/lib/ui/app_shell.dart`: WIP 없음. LF(전술 로비 인계 · `TacticalPage` 인자 · `onOpenStudents` — 최소).
+  - `frontend/lib/ui/scan/scan_session_controller.dart`: WIP 없음. LF(사본만 — 고칠 필요가 생길 때만, 지금 계획은 수정 0).
+  - 바뀐 동작에 걸리는 시험: `frontend/test/tactical_page_test.dart`(S2 "준비 중" 기대) · `frontend/test/goldens/fe9a_tactical_golden_test.dart`(장면 추가 · 조작만), 모두 WIP 없음, LF.
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/tactical/tactical_lobby_view.dart`(순수 규칙 — 카드 · 이력 · 시작 판정 · 문구 · 자동 채움), `frontend/lib/ui/tactical/tactical_lobby_widgets.dart`(S2 카드 · 플라이아웃), `frontend/test/tactical_lobby_fe9c_fixture.dart`(로비 쓰기를 가진 Mock 대역 · 로비 후보 payload), `frontend/test/tactical_lobby_fe9c_test.dart`. 새 golden 장면 `tactical-lobby` 1장(기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/services/**`(design_review 제외, 읽기만), 스캔 탭 고르기 · 진행 화면 · `scan_page.dart`, 홈 팝업, `lib/ui/statistics/**` · `lib/statistics/**` · `test/plan_*`(Lane B tidy4 — 작업 트리에 Lane B WIP 있음), `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일.
+
+## FE9-c 종료 기록 (2026-10-18, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+전술대항전 기록 화면 S2가 "준비 중" 자리에서 로비 스캔 섹션이 됐다. "지금 스캔"은 셸 `ScanSessionController`로 전술 로비 세션을 시작하고(홈 팝업 · 스캔 탭과 같은 시작 판정, 게임 창이 없으면 S4 자리에 FE8-e 창 선택 패널), 이 화면이 시작한 세션의 후보와 스캔 탭이 넘긴 후보를 `commitTacticalLobby`로 한 번씩 저장한 뒤 셸 검토 대기에서 뺀다. S2에 로비 상대 카드 3장(시안 `.row`, hover · 포커스 → 방어 이력 플라이아웃 `.fly.dl`), 카드를 누르면 `selectTacticalLobbyCandidate` + S3 새 공격 초안의 상대 이름 · 공개 칸(1번 · SP1 · SP2, `visible_lobby` · `lobby_scan`) 자동 채움, 그 초안을 저장하면 `linkTacticalMatch(auto)`. 로비 쓰기 오류 · 링크 결과는 S2 제목 줄 글자이고 기록 저장을 되돌리지 않는다. 셸은 전술 로비 인계 · `ScanTabPage(onOpenStudents:)`(FE8-g2 발견 2)를 연결했다. HEAD는 착수 때와 같다(`44255123`). git 쓰기 0, 저장소 파일 삭제 0(내가 만든 일회성 렌더 사본 1개만 만들고 지움).
+
+### 실행한 명령과 결과
+
+모두 `frontend` 폴더. 로그 `debug/frontend_fe9c/logs/`(json 요약 · 실패 줄만 봤다).
+
+- `flutter analyze`(frontend 전체, 마지막 손질 · format 뒤): **No issues found(0, info 포함)** — 마지막은 줄바꿈 정정 뒤(`logs/analyze_after_eol.log`). pubspec · lock 변경 0.
+- 새 시험 `flutter test test/tactical_lobby_fe9c_test.dart`: ① **+6 −6**(`logs/lobby_1.log`) — 제품 버그 1(셸이 화면을 만드는 중 `ScanTabPage.initState → ensureStarted`가 알릴 때 전술 화면 리스너가 바로 `setState` → "setState during build". FE8-f2 머리글 칩과 같은 "빌드 중이면 프레임 뒤" 규칙으로 고침) + 시험 쪽 1(칩 key에 `Text` 캐스트) → ② **+11 −1**(시험 쪽: 상대 입력 칸 key가 `TextField` 자신) → ③ **+12 −0**.
+- 관련 일반 시험 48파일 한 명령(`flutter test <파일들> --reporter json`, 목록 `logs/general_files.txt`): 첫 실행 **+519 −1** — `scan_run_view_fe8g2`의 "셸은 `학생 탭으로 이동`을 연결하지 않는다" 기대(이 slice 범위 5의 의도한 변화) → 기대만 `isNotNull`로 바꿈, 그 파일 + `tactical_page_test` 다시 **+28 −0**. 마지막 실행(format 뒤) **+520 −0**(`logs/general_final.json`): account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · home_scan_popup_fe8f3 +11 · inventory_shell_lazy +1 · mock_scanner_commit_history +9 · mock_scanner_service +4 · profile_delete_fb2d +17 · scan_companion_dock +3 · scan_header_progress_fe8f2 +7 · scan_inventory_identity_review +2 · scan_page +17 · scan_page_pause_fb10a +8 · scan_page_revision +14 · scan_run_view_fe8g2 +8 · scan_session_controller +7 · scan_student_review_logic +5 · scan_student_review_workspace +9 · scan_tab_page_fe8g1 +15 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_review_images_fb10c +6 · scanner_target_metadata_fb4 +19 · section_template_studio +15 · student_filter_followups +4 · student_filter_modal +8 · tactical_analysis +20 · tactical_excel_import +14 · tactical_fb6b_dart +9 · tactical_fe9b2 +14 · tactical_jokbo_panel +17 · tactical_lobby_fe9c **+12**(새) · tactical_lobby_scanner_service +2 · tactical_page +20 · tactical_page_revision +5 · tactical_records_controller +14 · tactical_service +6 · tactical_share_v1_contract +1 · tactical_slots +18 · tactical_v2_service +5 · title_page +25 · widget +16. (고른 기준: grep `BAPlannerApp(|AppShell(|ScanPage(|ScanTabPage(|TacticalPage(|ScanSessionController|TacticalRecordsController|tactical_workspace|tactical_lobby|top-tab-|onCandidateHandoff|header-connection-chip|home_page.dart` + tactical_* · scan* · mock_scanner_* · home_* · widget_test, `ProcessAppService` 문자열이 있는 파일은 process 묶음으로, Lane B 영역 `test/plan_*` · statistics_*는 뺐다.)
+- 통계 셸 시험(Lane B 작업 중 영역이라 따로): statistics_app_shell · statistics_filter **+12 −0**(셸을 띄우는 시험 — 읽기만, `logs/statistics_shell.log`).
+- process E2E(`--concurrency=1`, 파일마다 따로, 목록 `logs/process_files.txt`): scanner_pause_process_e2e **+1** · scanner_process_e2e **+1** · scanner_review_images_fb10c_process_e2e **+1** · scanner_target_metadata_process_e2e **+1** · tactical_fb6_dart **+14** · tactical_fb6_process_e2e **+1** · tactical_fb6b_process_e2e **+1** · tactical_fb7_dart **+12** · tactical_fb7_process_e2e **+1** · tactical_fe9b1_read **+12** · tactical_process_e2e **+1** · tactical_v2_process_e2e **+1**(`logs/final_summary.txt`).
+- 변이 확인: `tactical_page.dart` 저장 뒤 `_linkLobby` 호출에 `&& false`를 붙이면 새 시험 **+10 −2**(자동 링크 · 링크 실패 시험만 실패) → 원 바이트로 되돌림(SHA-256 `e1770d31bc8e…` 전후 같음).
+- 일회성 렌더: golden 파일 사본에서 `@Tags(['golden'])` · `library;` · `expectGoldenScene` 호출을 뺀 `test/goldens/zz_fe9c_oneoff_render_test.dart`(grep 0건 확인)를 `tactical` · `tactical-lobby` 두 장면만 돌려 **+2**(2560×1392, 예외 0), PNG를 `debug/frontend_fe9c/render/`에 남기고 사본은 바로 지웠다(`zz_` 0건). golden 비교는 돌리지 않았다.
+- `dart format`: 이 slice 파일 경로만 하나씩. `app_shell.dart`는 HEAD부터 맞지 않던 `_TopTab` fontWeight 줄(FE8-f1 발견 4)만 바뀌어 그 줄을 되돌렸다. 나머지는 이 slice 줄만 바뀌었다(전후 diff 확인).
+- 줄바꿈 · 끝: 고친 기존 파일은 원래 줄바꿈(LF, `tactical_page.dart`만 CRLF), 새 4파일 LF, 끝 개행 하나, 줄 끝 공백 0(바이트 검사). **사고 1건**: 편집 스크립트의 `pathlib.write_text`가 Windows에서 개행을 CRLF로 바꿔 LF였던 `tactical_workspace.dart` · `app_shell.dart` · `tactical_page_test.dart` · `fe9a_tactical_golden_test.dart`(와 commit.json)가 CRLF가 됐다 → 바이트로 LF로 되돌려 pre 사본과 같은 LF(CR 0), `git diff --numstat` 변화 없음. 정정 뒤 analyze 0 · 직접 걸린 6파일(tactical_lobby_fe9c · tactical_page · scan_run_view_fe8g2 · home_app_shell · widget · connected_target_fe8d) **+65 −0**(`logs/after_eol.log`). `git diff --check`(고친 기존 파일): exit 0. 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-127**(확정 (a)): 시안 카드 "방어 승률 · 30일" 큰 수치 · 미니 막대, 플라이아웃 기간별 "방어 n%", 머리 범례의 "방어 승률"은 그리지 않는다(범례는 `내 전적 · ? = 비공개`). 로비 순위는 후보 `opponent_rank`가 있으면 `n위`, 없으면 '—'(백엔드 DTO는 순위 ≥ 1 필수라 실제로는 늘 있다 — 아래 발견 2). "변경 의심" 칩은 추이 `changes`가 Dart DTO에 없어 그리지 않았다(XB 요청 후보 3).
+- **FD-128**(확정 (a)): 기록 쓰기는 지금처럼 v2 컨트롤러 하나. 로비 commit · 선택 · 링크도 같은 컨트롤러의 새 `lobbyWrite`로 같은 revision · idempotency key · busy · 다시 읽기 규칙을 쓴다. 자동 링크는 백엔드 `link_match(auto)` 판정(같은 상대 identity · 공개 시그니처 · 시즌 · 고른 시각 ±6시간) 그대로.
+- FD-150 (b) · FD-155 · FD-148: 홈 팝업 전술대항전 타일은 그대로 탭 링크, 미연결 창 선택 패널은 홈 · 스캔 탭과 같은 위젯, 머리글 칩은 FE8-f2 그대로(`전술대항전 스캔`). FD-176: 로비 채움은 공격 기록만이라 해당 없음.
+- 워커 재량(대장 밖, 시안 없는 상태): 빈 상태 · 진행 · 오류 문구 전부, 카드 선택 모양(`.srow.sel`), 플라이아웃 닫힘 지연 150ms, 내 전적 = 기간 없는 내 공격 기록 수(통계가 아니라 기록 수 — tidy3 30일 창을 쓰지 않음), 족보 줄 = 최근 30일 기준(tidy3).
+
+### 흐름 표
+
+| 단계 | 화면 · 호출 | 실패 경로 |
+|---|---|---|
+| 시작 | S2 "지금 스캔" → 시작 판정(로비 서비스 → 이관 전 → 진행 · 검토 대기 → 백엔드 → 스캐너 → 게임 창 → 계정 → 인식 준비 → 기록 읽기 · 쓰기 중) → `selectKind(tacticalLobby)` + `start()`. 제목 줄 `로비를 읽는 중입니다.`, 머리글 칩 `전술대항전 스캔` | 게임 창 없음 = 버튼이 S4 자리 창 선택 패널을 연다(취소 → `게임 창을 연결하면…`, 연결 → 패널 닫힘). 그 밖의 이유 = 버튼 흐림 + 툴팁(스캔 탭 글자). 시작 응답 실패 → `로비 스캔을 시작하지 못했습니다.` |
+| 후보 | 이 화면이 시작한 세션(id + generation)의 전술 로비 후보만 대기(같은 후보 · revision은 한 번). 스캔 탭에서 시작한 세션은 스캔 탭 "Review tactical capture"(`_handoffCandidate`)로 넘길 때만 | 끝났는데 후보 없음 → 완료 `…읽은 결과가 없습니다.` / 중지 / 실패 문구. 후보 해석 실패 → `…읽지 못했습니다. 다시 스캔해 주십시오.` · `confirmed`가 아니거나 순위 · 이름 없음 → `…확인이 필요한 값(순위 · 이름)…`(보내지 않음, 처리한 후보로 셸에 알림 — 다시 스캔 가능) |
+| commit | 기록 컨트롤러가 읽거나 쓰는 중이면 끝난 뒤 `commitTacticalLobby`(payload 그대로, 시즌 = 목록의 이번 시즌, map '', identity 바인딩 없음 — 백엔드가 이름 · 별칭으로 찾거나 만든다), 다시 읽기, 셸 `_markScanCandidateApplied`(검토 대기 · 탭 점에서 빠짐). 제목 줄 `로비 상대 3명을 저장했습니다…` | 서비스 없음(Mock) · 이관 전 → 문구. 백엔드 오류(`review_required` · `identity_ambiguous` · `opponent_not_found` · revision 충돌 등) → 코드별 S2 문구. 보내지 못함(busy) → 다시 대기 |
+| 카드 | 이 화면이 저장한 스캔(없으면 관측이 가장 늦은 스캔)의 후보 3장: `이름 · n위`, 공개 칸 3, 족보 줄, `내 전적` 칩. hover · 포커스 → 플라이아웃(공개 칸이 같은 연속 구간, 최근 5줄, 변경 주기, 최근 30일 기록이 있으면 `상대 카드 열기 →` = 분석 화면의 그 시그니처 · 상대) | 읽기 · 쓰기 중 · 이관 전 · 로비 서비스 없음 = 누를 수 없음 |
+| 선택 | 고칠 수 있는 새 초안이면 그 초안, 아니면 새 공격 초안(이번 시즌)에 상대 이름 · identity · 공개 칸 3 자동 채움(2~4번 그대로, 공개 학생과 겹치는 칸은 모름) → `selectTacticalLobbyCandidate(selected_at = 고정 시계 UTC)`. 제목 줄 `고른 상대: … · 저장하면 이 로비 관측과 잇습니다.` | 선택 실패 → S2 오류 문구(채운 초안은 남는다 — 저장해도 자동 링크가 `unresolved`일 수 있다고 알림) |
+| 자동 채움 → 저장 | S3 기존 "저장"(v2 upsert, 상대 identity = 이름으로 찾은 것 → 로비 commit이 만든/찾은 identity와 같다) | 저장 오류는 지금처럼 S3 문구 |
+| 링크 | 저장 성공 뒤 그 초안이 로비 카드로 채운 공격 초안이면 `linkTacticalMatch(match_id, mode auto)`. `automatic` → ok `로비 관측과 이 기록을 이었습니다.` | `unresolved` · `ambiguous` → wn 문구, 백엔드 오류(`link_conflict` · `link_review_required` · 연결 끊김) → wn 문구 + "기록은 저장했습니다". 기록 · S3 문구 · 고른 행은 그대로 |
+
+### 셸 인계 변경 (`app_shell.dart` +21 −2, 이유)
+
+- import 1(`TacticalLobbyHandoff` show), 상태 1(`_tacticalCandidate`), `_handoffCandidate` 전술 로비 분기 +4(탭만 바꾸던 것 → 후보를 `TacticalLobbyHandoff`로 담아 전술 탭으로), 계정 변경 때 비움 1, `TacticalPage` 인자 +6(`scanSession` · `connectedTarget` · `scanAppliedElsewhere` · `lobbyHandoff` · `onLobbyCandidateHandled: _markScanCandidateApplied`), `ScanTabPage(onOpenStudents: () => _open(AppSection.students))` +2(FE8-g2 발견 2), 완료 토스트 +5 −2(전술대항전 탭에 있을 때 전술 로비 세션이 끝나면 토스트를 띄우지 않는다 — S2가 결과를 바로 보이고, 토스트를 누르면 이미 처리한 결과 대신 스캔 고르기가 열리므로).
+- 이유: S2 시작 · 인계 · 검토 대기 해제는 셸 소유 스캔 컨트롤러 · 전역 창 연결 · 셸 `_scanAppliedElsewhere`가 필요하다. `app_section.dart` · 머리글 · 다른 탭 수정 0.
+- `scan_session_controller.dart`는 고치지 않았다(사본만, pre와 cmp 같음): 기존 `selectKind` · `start` · `candidates` · `session` · `stage`로 충분했다.
+
+### 고친 · 더한 파일
+
+- `lib/ui/pages/tactical_page.dart`(CRLF 유지, +558 −0): 인자 5, 로비 상태 · 흐름(`_scanChanged` · `_queueLobby` · `_drainLobby` · `_selectLobbyCard` · `_linkLobby` · `_onLobbyScan` · 창 선택 패널 · hover · `상대 카드 열기` · `_lobbyPanel`), 저장 뒤 링크 3줄, `_setDraft`에서 로비 채움 표시 지움 1줄, 컨트롤러 리스너에서 대기 후보 다시 보내기 1줄, 머리 주석.
+- `lib/ui/tactical/tactical_workspace.dart`(+149 −23): `lobby` 인자(기본 = 서비스 없음 빈 상태), S2 = 제목 줄 · 카드 3장 · 빈 상태, 섹션 위 층에 플라이아웃(화면 밖으로 밀지 않음, 꼬리는 카드 쪽) · 창 선택 패널.
+- `lib/ui/studio/tactical_studio_layout.dart`(+53 −4): 카드 폭 · 간격(시안 x 817.0 · 1171.2 · 1525.3, 폭 356.5), 플라이아웃 치수 · 높이 식, 창 선택 패널 폭 비율.
+- `lib/tactical/tactical_records_controller.dart`(+50 −13): `TacticalLobbyWrite` · `lobbyWrite`(오류를 `error`에 남기지 않는 같은 쓰기 규칙), 기존 `_mutate`는 공용 `_write(report: true)`로 — 기존 동작 · 알림 횟수 같음(기존 컨트롤러 시험 그대로 통과).
+- 새 `lib/ui/tactical/tactical_lobby_view.dart`(633줄): 순수 규칙(카드 · 최신 스캔 · 고른 카드 · 족보 줄 · 내 전적 · 이력 구간 · 변경 주기 · 시작 판정 · 문구 · 오류 문구 · 링크 결과 · 후보 막음 · 자동 채움 · `TacticalLobbyHandoff`).
+- 새 `lib/ui/tactical/tactical_lobby_widgets.dart`(671줄): `TacticalLobbyPanel` · 제목 줄 · 빈 상태 · 카드(`.po` 칠 · 선택) · 플라이아웃.
+- `lib/services/design_review/tactical_records_data.dart`: 고치지 않음(로비 seed는 시험 fixture에 뒀다 — Mock에 로비가 없어 lib seed가 쓰일 곳이 없다).
+
+### 바꾼 시험과 이유 (기대값 · 조작만, 지운 시험 0)
+
+- `tactical_page_test.dart`(+4 −5): 기본 Mock S2 = `tactical-lobby-pending` 대신 빈 상태 글자(`tactical-lobby-message` = `tacticalLobbyEmptyText`), 머리 주석.
+- `scan_run_view_fe8g2_test.dart`(+2 −2): 셸 진행 화면 `학생 탭으로 이동` onPressed `isNull` → `isNotNull`(이 slice 범위 5).
+- `goldens/fe9a_tactical_golden_test.dart`(+47): 장면 `tactical-lobby` 추가 · 머리 주석, 기존 장면 · 조작 변화 0.
+- 새 `tactical_lobby_fe9c_fixture.dart`: 로비 쓰기가 있는 Mock 대역(`Fe9cLobbyService` — 백엔드 commit · select · link(auto) 의미, 로비 쓰기마다 revision +1, 기록 쓰기 expected revision 보정, 시험이 내는 스캐너 이벤트, 오류 주입) · 로비 후보 payload · seed 넣기.
+- 새 `tactical_lobby_fe9c_test.dart`(12): 규칙 3(후보 막음 · 카드 · 이력 · 자동 채움 · 링크/오류 글자), 배치 3(기준 캔버스 카드 3 · 플라이아웃 rect ±2px · 카드 → 플라이아웃 이동 · 닫힘 지연 · `상대 카드 열기` 유무 / 1280×720 세 카드 플라이아웃이 창 안 · 예외 0 / 기본 Mock 빈 상태 · 버튼 흐림), 셸 6(미연결 → 패널 · 취소 문구 · 연결 / 시작 → commit `7:10` → 카드 · 검토 대기 해제 · 토스트 없음 → 선택 `select:…:8` · selected_at · 자동 채움 → 저장 → `link …:auto:10` · `automatic` / 링크 실패에도 기록 남음 · S3 그대로 / commit 오류 · 검토 필요 후보 / 스캔 탭에서 시작한 로비 스캔은 인계할 때만 commit / `onOpenStudents`).
+
+### golden 변화 예상 (장면별, 비교 미실행)
+
+| 장면 | 예상 | 근거 |
+|---|---|---|
+| `tactical` | **바뀜** — S2 "준비 중" → 제목 줄 `로비 스캔` · 회색 `공개 슬롯 자동 기록` · 흐린 분홍 `지금 스캔`(스캔 아이콘, 기본 Mock은 로비 저장 서비스가 없다) · 카드 자리 `아직 로비 스캔 기록이 없습니다. 지금 스캔으로 로비의 상대 3명을 읽습니다.` | 일회성 렌더 `render/tactical.png`로 확인 |
+| `tactical-jokbo-drag` | **바뀜** — S2 같은 빈 상태(고스트는 S2 아래 영역) | 같은 기록 화면 |
+| `tactical-import-excel` | **바뀜** — 스크림 아래 S2 같은 빈 상태 | 같은 기록 화면 |
+| `tactical-migration` | **바뀜** — S2 같은 빈 상태(이관 전이라 버튼 흐림 그대로) | 같은 기록 화면 |
+| `tactical-analysis` · `-analysis-all` · `-slots` | 변화 0 | 기록 화면 S2가 없다(하위 화면 전환 뒤 찍는다) |
+| `scan-student-run` | **바뀜** — 오른쪽 `학생 탭으로 이동` 버튼이 켜져 글자 흐림이 풀린다(셸 `onOpenStudents`, FE8-g2 발견 2). 나머지 같음 | 그 장면은 셸(`BAPlannerApp`)을 띄워 진행 화면을 찍는다 |
+| 그 밖(홈 · 스캔 고르기 · 셸 장면) | 변화 0 | 셸 diff는 인자 · 인계 · 토스트 조건뿐이고 그 장면들은 전술 로비 세션을 시작하지 않는다 |
+
+- **새 장면 `tactical-lobby`**(기준 이미지 없음 → CF `-UpdateGoldens`): 2560×1392, 로비 대역(같은 고정 시계)에 seed 7 + 로비 스캔 하나. 기대 모습: S2 제목 줄 `로비 스캔` · 상태 `고른 상대: 게헨나 선도부 · 저장하면 이 로비 관측과 잇습니다.` · 밝은 분홍 `지금 스캔`, 카드 3장 — ① `게헨나 선도부 · 23위` 선택(분홍 4px 테두리) 히나 | 히비키 · 아코, `족보 3a0a33 · 3일 전 검증`, `내 전적 1승 1패`(파랑) ② `아비도스 대책위원회 · 31위` hover(분홍 선) 아루 | 히비키 · 아코, `족보 없음`, `1승 0패`(초록) ③ `트리니티 정의실현부 · 27위` 미카 | 하나에 · 아야네, `족보 없음`, `기록 없음`(회색). ②의 플라이아웃(카드 아래 12, 폭 540, S3 위에 겹침): `아비도스 대책위원회 · 31위 · 최근 방어 덱 2종` · `내 전적 · ? = 비공개`, 줄1 분홍 막대 `10/5 ~ 현재` + `현재` 칩 · 아루 ? ? ? | 히비키 · 아코 · `기록 없음`, 줄2 `10/2 ~ 10/2` · 히나 · 하루나 · ? · 빈 상자 | 히비키 · 아코 · `1승 0패`, `변경 주기 평균 4일`(상대 카드 열기 없음). S3 `새 공격 기록` · `시즌 10`, 상대 `게헨나 선도부`, 상대 덱 히나 · 빗금 3 | 히비키 · 아코(공개 범례 1 · SP1 · SP2), 내 덱 빗금 6, 저장 켜짐. S4 대상 방어 덱 `2 · 3 · 4번 빈칸` · 족보 카드 2장. 렌더 PNG `debug/frontend_fe9c/render/tactical-lobby.png`(CF 검토용, 커밋 대상 아님).
+
+### 숨긴 지표 (FD-127 (a))
+
+| 시안 | 처리 |
+|---|---|
+| 카드 "방어 승률 · 30일" 41% · 미니 막대 | 그리지 않음 |
+| 카드 "변경 의심" 칩 | 그리지 않음(추이 `changes` DTO 없음 — XB 요청 후보 3) |
+| 플라이아웃 줄 "방어 41%" | 그리지 않음 |
+| 플라이아웃 머리 "방어 승률 · 내 전적 · ? = 비공개" | `내 전적 · ? = 비공개` |
+| 카드 "족보 A · 6h 전 검증" | 관측 값으로 그림(시그니처 족보 첫 카드 짧은 이름 · 그 편성 마지막 승리 상대 시각) |
+| 카드 "내 전적 3승 0패" · 플라이아웃 "내 전적" · "변경 주기 평균 6일" | 관측 값으로 그림(내 기록 · 로비 스냅숏) |
+
+### XB 요청 후보
+
+1. **Mock v2 로비**(CF `lib/services/**` slice 몫 — XB 아님): 기본 Mock이 `TacticalEvidenceService`(로비 commit · select · link)를 구현하지 않고, Mock 스캐너의 전술 로비 후보 payload가 학생 모양이라 mock 모드에서는 S2 버튼이 흐리다. 검수용 로비 Mock은 이 slice의 시험 대역(`test/tactical_lobby_fe9c_fixture.dart`)을 옮기면 된다.
+2. **`lobby.commit`의 순위 없는 후보**: 백엔드는 `current_rank.value` · 행 `rank.value`가 null이어도 저장하는데(검토 상태만 본다), Dart 읽기 DTO는 `current_rank` · `opponent_rank` ≥ 1 필수라 그런 스캔이 하나라도 저장되면 계정의 v2 상태 읽기가 실패한다. 화면은 순위 · 이름이 없는 후보를 보내지 않는다. 백엔드가 `review_required`로 거부하거나 DTO를 nullable로 넓히는 결정 필요.
+3. **"변경 의심"**: 추이 `TacticalTrendsResult.changes`(타입 없는 Map) · `verified_after_latest_change`의 Dart DTO(G §1.5). 있으면 카드 칩을 관측 지표로 되살릴 수 있다.
+4. (선택) 로비 후보 검토 UI용 필드 신뢰 · 대안 이름(`proposed_display_name`)을 화면이 쓰려면 검토 흐름 결정이 먼저(지금은 검토 필요 후보 = 다시 스캔).
+
+### 미검증(미실행)
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · 나머지 process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 바뀐 기준 이미지 5장 갱신 · 새 기준 이미지 생성: **미실행**(CF `-UpdateGoldens`).
+- 실제 백엔드 · 실제 게임 로비 스캔(후보가 `confirmed`로 오는 비율, 이름 · 순위 인식, commit · select · link 실제 응답 · revision 증가), 실제 창 연결, Windows release 빌드: **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 검수표 (artboard → 앱에서 여는 방법 → 확인 포인트)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Tactical S2(빈 상태) | mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 기준 viewport 최대화, design-review 시나리오 → 전술대항전 탭 | S2 제목 줄 `로비 스캔` · `공개 슬롯 자동 기록` · `지금 스캔`(Mock은 흐림 + 툴팁 `로비 스캔 저장 서비스가 제공되지 않습니다.`), 카드 자리 빈 상태 글자 |
+| Tactical S2(카드 · 선택 · 플라이아웃) | golden `tactical-lobby` · 렌더 PNG(Mock에 로비가 없어 앱에서는 실제 백엔드에서만) | 카드 3장 위치(시안 x 817 · 1171 · 1525, 폭 356.5), 선택 테두리, hover 분홍 선 + 플라이아웃(카드 아래 12 · 폭 540 · 꼬리), 방어 승률 수치 없음 |
+| 흐름(실제 백엔드) | 게임 로비 화면 → 전술대항전 탭 `지금 스캔`(미연결이면 S4 자리 창 선택 패널) | 머리글 칩 `전술대항전 스캔`, 끝나면 카드 3장 · `로비 상대 3명을 저장했습니다…`, 카드 누르기 → S3 새 공격 기록 이름 · 공개 칸, 저장 → `로비 관측과 이 기록을 이었습니다.`, 탭 `스캔` 점 없음 |
+| 인계 | 스캔 탭에서 시작한 전술 로비 세션 → `Review tactical capture` | 전술 탭으로 이동 + 카드, 검토 대기 해제 |
+| 진행 화면 `학생 탭으로 이동`(FE8-g2) | 스캔 탭 학생 스캔 진행 중 | 버튼이 눌리고 학생 탭으로 간다(스캔은 계속) |
+
+### 발견 사항
+
+1. **셸 빌드 중 스캔 컨트롤러 알림**: `ScanTabPage.initState`가 `ensureStarted`로 알려 다른 탭 화면(이제 전술 화면이 리스너)이 빌드 중 `setState`를 맞는다. FE8-f2 머리글 칩처럼 빌드 중이면 프레임 뒤에 본다. 컨트롤러를 듣는 다른 화면이 생기면 같은 규칙이 필요하다(키트 · 셸 공용 헬퍼 후보).
+2. **순위 없는 로비 후보**(XB 요청 후보 2).
+3. **검토 필요 로비 후보**: 검토 UI가 없어 저장하지 않고 "처리함"으로 셸에 알린다(검토 대기를 풀어 다시 스캔할 수 있게). 스캔 탭 `ScanPage`의 전술 로비 요약 줄 깨진 글자(`쨌`, FE8-f1 발견 1)는 그대로(스캔 파일 수정 금지).
+4. **2~4번 자동 채움 안 함**: 시안 (i) 문구("2~4번은 이 유저와의 지난 공격 기록으로 채웁니다")는 아직 화면이 하지 않는다 — 프롬프트 범위(공개 칸 · 이름)만 했다. 같은 상대 · 같은 공개 시그니처의 가장 최근 공격 기록에서 2~4번을 `manual`로 채우는 후속(출처 범례 "기록")이 자연스럽다.
+5. **선택 실패 뒤 채운 초안**: 고른 시각을 남기지 못해도 채운 초안은 남는다(S2가 알림). 저장하면 자동 링크가 `unresolved`가 될 수 있다.
+6. **스캔 컨트롤러 종류**: S2 시작은 `selectKind(tacticalLobby)`를 남긴다. 스캔 탭 시작(`startPick`)은 종류를 다시 정하므로 영향 없고, 진행 · 검토 중 옛 `ScanPage` 종류 드롭다운에 `tacticalLobby`가 보일 뿐이다.
+7. **시즌 · map**: commit 시즌 = 목록의 이번 시즌(없으면 ''), map = ''(화면에 map 입력이 없다). 백엔드 자동 링크는 빈 시즌을 무엇이든 맞는 것으로 본다.
+8. **키트 승격 후보(Lane A 판단)**: 앵커 플라이아웃(`TacticalLobbyFlyout` — 섹션 위 층 · 화면 안 밀기 · 꼬리, 분석 "전체 보기" 팝업과 같은 문법), 카드 `.po` 칠(`_CardHoverPainter`).
+9. **플라이아웃 위치**: 시안 그대로 카드 아래라 S3 상대 덱 줄을 덮는다(hover 동안만). 작은 창에서는 가로로 밀고 아래가 모자라면 위로 올린다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe9c/pre/<경로>` 10파일(고친 9 + 고치지 않은 `scan_session_controller.dart` — commit.json에는 없음). `scan_run_view_fe8g2_test.dart` 사본은 실행 중 기대 변화를 찾았을 때 고치기 전에 만들었다(HEAD와 cmp 일치). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe9c/commit.json`: slice `fe9c`, modified 9(이 문서 포함), added 4, `whole` = 바뀌는 기준 이미지 5장(`tactical` · `tactical-jokbo-drag` · `tactical-import-excel` · `tactical-migration` · `scan-student-run`, 파일 하나씩), `optional_added` = [`frontend/test/goldens/baseline/tactical-lobby.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe9c/output.md`. 로그 `debug/frontend_fe9c/logs/`, 렌더 `debug/frontend_fe9c/render/`.
+
+### 다음 행동
+
+- FE9-c 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(tidy4)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 tactical_lobby_fe9c +12 추가, process 4+8 GREEN, golden `tactical` · `-jokbo-drag` · `-import-excel` · `-migration` RED(S2 빈 상태) · `scan-student-run` RED(학생 탭 버튼 켜짐) · 새 `tactical-lobby` 기준 없음 → 실패 이미지 검토(렌더 PNG와 비교) → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe9c`.
+- 후속 후보: Mock v2 로비(XB 요청 후보 1, CF services slice), 2~4번 자동 채움(발견 4), 로비 후보 검토 UI(발견 3 · XB 요청 후보 4).
+
+### fe9c commit record (2026-10-18 02:23, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_021257\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

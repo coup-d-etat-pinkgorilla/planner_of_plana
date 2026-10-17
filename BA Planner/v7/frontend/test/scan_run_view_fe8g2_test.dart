@@ -386,7 +386,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      // 셸은 `학생 탭으로 이동`을 아직 연결하지 않는다(app_shell 요청), 미리 검토는 FE8-g4 전 꺼짐.
+      // FE9-c: 셸이 `학생 탭으로 이동`을 연결한다(FE8-g2 발견 2), 미리 검토는 FE8-g4 전 꺼짐.
       expect(
         tester
             .widget<KitPressable>(
@@ -396,7 +396,7 @@ void main() {
               ),
             )
             .onPressed,
-        isNull,
+        isNotNull,
       );
       expect(
         tester

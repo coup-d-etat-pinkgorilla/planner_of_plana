@@ -11,7 +11,7 @@ import 'section_template.dart';
 /// - 가운데 위 로비 스캔 `tactical-lobby` (788, 209.2, 1130.5, 204): 위 면(헤더 아래)에 붙은 얕은 평행사변형. 시안 x가
 ///   grid에 맞지 않아 rect 23~77칸 안에서 위 면 구간을 14+73칸, 깊이를 rect 17칸의 92/96으로 골랐다(통계 가운데 섹션과 같은
 ///   faceStart · faceSpan · height 방식). 꼭짓점 윗변 823.3→1918.3, 아랫변 787.2→1882.2, 아래 y 414.2.
-///   시안(824→1918.5, 788→1882.6, 413.2)과 1px 안. rect 나머지는 path 밖이라 그리지 않는다. FE9-c 자리.
+///   시안(824→1918.5, 788→1882.6, 413.2)과 1px 안. rect 나머지는 path 밖이라 그리지 않는다. FE9-c: 로비 상대 카드 3장.
 /// - 가운데 아래 기록 작성 `tactical-editor` (615.4, 437.2, 1262.9, 954.8): 아래 면에 붙은 평행사변형. rect 18~72칸 안에서
 ///   아래 면 구간을 9+73칸으로 골랐다. 꼭짓점 아랫변 615.0→1710.0, 윗변 783.6→1878.6, 위 y 435.7.
 ///   시안(615.4→1710.0, 783.8→1878.3, 437.2)과 x는 0.4px 안, 위 y는 grid 한계로 −1.5px.
@@ -78,7 +78,7 @@ final SectionStudioDocument tacticalStudioDocument = SectionStudioDocument(
 /// 왼쪽 기록 목록(제목 · 하위 seg · 필터 칩 · 사선 스크롤 목록).
 const tacticalRecordsSectionId = 'tactical-records';
 
-/// 가운데 위 로비 스캔(FE9-c 자리).
+/// 가운데 위 로비 스캔(FE9-c).
 const tacticalLobbySectionId = 'tactical-lobby';
 
 /// 가운데 아래 기록 작성.
@@ -228,7 +228,7 @@ abstract final class TacticalMetrics {
   static const mySlotPortrait = (width: 83.0, height: 67.0);
   static const deckSlotWidth = 92.0;
 
-  // --- 가운데 위 로비 스캔(자리) · 오른쪽 족보 제목 -------------------------
+  // --- 가운데 위 로비 스캔(FE9-c) · 오른쪽 족보 제목 ----------------------
 
   /// 로비 스캔 제목 줄(시안 (838.1, 229.2, 1052.9×36), 안쪽 16.3).
   static const lobbyTitle = TacticalSlotSpec(
@@ -238,13 +238,62 @@ abstract final class TacticalMetrics {
     rightGap: 24,
   );
 
-  /// 로비 카드 자리(시안 첫 카드 (817.0, 281.2, 356.5×104)) — "준비 중" 문구.
+  /// 로비 카드 줄 자리(시안 첫 카드 (817.0, 281.2, 356.5×104)의 왼쪽 아래 사선 간격 24 ~ 셋째 카드 오른쪽). FE9-c: 카드 3장 ·
+  /// 빈 상태 문구.
   static const lobbyBody = TacticalSlotSpec(
     top: 72,
     height: 104,
     leftGap: 24,
     rightGap: 24,
   );
+
+  /// 로비 카드(시안 x 817.0 · 1171.2 · 1525.3, 폭 356.5 — 이웃 카드와 사선 2.35px가 겹친다). 작은 창에서는 [lobbyBody] 폭에
+  /// 맞춰 같은 비율로 줄인다.
+  static const lobbyCardWidth = 356.5;
+  static const lobbyCardStep = 354.15;
+
+  /// 세 카드가 차지하는 폭(시안 1064.8).
+  static const lobbyCardsSpan = lobbyCardStep * 2 + lobbyCardWidth;
+
+  /// 카드 안쪽 여백(시안 28.3)과 공개 칸 초상(44×36).
+  static const lobbyCardPadding = 28.3;
+  static const lobbyCardPortrait = (width: 44.0, height: 36.0);
+
+  /// 방어 이력 플라이아웃(시안 `.fly.dl`): 카드 왼쪽에 맞춰 카드 아래 12, 폭 540, 꼬리(11×11 45°)는 왼쪽 36 · 위 −6.
+  /// 안쪽 14/16/12, 줄 간격 8, 머리 17, 줄 42.8(현재 구간 53.4 — "현재" 칩), 아래 줄 18.4, 초상 36×29.
+  static const lobbyFlyoutGap = 12.0;
+  static const lobbyFlyoutWidth = 540.0;
+  static const lobbyFlyoutArrowLeft = 36.0;
+  static const lobbyFlyoutPaddingTop = 14.0;
+  static const lobbyFlyoutPaddingX = 16.0;
+  static const lobbyFlyoutPaddingBottom = 12.0;
+  static const lobbyFlyoutSpacing = 8.0;
+  static const lobbyFlyoutHeaderHeight = 17.0;
+  static const lobbyFlyoutRowHeight = 42.8;
+  static const lobbyFlyoutCurrentRowHeight = 53.4;
+  static const lobbyFlyoutFooterHeight = 18.4;
+  static const lobbyFlyoutPortrait = (width: 36.0, height: 29.0);
+
+  /// 플라이아웃이 창 가장자리에서 떨어지는 최소 거리.
+  static const lobbyFlyoutMargin = 8.0;
+
+  /// 줄 [rows]개(첫 줄이 [current]면 "현재" 칩 높이)인 플라이아웃의 설계 높이.
+  static double lobbyFlyoutHeight(int rows, {required bool current}) {
+    final body = rows == 0
+        ? 0.0
+        : (current ? lobbyFlyoutCurrentRowHeight : lobbyFlyoutRowHeight) +
+              (rows - 1) * lobbyFlyoutRowHeight +
+              rows * lobbyFlyoutSpacing;
+    return lobbyFlyoutPaddingTop +
+        lobbyFlyoutHeaderHeight +
+        body +
+        lobbyFlyoutSpacing +
+        lobbyFlyoutFooterHeight +
+        lobbyFlyoutPaddingBottom;
+  }
+
+  /// 창 선택 패널(FD-155, 홈과 같은 설계 크기 719.5)은 S4(족보) 섹션 rect 폭의 719.5 / 826.7배 자리에 오른쪽 위로 붙는다.
+  static const connectPanelWidthFactor = 719.5 / (31 * 2560 / 96);
 
   /// 족보 제목 줄(시안 `.plain` (1956.7, 229.2, 581.3×36), 안쪽 18.3).
   static const jokboTitle = TacticalSlotSpec(

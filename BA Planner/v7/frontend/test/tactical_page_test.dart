@@ -1,7 +1,7 @@
 // FE9-a: 전술대항전 기록 화면(시안 Tactical S1 · S3, S2 자리 · S4는 FE9-d)을 FE9-b1 컨트롤러(v2) 위에서 검사한다.
 //
 // - Studio 섹션 꼭짓점(기준 콘텐츠 캔버스 2560×1208, 시안 y − 184)과 섹션 안 요소 배치(±2px, FE9-d S4 요소 포함).
-// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 "준비 중", S4 공개 칸 없음 안내(FE9-d), S1 제목 줄에 seg 없음
+// - 기본 Mock(빈 v1 · 빈 v2): 빈 목록 문구, 이관 안내 없음, S2 로비 스캔 빈 상태(FE9-c), S4 공개 칸 없음 안내(FE9-d), S1 제목 줄에 seg 없음
 //   (FE9-e: 셸 머리말로 옮김 — `tactical_analysis_test.dart`).
 //   세 창 크기에서 넘침 예외 0.
 // - design-review seed 기록 4개: 행 표기(FD-132 방어 행, 시각 정밀도, 시도 모름 '—'), 필터, 첫 행 자동 선택.
@@ -21,6 +21,7 @@ import 'package:ba_planner_v7/ui/kit/section_morph.dart'
     show sectionCanvasElementPolygon;
 import 'package:ba_planner_v7/ui/pages/tactical_page.dart';
 import 'package:ba_planner_v7/ui/studio/tactical_studio_layout.dart';
+import 'package:ba_planner_v7/ui/tactical/tactical_lobby_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_records_view.dart';
 import 'package:ba_planner_v7/ui/tactical/tactical_workspace.dart';
 import 'package:flutter/material.dart';
@@ -354,10 +355,8 @@ void main() {
           find.byKey(const ValueKey('tactical-migration-band')),
           findsNothing,
         );
-        expect(
-          find.byKey(const ValueKey('tactical-lobby-pending')),
-          findsOneWidget,
-        );
+        // FE9-c: S2는 로비 스캔 빈 상태(기본 Mock은 로비 저장 서비스가 없어 "지금 스캔"이 흐리다).
+        expect(_text(tester, 'tactical-lobby-message'), tacticalLobbyEmptyText);
         // FE9-d: 새 초안의 상대 덱은 모두 빈칸이라 공개 시그니처가 없다(질의하지 않는다).
         expect(
           _text(tester, 'tactical-jokbo-message'),

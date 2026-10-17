@@ -5,7 +5,9 @@
 //   FE9-e부터 셸 머리말 제목 옆이다(FD-126 (a), `tactical_sub_screen.dart`).
 //   필터 칩(전체 · 공격 · 방어 · 승 · 패 · 이번 시즌 · 상대), 이관 안내 띠(v1 기록이 남았을 때만), 공용 사선 스크롤 목록
 //   (resize 모드 — 행 폭이 사선을 따라 준다, 공용 스크롤바 · 포그).
-// - S2 로비 스캔(가운데 위, FE9-c 자리): 제목 + "준비 중". 스캔 버튼 없음.
+// - S2 로비 스캔(가운데 위, FE9-c): 제목 줄("로비 스캔" · 상태 글자 · "지금 스캔"), 로비 상대 카드 3장(올리거나 포커스하면
+//   방어 이력 플라이아웃 — 섹션 위 층, 누르면 기록 작성의 상대로 고른다), 기록이 없으면 빈 상태 글자. 미연결에서 "지금 스캔"을
+//   누르면 S4 자리에 창 선택 패널이 붙는다(FD-155). 값은 `tactical_lobby_view.dart`.
 // - S3 기록 작성(가운데 아래): 머리 줄(종류 · 시각, 시즌 칩, 공격/방어 칩), 상대 덱 캡션 + (i), 상대 유저 · 상대 덱 6칸 ·
 //   출처 범례, 내 덱 캡션, 내 덱 6칸 + "지난 기록 덱 복사" · "족보에서 가져오기"(FE9-d: S4에서 고른 카드), 결과 seg · 시도 스테퍼,
 //   메모, 저장 · 복제해서 새 기록 · 지우기 + 상태 문구(자동 연결 · 오류 · 저장할 수 없는 이유). 내 덱 줄은 족보 카드를 받는
@@ -31,14 +33,17 @@ import '../kit/kit_pressable.dart';
 import '../kit/section_frame.dart';
 import '../kit/skew_controls.dart';
 import '../studio/tactical_studio_layout.dart';
+import '../widgets/section_template_surface.dart' show sectionCanvasElementRect;
 import 'tactical_deck_widgets.dart';
 import 'tactical_jokbo_view.dart';
 import 'tactical_jokbo_widgets.dart';
+import 'tactical_lobby_view.dart';
+import 'tactical_lobby_widgets.dart';
 import 'tactical_records_view.dart';
 import 'tactical_section_edges.dart';
 import 'tactical_window.dart';
 
-/// 아직 그리지 않는 자리(S2 · S4 · 분석 · 슬롯, 통계 "준비 중"과 같은 문구).
+/// 아직 그리지 않는 자리(S4 이관 전 · 엑셀 가져오기 힌트 기본값, 통계 "준비 중"과 같은 문구).
 const tacticalPendingText = '준비 중';
 
 /// 상대 방어 덱 (i) 문구(시안 그대로).
@@ -198,8 +203,12 @@ class TacticalWorkspace extends StatelessWidget {
     this.fromJokboHint = tacticalPendingText,
     this.dropReason,
     this.onDropJokbo,
+    this.lobby = const TacticalLobbyPanel.unavailable(),
     this.sectionOffset,
   });
+
+  /// S2 로비 스캔(FE9-c).
+  final TacticalLobbyPanel lobby;
 
   /// 하위 화면 전환 중 섹션마다 민 거리(FE9-e, 부착면 intro/outro). null이면 제자리.
   final Offset Function(String sectionId)? sectionOffset;
@@ -281,6 +290,8 @@ class TacticalWorkspace extends StatelessWidget {
           layer(tacticalRecordsSectionId, _recordsSection(size, scale)),
           layer(tacticalJokboSectionId, _jokboSection(size, scale)),
           layer(tacticalLobbySectionId, _lobbySection(size, scale)),
+          ?_lobbyFlyout(size, scale, layer),
+          ?_connectPanel(size),
         ],
       );
     },
@@ -511,13 +522,18 @@ class TacticalWorkspace extends StatelessWidget {
   static String _filterKey(TacticalRecordFilter filter) =>
       '${filter.kind}-${filter.result}-${filter.currentSeason}-${filter.opponent}';
 
-  // --- S2 로비 스캔 · S4 족보 (자리) -----------------------------------------
+  // --- S2 로비 스캔(FE9-c) · S4 족보 ------------------------------------------
 
   Widget _lobbySection(Size size, double scale) {
     final edges = TacticalSectionEdges.of(
       size,
       tacticalSection(tacticalLobbySectionId),
     );
+    final panel = lobby;
+    final cards = panel.cards;
+    final onSelect = panel.onSelect;
+    final onHover = panel.onHover;
+    final rects = _lobbyCardRects(edges, scale);
     return SectionFrame(
       section: tacticalSection(tacticalLobbySectionId),
       surfaceKey: const ValueKey('tactical-section-$tacticalLobbySectionId'),
@@ -526,31 +542,141 @@ class TacticalWorkspace extends StatelessWidget {
           'tactical-slot-lobby-title',
           edges.slot(TacticalMetrics.lobbyTitle, scale),
           scale,
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.3),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('로비 스캔', style: _display(19)),
-            ),
-          ),
+          TacticalLobbyTitleRow(panel: panel),
         ),
-        tacticalPlaced(
-          'tactical-slot-lobby-body',
-          edges.slot(TacticalMetrics.lobbyBody, scale),
-          scale,
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28.3),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                tacticalPendingText,
-                key: ValueKey('tactical-lobby-pending'),
-                style: TextStyle(color: _mutedColor),
+        if (cards.isEmpty)
+          tacticalPlaced(
+            'tactical-slot-lobby-body',
+            edges.slot(TacticalMetrics.lobbyBody, scale),
+            scale,
+            TacticalLobbyMessage(text: panel.message ?? tacticalLobbyEmptyText),
+          )
+        else
+          for (final (index, card) in cards.indexed)
+            if (index < rects.length)
+              tacticalPlaced(
+                'tactical-slot-lobby-card-$index',
+                rects[index],
+                scale,
+                TacticalLobbyCardTile(
+                  key: ValueKey('tactical-lobby-card-${card.candidateId}'),
+                  card: card,
+                  selected: card.candidateId == panel.selectedId,
+                  hovered: panel.hoveredIndex == index,
+                  onPressed: onSelect == null ? null : () => onSelect(card),
+                  onHover: onHover == null
+                      ? null
+                      : (inside) => onHover(inside ? index : null),
+                  studentName: studentName,
+                ),
+              ),
+      ],
+    );
+  }
+
+  /// 카드 3장 자리(콘텐츠 캔버스 좌표). 카드 줄 자리([TacticalMetrics.lobbyBody]) 폭을 시안 비율로 나눈다(작은 창에서도 셋이 들어간다).
+  List<Rect> _lobbyCardRects(TacticalSectionEdges edges, double scale) {
+    final body = edges.slot(TacticalMetrics.lobbyBody, scale);
+    final ratio = body.width / TacticalMetrics.lobbyCardsSpan;
+    return [
+      for (var index = 0; index < 3; index++)
+        Rect.fromLTWH(
+          body.left + index * TacticalMetrics.lobbyCardStep * ratio,
+          body.top,
+          TacticalMetrics.lobbyCardWidth * ratio,
+          body.height,
+        ),
+    ];
+  }
+
+  /// 올리거나 포커스한 카드의 방어 이력 플라이아웃(시안 `.fly.dl`). 카드 왼쪽에 맞춰 카드 아래 12에 두고, 화면 밖으로 나가지 않게
+  /// 가로로 밀고(꼬리는 카드 쪽 그대로) 아래가 모자라면 위로 올린다. 섹션 clip 밖에도 그려지게 섹션 위 층이다.
+  Widget? _lobbyFlyout(
+    Size size,
+    double scale,
+    Widget Function(String id, Widget child) layer,
+  ) {
+    final panel = lobby;
+    final index = panel.hoveredIndex;
+    final history = panel.history;
+    if (index == null || history == null || index >= panel.cards.length) {
+      return null;
+    }
+    final edges = TacticalSectionEdges.of(
+      size,
+      tacticalSection(tacticalLobbySectionId),
+    );
+    final rects = _lobbyCardRects(edges, scale);
+    if (index >= rects.length) return null;
+    final card = rects[index];
+    const margin = TacticalMetrics.lobbyFlyoutMargin;
+    final width = TacticalMetrics.lobbyFlyoutWidth * scale;
+    final height =
+        TacticalMetrics.lobbyFlyoutHeight(
+          history.rows.length,
+          current: history.rows.firstOrNull?.current ?? false,
+        ) *
+        scale;
+    final left = math.max(
+      margin,
+      math.min(card.left, size.width - margin - width),
+    );
+    var top = card.bottom + TacticalMetrics.lobbyFlyoutGap * scale;
+    if (top + height > size.height - margin) {
+      top = math.max(margin, size.height - margin - height);
+    }
+    final arrow =
+        (TacticalMetrics.lobbyFlyoutArrowLeft + (card.left - left) / scale)
+            .clamp(12.0, TacticalMetrics.lobbyFlyoutWidth - 24.0)
+            .toDouble();
+    final onHover = panel.onHover;
+    return layer(
+      tacticalLobbySectionId,
+      Stack(
+        children: [
+          tacticalPlaced(
+            'tactical-lobby-flyout',
+            Rect.fromLTWH(left, top, width, height),
+            scale,
+            MouseRegion(
+              onEnter: onHover == null ? null : (_) => onHover(index),
+              onExit: onHover == null ? null : (_) => onHover(null),
+              child: TacticalLobbyFlyout(
+                history: history,
+                arrowLeft: arrow,
+                studentName: studentName,
+                onOpenOpponent: panel.onOpenOpponent,
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// 미연결에서 "지금 스캔"을 누르면 S4 자리에 붙는 창 선택 패널(홈 · 스캔 탭과 같은 위젯 · 설계 크기, 섹션 위에서 시작해
+  /// 오른쪽에 붙는다).
+  Widget? _connectPanel(Size size) {
+    final child = lobby.connectPanel;
+    if (child == null) return null;
+    final rect = sectionCanvasElementRect(
+      size,
+      tacticalSection(tacticalJokboSectionId),
+    );
+    return Positioned(
+      key: const ValueKey('tactical-connect-panel-section'),
+      top: rect.top,
+      right: 0,
+      bottom: 0,
+      width: rect.width * TacticalMetrics.connectPanelWidthFactor,
+      child: Align(
+        alignment: Alignment.topRight,
+        child: FittedBox(
+          fit: BoxFit.contain,
+          alignment: Alignment.topRight,
+          child: child,
         ),
-      ],
+      ),
     );
   }
 

@@ -9,6 +9,8 @@
 // - 도출 족보 표시 규칙(fb6-dart 발견 1): 기록을 지워 같은 편성 기록이 0개가 된 `lineage-` 족보도 목록에 남기고
 //   [TacticalJokboEntry.hasNoRecords]로 "기록 없음"을 표시한다(백엔드는 족보를 지우지 않는다).
 // - 시각 표시(fb6-dart 발견 7): `date` 정밀도는 날짜만, `instant`는 KST(UTC+9) 시각, `unknown`은 '—'.
+// - FE9-c: 로비 쓰기(로비 commit · 후보 선택 · 기록 링크)도 같은 revision · key · busy 규칙의 [TacticalRecordsController.lobbyWrite]로
+//   보낸다(로비 서비스는 화면이 넘긴다). 그 오류는 [TacticalRecordsController.error]에 남기지 않는다.
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -152,6 +154,17 @@ class TacticalJokboEntry {
 }
 
 typedef _Pending = ({String fingerprint, String key});
+
+/// FE9-c 로비 쓰기 결과: 성공이면 [value], 백엔드 · 연결 오류면 [error](화면 문구는 로비 섹션이 고른다).
+@immutable
+class TacticalLobbyWrite<T> {
+  const TacticalLobbyWrite.done(T this.value) : error = null;
+  const TacticalLobbyWrite.failed(TacticalRecordsError this.error)
+    : value = null;
+
+  final T? value;
+  final TacticalRecordsError? error;
+}
 
 /// 전술 기록 화면 컨트롤러. [_service]는 v2 읽기 · 쓰기 · 이관을 구현한 서비스(Process · Mock)다. [now]는 idempotency
 /// key의 시각(검수 · 테스트는 고정 시계 — `appClockNow`)이다.
@@ -347,11 +360,33 @@ class TacticalRecordsController extends ChangeNotifier {
     String action,
     Map<String, dynamic> request,
     Future<void> Function(String profileId, int revision, String key) send,
-  ) async {
+  ) async =>
+      (await _write<bool>(action, request, (profileId, revision, key) async {
+        await send(profileId, revision, key);
+        return true;
+      }, report: true))?.value ??
+      false;
+
+  /// FE9-c: 로비 쓰기(로비 commit · 후보 선택 · 기록 링크)를 기록 쓰기와 같은 revision · key · busy · 다시 읽기 규칙으로
+  /// 보낸다. 오류는 [error](기록 작성 상태 문구)에 남기지 않고 돌려준다 — 링크 실패가 기록 저장을 되돌리거나 S3 문구를
+  /// 바꾸지 않게 로비 섹션이 자기 문구로 보인다. 보내지 못했으면(계정 · revision 없음, 다른 쓰기 · 읽기 중) null.
+  Future<TacticalLobbyWrite<T>?> lobbyWrite<T extends Object>(
+    String action,
+    Map<String, dynamic> request,
+    Future<T> Function(String profileId, int revision, String key) send,
+  ) => _write<T>(action, request, send, report: false);
+
+  /// 쓰기 공통. [report]면 오류를 [error]에 남긴다. 늦게 온(다른 계정) 응답은 null.
+  Future<TacticalLobbyWrite<T>?> _write<T extends Object>(
+    String action,
+    Map<String, dynamic> request,
+    Future<T> Function(String profileId, int revision, String key) send, {
+    required bool report,
+  }) async {
     final profileId = _profileId;
     final revision = _state?.revision;
     if (profileId == null || revision == null || _busy || _loading) {
-      return false;
+      return null;
     }
     final key = _keyFor(action, {
       'profile_id': profileId,
@@ -359,25 +394,26 @@ class TacticalRecordsController extends ChangeNotifier {
       ...request,
     });
     _busy = true;
-    _error = null;
+    if (report) _error = null;
     _notify();
     try {
-      await send(profileId, revision, key);
+      final value = await send(profileId, revision, key);
       // 다른 계정으로 바꿨으면(load가 busy를 풀었다) 늦게 온 응답은 버린다.
-      if (!_sameProfile(profileId)) return false;
+      if (!_sameProfile(profileId)) return null;
       _pending = null;
       _busy = false;
       final refresh = ++_generation;
       _loading = true;
       _notify();
-      await _refresh(refresh, keepError: false);
-      return true;
+      await _refresh(refresh, keepError: !report);
+      return TacticalLobbyWrite.done(value);
     } on BackendRemoteException catch (error) {
-      if (!_sameProfile(profileId)) return false;
+      if (!_sameProfile(profileId)) return null;
       // 백엔드가 답했다: 같은 key를 다시 쓸 일이 없다.
       _pending = null;
       _busy = false;
-      _error = tacticalRecordsError(error);
+      final failure = tacticalRecordsError(error);
+      if (report) _error = failure;
       if (_reloadAfterError.contains(error.code)) {
         final refresh = ++_generation;
         _loading = true;
@@ -386,14 +422,15 @@ class TacticalRecordsController extends ChangeNotifier {
       } else {
         _notify();
       }
-      return false;
+      return TacticalLobbyWrite.failed(failure);
     } catch (error) {
       // 답을 받지 못했다(연결 끊김 · 시간 초과 · 프로토콜 오류): 같은 내용 재시도는 같은 key를 쓴다.
-      if (!_sameProfile(profileId)) return false;
+      if (!_sameProfile(profileId)) return null;
       _busy = false;
-      _error = tacticalRecordsError(error);
+      final failure = tacticalRecordsError(error);
+      if (report) _error = failure;
       _notify();
-      return false;
+      return TacticalLobbyWrite.failed(failure);
     }
   }
 
