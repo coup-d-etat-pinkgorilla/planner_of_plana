@@ -1,0 +1,179 @@
+{
+  "format": "ba-planner-section-studio",
+  "version": 5,
+  "gridSize": 96,
+  "detailGridSize": 96,
+  "diagonal": {
+    "direction": "up-right",
+    "angleDegrees": 80
+  },
+  "workspace": {
+    "headerRows": 12,
+    "viewport": "standard",
+    "showGrid": true,
+    "showSafeArea": true,
+    "selectedElementId": "element-9",
+    "activeLayer": "section",
+    "selectedContainerId": null,
+    "selectedFeatureId": null,
+    "placementMode": "parent-relative-spacing",
+    "placementGap": 0.0
+  },
+  "elements": [
+    {
+      "id": "element-5",
+      "label": "섹션 5",
+      "rect": {
+        "x": 17,
+        "y": 8,
+        "width": 28,
+        "height": 27
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-1",
+      "label": "섹션 1",
+      "rect": {
+        "x": 18,
+        "y": 9,
+        "width": 8,
+        "height": 3
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-2",
+      "label": "섹션 2",
+      "rect": {
+        "x": 27,
+        "y": 9,
+        "width": 8,
+        "height": 3
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-3",
+      "label": "섹션 3",
+      "rect": {
+        "x": 36,
+        "y": 9,
+        "width": 8,
+        "height": 3
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-4",
+      "label": "섹션 4",
+      "rect": {
+        "x": 18,
+        "y": 13,
+        "width": 26,
+        "height": 2
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-6",
+      "label": "섹션 6",
+      "rect": {
+        "x": 18,
+        "y": 16,
+        "width": 26,
+        "height": 3
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-7",
+      "label": "섹션 7",
+      "rect": {
+        "x": 18,
+        "y": 20,
+        "width": 26,
+        "height": 5
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-8",
+      "label": "섹션 8",
+      "rect": {
+        "x": 18,
+        "y": 26,
+        "width": 26,
+        "height": 3
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    },
+    {
+      "id": "element-9",
+      "label": "섹션 9",
+      "rect": {
+        "x": 18,
+        "y": 30,
+        "width": 26,
+        "height": 4
+      },
+      "shape": {
+        "mode": "parallelogram",
+        "face": "bottom",
+        "faceStart": 0,
+        "faceSpan": 96,
+        "height": 96
+      }
+    }
+  ],
+  "containers": [],
+  "features": []
+}

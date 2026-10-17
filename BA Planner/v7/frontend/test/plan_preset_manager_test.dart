@@ -69,9 +69,11 @@ void main() {
       ),
     );
 
+    // tidy4: git 추적 fixture를 읽는다. 출처는 미추적 로컬 빌드 산출물
+    // `release/section-preset-management.ba-section-studio.json`(바이트 그대로 복사, 2026-10-18 01:18). 추적 원본은 없다.
     final saved = jsonDecode(
       File(
-        '../release/section-preset-management.ba-section-studio.json',
+        'test/fixtures/studio_sections/section-preset-management.ba-section-studio.json',
       ).readAsStringSync(),
     );
     expect(

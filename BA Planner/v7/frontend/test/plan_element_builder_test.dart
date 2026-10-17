@@ -109,10 +109,13 @@ void main() {
     expect(planElementBuilderSectionMotions['element-7']?.outro, 0);
   });
 
+  // tidy4: 저장된 Studio 문서는 git 추적 fixture를 읽는다. 출처는 미추적 로컬 빌드 산출물
+  // `release/section-plan-starter.ba-section-studio.json` · `release/section-preset-element.ba-section-studio.json`
+  // (바이트 그대로 복사, 2026-10-18 01:18). 추적 원본은 없다.
   test('typed plan starter layout matches the saved Studio document', () {
     final saved = jsonDecode(
       File(
-        '../release/section-plan-starter.ba-section-studio.json',
+        'test/fixtures/studio_sections/section-plan-starter.ba-section-studio.json',
       ).readAsStringSync(),
     );
     expect(
@@ -124,7 +127,7 @@ void main() {
   test('typed preset element layout matches the saved Studio document', () {
     final saved = jsonDecode(
       File(
-        '../release/section-preset-element.ba-section-studio.json',
+        'test/fixtures/studio_sections/section-preset-element.ba-section-studio.json',
       ).readAsStringSync(),
     );
     expect(

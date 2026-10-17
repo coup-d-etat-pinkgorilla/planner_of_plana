@@ -5441,3 +5441,125 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - FE8-f3 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-g2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 home_scan_popup_fe8f3 +11 추가 · home_connect_fe8e 수 그대로, process 변화 0, 기존 golden 전 장면 GREEN, 새 `home-scan-popup`은 기준 없음 → 실패 이미지 검토 → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8f3`.
 - 발견 1(Lane A 컨트롤러 변경이 들어간 뒤 팝업 학생 전체 = 백그라운드 확인) · 2(고르기 되돌림/API) · 3 · 5는 CF 판단.
+
+## tidy4 착수 기록 (2026-10-18)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 tidy4 종료 기록), CF gate 미실행**. 범위: tidy4 — 1. 계획 시험이 미추적 `release/` Studio json에 기대지 않게(orchestrator-log 2026-10-14 23:00 후속 chip · 2026-10-15 01:50), 2. A6 두 점 고르기(FE7-j 발견 1).
+- 착수 전 확인: 이 문서에 다른 "tidy4 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약"에 tidy4 행이 없고 `열림` 0건, 근거 FD-175 · FD-104는 `확정` → 시작.
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `4425512359e55cda77d715cdb5c5b36e9ea2c0bb`.
+- 항목별 고칠 파일(예정) · 착수 WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음) · 줄바꿈(`git ls-files --eol` 작업 트리):
+  1. `frontend/test/plan_element_builder_test.dart`(LF) · `frontend/test/plan_preset_manager_test.dart`(LF), 새 `frontend/test/fixtures/studio_sections/` json 3개(`release/` 원본 바이트 그대로). 추적 원본 확인: `git ls-files`의 `*.ba-section-studio.json`은 `frontend/assets/studio_sections/` 3개(계정 · 타이틀)뿐이고 plan-starter · preset-element · preset-management는 없다. `../release/`를 읽는 시험은 이 둘뿐(grep `release/` — `lib/ui/studio/*` 5곳은 doc 주석).
+  2. `frontend/lib/statistics/statistics_history_projection.dart`(LF), `frontend/lib/ui/statistics/statistics_growth_evidence.dart`(CRLF), `frontend/lib/ui/statistics/statistics_history_charts.dart`(LF), `frontend/lib/ui/statistics/statistics_workspace.dart`(LF), `frontend/lib/ui/pages/statistics_page.dart`(CRLF, 필요할 때만), `frontend/test/statistics_a6_ranking_test.dart`(LF). 걸릴 수 있는 시험(사본만): `test/statistics_history_view_test.dart` · `test/statistics_history_projection_test.dart`.
+  - 이 문서: WIP 없음, LF.
+- 사본: `debug/frontend_tidy4/pre/<v7 기준 경로>` — 위 기존 파일 전부(10파일 + 이 문서). WIP가 없어 `post_dir`는 두지 않는다.
+- 고치지 않는 것: Lane A 파일(`lib/ui/pages/tactical_page.dart` · `lib/ui/tactical/**` · `lib/ui/scan/**` · `app_shell.dart`), 계획 화면 코드 · `lib/ui/studio/**`(시험 입력만 바꾼다), `lib/services/**`, `lib/ui/kit/**`, golden harness · golden 시험, `frontend/tool/**`, `release/`(읽기만), backend · contracts, 택틱 소유 파일.
+
+## tidy4 종료 기록 (2026-10-18, 코드 작성 완료 · CF gate 미실행)
+
+두 항목을 모두 했다. 1. 계획 시험 두 파일이 미추적 `release/` 대신 git 추적 fixture `frontend/test/fixtures/studio_sections/`의 Studio json을 읽는다(시험 의도 — 저장 문서와 typed projection이 같은지 — 그대로). 2. A6는 첫 클릭 = 시작, 둘째 클릭 = 끝으로 두 스냅샷 사이 구간을 고른다. HEAD는 착수 때와 같다(`44255123`). git 쓰기 0, 파일 삭제 0, `release/` 쓰기 · 이름 바꾸기 0(읽기 · 복사만).
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더, 로그 `debug/frontend_tidy4/logs/` — 실패 줄 · 요약만 봤다)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/statistics lib/ui/statistics lib/ui/pages/statistics_page.dart test/plan_element_builder_test.dart test/plan_preset_manager_test.dart`(편집 뒤) | **No issues found(0)**(`analyze_1.log`) |
+| `flutter test test/statistics_a6_ranking_test.dart test/plan_element_builder_test.dart test/plan_preset_manager_test.dart` | **+65 −0**(첫 실행, `slice_1.log`) |
+| 바뀐 동작에 걸리는 시험 37파일 한 명령(`--file-reporter json`, 목록 `related_files.txt`) | **+457 −0**(첫 실행, `related_1.json`) |
+| `charts` 한 줄 format 손질 뒤 `flutter test` A6 · 이력 4파일(`statistics_a6_ranking` · `statistics_history_view` · `statistics_history_projection` · `statistics_page`) | **+58 −0**(`final_a6.json`) |
+| `flutter analyze`(frontend 전체, 최종) | **No issues found(0, info 포함)**(`analyze_final.log`). `pubspec.yaml` · `pubspec.lock` 변경 0 |
+| `git diff --check`(고친 기존 7파일) | exit 0 |
+
+- 37파일 파일별(1차): plan_element_builder +47 · title_page +25 · growth_calculator_adapter +24 · plan_flow_goal_step +23 · metadata_manager_dto +18 · planning_page +17 · statistics_history_projection +17 · widget +16 · plan_flow +15 · statistics_second_tiles +15 · app_navigation_fe7d +14 · statistics_page +14 · statistics_history_view +14 · **statistics_a6_ranking +13**(11 → 13, 새 2) · statistics_workspace +13 · developer_tools_app +12 · statistics_growth_view +12 · app_navigation_tidy1 +11 · mock_design_review_scenario +11 · statistics_growth_projection +11 · statistics_supply_view +11 · section_studio_document +10 · statistics_filter +10 · statistics_third_tiles +10 · statistics_plan_view +9 · kit/diagonal_scrollbar +8 · statistics_supply_projection +8 · statistics_plan_projection +7 · statistics_projection +7 · kit/scroll_viewport_fog +6 · home_page +5 · kit/section_frame +5 · **plan_preset_manager +5** · widgets/section_surface +5 · student_range_condition_section +4 · theme_tokens +3 · statistics_app_shell +2.
+- 시험 찾기: grep `statistics|Statistics|plan_element_builder|plan_preset_manager|ba-section-studio|PlanElementBuilder|PlanPresetManager|planStarterStudioDocument|presetElementStudioDocument|presetManagementStudioDocument`(goldens 제외) 43파일(`related_all.txt`) 중 process E2E 3(`repository_process_e2e` · `tactical_fb6b_process_e2e` · `tactical_v2_process_e2e`)과 전술 3(`tactical_fb6b_dart` · `tactical_fe9b1_read` · `tactical_jokbo_panel` — 낱말 "statistics"만 걸림, 이 slice 코드를 쓰지 않고 Lane A FE9-c 작업 중)을 뺐다. `metadata_manager_dto`(낱말만 걸림)는 함께 돌렸다.
+- `dart format`: **쓰기 실행 0**. 고친 7파일을 하나씩 `--output=none --set-exit-if-changed` · `--output=show`로 확인만 했다. `statistics_history_charts.dart`는 내 줄 하나(강조 글자 `Offset`)만 format과 달라 손으로 맞췄고 지금 0 changed다. 나머지 format 차이는 모두 착수 사본에도 있는 기존 줄이다(같은 hunk 수 — workspace 17 · evidence 3 · projection 1 · plan_element_builder 1(파일 끝 `}` 앞 빈 줄), `--stdin-name`으로 같은 패키지 기준 비교). 그래서 diff에는 이 slice 줄만 있다.
+- 줄바꿈: `statistics_growth_evidence.dart` CRLF 유지(1018줄 모두 CRLF), 나머지 6파일 LF 유지. fixture 3개는 `release/` 원본과 `cmp` 일치(LF, 끝 개행 하나).
+- 잠금 충돌 0(재시도 없음). golden · process E2E · 전체 gate는 돌리지 않았다.
+
+### 항목별 결과
+
+| 항목 | 결과 | 고친 파일(pre 대비 줄) |
+|---|---|---|
+| 1 `release/` 의존 제거 | **완료** | `test/plan_element_builder_test.dart`(+5 −2) · `test/plan_preset_manager_test.dart`(+3 −1), 새 fixture 3 |
+| 2 A6 두 점 고르기 | **완료** | `lib/statistics/statistics_history_projection.dart`(+18 −10) · `lib/ui/statistics/statistics_growth_evidence.dart`(+40 −24) · `lib/ui/statistics/statistics_history_charts.dart`(+28 −29) · `lib/ui/statistics/statistics_workspace.dart`(+4 −5) · `test/statistics_a6_ranking_test.dart`(+114 −12) |
+
+- `lib/ui/pages/statistics_page.dart`는 고치지 않았다(pre와 `cmp` 일치). "← 통계" 복귀 되살리기(`_restoreTrendSelection`)는 근거가 있을 때만 되살리므로, 두 끝을 고른 구간은 그대로 되살고 시작만 고른 상태는 버린다(다시 읽으면 풀리는 다른 선택과 같다).
+- 사본만 두고 고치지 않은 시험: `test/statistics_history_view_test.dart` · `test/statistics_history_projection_test.dart`(pre와 `cmp` 일치, 둘 다 통과 — 기본 강조 `highlightStart 3` 그대로).
+
+### `release/` 의존 제거 표
+
+| 시험 | 이전 경로 | 새 경로 | 출처 |
+|---|---|---|---|
+| `plan_element_builder_test.dart` "typed plan starter layout matches the saved Studio document" | `../release/section-plan-starter.ba-section-studio.json` | `test/fixtures/studio_sections/section-plan-starter.ba-section-studio.json` | `release/` 같은 이름 파일 바이트 복사(6582 B, SHA-256 `80bca885…bd36`, 원본 mtime 2026-08-04, 복사 2026-10-18 01:18) |
+| `plan_element_builder_test.dart` "typed preset element layout matches the saved Studio document" | `../release/section-preset-element.ba-section-studio.json` | `test/fixtures/studio_sections/section-preset-element.ba-section-studio.json` | 같음(3413 B, `0e16e423…8d26`, 원본 2026-08-03) |
+| `plan_preset_manager_test.dart` "preset manager owns dedicated geometry and requested motions"(75행 부근) | `../release/section-preset-management.ba-section-studio.json` | `test/fixtures/studio_sections/section-preset-management.ba-section-studio.json` | 같음(1409 B, `c57fb876…e6bce6`, 원본 2026-08-05) |
+
+- 추적 원본: 없다. `git ls-files`의 `*.ba-section-studio.json`은 `frontend/assets/studio_sections/` 3개(계정 생성 · 타이틀 두 장)뿐이다. 그래서 프롬프트 차선대로 `frontend/test/fixtures/`에 복사했다. `assets/`에 두지 않은 이유: `pubspec.yaml`이 `assets/studio_sections/`를 앱 번들에 넣으므로 시험 입력이 앱 산출물을 바꾸게 된다.
+- 추적 원본과 release json 차이 판단: 비교할 추적 원본이 없다. `frontend/tool/sync_windows_release.ps1`(245행)은 기존 `release/*.ba-section-studio.json`을 새 빌드 폴더로 **그대로 옮기기만** 하고 다시 쓰지 않는다 — 즉 이 json은 빌드 산출이 아니라 Studio에서 저장해 `release/`에 둔 문서다. typed projection(`lib/ui/studio/*_studio_layout.dart`) doc 주석도 이 파일을 원본으로 적는다. 그래서 release json 내용이 시험 의도의 기준이고, 그대로 복사했다.
+- 확인(grep · 코드, `release/` 이름 바꾸기 없이): `frontend/test` · `frontend/lib`에서 `../release` 0건, `release/` 문자열은 시험 주석 2곳(출처)과 `lib/ui/studio/*` doc 주석 5곳뿐이다. 세 시험 모두 `File('test/fixtures/...')`만 연다(cwd = `frontend`, `assets/studio_sections/...`를 읽는 `title_page_test`와 같은 방식).
+
+### A6 고르기 규칙 표 (tidy4 — FE7-j 발견 1, 시안 Statistics-Proposal A6 "두 스냅샷을 고르면")
+
+| 지금 상태 | 누른 점 | 다음 상태 | 그림(A6) | 근거 패널 |
+|---|---|---|---|---|
+| 고른 것 없음 | i | 시작 = i | 점 i만 분홍(구간 바탕 · 강조 글자 없음, 기본 강조 사라짐) | "근거 확인"(근거 없음) |
+| 시작 = s | s(같은 점) | 고른 것 없음 | FE7-h 기본 강조(마지막에서 14일 안) | "근거 확인" |
+| 시작 = s | e ≠ s | 구간 min(s,e) → max(s,e) | 두 점 사이 분홍 바탕 · 두 끝 분홍 점 · 가운데 "9/29 → 10/05 +1.2%p" | 오른 학생 순위(FE7-j 틀 그대로) |
+| 구간 a → b | 아무 점 i(a · b 포함) | 시작 = i(셋째 클릭 = 새 시작) | 점 i만 분홍 | "근거 확인" |
+| 시작 · 구간 | 다른 타일 고름 · 주제 · A1 seg · 통계 필터 변경 · 다시 읽기 | 풀림 | 기본 강조 | 그대로 다른 선택 / "근거 확인" |
+
+- 끝은 아무 점이다(마지막 점이 아니어도 된다). 그래서 FE7-j의 "마지막 점을 누르면 바로 앞 점부터"(`StatisticsA6Geometry.startFor`)와 "근거는 끝이 지금 마지막 점일 때만" 조건을 지웠다. 이제 두 끝 스냅샷이 지금 A6 점(최근 6개)에 다 있고 시작 < 끝이면 근거가 있다(새 스냅샷이 생겨도 두 점이 남아 있으면 구간이 남는다).
+- 누르는 단위 · 칸(`pointAt`, 이웃 점 가운데까지 · y 10 ~ 231)은 FE7-j 그대로. 점 2개 미만이면 누를 수 없다(그대로).
+- 키보드 · 접근성: 기존 A1 문법 그대로다. A1은 `StatChartFrame.onTapAt` 누르기와 의미 라벨(`'… 분포'`)뿐이고 키보드 경로가 없다. A6도 누르기 + 의미 라벨 `성장 추이` 그대로이며 새 키보드 경로를 만들지 않았다(발견 2).
+- 스냅샷 = FD-175 묶음 끝 학생 상태(A6 점과 같다). 순위 · 강조 글자는 고른 두 점 그대로(`statisticsGrowthRanking`은 원래 아무 두 점을 받았다 — 변경 0). 통계 필터(FD-104): A6 · 순위 모두 지금 필터 대상만, 필터가 바뀌면 풀린다(변경 0).
+- 구현:
+  - `StatisticsGrowthTrend.highlightEnd`(null = 마지막 점, FE7-h 기본) · `withHighlight(start, {end})` · `highlightText`는 두 끝 사이(시작 = 끝이면 null).
+  - `StatisticsGrowthTrendSelection(fromSession, [toSession])` — `toSession` null = 시작만 고름. `StatisticsGrowthView.trendRange`(두 끝 순번, 시작만이면 end null) · `shownTrend` · `selectTrendPoint(index)`(위 표의 상태 전이). `trendStart` · `selectTrendStart`는 지웠다(쓰는 곳은 workspace 하나).
+  - painter `StatisticsGrowthTrendPainter.highlightEnd`(null = 마지막 점): 바탕 · 분홍 점 · 글자 가운데를 끝까지. 차트 `StatisticsGrowthTrendChart.onPointSelected(int)`(누른 점 순번만 넘김, 규칙은 view).
+- 시험 `test/statistics_a6_ranking_test.dart`: 한 번 누르기 시험 6건을 두 번 누르기(`_tapRange`)로 바꿈, 첫 화면 시험은 "첫 클릭 = 시작(분홍 점 · 글자 · 근거 없음) → 둘째 = 끝 → 셋째 = 새 시작 → 같은 점 = 풀림"으로, 새 2건: projection "가운데 구간(1 → 3) 순위 · 강조 글자 · 시작 = 끝 글자 없음 · 기본 끝 = 마지막", 화면 "앞 점을 둘째로 누르면 두 끝을 바꿈 · 끝이 마지막 점이 아닌 구간 근거 · 구간 끝 점을 눌러도 새 시작". 지운 시험 0.
+
+### golden 변화 0 근거(비교 미실행)
+
+- golden 조작은 A6를 누르지 않는다(grep `statistics-a6` · `StatisticsGrowthTrend` in `test/goldens/` 0건). 그래서 선택은 늘 없고 `shownTrend`는 같은 trend 객체(`highlightEnd` null)를 돌려준다.
+- painter: `highlightEnd` null이면 끝 = `count - 1`. 바탕 조건 `start < end` = FE7-h `start < count - 1`, 분홍 점 `index == start || index == end` = 이전 `index == count - 1`, 글자 가운데 `(x(start) + x(end)) / 2` 같은 값, 글자 조건은 `start < end`가 더해졌지만 기본 강조는 늘 `start ≤ count - 2`라 같다. `highlightText`도 끝 = `points.length - 1`로 같은 글자.
+- 차트: `StatChartFrame`은 `onTapAt`이 있든 없든 같은 `GestureDetector` 트리다(FE7-j 근거와 같음). 콜백 이름만 바뀌었다.
+- 계획 시험 입력 변경은 시험 파일만이다(앱 코드 · Studio 문서 · 기준 이미지 변경 0).
+- 그래서 commit.json `whole`에 기준 이미지가 없다.
+
+### 미검증 항목
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교: **미실행**(모든 장면 변화 0 예상, 위 근거).
+- 깨끗한 checkout에서 계획 두 시험 실행(새 fixture가 git에 들어간 뒤): **미실행**. 이 PC에서는 `release/`가 있는 채로 돌았고, 시험이 `release/`를 열지 않는 것은 grep · 코드로만 확인했다.
+- process E2E · 전술 시험 4(Lane A 작업 중), 사용자 시각 검수(앱 mock 검수 시나리오는 학생 스냅샷 1회라 A6를 누를 수 없음 — FE7-j 발견 5): **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Statistics-Proposal A6(두 스냅샷 → 오른 학생 순위) | 통계 → 학생 성장 → A6. fixture는 `test/statistics_a6_ranking_test.dart`(앱 mock 시나리오는 스냅샷 1회라 누를 수 없음) | 9/29 점 → 그 점만 분홍, 근거 "근거 확인" / 10/05 점 → 9/29 ~ 10/05 분홍 · "9/29 → 10/05 +1.2%p" · 근거 순위 / 9/22 → 그 앞 점 순서로 누르면 앞 점 ~ 9/22 구간(끝이 마지막이 아님) / 구간 뒤 아무 점 → 새 시작 / 시작 점 다시 → 기본 강조 9/22 ~ 10/05 |
+
+### 처리한 FD
+
+- FD-175(확정): 두 끝은 묶음 끝 학생 스냅샷 그대로. FD-104(확정): 통계 필터 대상만, 필터 변경 = 풀림 그대로. FD-028 · FD-041: FE7-j 그대로(변경 0).
+- 막는 `열림` FD 0(착수 기록). 새 FD 후보 없음 — 고르기 규칙은 이번 프롬프트(CF)가 정했다.
+
+### 발견 사항
+
+1. **fixture 갱신 규칙**: 계획 Studio 문서를 Studio에서 다시 저장하면 이제 `release/` json과 `frontend/test/fixtures/studio_sections/` 사본을 함께 바꿔야 시험이 새 문서를 본다(타이틀 · 계정 문서는 `assets/studio_sections/`가 원본이라 한 벌). 한 벌로 하려면 계획 문서 3개도 추적 원본 자리(`assets/studio_sections/` 또는 문서 폴더)를 정하는 CF 판단이 필요하다. `release/`에는 시험이 읽지 않는 `section-plan-main` · `-plan-main-1` · `-plan-phase` · `-student` · `-student_stat_indicator` · `component-diagonal-media-list-item1`도 추적 원본 없이 있다(`plan_studio_layout.dart` · `student_studio_layout.dart` doc 주석이 원본으로 적음) — 시험 없음, 이번 범위 밖.
+2. **A6 · A1 키보드 경로 없음**: 기존 A1 문법이 누르기 + 의미 라벨뿐이라 A6도 키보드로 점을 고를 수 없다. 통계 차트 전체(A1 · A2 · A5 · B1 · C2 등 `onTapAt` 차트)의 키보드 · 스크린리더 경로는 따로 정할 일이다(A4 학교 칩만 `FocusableActionDetector`).
+3. **시작만 고른 상태의 근거 패널**: 시안에 문구가 없어 "근거 확인"(선택 없음과 같은 빈 상태)을 둔다. "끝 스냅샷을 고르십시오" 같은 안내가 필요하면 시안 문구 결정이 필요하다(지어내지 않음).
+4. **"← 통계" 복귀와 시작만 고른 상태**: 복귀는 근거가 있는 선택만 되살리므로 시작만 고른 채 다른 탭으로 갔다 오면 풀린다. 근거 버튼으로만 학생 탭에 가므로 실제로는 두 끝 구간만 되살릴 일이 있다.
+5. **pre에 있던 format 차이**: `plan_element_builder_test.dart` 끝 `}` 앞 빈 줄, `statistics_workspace.dart` 17곳 · `statistics_growth_evidence.dart` 3곳 · `statistics_history_projection.dart` 1곳이 HEAD부터 `dart format` 결과와 다르다. 이번 diff에 섞지 않았다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때, 작업 트리와 `cmp` 일치 · LF 파일은 HEAD와도 일치): `debug/frontend_tidy4/pre/<경로>` 11파일(고친 7 + 고치지 않은 `statistics_page.dart` · `statistics_history_view_test.dart` · `statistics_history_projection_test.dart` + 이 문서 HEAD 내용). WIP 0 → `post_dir` 없음.
+- `debug/frontend_tidy4/commit.json`: slice `tidy4`, modified 7, added 3, `whole` = [이 문서], `status=true`.
+- 인계: `debug/frontend_tidy4/output.md`. 로그 `debug/frontend_tidy4/logs/`.
+
+### 다음 행동
+
+- tidy4 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE9-c)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 statistics_a6_ranking +13(11 → 13) · plan 두 파일 수 그대로, process 변화 0, golden 전 장면 GREEN) → `fe_commit.ps1 -Slice tidy4`. 새 fixture 3개가 index에 오르는지(`added`) 확인.
+- 발견 1(계획 Studio 문서 원본 자리) · 2(통계 차트 키보드 경로) · 3(시작만 고른 상태 안내 문구)은 CF 판단.

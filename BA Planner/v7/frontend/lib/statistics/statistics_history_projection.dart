@@ -642,6 +642,7 @@ class StatisticsGrowthTrend {
     required this.snapshotCount,
     this.lastAt,
     this.highlightStart,
+    this.highlightEnd,
   });
 
   /// 최근 학생 스냅샷([statisticsHistoryRecentSnapshots]개까지, 오래된 것부터).
@@ -653,8 +654,11 @@ class StatisticsGrowthTrend {
   /// 마지막 학생 스냅샷 시각.
   final DateTime? lastAt;
 
-  /// 강조 구간 시작 점(끝은 마지막 점). 없으면 null.
+  /// 강조 구간 시작 점. 없으면 null.
   final int? highlightStart;
+
+  /// 강조 구간 끝 점. null이면 마지막 점이다(FE7-h 기본 강조). [highlightStart]와 같으면 시작만 고른 상태다(tidy4).
+  final int? highlightEnd;
 
   bool get drawable => points.length >= 2;
 
@@ -667,19 +671,23 @@ class StatisticsGrowthTrend {
     return index < 0 ? null : index;
   }
 
-  /// 강조 구간 시작만 [start]로 바꾼 값(A6 고른 구간, FE7-j).
-  StatisticsGrowthTrend withHighlight(int start) => StatisticsGrowthTrend(
-    points: points,
-    snapshotCount: snapshotCount,
-    lastAt: lastAt,
-    highlightStart: start,
-  );
+  /// 강조 구간을 [start] → [end](null이면 마지막 점)로 바꾼 값(A6 고른 구간, FE7-j · tidy4).
+  StatisticsGrowthTrend withHighlight(int start, {int? end}) =>
+      StatisticsGrowthTrend(
+        points: points,
+        snapshotCount: snapshotCount,
+        lastAt: lastAt,
+        highlightStart: start,
+        highlightEnd: end,
+      );
 
-  /// 강조 구간 글자(`9/22 → 10/05 +2.0%p`). 끝 값을 모르면 null.
+  /// 강조 구간 글자(`9/22 → 10/05 +2.0%p`). 시작만 골랐거나 두 끝 값 중 하나를 모르면 null.
   String? get highlightText {
     final start = highlightStart;
     if (start == null) return null;
-    final from = points[start], to = points.last;
+    final end = highlightEnd ?? points.length - 1;
+    if (end <= start) return null;
+    final from = points[start], to = points[end];
     final a = from.averageGrowth, b = to.averageGrowth;
     if (a == null || b == null) return null;
     final tenths = _percentUnits(b, 1) - _percentUnits(a, 1);

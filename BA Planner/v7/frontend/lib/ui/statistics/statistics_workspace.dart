@@ -1745,8 +1745,8 @@ class _StatisticsTile extends StatelessWidget {
     ),
   );
 
-  /// A6 내용(FE7-h). 읽는 중 · 성장 자료 없음 '—', 읽기 실패는 그 글자, 학생 스냅샷 2회 미만은 확정 4 문구다. 점을 누르면 그
-  /// 스냅샷 → 마지막 스냅샷 구간을 고르고(같은 구간을 다시 누르면 푼다), 고른 구간이 강조 구간이다(FE7-j).
+  /// A6 내용(FE7-h). 읽는 중 · 성장 자료 없음 '—', 읽기 실패는 그 글자, 학생 스냅샷 2회 미만은 확정 4 문구다. 첫 클릭 = 시작,
+  /// 둘째 클릭 = 끝으로 두 스냅샷 사이 구간을 고르고(시작 점을 다시 누르면 푼다), 고른 구간이 강조 구간이다(FE7-j · tidy4).
   Widget _a6Body() {
     final error = history.error;
     if (error != null) return _empty(error);
@@ -1760,9 +1760,8 @@ class _StatisticsTile extends StatelessWidget {
     return _chart(
       StatisticsGrowthTrendChart(
         trend: selectable ? view.shownTrend ?? trend : trend,
-        selectedStart: selectable ? view.trendStart : null,
-        onStartSelected: selectable && view.onSelectionChanged != null
-            ? view.selectTrendStart
+        onPointSelected: selectable && view.onSelectionChanged != null
+            ? view.selectTrendPoint
             : null,
       ),
     );

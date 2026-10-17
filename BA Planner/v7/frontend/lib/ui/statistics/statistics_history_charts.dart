@@ -5,8 +5,8 @@
 // - A6 꺾은선(시안 viewBox 462×240): 스냅샷마다 평균 육성도, 같은 간격. 바닥 = 가장 낮은 값을 내린 정수 − 2, 가장 높은 값이
 //   y 55.4(시안 63.4%). 가장 높은 값 아래 5의 배수에 점선 · 글자(시안 60), 바닥 글자(56). 강조 구간(분홍 바탕 · 두 끝 분홍 점 ·
 //   "9/22 → 10/05 +2.0%p"), 끝 점 위 값 글자.
-//   FE7-j: 점(그 점 세로 칸)을 누르면 그 스냅샷 → 마지막 스냅샷 구간을 고른다(마지막 점은 바로 앞 점부터). 고른 구간이 강조
-//   구간이 되고, 같은 구간을 다시 누르면 푼다(A1 구간 선택과 같은 문법). 근거는 "오른 학생 순위"다.
+//   FE7-j · tidy4: 점(그 점 세로 칸)을 누르면 첫 클릭 = 시작(그 점만 분홍), 둘째 클릭 = 끝(두 점 사이 구간, 순서는 상관없다)이다.
+//   같은 점을 다시 누르면 시작을 풀고, 구간을 고른 뒤 누르면 새 시작이다. 고른 구간이 강조 구간이 되고 근거는 "오른 학생 순위"다.
 // - B3 작은 배수(시안 viewBox 1030×226): 패널마다 축이 따로(FD-033). 이름, 필요량이 범위 안이면 점선 + "필요", 위 · 아래면
 //   "필요 n ↑ · ↓", 선 + 끝 점, 아래 왼쪽 순변화(감소 분홍 · 증가 초록), 아래 오른쪽 지금 수량. 마지막 스캔 뒤 바뀐 지금 점은
 //   속이 빈 원이다(FE6-f 스파크라인과 같다).
@@ -209,10 +209,6 @@ abstract final class StatisticsA6Geometry {
     return ((point.dx - firstX) / pitch).round().clamp(0, count - 1);
   }
 
-  /// [index] 점을 눌렀을 때 고를 구간 시작(끝은 마지막 점, 마지막 점이면 바로 앞 점부터).
-  static int startFor(int index, int count) =>
-      index >= count - 1 ? count - 2 : index;
-
   /// 바닥 값(%): 가장 낮은 값을 내린 정수 − 2(시안 58.1 → 56).
   static double floorOf(double minPercent) => minPercent.floorToDouble() - 2;
 
@@ -254,11 +250,15 @@ class StatisticsGrowthTrendPainter extends StatChartPainter {
   StatisticsGrowthTrendPainter({
     required List<StatisticsA6PaintPoint> points,
     this.highlightStart,
+    this.highlightEnd,
     this.highlightText,
   }) : points = List.unmodifiable(points);
 
   final List<StatisticsA6PaintPoint> points;
   final int? highlightStart;
+
+  /// 강조 구간 끝. null이면 마지막 점이다. [highlightStart]와 같으면 그 점만 분홍이다(시작만 고름, tidy4).
+  final int? highlightEnd;
   final String? highlightText;
 
   @override
@@ -275,13 +275,16 @@ class StatisticsGrowthTrendPainter extends StatChartPainter {
     final count = points.length;
     double x(int index) => StatisticsA6Geometry.xOf(index, count);
     final start = highlightStart;
-    if (start != null && start < count - 1) {
+    final end = start == null
+        ? null
+        : (highlightEnd ?? count - 1).clamp(start, count - 1);
+    if (start != null && end != null && start < end) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTRB(
             x(start),
             StatisticsA6Geometry.plotTop,
-            x(count - 1),
+            x(end),
             StatisticsA6Geometry.baseline,
           ),
           const Radius.circular(6),
@@ -338,7 +341,7 @@ class StatisticsGrowthTrendPainter extends StatChartPainter {
       final percent = point.percent;
       if (percent != null) {
         final center = Offset(x(index), y(percent));
-        final pink = start != null && (index == start || index == count - 1);
+        final pink = start != null && (index == start || index == end);
         canvas.drawCircle(
           center,
           StatisticsA6Geometry.dotRadius,
@@ -375,14 +378,11 @@ class StatisticsGrowthTrendPainter extends StatChartPainter {
       );
     }
     final text = highlightText;
-    if (start != null && text != null) {
+    if (start != null && end != null && start < end && text != null) {
       statisticsChartText(
         canvas,
         text,
-        Offset(
-          (x(start) + x(count - 1)) / 2,
-          StatisticsA6Geometry.highlightLabelY,
-        ),
+        Offset((x(start) + x(end)) / 2, StatisticsA6Geometry.highlightLabelY),
         fontSize: 11,
         fontWeight: AppType.bold,
         color: StatChartPalette.highlight,
@@ -404,24 +404,22 @@ class StatisticsGrowthTrendPainter extends StatChartPainter {
   bool shouldRepaint(StatisticsGrowthTrendPainter oldPainter) =>
       !listEquals(oldPainter.points, points) ||
       oldPainter.highlightStart != highlightStart ||
+      oldPainter.highlightEnd != highlightEnd ||
       oldPainter.highlightText != highlightText;
 }
 
-/// A6 그래프. 점을 누르면 [onStartSelected](그 구간 시작, 같은 구간을 다시 누르면 null, FE7-j).
+/// A6 그래프. 점을 누르면 [onPointSelected](누른 점 순번)다. 시작 · 끝 고르기 규칙은 `StatisticsGrowthView.selectTrendPoint`
+/// (FE7-j · tidy4).
 class StatisticsGrowthTrendChart extends StatelessWidget {
   const StatisticsGrowthTrendChart({
     super.key,
     required this.trend,
-    this.selectedStart,
-    this.onStartSelected,
+    this.onPointSelected,
   });
 
-  /// 그릴 값(구간을 골랐으면 그 구간이 강조 구간이다).
+  /// 그릴 값(구간이나 시작을 골랐으면 그것이 강조 구간이다).
   final StatisticsGrowthTrend trend;
-
-  /// 고른 구간 시작(끝은 마지막 점). 고르지 않았으면 null.
-  final int? selectedStart;
-  final ValueChanged<int?>? onStartSelected;
+  final ValueChanged<int>? onPointSelected;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -443,15 +441,16 @@ class StatisticsGrowthTrendChart extends StatelessWidget {
               ),
           ],
           highlightStart: trend.highlightStart,
+          highlightEnd: trend.highlightEnd,
           highlightText: trend.highlightText,
         ),
-        onTapAt: switch (onStartSelected) {
-          final onStartSelected? when trend.points.length >= 2 => (point) {
-            final count = trend.points.length;
-            final index = StatisticsA6Geometry.pointAt(point, count);
-            if (index == null) return;
-            final start = StatisticsA6Geometry.startFor(index, count);
-            onStartSelected(start == selectedStart ? null : start);
+        onTapAt: switch (onPointSelected) {
+          final onPointSelected? when trend.points.length >= 2 => (point) {
+            final index = StatisticsA6Geometry.pointAt(
+              point,
+              trend.points.length,
+            );
+            if (index != null) onPointSelected(index);
           },
           _ => null,
         },

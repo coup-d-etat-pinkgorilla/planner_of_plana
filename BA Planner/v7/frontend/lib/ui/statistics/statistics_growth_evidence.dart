@@ -116,12 +116,13 @@ final class StatisticsGrowthMatrixSelection extends StatisticsGrowthSelection {
   int get hashCode => cell.hashCode;
 }
 
-/// A6 구간(FE7-j): [fromSession] 스냅샷 → [toSession] 스냅샷(FD-175 묶음 이름). 끝은 고를 때의 마지막 점이다.
+/// A6 구간(FE7-j · tidy4): [fromSession] 스냅샷 → [toSession] 스냅샷(FD-175 묶음 이름, 오래된 점이 먼저). [toSession]이 null이면
+/// 첫 클릭으로 시작만 고른 상태다(근거 없음).
 final class StatisticsGrowthTrendSelection extends StatisticsGrowthSelection {
-  const StatisticsGrowthTrendSelection(this.fromSession, this.toSession);
+  const StatisticsGrowthTrendSelection(this.fromSession, [this.toSession]);
 
   final String fromSession;
-  final String toSession;
+  final String? toSession;
 
   @override
   bool operator ==(Object other) =>
@@ -172,43 +173,58 @@ class StatisticsGrowthView {
   /// 근거 목록을 모두 펼쳤는가.
   final bool expanded;
 
-  /// 고른 A6 구간의 시작 점([trend] 순번). 끝이 지금 마지막 점이 아니거나 고르지 않았으면 null.
-  int? get trendStart {
+  /// 고른 A6 구간의 두 끝([trend] 순번, `start < end`). 시작만 골랐으면 `end`가 null이다. 고르지 않았거나 그 점을 지금
+  /// [trend]에서 찾지 못하면(다시 읽어 점이 바뀜) null.
+  ({int start, int? end})? get trendRange {
     final trend = this.trend;
     final selection = this.selection;
     if (trend == null || selection is! StatisticsGrowthTrendSelection) {
       return null;
     }
     final start = trend.indexOf(selection.fromSession);
-    final end = trend.indexOf(selection.toSession);
-    if (start == null ||
-        end == null ||
-        end != trend.points.length - 1 ||
-        start >= end) {
-      return null;
-    }
-    return start;
+    if (start == null) return null;
+    final toSession = selection.toSession;
+    if (toSession == null) return (start: start, end: null);
+    final end = trend.indexOf(toSession);
+    if (end == null || start >= end) return null;
+    return (start: start, end: end);
   }
 
-  /// A6에 그릴 값: 구간을 골랐으면 그 구간을 강조하고, 아니면 기본 강조(FE7-h)다.
+  /// A6에 그릴 값: 구간을 골랐으면 그 구간, 시작만 골랐으면 그 점만 강조하고, 아니면 기본 강조(FE7-h)다.
   StatisticsGrowthTrend? get shownTrend {
-    final start = trendStart;
-    return start == null ? trend : trend?.withHighlight(start);
+    final range = trendRange;
+    if (range == null) return trend;
+    return trend?.withHighlight(range.start, end: range.end ?? range.start);
   }
 
-  /// A6 [start] 점 → 마지막 점 구간을 고른다(null이면 푼다).
-  void selectTrendStart(int? start) {
+  /// A6 [index] 점을 눌렀다(tidy4, 시안 "두 스냅샷을 고르면"). 고른 것이 없거나 구간을 이미 골랐으면 그 점이 새 시작이다.
+  /// 시작만 골랐으면 그 점이 끝이고(시작보다 앞 점이면 두 끝을 바꾼다), 시작 점을 다시 누르면 푼다.
+  void selectTrendPoint(int index) {
     final trend = this.trend;
     final onSelectionChanged = this.onSelectionChanged;
-    if (onSelectionChanged == null) return;
-    if (start == null || trend == null) {
+    if (onSelectionChanged == null ||
+        trend == null ||
+        index < 0 ||
+        index >= trend.points.length) {
+      return;
+    }
+    final range = trendRange;
+    if (range == null || range.end != null) {
+      onSelectionChanged(
+        StatisticsGrowthTrendSelection(trend.points[index].sessionId),
+      );
+      return;
+    }
+    if (index == range.start) {
       onSelectionChanged(null);
       return;
     }
+    final from = math.min(index, range.start);
+    final to = math.max(index, range.start);
     onSelectionChanged(
       StatisticsGrowthTrendSelection(
-        trend.points[start].sessionId,
-        trend.points.last.sessionId,
+        trend.points[from].sessionId,
+        trend.points[to].sessionId,
       ),
     );
   }
@@ -275,8 +291,8 @@ class StatisticsGrowthView {
           ],
         );
       case StatisticsGrowthTrendSelection(:final fromSession, :final toSession):
-        // 끝이 지금 마지막 점이 아니면(새 스냅샷) A6에 그 구간이 없다.
-        if (trendStart == null) return null;
+        // 시작만 골랐거나 지금 A6에 그 구간이 없으면(다시 읽어 점이 바뀜) 근거가 없다.
+        if (toSession == null || trendRange?.end == null) return null;
         final ranking = statisticsGrowthRanking(
           history,
           trend,

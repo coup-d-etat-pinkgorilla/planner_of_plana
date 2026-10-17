@@ -1,8 +1,9 @@
 // FE7-j: A6 구간 선택 → "오른 학생 순위"(Statistics-Proposal A6, FE7-h 발견 5).
 //
 // - projection: 두 학생 스냅샷 사이 학생별 육성도 증감(오른 학생 증감 큰 순 → 새 학생), 통계 필터 대상만, 구간을 못 찾으면 null.
-// - 화면: 점을 누르면 그 스냅샷 → 마지막 스냅샷이 강조 구간이 되고 근거 패널이 순위를 보인다. 같은 구간을 다시 누르면 푼다
-//   (A1 구간 선택과 같은 문법). 근거 버튼은 학생 탭 임시 목록으로 넘긴다(FE7-d). "← 통계" 복귀 뒤 이력을 읽으면 되살린다.
+// - 화면(tidy4, FE7-j 발견 1 — 시안 "두 스냅샷을 고르면"): 첫 클릭 = 시작(그 점만 분홍, 근거 없음), 둘째 클릭 = 끝(두 점 사이가
+//   강조 구간 · 근거 패널 순위, 앞 점을 누르면 두 끝을 바꾼다). 시작 점을 다시 누르면 풀고, 구간을 고른 뒤 누르면 새 시작이다.
+//   근거 버튼은 학생 탭 임시 목록으로 넘긴다(FE7-d). "← 통계" 복귀 뒤 이력을 읽으면 되살린다.
 // 시안 숫자 이력 fixture(`statistics_history_fixture.dart`)를 쓴다.
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
@@ -53,9 +54,11 @@ StatisticsHistory _build() {
   );
 }
 
+/// [from] 점 → [to] 점(null이면 마지막 점) 순위.
 StatisticsGrowthRanking _ranking(
   StatisticsHistory history,
   int from, {
+  int? to,
   Set<String>? targets,
 }) {
   final trend = statisticsGrowthTrend(history, targets: targets)!;
@@ -63,7 +66,7 @@ StatisticsGrowthRanking _ranking(
     history,
     trend,
     fromSession: trend.points[from].sessionId,
-    toSession: trend.points.last.sessionId,
+    toSession: trend.points[to ?? trend.points.length - 1].sessionId,
   )!;
 }
 
@@ -187,6 +190,12 @@ Future<void> _tapPoint(WidgetTester tester, int index) async {
   await tester.pumpAndSettle();
 }
 
+/// A6 두 점을 차례로 누른다(첫 클릭 = 시작, 둘째 클릭 = 끝, tidy4).
+Future<void> _tapRange(WidgetTester tester, int first, int second) async {
+  await _tapPoint(tester, first);
+  await _tapPoint(tester, second);
+}
+
 String _text(WidgetTester tester, String key) =>
     tester.widget<Text>(find.byKey(ValueKey(key))).data!;
 
@@ -291,6 +300,46 @@ void main() {
       expect(ranking.rows.last.isNew, isTrue);
     });
 
+    test('a middle range compares its own two snapshots (tidy4)', () {
+      final history = _build();
+      final trend = statisticsGrowthTrend(history)!;
+      final ranking = _ranking(history, 1, to: 3);
+      expect(ranking.from, same(trend.points[1]));
+      expect(ranking.to, same(trend.points[3]));
+      expect(
+        ranking.title,
+        '${statisticsDateText(trend.points[1].at)} → '
+        '${statisticsDateText(trend.points[3].at)}',
+      );
+      final before = {
+        for (final student in history.growthAt(trend.points[1].states).students)
+          student.studentId: student,
+      };
+      final after = {
+        for (final student in history.growthAt(trend.points[3].states).students)
+          student.studentId: student,
+      };
+      for (final row in ranking.rows) {
+        final then = before[row.student.studentId];
+        final now = after[row.student.studentId]!;
+        if (row.isNew) {
+          expect(then, isNull);
+          continue;
+        }
+        expect(
+          row.tenths,
+          (now.growth! * 1000).round() - (then!.growth! * 1000).round(),
+        );
+        expect(row.tenths, greaterThan(0));
+      }
+      // 강조 글자도 같은 두 끝이다. 시작만 고른 강조(시작 = 끝)는 글자가 없다.
+      final shown = trend.withHighlight(1, end: 3);
+      expect(shown.highlightEnd, 3);
+      expect(shown.highlightText, '${ranking.title} ${ranking.averageText}');
+      expect(trend.withHighlight(2, end: 2).highlightText, isNull);
+      expect(trend.withHighlight(3).highlightText, trend.highlightText);
+    });
+
     test('an unknown or reversed range has no ranking', () {
       final history = _build();
       final trend = statisticsGrowthTrend(history)!;
@@ -325,16 +374,27 @@ void main() {
   });
 
   group('A6 range selection', () {
-    testWidgets('a point selects that snapshot → the last one; again clears', (
+    testWidgets('first click = start, second click = end, start again clears', (
       tester,
     ) async {
       await _pump(tester);
       expect(_painter(tester).highlightStart, 3);
+      expect(_painter(tester).highlightEnd, isNull);
       expect(_title(tester), '근거 확인');
 
+      // 첫 클릭: 그 점만 분홍(구간 · 글자 · 근거 없음).
       await _tapPoint(tester, 4);
-      final painter = _painter(tester);
+      var painter = _painter(tester);
       expect(painter.highlightStart, 4);
+      expect(painter.highlightEnd, 4);
+      expect(painter.highlightText, isNull);
+      expect(_title(tester), '근거 확인');
+
+      // 둘째 클릭: 두 점 사이가 구간이다.
+      await _tapPoint(tester, 5);
+      painter = _painter(tester);
+      expect(painter.highlightStart, 4);
+      expect(painter.highlightEnd, 5);
       expect(painter.highlightText, '9/29 → 10/05 +1.2%p');
       final ranking = _ranking(_build(), 4);
       expect(_title(tester), contains('9/29 → 10/05'));
@@ -373,9 +433,49 @@ void main() {
         '${ranking.newCount}명',
       );
 
-      // 같은 구간(마지막 점 = 바로 앞 점부터)을 다시 누르면 푼다.
-      await _tapPoint(tester, 5);
+      // 셋째 클릭: 새 시작(구간 · 근거가 풀린다). 같은 점을 다시 누르면 시작도 풀려 기본 강조로 돌아간다.
+      await _tapPoint(tester, 2);
+      painter = _painter(tester);
+      expect(painter.highlightStart, 2);
+      expect(painter.highlightEnd, 2);
+      expect(painter.highlightText, isNull);
+      expect(_title(tester), '근거 확인');
+      await _tapPoint(tester, 2);
       expect(_painter(tester).highlightStart, 3);
+      expect(_painter(tester).highlightEnd, isNull);
+      expect(_title(tester), '근거 확인');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an earlier second point swaps the ends; any end is allowed', (
+      tester,
+    ) async {
+      await _pump(tester);
+      // 9/22 → 그보다 앞 점: 끝이 마지막 점이 아닌 구간.
+      await _tapRange(tester, 3, 1);
+      final painter = _painter(tester);
+      final ranking = _ranking(_build(), 1, to: 3);
+      expect(painter.highlightStart, 1);
+      expect(painter.highlightEnd, 3);
+      expect(painter.highlightText, '${ranking.title} ${ranking.averageText}');
+      expect(_title(tester), contains(ranking.title));
+      expect(
+        tester
+            .widget<BaChip>(
+              find.byKey(const ValueKey('statistics-evidence-count')),
+            )
+            .label,
+        '${ranking.rows.length}명',
+      );
+      expect(
+        _text(tester, 'statistics-evidence-summary-change-value'),
+        ranking.averageText,
+      );
+
+      // 구간 끝 점을 눌러도 셋째 클릭은 새 시작이다.
+      await _tapPoint(tester, 3);
+      expect(_painter(tester).highlightStart, 3);
+      expect(_painter(tester).highlightEnd, 3);
       expect(_title(tester), '근거 확인');
       expect(tester.takeException(), isNull);
     });
@@ -384,7 +484,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester);
-      await _tapPoint(tester, 3);
+      await _tapRange(tester, 3, 5);
       expect(_painter(tester).highlightText, '9/22 → 10/05 +2.0%p');
       final ranking = _ranking(_build(), 3);
       expect(ranking.rows.length, greaterThan(7));
@@ -423,7 +523,7 @@ void main() {
       (tester) async {
         final intents = <AppNavigationIntent>[];
         await _pump(tester, intents: intents);
-        await _tapPoint(tester, 4);
+        await _tapRange(tester, 4, 5);
         await tester.tap(
           find.byKey(const ValueKey('statistics-evidence-secondary')),
         );
@@ -439,7 +539,7 @@ void main() {
 
     testWidgets('another tile selection replaces the range', (tester) async {
       await _pump(tester);
-      await _tapPoint(tester, 4);
+      await _tapRange(tester, 4, 5);
       expect(_painter(tester).highlightStart, 4);
       await tester.tap(
         find.byKey(const ValueKey('statistics-topic-inventory')),
@@ -449,6 +549,7 @@ void main() {
       await tester.pumpAndSettle();
       // 주제를 바꾸면 고른 것을 지운다(다른 타일과 같다).
       expect(_painter(tester).highlightStart, 3);
+      expect(_painter(tester).highlightEnd, isNull);
       expect(_title(tester), '근거 확인');
     });
 
@@ -461,13 +562,14 @@ void main() {
         addTearDown(service.dispose);
         await tester.pumpWidget(_subject(service));
         await tester.pumpAndSettle();
-        await _tapPoint(tester, 4);
+        await _tapRange(tester, 4, 5);
         expect(_title(tester), contains('9/29 → 10/05'));
 
         // "← 통계" 복귀(FE7-d): 다시 읽은 뒤 고른 구간을 되살린다. 이력은 보드 뒤에 읽는다.
         await tester.pumpWidget(_subject(service, token: 1));
         await tester.pumpAndSettle();
         expect(_painter(tester).highlightStart, 4);
+        expect(_painter(tester).highlightEnd, 5);
         expect(_title(tester), contains('9/29 → 10/05'));
       },
     );
@@ -477,7 +579,7 @@ void main() {
         tester,
       ) async {
         await _pump(tester, size: size);
-        await _tapPoint(tester, 3);
+        await _tapRange(tester, 3, 5);
         expect(_painter(tester).highlightStart, 3);
         expect(_title(tester), contains('9/22 → 10/05'));
         expect(tester.takeException(), isNull);
