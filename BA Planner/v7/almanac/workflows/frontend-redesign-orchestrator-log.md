@@ -3846,3 +3846,11 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 사용자 결정(AskUserQuestion, 2026-10-19): FD-177 한 명 모드 만든다 · FD-178 학생 현재값 직접 수정·전체 육성 부족·백업 복원은 개편 뒤, 전술 캡처·붙여넣기·폴더는 범위 밖 · FD-179 설정 탭 새 스타일(내용 그대로) · FD-180 병합 목표 역전은 나중 단계를 올리고 알림. 대장 §10에 FD-177~180 추가.
 - CF: `frontend/tool/fe_commit.ps1`에 `deleted` 키(CF 전용 — 파일을 먼저 지우고 gate, 그 뒤 `git rm --cached`; 추적 중·작업 트리에 없음 확인). FE10-b 파일 삭제 후보 5개(`dead-code.md`)에 쓴다.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4b2-worker-prompt-20261019.md`(계획 1단계 한 명 모드) · Lane B `debug/frontend_redesign_handoff/fe10s-worker-prompt-20261019.md`(설정 탭 새 스타일, 동작 변화 0). 그다음: FE4-g4(FD-180) · FE10-b(죽은 코드 2차·파일 삭제·버그 의심 2) · FE10-d(문서 반영) → FE10-z(Release·최종 둘러보기).
+## 2026-10-19 01:10 — FE4-b2·FE10-s 검토·gate·커밋, 다음 라운드
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe4b2 14행, fe10s 7행), 겹침 0. `student_section_layout.dart`는 private 이름 공개화만(+11/−11). `plan_flow_test` 기대 1건은 한 명 모드로 의도 변경.
+- FE4-b2: 새 `plan_flow_student_one.dart` — 고른 학생이 정확히 1명이면 한 명 모드(B 4칸 좁음·짧은 C "선택한 학생"·학생 상세 인디케이터·"이미 잡혀 있는 목표" P1/P2 행·"이 학생 목표 정하기"). 발견: 시안 "한 명 | 여러 명" 세그먼트·교체 고르기는 그리지 않음(고른 수로 전환), 레일 부제 "1명 · 여러 명 모드"(→ FE4-g4), `-filter` 장면이 1명이라 배경이 바뀜(→ FE4-g4에서 3명으로), 상태 칩 '—'.
+- FE10-s: 설정 탭 = 머리 띠(SETTINGS / RECOVERY) + 2×2(프로필 · Backend 연결 · Scanner 준비 상태 · 고급 진단), 버튼·콜백 그대로, app_shell·키트 변경 0. 발견: 1280×720에서 글자 약 0.5배(다른 탭과 같은 배율 규칙 — 최종 둘러보기 확인 항목), 영어 섞인 문구 목록(CF 판단 — FE10-d), 대화상자 Material 그대로.
+- gate ① `20261019_003508`: 모두 PASS(process 101), golden RED 4 — 예측 3(`plan-flow-step1-filter` 배경 한 명 모드, 새 `plan-flow-step1-one`·`settings`) + 예측 밖 1(`plan-flow-step1-many` 8px — 정렬 칩 `이름`·`학교` 경계 AA, 확대 비교로 눈 차이 0 → 수용, fe4b2 `whole`에 CF가 추가) → ② `-UpdateGoldens` `20261019_004710` **GREEN**(golden 67).
+- 커밋: **fe4b2 `aaf4445b`** → **fe10s `7f1269a1`**. artboard 57장 전부 구현.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4g4-worker-prompt-20261019.md`(FD-180 나중 단계 올림·알림, FE4-b2 후속, `skill_book` 분류) · Lane B `debug/frontend_redesign_handoff/fe10b-worker-prompt-20261019.md`(계획 밖 죽은 코드 2차, 통째 삭제 목록 `delete-list.txt` — CF가 gate 전에 지우고 `deleted` 키, `scan_page` 깨진 글자). 그다음 FE10-d(fd-audit §3 누락 8건·검수 포인트 결정문·문구 목록) → FE10-z.

@@ -425,8 +425,8 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 | slice | 내용 | 근거·상태 |
 |---|---|---|
 | FE10-a 마감 감사 1차 | 결정 대장·artboard 57장·발견 사항 감사(보고서 `debug/frontend_fe10a/artifacts/`), `SectionTemplateSurface` 계열 제거 | FD-174 — **완료 2026-10-18**: 커밋 `e1941271`, gate `20261018_234539` |
-| FE4-b2 계획 1단계 한 명 모드 | Flow-1-Students-One: 한 명 골랐을 때 B 1595·C 짧은 사다리꼴, 학생 상세 인디케이터 재사용, "이미 잡혀 있는 목표" 행 | FD-177 (a) |
-| FE10-s 설정 탭 새 스타일 | 내용·순서 그대로 사선 섹션·키트로 다시 그림(동작 변화 0) | FD-179 (a) |
+| FE4-b2 계획 1단계 한 명 모드 | Flow-1-Students-One: 한 명 골랐을 때 B 1595·C 짧은 사다리꼴, 학생 상세 인디케이터 재사용, "이미 잡혀 있는 목표" 행 | FD-177 (a) — **완료 2026-10-19**: 커밋 `aaf4445b`, gate `20261019_004710`(새 `plan-flow-step1-one`, `-filter` 배경이 한 명 모드로 · `-many` 8px 경계 AA). 모드 = 고른 수 1명(시안의 "한 명 | 여러 명" 세그먼트·교체 고르기는 그리지 않음 — 발견 1) |
+| FE10-s 설정 탭 새 스타일 | 내용·순서 그대로 사선 섹션·키트로 다시 그림(동작 변화 0) | FD-179 (a) — **완료 2026-10-19**: 커밋 `7f1269a1`, gate `20261019_004710`(새 `settings`). 머리 띠 + 2×2, 대화상자·SnackBar는 Material 그대로 |
 | FE4-g4 병합 목표 역전 | "페이즈로 추가"에서 나중 단계를 새 값까지 올리고 알림 | FD-180 (a) |
 | FE10-b 죽은 코드 2차 | Lane A 파일 안 죽은 코드(`dead-code.md` §2·§4), 파일 통째 삭제(CF가 먼저 지우고 gate → `fe_commit.ps1` `deleted` 키), 버그 의심(`scan_page.dart` 깨진 글자, `skill_book` 오파츠 분류) | FD-137 |
 | FE10-d 문서 반영 | `fd-audit.md` §3 누락 8건(section-direction·section-template-studio), 검수 포인트 결정문(§13) | FD-136 |
@@ -600,3 +600,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-18(15:30): FE8-g3 `c0d72dbd` · FE8-g4a `280f135c`, gate `20261018_151238` GREEN(golden 62). 배정: Lane A FE8-g4b(보드 연결·컨트롤러 approve/commit 공개·셸 후속 2건) · Lane B FE8-g5a(아이템 검토 보드 새 파일만). 다음: FE8-g5b(아이템 보드 연결·`_CandidatePanel`·`_handoffCandidate` 분기 제거).
 - 2026-10-18(22:00): FE8-g4b `0e869636` · FE8-g5a `4bc7a2c8`, gate `20261018_214037` GREEN(golden 64). 배정: Lane A FE8-g5b(아이템 보드 연결·`_CandidatePanel`·`_handoffCandidate` 인벤토리·학생 분기 제거 — FE8 마지막) · Lane B FE10-a(마감 감사·Lane A 파일 밖 죽은 코드). 다음: FE10-b(남은 죽은 코드·파일 삭제 — `fe_commit.ps1`에 삭제 지원 필요) · Windows release · 사용자 최종 둘러보기.
 - 2026-10-19(00:30): FE8-g5b `7508ee42`(FE8 끝) · FE10-a `e1941271`, gate `20261018_234539` GREEN(golden 65). 사용자 결정 FD-177~180. `fe_commit.ps1`에 `deleted` 키. 배정: Lane A FE4-b2(한 명 모드) · Lane B FE10-s(설정 탭). 다음: FE4-g4 · FE10-b · FE10-d → FE10-z.
+- 2026-10-19(01:10): FE4-b2 `aaf4445b` · FE10-s `7f1269a1`, gate `20261019_004710` GREEN(golden 67). 배정: Lane A FE4-g4(FD-180 병합 목표 올림·알림 + FE4-b2 후속 + `skill_book` 분류) · Lane B FE10-b(계획 밖 죽은 코드 2차·삭제 목록·깨진 글자). 다음: FE10-d(문서 반영) → FE10-z(Release·최종 둘러보기).
