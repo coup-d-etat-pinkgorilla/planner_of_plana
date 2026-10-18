@@ -5686,3 +5686,140 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - FE8-g4a 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-g3)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 새 `scan_student_review_board_test` +14, 기존 수 그대로, golden은 새 장면 `scan-student-review-board` 기준 이미지 없음 → `failures/` 확인 → `-UpdateGoldens` → 재비교 GREEN, 기존 장면 변화 0) → `fe_commit.ps1 -Slice fe8g4a`(added 9 + baseline PNG).
 - FE8-g4b: 위 "FE8-g4b 입력" 1~5(컨트롤러 approve/commit 공개, scan_tab_page 자리, workspace 경로 해제, 진단 JSON 자리, 인디케이터 공개 요청). 발견 3 · 5 · 6은 CF 판단.
+
+## FE8-g5a 착수 기록 (2026-10-18)
+
+- 상태: **진행 중**. 범위: FE8-g5a — 새 아이템 결과 검토 보드 `ScanItemReviewBoard`를 단독 위젯으로 만든다(시안 Scan-Item-Review, S2 칸 목록 + S3 검사기). 종류 합쳐 보기(종류 탭 · FE8-g3 칩과 같은 말, 종류마다 후보는 (session, generation, candidate) 열쇠), 칸 상태(바뀜 / 그대로 / 확인 필요 / 읽지 못함 빗금 / 미식별) · 칸별 승인, 부분 적용(FD-146 — 승인 칸 subset만 review → commit, 종류 순차, 실패하면 그 종류에서 멈춤), S3 검사기(근거는 고정 형식 값만 · 이전값 · 직접 고치기), 미식별 칸은 기존 `ScanInventoryIdentityReview`를 생성자 인자로만 마운트(FD-153). 스캔 탭 연결 · `_CandidatePanel` · `_handoffCandidate` 분기 제거는 FE8-g5b.
+- 착수 전 확인: 이 문서에 다른 "FE8-g5a 착수 기록" 없음(grep 0건), `debug/frontend_fe8g5a/` · `frontend/lib/ui/scan/item_review/` 없음. 대장 "slice별 막힘 요약" FE8-g5 행 = FD-146 → **확정 2026-10-06 (a)**, 현재 `열림` 0건 → 시작. FD-153 · FD-147은 `워커 재량`(권장안대로 처리 예정). 형식은 backend 로그 2026-10-18 01:30 FB-10 고정 선언(`debug/xb_fb10_g3g5_freeze_20261018/artifacts/format-freeze.md` — g5 부분 승인 · 영속 needs_review · R6e 미식별).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `d285c0d82c79be1a1bded06ce4bcb55dbfa27cd4`.
+- 만들 새 파일(예정, 모두 LF · 끝 개행 하나):
+  - `frontend/lib/ui/scan/item_review/scan_item_review_logic.dart`(순수: 칸 모델 · 상태 규칙 · 분류 수 · 티어 묶음 · subset payload · 글자)
+  - `frontend/lib/ui/scan/item_review/scan_item_review_actions.dart`(보드가 받는 actions 인터페이스 · 종류 순차 부분 적용)
+  - `frontend/lib/ui/scan/item_review/scan_item_review_board.dart`(보드 위젯 · 상태, library)
+  - `frontend/lib/ui/scan/item_review/scan_item_review_list_section.dart` · `frontend/lib/ui/scan/item_review/scan_item_review_inspector_section.dart`(S2 · S3, `part of` 보드)
+  - `frontend/lib/ui/studio/scan_item_review_studio_layout.dart`(시안 좌표)
+  - `frontend/test/scan_item_review_board_test.dart`, `frontend/test/goldens/fe8g5_item_review_board_golden_test.dart`, `frontend/test/fixtures/scan_item_review_board_fixture.dart`(가짜 2종 큐 후보 · 가짜 actions)
+- **기존 파일 수정 0** 확인: 고치는 기존 파일은 이 문서(착수 · 종료 기록 append, 사본 `debug/frontend_fe8g5a/pre/almanac/workflows/frontend-redesign-status-lane-b.md`, cmp 일치)뿐이다. `scan_tab_page` · `scan_session_controller` · `scan_page` · `scan_item_queue` · `inventory_page` · `scan_inventory_identity_review` · `app_shell` · `lib/ui/scan/review/**` · 서비스 · kit · golden harness는 읽기(import)만 한다. 착수 때 `git status --short` 이 문서 · `frontend/lib/ui/studio` · `frontend/test/goldens` · `frontend/test/fixtures` 0줄, `frontend/lib/ui/scan`은 `scan_session_controller.dart` 1줄(Lane A FE8-g4b 작업 중 — 이 slice는 읽기만).
+
+## FE8-g5a 종료 기록 (2026-10-18, 코드 작성 완료 · CF gate 미실행)
+
+새 아이템 결과 검토 보드 `ScanItemReviewBoard`를 단독 위젯으로 만들었다(시안 Scan-Item-Review S2 · S3). 종류 합쳐 보기(종류 탭) · 칸 상태 · 칸별 승인 · 부분 적용(FD-146) · S3 검사기 · 미식별 칸 identity 검토 마운트(FD-153)가 보드 안에 있고, 바깥 일은 `ScanItemReviewBoardActions` 인터페이스로만 받는다. 스캔 탭 연결은 FE8-g5b. HEAD는 착수 때와 같다(`d285c0d8`). **기존 파일 수정 0**(이 문서 append만), git 쓰기 0, 저장소 파일 삭제는 일회성 렌더 사본 1개(만들고 바로 지움, 두 번)뿐이다.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더, 로그 `debug/frontend_fe8g5a/logs/` — 실패 줄 · 요약만 봤다)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/ui/scan/item_review lib/ui/studio/scan_item_review_studio_layout.dart`(1 · 2회) | 1회 info 2(불필요 import · null-aware 원소) → 고침. 2회(보드 · part 작성 뒤) error 2 · warning 3 · info 1(`_value()`의 지역 변수 선언 순서, 안 쓰는 import · 변수) → 고침 → **No issues found** |
+| `flutter analyze` 새 lib + 새 시험 + fixture + golden 시험(3회) | **No issues found** |
+| `flutter test test/scan_item_review_board_test.dart`(1회) | **+3 −11** — 타일 값 줄 Row가 시험 글꼴 폭에서 8.3px 넘침(제품 수정: 값 줄을 `FittedBox(scaleDown)`로) |
+| 같은 명령(2회) | **+14 −0** |
+| 변이 확인: `approvedByDefault`에 확인 필요를 넣음 | **+8 −6**(분류 · 적용 · 승인 시험이 잡음) → 원 바이트로 되돌림(SHA-256 앞 16자 `5f72d0f5c80ebe04` 전후 같음) |
+| 일회성 렌더(golden 시험 대신 `test/goldens/zz_fe8g5a_oneoff_render_test.dart` — `@Tags` · `expectGoldenScene` 없음, grep 0건 확인, 2회) | **+1** · 예외 0, PNG `debug/frontend_fe8g5a/render/scan-item-review-board.png`. 사본은 매번 바로 지웠다(`ls test/goldens/zz*` 0건) |
+| `dart format <파일>` 새 9파일 하나씩 | 5파일 바뀜(줄바꿈만) |
+| `flutter analyze`(frontend 전체, 최종 — Lane A FE8-g4b WIP 위) | **No issues found(0, info 포함)**. `pubspec.yaml` · `pubspec.lock` 변경 0 |
+| `flutter test test/scan_item_review_board_test.dart test/scan_inventory_identity_review_test.dart test/inventory_review_fb10b_test.dart test/scan_item_queue_fe8g3_test.dart`(최종) | **+44 −0**(새 14 + 기존 30: identity 검토 2 · fb10b 19 · 큐 9) |
+| 바이트 검사(새 9파일) | 모두 LF, 끝 개행 하나, 줄 끝 공백 0 |
+
+- golden 비교 · 전체 gate · 맨 `flutter test`는 돌리지 않았다. 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-146**(확정 (a)): 부분 적용 = 승인 칸만 남긴 `candidate_payload`로 review(approve=true) → commit. 확인 필요 · 읽지 못함 · 미식별 칸은 기본으로 빼고, 승인 칸이 0인 후보는 부르지 않는다(빈 적용 commit 금지). 영속 `needs_review` 표시는 백엔드가 제외 key로 정한다(보드는 쓰지 않는다 — 01:30 "보류/review만으로 flag 쓰기 0"). 표는 아래.
+- **FD-153**(워커 재량 → 권장안): 미식별 슬롯 = `확인 필요` 분류의 칸 변형(호박 테두리 · 그림 자리는 슬롯 crop, 없으면 `?` · 값 `미식별`). 고르면 S3의 `자동 판독` 자리부터 버튼 줄 위까지 기존 `ScanInventoryIdentityReview`(슬롯 1개)를 생성자 인자로만 마운트(그 파일 수정 0). 미식별 칸에서는 "그리드 스캔은 캡처를 남기지 않습니다" 안내를 숨긴다. 지정 뒤 새 revision은 수량 null 줄 → `읽지 못함` 칸(R6e).
+- **FD-147**(워커 재량, 일부): 검사기 `이전 확정값 · n일 전 스캔`의 시각 글자는 보드가 만들지 않고 `lastScanLabels`(resource key → 글자)로 받는다. 없으면 '—'. 연결은 FE8-g5b(아래 입력 4).
+- FD-143(확정 (a)): 종류 = 큐의 한 세션. 후보는 `scanCandidateKey`(session#generation#id)로만 다루고, 적용은 종류 순서대로 순차.
+- 막는 `열림` FD 0(착수 기록).
+
+### 칸 상태 규칙 표(`scan_item_review_logic.dart` `scanItemCellStateFor`, 위에서 먼저 맞는 줄)
+
+| 순서 | 조건 | 상태 | 분류 버튼 | 타일 | 기본 승인 |
+|---|---|---|---|---|---|
+| 1 | `scanner.review.unresolved_slots`의 슬롯(payload에 줄 없음) | 미식별 | 확인 필요 | 호박 테두리 · crop/`?` · `미식별` | 아니오(승인 불가 — 먼저 지정) |
+| 2 | 줄의 `quantity`가 null(또는 정규 정수 문자열 밖) | 읽지 못함 | 확인 필요 | 빗금 30×16 + `읽지 못함`(0으로 보지 않음) | 아니오(수량을 입력하면 승인 가능) |
+| 3 | 줄에 붙은 근거(`entries[<observed_slot 또는 index>].*` · `zero_fill[<key>].*`) 하나라도 상태가 안전 집합(`scanStudentSafeEvidenceStatuses`: ok · inferred · skipped · verified · deferred · shadow) 밖 | 확인 필요 | 확인 필요 | 호박 테두리(승인하면 분홍 .7) + 값 | 아니오(`n로 승인`으로 승인 가능) |
+| 4 | 이전 확정값과 다름(저장된 줄이 없거나 수량 null이면 이전 '—'로 바뀜) | 바뀜 | 바뀐 수량 | `96 → 112 +16`(− 는 빨강) | 예 |
+| 5 | 이전 확정값과 같음 | 그대로 | 그대로 | 흐린 `140` | 예 |
+
+- 이전값 = `currentInventory`의 `item_id ?? key`(정규 key, `historyCanonicalResourceKey`) 수량. 모르면 '—'(0 금지).
+- 건너뛴 칸(기본 승인 칸을 끔): 타일 `102 · 건너뜀`. 직접 고친 칸: 새 값 분홍 글자, 고치면 그 칸을 승인으로 둔다.
+- 묶음: 종류마다 티어(카탈로그 `tier`) 높은 순, 티어를 모르는 칸(미식별 등)은 끝 한 묶음 `<종류> · n칸`. 전체 보기에서 맨 위 티어 외 티어는 접고 맨 위 소제목에 요약(`초급 · 일반 · 상급 21칸은 바뀐 칸 없음 · 펼치기` / `… 18칸 · 1칸 바뀜 · 펼치기`, 누르면 펼침 · `접기`). 확인 필요 분류 칸이 있는 티어는 접지 않는다. 다른 분류 버튼에서는 모두 펼친다. 티어 이름은 FD-098(초급 · 일반 · 상급 · 최상급, 노트 · BD만 — 그 밖 `T<n>`).
+- 칸 이름: 카탈로그 `school`이 있으면 학교 이름(`schoolLabel`), 없으면 카탈로그 이름, 없으면 key.
+
+### 부분 적용 규칙(`runScanItemPartialApply`, 주 버튼 `승인한 n칸 인벤토리에 적용`)
+
+| 경우 | 동작 |
+|---|---|
+| 대상 | 지금 범위(모든 종류 또는 고른 종류)의 종류 순서 → 종류 안 후보 순서. 후보마다 승인 칸(위 표 기본 + 사용자 승인 · 건너뜀 · 고친 값)의 payload 줄만 남긴 payload. 승인 칸 0인 후보는 대상이 아니다. 주 버튼은 승인 칸 0이면 꺼짐 |
+| payload | 원 payload의 다른 키(`version` · `catalog_revision` 등) 그대로, `entries`만 줄인다. 줄은 원 줄 그대로에 `quantity`만 적용할 수량 문자열(고친 값 포함) |
+| 제외 | 확인 필요(승인하지 않은) · 읽지 못함(수량 입력 없음) · 미식별 · 건너뛴 칸. 부제 `확인 필요 2칸은 빼고 적용합니다` / `확인 필요 1칸 · 건너뛴 1칸은 빼고 적용합니다` / `빼는 칸 없이 적용합니다` |
+| 시작 | 시작 revision = `max(repositoryRevision 인자, 마지막 commit 응답 revision)`, 둘 다 없으면 시작하지 않음(`적용에 필요한 저장소 상태가 없습니다.`) |
+| 후보마다 | `actions.approveSubset(최신 후보, payload)` → 받은 후보로 `actions.commit(expected = 지금 revision)` → 응답 revision이 다음 expected |
+| 성공 | 적용한 후보는 바깥 목록에서 빠질 때까지 보드가 숨긴다(종류 탭 칩 `확정`). 설명 자리 `n종류 · m칸을 적용했습니다`(녹색) |
+| 중간 실패 | 그 후보(종류)에서 멈춘다. 앞 성공은 그대로, 멈춘 종류는 탭 칩 `적용 실패` + 설명 자리(빨강) `<종류>에서 멈췄습니다: <오류> · 적용 a종류 · 남은 r종류는 그대로 둡니다`(r = 멈춘 종류 포함). **칸은 부분 승인 review가 줄인 payload가 아니라 원 후보 payload로 계속 보인다**(보드가 원 후보를 기억, 다음 적용도 같은 subset). 다음 적용은 마지막 성공 revision부터 잇는다 |
+| 진행 중 | 부제 `적용 중 · k / n종류`, 주 버튼 · 검사기 승인 · 건너뛰기 · 수량 입력 꺼짐 |
+| 보드가 사라짐 | 다음 후보를 시작하지 않는다(`isActive`), dispose 뒤 setState 0 |
+
+- 시험(가짜 actions): 성공 `review tech:1 → commit tech:2:70 → review bd:1 → commit bd:2:71`, tech 27줄(밀레니엄 확인 필요 제외) · bd 23줄(붉은겨울 읽지 못함 제외) · `catalog_revision` 그대로. BD commit 실패 → 기술 노트만 적용 · BD 24칸 그대로 · 다시 적용 `review bd:2 → commit bd:3:71`.
+
+### 보드 공개 API · actions 인터페이스
+
+- `ScanItemReviewBoard({kinds, currentInventory, catalog, repositoryRevision (int?), actions, unresolvedSlots = {}, identityBusy = {}, identityErrors = {}, identitySkipped = {}, candidateErrors = {}, planRequired = {}, lastScanLabels = {}, timeLabel (null → '—'), initialFilter = ScanItemFilter.all, initialKind (null = 모든 종류)})`. 스캔 탭 콘텐츠 영역 전체(헤더 아래, 기준 2560×1208)를 받아 `scanItemReviewStudioDocument`의 두 섹션만 그린다(왼쪽 레일은 스캔 탭 몫). `candidateErrors`는 받기만 하고 아직 그리지 않는다(발견 6).
+- `ScanItemReviewKind({queue: ScanQueueKind, result: ScannerRecentSummary?, candidates: 남은 후보, appliedElsewhere})`. 종류 칩 = `scanItemKindChip` — 끝난 기록이 있으면 `scanRecentChip`(`검토 n` · `확인 n` · `확정` · `결과 없음` · `실패` · `중지`), 없으면 `scanQueueKindChip`(`대기` · `읽지 않음` …). FE8-g3 종류별 검토 줄과 같은 말. 이 보드가 적용에 실패한 종류만 `적용 실패`.
+- 열쇠: 후보 = `scanCandidateKey`(`session#generation#id`), 칸 = `<후보 열쇠>#k:<resource key>` · `<후보 열쇠>#s:<slot>`, 슬롯 = `scanItemSlotKey(candidate, slot)` = `<후보 열쇠>:<slot>`.
+- `abstract interface class ScanItemReviewBoardActions`: `Future<ScannerCandidate> approveSubset(candidate, candidatePayload)` · `Future<int> commit(approved, {required int expectedRepositoryRevision})` · `Future<void> assignIdentity(candidate, slot, identity, persist)` · `Future<void> skipIdentity(candidate, slot)`.
+- 순수 로직(`scan_item_review_logic.dart`, 보드 라이브러리가 export): `ScanItemReviewKind` · `ScanItemCellState` · `ScanItemFilter` · `ScanItemCell` · `ScanItemTierGroup` · `scanItemCellsFor` · `scanItemCellStateFor` · `scanItemStoredQuantities` · `scanItemEntryKey` · `scanItemQuantity` · `scanItemEntryEvidence` · `scanItemSlotEvidence` · `scanItemCounts` · `scanItemCellInFilter` · `scanItemTierGroups` · `scanItemGroupTitle` · `scanItemCollapsedNote` · `scanItemKindChip` · `scanItemSubsetPayload` · `scanItemApplySubtitle` · `scanItemCellChip` · `scanItemEvidenceLabel` · `scanItemTierLabel` · `scanItemCellName`. 순차 적용 `runScanItemPartialApply` · `ScanItemApplyTarget` · `ScanItemApplyRun`(actions 파일).
+- 주요 key: `scan-item-review-board` · `scan-item-kind-all` · `scan-item-kind-<wire>` · `scan-item-scope` · `scan-item-filter-<filter>` · `scan-item-count-<filter>` · `scan-item-group-<wire>-<tier>` · `scan-item-expand-<wire>` · `scan-item-empty-<wire>` · `scan-item-cell-<칸 id>` · `scan-item-cell-value-<칸 id>` · `scan-item-apply(-title · -subtitle · -note)` · `scan-item-inspector-(title · chip · location · grid-note · previous · reading · reading-note · required · shortage)` · `scan-item-quantity-(input · minus · plus)` · `scan-item-evidence-<n>` · `scan-item-identity-<칸 id>` · `scan-item-identity-skipped` · `scan-item-skip` · `scan-item-next-review` · `scan-item-approve(-title)`.
+
+### FE8-g5b 입력(연결에 필요한 것)
+
+1. **컨트롤러 API(착수 HEAD에 없음)**: 인벤토리 후보의 review · commit이 컨트롤러에 공개되어 있지 않다(지금은 인벤토리 탭 `InventoryController.approveCandidate`가 후보 전체로 review → commit). 필요: ① `approveInventoryCandidateSubset(c, payload) → ScannerCandidate`(`reviewScannerCandidate(session, c, payload, approve: true, reason: …)`, 받은 후보 `_keepCandidate`) ② `commitApprovedInventoryCandidate(approved, expected) → int`(학생 commit과 같은 idempotency key · 같은 의도 재전송 고정 · 실패 분류 · `_acceptCommittedRevision` · 후보 해결 · state 다시 읽기, 실패면 던짐). Lane A FE8-g4b WIP에 학생용 `approveStudentCandidate` · `commitApprovedStudentCandidate` · `repositoryRevision` getter가 생기고 있다 — 같은 모양으로 인벤토리판을 더하면 된다. `assignIdentity` · `skipIdentity`는 지금 `assignInventoryIdentity` · `skipInventoryIdentity` 그대로.
+2. **값 연결**: `kinds` = `controller.itemQueue.kinds`마다 `ScanItemReviewKind(queue: kind, result: controller.itemQueueResult(kind), candidates: 그 기록 후보 중 candidateResolution == null이고 다른 탭 적용이 아닌 것 — 지금 보이는 세션이면 controller.candidates의 최신 revision, appliedElsewhere: 하나라도 적용)`. 예전 1종 경로도 지금은 1종 큐라 같다. `currentInventory` = `repositoryState.inventory`, `catalog` = `inventoryCatalog`, `repositoryRevision` = 컨트롤러 getter, `unresolvedSlots`(후보 열쇠로) · `identityBusy` · `identityErrors` · `identitySkipped`(슬롯 열쇠로) = 지금 후보 id 기준 맵을 바꿔 넘긴다. **미식별 슬롯은 지금 보이는 세션 후보만 읽는다**(`_keepCandidate`가 부름) — 보드가 모든 종류를 한 번에 보이려면 컨트롤러가 큐 결과 후보 전부의 `scanner.review.unresolved_slots`를 읽어야 한다(세션이 다른 후보는 `_sessionFor`가 recent에서 찾는다). `timeLabel` = 최근 기록 시각.
+3. **scan_tab_page 자리 · 대체 범위**: 지금 `pageShown`(끝남 + 남은 후보)일 때 아이템 후보면 `Column[ScanQueueReviewBar, Expanded(ScanPage)]` 대신 보드(`key: scan-item-review`)를 보인다. 보드의 종류 탭이 `ScanQueueReviewBar` · `scanQueueReviewVisible` · `openQueueKind`를 대신한다(쓰는 곳이 없어지면 FE10 정리). `ScanPage`의 아이템 경로(`_CandidateSummary` 아이템 줄 · `Review in Inventory` 인계 · 그 아래 `ScanInventoryIdentityReview` 마운트)는 스캔 탭에서 쓰지 않게(전술 로비만 남음). 머리글 부제 `아이템 스캔 결과 검토 · 칸별 승인 → 적용`은 `app_section` · 셸 몫. 검토 대기 판단은 `ScanHeaderStatus.of` 그대로.
+4. **이력 · 계획 값(선택)**: `lastScanLabels`는 FB-2 이력에서 resource key별 최신 scan commit 시각(`scanElapsedDays` 글자 규칙), `planRequired`는 활성 계획 필요량. 둘 다 없으면 '—'로 그대로 동작한다.
+5. **인벤토리 `_CandidatePanel` 제거 범위**: `inventory_page.dart`의 `_CandidatePanel` 클래스 · `candidatePanel:` 인자 · `_approveCandidate` · `candidateContext` · `onCandidateCommitted` · `didUpdateWidget`의 후보 분기, `inventory_controller.dart`의 `InventoryCandidateContext` · `holdCandidate` · `approveCandidate`(+ `inventory_page.dart` export), `InventoryWorkspace.candidatePanel` 자리. 관련 시험(인벤토리 후보 띠 시험)은 같은 slice에서 대체.
+6. **`_handoffCandidate` 분기 제거 범위**: `app_shell.dart` `_handoffCandidate`의 인벤토리 분기(인벤토리 탭으로 `InventoryCandidateContext`)와 학생 분기(학생 탭 `candidateContext`), `ScanPage.onCandidateHandoff`의 인벤토리 · 학생 쓰임, `student_page.dart`의 `candidateContext` · `_approveCandidate`(I-scan §9.1). 전술 로비 분기는 FE9-c 경로라 남긴다.
+7. **Hold 대체**: `_CandidatePanel`의 `Hold`(저장소 변경 없이 알림만)는 보드에 버튼을 두지 않았다 — 적용하지 않고 두면 후보가 그대로 남는다(같은 효과). 버튼이 필요하면 g5b에서 추가.
+
+### 새 장면 기대 모습(`scan-item-review-board`, 기준 이미지 없음 → CF `-UpdateGoldens`)
+
+2560×1392, 셸 없이 보드만(머리글 · 탭 줄 · 왼쪽 레일 자리는 비어 있음). 가운데: `아이템 스캔 결과 검토` (i) · 종류 탭 `모든 종류 · 2종`(분홍) · `기술 노트 · 확인 1` · `전술 교육 BD · 확인 1` · 회색 칩 `기술 노트 · 전술 교육 BD · 방금`, 분류 버튼 `전체 52`(분홍) · `확인 필요 2`(호박 숫자) · `바뀐 수량 5` · `그대로 45`(흐린 숫자), `기술 노트 · 최상급 7칸` + `초급 · 일반 · 상급 21칸은 바뀐 칸 없음 · 펼치기` + 사선 타일 7칸(밀레니엄 `96 → 112 +16` 선택 분홍 · 게헨나 `140` · 트리니티 `88 → 102 +14` · 아비도스 `61` · 백귀야행 `44 → 52 +8` · 붉은겨울 `37` · 발키리 `29`), `전술 교육 BD · 최상급 6칸` + `초급 · 일반 · 상급 18칸 · 1칸 바뀜 · 펼치기` + 6칸(아비도스 `18 → 22 +4` … 붉은겨울 빗금 `읽지 못함` 호박 테두리 … 트리니티 `9`), `표시` 범례, 분홍 주 버튼 `승인한 50칸 인벤토리에 적용` / `확인 필요 2칸은 빼고 적용합니다` + 흐린 설명. 오른쪽: `기술 노트 · 밀레니엄 (최상급)` + `확인 필요`, 아이콘 · `기술 노트 · 밀레니엄 · 최상급` · `인벤토리 · 기술 노트 탭 · 1번째 칸` · 그리드 안내 2줄, `이전 확정값 96 3일 전 스캔`, `자동 판독 112 신뢰도 0.58 · 1과 7 구분 낮음`, `승인할 수량` `112` − +, 설명, `이 아이템을 쓰는 곳` `활성 계획 필요량 254` · 분홍 `158 → 142`, `근거` `식별 ok …` · `수량 uncertain …`, `이 칸 건너뛰기`(흐림) · `다음 확인 필요`, 분홍 `112로 승인` / `기술 노트 · 밀레니엄 최상급`. 일회성 렌더 PNG: `debug/frontend_fe8g5a/render/scan-item-review-board.png`(CF 검토용, 커밋 대상 아님).
+- 기존 장면 변화 0: 기존 파일 · harness · 기준 이미지 수정 0이고 새 파일은 기존 화면에서 import되지 않는다.
+
+### 미검증 항목
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지 생성: **미실행**(CF `-UpdateGoldens`).
+- 실제 컨트롤러 · 실제 백엔드 후보(실제 evidence 상태 분포 · 0 채움 칸 `zero_fill[...]` · 실제 미식별 crop) · Mock 후보 · 스캔 탭 안 배치 · Windows release: **미실행**(FE8-g5b).
+- 많은 칸(종류마다 수십 칸, 7종) 스크롤 성능 · 2560×1392 · 1920×1080 · 1280×720 밖의 창 비율: **미실행**(넘침 시험은 세 크기만).
+- 키보드 경로(타일 · 버튼은 `KitPressable`, 수량 입력은 TextField): 별도 시험 **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### XB 요청 후보(고정 형식 밖 — 이 slice는 '—' · 숨김)
+
+1. 인벤토리 entry의 게임 그리드 위치(행 · 열 또는 그리드 열 수) — 시안 `4행 2열`. 지금은 `observed_slot + 1`번째 칸만 보인다.
+2. 수량 판독 이유의 사람용 글자(시안 `1과 7 구분 낮음`) — 지금 `entries[i].quantity` note는 백엔드 이유 코드 그대로 보인다.
+3. (FE8-g3 요청과 같음) 종류별 전체 분모 · 인벤토리 feedback — 이 보드에는 필요 0.
+
+### 발견 사항
+
+1. **Lane A 동시 편집**: 세션 중 Lane A(FE8-g4b)가 `app_shell` · `scan_page` · `scan_session_controller` · `scan_tab_page` · `scan_tab_sections`와 시험 4개를 고치고 `scan_review_board_adapter.dart` · `scan_review_board_fe8g4b_test.dart`를 새로 만들고 있다. 이 slice는 그 파일을 읽기(import)만 했고, 최종 analyze는 그 WIP 위에서 0이다(보드는 컨트롤러를 직접 import하지 않는다 — `scan_item_queue` · `scan_pick_logic`를 통한 간접 import만). FE8-g5b 입력의 이름은 착수 HEAD 기준이다.
+2. **시안 숫자 불일치**: 시안 `전체 58` · `그대로 51` · `승인한 56칸`은 시안 소제목 칸 수(7 + 21 + 6 + 18 = 52)와 맞지 않는다. fixture는 칸 수를 따라 52 · 45 · 50이다.
+3. **티어 이름**: 시안 `하급 · 중급 · 상급`은 FD-098 사용자 결정(초급 · 일반 · 상급 · 최상급)과 달라 FD-098을 따랐다.
+4. **부분 승인 review가 후보 payload를 줄인다**: 승인 subset으로 review하면 후보의 새 revision payload는 subset뿐이라, commit이 실패하면 바깥이 넘기는 후보로는 제외 칸이 사라져 보인다. 보드는 자기 review가 만든 revision을 기억해 원 payload로 칸을 계속 그리고 다음 적용도 원 payload에서 subset을 다시 만든다. g5b에서 컨트롤러가 그 후보를 recent · 투영에 둘 때도 유의(다른 화면이 subset 후보를 원 결과로 오해하지 않게).
+5. **같은 후보 새 revision에서 고친 값 유지(워커 재량)**: 학생 보드는 새 revision이면 편집을 지우지만(FE8-f1 버그 표 5), 아이템 칸 고친 값 · 승인은 칸 id(resource key)로 두어 identity 지정으로 revision이 올라도 남는다. 새 revision이 같은 key의 수량을 바꾸면 고친 값이 그것을 덮는다. CF 판단.
+6. **`candidateErrors`를 아직 그리지 않는다**: 인자는 받지만(미식별 슬롯 읽기 실패 등) 화면 자리를 정하지 않았다. g5b에서 검사기 상태 줄 또는 종류 탭 칩에 붙일지 CF 판단.
+7. **시안에 없는 최소 문구 · 요소(워커 재량, CF 확인)**: 종류 탭 `모든 종류 · n종` · `<종류> · <칩>`, 칩 `적용 실패`, 검사기 `근거` 소제목과 줄(시안 빈 자리), `승인한 칸입니다 · n`, `수량을 입력하면 승인할 수 있습니다`, `아이템을 먼저 지정합니다`, `건너뛴 칸입니다. 이 칸은 적용하지 않습니다.`, 타일 `n · 건너뜀` · `미식별`, `이 분류에 든 칸이 없습니다`, 결과 없는 종류 줄 `검토할 칸이 없습니다`, 부제 `건너뛴 n칸` · `빼는 칸 없이 적용합니다`, `적용 중 · k / n종류`, 결과 `n종류 · m칸을 적용했습니다` · `<종류>에서 멈췄습니다: …`, 위치 `n번째 칸`, `접기`.
+8. **identity 검토 위젯 모양**: 기존 `ScanInventoryIdentityReview`는 Material `Card` · `ChoiceChip` · `TextField` 모양 그대로라 시안 톤과 다르다(파일 수정 금지 — 마운트만). 시안 톤으로 바꾸려면 스캐너 세션 소유 파일이라 그쪽 요청.
+9. **S2 목록 높이**: 시안 위치 그대로 범례 · 주 버튼을 y=805 · 897에 두어 목록 viewport가 444(두 종류 최상급 줄)이고 그 아래 섹션 약 430px이 빈다. 종류가 많으면 스크롤이 길다. 아래로 붙일지는 CF 판단(시안 ±2px 규칙과 충돌).
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe8g5a/pre/almanac/workflows/frontend-redesign-status-lane-b.md`(이 문서 HEAD 내용). 기존 코드 파일 수정 0 → 코드 사본 · `post_dir` 없음.
+- `debug/frontend_fe8g5a/commit.json`: slice `fe8g5a`, modified [], added 9, `whole` = [이 문서], `optional_added` = [`frontend/test/goldens/baseline/scan-item-review-board.png`], `status=true`.
+- 인계: `debug/frontend_fe8g5a/output.md`. 로그 `debug/frontend_fe8g5a/logs/`, 렌더 `debug/frontend_fe8g5a/render/`.
+
+### 다음 행동
+
+- FE8-g5a 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-g4b)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 새 `scan_item_review_board_test` +14, 기존 수 그대로, golden은 새 장면 `scan-item-review-board` 기준 이미지 없음 → `failures/` 확인 → `-UpdateGoldens` → 재비교 GREEN, 기존 장면 변화 0) → `fe_commit.ps1 -Slice fe8g5a`(added 9 + baseline PNG).
+- FE8-g5b: 위 "FE8-g5b 입력" 1~7(컨트롤러 인벤토리 approve subset/commit 공개 · 큐 후보 전부의 미식별 슬롯 읽기, scan_tab_page 자리, `ScanQueueReviewBar` · `ScanPage` 아이템 경로 대체, `_CandidatePanel` · `_handoffCandidate` 인벤토리 · 학생 분기 제거). 발견 4~9는 CF 판단.
