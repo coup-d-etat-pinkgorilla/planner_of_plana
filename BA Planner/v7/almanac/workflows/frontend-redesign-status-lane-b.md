@@ -5912,3 +5912,111 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - CF: Lane A(FE8-g5b)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험 −1(`section_surface_test` 5 → 4), golden 변화 0) → `fe_commit.ps1 -Slice fe10a`(modified 2 + 이 문서).
 - CF: `fd-audit.md` §3 문서 반영, `review-points-decision-draft.md`를 사용자 결정에 올리기, CF 삭제 후보 표 승인 시 삭제 커밋.
 - FE10-b(FE8-g5b 뒤): `dead-code.md` §2 · §4 후보 정리, Scan-Item-Review 검수 경로를 체크리스트에 채우기.
+
+## FE10-s 착수 기록 (2026-10-19)
+
+- 진행 중: FE10-s 설정 탭 새 스타일(FD-179 (a), 동작 변화 0). 시작 SHA `e9fcb280d617b203895e7a91e231e83141ad1868`(브랜치 scanner-consolidation). 이 문서 끝에 다른 "FE10-s 착수 기록"은 없었다.
+- 막힘: 대장 "slice별 막힘 요약" 현재 `열림` 0건, FD-179 · FD-178 확정(2026-10-19) → 막히지 않는다. FD-020(시안 없는 설정 탭은 현행 문구 유지) · FD-152는 확정 · 워커 재량 그대로 따른다.
+- 동시 작업: Lane A FE4-b2(`lib/ui/widgets/plan_*` · `student_section_layout` · `lib/ui/models/plan_flow_draft` · `plan_flow_studio_layout`)는 건드리지 않는다.
+- 고칠 기존 파일: `frontend/lib/ui/pages/settings_page.dart`(WIP 없음), `frontend/test/settings_page_test.dart`(WIP 없음), 이 문서(WIP 없음). `git status --porcelain` 빈 줄.
+- 새 파일: `frontend/lib/ui/studio/settings_studio_layout.dart`, `frontend/lib/ui/settings/settings_sections.dart`, `frontend/test/goldens/fe10s_settings_golden_test.dart`.
+- 사본: `debug/frontend_fe10s/pre/<v7 기준 경로>`에 세 파일(SHA-256 원본과 같음 확인).
+
+## FE10-s 종료 기록 (2026-10-19, 코드 작성 완료 · CF gate 미실행)
+
+### 한 일
+
+1. 설정 탭을 옛 Material 카드(`DiagonalSection` 안 `ListView` + `Wrap` 카드 4장)에서 다른 탭과 같은 셸 안 사선 섹션으로 다시 그렸다: 머리 띠 1 + 2×2 섹션 4(FD-179 (a)). 상태 · 비동기 · 콜백 코드(`build` 앞 367줄)는 import 줄과 클래스 doc 주석 말고 그대로다.
+2. 새 Studio 문서 `frontend/lib/ui/studio/settings_studio_layout.dart`(`settingsStudioDocument`, `SettingsMetrics`)와 섹션 틀 `frontend/lib/ui/settings/settings_sections.dart`(`SettingsSection` · `SettingsHeaderBand` · `SettingsRow` · `SettingsHeaderError` · `SettingsInlineError` · `SettingsIconButton`).
+3. 시험: `settings_page_test.dart` 딥링크 시험의 스크롤 key만 바꿈(`settings-scroll` → `settings-scanner-scroll` · `settings-diagnostics-scroll`), 섹션 순서 · 버튼 상시 노출 시험 1건 추가. 지운 시험 0.
+4. 새 golden 장면 `settings`(`frontend/test/goldens/fe10s_settings_golden_test.dart`, 기준 이미지 없음 → CF `-UpdateGoldens`).
+
+### 실행한 명령과 결과
+
+- `flutter analyze`(frontend, 3회 — 마지막은 시험 · golden 파일 정리 뒤): "No issues found!"(info 포함 0). 로그 `debug/frontend_fe10s/logs/analyze.txt`.
+- `flutter test test/settings_page_test.dart`: `+11: All tests passed!`(기존 10 + 추가 1). 로그 `logs/test_settings.txt`.
+- 설정 · 셸 관련 17파일(`settings_page_test` · `widget_test` · `scan_header_progress_fe8f2_test` · `scan_session_controller_test` · `growth_calculator_view_test` · `statistics_filter_test` · `student_filter_followups_test` · `home_page_test` · `app_navigation_fe7d_test` · `app_navigation_tidy1_test` · `recovery_banner_test` · `account_manager_fe8b_test` · `account_editor_fe8c_test` · `repository_profile_panel_test` · `profile_delete_fb2d_test` · `idempotency_keys_test` · `kit/section_frame_test`): `+153: All tests passed!`. 로그 `logs/test_related.txt`.
+- `BAPlannerApp`을 띄우는 나머지 시험 18파일(`grep -rl "BAPlannerApp(" test`에서 golden · e2e · 위 목록 제외: `connected_target_fe8d` · `home_app_shell` · `home_connect_fe8e` · `home_scan_popup_fe8f3` · `inventory_shell_lazy` · `scan_item_queue_fe8g3` · `scan_item_review_fe8g5b` · `scan_review_board_fe8g4b` · `scan_run_view_fe8g2` · `scan_tab_page_fe8g1` · `section_template_studio` · `statistics_app_shell` · `student_filter_modal` · `tactical_analysis` · `tactical_excel_import` · `tactical_lobby_fe9c` · `tactical_slots` · `title_page`): `+197: All tests passed!`(설정 페이지는 셸 IndexedStack 안에서 늘 배치되므로 함께 돌림). 로그 `logs/test_shell.txt`.
+- 일회성 렌더: 사본 `test/fe10s_render_tmp_test.dart`(`@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, `RepaintBoundary.toImage`로 PNG만 저장)를 2560×1392 · 1280×720에서 실행 `+2`, 넘침 예외 0. 사본은 실행 직후 지웠다. 이미지 `debug/frontend_fe10s/render/settings_2560.png` · `settings_1280.png`(커밋 대상 아님).
+- `dart format`: 고친 · 새 파일 5개를 하나씩. `git diff --check`(고친 기존 파일 3개): 출력 없음. 새 파일 3개 끝 개행 하나 · 줄 끝 공백 0 확인.
+- 실행하지 않음: `fe_gate.ps1`, golden 비교, `-UpdateGoldens`, 맨 `flutter test`, git 쓰기.
+
+### 처리한 FD
+
+- FD-179 (a): 내용 · 순서(프로필 → Backend 연결 → Scanner 준비 상태 → 고급 진단) 그대로, 사선 섹션 · 키트로 다시 그림. 동작 변화 0.
+- FD-020: 시안 없는 설정 탭이라 문구는 현행 유지 — (i) 팝오버로 옮긴 문장 없음, 각주 · 설명 줄은 그대로 보인다.
+- FD-178: `백업은 아직 지원하지 않습니다.` 그대로(프로필 각주 행).
+- FD-152(워커 재량): 진단 JSON은 개발 상태 패널 그대로, 설정 `진단 복사`는 손대지 않음.
+- 워커 재량으로 정한 것(대장 ID 없음): 섹션 수 · 폭(아래 "발견 사항" 1).
+
+### 섹션 대응 표(옛 카드 → 새 섹션 · 위젯)
+
+| 옛 자리 | 새 자리 | 버튼 · 콜백(그대로) |
+|---|---|---|
+| 머리 줄(설정 아이콘 · `SETTINGS / RECOVERY` · `프로필과 연결` · `계정 · connection.name` · 새로고침 `IconButton`) | 머리 띠 `settings-header`(`SettingsHeaderBand`): 분홍 막대 + 같은 세 줄, 새로고침 `SettingsIconButton`(key `settings-refresh`, tooltip · 의미 라벨 `설정 새로고침`) | `onRefresh: _loading ? null : _reload` |
+| 목록 맨 위 `LinearProgressIndicator` | 머리 띠 아래 막대(key `settings-loading`) | `_loading`일 때만 |
+| `_ErrorCard`(작업 오류) | 머리 띠 오류 줄 `SettingsHeaderError`(key `settings-action-error`, 평행사변형 `.row`) | `다시 불러오기` → `_reload` |
+| 프로필 카드 | `settings-profiles`(왼쪽 위): 레일 행, 지금 적용된 계정은 분홍 선택 행 + `현재 적용` 칩, 다른 계정은 `전환` tonal 버튼, 각주 투명 행 | `새 프로필`(Filled → primary) `_createProfile`, `v6 가져오기`(Outlined → ghost, key `settings-profile-v6-import`) `_importV6Profile`, `이름 변경`(Outlined → ghost) `_renameProfile`, `전환`(TextButton → tonal) `_selectProfile`, 비활성 조건 같음 |
+| Backend 연결 카드 | `settings-backend`(오른쪽 위): 상태 행(key `settings-backend-status`, 아이콘 · `연결됨/연결 중/연결 끊김` · 설명) | `재연결`(Outlined → ghost) `_recover(false)`, `Backend 재시작`(tonal → normal) `_recover(true)`, `_recoveryAction`이면 둘 다 비활성 |
+| Scanner 준비 상태 카드 | `settings-scanner`(왼쪽 아래): `인식 asset …` 행, `감지된 대상 n개`, 대상 행 최대 4, 각주 | `스캔 탭 열기`(tonal → normal) `widget.onOpenScan` |
+| 고급 진단 카드 | `settings-diagnostics`(오른쪽 아래): process `SelectableText` 행(같은 4줄 문자열), lifecycle 수, lifecycle 최근 4행, 각주 | `진단 복사`(Outlined → ghost) `_copyDiagnostics`(값 없으면 비활성), `Adaptive-Sync`(tonal → normal) `widget.onOpenDiagnostics` |
+| `_InlineError`(프로필 · 스캐너 오류) | `SettingsInlineError` 행(3줄 말줄임) | — |
+| 대화상자 4종 · SnackBar | 그대로(Material `AlertDialog` · `SimpleDialog` · `SnackBar`, key `settings-v6-account-dialog` · `settings-v6-import-confirm` 유지) | 그대로 |
+
+근거: `build` 앞 상태 코드 diff 0(위 "한 일" 1), 콜백은 같은 메서드를 같은 조건으로 넘긴다, 시험 11건(텍스트 · key · 콜백 횟수 · 오류 문자열) 통과.
+
+### 좌표 · 간격 출처(시안 없음)
+
+- 섹션 배치: 머리 띠 = 인벤토리 KPI 띠(`inventory-kpis`)처럼 섹션 위 첫 줄(0,2,96,9). 2×2 = 인벤토리 분석(S1 · S2 · S4 · S5)처럼 위아래 줄이 한 사선으로 이어지고 같은 줄 두 섹션이 맞물린다. 꼭짓점은 `settings_studio_layout.dart` doc 주석(가로 틈 25.4 · 27.4px — 인벤토리 C·D 26.7, 분석 S1·S2 24.6~28.7 / 줄 사이 25.2px — 분석 S1·S5 23.2). 오른쪽 두 섹션 · 왼쪽 아래 섹션은 정수 칸으로 사선을 잇기 위해 깊이 93 · 94 · 95를 썼다(인벤토리 분석과 같은 방법).
+- 섹션 안: 제목 위 20 · 높이 40 · 변에서 22, 첫 행 위 78 · 변에서 24(`InventoryAnalysisMetrics`), 목록 inset 8 · 스크롤바 자리 14 · 행 사이 8(`ScanReviewMetrics`), 아래 버튼 줄 사선 쪽 24 · 반대쪽 22(`ScanMetrics` 오른쪽 섹션 아래 버튼) + tonal 높이 40, 아래 끝에서 62. 행 높이(64 · 72 · 56 · 88 · 44 · 40)와 머리 띠 안 세로 배치는 글자 크기에 맞춰 워커가 정했다.
+- 배율: 섹션 높이 / 기준 높이(0.4~1), 통계 · 스캔과 같은 `SectionScaledBox` 규칙.
+
+### 문구 목록(바꾸지 않음 — CF 판단)
+
+~습니다체가 아닌 문장: `프로필이 없습니다. 새 프로필을 만들어 시작하세요.`(둘째 문장 ~하세요).
+영어가 섞인 문구: `SETTINGS / RECOVERY`, 머리 부제 `connection.name`(`connected` · `connecting` · `disconnected`), `ID … · revision …`, `Backend 연결` · `Backend 재시작`, `재연결과 재시작은 저장되지 않은 draft나 scan 후보를 자동 확정하지 않습니다.`, `Scanner 준비 상태`, `인식 asset 준비됨` · `인식 asset 확인 필요`, 대상 부제 `ready` · `· foreground`(`status.name`), `protocol … · generation …` / `launcher configured|default / resolved|unresolved` / 실행 파일 · 작업 폴더, `최근 lifecycle n건 · stderr n건`, `이 서비스는 process 진단 정보를 제공하지 않습니다.`, `진단 보고서는 환경 변수 값, token, 사용자 payload와 프로필 데이터를 포함하지 않습니다.`, `Adaptive-Sync`, 오류 `RepositoryService를 사용할 수 없습니다.` · `ScannerService를 사용할 수 없습니다.`(서비스 오류 문자열은 원문 그대로).
+라벨 · 제목(문장 아님, 참고): `프로필과 연결` · `설정 새로고침` · `다시 불러오기` · `현재 적용` · `전환` · `감지된 대상 n개` · `스캔 탭 열기` · `진단 복사`, 대화상자 `새 프로필` · `프로필 이름` · `프로필 이름 변경` · `새 이름` · `취소` · `확인` · `v6 계정 가져오기` · `v6 계정을 v7로 복사` · `가져오기`.
+
+### golden 변화 예상
+
+- 기존 장면: 변화 0 예상. `SettingsPage`는 셸 IndexedStack에서 설정 탭일 때만 그려지고, 기존 장면 중 설정 탭을 찍는 것은 없다(`title-settings`로 여는 `account-manager` · `account-editor` · `account-picker` · `account-new`는 타이틀 계정 관리 화면이다). 레이아웃은 모든 장면에서 돌지만 셸 시험 +197 · 렌더 2장에서 넘침 예외 0.
+- 새 장면 `settings`(2560×1392, 기준 이미지 없음): 셸 머리 `설정 / 앱 및 연결 설정` 아래, 위 머리 띠(`SETTINGS / RECOVERY`, 분홍 막대 + `프로필과 연결`, `Main · connected`, 오른쪽 새로고침), 아래 2×2: 왼쪽 위 `프로필`(분홍 선택 레일 행 `Main` · `ID 000…001 · revision 0` · `현재 적용` 칩, 각주, 아래 `새 프로필` 분홍 · `v6 가져오기` · `이름 변경`), 오른쪽 위 `Backend 연결`(초록 체크 `연결됨` 행, 아래 `재연결` · `Backend 재시작`), 왼쪽 아래 `Scanner 준비 상태`(`인식 asset 준비됨`, `감지된 대상 1개`, `Mock Blue Archive / ready · foreground` 행, 각주, `스캔 탭 열기`), 오른쪽 아래 `고급 진단`(process 4줄 행, `최근 lifecycle 1건 · stderr 0건`, `g1: mock process connected`, 각주, `진단 복사` · `Adaptive-Sync`). 네 섹션이 하나의 80° 사선으로 맞물리고 각 섹션 사선 쪽에 공용 스크롤바 트랙이 보인다. 일회성 렌더 `debug/frontend_fe10s/render/settings_2560.png`와 같은 모습이어야 한다.
+
+### 미검증 항목
+
+- golden 비교 · 새 기준 이미지 생성: 미실행(CF gate).
+- 전체 일반 시험 · `fe_gate.ps1` · `codealmanac validate` · Windows release: 미실행.
+- 실제 앱(Windows, real backend)에서 키보드 Tab 순서 · 스크린 리더 읽기: 미실행(시험은 버튼 텍스트 · 탭 · 콜백만 본다).
+- 연결 끊김 · 오류 · 프로필 여러 개 · 대상 4개 이상 · lifecycle 4건 이상 상태의 시각 확인: 미실행(시험으로 넘침 예외 0만 확인).
+
+### 검수표(시안 없음 — 옛 화면과 비교)
+
+| 확인할 것 | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| 설정 탭 기본 | mock(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`) → 설정 탭, 2560×1440 최대화 | 머리 띠 + 2×2, 순서 프로필 · Backend / Scanner · 고급 진단, 사선이 위아래로 이어짐, 문구가 옛 화면과 같음 |
+| 버튼 · 콜백 | 같은 화면 | `새 프로필` → 이름 대화상자, `v6 가져오기`, `이름 변경`, `전환`(계정 2개일 때), `재연결` · `Backend 재시작`, `스캔 탭 열기` → 스캔 탭, `진단 복사` → SnackBar, `Adaptive-Sync` → 진단 화면, 새로고침 |
+| 작업 오류 | mock에서 실패하는 작업(시험 `failNextProfileMutation`과 같은 상황) | 머리 띠 오른쪽 오류 줄 + `다시 불러오기`, 내용에 마우스를 올리면 전체 |
+| 연결 끊김 | 개발 패널에서 연결 끊김 | `연결 끊김` 행 · 버튼 활성 |
+| 작은 창 | 1280×720 | 넘침 없음, 요소가 다른 탭처럼 같은 비율로 작아짐(발견 사항 2) |
+| 키보드 | Tab · Enter | 새로고침 → 프로필 행 → 버튼 줄 순서로 이동, Enter로 실행, 파란 포커스 테두리 |
+
+### 발견 사항
+
+1. 배치 권장안 = 머리 띠 + 2×2(옛 Wrap 2열과 같은 읽기 순서, 인벤토리 분석 2×2 문법). 대안: (a) 스캔 · 통계식 3-Section(왼쪽 레일 프로필 · 가운데 Backend + Scanner · 오른쪽 고급 진단) — 카드 둘을 한 섹션에 합쳐 "내용 그대로"에서 멀어진다, (b) 4열 — 1280 폭에서 진단 경로 줄이 너무 좁다, (c) 머리 띠 없이 머리 내용을 프로필 섹션 위로 — 프로필 제목과 겹친다.
+2. 작은 창 가독성: 다른 탭과 같은 배율 규칙이라 1280×720에서 글자가 기준의 약 0.5배(본문 약 6.5px)다. 옛 설정 화면은 배율 없이 보통 크기였다. 대안: 설정만 최소 배율을 높이고 목록 스크롤로 받기(CF 판단).
+3. 대화상자(텍스트 입력 · v6 계정 고르기 · 복사 확인)와 SnackBar는 Material 그대로 뒀다(동작 변화 0 범위, 키트 `BaModal` 전환은 별도 slice 후보).
+4. 키보드 순서: 섹션별 `FocusTraversalGroup`을 두지 않아 옛 화면처럼 화면 위치 순서(ReadingOrder)다. 위 줄 두 섹션의 버튼 줄이 같은 높이라 `새 프로필 · v6 가져오기 · 이름 변경 · 재연결 · Backend 재시작`이 한 줄로 이어진다. 대안: 섹션별 그룹 + 순서 정책(프로필 → Backend → Scanner → 고급 진단).
+5. 작은 표시 변화(동작 아님): 지금 적용된 계정 행이 `DiagonalRow` 선택 의미(selected)를 갖는다, 상태 아이콘에 초록 · 노랑 색, 옛 카드 아이콘(사람 · 서버 · 스캐너 · 심박)은 분홍 막대로 바뀜, 작업 오류 내용은 2줄 말줄임 + 마우스 올리면 전체(옛 카드는 전부 표시).
+6. 오른쪽 섹션 목록은 키트 translate 모드라 행 폭이 일정하고 아래 행일수록 오른쪽(수직 변) 여백이 커진다. 키트 동작 그대로 두었다.
+7. 워크플로 "Lane A·B 프론트 병렬" 문단은 "새 golden 장면도 Lane A만 추가한다"인데, 이번 CF 프롬프트가 Lane B에 새 장면 1장(`settings`)을 맡겼다. 프롬프트대로 했다.
+8. `app_shell.dart` 변경 0(진입 경로 · 생성자 그대로). 키트 변경 0 — 아이콘 전용 tonal 버튼이 키트에 없어 `SettingsIconButton`을 설정 폴더에 만들었다(키트 승격 후보).
+
+### 사본 · commit.json
+
+- 사본 `debug/frontend_fe10s/pre/`(settings_page · settings_page_test · 이 문서), `debug/frontend_fe10s/commit.json`(slice `fe10s`, modified 2, added 3, `status=true`, whole = 이 문서, optional_added = `frontend/test/goldens/baseline/settings.png`, 바뀌는 기존 기준 이미지 없음), 인계 `debug/frontend_fe10s/output.md`.
+
+### 다음 행동
+
+- FE10-s 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE4-b2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험 +1(`settings_page_test` 10 → 11), golden 기존 변화 0 · 새 `settings` 기준 없음 RED) → `failures/` 확인 → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe10s`.
+- CF 판단: 발견 사항 1(배치) · 2(작은 창 배율) · 4(키보드 그룹) · 문구 목록.

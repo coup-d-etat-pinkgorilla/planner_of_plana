@@ -196,14 +196,20 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final settingsScroll = find.byKey(const ValueKey('settings-scroll'));
+      // FE10-s: 한 장짜리 목록이 섹션별 목록이 되었다. 버튼은 섹션 아래 줄에 있고, 목록을 끝까지 내려도 그대로 보인다.
+      final scannerScroll = find.byKey(
+        const ValueKey('settings-scanner-scroll'),
+      );
+      final diagnosticsScroll = find.byKey(
+        const ValueKey('settings-diagnostics-scroll'),
+      );
       final openScan = find.text('스캔 탭 열기');
-      await tester.drag(settingsScroll, const Offset(0, -500));
+      await tester.drag(scannerScroll, const Offset(0, -500));
       await tester.pumpAndSettle();
       await tester.tap(openScan);
       await tester.pump();
       final openAdaptiveSync = find.text('Adaptive-Sync');
-      await tester.drag(settingsScroll, const Offset(0, -500));
+      await tester.drag(diagnosticsScroll, const Offset(0, -500));
       await tester.pumpAndSettle();
       await tester.tap(openAdaptiveSync);
       await tester.pump();
@@ -226,5 +232,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('mock reconnect failed'), findsOneWidget);
     expect(find.text('재연결'), findsOneWidget);
+  });
+
+  testWidgets('FE10-s sections keep the old card order in reading order', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(2560, 1208);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final service = MockAppService();
+    addTearDown(service.dispose);
+    await tester.pumpWidget(subject(service));
+    await tester.pumpAndSettle();
+    Offset title(String id) =>
+        tester.getTopLeft(find.byKey(ValueKey('settings-$id-title')));
+    final profiles = title('profiles');
+    final backend = title('backend');
+    final scanner = title('scanner');
+    final diagnostics = title('diagnostics');
+    // 옛 Wrap 순서: 프로필 · Backend 연결 / Scanner 준비 상태 · 고급 진단.
+    expect(profiles.dy, closeTo(backend.dy, 0.5));
+    expect(profiles.dx, lessThan(backend.dx));
+    expect(scanner.dy, greaterThan(profiles.dy));
+    expect(scanner.dy, closeTo(diagnostics.dy, 0.5));
+    expect(scanner.dx, lessThan(diagnostics.dx));
+    expect(
+      tester
+          .getBottomLeft(find.byKey(const ValueKey('settings-header-subtitle')))
+          .dy,
+      lessThan(profiles.dy),
+    );
+    // 버튼은 섹션 아래 줄에 있어 스크롤 없이 보인다.
+    for (final label in const [
+      '새 프로필',
+      'v6 가져오기',
+      '이름 변경',
+      '재연결',
+      'Backend 재시작',
+      '스캔 탭 열기',
+      '진단 복사',
+      'Adaptive-Sync',
+    ]) {
+      final center = tester.getCenter(find.text(label));
+      expect(tester.view.physicalSize.contains(center), isTrue, reason: label);
+    }
+    expect(tester.takeException(), isNull);
   });
 }
