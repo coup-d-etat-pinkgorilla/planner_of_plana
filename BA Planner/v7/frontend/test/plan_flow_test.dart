@@ -874,10 +874,9 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(
-      find.byKey(ValueKey('plan-flow-selected-$firstId')),
-      findsOneWidget,
-    );
+    // FE4-b2: 한 명만 고르면 C는 한 명 모드(짧은 사다리꼴 "선택한 학생")다. 여러 명 목록 행은 없다.
+    expect(find.byKey(const ValueKey('plan-flow-one-aside')), findsOneWidget);
+    expect(find.byKey(ValueKey('plan-flow-selected-$firstId')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
     await tester.pumpAndSettle();
     expect(find.byType(PlanFlowStudentBody), findsNothing);
@@ -904,10 +903,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('plan-flow-step-1')));
     await tester.pumpAndSettle();
     expect(find.byType(PlanFlowStudentBody), findsOneWidget);
-    // 돌아와도 고른 학생은 그대로다.
+    // 돌아와도 고른 학생은 그대로다(한 명이라 한 명 모드 C 학생 행, FE4-b2).
+    expect(find.byKey(const ValueKey('plan-flow-one-student')), findsOneWidget);
     expect(
-      find.byKey(ValueKey('plan-flow-selected-$firstId')),
-      findsOneWidget,
+      tester.widget<StudentDiagonalGrid>(gridFinder).selectedIds,
+      {firstId},
     );
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
     await tester.pumpAndSettle();

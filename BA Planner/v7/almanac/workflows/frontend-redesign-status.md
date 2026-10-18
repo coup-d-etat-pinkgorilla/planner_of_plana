@@ -10667,3 +10667,157 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_234539\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-b2 착수 기록 (2026-10-19 00:12, Lane A)
+
+- 상태: **진행 중** — FE4-b2 계획 만들기 1단계 한 명 모드(Flow-1-Students-One, FD-177 (a)).
+- 시작 SHA: `e9fcb280d617b203895e7a91e231e83141ad1868`(브랜치 `scanner-consolidation`).
+- 막힘 확인: 결정 대장 "slice별 막힘 요약"에 FE4-b2 행 없음, `열림` 0건. FD-177 확정 (a). FD-078(모드 전환 360ms 보간)은 워커 재량 → 권장안대로. FD-074·FD-171은 그대로(내 그룹 저장·계산기 넘김 동작 바꾸지 않음).
+- 고칠 기존 파일(모두 착수 때 작업트리 = HEAD, **기존 미커밋 변경(WIP) 없음**, 사본 `debug/frontend_fe4b2/pre/<v7 기준 경로>`, cmp 일치):
+
+| 파일 | WIP |
+|---|---|
+| `frontend/lib/ui/widgets/plan_flow_student_step.dart` | 없음 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | 없음 |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 없음 |
+| `frontend/lib/ui/studio/plan_flow_studio_layout.dart` | 없음 |
+| `frontend/lib/ui/widgets/student_section_layout.dart`(공개화 이름 바꾸기만) | 없음 |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart`(장면 추가) | 없음 |
+| `frontend/test/plan_flow_student_step_test.dart`·`plan_flow_test.dart`·`planning_page_test.dart`(필요할 때만, 사본만 미리 둠) | 없음 |
+| `almanac/workflows/frontend-redesign-status.md`(이 기록) | 없음 |
+
+- 새 파일 예정: `frontend/lib/ui/widgets/plan_flow_student_one.dart`(한 명 모드 C·학생 상세 겹침·모드 표면), `frontend/test/plan_flow_student_one_test.dart`.
+- 고치지 않음: `lib/ui/pages/settings_page.dart`·`lib/ui/settings/**`(Lane B FE10-s), `plan_student_step_tile.dart`(바꿀 필요 없음), 2~4단계·병합 규칙, `lib/services/**`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend·contracts, 택틱 소유 파일.
+
+## FE4-b2 종료 기록 (2026-10-19 00:30, Lane A, 코드 작성 완료 · gate 미실행)
+
+- 상태: **완료(gate 전)**. 근거 시안 Flow-1-Students-One(`dc_outline.py` 개요 + 섹션 path `d` 두 줄만 읽음), FD-177 (a).
+- 이 레인이 고친 기존 파일은 사본 `debug/frontend_fe4b2/pre/`와 비교한다. 작업트리의 `settings_page.dart`·`settings_page_test.dart` 차이는 Lane B(FE10-s) 것이고 이 slice와 무관하다.
+
+### 실행한 명령과 결과
+
+| 명령(`frontend`에서) | 결과 |
+|---|---|
+| `flutter analyze` | No issues found(info 포함 0), 마지막 실행 2.8s |
+| `flutter test test/plan_flow_student_one_test.dart` | 1차 −8(기본 mock 계정에 보유 학생이 없어 fixture `firstWhere` 실패 7, 둥근 path bounds 비교 1 — 둘 다 시험 쪽 문제) → 시험 고침 → **+8 All passed** |
+| 관련 시험 25파일 `flutter test --exclude-tags golden …`(plan_flow_* 11 · planning_page · plan_home_detail · plan_student_step_tile · student_page · student_bond_gauge · student_studio_layout · student_filter_followups · student_filter_modal · student_search_section · growth_calculator_view/state/adapter/rules · app_navigation_fe7d · app_navigation_tidy1 · widget_test) | 1차 **+380 −1**(`plan_flow_test` "1단계는 새 학생 고르기 …"가 한 명 고른 뒤 여러 명 목록 행 `plan-flow-selected-<id>`를 찾음 = 의도한 동작 변화) → 단언 2곳 고침 → `plan_flow_test` 단독 +15 → 25파일 재실행 **+381 All passed** |
+| 일회성 렌더(사본 `test/goldens/fe4b2_render_once_test.dart`, `@Tags`·`expectGoldenScene` grep 0건, 실행 뒤 바로 지움) | +3, PNG `debug/frontend_fe4b2/render/`(`plan-flow-step1-one.png` · `one-unowned.png` · `plan-flow-step1-filter.png`), 넘침 예외 0 |
+| `git diff --check -- frontend/lib frontend/test` | 0 |
+| `dart format` | 새 파일 2개만 전체 포맷. 기존 파일은 HEAD부터 포맷과 달라(예 `plan_flow_student_step.dart` 기존 줄 6곳) 이 slice 줄만 포맷 결과와 같게 맞췄다 |
+
+로그: `debug/frontend_fe4b2/logs/`(one_1 · one_2 · related_1 · related_2 · plan_flow_test_2 · plan_flow_test_3 · render_once).
+
+### 처리한 FD
+
+- **FD-177** (확정 (a)): 한 명 모드를 만들었다.
+- **FD-078** (워커 재량 → 권장안): 섹션 intro/outro 부착면 규칙 그대로, 한 명 ↔ 여러 명 전환은 B·C 꼭짓점 보간 360ms(`easeInOutCubic`). 단계를 바꿀 때(B·C 퇴장 중)는 보간 없이 바로 맞춘다.
+- **FD-074·FD-171**: 바꾸지 않음(내 그룹 저장소 · 계산기 넘김 동작 그대로). 다만 한 명 모드 C에는 "내 그룹"이 보이지 않는다(발견 2).
+- **FD-050·FD-051**(FE3-b): 인연 게이지 목표는 학생 탭과 같은 위젯 · 같은 규칙(활성 계획 마지막 단계 `bond_rank`, 현재 이하이면 숨김).
+
+### 모드 전환 규칙
+
+| 상태 | 모드 | B | C | 학생 탭 S3 겹침 | 그리드 카드 |
+|---|---|---|---|---|---|
+| 1단계 · 0명 | 여러 명 | `flow-body` 56칸 | `flow-aside`(빈 줄 · 내 그룹 · 역할군) | 없음 | — |
+| 1단계 · **정확히 1명** | **한 명** | `flow-body-one` 52칸(제목 · 검색 · 그리드 폭 −106.7) | `flow-aside-one` 짧은 사다리꼴(선택한 학생 · 학생 행 · 이미 잡혀 있는 목표 · "이 학생 목표 정하기") | 있음(`element-3` 자리) | 분홍 외곽선만, 순서 배지 없음 |
+| 1단계 · 2명 이상 | 여러 명 | `flow-body` | 목록(6명까지) / 압축 그리드(7명부터, FD-077) | 없음 | 순서 배지 |
+| 2~4단계(몇 명이든) | 여러 명 | 각 단계 그대로 | 각 단계 그대로 | 없음 | — |
+
+- 전환: 1단계 안에서 0↔1 · 1↔2명이 되면 360ms 보간(표면 꼭짓점 · B 폭, C 내용과 S3는 같은 값으로 페이드, S3는 사라지는 동안 마지막 학생을 보인다). 단계를 바꾸면 즉시.
+- 규칙 함수: `planFlowOneMode(flow)` = `step == students && selectedStudentIds.length == 1`.
+- 흐름 화면 밖에서 `PlanFlowStudentBody`·`PlanFlowStudentAside`를 직접 그리면(`oneMode` 인자 없음) 여러 명 배치만 쓴다(기존 위젯 시험 그대로).
+- 고르기 동작은 바꾸지 않았다: 한 명 모드에서 다른 카드를 누르면 **더해진다**(2명 → 여러 명 모드). 시안 (i)의 "누르면 바로 바뀝니다"(교체)는 따르지 않았다(발견 1).
+
+### 인디케이터 공개화 diff
+
+- 파일 `frontend/lib/ui/widgets/student_section_layout.dart` **+11 −11**, 이름 바꾸기만: `_StudentStatusIndicators` → `StudentStatusIndicators`(선언 2줄 + 사용 2줄), `_StudentSectionFoundationPainter` → `StudentSectionFoundationPainter`(선언 2줄 + `shouldRepaint` 1줄 + 사용 4줄). 주석 · 인자 · 본문 변화 0.
+- S3 바탕(섹션 모양 · container 텍스처 · ★ 표시)은 foundation painter가 그리므로 "같은 모양"을 위해 함께 공개했다(지시 "인디케이터 공개화"의 범위로 판단, CF 확인 요청). 초상 카드는 공개 위젯(`AssetImageGrid`·`StudentGridCardOverlayPainter` 등)으로 새 파일에서 학생 탭과 같은 인자로 조립했다.
+- 학생 탭 변화 0 근거: 바뀐 줄이 식별자뿐이라 생성되는 위젯 · painter · 인자가 같다. 학생 탭 시험(`student_page_test` · `student_bond_gauge_test` · `student_studio_layout_test` · `growth_calculator_view_test` 등) 그대로 통과. golden 비교는 돌리지 않았다(CF 몫).
+
+### "이미 잡혀 있는 목표" 값 출처
+
+| 화면 값 | 출처 | 없을 때 |
+|---|---|---|
+| 머리 칩 `활성 계획 Pn에 있음` | `PlanFlowContext.activePlan`(흐름을 열 때 읽은 `plan.get` 문서)에서 그 학생 첫 단계의 페이즈 번호 | 칩 없음 |
+| 행 왼쪽 `Pn · k단계` | 같은 문서: 페이즈 순번(1부터) · 그 학생 단계 순번(문서 순서) | — |
+| 행 가운데 목표 요약 | 같은 문서 단계의 v2 목표 → 정수 보기(`planFlowDocumentIntegerTargets`, null = 앞 단계, 첫 단계 앞 = 확정 현재값) → 앞 단계와의 차이(`planFlowGoalChanges`) → 3단계 카드와 같은 요약(`planFlowOrderGoalSummary`, 예 `Lv.90`, `EX5 · 인연 100`, 미보유 `모집 · 인연 20`) | 단계 없음: 빈 상태 줄 "활성 계획에 이 학생의 단계가 없습니다" |
+| 행 오른쪽 상태(시안 `지금 가능` · `부족 1종`) | 흐름에는 활성 계획 계산이 없다(문서에 없는 값) | **'—'** |
+| `외 n단계` | 그 학생 단계가 3개 이상일 때(행은 2개만) | — |
+| 학생 행 둘째 줄 | 카탈로그 학교 · 편성 · 공격/방어 라벨 | 모르는 값 '—' |
+| S3 수치 | 확정 현재값(`repositoryState.students`, 2단계 "현재"와 같은 원천) | 미보유: 학생 탭 미보유와 같은 '-' 표시 |
+| 인연 목표 빗금 · `→N` | `activePlanBondTarget(activePlan, id)`(학생 탭과 같은 함수) | 없음 |
+
+- 읽기 전용: 새 함수 `planFlowActiveStudentStages`·`PlanFlowContext.activeStagesOf`는 문서를 읽기만 한다. 초안 · 저장 경로(`PlanFlowDocumentBoundary`, 4단계 저장) 변화 0(시험: 읽은 뒤 `toWire` 동일 · 초안 단계 0).
+
+### 바뀐 파일
+
+| 파일 | 상태 | 줄(+/−) | 내용 |
+|---|---|---|---|
+| `frontend/lib/ui/widgets/plan_flow_student_one.dart` | 새 파일 | +567 | 짧은 C 내용 `PlanFlowStudentOneAside`, S3 겹침 `PlanFlowStudentOneDetail`, 보간 표면 `PlanFlowModeSectionPainter`·`planFlowModeSectionPath`, `planFlowOneModeDuration` 360ms |
+| `frontend/test/plan_flow_student_one_test.dart` | 새 파일 | +497 | 8건(검수표) |
+| `frontend/lib/ui/studio/plan_flow_studio_layout.dart` | 수정 | +52 −3 | `planFlowOneStudioDocument`(B `flow-body-one` (15,2,52,94), C `flow-aside-one` (64,2,32,28) 깊이 68/96), `planFlowSection`이 두 문서를 찾음 |
+| `frontend/lib/ui/widgets/plan_flow_student_step.dart` | 수정 | +73 −13 | `planFlowOneMode`, `planFlowAsideLeftAt(sectionId:)`(기본값 = 기존), Body · Aside `oneMode`(선택 인자), Aside `onNext`, 한 명 모드 폭 · 배지 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart` | 수정 | +46 −6 | 모드 컨트롤러, B · C 표면을 보간 painter로(0이면 기존과 같은 path), S3 겹침 마운트 |
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 수정 | +61 −0 | 읽기용 `PlanFlowActiveStudentStage`·`planFlowActiveStudentStages`·`PlanFlowContext.activeStagesOf` |
+| `frontend/lib/ui/widgets/student_section_layout.dart` | 수정 | +11 −11 | 공개화 이름 바꾸기만 |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart` | 수정 | +24 −0 | 새 장면 `plan-flow-step1-one` + import 1 |
+| `frontend/test/plan_flow_test.dart` | 수정 | +7 −7 | 한 명 고른 1단계 단언 2곳을 한 명 모드 C로 |
+| `almanac/workflows/frontend-redesign-status.md` | 수정 | 이 기록 | — |
+
+`plan_student_step_tile.dart`, `plan_flow_rail.dart`, `lib/services/**`, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, settings 파일, backend · contracts, 택틱 파일은 고치지 않았다. 사본만 두고 고치지 않은 파일: `plan_flow_student_step_test.dart`·`planning_page_test.dart`(commit.json에 없음).
+
+### golden 변화 예상(장면별)
+
+- **바뀜 1 — `plan-flow-step1-filter`**: 이 장면은 아루 **한 명**을 고른 뒤 필터 모달을 연다. 그래서 스크림 아래 화면이 한 명 모드가 된다(B 4칸 좁음 · 짧은 C · 오른쪽 아래 아루 S3). 모달 자체는 같다. 렌더 `render/plan-flow-step1-filter.png`. 장면 조작은 고치지 않았다(발견 3).
+- **새 장면 1 — `plan-flow-step1-one`**(기준 없음): 아야네 한 명. A 레일 1단계 "지금", B 제목 "1명 골랐습니다", 그리드 8열 좁아짐 · 아야네 카드 분홍 외곽선(배지 없음); C 짧은 사다리꼴: "선택한 학생 (i) [활성 계획 P1에 있음]", 학생 행(초상 · 아야네 · 학교 · 편성 · 속성), "이미 잡혀 있는 목표", `P1 · 1단계 | 인연 30 | —`, `P2 · 2단계 | 인연 45 | —`, 분홍 "이 학생 목표 정하기 ›"; 그 아래 학생 탭 S3 그대로(PLAN 초상, Lv, Position/Class/Weapon, 스킬 · 장비 · 능력 개방 · 심상개화 · STATS, 인연 게이지 현재 24 채움 + 24~45 빗금 + `→45`). 렌더 `render/plan-flow-step1-one.png`.
+- **그대로**: 나머지 전부. `plan-flow-step1`(3명) · `-many`(8명) · `plan-flow-step2*`(2 · 3명, 그룹으로 2명) · `step3*` · `step4*`는 1단계가 한 명이 아니거나 1단계가 아니라 모드 값 0 = 기존 path · 기존 폭 · 배지 그대로다. 여러 명 C는 `FadeTransition` 불투명도 1로 감싸져 픽셀이 같다. 학생 탭 장면(`students-*`)은 이름 바꾸기뿐이다.
+- 그래서 CF gate 예상: golden **2건 RED**(`plan-flow-step1-filter` 바뀜, `plan-flow-step1-one` 기준 없음), 나머지 GREEN.
+
+### 미검증("미실행")
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` — 미실행(CF 몫).
+- 바뀐 동작에 걸리지 않는 나머지 일반 시험(스캔 · 인벤토리 · 통계 · 택틱 · process E2E) — 미실행(gate에서).
+- 시안과 ±2px 내부 요소 대조 — 섹션 꼭짓점만 시험으로 확인(±1px). 내부 행 inset은 시안 좌표에서 계산했고 렌더로 눈 확인만 했다.
+- 실제 앱(mock 모드) 클릭 검수 — 미실행(검수표, 사용자/CF).
+
+### 검수표 (mock 모드 `--dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`, 2560×1392 최대화)
+
+| artboard | 여는 방법 | 확인 포인트 | 자동 확인 |
+|---|---|---|---|
+| Flow-1-Students-One | 계획 탭 → 시나리오 생성(계획 만들기) → 그리드에서 학생 한 명 | B 오른쪽 변이 4칸 안으로, C가 위쪽 짧은 사다리꼴(아래 1955 · 위 2017), 그 아래 학생 탭과 같은 자리 S3 | 시험 "한 명 모양 B·C …" ±1px, golden 새 장면 |
+| (전환) | 같은 화면에서 둘째 학생을 더 고름 / 빼서 한 명 | 360ms 동안 B · C가 늘고 줄며 C 내용 · S3가 페이드 | 시험 "한 명을 고르면 …"(중간값 0<t<1, 끝 1 → 0) |
+| (이미 잡혀 있는 목표) | 활성 계획에 단계가 있는 학생 한 명 | `Pn · k단계`, 목표 요약, 상태 '—', 3단계 이상이면 "외 n단계" | 시험 읽기 · 화면 |
+| (빈 상태) | 활성 계획에 없는 학생 한 명 | "활성 계획에 이 학생의 단계가 없습니다", 머리 칩 없음 | 시험 "활성 계획에 단계가 없으면 …" |
+| (인연 게이지) | 인연 목표가 현재보다 높은 학생 | 학생 탭 S3와 같은 빗금 · 점선 · `→N` | 시험 `→100`, golden `→45` |
+| (다음) | C "이 학생 목표 정하기" | 레일 "다음"과 같이 2단계, 2단계는 여러 명 모양 | 시험 "이 학생 목표 정하기 …" |
+| (작은 창) | 1280×720 | 넘침 예외 없음(행 높이 0.4~1배) | 시험 1280×720 |
+
+### 발견 사항
+
+1. **시안 (i) "그리드에서 다른 학생을 누르면 바로 바뀝니다"**: 모드를 고른 수로 정했으므로(지시 권장안) 누르면 교체가 아니라 더해져 여러 명 모드가 된다. 그래서 (i) 둘째 문장을 "그리드에서 학생을 더 고르면 여러 명 모드로 바뀝니다."로 바꿨다. 시안의 세그먼트 "한 명 | 여러 명"(네 시안 모두 제목 줄에 있음)은 그리지 않았다(기존 장면 변화 0 조건, 고르기 동작 유지). 세그먼트 + 한 명 모드 교체 고르기를 원하면 별도 결정(FD 후보).
+2. **한 명 모드 C에는 "내 그룹" · 역할군 칩 · "보이는 학생 모두 고르기"가 없다**(시안 짧은 C에 없음). 한 명을 고른 동안은 그룹 저장(1명 그룹) · 그룹 불러오기를 할 수 없고, 0명 또는 2명 이상일 때는 그대로다. 저장소 동작 변화는 없다.
+3. **`plan-flow-step1-filter` 장면이 한 명 고른 상태**라 스크림 아래가 한 명 모드로 바뀐다. 시안 Flow-1-Students-Filter는 3명 · 여러 명이다. 장면 조작을 3명으로 맞출지 CF 판단.
+4. **레일 1단계 부제**: 한 명이어도 "1명 · 여러 명 모드"로 나온다(시안 "1명 · 한 명 모드"). `plan_flow_rail.dart`는 이 slice 범위 밖이라 두었다. 2단계 부제 "리오(무장) · 설정 중"도 같다.
+5. **"학생 탭" 버튼**(시안 학생 행 오른쪽 `학생 탭에서 열기`): 흐름에서 학생 탭으로 가는 셸 경로가 없어 그리지 않았다.
+6. **상태 칩**(`지금 가능` · `부족 1종`): 흐름 context에 활성 계획 계산(`plan.get` calculation)이 없어 '—'다. 흐름을 열 때 계산을 함께 넘기면 채울 수 있다.
+7. **빈 상태 문구**: 시안에 없어 "활성 계획에 이 학생의 단계가 없습니다"를 새로 썼다.
+8. **짧은 C 깊이**: 시안 604.7이 칸 정수로 떨어지지 않아 rect 32칸 × 깊이 68/96(604.4)로 맞췄다(꼭짓점 차 ≤0.3px).
+9. **같은 키가 두 곳**: S3 안의 `student-detail-bond-target` 등 학생 탭 위젯 키가 계획 흐름 S3에도 생긴다. 학생 탭과 계획 흐름을 함께 띄운 앱 단위 시험이 `find.byKey(...)`로 하나만 기대하면 한 명 모드일 때 2개가 된다(지금 시험 중 해당 없음).
+10. 최근 본 학생 줄(원래 FE4-b2 계획의 `RecentStudents`)은 이번 지시 범위가 아니라 하지 않았다.
+
+### 사본 · commit.json
+
+- pre 사본: `debug/frontend_fe4b2/pre/<경로>` 10파일(고친 8 + 고치지 않은 `plan_flow_student_step_test.dart`·`planning_page_test.dart`). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe4b2/commit.json`: slice `fe4b2`, modified 8(이 문서 포함), added 2, `whole` = [`frontend/test/goldens/baseline/plan-flow-step1-filter.png`], `optional_added` = [`frontend/test/goldens/baseline/plan-flow-step1-one.png`], `status=true`.
+- 인계: `debug/frontend_fe4b2/output.md`.
+
+### 다음 행동
+
+- CF: Lane B(FE10-s)가 멈춘 뒤 `fe_gate.ps1` 1회 → golden 2건(`plan-flow-step1-filter` 바뀜, `plan-flow-step1-one` 새 장면) `failures/` 확인(렌더 PNG와 비교) → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe4b2`.
+- CF 판단: 발견 1(세그먼트 · 교체 고르기), 3(filter 장면 조작), 4(레일 부제, 다음 slice 후보), 6(상태 칩).
+- 다음 slice: FE4-g4(FD-180 병합 목표 역전).
+
+### fe4b2 commit record (2026-10-19 01:01, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_004710\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -296,6 +296,63 @@ Map<String, int>? planFlowActiveLastTargets(
   )[lastId];
 }
 
+/// 한 명 모드 C "이미 잡혀 있는 목표" 한 줄(FE4-b2, 시안 Flow-1-Students-One `P1 · 1단계 | Lv.90 · EX 4`).
+///
+/// 저장된 활성 계획 문서에서 읽기만 한다(초안·저장 경로와 무관). [before]·[targets]는 정수 보기다(v2 null은 앞 단계
+/// 값, 첫 단계의 앞은 지금 값, [planFlowDocumentIntegerTargets]).
+@immutable
+class PlanFlowActiveStudentStage {
+  const PlanFlowActiveStudentStage({
+    required this.phaseNumber,
+    required this.stageNumber,
+    required this.stageId,
+    required this.before,
+    required this.targets,
+  });
+
+  /// 활성 계획 페이즈 번호(1부터, `P1`).
+  final int phaseNumber;
+
+  /// 그 학생 단계 중 몇 번째인가(1부터, `1단계`).
+  final int stageNumber;
+  final String stageId;
+  final Map<String, int> before;
+  final Map<String, int> targets;
+}
+
+/// [active]에 있는 [studentId]의 단계(페이즈 순서 → 페이즈 안 순서). 문서가 없거나 그 학생 단계가 없으면 빈 목록이다.
+List<PlanFlowActiveStudentStage> planFlowActiveStudentStages(
+  PlanningDocument? active,
+  String studentId,
+  PlanningStudentSeed seed,
+) {
+  if (active == null) return const [];
+  final integer = planFlowDocumentIntegerTargets(
+    active,
+    seedFor: (id) => id == studentId ? seed : null,
+  );
+  final rows = <PlanFlowActiveStudentStage>[];
+  var before = planElementCurrentTargets(seed);
+  for (final (index, phase) in active.phases.indexed) {
+    for (final stage in phase.stages) {
+      if (stage.studentId != studentId) continue;
+      final targets = integer[stage.id];
+      if (targets == null) continue;
+      rows.add(
+        PlanFlowActiveStudentStage(
+          phaseNumber: index + 1,
+          stageNumber: rows.length + 1,
+          stageId: stage.id,
+          before: before,
+          targets: targets,
+        ),
+      );
+      before = targets;
+    }
+  }
+  return rows;
+}
+
 /// 계산기에서 올린 목표 [raised](현재값보다 올린 키만, 정수 절대값)를 바닥 snapshot [floor] 뒤 새 단계 정수 목표로
 /// 만든다(FE4-g, FD-171 (a)).
 ///
@@ -1468,6 +1525,10 @@ class PlanFlowContext {
 
   /// 활성 계획 문서에 단계가 있는 학생(1단계 PLAN 배지·계획 칩). goals v1은 보지 않는다.
   Set<String> get plannedStudentIds => activePlanStudentIds(activePlan);
+
+  /// [studentId]가 활성 계획에 가진 단계(1단계 한 명 모드 "이미 잡혀 있는 목표", FE4-b2). 읽기만 한다.
+  List<PlanFlowActiveStudentStage> activeStagesOf(String studentId) =>
+      planFlowActiveStudentStages(activePlan, studentId, seedFor(studentId));
 
   String displayName(String studentId) =>
       catalog[studentId]?.displayName ?? studentId;

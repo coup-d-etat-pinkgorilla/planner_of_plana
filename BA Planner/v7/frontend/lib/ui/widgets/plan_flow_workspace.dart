@@ -7,6 +7,7 @@
 // 4단계는 저장(FE4-e, [PlanFlowSaveBody]·[PlanFlowSaveAside], 상태 [PlanFlowSaveController])이다. 저장 위치
 // 3지선다와 이름 입력이 C 패널 안에 있고(다이얼로그 없음), A 레일 primary는 C 버튼과 같은 동작·같은 글자다(FD-079).
 // 섹션 모션은 부착면 규칙(FD-078): 레일 0/180(왼쪽), B 80/260(아래), C 180/0(오른쪽).
+// FE4-b2: 1단계에서 한 명만 고르면 B·C가 한 명 모양으로 360ms 보간하고 C 위에 학생 탭 S3를 겹친다(FD-078 권장안).
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -23,6 +24,7 @@ import 'plan_flow_goal_step.dart';
 import 'plan_flow_order_step.dart';
 import 'plan_flow_rail.dart';
 import 'plan_flow_save_step.dart';
+import 'plan_flow_student_one.dart';
 import 'plan_flow_student_step.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 
@@ -63,6 +65,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   late final AnimationController _railController = _motionController();
   late final AnimationController _bodyController = _motionController();
   late final AnimationController _asideController = _motionController();
+
+  /// 한 명 모드 진행(0 = 여러 명 배치, 1 = 한 명 배치, FE4-b2). 1단계 고르기로 바뀌면 보간하고, 단계를 바꿀 때는
+  /// (B·C가 퇴장한 동안) 바로 맞춘다.
+  late final AnimationController _modeController = AnimationController(
+    vsync: this,
+    duration: planFlowOneModeDuration,
+  );
+  bool _oneMode = false;
 
   /// 단계를 바꾸거나 닫는 중(본문 퇴장 중). 이 동안 입력을 무시한다.
   bool _switching = false;
@@ -131,6 +141,8 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   void initState() {
     super.initState();
     _shownStep = _flow.step;
+    _oneMode = planFlowOneMode(_flow);
+    _modeController.value = _oneMode ? 1 : 0;
     _flow.addListener(_flowChanged);
     _saveState = _newSaveState(_flow);
     _presetsStore = _newPresetsStore(_flow);
@@ -144,6 +156,8 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       oldWidget.flow.removeListener(_flowChanged);
       widget.flow.addListener(_flowChanged);
       _shownStep = widget.flow.step;
+      _oneMode = planFlowOneMode(widget.flow);
+      _modeController.value = _oneMode ? 1 : 0;
       final previous = _pickerState;
       _pickerState = null;
       final previousEditor = _goalEditorState;
@@ -186,13 +200,18 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   void _flowChanged() {
     if (!mounted) return;
     final step = _flow.step;
+    final oneMode = planFlowOneMode(_flow);
     if (step != _shownStep) {
       _shownStep = step;
+      _modeController.value = oneMode ? 1 : 0;
       if (!_switching && widget.active) {
         _bodyController.forward(from: 0);
         _asideController.forward(from: 0);
       }
+    } else if (oneMode != _oneMode) {
+      _modeController.animateTo(oneMode ? 1 : 0, curve: Curves.easeInOutCubic);
     }
+    _oneMode = oneMode;
     setState(() {});
   }
 
@@ -220,6 +239,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     _railController.dispose();
     _bodyController.dispose();
     _asideController.dispose();
+    _modeController.dispose();
     super.dispose();
   }
 
@@ -349,10 +369,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              const IgnorePointer(
+              IgnorePointer(
                 child: CustomPaint(
-                  key: ValueKey('plan-flow-body-surface'),
-                  painter: PlanFlowSectionPainter(planFlowBodySectionId),
+                  key: const ValueKey('plan-flow-body-surface'),
+                  painter: PlanFlowModeSectionPainter(
+                    manyId: planFlowBodySectionId,
+                    oneId: planFlowBodyOneSectionId,
+                    mode: _modeController,
+                  ),
                 ),
               ),
               if (saving)
@@ -370,6 +394,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     flow: _flow,
                     picker: _picker,
                     active: active,
+                    oneMode: _modeController,
                   ),
                 ),
               if (step == PlanFlowStep.goals)
@@ -402,10 +427,14 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              const IgnorePointer(
+              IgnorePointer(
                 child: CustomPaint(
-                  key: ValueKey('plan-flow-aside-surface'),
-                  painter: PlanFlowSectionPainter(planFlowAsideSectionId),
+                  key: const ValueKey('plan-flow-aside-surface'),
+                  painter: PlanFlowModeSectionPainter(
+                    manyId: planFlowAsideSectionId,
+                    oneId: planFlowAsideOneSectionId,
+                    mode: _modeController,
+                  ),
                 ),
               ),
               if (saving)
@@ -424,6 +453,17 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
                     flow: _flow,
                     picker: _picker,
                     presets: _presetsStore,
+                    oneMode: _modeController,
+                    onNext: _next,
+                  ),
+                ),
+              if (step == PlanFlowStep.students)
+                Positioned.fill(
+                  child: PlanFlowStudentOneDetail(
+                    key: const ValueKey('plan-flow-student-one-detail-view'),
+                    flow: _flow,
+                    picker: _picker,
+                    mode: _modeController,
                   ),
                 ),
               if (step == PlanFlowStep.goals)

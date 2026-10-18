@@ -9,6 +9,8 @@
 // - FD-074·FE4-i: C "내 그룹"은 프로필 저장소(FB-14, [RepositoryPresetsController])의 학생 그룹이다. 지금 고른 학생을
 //   그룹으로 저장하고, 누르면 그룹 학생을 한꺼번에 고르고(이미 고른 학생은 그대로), 지울 수 있다. 카탈로그에 없는
 //   학생 ID는 그룹에서 지우지 않고 저장한 그대로 둔다(고를 때만 뺀다). 필터 프리셋은 범위 밖이다(칩 숨김).
+// - FE4-b2 한 명 모드(시안 Flow-1-Students-One): 정확히 한 명을 골랐을 때([planFlowOneMode]) B가 4칸 좁아지고
+//   C가 짧은 사다리꼴(`plan_flow_student_one.dart`)로 바뀐다. 전환은 흐름 화면의 360ms 보간이다(FD-078).
 // 좌표는 시안(2560×1392, 헤더 184)을 콘텐츠 캔버스로 옮긴 값이다([planFlowProtoRect]).
 import 'dart:math' as math;
 
@@ -31,6 +33,7 @@ import '../models/student_filter_controller.dart';
 import '../models/student_filter_selection.dart';
 import '../studio/plan_flow_studio_layout.dart';
 import 'plan_flow_rail.dart' show planFlowSectionPolygon;
+import 'plan_flow_student_one.dart';
 import 'student_filter_modal.dart';
 import 'student_section_layout.dart';
 
@@ -55,10 +58,14 @@ Rect planFlowProtoRect(
   return Rect.fromLTWH(left * sx, (top - 184) * sy, width * sx, height * sy);
 }
 
-/// C 보조 왼쪽 사선의 캔버스 [y]에서의 x.
-double planFlowAsideLeftAt(Size size, double y) {
+/// C 보조 왼쪽 사선의 캔버스 [y]에서의 x. 한 명 모드의 짧은 C는 [sectionId] = [planFlowAsideOneSectionId]다.
+double planFlowAsideLeftAt(
+  Size size,
+  double y, {
+  String sectionId = planFlowAsideSectionId,
+}) {
   // 꼭짓점 순서: 윗변 오른쪽, 아랫변 오른쪽, 아랫변 왼쪽, 윗변 왼쪽.
-  final points = planFlowSectionPolygon(size, planFlowAsideSectionId);
+  final points = planFlowSectionPolygon(size, sectionId);
   final top = points[3];
   final bottom = points[2];
   final span = bottom.dy - top.dy;
@@ -66,6 +73,13 @@ double planFlowAsideLeftAt(Size size, double y) {
   final progress = ((y - top.dy) / span).clamp(0.0, 1.0).toDouble();
   return top.dx + (bottom.dx - top.dx) * progress;
 }
+
+/// 한 명 모드인가(FE4-b2): 1단계에서 학생을 정확히 한 명 골랐을 때다. 0명·2명 이상과 2~4단계는 여러 명 배치다.
+bool planFlowOneMode(PlanFlowController flow) =>
+    flow.step == PlanFlowStep.students && flow.selectedStudentIds.length == 1;
+
+/// 한 명 모드에서 B 제목 줄·검색 줄·그리드가 줄어드는 폭(시안 1425.3 → 1318.7 등, 4칸 = 106.7).
+const planFlowOneModeBodyShrink = 2560 * 4 / 96;
 
 /// 사선 사각형(윗변이 [depth]만큼 오른쪽으로 밀린 평행사변형) 경로.
 Path planFlowParallelogramPath(Size size, {double radius = 10}) {
@@ -338,11 +352,16 @@ class PlanFlowStudentBody extends StatefulWidget {
     required this.flow,
     required this.picker,
     this.active = true,
+    this.oneMode,
   });
 
   final PlanFlowController flow;
   final PlanFlowStudentPicker picker;
   final bool active;
+
+  /// 한 명 모드 진행(0 = 여러 명 배치, 1 = 한 명 배치, 흐름 화면의 360ms 보간, FE4-b2). null이면 한 명 모드를 쓰지
+  /// 않는다(여러 명 배치만).
+  final Animation<double>? oneMode;
 
   @override
   State<PlanFlowStudentBody> createState() => _PlanFlowStudentBodyState();
@@ -414,7 +433,11 @@ class _PlanFlowStudentBodyState extends State<PlanFlowStudentBody> {
       ),
     ),
     child: ListenableBuilder(
-      listenable: Listenable.merge([widget.flow, widget.picker]),
+      listenable: Listenable.merge([
+        widget.flow,
+        widget.picker,
+        ?widget.oneMode,
+      ]),
       builder: (context, _) => LayoutBuilder(
         builder: (context, constraints) => _buildBody(constraints.biggest),
       ),
@@ -425,9 +448,12 @@ class _PlanFlowStudentBodyState extends State<PlanFlowStudentBody> {
     final picker = widget.picker;
     final picked = widget.flow.selectedStudentIds;
     final visible = picker.visible;
-    final title = planFlowProtoRect(size, 635.5, 229.2, 1425.3, 40);
-    final search = planFlowProtoRect(size, 614.1, 281.2, 1449.1, 44);
-    final grid = planFlowProtoRect(size, 416.8, 353.2, 1647.6, 1012.8);
+    // 한 명 모드: 시안 Flow-1-Students-One의 폭(제목 1318.7 · 검색 1449.1 → 1342.4 · 그리드 1540.9).
+    final shrink = planFlowOneModeBodyShrink * (widget.oneMode?.value ?? 0);
+    final one = widget.oneMode != null && planFlowOneMode(widget.flow);
+    final title = planFlowProtoRect(size, 635.5, 229.2, 1425.3 - shrink, 40);
+    final search = planFlowProtoRect(size, 614.1, 281.2, 1449.1 - shrink, 44);
+    final grid = planFlowProtoRect(size, 416.8, 353.2, 1647.6 - shrink, 1012.8);
     return Stack(
       key: const ValueKey('plan-flow-student-body'),
       children: [
@@ -491,9 +517,13 @@ class _PlanFlowStudentBodyState extends State<PlanFlowStudentBody> {
                       plannedIds: picker.plannedIds,
                       selectedId: null,
                       selectedIds: picked.toSet(),
-                      selectionOrder: {
-                        for (final (index, id) in picked.indexed) id: index + 1,
-                      },
+                      // 한 명 모드 카드는 순서 배지 없이 외곽선만(시안 Flow-1-Students-One).
+                      selectionOrder: one
+                          ? const {}
+                          : {
+                              for (final (index, id) in picked.indexed)
+                                id: index + 1,
+                            },
                       onSelected: widget.flow.toggleStudent,
                     ),
             ),
@@ -600,6 +630,8 @@ class PlanFlowStudentAside extends StatelessWidget {
     required this.flow,
     required this.picker,
     this.presets,
+    this.oneMode,
+    this.onNext,
   });
 
   final PlanFlowController flow;
@@ -608,12 +640,40 @@ class PlanFlowStudentAside extends StatelessWidget {
   /// 내 그룹 저장소(FE4-i). 없거나 서비스가 저장소를 주지 않으면 "내 그룹"을 그리지 않는다.
   final RepositoryPresetsController? presets;
 
+  /// 한 명 모드 진행(FE4-b2, [PlanFlowStudentBody.oneMode]). null이면 한 명 모드를 쓰지 않는다. 있으면 한 명일 때
+  /// 짧은 C 내용([PlanFlowStudentOneAside])을 그리고, 바뀐 내용은 보간 동안 서서히 나타난다.
+  final Animation<double>? oneMode;
+
+  /// 한 명 모드 "이 학생 목표 정하기"(레일 "다음"과 같은 동작).
+  final VoidCallback? onNext;
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([flow, picker, ?presets]),
-    builder: (context, _) => LayoutBuilder(
-      builder: (context, constraints) => _build(constraints.biggest),
-    ),
+    builder: (context, _) {
+      final mode = oneMode;
+      if (mode == null) {
+        return LayoutBuilder(
+          builder: (context, constraints) => _build(constraints.biggest),
+        );
+      }
+      final one = planFlowOneMode(flow);
+      return FadeTransition(
+        key: ValueKey(
+          one ? 'plan-flow-aside-one-fade' : 'plan-flow-aside-many-fade',
+        ),
+        opacity: one ? mode : ReverseAnimation(mode),
+        child: one
+            ? PlanFlowStudentOneAside(
+                flow: flow,
+                picker: picker,
+                onNext: onNext,
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) => _build(constraints.biggest),
+              ),
+      );
+    },
   );
 
   Widget _build(Size size) {

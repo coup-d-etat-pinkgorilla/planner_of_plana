@@ -29,6 +29,7 @@ import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_student_one.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/student_form_cycle.dart';
@@ -673,6 +674,29 @@ void main() {
       findsOneWidget,
     );
     await expectGoldenScene(tester, 'plan-flow-step1-filter');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step1-one', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _openPlanFlow(tester, service);
+    // FE4-b2 한 명 모드(시안 Flow-1-Students-One): 아야네 한 명(보유 + PLAN, 활성 계획 P1 · P2 두 단계, 인연 24 → 45).
+    // B가 4칸 좁아지고 C가 짧은 사다리꼴, 그 아래 학생 탭 S3(인연 게이지 →45 빗금)가 겹친다.
+    await _tapFlowCard(tester, 'ayane');
+    await tester.pump(planFlowOneModeDuration);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('plan-flow-one-aside')), findsOneWidget);
+    expect(find.text('활성 계획 P1에 있음'), findsOneWidget);
+    expect(find.text('P1 · 1단계'), findsOneWidget);
+    expect(find.text('P2 · 2단계'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-flow-one-detail')),
+        matching: find.text('→45'),
+      ),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-flow-step1-one');
   }, variant: goldenPlatform);
 
   testWidgets('plan-flow-step2', (tester) async {

@@ -1414,7 +1414,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-2-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: widget.selectedValues,
                           sectionIds: const {'element-2'},
                           bare: calculator != null,
@@ -1492,7 +1492,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-4-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: null,
                           sectionIds: {'element-4'},
                         ),
@@ -1615,7 +1615,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-3-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: calcState == null
                               ? widget.selectedValues
                               : {
@@ -1695,14 +1695,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       ),
                     ),
                     if (calcState == null)
-                      _StudentStatusIndicators(
+                      StudentStatusIndicators(
                         canvasSize: size,
                         student: selectedStudent,
                         values: widget.selectedValues,
                         bondTarget: widget.selectedBondTarget,
                       )
                     else ...[
-                      _StudentStatusIndicators(
+                      StudentStatusIndicators(
                         key: const ValueKey('calculator-s3-indicators'),
                         canvasSize: size,
                         student: selectedStudent,
@@ -1743,7 +1743,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-1-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: null,
                           sectionIds: {'element-1'},
                         ),
@@ -2781,8 +2781,8 @@ StudentContainerTextureRole studentContainerTextureRole(
 
 bool studentContainerShowsOutline(StudioContainerElement container) => true;
 
-class _StudentStatusIndicators extends StatelessWidget {
-  const _StudentStatusIndicators({
+class StudentStatusIndicators extends StatelessWidget {
+  const StudentStatusIndicators({
     super.key,
     required this.canvasSize,
     required this.student,
@@ -4449,8 +4449,8 @@ Rect studentBondGaugeFillRect(
   );
 }
 
-class _StudentSectionFoundationPainter extends CustomPainter {
-  const _StudentSectionFoundationPainter({
+class StudentSectionFoundationPainter extends CustomPainter {
+  const StudentSectionFoundationPainter({
     required this.selectedValues,
     required this.sectionIds,
     this.bare = false,
@@ -4578,7 +4578,7 @@ class _StudentSectionFoundationPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_StudentSectionFoundationPainter oldDelegate) =>
+  bool shouldRepaint(StudentSectionFoundationPainter oldDelegate) =>
       oldDelegate.selectedValues != selectedValues ||
       oldDelegate.sectionIds != sectionIds ||
       oldDelegate.bare != bare ||
