@@ -5823,3 +5823,92 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - FE8-g5a 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE8-g4b)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 새 `scan_item_review_board_test` +14, 기존 수 그대로, golden은 새 장면 `scan-item-review-board` 기준 이미지 없음 → `failures/` 확인 → `-UpdateGoldens` → 재비교 GREEN, 기존 장면 변화 0) → `fe_commit.ps1 -Slice fe8g5a`(added 9 + baseline PNG).
 - FE8-g5b: 위 "FE8-g5b 입력" 1~7(컨트롤러 인벤토리 approve subset/commit 공개 · 큐 후보 전부의 미식별 슬롯 읽기, scan_tab_page 자리, `ScanQueueReviewBar` · `ScanPage` 아이템 경로 대체, `_CandidatePanel` · `_handoffCandidate` 인벤토리 · 학생 분기 제거). 발견 4~9는 CF 판단.
+
+## FE10-a 착수 기록 (2026-10-18)
+
+- 진행 중: FE10-a 마감 점검 1차(감사 보고 + Lane A 파일 밖 죽은 코드 정리, 동작 변화 0). 시작 SHA `7faaaefb89fc9cbbe5a8a2ebae7bd0a6779dde0f`(브랜치 scanner-consolidation). 이 문서 끝에 다른 "FE10-a 착수 기록"은 없었다.
+- 막힘: 대장 "slice별 막힘 요약" FE10 행은 "모든 열림 항목 종결"이고 현재 `열림` 0건(대장 표 173행 상태 칸 전수, `열림` 0) → 막히지 않는다.
+- 동시 작업: Lane A FE8-g5b(`lib/ui/scan/**` · `scan_page` · `inventory_page` · 인벤토리 컨트롤러 · `student_page` · `app_shell`과 그 시험)는 읽기만 한다.
+- 고칠 파일(4의 후보, FD-174): `frontend/lib/ui/widgets/section_template_surface.dart`(`SectionTemplateSurface` · `AttachedSectionTemplateSurface`와 그 전용 painter · clipper 줄 제거), `frontend/test/widgets/section_surface_test.dart`(두 위젯 시험 1건 제거). 둘 다 기존 미커밋 변경(WIP) 없음(`git status --short` 빈 줄). 이 문서도 WIP 없음.
+- 사본: `debug/frontend_fe10a/pre/<v7 기준 경로>`에 세 파일. 보고서는 `debug/frontend_fe10a/artifacts/`.
+
+## FE10-a 종료 기록 (2026-10-18, 코드 작성 완료 · CF gate 미실행)
+
+### 한 일
+
+1. 결정 대장 감사(대장은 고치지 않음): `열림` 0 확인, "갱신" 근거 칸 전수 → `debug/frontend_fe10a/artifacts/fd-audit.md`.
+2. artboard 지도 57행 전수(slice 커밋 · 검수 경로) → `artboard-audit.md`, 사용자 최종 둘러보기 체크리스트 초안 → `walkthrough-checklist.md`.
+3. status · status-lane-b 발견 사항 · XB 요청 후보 · 미검증 수집(5분류, 출처 줄) → `findings.md`.
+4. 죽은 코드 정리(Lane A 파일 밖): `section_template_surface.dart` · `section_surface_test.dart`만 고침 → `dead-code.md`.
+5. 탭별 "사용자 검수 포인트" ↔ 지금 앱 동작 결정문 초안(문서 본문 미수정) → `review-points-decision-draft.md`.
+
+### 실행한 명령과 결과
+
+- `flutter analyze`(frontend): "No issues found!"(info 포함 0). 로그 `debug/frontend_fe10a/logs/analyze.txt`.
+- `flutter test test/widgets/section_surface_test.dart test/account_editor_fe8c_test.dart test/geometry/diagonal_geometry_test.dart test/inventory_tiers_page_test.dart test/kit/section_frame_test.dart test/kit/section_morph_test.dart test/plan_element_builder_test.dart test/section_studio_document_test.dart test/section_template_studio_test.dart test/student_studio_layout_test.dart test/title_page_test.dart`(고친 파일을 import하는 시험 전부, golden 비교 없음): `+179: All tests passed!`. `section_surface_test.dart` 단독 `+4`(5 → 4, 지운 시험 1건). 로그 `debug/frontend_fe10a/logs/test.txt`.
+- `codealmanac validate`: `validate: ok`(45 pages). 로그 `debug/frontend_fe10a/logs/almanac.txt`.
+- `git diff --check`(고친 세 파일): 출력 없음(exit 0).
+- `dart format --output=none --set-exit-if-changed`(두 파일 각각): 차이 있음 — 이번에 건드리지 않은 기존 줄(`section_surface_test.dart:83` 긴 test 이름, `section_template_surface.dart` 끝 `sectionTemplateCutDepth` 2줄). 착수 사본도 같아 적용하지 않았다(최소 diff).
+- golden 시험 · `fe_gate.ps1` · Windows release: 미실행(금지 · CF 몫).
+
+### 감사 요약 수치
+
+- 대장: FD 173행(FD-157~159 결번), `열림` 0, `확정` 계열 56, `워커 재량` 계열 115, `폐기` 2. "갱신" 대상이 있는 FD 20개 중 반영 11 · 부분 1(FD-020) · **누락 8**(FD-019 · 026 · 033 · 070 · 081 · 094 · 127 · 136; 그중 6개가 `frontend-section-direction-and-user-flows.md`).
+- artboard: 57장 중 **완료 55**, Lane A 진행 중 1(Scan-Item-Review, FE8-g5b), 미구현 1(Flow-1-Students-One, FE4-b2 미배정). 검수 경로 있음 51 · 일부 추정 4 · 없음 2 · 직접 보기 1.
+- 발견 사항: 본 항목 917, 해결 · 종결 583, 남은 334(표 202줄). 분류별 줄 수: 버그 의심 31 · 시안 차이 46 · XB 요청 19(미전달 확인 5) · 사용자 결정 필요 36 · 사용자 실기 · 눈 확인 30 · FE10 정리 36 · FE8-g5b 예정 4.
+
+### 죽은 코드 정리 표
+
+| 기호 | 사용처 0 증거 | 처리 |
+|---|---|---|
+| `AttachedSectionTemplateSurface` · `_AttachedSectionPainter` · `AttachedSectionClipper` | lib 참조 0, 시험 `section_surface_test.dart:135`·`:147`뿐(FD-174) | 제거 |
+| `SectionTemplateSurface` · `_SectionTemplateBorderPainter` · `SectionTemplateClipper` | lib 참조 0, 시험 `section_surface_test.dart:125`·`:131`뿐(FD-174) | 제거 |
+| `studioGridRectWithin` | lib · test 참조 0 | 제거 |
+| 시험 `template surfaces share the section surface when unselected` + import 2줄 | 위 두 위젯만 시험 | 제거(공용 표면 계약은 같은 파일 나머지 4건이 덮음) |
+
+파일 · 줄 수: `frontend/lib/ui/widgets/section_template_surface.dart` 1356 → 1159(−197, 삭제만, CRLF 유지), `frontend/test/widgets/section_surface_test.dart` 151 → 117(−34, 삭제만, LF 유지). 그 밖 파일 수정 0.
+
+### CF 삭제 후보(파일 통째, 이 slice는 삭제하지 않음)
+
+| 경로 | 이유 |
+|---|---|
+| `frontend/lib/ui/widgets/student_range_condition_section.dart` | lib import 0, FE3-d2에서 폐기한 범위 조건 카드(FD-052 · FD-137) |
+| `frontend/test/student_range_condition_section_test.dart` | 위 파일만 시험 |
+| `frontend/lib/ui/pages/section_placeholder_page.dart` | lib · test import 0 |
+| `frontend/lib/ui/studio/plan_studio_layout.dart` | lib · test import 0(`planStudioDocument` 참조 0) |
+| `frontend/assets/studio_sections/section-title-1.ba-section-studio.json` | 코드 참조 0(이 문서 `:140` FE10 후보, `pubspec.yaml:77` 폴더 번들) |
+
+### FE10-b 후보
+
+- Lane A 소유 파일 안(FE8-g5b 뒤): `DiagonalSection` 사용처(`inventory_page.dart:288`, `scan_page.dart:180`·`:260`, `student_page.dart:740` — 그 밖 `settings_page.dart:375`, 스캐너 소유 `scan_student_review_workspace.dart`), `ScanQueueReviewBar` · `scanQueueReviewVisible` · `openQueueKind`, `ScanPage` 아이템 경로 · `_CandidatePanel` · `_handoffCandidate`, `ScanPage` 미사용 인자, `ScanStudentReviewWorkspace`(스캐너 소유 — 조율), `section_surface.dart:6` 주석.
+- Lane A 밖이지만 이번에 안 지운 것(시험 수정 필요 · 범위 최소화): `buildSectionTemplatePath` + `SectionShape`(시험 전용), `buildAttachedSectionPath` · `hitTestSectionResizeHandle`(시험 전용), `StudentDiagonalFilterList`(0/0), `PlanElementBuilder` 위젯(시험 전용) · `planElementTargetSummary` · `planPresetElementUnionPath`(0/0), `section_template.dart`의 `sectionTemplateSectionGap` · `copyGridRectWithin` · `resizeAspectLockedGridRect`(0/0), `StatisticsBaseDataValue`(0/0), `PlanFlowDraft.editStudent` · `RepositoryPresetsController.clearMessage`(0/0), `planPrimaryBottleneck*` 등 아이콘 상수 4개(시험 전용). 목록만: 키트 `skewedTrackPath` · `paintStatSurface`, 서비스 `AppServiceResourceAcquisition` · `AppServiceStudentCalculation`. 근거 줄은 `dead-code.md` §2 · §4.
+
+### 사용자 결정 필요 목록(주요, 전체는 `findings.md` · `review-points-decision-draft.md`)
+
+1. Flow-1-Students-One(FE4-b2 한 명 모드): 배정할지, 시안 범위에서 뺄지.
+2. "페이즈로 추가" 병합 퇴행 규칙(`target_regression`: 자동 올림 · 제외 · 막기) — LOG:1885부터 열림.
+3. 검수 포인트 중 기능 범위 결정 5건: 학생 탭 수동 현재값 수정(S3), 전체 육성 부족 기믹(I2), v6 입력 경로 캡처 · 붙여넣기 · 폴더(T3), 설정 탭 개편(SE1), 백업 · 복원(SE3). 나머지 10건은 지금 동작 승인, 5건은 이미 FD 확정(문서 반영만).
+4. 그 밖 findings "사용자 결정 필요" 36줄(예: FD-086 비교 스크롤 vs 시안 메모, 페이즈 맞춤 FD, C5 행 기준, 연속 스캔 상한, 헤더 지표 의미, 게임 창 연결 해제 버튼 자리).
+
+### CF 요청(대장 · 문서, 보고만)
+
+- `fd-audit.md` §3 1~8(section-direction FD-019 · 033 · 081 · 094 · 127 반영, section-template-studio 페이즈 편집 절 FD-026 · 070, FD-020 규칙 줄, FD-136 README · 대장 링크, FD-157~159 결번 사유, 이 slice로 낡은 `section-template-studio.md:179`·`:844` 서술).
+- 먼저 볼 버그 의심: `scan_page.dart:696` 깨진 글자 `쨌`(g5b 뒤에도 남음), 기술 노트(`skill_book`) "오파츠" 분류(`plan_section_layout.dart:141`·`:157`).
+
+### 보고서 경로
+
+`debug/frontend_fe10a/artifacts/` — `fd-audit.md`, `artboard-audit.md`, `walkthrough-checklist.md`, `findings.md`, `dead-code.md`, `review-points-decision-draft.md`. 착수 사본 `debug/frontend_fe10a/pre/`(세 파일), `debug/frontend_fe10a/commit.json`(slice `fe10a`, modified 2, added 0, `whole` = 이 문서, `status=true`), 인계 `debug/frontend_fe10a/output.md`.
+
+### 미검증 항목
+
+- golden 비교: 미실행(지운 코드는 어떤 golden 장면에서도 그려지지 않으므로 변화 0 예상 — CF gate로 확인).
+- 전체 일반 시험 · `fe_gate.ps1` · Windows release: 미실행.
+- 발견 사항 "해결" 판정은 기록 · grep 기준이다. 하위 조사가 "근거 부족 → 열림"으로 둔 6건(`findings.md` 끝)은 실제 닫힘 여부를 확인하지 못했다.
+- 검수 경로 "(추정)" 4건은 앱에서 직접 열어 보지 않았다.
+
+### 다음 행동
+
+- FE10-a는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-g5b)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험 −1(`section_surface_test` 5 → 4), golden 변화 0) → `fe_commit.ps1 -Slice fe10a`(modified 2 + 이 문서).
+- CF: `fd-audit.md` §3 문서 반영, `review-points-decision-draft.md`를 사용자 결정에 올리기, CF 삭제 후보 표 승인 시 삭제 커밋.
+- FE10-b(FE8-g5b 뒤): `dead-code.md` §2 · §4 후보 정리, Scan-Item-Review 검수 경로를 체크리스트에 채우기.

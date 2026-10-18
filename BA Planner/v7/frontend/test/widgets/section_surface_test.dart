@@ -2,7 +2,6 @@
 //
 // 섹션 표면 = surface@.76, 블러(BackdropFilter) 없음, 테두리 없음, lifted shadow 4층.
 import 'package:ba_planner_v7/app/theme.dart';
-import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_section.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart'
@@ -10,7 +9,6 @@ import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart'
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart'
     show planSectionOpacity;
 import 'package:ba_planner_v7/ui/widgets/section_surface.dart';
-import 'package:ba_planner_v7/ui/widgets/section_template_surface.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart'
     show studentSectionOpacity;
 import 'package:flutter/material.dart';
@@ -114,38 +112,6 @@ void main() {
     final host = find.byType(DiagonalSection);
     _expectSectionSurfacePainter(tester, host);
     expect(find.text('section'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('template surfaces share the section surface when unselected', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        const SectionTemplateSurface(
-          shape: SectionShape.rightCut,
-          child: SizedBox.expand(),
-        ),
-      ),
-    );
-    _expectSectionSurfacePainter(tester, find.byType(SectionTemplateSurface));
-
-    await tester.pumpWidget(
-      _host(
-        const AttachedSectionTemplateSurface(
-          spec: AttachedSectionSpec(
-            mode: SectionShapeMode.trapezoid,
-            face: SectionAttachmentFace.left,
-          ),
-          showFaceGrid: false,
-          child: SizedBox.expand(),
-        ),
-      ),
-    );
-    _expectSectionSurfacePainter(
-      tester,
-      find.byType(AttachedSectionTemplateSurface),
-    );
     expect(tester.takeException(), isNull);
   });
 }

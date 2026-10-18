@@ -9,50 +9,6 @@ import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'section_surface.dart';
 
-class AttachedSectionTemplateSurface extends StatelessWidget {
-  const AttachedSectionTemplateSurface({
-    super.key,
-    required this.spec,
-    required this.child,
-    this.selected = false,
-    this.showFaceGrid = true,
-  });
-
-  final AttachedSectionSpec spec;
-  final Widget child;
-  final bool selected;
-  final bool showFaceGrid;
-
-  // FE1-c: 표면은 공용 SectionSurface(surface@.76, 블러·테두리 없음, lifted shadow).
-  // 선택 표시(primaryMuted@.78 + primary 2.5px 외곽선)는 Studio 편집용이고 시안 근거가 없어 그대로 둔다.
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    foregroundPainter: _AttachedSectionPainter(
-      spec: spec,
-      selected: selected,
-      showFaceGrid: showFaceGrid,
-    ),
-    child: SectionSurface(
-      clipper: AttachedSectionClipper(spec),
-      fill: selected ? AppColors.primaryMuted.withValues(alpha: 0.78) : null,
-      child: child,
-    ),
-  );
-}
-
-class AttachedSectionClipper extends CustomClipper<Path> {
-  const AttachedSectionClipper(this.spec);
-
-  final AttachedSectionSpec spec;
-
-  @override
-  Path getClip(Size size) => buildAttachedSectionPath(size, spec);
-
-  @override
-  bool shouldReclip(AttachedSectionClipper oldDelegate) =>
-      oldDelegate.spec != spec;
-}
-
 Path buildAttachedSectionPath(Size size, AttachedSectionSpec spec) {
   final points = buildAttachedSectionPolygon(size, spec);
   final raw = buildRoundedSectionPolygon(points);
@@ -388,17 +344,6 @@ class SectionCanvasPainter extends CustomPainter {
       oldDelegate.showGrid != showGrid ||
       oldDelegate.showSafeArea != showSafeArea;
 }
-
-Rect studioGridRectWithin(
-  Rect parent,
-  SectionGridRect rect, {
-  int gridSize = sectionTemplateDetailGridSize,
-}) => Rect.fromLTWH(
-  parent.left + parent.width * rect.x / gridSize,
-  parent.top + parent.height * rect.y / gridSize,
-  parent.width * rect.width / gridSize,
-  parent.height * rect.height / gridSize,
-);
 
 Rect studioPlacementRectWithin(Rect parent, StudioPlacementRect rect) =>
     Rect.fromLTWH(
@@ -1170,121 +1115,6 @@ List<Offset> _sideParallelogramPoints(
   ];
 }
 
-class _AttachedSectionPainter extends CustomPainter {
-  const _AttachedSectionPainter({
-    required this.spec,
-    required this.selected,
-    required this.showFaceGrid,
-  });
-
-  final AttachedSectionSpec spec;
-  final bool selected;
-  final bool showFaceGrid;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 섹션 테두리는 없다(FD-006). 선택 외곽선만 Studio 편집 표시로 남긴다.
-    if (selected) {
-      canvas.drawPath(
-        buildAttachedSectionPath(size, spec),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5
-          ..color = AppColors.primary,
-      );
-    }
-    if (!showFaceGrid) return;
-    final (start, end) = switch (spec.face) {
-      SectionAttachmentFace.left => (Offset.zero, Offset(0, size.height)),
-      SectionAttachmentFace.right => (
-        Offset(size.width, 0),
-        Offset(size.width, size.height),
-      ),
-      SectionAttachmentFace.top => (Offset.zero, Offset(size.width, 0)),
-      SectionAttachmentFace.bottom => (
-        Offset(0, size.height),
-        Offset(size.width, size.height),
-      ),
-    };
-    final gridPaint = Paint()
-      ..color = AppColors.textMuted.withValues(alpha: 0.65)
-      ..strokeWidth = 1;
-    canvas.drawLine(start, end, gridPaint);
-    for (var index = 0; index <= sectionTemplateGridSize; index++) {
-      final t = index / sectionTemplateGridSize;
-      final point = Offset.lerp(start, end, t)!;
-      final major = index % sectionTemplateSubdivisionsPerMajor == 0;
-      final tickLength = major ? 7.0 : 3.5;
-      final tick =
-          spec.face == SectionAttachmentFace.left ||
-              spec.face == SectionAttachmentFace.right
-          ? Offset(tickLength, 0)
-          : Offset(0, tickLength);
-      canvas.drawLine(point - tick, point + tick, gridPaint);
-    }
-    final selectedStart = Offset.lerp(
-      start,
-      end,
-      spec.faceStart / sectionTemplateGridSize,
-    )!;
-    final selectedEnd = Offset.lerp(
-      start,
-      end,
-      spec.faceEnd / sectionTemplateGridSize,
-    )!;
-    canvas.drawLine(
-      selectedStart,
-      selectedEnd,
-      Paint()
-        ..color = AppColors.warning
-        ..strokeWidth = 4,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_AttachedSectionPainter oldDelegate) =>
-      oldDelegate.spec != spec ||
-      oldDelegate.selected != selected ||
-      oldDelegate.showFaceGrid != showFaceGrid;
-}
-
-class SectionTemplateSurface extends StatelessWidget {
-  const SectionTemplateSurface({
-    super.key,
-    required this.shape,
-    required this.child,
-    this.selected = false,
-  });
-
-  final SectionShape shape;
-  final Widget child;
-  final bool selected;
-
-  // FE1-c: 표면은 공용 SectionSurface. 선택 표시는 AttachedSectionTemplateSurface와 같은 이유로 유지한다.
-  @override
-  Widget build(BuildContext context) => CustomPaint(
-    painter: _SectionTemplateBorderPainter(shape: shape, selected: selected),
-    child: SectionSurface(
-      clipper: SectionTemplateClipper(shape),
-      fill: selected ? AppColors.primaryMuted.withValues(alpha: 0.78) : null,
-      child: child,
-    ),
-  );
-}
-
-class SectionTemplateClipper extends CustomClipper<Path> {
-  const SectionTemplateClipper(this.shape);
-
-  final SectionShape shape;
-
-  @override
-  Path getClip(Size size) => buildSectionTemplatePath(size, shape);
-
-  @override
-  bool shouldReclip(SectionTemplateClipper oldDelegate) =>
-      oldDelegate.shape != shape;
-}
-
 Path buildSectionTemplatePath(Size size, SectionShape shape) {
   final horizontalCut = sectionTemplateCutDepth(size.height);
   final polygon = switch (shape) {
@@ -1327,30 +1157,3 @@ Path buildSectionTemplatePath(Size size, SectionShape shape) {
 
 double sectionTemplateCutDepth(double height) =>
     diagonalCutDepth(height);
-
-class _SectionTemplateBorderPainter extends CustomPainter {
-  const _SectionTemplateBorderPainter({
-    required this.shape,
-    required this.selected,
-  });
-
-  final SectionShape shape;
-  final bool selected;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 섹션 테두리는 없다(FD-006). 선택 외곽선만 남긴다.
-    if (!selected) return;
-    canvas.drawPath(
-      buildSectionTemplatePath(size, shape),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..color = AppColors.primary,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SectionTemplateBorderPainter oldDelegate) =>
-      oldDelegate.shape != shape || oldDelegate.selected != selected;
-}
