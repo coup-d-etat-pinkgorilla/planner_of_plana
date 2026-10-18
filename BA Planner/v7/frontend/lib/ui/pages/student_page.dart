@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
-import '../../services/scanner_service.dart';
 import '../app_section.dart';
 import '../kit/ba_modal.dart';
 import '../kit/kit_overlay.dart';
@@ -18,21 +17,11 @@ import '../models/recent_students.dart';
 import '../models/repository_plan_snapshot.dart';
 import '../models/student_filter_controller.dart';
 import '../navigation/app_navigation_intent.dart';
-import '../widgets/diagonal_section.dart';
 import '../widgets/growth_calculator_section.dart';
 import '../widgets/page_header_override.dart';
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
-
-class StudentCandidateContext {
-  const StudentCandidateContext({
-    required this.session,
-    required this.candidate,
-  });
-  final ScannerSession session;
-  final ScannerCandidate candidate;
-}
 
 class StudentPage extends StatefulWidget {
   const StudentPage({
@@ -40,8 +29,6 @@ class StudentPage extends StatefulWidget {
     required this.service,
     required this.onAddToPlan,
     this.onOpenScan,
-    this.candidateContext,
-    this.onCandidateCommitted,
     this.active = true,
     this.recentStudents,
     this.headerOverride,
@@ -56,8 +43,6 @@ class StudentPage extends StatefulWidget {
   /// 열기"가 되어, 성장 계산기 "이 목표로 계획에 추가"(FE4-g, FD-171 (a))만 쓴다. 시드에 계산기 목표를 싣는다.
   final ValueChanged<PlanningStudentSeed> onAddToPlan;
   final VoidCallback? onOpenScan;
-  final StudentCandidateContext? candidateContext;
-  final ValueChanged<ScannerCandidate>? onCandidateCommitted;
   final bool active;
 
   /// 최근 본 학생(FD-061). 앱 셸이 계획 화면과 함께 쓰도록 넘긴다. 없으면 페이지가 만든다.
@@ -96,7 +81,6 @@ class _StudentPageState extends State<StudentPage> {
   String? _selectedId;
   String? _message;
   bool _loading = true;
-  bool _saving = false;
   int _warmupRequest = 0;
 
   /// 성장 계산기 모드(FE3-f2a, FD-160 (a)). 열려 있으면 null이 아니다. 목표는 저장하지 않는다.
@@ -128,9 +112,6 @@ class _StudentPageState extends State<StudentPage> {
 
   RepositoryService? get _repository => widget.service is RepositoryService
       ? widget.service as RepositoryService
-      : null;
-  ScannerService? get _scanner => widget.service is ScannerService
-      ? widget.service as ScannerService
       : null;
 
   @override
@@ -570,57 +551,6 @@ class _StudentPageState extends State<StudentPage> {
     }
   }
 
-  Future<void> _approveCandidate() async {
-    final context = widget.candidateContext;
-    final scanner = _scanner;
-    final profile = _profile;
-    final state = _repositoryState;
-    if (context == null ||
-        scanner == null ||
-        profile == null ||
-        state == null) {
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _message = null;
-    });
-    try {
-      final approved = context.candidate.approved
-          ? context.candidate
-          : await scanner.reviewScannerCandidate(
-              context.session,
-              context.candidate,
-              context.candidate.payload,
-              approve: true,
-              reason: 'approved_in_student_page',
-            );
-      final committed = await scanner.commitScannerCandidate(
-        context.session,
-        approved,
-        profileId: profile.id,
-        expectedRepositoryRevision: state.revision,
-        idempotencyKey: 'candidate-${approved.id}-${approved.revision}',
-      );
-      if (!mounted) return;
-      final refreshed = await _repository!.loadRepositoryState(profile.id);
-      if (!mounted) return;
-      setState(() {
-        _repositoryState = refreshed;
-        _message = 'Candidate committed at revision ${committed['revision']}.';
-      });
-      _syncEditors();
-      _refreshCalculatorCurrent();
-      widget.onCandidateCommitted?.call(context.candidate);
-    } catch (error) {
-      if (mounted) {
-        setState(() => _message = 'Candidate was not committed: $error');
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -648,7 +578,6 @@ class _StudentPageState extends State<StudentPage> {
           in _repositoryState?.students ?? const <ConfirmedStudentState>[])
         student.studentId: student.values,
     };
-    final candidate = widget.candidateContext;
     final catalogById = {
       for (final student in _catalog) student.studentId: student,
     };
@@ -735,59 +664,6 @@ class _StudentPageState extends State<StudentPage> {
                         'metadata unavailable',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                       ),
-                    if (candidate != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      DiagonalSection(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Delivered scan candidate',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              Text(
-                                'Candidate ${candidate.candidate.id} · revision ${candidate.candidate.revision}',
-                              ),
-                              Text(
-                                'Confirmed: ${_selectedState?.values ?? const <String, dynamic>{}}',
-                              ),
-                              Text(
-                                'Candidate: ${candidate.candidate.payload['values'] ?? candidate.candidate.payload}',
-                              ),
-                              Text(
-                                'Review required: ${candidate.candidate.reviewRequired}',
-                              ),
-                              ...candidate.candidate.evidence.map(
-                                (evidence) => Text(
-                                  '${evidence.field}: ${evidence.status} (${evidence.source}, confidence ${evidence.confidence?.toStringAsFixed(2) ?? 'n/a'})',
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              Wrap(
-                                spacing: AppSpacing.sm,
-                                children: [
-                                  FilledButton(
-                                    key: const ValueKey('candidate-approve'),
-                                    onPressed: _saving ? null : _approveCandidate,
-                                    child: const Text('Approve and commit'),
-                                  ),
-                                  OutlinedButton(
-                                    key: const ValueKey('candidate-hold'),
-                                    onPressed: () => setState(
-                                      () => _message =
-                                          'Candidate kept for later review; repository unchanged.',
-                                    ),
-                                    child: const Text('Hold'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                     if (_message != null)
                       Padding(
                         padding: const EdgeInsets.only(top: AppSpacing.md),
@@ -802,7 +678,7 @@ class _StudentPageState extends State<StudentPage> {
                             if (_profile != null)
                               TextButton(
                                 key: const ValueKey('student-reload-profile'),
-                                onPressed: _saving ? null : _reloadProfile,
+                                onPressed: _reloadProfile,
                                 child: const Text('Reload profile'),
                               ),
                           ],

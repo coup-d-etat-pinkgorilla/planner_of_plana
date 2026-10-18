@@ -1,4 +1,5 @@
-// 인벤토리 화면 컨트롤러(FE6-a). 옛 `_InventoryPageState`의 로드·편집·저장·부족 계산·후보 승인을 옮겼다.
+// 인벤토리 화면 컨트롤러(FE6-a). 옛 `_InventoryPageState`의 로드·편집·저장·부족 계산을 옮겼다. 스캔 후보 승인은 스캔 탭
+// 아이템 결과 검토 보드로 옮겼다(FE8-g5b).
 //
 // 로드 순서: 카탈로그(`listInventoryItems`) → 선택된 계정(`listProfiles`의 selected) → 활성 계획(`loadRepositoryPlan`,
 // 목표 v1만 있던 계정은 이때 문서로 옮겨져 revision이 오를 수 있다) → 저장된 상태(`loadRepositoryState`, 저장 기준
@@ -31,7 +32,7 @@
 // 이력(FE6-f, FB-2 · FD-041 · FD-042):
 // - 로드가 끝난 뒤(보드를 먼저 그린 다음) 지금 − 28일 이력(`repository.history.events`, cursor 끝까지)과 카탈로그 재화의
 //   마지막 스캔(`repository.history.scan_latest`, 256개씩)을 읽어 [InventoryHistory]를 만든다. 같은 계정 · 같은 revision이면
-//   다시 읽지 않는다. 저장 · 후보 승인은 [load]를 다시 부르므로 revision이 바뀐 뒤 다시 읽는다.
+//   다시 읽지 않는다. 저장은 [load]를 다시 부르므로 revision이 바뀐 뒤 다시 읽는다.
 // - 이력 응답의 revision이 읽은 상태와 다르면(사이에 쓰기) 이력을 버리고 다음 기회에 다시 읽는다(섞어 그리지 않는다).
 // - 탭을 다시 열 때 [refreshIfChanged]가 `repository.history.summary`의 revision만 보고, 다르면(다른 탭의 스캔 commit 등)
 //   [load]를 다시 부른다. 셸 시작 때(탭을 열기 전)는 아무것도 읽지 않는다(FE6-b).
@@ -48,7 +49,6 @@ import '../../services/idempotency_keys.dart';
 import '../../services/planning_protocol_client.dart'
     show BackendDisconnectedException, BackendRemoteException;
 import '../../services/repository_service.dart';
-import '../../services/scanner_service.dart';
 import 'inventory_analysis.dart';
 import 'inventory_history.dart';
 import 'inventory_tiers.dart';
@@ -56,16 +56,6 @@ import 'inventory_view_model.dart';
 
 /// 이력 events를 끝까지 읽을 때의 쪽 수 상한(200 × 50 = FB-2 보존 상한 10,000건).
 const _historyMaxPages = 50;
-
-/// 스캔 탭이 인벤토리로 넘긴 후보(FE8-g5 전까지 인벤토리에서 승인한다).
-class InventoryCandidateContext {
-  const InventoryCandidateContext({
-    required this.session,
-    required this.candidate,
-  });
-  final ScannerSession session;
-  final ScannerCandidate candidate;
-}
 
 /// 화면 위 알림 줄의 색.
 enum InventoryMessageTone { info, warning }
@@ -456,8 +446,6 @@ class InventoryController extends ChangeNotifier {
         _state != null &&
         !_saving;
   }
-  ScannerService? get _scanner =>
-      service is ScannerService ? service as ScannerService : null;
 
   /// 지금 목록. 부족한 것 보기는 위험도 행(정렬됨), 전체 보기는 타일 그룹을 이은 순서다.
   List<InventoryItemView> get visible => _view == InventoryView.all
@@ -1265,60 +1253,6 @@ class InventoryController extends ChangeNotifier {
     if (_disposed) return;
     _acquisitions[key] = next;
     _notify();
-  }
-
-  // --- 스캔 후보(FE8-g5 전까지) ----------------------------------------------
-
-  /// 후보 보류: 저장소를 바꾸지 않는다.
-  void holdCandidate() => _setMessage(
-    '후보를 보류했습니다. 인벤토리는 바뀌지 않았습니다.',
-    InventoryMessageTone.info,
-  );
-
-  /// 후보를 검토 승인하고 커밋한다. 실패하면 비교를 그대로 둔다.
-  Future<bool> approveCandidate(InventoryCandidateContext context) async {
-    final scanner = _scanner;
-    final profile = _profile;
-    final state = _state;
-    if (scanner == null || profile == null || state == null || _saving) {
-      return false;
-    }
-    _saving = true;
-    _message = null;
-    _notify();
-    try {
-      final approved =
-          context.candidate.reviewRequired && !context.candidate.approved
-          ? await scanner.reviewScannerCandidate(
-              context.session,
-              context.candidate,
-              context.candidate.payload,
-              approve: true,
-              reason: 'approved_in_inventory_page',
-            )
-          : context.candidate;
-      await scanner.commitScannerCandidate(
-        context.session,
-        approved,
-        profileId: profile.id,
-        expectedRepositoryRevision: state.revision,
-        idempotencyKey:
-            'inventory-candidate-${approved.id}-${approved.revision}',
-      );
-      if (_disposed) return true;
-      _saving = false;
-      await load();
-      _setMessage('스캔 후보를 반영했습니다.', InventoryMessageTone.info);
-      return true;
-    } catch (error) {
-      if (_disposed) return false;
-      _saving = false;
-      _setMessage(
-        '후보를 반영하지 못했습니다. 비교는 그대로 남아 있습니다: $error',
-        InventoryMessageTone.warning,
-      );
-      return false;
-    }
   }
 
   // --- 공통 -----------------------------------------------------------------

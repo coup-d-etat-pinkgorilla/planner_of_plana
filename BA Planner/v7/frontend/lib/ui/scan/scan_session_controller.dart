@@ -56,11 +56,12 @@ class ScanPick {
   );
 }
 
-/// 최근 스캔 행이 쓰는 앱 실행 기록 보탬(FD-149 (a)): 시작 시각과 아이템 종류. [ScannerRecentSummary]에는 없는 값이라
-/// 학생 결과 적용([ScanSessionController.approveStudentCandidate] ·
-/// [ScanSessionController.commitApprovedStudentCandidate])을 시작할 수 없을 때 던진다. [message]가 그대로 보인다.
-class ScanStudentApplyException implements Exception {
-  const ScanStudentApplyException(this.message);
+/// 검토 보드의 결과 적용(학생 [ScanSessionController.approveStudentCandidate] ·
+/// [ScanSessionController.commitApprovedStudentCandidate], 아이템
+/// [ScanSessionController.approveInventoryCandidateSubset] · [ScanSessionController.commitApprovedInventoryCandidate])을
+/// 시작할 수 없을 때 던진다. [message]가 그대로 보인다.
+class ScanApplyException implements Exception {
+  const ScanApplyException(this.message);
 
   final String message;
 
@@ -68,6 +69,7 @@ class ScanStudentApplyException implements Exception {
   String toString() => message;
 }
 
+/// 최근 스캔 행이 쓰는 앱 실행 기록 보탬(FD-149 (a)): 시작 시각과 아이템 종류. [ScannerRecentSummary]에는 없는 값이라
 /// 세션(id + generation)마다 컨트롤러가 기억한다.
 @immutable
 class ScanRecentDetail {
@@ -157,11 +159,21 @@ class ScanSessionController extends ChangeNotifier {
   final List<ScannerRecentSummary> _recent = [];
   final Set<String> _busyCandidateIds = {};
   final Map<String, String> _candidateErrors = {};
+
+  /// 인벤토리 미식별 슬롯 · identity 지정 상태(FE8-g5b). 후보 열쇠(세션 · generation · id, 슬롯은 `<후보 열쇠>:<slot>`)로
+  /// 둔다 — 아이템 결과 검토 보드가 큐의 모든 종류(세션이 다른 후보)를 한 번에 보이므로 지금 보이는 세션만이 아니다.
+  /// 같은 후보 id가 다른 세션에 있어도 섞이지 않는다. 새 세션을 시작하면 지금 큐 밖 세션의 것은 버린다.
   final Map<String, List<ScannerUnresolvedSlot>> _unresolvedSlots = {};
   final Set<String> _unresolvedLoading = {};
+  final Map<String, String> _unresolvedErrors = {};
   final Set<String> _identityBusy = {};
   final Set<String> _identitySkipped = {};
   final Map<String, String> _identityErrors = {};
+
+  /// 아이템 부분 승인 review(FD-146)가 만든 승인 revision(후보 열쇠 → 후보, payload는 승인한 칸만). 지금 후보 · 최근 기록에는
+  /// 넣지 않는다 — 다른 화면(최근 스캔 행 칩 · 투영 · 보드 칸)은 원 결과 payload로 계속 본다(FE8-g5a 발견 4). 다음 부분 승인은
+  /// 이 revision에서 다시 review하고, 같은 칸이면 다시 review하지 않고 이 후보를 그대로 쓴다(같은 의도 재전송). 적용에 성공하면 버린다.
+  final Map<String, ScannerCandidate> _approvedSubsets = {};
   String? _candidateNotice;
   bool _companionActive = false;
   bool _exportingStudentDiagnostic = false;
@@ -328,16 +340,60 @@ class ScanSessionController extends ChangeNotifier {
   String? get candidateNotice => _candidateNotice;
   bool get companionActive => _companionActive;
   bool get exportingStudentDiagnostic => _exportingStudentDiagnostic;
+
+  // 지금 보이는 세션의 후보 id로 읽는다(예전 스캔 화면).
   bool unresolvedLoading(String candidateId) =>
-      _unresolvedLoading.contains(candidateId);
+      _unresolvedLoading.contains(_shownKey(candidateId));
   List<ScannerUnresolvedSlot>? unresolvedSlots(String candidateId) =>
-      _unresolvedSlots[candidateId];
+      _unresolvedSlots[_shownKey(candidateId)];
   bool identitySkipped(String candidateId, int slot) =>
-      _identitySkipped.contains(_identitySlotKey(candidateId, slot));
+      _identitySkipped.contains(_shownSlotKey(candidateId, slot));
   bool identityBusy(String candidateId, int slot) =>
-      _identityBusy.contains(_identitySlotKey(candidateId, slot));
+      _identityBusy.contains(_shownSlotKey(candidateId, slot));
   String? identityError(String candidateId, int slot) =>
-      _identityErrors[_identitySlotKey(candidateId, slot)];
+      _identityErrors[_shownSlotKey(candidateId, slot)];
+
+  // 후보(세션 · generation · id)로 읽는다(아이템 결과 검토 보드 — 지금 보이는 세션이 아니어도 된다).
+  List<ScannerUnresolvedSlot>? unresolvedSlotsOf(ScannerCandidate candidate) =>
+      _unresolvedSlots[_candidateKey(candidate)];
+  String? unresolvedErrorOf(ScannerCandidate candidate) =>
+      _unresolvedErrors[_candidateKey(candidate)];
+  bool identitySkippedOf(ScannerCandidate candidate, int slot) =>
+      _identitySkipped.contains(_slotKey(candidate, slot));
+  bool identityBusyOf(ScannerCandidate candidate, int slot) =>
+      _identityBusy.contains(_slotKey(candidate, slot));
+  String? identityErrorOf(ScannerCandidate candidate, int slot) =>
+      _identityErrors[_slotKey(candidate, slot)];
+
+  /// 아이템 결과 검토 보드(FE8-g5b)에 넘길 [result] 세션의 남은 후보(최신 revision): 적용 · 폐기한 후보와 다른 탭이 적용한
+  /// 후보([appliedElsewhere])는 뺀다. 지금 보이는 세션이면 지금 후보, 아니면 최근 기록(미식별 지정으로 오른 revision 포함)이다.
+  /// 부분 승인 review가 만든 revision(승인한 칸만 남은 payload)은 넣지 않는다 — 원 결과 그대로다.
+  List<ScannerCandidate> itemReviewCandidates(
+    ScannerRecentSummary? result, {
+    Set<String> appliedElsewhere = const {},
+  }) {
+    if (result == null || result.kind != ScannerKind.inventory) {
+      return const [];
+    }
+    final shown = _session;
+    final source =
+        shown != null &&
+            shown.id == result.sessionId &&
+            shown.generation == result.generation
+        ? _candidates.values.where(
+            (candidate) =>
+                candidate.sessionId == result.sessionId &&
+                candidate.generation == result.generation,
+          )
+        : result.candidates;
+    return [
+      for (final candidate in source)
+        if (candidate.kind == ScannerKind.inventory &&
+            _resolvedCandidates[_candidateKey(candidate)] == null &&
+            !appliedElsewhere.contains(_candidateKey(candidate)))
+          candidate,
+    ];
+  }
 
   bool get canStart =>
       connected &&
@@ -928,6 +984,12 @@ class ScanSessionController extends ChangeNotifier {
         _update(() => _showSummary(first));
       }
     }
+    // 아이템 결과 검토 보드는 모든 종류를 한 번에 보인다: 보이지 않는 종류 후보의 미식별 슬롯도 읽는다(FE8-g5b).
+    for (final kind in queue.kinds) {
+      for (final candidate in itemQueueResult(kind)?.candidates ?? const []) {
+        _ensureUnresolvedSlots(candidate);
+      }
+    }
     if (!_companionActive) return;
     if (queue.end == ScanQueueEnd.cancelled) {
       unawaited(_closeCompanion());
@@ -1261,44 +1323,115 @@ class ScanSessionController extends ChangeNotifier {
     final current = _candidates[candidate.id];
     if (current == null || candidate.revision > current.revision) {
       _candidates[candidate.id] = candidate;
-      if (candidate.kind == ScannerKind.inventory &&
-          !_unresolvedSlots.containsKey(candidate.id) &&
-          !_unresolvedLoading.contains(candidate.id)) {
-        unawaited(
-          Future<void>.microtask(() => _loadUnresolvedSlots(candidate)),
-        );
+      _ensureUnresolvedSlots(candidate);
+    }
+  }
+
+  /// 미식별 지정 등으로 오른 [candidate] revision을 둔다: 지금 보이는 세션이면 지금 후보로, 그리고 그 세션의 최근 기록에도
+  /// 적어 둔다(아이템 결과 검토 보드의 다른 종류 후보 · 다른 기록을 열었다 돌아와도 잃지 않는다). _update 안에서 부른다.
+  void _keepRevised(ScannerCandidate candidate) {
+    final shown = _session;
+    if (shown != null &&
+        shown.id == candidate.sessionId &&
+        shown.generation == candidate.generation) {
+      _keepCandidate(candidate);
+    }
+    for (var index = 0; index < _recent.length; index += 1) {
+      final item = _recent[index];
+      if (item.sessionId != candidate.sessionId ||
+          item.generation != candidate.generation) {
+        continue;
       }
+      if (!item.candidates.any(
+        (old) => old.id == candidate.id && old.revision < candidate.revision,
+      )) {
+        continue;
+      }
+      _recent[index] = _recentWithCandidates(item, [
+        for (final old in item.candidates)
+          old.id == candidate.id ? candidate : old,
+      ]);
     }
   }
 
   // ---- 인벤토리 미식별 칸 ----
 
-  String _identitySlotKey(String candidateId, int slot) => '$candidateId:$slot';
+  /// 지금 보이는 세션의 후보 id → 후보 열쇠(없으면 null).
+  String? _shownKey(String candidateId) {
+    final shown = _candidates[candidateId];
+    return shown == null ? null : _candidateKey(shown);
+  }
+
+  String? _shownSlotKey(String candidateId, int slot) {
+    final key = _shownKey(candidateId);
+    return key == null ? null : '$key:$slot';
+  }
+
+  static String _slotKey(ScannerCandidate candidate, int slot) =>
+      '${_candidateKey(candidate)}:$slot';
+
+  /// 인벤토리 후보의 미식별 슬롯을 아직 읽지 않았으면 읽는다(지금 보이는 세션이 아니어도 된다).
+  void _ensureUnresolvedSlots(ScannerCandidate candidate) {
+    final key = _candidateKey(candidate);
+    if (candidate.kind != ScannerKind.inventory ||
+        _unresolvedSlots.containsKey(key) ||
+        _unresolvedLoading.contains(key)) {
+      return;
+    }
+    unawaited(Future<void>.microtask(() => _loadUnresolvedSlots(candidate)));
+  }
+
+  /// [candidate]와 같은 후보(세션 · generation · id)의 지금 아는 최신본: 지금 보이는 세션이면 지금 후보, 아니면 최근 기록 · 큐.
+  ScannerCandidate? _knownCandidate(ScannerCandidate candidate) {
+    if (_isShownCandidate(candidate)) return _candidates[candidate.id];
+    final sources = [
+      ..._recent,
+      for (final kind in _itemQueue?.kinds ?? const <ScanQueueKind>[])
+        ?kind.result,
+    ];
+    for (final item in sources) {
+      if (item.sessionId != candidate.sessionId ||
+          item.generation != candidate.generation) {
+        continue;
+      }
+      for (final known in item.candidates) {
+        if (known.id == candidate.id) return known;
+      }
+    }
+    return null;
+  }
 
   Future<void> _loadUnresolvedSlots(ScannerCandidate candidate) async {
     final scanner = _scanner;
     final session = _sessionFor(candidate);
     if (scanner == null || session == null || _disposed) return;
+    final key = _candidateKey(candidate);
+    if (_unresolvedLoading.contains(key)) return;
     _update(() {
-      _unresolvedLoading.add(candidate.id);
-      _candidateErrors.remove(candidate.id);
+      _unresolvedLoading.add(key);
+      _unresolvedErrors.remove(key);
+      if (_isShownCandidate(candidate)) _candidateErrors.remove(candidate.id);
     });
     try {
       final result = await scanner.scannerUnresolvedSlots(session, candidate);
       if (_disposed) return;
-      final current = _candidates[candidate.id];
+      final current = _knownCandidate(candidate);
       if (current == null || current.revision != result.candidateRevision) {
         return;
       }
-      _update(() => _unresolvedSlots[candidate.id] = result.slots);
+      _update(() => _unresolvedSlots[key] = result.slots);
     } catch (error) {
       if (!_disposed) {
+        final message = '미식별 슬롯을 불러오지 못했습니다: $error';
         _update(() {
-          _candidateErrors[candidate.id] = '미식별 슬롯을 불러오지 못했습니다: $error';
+          _unresolvedErrors[key] = message;
+          if (_isShownCandidate(candidate)) {
+            _candidateErrors[candidate.id] = message;
+          }
         });
       }
     } finally {
-      if (!_disposed) _update(() => _unresolvedLoading.remove(candidate.id));
+      if (!_disposed) _update(() => _unresolvedLoading.remove(key));
     }
   }
 
@@ -1311,7 +1444,7 @@ class ScanSessionController extends ChangeNotifier {
     final scanner = _scanner;
     final session = _sessionFor(candidate);
     if (scanner == null || session == null) return;
-    final key = _identitySlotKey(candidate.id, slot.slot);
+    final key = _slotKey(candidate, slot.slot);
     _update(() {
       _identityBusy.add(key);
       _identityErrors.remove(key);
@@ -1327,8 +1460,8 @@ class ScanSessionController extends ChangeNotifier {
       );
       if (_disposed) return;
       _update(() {
-        _keepCandidate(result.candidate);
-        _unresolvedSlots[candidate.id] = result.slots;
+        _keepRevised(result.candidate);
+        _unresolvedSlots[_candidateKey(candidate)] = result.slots;
         _identitySkipped.remove(key);
         _identityErrors.remove(key);
         _candidateNotice = persist
@@ -1351,7 +1484,7 @@ class ScanSessionController extends ChangeNotifier {
     ScannerUnresolvedSlot slot,
   ) async {
     _update(() {
-      _identitySkipped.add(_identitySlotKey(candidate.id, slot.slot));
+      _identitySkipped.add(_slotKey(candidate, slot.slot));
       _candidateNotice = '슬롯 ${slot.slot + 1}을 건너뛰었습니다. 후보는 partial 상태로 유지됩니다.';
     });
   }
@@ -1559,7 +1692,7 @@ class ScanSessionController extends ChangeNotifier {
       return;
     }
     try {
-      await _commitStudentCandidate(
+      await _commitCandidate(
         candidate,
         scanner: scanner,
         session: session,
@@ -1569,7 +1702,7 @@ class ScanSessionController extends ChangeNotifier {
         approve: () => _approveStudentCandidate(candidate),
       );
     } catch (_) {
-      // 실패는 _commitStudentCandidate가 후보 오류 · 안내에 적었다(한 명 적용은 던지지 않는다).
+      // 실패는 _commitCandidate가 후보 오류 · 안내에 적었다(한 명 적용은 던지지 않는다).
     }
   }
 
@@ -1616,7 +1749,7 @@ class ScanSessionController extends ChangeNotifier {
     final scanner = _scanner;
     final session = _sessionFor(candidate);
     if (scanner == null || session == null) {
-      throw const ScanStudentApplyException('적용에 필요한 프로필 또는 세션 상태가 없습니다.');
+      throw const ScanApplyException('적용에 필요한 프로필 또는 세션 상태가 없습니다.');
     }
     final approved = candidate.approved
         ? candidate
@@ -1645,7 +1778,62 @@ class ScanSessionController extends ChangeNotifier {
   Future<int> commitApprovedStudentCandidate(
     ScannerCandidate approved, {
     required int expectedRepositoryRevision,
-  }) {
+  }) => _commitApproved(approved, expectedRepositoryRevision);
+
+  /// FD-146 부분 적용 1단계(아이템 결과 검토 보드, FE8-g5b): 승인한 칸만 남긴 [candidatePayload]로
+  /// `scanner.candidate.review`(approve = true)를 보내고 승인한 새 revision 후보를 돌려준다. 보드는 원 결과 후보([candidate],
+  /// 지금 후보 · 최근 기록의 revision)를 넘긴다 — 앞 부분 승인이 만든 revision이 더 높으면 그 revision에서 다시 review한다
+  /// (후보 revision 검사). 앞 부분 승인과 같은 칸(같은 payload)이면 review를 다시 보내지 않고 그 승인 후보를 그대로 돌려준다
+  /// (같은 의도의 commit 재전송이 같은 요청을 쓴다). 받은 후보는 지금 후보 · 최근 기록에 넣지 않는다([_approvedSubsets]).
+  /// 실패하면 던진다(보드가 그 종류에서 멈춘다).
+  Future<ScannerCandidate> approveInventoryCandidateSubset(
+    ScannerCandidate candidate,
+    Map<String, dynamic> candidatePayload,
+  ) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null ||
+        session == null ||
+        candidate.kind != ScannerKind.inventory) {
+      throw const ScanApplyException('적용에 필요한 프로필 또는 세션 상태가 없습니다.');
+    }
+    final key = _candidateKey(candidate);
+    final previous = _approvedSubsets[key];
+    if (previous != null &&
+        previous.revision >= candidate.revision &&
+        historyCanonicalJson(previous.payload) ==
+            historyCanonicalJson(candidatePayload)) {
+      return previous;
+    }
+    final base = previous != null && previous.revision > candidate.revision
+        ? previous
+        : candidate;
+    final approved = await scanner.reviewScannerCandidate(
+      session,
+      base,
+      candidatePayload,
+      approve: true,
+      reason: 'approved_subset_in_scan_item_review',
+    );
+    if (!_disposed) _approvedSubsets[key] = approved;
+    return approved;
+  }
+
+  /// FD-146 부분 적용 2단계(아이템 결과 검토 보드): 부분 승인한 후보 [approved]를 적용하고 응답 repository revision을
+  /// 돌려준다. 규칙은 [commitApprovedStudentCandidate]와 같다(새 idempotency key, 같은 의도의 재시도는 고정한 요청 그대로,
+  /// 실패 분류 · 후보 오류 · 안내, 성공하면 revision을 받고 후보를 해결로 두고 state를 다시 읽는다, 실패하면 던진다).
+  Future<int> commitApprovedInventoryCandidate(
+    ScannerCandidate approved, {
+    required int expectedRepositoryRevision,
+  }) => _commitApproved(approved, expectedRepositoryRevision);
+
+  /// 보드 commit 공용 본체(학생 · 아이템): 같은 차례 큐, 후보 바쁨, 상태 없음이면 오류를 적고 던짐, 같은 의도 재시도면
+  /// 고정 요청(key · expected)을 그대로 보내고 [expectedRepositoryRevision]은 쓰지 않음, 성공 = 응답 revision(정수가 아니면
+  /// 다시 읽은 [repositoryRevision], 그것도 없으면 [StateError]).
+  Future<int> _commitApproved(
+    ScannerCandidate approved,
+    int expectedRepositoryRevision,
+  ) {
     _update(() => _busyCandidateIds.add(approved.id));
     final run = _applyQueue.then((_) async {
       try {
@@ -1657,10 +1845,10 @@ class ScanSessionController extends ChangeNotifier {
             _repository == null ||
             profile == null ||
             session == null) {
-          throw ScanStudentApplyException(_recordMissingApplyState(approved));
+          throw ScanApplyException(_recordMissingApplyState(approved));
         }
         final retry = _pinnedRetryFor(session, approved, profile.id);
-        final committed = await _commitStudentCandidate(
+        final committed = await _commitCandidate(
           approved,
           scanner: scanner,
           session: session,
@@ -1685,7 +1873,7 @@ class ScanSessionController extends ChangeNotifier {
   /// 적용 본체(한 명 적용 · 보드 commit 공용). [retry]가 있으면 고정한 요청을 그대로 다시 보내고, 없으면 [approve]
   /// (없으면 [candidate]가 이미 승인된 후보)로 승인한 뒤 새 key · [expected]로 보낸다. 성공하면 commit 응답 revision
   /// (정수가 아니거나 dispose 뒤면 null), 실패하면 분류해 후보 오류 · 안내에 적은 뒤 다시 던진다.
-  Future<int?> _commitStudentCandidate(
+  Future<int?> _commitCandidate(
     ScannerCandidate candidate, {
     required ScannerService scanner,
     required ScannerSession session,
@@ -1740,6 +1928,7 @@ class ScanSessionController extends ChangeNotifier {
           _candidateErrors.remove(candidate.id);
         }
         _resolvedCandidates[_candidateKey(candidate)] = true;
+        _approvedSubsets.remove(_candidateKey(candidate));
         _releaseStudentCandidateImages(candidate);
         _candidateNotice =
             '결과를 repository revision $committedRevision에 적용했습니다.';
@@ -1827,11 +2016,25 @@ class ScanSessionController extends ChangeNotifier {
     _liveFeedbackStudentId = null;
     _observedStudentIds.clear();
     _candidateErrors.clear();
-    _unresolvedSlots.clear();
-    _unresolvedLoading.clear();
-    _identityBusy.clear();
-    _identitySkipped.clear();
-    _identityErrors.clear();
+    _pruneItemReviewState();
+  }
+
+  /// 미식별 슬롯 · identity 상태와 부분 승인 후보에서 지금 아이템 큐 밖 세션의 것을 버린다(새 세션 시작). 큐의 앞 종류 것은
+  /// 아이템 결과 검토 보드가 끝까지 쓰므로 남긴다.
+  void _pruneItemReviewState() {
+    final kept = {
+      for (final kind in _itemQueue?.kinds ?? const <ScanQueueKind>[])
+        if (kind.session case final session?)
+          '${_sessionKey(session.id, session.generation)}#',
+    };
+    bool stale(String key) => !kept.any(key.startsWith);
+    _unresolvedSlots.removeWhere((key, _) => stale(key));
+    _unresolvedLoading.removeWhere(stale);
+    _unresolvedErrors.removeWhere((key, _) => stale(key));
+    _identityBusy.removeWhere(stale);
+    _identitySkipped.removeWhere(stale);
+    _identityErrors.removeWhere((key, _) => stale(key));
+    _approvedSubsets.removeWhere((key, _) => stale(key));
   }
 
   void _recordRecent() {
@@ -1903,22 +2106,28 @@ class ScanSessionController extends ChangeNotifier {
       }
     }
     if (!changed) return;
-    _recent[index] = ScannerRecentSummary(
-      session: item.session,
-      targetId: item.targetId,
-      targetTitle: item.targetTitle,
-      outcome: item.outcome,
-      phase: item.phase,
-      diagnostic: item.diagnostic,
-      candidateCount: item.candidateCount,
-      reviewRequired: item.reviewRequired,
-      progressCurrent: item.progressCurrent,
-      progressTotal: item.progressTotal,
-      messageKey: item.messageKey,
-      terminalError: item.terminalError,
-      candidates: merged,
-    );
+    _recent[index] = _recentWithCandidates(item, merged);
   }
+
+  /// [item]의 후보만 [candidates]로 바꾼 기록(후보 수 · 검토 필요 표시는 끝났을 때 값 그대로).
+  static ScannerRecentSummary _recentWithCandidates(
+    ScannerRecentSummary item,
+    List<ScannerCandidate> candidates,
+  ) => ScannerRecentSummary(
+    session: item.session,
+    targetId: item.targetId,
+    targetTitle: item.targetTitle,
+    outcome: item.outcome,
+    phase: item.phase,
+    diagnostic: item.diagnostic,
+    candidateCount: item.candidateCount,
+    reviewRequired: item.reviewRequired,
+    progressCurrent: item.progressCurrent,
+    progressTotal: item.progressTotal,
+    messageKey: item.messageKey,
+    terminalError: item.terminalError,
+    candidates: candidates,
+  );
 
   /// 끝난 기록 [item]을 지금 검토 화면에 연다(_update 안에서). 대상 창은 바꾸지 않는다(큐 종류는 같은 창). 이미 적용 ·
   /// 폐기한 후보는 다시 보이지 않는다.
@@ -1943,12 +2152,8 @@ class ScanSessionController extends ChangeNotifier {
     _messageKey = latest.messageKey;
     _outcome = latest.outcome;
     _terminalError = latest.terminalError;
+    // 미식별 슬롯 · identity 상태는 후보 열쇠로 두므로 기록을 바꿔 열어도 지우지 않는다(FE8-g5b).
     _candidateErrors.clear();
-    _unresolvedSlots.clear();
-    _unresolvedLoading.clear();
-    _identityBusy.clear();
-    _identitySkipped.clear();
-    _identityErrors.clear();
     _candidates.clear();
     for (final candidate in latest.candidates) {
       if (_resolvedCandidates[_candidateKey(candidate)] == null) {
@@ -1958,28 +2163,35 @@ class ScanSessionController extends ChangeNotifier {
     _sessionError = null;
   }
 
+  /// 최근 기록을 지금 화면에 연다. 지금 보이는 세션의 오른 revision을 먼저 그 기록에 적어 두고, 여는 기록도 최신본을 쓴다
+  /// (FE8-g5b: 레일 최근 스캔 행으로 학생 · 아이템 검토를 오가도 미식별 지정으로 오른 revision을 잃지 않는다).
   void openRecent(ScannerRecentSummary item) {
     final recentTargetId = _recentTargetId(item);
     _update(() {
-      _session = item.session;
-      _kind = item.kind;
+      _syncShownToRecent();
+      final latest =
+          _recent
+              .where(
+                (entry) =>
+                    entry.sessionId == item.sessionId &&
+                    entry.generation == item.generation,
+              )
+              .firstOrNull ??
+          item;
+      _session = latest.session;
+      _kind = latest.kind;
       _targetId = recentTargetId;
       _stage = ScanSessionStage.terminal;
-      _phase = item.phase;
-      _diagnostic = item.diagnostic;
-      _progressCurrent = item.progressCurrent;
-      _progressTotal = item.progressTotal;
-      _messageKey = item.messageKey;
-      _outcome = item.outcome;
-      _terminalError = item.terminalError;
+      _phase = latest.phase;
+      _diagnostic = latest.diagnostic;
+      _progressCurrent = latest.progressCurrent;
+      _progressTotal = latest.progressTotal;
+      _messageKey = latest.messageKey;
+      _outcome = latest.outcome;
+      _terminalError = latest.terminalError;
       _candidateErrors.clear();
-      _unresolvedSlots.clear();
-      _unresolvedLoading.clear();
-      _identityBusy.clear();
-      _identitySkipped.clear();
-      _identityErrors.clear();
       _candidates.clear();
-      for (final candidate in item.candidates) {
+      for (final candidate in latest.candidates) {
         _keepCandidate(candidate);
       }
       _sessionError = null;

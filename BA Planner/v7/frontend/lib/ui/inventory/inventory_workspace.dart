@@ -108,7 +108,6 @@ abstract final class InventoryMetrics {
   static const ruleTop = 67.0;
   static const bandTop = 80.0;
   static const messageHeight = 22.0;
-  static const candidateHeight = 200.0;
   static const rowsTop = 86.0;
   static const rowHeight = 58.0;
   static const rowGap = 8.0;
@@ -293,14 +292,13 @@ class InventoryRevealRequest {
   }
 }
 
-/// 인벤토리 4섹션. [candidatePanel]은 스캔 후보 승인 패널(FE8-g5 전까지)이다.
+/// 인벤토리 4섹션. 스캔 후보 승인은 스캔 탭 아이템 결과 검토 보드가 한다(FE8-g5b — 예전 후보 승인 띠 자리는 없앴다).
 class InventoryWorkspace extends StatelessWidget {
   const InventoryWorkspace({
     super.key,
     required this.controller,
     required this.onOpenPlan,
     required this.onOpenScan,
-    this.candidatePanel,
     this.reveal,
   });
 
@@ -309,7 +307,6 @@ class InventoryWorkspace extends StatelessWidget {
   /// 계획 탭으로 간다("계획에서 보기" 등). 볼 재화가 있으면 그 resource_key, 없으면 null(tidy1, FD-108).
   final ValueChanged<String?> onOpenPlan;
   final VoidCallback onOpenScan;
-  final Widget? candidatePanel;
 
   /// 목록 · 타일에서 보이게 할 행(이동 의도, tidy1).
   final InventoryRevealRequest? reveal;
@@ -678,10 +675,8 @@ class InventoryWorkspace extends StatelessWidget {
     final bottom = quad.bottom;
     final titleTop = top + InventoryMetrics.titleTop;
     final ruleTop = top + InventoryMetrics.ruleTop;
-    final candidatePanel = this.candidatePanel;
     final message = controller.message;
     var band = 0.0;
-    if (candidatePanel != null) band += InventoryMetrics.candidateHeight;
     if (message != null) band += InventoryMetrics.messageHeight + 4;
     final rowsTop = top + InventoryMetrics.rowsTop + band;
     final panelBottom = math.max(
@@ -738,24 +733,7 @@ class InventoryWorkspace extends StatelessWidget {
         ),
       ),
     ];
-    var bandY = top + InventoryMetrics.bandTop;
-    if (candidatePanel != null) {
-      children.add(
-        Positioned(
-          key: const ValueKey('inventory-candidate-band'),
-          left: rowLeft(bandY, InventoryMetrics.candidateHeight),
-          top: bandY,
-          width: rowWidth(bandY, InventoryMetrics.candidateHeight),
-          height: InventoryMetrics.candidateHeight,
-          child: _Fit(
-            minWidth: 900,
-            minHeight: InventoryMetrics.candidateHeight,
-            child: candidatePanel,
-          ),
-        ),
-      );
-      bandY += InventoryMetrics.candidateHeight;
-    }
+    final bandY = top + InventoryMetrics.bandTop;
     if (message != null) {
       children.add(
         Positioned(

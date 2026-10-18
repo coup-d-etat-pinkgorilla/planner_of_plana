@@ -8,14 +8,19 @@
 // 학생 검토 대기(끝났고 적용 · 폐기하지 않은 학생 후보)는 학생 결과 검토 보드([ScanStudentReviewBoard], FE8-g4 · 시안
 // Scan-Student-Review)다. 보드는 가운데 · 오른쪽 섹션만 그리므로 왼쪽 레일([ScanRailWorkspace])은 고르기 · 진행과 같은
 // 자리에 이 화면이 둔다. 보드의 적용 · 재검증 · 보류 · 폐기는 셸 소유 컨트롤러로 간다([ScanReviewBoardControllerActions]).
-// 이 탭의 [ScanPage]는 학생 검토(기존 workspace)를 그리지 않는다(마운트 해제, FE8-g4b) — 아이템 · 전술 로비 검토만이다.
+// 이 탭의 [ScanPage]는 학생 검토(기존 workspace)를 그리지 않는다(마운트 해제, FE8-g4b).
+// 아이템 검토 대기(끝난 아이템 세션 · 큐에 적용 · 폐기하지 않은 후보)는 아이템 결과 검토 보드([ScanItemReviewBoard], FE8-g5 ·
+// 시안 Scan-Item-Review)다. 보드는 큐의 모든 종류를 종류 탭으로 합쳐 보이고(FD-143 (a)), 부분 적용 · 미식별 지정은 셸 소유
+// 컨트롤러로 간다([ScanItemReviewBoardControllerActions], FD-146 · FD-153). 이 탭의 [ScanPage]는 아이템 검토도 그리지 않는다
+// (FE8-g5b) — 전술 로비 검토만 남는다. 학생 · 아이템 보드가 함께 남으면 지금 보이는 세션(가장 최근에 끝난 실행, 또는 레일 최근
+// 스캔 행으로 연 기록)의 보드를 보이고, 다른 쪽은 레일 행으로 연다. 보이는 기록에 남은 후보가 없고 끝난 아이템 큐에 남았으면 아이템
+// 보드다. 두 보드 옆 레일에는 `다시 스캔` · `결과 다시 읽기`(예전 Retry · Recover snapshot)를 둔다.
 //
 // [ScanPage]는 고르기 화면 동안에도 Offstage로 붙여 둔다: 계정 패널이 컨트롤러에 계정을 넘기고(시작 전제), 셸 · 테스트가
 // 컨트롤러를 그 화면에서 찾는다(FE8-f1 · f2와 같은 경로). 고르기 화면은 컨트롤러의 고르기 값만 바꾸고, 시작은
 // [ScanSessionController.startPick](지금 시작 동작 그대로)이다.
 //
-// 아이템 차례 스캔(FE8-g3, FD-143 (a))은 큐가 끝날 때까지 진행이다(진행 창이 플래너를 덮는다). 여러 종류가 끝나면 지금 검토
-// 화면 위에 종류별 검토 줄([ScanQueueReviewBar])을 붙여 종류마다 결과를 연다(FE8-g5 전까지 검토 화면은 [ScanPage]).
+// 아이템 차례 스캔(FE8-g3, FD-143 (a))은 큐가 끝날 때까지 진행이다(진행 창이 플래너를 덮는다 — 그동안은 [ScanPage]).
 //
 // 미연결이면(앱 전역 게임 창 연결이 없으면) 시작이 막히고 오른쪽 섹션 자리에 홈과 같은 창 선택 패널이 붙는다(FD-155).
 // 취소하면 접고, 연결이 다시 끊기면 다시 붙인다. `게임 창 다시 선택` · 준비 상태 게임 창 행도 같은 패널을 연다.
@@ -30,9 +35,10 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../pages/scan_page.dart';
 import 'connected_target_controller.dart';
+import 'item_review/scan_item_review_board.dart';
 import 'review/scan_student_review_board.dart';
 import 'scan_header_progress.dart' show scanCandidateKey;
-import 'scan_item_queue.dart';
+import 'scan_item_review_board_adapter.dart';
 import 'scan_pick_logic.dart';
 import 'scan_review_board_adapter.dart';
 import 'scan_run_logic.dart';
@@ -42,6 +48,9 @@ import 'scan_tab_sections.dart';
 /// FB-2b by_kind 한 쪽 최대 행 수와 따라갈 쪽 수(넘으면 거기까지 읽은 값으로 그린다).
 const _lastScanPageLimit = 200;
 const _lastScanMaxPages = 10;
+
+/// FB-2b `resource_keys` 한 번 상한(아이템 결과 검토 보드의 `n일 전 스캔`, FD-147).
+const _itemLastScanChunk = 256;
 
 class ScanTabPage extends StatefulWidget {
   const ScanTabPage({
@@ -97,6 +106,11 @@ class _ScanTabPageState extends State<ScanTabPage> {
   bool _lastScansStale = true;
   var _lastScansGeneration = 0;
 
+  /// 아이템 결과 검토 보드의 resource key → `n일 전 스캔`(FB-2b by_resource_key). 읽기 전 · 실패 · 스캔 없음이면 없음('—').
+  Map<String, String> _itemLastScans = const {};
+  String? _itemLastScansFor;
+  var _itemLastScansGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -104,6 +118,9 @@ class _ScanTabPageState extends State<ScanTabPage> {
     _controller.ensureStarted();
     _wasConnected = _connected;
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadLastScans());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeLoadItemLastScans(),
+    );
   }
 
   @override
@@ -121,11 +138,15 @@ class _ScanTabPageState extends State<ScanTabPage> {
     }
     _trackView();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLoadLastScans());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeLoadItemLastScans(),
+    );
   }
 
   @override
   void dispose() {
     _lastScansGeneration += 1;
+    _itemLastScansGeneration += 1;
     _controller.removeListener(_controllerChanged);
     super.dispose();
   }
@@ -143,6 +164,7 @@ class _ScanTabPageState extends State<ScanTabPage> {
       _trackView();
     });
     _maybeLoadLastScans();
+    _maybeLoadItemLastScans();
   }
 
   /// 진행 · 검토를 마치고 고르기로 돌아오면 마지막 스캔을 다시 읽게 표시한다(적용으로 바뀌었을 수 있다).
@@ -233,6 +255,77 @@ class _ScanTabPageState extends State<ScanTabPage> {
     }
   }
 
+  /// 아이템 결과 검토 보드가 보이면 보드 후보가 읽은 아이템의 마지막 스캔(FB-2b by_resource_key)을 읽는다(계정 · 아이템 묶음이
+  /// 바뀔 때만).
+  void _maybeLoadItemLastScans() {
+    if (!mounted || !widget.active) return;
+    final profile = _controller.profile;
+    if (profile == null) return;
+    final keys = scanItemReviewResourceKeys(_itemReviewKinds()).toList()
+      ..sort();
+    if (keys.isEmpty) return;
+    final signature = [profile.id, ...keys].join('|');
+    if (signature == _itemLastScansFor) return;
+    _itemLastScansFor = signature;
+    unawaited(_loadItemLastScans(profile.id, keys));
+  }
+
+  Future<void> _loadItemLastScans(String profileId, List<String> keys) async {
+    final generation = ++_itemLastScansGeneration;
+    final service = widget.service;
+    if (service is! RepositoryService) {
+      setState(() => _itemLastScans = const {});
+      return;
+    }
+    final repository = service as RepositoryService;
+    final now = appClockNow(widget.service);
+    try {
+      final labels = <String, String>{};
+      for (var start = 0; start < keys.length; start += _itemLastScanChunk) {
+        final end = start + _itemLastScanChunk < keys.length
+            ? start + _itemLastScanChunk
+            : keys.length;
+        final result = await repository.loadRepositoryHistoryScanLatest(
+          RepositoryHistoryScanLatestRequest(
+            profileId: profileId,
+            resourceKeys: keys.sublist(start, end),
+          ),
+        );
+        if (!mounted || generation != _itemLastScansGeneration) return;
+        for (final row in result.byResourceKey) {
+          final recordedAt = row.latestScan?.recordedAt;
+          final at = recordedAt == null ? null : DateTime.tryParse(recordedAt);
+          if (at == null) continue;
+          labels[row.resourceKey] = '${scanWhenText(at, now, clock: false)} 스캔';
+        }
+      }
+      setState(() => _itemLastScans = labels);
+    } catch (_) {
+      if (!mounted || generation != _itemLastScansGeneration) return;
+      setState(() => _itemLastScans = const {});
+    }
+  }
+
+  /// 아이템 결과 검토 보드의 종류(고르기 · 진행이거나 학생 보드가 보이면 빈 목록).
+  List<ScanItemReviewKind> _itemReviewKinds() {
+    final view = scanTabViewFor(
+      _controller,
+      appliedElsewhere: widget.appliedElsewhere,
+    );
+    if (view != ScanTabView.session ||
+        scanRunVisible(_controller) ||
+        scanReviewStudentCandidates(
+          _controller,
+          appliedElsewhere: widget.appliedElsewhere,
+        ).isNotEmpty) {
+      return const [];
+    }
+    return scanItemReviewKindsFor(
+      _controller,
+      appliedElsewhere: widget.appliedElsewhere,
+    );
+  }
+
   /// 학생 결과 검토 보드 제목 칩의 범위 · 시각(시각은 이 컨트롤러로 시작한 세션만, 아니면 '—').
   ({String scope, String? time}) _reviewLabels() {
     final session = _controller.session;
@@ -263,8 +356,12 @@ class _ScanTabPageState extends State<ScanTabPage> {
           )
         : const <ScannerCandidate>[];
     final reviewShown = studentReview.isNotEmpty;
-    final pageShown = sessionShown && !runShown && !reviewShown;
-    final queueBarShown = pageShown && scanQueueReviewVisible(_controller);
+    final itemKinds = sessionShown && !runShown && !reviewShown
+        ? _itemReviewKinds()
+        : const <ScanItemReviewKind>[];
+    final itemReviewShown = itemKinds.any((kind) => kind.candidates.isNotEmpty);
+    final pageShown =
+        sessionShown && !runShown && !reviewShown && !itemReviewShown;
     final connectedTarget = widget.connectedTarget;
     final panelVisible =
         widget.active &&
@@ -290,27 +387,14 @@ class _ScanTabPageState extends State<ScanTabPage> {
           offstage: !pageShown,
           child: TickerMode(
             enabled: pageShown,
-            child: Column(
-              children: [
-                if (queueBarShown)
-                  ScanQueueReviewBar(
-                    key: const ValueKey('scan-queue-review'),
-                    controller: _controller,
-                    appliedElsewhere: widget.appliedElsewhere,
-                  )
-                else
-                  const SizedBox.shrink(),
-                Expanded(
-                  child: ScanPage(
-                    service: widget.service,
-                    onCandidateHandoff: widget.onCandidateHandoff,
-                    controller: _controller,
-                    active: widget.active,
-                    connectedTarget: connectedTarget,
-                    showStudentReview: false,
-                  ),
-                ),
-              ],
+            child: ScanPage(
+              service: widget.service,
+              onCandidateHandoff: widget.onCandidateHandoff,
+              controller: _controller,
+              active: widget.active,
+              connectedTarget: connectedTarget,
+              showStudentReview: false,
+              showItemReview: false,
             ),
           ),
         ),
@@ -325,6 +409,15 @@ class _ScanTabPageState extends State<ScanTabPage> {
           ScanRailWorkspace(
             key: const ValueKey('scan-review-rail'),
             view: pickView(panel: false),
+            sessionActions: true,
+          ),
+        ],
+        if (itemReviewShown) ...[
+          _itemReviewBoard(itemKinds),
+          ScanRailWorkspace(
+            key: const ValueKey('scan-item-review-rail'),
+            view: pickView(panel: false),
+            sessionActions: true,
           ),
         ],
         if (!sessionShown)
@@ -355,6 +448,34 @@ class _ScanTabPageState extends State<ScanTabPage> {
       candidateErrors: _controller.candidateErrors,
       scopeLabel: labels.scope,
       timeLabel: labels.time,
+    );
+  }
+
+  /// 아이템 결과 검토 보드(FE8-g5b 값 연결 — 모르는 값은 보드가 '—'). 계획 필요량은 스캔 탭에 활성 계획 계산이 없어 넘기지
+  /// 않는다('—'). 범위 칩 시각은 이 컨트롤러로 시작한 첫 종류의 시작 시각(큐 시작)이다.
+  Widget _itemReviewBoard(List<ScanItemReviewKind> kinds) {
+    final slots = scanItemReviewSlotStateFor(_controller, kinds);
+    final startedAt = [
+      for (final kind in kinds)
+        if (kind.queue.session case final session?)
+          ?_controller.recentDetail(session)?.startedAt,
+    ].firstOrNull;
+    return ScanItemReviewBoard(
+      key: const ValueKey('scan-item-review'),
+      kinds: kinds,
+      currentInventory: _controller.repositoryState?.inventory,
+      catalog: _controller.inventoryCatalog,
+      repositoryRevision: _controller.repositoryRevision,
+      actions: ScanItemReviewBoardControllerActions(_controller),
+      unresolvedSlots: slots.slots,
+      identityBusy: slots.busy,
+      identityErrors: slots.errors,
+      identitySkipped: slots.skipped,
+      candidateErrors: slots.candidateErrors,
+      lastScanLabels: _itemLastScans,
+      timeLabel: startedAt == null
+          ? null
+          : scanWhenText(startedAt, appClockNow(widget.service)),
     );
   }
 }

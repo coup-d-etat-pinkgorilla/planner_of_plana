@@ -730,7 +730,8 @@ class _SnapshotMockService extends MockAppService {
 
   @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
-    final candidateKind = mismatch ? ScannerKind.inventory : session.kind;
+    // 다른 탭으로 넘기는 후보는 전술 로비뿐이다(FE8-g5b): 학생 세션의 전술 로비 후보로 종류 불일치를 만든다.
+    final candidateKind = mismatch ? ScannerKind.tacticalLobby : session.kind;
     final candidate = ScannerCandidate(
       id: 'snapshot-candidate',
       sessionId: session.id,

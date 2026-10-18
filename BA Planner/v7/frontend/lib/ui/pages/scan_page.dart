@@ -32,9 +32,13 @@ class ScanPage extends StatefulWidget {
     this.active = true,
     this.connectedTarget,
     this.showStudentReview = true,
+    this.showItemReview = true,
   });
 
   final AppService service;
+
+  /// 후보를 다른 탭으로 넘긴다. 전술 로비 후보만 넘긴다(FE9-c) — 학생 · 아이템 후보는 스캔 탭 결과 검토 보드가 적용한다
+  /// (FE8-g4b · FE8-g5b, I-scan §9.1 인계 제거).
   final void Function(ScannerSession session, ScannerCandidate candidate)
   onCandidateHandoff;
 
@@ -57,6 +61,10 @@ class ScanPage extends StatefulWidget {
   /// 학생 후보 검토(기존 [ScanStudentReviewWorkspace])를 그리는가. 스캔 탭은 학생 검토를 새 보드로만 하므로 false를
   /// 준다(FE8-g4b, 마운트 해제). 단독 화면 · 기존 시험은 그대로(true).
   final bool showStudentReview;
+
+  /// 아이템 후보 요약 · 미식별 칸 지정([ScanInventoryIdentityReview])을 그리는가. 스캔 탭은 아이템 검토를 새 보드로만 하므로
+  /// false를 준다(FE8-g5b) — 이 화면에는 전술 로비 후보만 남는다. 단독 화면 · 기존 시험은 그대로(true).
+  final bool showItemReview;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -560,12 +568,16 @@ class _ScanPageState extends State<ScanPage> {
               style: const TextStyle(color: AppColors.danger),
             ),
           for (final candidate in _controller.candidates.values.where(
-            (item) => item.kind != ScannerKind.student,
+            (item) =>
+                item.kind != ScannerKind.student &&
+                (widget.showItemReview || item.kind != ScannerKind.inventory),
           )) ...[
             const Divider(),
             _CandidateSummary(
               candidate: candidate,
-              onHandoff: () => _handoff(candidate),
+              onHandoff: candidate.kind == ScannerKind.tacticalLobby
+                  ? () => _handoff(candidate)
+                  : null,
             ),
             if (candidate.kind == ScannerKind.inventory) ...[
               if (_controller.unresolvedLoading(candidate.id))
@@ -665,7 +677,9 @@ class _StatusChip extends StatelessWidget {
 class _CandidateSummary extends StatelessWidget {
   const _CandidateSummary({required this.candidate, required this.onHandoff});
   final ScannerCandidate candidate;
-  final VoidCallback onHandoff;
+
+  /// 전술 로비 인계. null이면 인계 버튼이 없다(학생 · 아이템은 스캔 탭 보드).
+  final VoidCallback? onHandoff;
 
   String get _payloadSummary {
     if (candidate.kind == ScannerKind.student) {
@@ -721,17 +735,15 @@ class _CandidateSummary extends StatelessWidget {
             '${evidence.note.isEmpty ? '' : ' · ${evidence.note}'}',
           ),
         ),
-      const SizedBox(height: AppSpacing.sm),
-      FilledButton.icon(
-        key: ValueKey('scan-review-${candidate.id}'),
-        onPressed: onHandoff,
-        icon: const Icon(Icons.rate_review_outlined),
-        label: Text(switch (candidate.kind) {
-          ScannerKind.student => 'Review in Students',
-          ScannerKind.inventory => 'Review in Inventory',
-          ScannerKind.tacticalLobby => 'Review tactical capture',
-        }),
-      ),
+      if (onHandoff case final handoff?) ...[
+        const SizedBox(height: AppSpacing.sm),
+        FilledButton.icon(
+          key: ValueKey('scan-review-${candidate.id}'),
+          onPressed: handoff,
+          icon: const Icon(Icons.rate_review_outlined),
+          label: const Text('Review tactical capture'),
+        ),
+      ],
     ],
   );
 }

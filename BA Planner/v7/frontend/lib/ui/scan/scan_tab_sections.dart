@@ -1,7 +1,8 @@
 // 스캔 탭 고르기 화면 3섹션(FE8-g1, 시안 Scan · Scan-Items, I-scan §1 · §2 · §5).
 //
 // - 왼쪽 레일: `스캔` 제목 + (i), `.cap` 준비 상태 + 행 3개(게임 창 · 인식 준비 · 계정), `.cap` 최근 스캔 + 행(앱 실행 기록,
-//   FD-149 (a)) + 각주, 아래 `게임 창 다시 선택`(FD-155: 창 선택 패널).
+//   FD-149 (a)) + 각주, 아래 `게임 창 다시 선택`(FD-155: 창 선택 패널). 검토 보드 옆 레일([ScanRailWorkspace])은 그 위에
+//   `다시 스캔` · `결과 다시 읽기` 줄을 더한다(FE8-g5b).
 // - 가운데 고르기: 제목 줄(`무엇을 스캔합니까` + (i) + 연결 칩), 학생 줄(전체 · 1명 칸), 아이템 줄(7칸, FD-151 선물 포함,
 //   여러 종류), 주 버튼 + `.plain` 설명(막혔으면 이유), 종류별 마지막 스캔 카드(FB-2b, FD-147).
 // - 오른쪽 시작 전 안내: 고른 것 머리 · 요약 · 시작 전에 · 읽는 항목/진행 표시 · 끝나면 · 아래 바꾸기 버튼. 미연결이거나
@@ -197,23 +198,39 @@ class ScanPickWorkspace extends StatelessWidget {
   }
 }
 
-/// 왼쪽 레일만(FE8-g4b): 학생 결과 검토 보드는 가운데 · 오른쪽 섹션만 그리므로 스캔 탭이 같은 자리에 같은 레일을 둔다.
+/// 왼쪽 레일만(FE8-g4b): 학생 · 아이템 결과 검토 보드는 가운데 · 오른쪽 섹션만 그리므로 스캔 탭이 같은 자리에 같은 레일을 둔다.
 class ScanRailWorkspace extends StatelessWidget {
-  const ScanRailWorkspace({super.key, required this.view});
+  const ScanRailWorkspace({
+    super.key,
+    required this.view,
+    this.sessionActions = false,
+  });
 
   final ScanPickView view;
+
+  /// `게임 창 다시 선택` 위에 세션 버튼 줄(`다시 스캔` · `결과 다시 읽기`)을 둔다(FE8-g5b, FE8-g4b 발견 1 — 검토 보드 동안
+  /// 예전 스캔 화면의 Retry · Recover snapshot이 보이지 않는다).
+  final bool sessionActions;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => Stack(
       children: [
         Positioned.fill(
-          child: _RailSection(size: constraints.biggest, view: view),
+          child: _RailSection(
+            size: constraints.biggest,
+            view: view,
+            sessionActions: sessionActions,
+          ),
         ),
       ],
     ),
   );
 }
+
+/// 레일 세션 버튼 줄: `게임 창 다시 선택` 위 10, 높이 40(시안 밖 최소 요소 — 최근 스캔 8행 · 각주 아래 끝 894보다 아래).
+const _sessionActionsGap = 10.0;
+const _sessionActionsHeight = 40.0;
 
 /// 자리가 [minWidth]보다 좁으면 그 폭으로 배치하고 넘친 부분을 자른다(통계 `_MinBox`와 같은 규칙).
 class _MinBox extends StatelessWidget {
@@ -304,6 +321,7 @@ class _RailSection extends StatelessWidget {
     required this.size,
     required this.view,
     this.live = false,
+    this.sessionActions = false,
   });
 
   final Size size;
@@ -311,6 +329,9 @@ class _RailSection extends StatelessWidget {
 
   /// 지금 진행 중인 실행을 최근 스캔 첫 행(`.btn.sel-pink`)으로 넣는다(FE8-g2 진행 화면).
   final bool live;
+
+  /// [ScanRailWorkspace.sessionActions].
+  final bool sessionActions;
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +512,14 @@ class _RailSection extends StatelessWidget {
           ),
         ),
       ),
+      if (sessionActions)
+        placed(
+          row(
+            reselectTop - _sessionActionsGap - _sessionActionsHeight,
+            _sessionActionsHeight,
+          ),
+          _SessionActions(controller: controller),
+        ),
       placed(
         row(reselectTop, ScanMetrics.reselectHeight),
         RailButton(
@@ -523,6 +552,41 @@ class _RailSection extends StatelessWidget {
       children: children,
     );
   }
+}
+
+/// 검토 보드 옆 레일의 세션 버튼(예전 스캔 화면 Retry · Recover snapshot과 같은 조건 · 같은 동작).
+class _SessionActions extends StatelessWidget {
+  const _SessionActions({required this.controller});
+
+  final ScanSessionController controller;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      TonalButton(
+        key: const ValueKey('scan-rail-retry'),
+        label: '다시 스캔',
+        icon: Icons.replay,
+        height: _sessionActionsHeight,
+        fontSize: AppType.bodySmallSize,
+        onPressed:
+            controller.stage == ScanSessionStage.terminal && controller.canStart
+            ? () => unawaited(controller.start())
+            : null,
+      ),
+      const SizedBox(width: 8),
+      TonalButton(
+        key: const ValueKey('scan-rail-recover'),
+        label: controller.recovering ? '읽는 중…' : '결과 다시 읽기',
+        icon: Icons.sync,
+        height: _sessionActionsHeight,
+        fontSize: AppType.bodySmallSize,
+        onPressed: controller.session == null || controller.recovering
+            ? null
+            : () => unawaited(controller.recoverSnapshot()),
+      ),
+    ],
+  );
 }
 
 /// `Blue Archive · 2560×1440`(머리글 칩 글자에서 `연결됨`을 뺀 것). 모르면 '—'.

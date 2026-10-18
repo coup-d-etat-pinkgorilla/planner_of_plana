@@ -1,10 +1,10 @@
 // 인벤토리 탭(FE6-a 재작성). 옛 Material 목록·드롭다운·"Save inventory" 대신 4섹션(사이드바 · KPI · 위험도 목록 ·
-// 상세)을 검사한다. 저장은 상세의 "수량 직접 고치기" 칸으로, 계획·스캔 이동은 상세 액션으로 옮겼다. 후보 승인 패널
-// (`_CandidatePanel`)은 FE8-g5 전까지 그대로라 'Hold'·'Review & approve' 글자를 그대로 쓴다.
+// 상세)을 검사한다. 저장은 상세의 "수량 직접 고치기" 칸으로, 계획·스캔 이동은 상세 액션으로 옮겼다. 예전 후보 승인 패널
+// (`_CandidatePanel`)은 FE8-g5b에서 없앴다 — 그 시험(보류 · 승인 반영 · 오래된 revision)은 스캔 탭 아이템 결과 검토 보드
+// 경로로 옮겼다(`scan_item_review_fe8g5b_test.dart` "inventory candidate apply (예전 인벤토리 후보 띠 대체)").
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
-import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/kit/item_icon_tile.dart';
 import 'package:ba_planner_v7/ui/kit/skew_bar.dart';
 import 'package:ba_planner_v7/ui/pages/inventory_page.dart';
@@ -17,16 +17,12 @@ Widget _subject(
   AppService service, {
   VoidCallback? onOpenPlan,
   VoidCallback? onOpenScan,
-  ValueChanged<ScannerCandidate>? onCandidateCommitted,
-  InventoryCandidateContext? candidateContext,
 }) => MaterialApp(
   home: Scaffold(
     body: InventoryPage(
       service: service,
       onOpenPlan: onOpenPlan ?? () {},
       onOpenScan: onOpenScan ?? () {},
-      candidateContext: candidateContext,
-      onCandidateCommitted: onCandidateCommitted,
     ),
   ),
 );
@@ -392,135 +388,6 @@ void main() {
     expect(tester.takeException(), isNull);
     await service.dispose();
   });
-
-  testWidgets(
-    'candidate hold does not mutate and approve commits the inventory snapshot',
-    (tester) async {
-      await _standardSurface(tester);
-      final service = MockAppService();
-      var committed = false;
-      const session = ScannerSession(
-        id: 'inventory-session',
-        generation: 1,
-        kind: ScannerKind.inventory,
-      );
-      final candidate = ScannerCandidate(
-        id: 'inventory-candidate',
-        sessionId: session.id,
-        generation: 1,
-        revision: 1,
-        kind: ScannerKind.inventory,
-        payload: {
-          'version': 1,
-          'entries': [
-            {
-              'key': 'Item_Icon_ExpItem_0',
-              'item_id': 'Item_Icon_ExpItem_0',
-              'quantity': '7',
-            },
-          ],
-        },
-        evidence: const [],
-        reviewRequired: true,
-        approved: false,
-      );
-      await tester.pumpWidget(
-        _subject(
-          service,
-          candidateContext: InventoryCandidateContext(
-            session: session,
-            candidate: candidate,
-          ),
-          onCandidateCommitted: (_) {
-            committed = true;
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('inventory-candidate-panel')),
-        findsOneWidget,
-      );
-      await tester.tap(find.text('Hold'));
-      await tester.pump();
-      expect(find.textContaining('후보를 보류했습니다'), findsOneWidget);
-      var state = await service.loadRepositoryState('000000000000000000000001');
-      expect(state.inventory.entries, isEmpty);
-      await tester.tap(find.text('Review & approve'));
-      await tester.pumpAndSettle();
-      state = await service.loadRepositoryState('000000000000000000000001');
-      expect(state.inventory.entries.single['quantity'], '7');
-      expect(committed, isTrue);
-      expect(find.textContaining('스캔 후보를 반영했습니다'), findsOneWidget);
-      await service.dispose();
-    },
-  );
-
-  testWidgets(
-    'stale repository revision preserves candidate comparison and newer inventory',
-    (tester) async {
-      await _standardSurface(tester);
-      final service = MockAppService();
-      const profile = '000000000000000000000001';
-      await service.saveRepositoryInventory(
-        profile,
-        RepositoryInventoryState.fromEntries([
-          {'key': 'base', 'quantity': '1'},
-        ]),
-        0,
-        'seed',
-      );
-      const session = ScannerSession(
-        id: 'stale-session',
-        generation: 2,
-        kind: ScannerKind.inventory,
-      );
-      final candidate = ScannerCandidate(
-        id: 'stale-candidate',
-        sessionId: session.id,
-        generation: 2,
-        revision: 1,
-        kind: ScannerKind.inventory,
-        payload: {
-          'version': 1,
-          'entries': [
-            {'key': 'candidate', 'quantity': '9'},
-          ],
-        },
-        evidence: const [],
-        reviewRequired: false,
-        approved: false,
-      );
-      await tester.pumpWidget(
-        _subject(
-          service,
-          candidateContext: InventoryCandidateContext(
-            session: session,
-            candidate: candidate,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await service.saveRepositoryInventory(
-        profile,
-        RepositoryInventoryState.fromEntries([
-          {'key': 'newer', 'quantity': '4'},
-        ]),
-        1,
-        'newer',
-      );
-      await tester.tap(find.text('Review & approve'));
-      await tester.pumpAndSettle();
-      final state = await service.loadRepositoryState(profile);
-      expect(state.inventory.entries.single['key'], 'newer');
-      expect(find.textContaining('비교는 그대로 남아 있습니다'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('inventory-candidate-panel')),
-        findsOneWidget,
-      );
-      await service.dispose();
-    },
-  );
 
   testWidgets(
     'large, long-name, and missing-metadata catalogs lay out at required viewports',

@@ -18,6 +18,10 @@
 // - `scan-review-students`(Scan-Student-Review, FE8-g4b): `전체 학생`으로 시작해 Mock 후보 5개로 끝난 뒤 스캔 탭 = 왼쪽 레일 +
 //   학생 결과 검토 보드. 확정값이 있는 학생(id 순) 첫 4명 중 1명은 레벨 근거 `uncertain`(확인 필요), 3명은 레벨 +1 · EX
 //   스킬 등 바뀐 값(계산 검증 `verified` = 바뀐 학생), 확정값이 없는 학생 1명(새 학생). 시작 = 지역 11:57(제목 칩 `오늘 11:57`).
+//   레일 아래 `다시 스캔` · `결과 다시 읽기`(FE8-g5b)가 `게임 창 다시 선택` 위에 있다.
+// - `scan-review-items`(Scan-Item-Review, FE8-g5b): `기술 노트` · `전술 교육 BD` 2종 큐가 FE8-g5a 보드 fixture 값(카탈로그 ·
+//   이전 수량 · 후보 payload · 근거, 합성 값)으로 끝난 뒤 스캔 탭 = 왼쪽 레일 + 아이템 결과 검토 보드. 큐 시작 = 지역 11:57(범위
+//   칩 `오늘 11:57`), 아이템 마지막 스캔(by_resource_key) = 10/1 21:10(`3일 전 스캔`). 계획 필요량은 스캔 탭에 없어 '—'.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -30,6 +34,8 @@ import 'dart:async';
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
+import 'package:ba_planner_v7/services/app_service.dart'
+    show InventoryCatalogResult;
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/services/window_dock_service.dart';
@@ -40,6 +46,7 @@ import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fixtures/scan_item_review_board_fixture.dart';
 import 'golden_harness.dart';
 
 /// 시안 by_kind 값(지역 시각)과 고정 시계.
@@ -128,6 +135,134 @@ class _HeldRunGoldenService extends _ScanTabGoldenService {
     await events.close();
     await super.dispose();
   }
+}
+
+/// 아이템 결과 검토 장면(FE8-g5b): FE8-g5a 보드 fixture의 카탈로그 · 후보를 셸 스캔 탭으로 흘린다. 세션 시작만 받고 후보 ·
+/// 끝 이벤트는 장면이 낸다. 아이템 마지막 스캔(by_resource_key)은 10/1 21:10으로 답한다.
+class _ItemReviewGoldenService extends _ScanTabGoldenService {
+  final StreamController<ScannerEvent> events = StreamController.broadcast();
+  final List<ScannerSession> sessions = [];
+  var _sequence = 0;
+
+  @override
+  Stream<ScannerEvent> get scannerEvents => events.stream;
+
+  @override
+  Future<InventoryCatalogResult> listInventoryItems() async =>
+      InventoryCatalogResult(
+        catalogRevision: '0' * 64,
+        items: scanItemFixtureCatalog(),
+      );
+
+  @override
+  Future<ScannerSession> startScannerSession(
+    ScannerKind kind,
+    String targetId, {
+    String? profileId,
+    StudentScanMode studentScanMode = StudentScanMode.single,
+    InventoryScanProfile? inventoryScanProfile,
+  }) async {
+    final session = ScannerSession(
+      id: 'golden-item-session-${sessions.length + 1}',
+      generation: sessions.length + 1,
+      kind: kind,
+      studentScanMode: studentScanMode,
+    );
+    sessions.add(session);
+    return session;
+  }
+
+  /// 지금 세션에 fixture [candidate](payload · 근거 그대로)를 내고 끝낸다.
+  void finishWith(ScannerCandidate candidate) {
+    final session = sessions.last;
+    void emit(ScannerEventKind kind, Map<String, dynamic> payload) {
+      _sequence += 1;
+      events.add(
+        ScannerEvent(
+          sessionId: session.id,
+          generation: session.generation,
+          sequence: _sequence,
+          kind: session.kind,
+          eventKind: kind,
+          payload: payload,
+        ),
+      );
+    }
+
+    emit(ScannerEventKind.candidate, {
+      'candidate': {
+        'candidate_id': candidate.id,
+        'session_id': session.id,
+        'generation': session.generation,
+        'revision': 1,
+        'scan_kind': 'inventory',
+        'payload': candidate.payload,
+        'evidence': [
+          for (final item in candidate.evidence)
+            {
+              'field': item.field,
+              'status': item.status,
+              'source': item.source,
+              'confidence': item.confidence,
+              'note': item.note,
+            },
+        ],
+        'review_required': candidate.reviewRequired,
+        'approved': false,
+        'audit': const <dynamic>[],
+      },
+    });
+    emit(ScannerEventKind.terminal, {'outcome': 'completed'});
+  }
+
+  @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async {
+    if (request.resourceKeys.isEmpty) {
+      return super.loadRepositoryHistoryScanLatest(request);
+    }
+    final at = historyUtcTimestamp(DateTime(2026, 10, 1, 21, 10).toUtc());
+    return RepositoryHistoryScanLatestResult.fromWireFor(request, {
+      'profile_id': request.profileId,
+      'revision': 1,
+      'history_sequence': 1,
+      'last_scan_at': at,
+      'by_kind': const <Object>[],
+      'by_student_id': const <Object>[],
+      'by_resource_key': [
+        for (final key in request.resourceKeys)
+          {
+            'resource_key': key,
+            'latest_scan': {
+              'sequence': 1,
+              'recorded_at': at,
+              'session_id': 'golden-scan-tech',
+              'scan_kind': 'inventory',
+              'inventory_scan_profile': 'tech_notes',
+            },
+            'reason': null,
+          },
+      ],
+      'by_kind_next_after_sequence': null,
+    });
+  }
+
+  @override
+  Future<void> dispose() async {
+    await events.close();
+    await super.dispose();
+  }
+}
+
+/// 진행 창을 붙이지 못하는 대역(아이템 결과 검토 장면은 진행 창 없이 큐를 끝낸다).
+class _NoDock implements WindowDockService {
+  @override
+  Future<ScanDockPlacement> dockBeside(String targetId) =>
+      Future.error(StateError('no native dock in the golden scene'));
+
+  @override
+  Future<void> restore() async {}
 }
 
 /// 네이티브 창 붙이기 대역(진행 창 장면).
@@ -417,5 +552,53 @@ void main() {
       '3',
     );
     await expectGoldenScene(tester, 'scan-review-students');
+  }, variant: goldenPlatform);
+
+  testWidgets('scan-review-items', (tester) async {
+    final service = _ItemReviewGoldenService();
+    final profiles = await service.listProfiles();
+    final profileId = profiles
+        .firstWhere((profile) => profile.selected, orElse: () => profiles.first)
+        .id;
+    final seeded = await service.loadRepositoryState(profileId);
+    await service.saveRepositoryInventory(
+      profileId,
+      scanItemFixtureInventory(),
+      seeded.revision,
+      'golden-item-review-seed',
+    );
+    final page = await _openScanTab(tester, service: service);
+    final controller = page.controller
+      ..windowDockService = _NoDock()
+      ..now = () => DateTime(2026, 10, 4, 11, 57, 50);
+    controller.pickInventory(const [
+      InventoryScanProfile.techNotes,
+      InventoryScanProfile.tacticalBd,
+    ]);
+    await tester.pumpAndSettle();
+    // 큐가 도는 동안은 진행 화면(끝없는 막대)이라 정착을 기다리지 않고 몇 프레임만 넘긴다.
+    Future<void> step() async {
+      for (var frame = 0; frame < 4; frame += 1) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
+    await step();
+    service.finishWith(scanItemFixtureTechCandidate());
+    await step();
+    service.finishWith(scanItemFixtureBdCandidate());
+    await step();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scan-item-review')), findsOneWidget);
+    expect(find.byKey(const ValueKey('scan-item-review-rail')), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('scan-item-count-all')))
+          .data,
+      '52',
+    );
+    expect(find.text('3일 전 스캔'), findsOneWidget);
+    await expectGoldenScene(tester, 'scan-review-items');
   }, variant: goldenPlatform);
 }

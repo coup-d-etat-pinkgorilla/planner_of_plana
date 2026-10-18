@@ -1,6 +1,5 @@
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
-import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,11 +45,13 @@ void main() {
     expect(find.byKey(const ValueKey('home-menu-section')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-pending-student')), findsNothing);
 
+    // 학생 탭으로 후보를 넘기는 길은 없다(FE8-g5b, I-scan §9.1 인계 제거): 보류한 후보는 스캔 탭 보드에 그대로 남는다.
     await tester.tap(find.byKey(const ValueKey('top-tab-students')));
     await tester.pumpAndSettle();
-    expect(
-      tester.widget<StudentPage>(find.byType(StudentPage)).candidateContext,
-      isNull,
-    );
+    expect(find.text('Delivered scan candidate'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scan-review')), findsOneWidget);
+    expect(hold, findsOneWidget);
   });
 }

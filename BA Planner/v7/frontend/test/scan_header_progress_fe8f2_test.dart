@@ -8,7 +8,7 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/pages/scan_page.dart';
 import 'package:ba_planner_v7/ui/pages/settings_page.dart';
-import 'package:ba_planner_v7/ui/pages/student_page.dart';
+import 'package:ba_planner_v7/ui/pages/tactical_page.dart';
 import 'package:ba_planner_v7/ui/scan/scan_end_toast.dart';
 import 'package:ba_planner_v7/ui/scan/scan_header_progress.dart';
 import 'package:ba_planner_v7/ui/scan/scan_session_controller.dart';
@@ -615,11 +615,15 @@ void main() {
         expect(_toast, findsOneWidget);
         expect(_dot, findsOneWidget);
 
-        final students = tester.widget<StudentPage>(find.byType(StudentPage));
-        students.onCandidateCommitted!(noa);
+        // 다른 탭이 처리한 후보는 셸의 appliedElsewhere로 검토 대기에서 빠진다. 학생 · 인벤토리 탭 인계는 FE8-g5b에서
+        // 없앴으므로(I-scan §9.1) 남은 다른 탭 경로(전술대항전 탭의 후보 처리 알림)로 같은 셸 규칙을 본다.
+        final pvp = tester.widget<TacticalPage>(
+          find.byType(TacticalPage, skipOffstage: false),
+        );
+        pvp.onLobbyCandidateHandled!(noa);
         await _settle(tester);
         expect(_dot, findsOneWidget, reason: 'hina is still unapplied');
-        students.onCandidateCommitted!(hina);
+        pvp.onLobbyCandidateHandled!(hina);
         await _settle(tester);
         expect(_dot, findsNothing);
         expect(controller.candidates, hasLength(2));

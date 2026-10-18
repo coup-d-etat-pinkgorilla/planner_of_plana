@@ -103,8 +103,6 @@ class _AppShellState extends State<AppShell>
   late BackendConnection _lastConnection;
   bool _showDevelopmentPanel = false;
   PlanningStudentSeed? _planningSeed;
-  StudentCandidateContext? _studentCandidate;
-  InventoryCandidateContext? _inventoryCandidate;
   TacticalLobbyHandoff? _tacticalCandidate;
   List<ScannerRecentSummary> _recentScans = const [];
   var _homeReloadToken = 0;
@@ -150,7 +148,7 @@ class _AppShellState extends State<AppShell>
   Timer? _scanEndNoticeTimer;
   String? _lastScanEndKey;
 
-  /// 학생 · 인벤토리 탭에서 적용한 스캔 후보([scanCandidateKey]). 탭 점의 검토 대기에서 뺀다.
+  /// 다른 탭(전술대항전)에서 처리한 스캔 후보([scanCandidateKey]). 탭 점의 검토 대기에서 뺀다.
   Set<String> _scanAppliedElsewhere = const {};
 
   ScanSessionController _createScanSession() => ScanSessionController(
@@ -306,29 +304,16 @@ class _AppShellState extends State<AppShell>
     });
   }
 
+  /// 스캔 화면의 전술 로비 후보만 전술대항전 탭으로 넘긴다(FE9-c). 학생 · 아이템 후보는 스캔 탭 결과 검토 보드가 적용한다
+  /// (FE8-g4b · FE8-g5b, I-scan §9.1 인계 제거).
   void _handoffCandidate(ScannerSession session, ScannerCandidate candidate) {
+    if (candidate.kind != ScannerKind.tacticalLobby) return;
     setState(() {
-      if (candidate.kind == ScannerKind.student) {
-        _studentCandidate = StudentCandidateContext(
-          session: session,
-          candidate: candidate,
-        );
-        if (_section != AppSection.students) _studentTabActive = false;
-        if (_section == AppSection.plan) _planTabActive = false;
-        _section = AppSection.students;
-      } else if (candidate.kind == ScannerKind.inventory) {
-        _inventoryCandidate = InventoryCandidateContext(
-          session: session,
-          candidate: candidate,
-        );
-        _section = AppSection.inventory;
-      } else {
-        _tacticalCandidate = TacticalLobbyHandoff(
-          session: session,
-          candidate: candidate,
-        );
-        _section = AppSection.pvp;
-      }
+      _tacticalCandidate = TacticalLobbyHandoff(
+        session: session,
+        candidate: candidate,
+      );
+      _section = AppSection.pvp;
     });
   }
 
@@ -384,18 +369,6 @@ class _AppShellState extends State<AppShell>
     },
   );
 
-  void _clearStudentCandidate(ScannerCandidate committed) {
-    _markScanCandidateApplied(committed);
-    if (_studentCandidate?.candidate.id != committed.id) return;
-    setState(() => _studentCandidate = null);
-  }
-
-  void _clearInventoryCandidate(ScannerCandidate committed) {
-    _markScanCandidateApplied(committed);
-    if (_inventoryCandidate?.candidate.id != committed.id) return;
-    setState(() => _inventoryCandidate = null);
-  }
-
   void _profileChanged() {
     // 최근 본 학생은 그 계정의 보유·육성 맥락이라 계정을 바꾸면 비운다(오케스트레이터 2026-10-07 13:49).
     _recentStudents.clear();
@@ -418,8 +391,6 @@ class _AppShellState extends State<AppShell>
       _statisticsReloadToken += 1;
       _tacticalReloadToken += 1;
       _planningSeed = null;
-      _studentCandidate = null;
-      _inventoryCandidate = null;
       _tacticalCandidate = null;
       _recentScans = const [];
       _navigation = null;
@@ -520,10 +491,6 @@ class _AppShellState extends State<AppShell>
                                   service: widget.service,
                                   onOpen: _open,
                                   reloadToken: _homeReloadToken,
-                                  studentCandidatePending:
-                                      _studentCandidate != null,
-                                  inventoryCandidatePending:
-                                      _inventoryCandidate != null,
                                   recentScans: _recentScans,
                                   entranceAnimation: _homeEntranceController,
                                   connectedTarget: _connectedTarget,
@@ -536,8 +503,6 @@ class _AppShellState extends State<AppShell>
                                   service: widget.service,
                                   onAddToPlan: _addStudentToPlan,
                                   onOpenScan: () => _open(AppSection.scan),
-                                  candidateContext: _studentCandidate,
-                                  onCandidateCommitted: _clearStudentCandidate,
                                   active: _studentTabActive,
                                   recentStudents: _recentStudents,
                                   headerOverride: _headerOverride,
@@ -567,9 +532,6 @@ class _AppShellState extends State<AppShell>
                                   service: widget.service,
                                   onNavigate: _navigate,
                                   onOpenScan: () => _open(AppSection.scan),
-                                  candidateContext: _inventoryCandidate,
-                                  onCandidateCommitted:
-                                      _clearInventoryCandidate,
                                   active: _section == AppSection.inventory,
                                   navigation: switch (_navigation) {
                                     final InventoryNavigationIntent intent =>

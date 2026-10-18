@@ -600,7 +600,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('item results still use the scan page review', (tester) async {
+    testWidgets('item results use the item review board, not the student one', (
+      tester,
+    ) async {
       final service = _ReviewScanService();
       addTearDown(service.dispose);
       final controller = await _openShellScanTab(
@@ -640,8 +642,10 @@ void main() {
       });
       service.emit(ScannerEventKind.terminal, {'outcome': 'completed'});
       await _settle(tester);
+      // FE8-g5b: 아이템 결과는 학생 보드가 아니라 아이템 결과 검토 보드다(예전에는 `ScanPage`).
       expect(find.byKey(const ValueKey('scan-review')), findsNothing);
-      expect(find.byType(ScanPage), findsOneWidget);
+      expect(find.byKey(const ValueKey('scan-item-review')), findsOneWidget);
+      expect(find.byType(ScanPage), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

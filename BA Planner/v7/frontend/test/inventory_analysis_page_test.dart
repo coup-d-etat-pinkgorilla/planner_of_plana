@@ -3,7 +3,6 @@
 // 전환, 작은 창.
 // 숫자는 `inventory_fe6c_fixture.dart`다.
 import 'package:ba_planner_v7/services/app_service.dart';
-import 'package:ba_planner_v7/services/scanner_service.dart';
 import 'package:ba_planner_v7/ui/inventory/inventory_analysis.dart';
 import 'package:ba_planner_v7/ui/inventory/inventory_analysis_charts.dart';
 import 'package:ba_planner_v7/ui/inventory/inventory_controller.dart';
@@ -21,7 +20,6 @@ Widget _subject(
   AppService service, {
   InventoryController? controller,
   VoidCallback? onOpenPlan,
-  InventoryCandidateContext? candidateContext,
 }) => MaterialApp(
   home: Scaffold(
     body: InventoryPage(
@@ -29,7 +27,6 @@ Widget _subject(
       controller: controller,
       onOpenPlan: onOpenPlan ?? () {},
       onOpenScan: () {},
-      candidateContext: candidateContext,
     ),
   ),
 );
@@ -389,7 +386,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a new scan candidate returns the page to the list view', (
+  // FE8-g5b: 스캔 후보는 인벤토리 탭으로 오지 않는다(스캔 탭 아이템 결과 검토 보드가 적용한다, I-scan §9.1). 예전 "새 후보가
+  // 오면 후보 띠가 있는 목록 보기로 돌린다" 대신, 다시 그려도 분석 모드가 그대로이고 후보 띠 자리가 없는지 본다.
+  testWidgets('scan candidates no longer reach the page: analysis stays', (
     tester,
   ) async {
     await _standardSurface(tester);
@@ -400,35 +399,11 @@ void main() {
     await tester.pumpWidget(_subject(service, controller: controller));
     await tester.pumpAndSettle();
     await _tap(tester, 'inventory-mode-analysis');
-    const session = ScannerSession(
-      id: 'inventory-session',
-      generation: 1,
-      kind: ScannerKind.inventory,
-    );
-    final candidate = ScannerCandidate(
-      id: 'inventory-candidate',
-      sessionId: session.id,
-      generation: 1,
-      revision: 1,
-      kind: ScannerKind.inventory,
-      payload: const {'version': 1, 'entries': <dynamic>[]},
-      evidence: const [],
-      reviewRequired: true,
-      approved: false,
-    );
-    await tester.pumpWidget(
-      _subject(
-        service,
-        controller: controller,
-        candidateContext: InventoryCandidateContext(
-          session: session,
-          candidate: candidate,
-        ),
-      ),
-    );
+    await tester.pumpWidget(_subject(service, controller: controller));
     await tester.pumpAndSettle();
-    expect(controller.screenMode, InventoryScreenMode.list);
-    expect(find.byKey(const ValueKey('inventory-candidate-panel')), findsOneWidget);
+    expect(controller.screenMode, InventoryScreenMode.analysis);
+    expect(find.byKey(const ValueKey('inventory-candidate-panel')), findsNothing);
+    expect(find.byKey(const ValueKey('inventory-candidate-band')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

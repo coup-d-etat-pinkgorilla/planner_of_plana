@@ -608,60 +608,72 @@ void main() {
     }
 
     for (final size in const [Size(2560, 1392), Size(1280, 720)]) {
-      testWidgets(
-        'several kinds start, run in order and open per kind ($size)',
-        (tester) async {
-          final controller = await openScanTab(tester, size: size);
-          await tester.tap(
-            find.byKey(const ValueKey('scan-pick-item-tech_notes')),
-          );
-          await tester.pump();
-          await tester.tap(
-            find.byKey(const ValueKey('scan-pick-item-tactical_bd')),
-          );
-          await tester.pump();
-          // 여러 종류도 시작할 수 있다(FE8-g1의 막음 해제) — 시안 Scan-Items 설명 그대로.
-          final start = tester.widget<KitPressable>(
-            find.byKey(const ValueKey('scan-pick-start')),
-          );
-          expect(start.onPressed, isNotNull);
-          expect(
-            tester
-                .widget<Text>(find.byKey(const ValueKey('scan-start-note')))
-                .data,
-            '시작하면 플래너는 뒤로 갑니다. 진행은 게임 창 옆 작은 창에 나오고, '
-            '끝나면 플래너가 다시 앞으로 와 결과 검토를 엽니다.',
-          );
-          await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
-          // 시험 환경에는 네이티브 진행 창이 없어 플래너 그대로 진행한다(Mock이 종류마다 끝낸다).
-          for (var step = 0; step < 8; step += 1) {
-            await tester.pump(const Duration(milliseconds: 500));
-          }
-          final queue = controller.itemQueue!;
-          expect(queue.end, ScanQueueEnd.completed);
-          expect(queue.kinds.map((kind) => kind.profile), const [
-            InventoryScanProfile.techNotes,
-            InventoryScanProfile.tacticalBd,
-          ]);
-          expect(
-            queue.kinds.map((kind) => kind.session?.id).toSet(),
-            hasLength(2),
-          );
-          // 검토: 지금 아이템 검토 화면 위에 종류별 줄. 첫 종류가 열려 있다.
-          expect(
-            find.byKey(const ValueKey('scan-queue-review')),
-            findsOneWidget,
-          );
-          expect(find.byType(ScanPage), findsOneWidget);
-          expect(controller.session?.id, queue.kinds.first.session?.id);
-          await tester.tap(
-            find.byKey(const ValueKey('scan-queue-review-tactical_bd')),
-          );
-          await tester.pump();
-          expect(controller.session?.id, queue.kinds.last.session?.id);
-          expect(tester.takeException(), isNull);
-        },
-      );
+      testWidgets('several kinds start, run in order and open per kind ($size)', (
+        tester,
+      ) async {
+        final controller = await openScanTab(tester, size: size);
+        await tester.tap(
+          find.byKey(const ValueKey('scan-pick-item-tech_notes')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const ValueKey('scan-pick-item-tactical_bd')),
+        );
+        await tester.pump();
+        // 여러 종류도 시작할 수 있다(FE8-g1의 막음 해제) — 시안 Scan-Items 설명 그대로.
+        final start = tester.widget<KitPressable>(
+          find.byKey(const ValueKey('scan-pick-start')),
+        );
+        expect(start.onPressed, isNotNull);
+        expect(
+          tester
+              .widget<Text>(find.byKey(const ValueKey('scan-start-note')))
+              .data,
+          '시작하면 플래너는 뒤로 갑니다. 진행은 게임 창 옆 작은 창에 나오고, '
+          '끝나면 플래너가 다시 앞으로 와 결과 검토를 엽니다.',
+        );
+        await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
+        // 시험 환경에는 네이티브 진행 창이 없어 플래너 그대로 진행한다(Mock이 종류마다 끝낸다).
+        for (var step = 0; step < 8; step += 1) {
+          await tester.pump(const Duration(milliseconds: 500));
+        }
+        final queue = controller.itemQueue!;
+        expect(queue.end, ScanQueueEnd.completed);
+        expect(queue.kinds.map((kind) => kind.profile), const [
+          InventoryScanProfile.techNotes,
+          InventoryScanProfile.tacticalBd,
+        ]);
+        expect(
+          queue.kinds.map((kind) => kind.session?.id).toSet(),
+          hasLength(2),
+        );
+        // 검토(FE8-g5b): 아이템 결과 검토 보드가 두 종류를 종류 탭으로 합쳐 보인다(예전 종류별 검토 줄 + `ScanPage` 대체).
+        // 첫 종류의 기록이 열려 있고, 종류 탭으로 종류마다 결과를 연다.
+        expect(find.byKey(const ValueKey('scan-item-review')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('scan-item-review-rail')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('scan-queue-review')), findsNothing);
+        expect(find.byType(ScanPage), findsNothing);
+        expect(controller.session?.id, queue.kinds.first.session?.id);
+        Finder groupOf(String wire) => find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'scan-item-group-$wire-',
+              ),
+        );
+        expect(groupOf('tech_notes'), findsWidgets);
+        expect(groupOf('tactical_bd'), findsWidgets);
+        await tester.tap(
+          find.byKey(const ValueKey('scan-item-kind-tactical_bd')),
+        );
+        await tester.pump();
+        expect(groupOf('tech_notes'), findsNothing);
+        expect(groupOf('tactical_bd'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      });
     }
   });
 }
