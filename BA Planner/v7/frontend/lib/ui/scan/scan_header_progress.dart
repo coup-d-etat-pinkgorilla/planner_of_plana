@@ -43,12 +43,33 @@ class ScanHeaderStatus {
   /// 시작 중 · 진행 · 중지 요청 중 = 진행, 진행 중 `paused` = 일시정지(FB-10 `paused`/`resumed`),
   /// 끝났고 아직 적용하지 않은 후보가 있으면 검토 대기. [appliedElsewhere]는 다른 탭(학생 · 인벤토리)이
   /// 이미 적용한 후보([scanCandidateKey])다.
+  ///
+  /// 아이템 차례 스캔(FE8-g3)은 큐가 끝날 때까지(종류 사이 포함) 진행이고, 수치는 큐 누계 · 분모 없음이다(inventory
+  /// total = null, XB 2026-10-18 01:30). 끝난 큐는 다른 종류에 남은 후보도 검토 대기로 센다.
   factory ScanHeaderStatus.of(
     ScanSessionController? controller, {
     Set<String> appliedElsewhere = const {},
   }) {
     if (controller == null) return idle;
     final kind = controller.session?.kind ?? controller.kind;
+    final queue = controller.itemQueue;
+    if (queue != null && queue.running) {
+      final paused =
+          controller.stage == ScanSessionStage.running &&
+          controller.control == ScannerControlState.paused &&
+          queue.indexOf(controller.session) == queue.index;
+      return ScanHeaderStatus(
+        activity: paused
+            ? ScanHeaderActivity.paused
+            : ScanHeaderActivity.running,
+        kind: ScannerKind.inventory,
+        current: queue.countWith(
+          queue.indexOf(controller.session) == queue.index
+              ? controller.progressCurrent
+              : null,
+        ),
+      );
+    }
     switch (controller.stage) {
       case ScanSessionStage.starting:
       case ScanSessionStage.running:
@@ -65,10 +86,14 @@ class ScanHeaderStatus {
           total: controller.progressTotal,
         );
       case ScanSessionStage.terminal:
-        final pending = controller.candidates.values.any(
-          (candidate) =>
-              !appliedElsewhere.contains(scanCandidateKey(candidate)),
-        );
+        final pending =
+            controller.candidates.values.any(
+              (candidate) =>
+                  !appliedElsewhere.contains(scanCandidateKey(candidate)),
+            ) ||
+            controller
+                .itemQueuePendingCandidates(appliedElsewhere: appliedElsewhere)
+                .isNotEmpty;
         return pending
             ? ScanHeaderStatus(
                 activity: ScanHeaderActivity.reviewPending,

@@ -13,6 +13,8 @@ import '../widgets/account_section_cluster.dart'
     show repositoryLoadErrorText, repositoryProfileWithRevision;
 import '../widgets/scan_companion_dock.dart';
 import 'connected_target_controller.dart';
+import 'scan_item_queue.dart';
+import 'scan_pick_logic.dart' show scanPickOrderedProfiles;
 import 'scan_repository_sync.dart';
 
 /// 스캔 세션 단계. 이름(`name`)은 스캔 화면 칩과 dock 단계 글자로 그대로 보인다.
@@ -92,7 +94,7 @@ class ScanSessionController extends ChangeNotifier {
   /// 최근 스캔이 바뀌면 부른다(셸의 홈 최근 스캔).
   ValueChanged<List<ScannerRecentSummary>>? onRecentChanged;
 
-  /// 전체 학생 스캔의 dock 상태. dock을 닫으면 null.
+  /// 아이템 진행 창(dock) 상태(FE8-g3). 진행 창을 닫으면 null.
   ValueChanged<ScanCompanionState?>? onCompanionChanged;
 
   AppService get service => _service;
@@ -159,6 +161,16 @@ class ScanSessionController extends ChangeNotifier {
   ScannerSession? _lastEndedSession;
   ScanPick _pick = const ScanPick.student(StudentScanMode.full);
   final Map<String, ScanRecentDetail> _recentDetails = {};
+
+  /// 아이템 차례 스캔(FE8-g3, FD-143 (a)). 아이템 시작은 모두 큐다(한 종류면 1종 큐). 새 시작 전까지 끝난 큐를 남겨 둔다.
+  ScanItemQueue? _itemQueue;
+  int _itemQueueSequence = 0;
+
+  /// 끝을 처리한(검토 열기 · 진행 창 닫기 예약) 마지막 큐 번호. 같은 큐를 두 번 처리하지 않는다.
+  int? _finishedQueueId;
+
+  /// 진행 창 끝 카드를 닫는 예약([scanItemDockCloseDelay]).
+  Timer? _dockCloseTimer;
 
   /// 스캔 화면에서 적용(true) · 폐기(false)한 후보(세션 · generation · id). 최근 스캔 행의 "확정"을 판단한다.
   final Map<String, bool> _resolvedCandidates = {};
@@ -247,6 +259,46 @@ class ScanSessionController extends ChangeNotifier {
 
   /// 스캔 탭 고르기(FE8-g1). 시작 전 화면만 쓴다.
   ScanPick get pick => _pick;
+
+  /// 지금(또는 마지막) 아이템 차례 스캔. 학생 · 전술 로비를 시작하면 비운다.
+  ScanItemQueue? get itemQueue => _itemQueue;
+
+  /// 아이템 차례 스캔이 아직 끝나지 않았다(종류 사이 포함). 머리글 · 스캔 탭은 이 동안을 진행으로 본다.
+  bool get itemQueueRunning => _itemQueue?.running ?? false;
+
+  /// 큐 종류 [kind]의 끝난 기록. 최근 기록에 남아 있으면 그 최신본(후보 revision · crop 정리 반영), 없으면 큐가 기억한 값.
+  ScannerRecentSummary? itemQueueResult(ScanQueueKind kind) {
+    final result = kind.result;
+    if (result == null) return null;
+    for (final item in _recent) {
+      if (item.sessionId == result.sessionId &&
+          item.generation == result.generation) {
+        return item;
+      }
+    }
+    return result;
+  }
+
+  /// 끝난 큐에서 아직 적용 · 폐기하지 않은 후보(지금 보이는 세션은 [candidates]가 따로 센다). [appliedElsewhere]는 다른 탭이
+  /// 적용한 후보 열쇠(세션 · generation · id).
+  List<ScannerCandidate> itemQueuePendingCandidates({
+    Set<String> appliedElsewhere = const {},
+  }) {
+    final queue = _itemQueue;
+    if (queue == null || queue.running) return const [];
+    final shown = _session;
+    return [
+      for (final kind in queue.kinds)
+        if (itemQueueResult(kind) case final result?)
+          if (shown == null ||
+              result.sessionId != shown.id ||
+              result.generation != shown.generation)
+            for (final candidate in result.candidates)
+              if (_resolvedCandidates[_candidateKey(candidate)] == null &&
+                  !appliedElsewhere.contains(_candidateKey(candidate)))
+                candidate,
+    ];
+  }
 
   /// [session]을 시작한 시각 · 아이템 종류(이 컨트롤러로 시작한 세션만, 아니면 null).
   ScanRecentDetail? recentDetail(ScannerSession session) =>
@@ -341,7 +393,13 @@ class ScanSessionController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    if (_companionActive) unawaited(windowDockService.restore());
+    _dockCloseTimer?.cancel();
+    if (_companionActive) {
+      // 진행 창이 열린 채 버려지면(계정 변경 · 셸 종료) 창을 되돌리고 셸 덮개도 내린다(FE8-f1 버그 표 4).
+      _companionActive = false;
+      unawaited(windowDockService.restore());
+      onCompanionChanged?.call(null);
+    }
     _service.state.removeListener(_connectionChanged);
     _connectedTarget?.removeListener(_connectedTargetChanged);
     unawaited(_subscription?.cancel());
@@ -429,20 +487,51 @@ class ScanSessionController extends ChangeNotifier {
   /// 고른 종류를 모두 푼다(`고른 종류 해제`).
   void clearPick() => _update(() => _pick = const ScanPick.none());
 
-  /// 고른 것이 학생 하나 또는 아이템 한 종류면 그 종류로 [start]한다(시작 동작 그대로). 아무것도 고르지 않았거나
-  /// 아이템을 여러 종류 골랐으면 시작하지 않는다(여러 종류 차례 스캔은 FE8-g3, FD-143).
+  /// 고른 것으로 시작한다. 학생 칸이면 그 모드로 [start], 아이템이면 고른 종류를 칸 순서대로 차례 스캔한다
+  /// ([startItemQueue], FE8-g3 · FD-143 (a)). 아무것도 고르지 않았으면 시작하지 않는다.
   Future<void> startPick() async {
     final pick = _pick;
     final studentScanMode = pick.studentScanMode;
     if (studentScanMode != null) {
       selectKind(ScannerKind.student, studentScanMode: studentScanMode);
-    } else if (pick.inventoryScanProfiles.length == 1) {
-      selectKind(ScannerKind.inventory);
-      selectInventoryScanProfile(pick.inventoryScanProfiles.single);
-    } else {
+      await start();
       return;
     }
+    final profiles = scanPickOrderedProfiles(pick);
+    if (profiles.isEmpty) return;
+    await startItemQueue(profiles);
+  }
+
+  /// 아이템 [profiles]를 이 순서대로 한 세션씩 읽는다(FD-143 (a) 프론트 큐). 시작할 수 없으면 아무것도 하지 않는다.
+  Future<void> startItemQueue(List<InventoryScanProfile> profiles) async {
+    if (profiles.isEmpty || !canStart) return;
+    _itemQueueSequence += 1;
+    final queue = ScanItemQueue.start(_itemQueueSequence, profiles);
+    _update(() {
+      _itemQueue = queue;
+      _kind = ScannerKind.inventory;
+      _inventoryScanProfile = queue.current.profile;
+    });
     await start();
+  }
+
+  /// 끝난 큐의 [profile] 결과를 지금 검토 화면에 연다(종류별 검토). 큐가 진행 중이거나 그 종류의 기록이 없으면 무시한다.
+  void openQueueKind(InventoryScanProfile profile) {
+    final queue = _itemQueue;
+    if (queue == null || queue.running) return;
+    final kind = queue.kinds
+        .where((item) => item.profile == profile)
+        .firstOrNull;
+    final result = kind == null ? null : itemQueueResult(kind);
+    if (result == null) return;
+    _update(() => _showSummary(result));
+  }
+
+  /// 진행 창 끝 카드의 `결과 검토 열기`: 예약을 기다리지 않고 지금 플래너를 되돌린다.
+  void closeItemDock() {
+    _dockCloseTimer?.cancel();
+    _dockCloseTimer = null;
+    unawaited(_closeCompanion());
   }
 
   void _connectionChanged() {
@@ -614,6 +703,18 @@ class ScanSessionController extends ChangeNotifier {
     if (!canStart || scanner == null || target == null) return;
     final startedAt = now();
     _update(() {
+      // 아이템 시작은 모두 큐다: 큐 밖에서 부른 아이템 시작(예전 스캔 화면)은 1종 큐로 감싼다. 다른 종류를 시작하면 끝난
+      // 큐를 비운다(그 큐의 기록은 최근 스캔에 남는다).
+      if (_kind == ScannerKind.inventory) {
+        if (!itemQueueRunning) {
+          _itemQueueSequence += 1;
+          _itemQueue = ScanItemQueue.start(_itemQueueSequence, [
+            _inventoryScanProfile,
+          ]);
+        }
+      } else if (!itemQueueRunning) {
+        _itemQueue = null;
+      }
       _stage = ScanSessionStage.starting;
       _session = null;
       _sessionError = null;
@@ -639,7 +740,33 @@ class ScanSessionController extends ChangeNotifier {
       if (_disposed) return;
     }
     // 학생 스캔은 백그라운드다(FE8-g2, 시안 Scan-Student-Run): 플래너 창을 줄여 붙이지 않고 스캔 탭 진행 화면 · 머리글로
-    // 보인다. 아이템 진행 창(dock)은 FE8-g3.
+    // 보인다. 아이템은 포그라운드(FE8-g3, 시안 Scan-Item-Run, FD-141 (a)): 큐의 첫 종류에서 한 번 플래너 창을 게임 창 옆
+    // 진행 창으로 줄이고, 큐가 끝날 때 되돌린다. 줄이지 못하면(네이티브 실패) 진행 창 없이 스캔을 계속한다 — 진행은 스캔 탭 ·
+    // 머리글 칩에 남는다.
+    var queueEnded = false;
+    final queue = _itemQueue;
+    if (_kind == ScannerKind.inventory &&
+        !_companionActive &&
+        queue != null &&
+        queue.index == 0 &&
+        _dockAvailable) {
+      _dockCloseTimer?.cancel();
+      _dockCloseTimer = null;
+      try {
+        await windowDockService
+            .dockBeside(target.id)
+            .timeout(scanItemDockTimeout);
+        if (_disposed) {
+          await windowDockService.restore();
+          return;
+        }
+        _companionActive = true;
+        _publishCompanion();
+      } catch (_) {
+        // 진행 창 없이 계속한다.
+      }
+      if (_disposed) return;
+    }
     try {
       final session = await scanner.startScannerSession(
         _kind,
@@ -662,6 +789,12 @@ class ScanSessionController extends ChangeNotifier {
               ? _inventoryScanProfile
               : null,
         );
+        final current = _itemQueue;
+        if (session.kind == ScannerKind.inventory &&
+            current != null &&
+            current.running) {
+          _itemQueue = current.withSession(session);
+        }
         _stage = ScanSessionStage.running;
         final buffered = List<ScannerEvent>.from(_pendingStartEvents);
         _pendingStartEvents.clear();
@@ -671,17 +804,125 @@ class ScanSessionController extends ChangeNotifier {
             _applyEvent(event);
           }
         }
+        queueEnded = _settleQueueOnTerminal();
       });
       _publishCompanion();
+      if (queueEnded) await _continueQueue();
     } catch (error) {
-      if (_companionActive) await _closeCompanion();
-      if (!_disposed) {
-        _update(() {
-          _stage = ScanSessionStage.idle;
-          _sessionError = 'Could not start scan: $error';
-        });
+      if (_disposed) return;
+      var queueFailed = false;
+      _update(() {
+        _stage = ScanSessionStage.idle;
+        _sessionError = 'Could not start scan: $error';
+        // 차례 스캔: 이 종류만 실패로 두고 다음 종류로 간다.
+        final current = _itemQueue;
+        if (current != null &&
+            current.running &&
+            current.current.session == null) {
+          _itemQueue = current.ended(ScanQueueStatus.failed);
+          queueFailed = true;
+        }
+      });
+      if (queueFailed) {
+        await _continueQueue();
+      } else if (_companionActive && !itemQueueRunning) {
+        await _closeCompanion();
       }
     }
+  }
+
+  /// 네이티브 창 붙이기(`ba_planner/window_dock`)는 Windows 러너에만 있다. 기본 서비스면 Windows에서만 부르고, 다른 플랫폼
+  /// (시험 기본 플랫폼 포함)에서는 진행 창 없이 진행한다. 주입한 서비스는 언제나 부른다.
+  bool get _dockAvailable =>
+      windowDockService is! WindowsWindowDockService ||
+      defaultTargetPlatform == TargetPlatform.windows;
+
+  /// 큐의 지금 종류가 끝난 뒤: 다음 종류가 있으면 시작하고, 시작할 수 없으면 남은 종류를 `읽지 않음`으로 끝낸다. 큐가
+  /// 끝났으면 [_finishQueue].
+  Future<void> _continueQueue() async {
+    final queue = _itemQueue;
+    if (_disposed || queue == null) return;
+    if (!queue.running) {
+      _finishQueue();
+      return;
+    }
+    if (queue.current.session != null ||
+        (_stage != ScanSessionStage.idle &&
+            _stage != ScanSessionStage.terminal)) {
+      return;
+    }
+    if (!canStart) {
+      _update(() => _itemQueue = queue.stopped());
+      _finishQueue();
+      return;
+    }
+    _update(() {
+      _kind = ScannerKind.inventory;
+      _inventoryScanProfile = queue.current.profile;
+    });
+    _publishCompanion();
+    await start();
+  }
+
+  /// 지금 세션이 terminal이고 그것이 큐의 지금 종류면 큐에 결과를 적는다(_update 안에서, [_recordRecent] 뒤에 부른다).
+  /// 큐가 바뀌었으면 true.
+  bool _settleQueueOnTerminal() {
+    final queue = _itemQueue;
+    final session = _session;
+    if (queue == null ||
+        !queue.running ||
+        session == null ||
+        _stage != ScanSessionStage.terminal ||
+        queue.indexOf(session) != queue.index) {
+      return false;
+    }
+    final status = switch (_outcome) {
+      'completed' => ScanQueueStatus.completed,
+      'cancelled' => ScanQueueStatus.cancelled,
+      _ => ScanQueueStatus.failed,
+    };
+    final result = _recent
+        .where(
+          (item) =>
+              item.sessionId == session.id &&
+              item.generation == session.generation,
+        )
+        .firstOrNull;
+    _itemQueue = queue.ended(status, count: _progressCurrent, result: result);
+    return true;
+  }
+
+  /// 큐가 끝났다(한 번만): 여러 종류면 후보가 남은 첫 종류를 검토 화면에 열고, 진행 창은 중지면 바로, 아니면 끝 카드를 잠시
+  /// 보인 뒤 닫는다(시안 `곧 플래너가 앞으로 오고 결과 검토가 열립니다`).
+  void _finishQueue() {
+    final queue = _itemQueue;
+    if (_disposed || queue == null || queue.running) return;
+    if (_finishedQueueId == queue.id) return;
+    _finishedQueueId = queue.id;
+    if (queue.length > 1) {
+      final first = queue.kinds
+          .map(itemQueueResult)
+          .where((result) => result != null && result.candidates.isNotEmpty)
+          .firstOrNull;
+      final shown = _session;
+      if (first != null &&
+          (shown == null ||
+              first.sessionId != shown.id ||
+              first.generation != shown.generation)) {
+        _update(() => _showSummary(first));
+      }
+    }
+    if (!_companionActive) return;
+    if (queue.end == ScanQueueEnd.cancelled) {
+      unawaited(_closeCompanion());
+      return;
+    }
+    _publishCompanion();
+    _dockCloseTimer?.cancel();
+    _dockCloseTimer = Timer(scanItemDockCloseDelay, () {
+      _dockCloseTimer = null;
+      unawaited(_closeCompanion());
+    });
   }
 
   Future<void> cancel() async {
@@ -802,6 +1043,7 @@ class ScanSessionController extends ChangeNotifier {
       _recovering = true;
       _sessionError = null;
     });
+    var queueEnded = false;
     try {
       final snapshot = await scanner.scannerSnapshot(session);
       if (_disposed) return;
@@ -824,7 +1066,11 @@ class ScanSessionController extends ChangeNotifier {
             : snapshot.controlState;
         _pauseReason = snapshot.reason;
         if (_stage == ScanSessionStage.terminal) _recordRecent();
+        queueEnded = _settleQueueOnTerminal();
       });
+      // 스냅숏으로 바뀐 진행 · 일시정지를 진행 창에도 보인다(FE8-f1 버그 표 3).
+      _publishCompanion();
+      if (queueEnded) await _continueQueue();
     } catch (error) {
       if (!_disposed) {
         _update(() {
@@ -909,61 +1155,26 @@ class ScanSessionController extends ChangeNotifier {
         _stage == ScanSessionStage.terminal) {
       return;
     }
-    _update(() => _applyEvent(event));
-    if (_companionActive) {
-      _publishCompanion();
-      if (event.eventKind == ScannerEventKind.terminal) {
-        unawaited(_closeCompanion());
-      }
+    var queueEnded = false;
+    _update(() {
+      _applyEvent(event);
+      queueEnded = _settleQueueOnTerminal();
+    });
+    _publishCompanion();
+    if (queueEnded) {
+      unawaited(_continueQueue());
+    } else if (_companionActive &&
+        event.eventKind == ScannerEventKind.terminal &&
+        !itemQueueRunning) {
+      unawaited(_closeCompanion());
     }
   }
 
+  /// 진행 창 값을 셸에 다시 낸다(진행 창이 열려 있을 때만). 값은 큐 · 세션으로 만든다([scanCompanionStateFor]).
   void _publishCompanion() {
-    if (!_companionActive) return;
-    final target = selectedTarget;
-    final feedback = _liveStudentFeedback;
-    onCompanionChanged?.call(
-      ScanCompanionState(
-        targetTitle: target?.title ?? target?.id ?? 'Blue Archive',
-        modeLabel: '전체 학생',
-        stageLabel: _stage.name,
-        phase: _phase,
-        recognizedCount: _progressCurrent ?? 0,
-        progressCurrent: _progressCurrent,
-        progressTotal: _progressTotal,
-        messageKey: _messageKey,
-        student: feedback,
-        cancelling: _stage == ScanSessionStage.cancelling,
-        onCancel: _stage == ScanSessionStage.running
-            ? () => unawaited(cancel())
-            : null,
-        pausedLabel: pausedLabel,
-        pauseRequested:
-            _stage == ScanSessionStage.running &&
-            _control == ScannerControlState.pauseRequested,
-        onPause:
-            _stage == ScanSessionStage.running &&
-                _control == ScannerControlState.running &&
-                !_controlBusy
-            ? () => unawaited(pause())
-            : null,
-        onResume:
-            _stage == ScanSessionStage.running &&
-                _control == ScannerControlState.paused &&
-                !_controlBusy
-            ? () => unawaited(resume())
-            : null,
-      ),
-    );
-  }
-
-  ScanDockStudentFeedback? get _liveStudentFeedback {
-    final studentId = _liveFeedbackStudentId;
-    if (studentId == null) return null;
-    return ScanDockStudentFeedback(
-      studentId: studentId,
-      displayName: _studentCatalog[studentId]?.displayName ?? studentId,
-    );
+    if (!_companionActive || _disposed) return;
+    final state = scanCompanionStateFor(this);
+    if (state != null) onCompanionChanged?.call(state);
   }
 
   Future<void> _closeCompanion() async {
@@ -1535,6 +1746,87 @@ class ScanSessionController extends ChangeNotifier {
 
   static String _candidateKey(ScannerCandidate candidate) =>
       '${candidate.sessionId}#${candidate.generation}#${candidate.id}';
+
+  /// 지금 보이는 세션의 후보(revision이 오른 것)를 그 세션의 최근 기록에 적어 둔다(_update 안에서). 종류를 바꿔 봐도
+  /// 미식별 칸 지정 등으로 오른 revision을 잃지 않는다. 적용 · 폐기로 빠진 후보는 기록에 그대로 둔다(결과 칩 판단).
+  void _syncShownToRecent() {
+    final session = _session;
+    if (session == null) return;
+    final index = _recent.indexWhere(
+      (item) =>
+          item.sessionId == session.id && item.generation == session.generation,
+    );
+    if (index < 0) return;
+    final item = _recent[index];
+    var changed = false;
+    final merged = <ScannerCandidate>[];
+    for (final candidate in item.candidates) {
+      final shown = _candidates[candidate.id];
+      if (shown != null &&
+          shown.sessionId == candidate.sessionId &&
+          shown.generation == candidate.generation &&
+          shown.revision > candidate.revision) {
+        changed = true;
+        merged.add(shown);
+      } else {
+        merged.add(candidate);
+      }
+    }
+    if (!changed) return;
+    _recent[index] = ScannerRecentSummary(
+      session: item.session,
+      targetId: item.targetId,
+      targetTitle: item.targetTitle,
+      outcome: item.outcome,
+      phase: item.phase,
+      diagnostic: item.diagnostic,
+      candidateCount: item.candidateCount,
+      reviewRequired: item.reviewRequired,
+      progressCurrent: item.progressCurrent,
+      progressTotal: item.progressTotal,
+      messageKey: item.messageKey,
+      terminalError: item.terminalError,
+      candidates: merged,
+    );
+  }
+
+  /// 끝난 기록 [item]을 지금 검토 화면에 연다(_update 안에서). 대상 창은 바꾸지 않는다(큐 종류는 같은 창). 이미 적용 ·
+  /// 폐기한 후보는 다시 보이지 않는다.
+  void _showSummary(ScannerRecentSummary item) {
+    _syncShownToRecent();
+    final latest =
+        _recent
+            .where(
+              (entry) =>
+                  entry.sessionId == item.sessionId &&
+                  entry.generation == item.generation,
+            )
+            .firstOrNull ??
+        item;
+    _session = latest.session;
+    _kind = latest.kind;
+    _stage = ScanSessionStage.terminal;
+    _phase = latest.phase;
+    _diagnostic = latest.diagnostic;
+    _progressCurrent = latest.progressCurrent;
+    _progressTotal = latest.progressTotal;
+    _messageKey = latest.messageKey;
+    _outcome = latest.outcome;
+    _terminalError = latest.terminalError;
+    _candidateErrors.clear();
+    _unresolvedSlots.clear();
+    _unresolvedLoading.clear();
+    _identityBusy.clear();
+    _identitySkipped.clear();
+    _identityErrors.clear();
+    _candidates.clear();
+    for (final candidate in latest.candidates) {
+      if (_resolvedCandidates[_candidateKey(candidate)] == null) {
+        _keepCandidate(candidate);
+      }
+    }
+    _sessionError = null;
+  }
 
   void openRecent(ScannerRecentSummary item) {
     final recentTargetId = _recentTargetId(item);

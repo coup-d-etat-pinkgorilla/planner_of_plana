@@ -1,10 +1,12 @@
 // fb10a-dart: 지금 스캔 화면의 최소 FB-10a 연결(FD-142). 일시정지 → paused 사유 → 이어서, Esc = 중지(기존 cancel).
-// 본격 일시정지 화면(머리글 진행·dock 재작성)은 FE8-f2·g2·g3 몫이라 여기서는 기존 버튼·dock만 본다. 학생 전체는 FE8-g2부터
-// dock을 쓰지 않는다(백그라운드).
+// 본격 일시정지 화면(머리글 진행 · 학생 진행 화면)은 FE8-f2 · g2 몫이라 여기서는 기존 버튼과 진행 창(FE8-g3 재작성)의 일시정지
+// 버튼만 본다. 학생 전체는 FE8-g2부터 dock을 쓰지 않는다(백그라운드).
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/window_dock_service.dart';
 import 'package:ba_planner_v7/ui/kit/kit_overlay.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/pages/scan_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:flutter/material.dart';
@@ -244,27 +246,45 @@ void main() {
 
   group('companion dock', () {
     ScanCompanionState dockState({
-      String? pausedLabel,
-      bool pauseRequested = false,
+      ScanCompanionPhase phase = ScanCompanionPhase.running,
       VoidCallback? onPause,
       VoidCallback? onResume,
     }) => ScanCompanionState(
-      targetTitle: 'Blue Archive',
-      modeLabel: '전체 학생',
-      stageLabel: 'running',
-      phase: 'capturing',
-      recognizedCount: 1,
-      progressCurrent: 1,
-      progressTotal: null,
-      messageKey: null,
-      student: null,
-      cancelling: false,
+      phase: phase,
+      names: '기술 노트',
+      chipLabel: phase == ScanCompanionPhase.paused ? '일시정지 · 창 최소화' : '진행 중',
+      chipTone: phase == ScanCompanionPhase.paused
+          ? AppTones.warn
+          : AppTones.pink,
+      countText: '1',
+      countCaption: '칸',
+      fraction: null,
+      barColor: AppColors.accent,
+      kinds: const [
+        ScanCompanionKind(
+          id: 'tech_notes',
+          label: '기술 노트',
+          chipLabel: '1칸',
+          chipTone: AppTones.pink,
+        ),
+      ],
+      card: phase == ScanCompanionPhase.paused
+          ? const ScanCompanionCard(
+              title: '게임 창이 최소화되어 멈췄습니다',
+              body: "게임 창을 다시 연 뒤 '이어서'를 누르십시오. 읽은 1칸은 그대로 남습니다.",
+              tone: AppTones.warn,
+            )
+          : null,
       onCancel: () {},
-      pausedLabel: pausedLabel,
-      pauseRequested: pauseRequested,
       onPause: onPause,
       onResume: onResume,
     );
+
+    VoidCallback? pressedOf(WidgetTester tester, String key) => tester
+        .widget<KitPressable>(
+          find.descendant(of: _key(key), matching: find.byType(KitPressable)),
+        )
+        .onPressed;
 
     Future<void> pumpDock(WidgetTester tester, ScanCompanionState state) =>
         tester.pumpWidget(
@@ -282,18 +302,17 @@ void main() {
       await pumpDock(tester, dockState(onPause: () => paused += 1));
       expect(_key('scan-dock-cancel'), findsOneWidget);
       expect(_key('scan-dock-resume'), findsNothing);
-      expect(_key('scan-dock-paused'), findsNothing);
+      expect(_key('scan-dock-card'), findsNothing);
       await tester.tap(_key('scan-dock-pause'));
       expect(paused, 1);
 
+      // 요청을 받은 뒤(`pauseRequested`)는 `멈추는 중…`이고 누를 수 없다(멈춤은 `paused` 이벤트로만).
       await pumpDock(
         tester,
-        dockState(pauseRequested: true, onPause: () => paused += 1),
+        dockState(phase: ScanCompanionPhase.pauseRequested),
       );
-      expect(
-        tester.widget<IconButton>(_key('scan-dock-pause')).onPressed,
-        isNull,
-      );
+      expect(find.text('멈추는 중…'), findsOneWidget);
+      expect(pressedOf(tester, 'scan-dock-pause'), isNull);
     });
 
     testWidgets('paused dock shows the reason and resume', (tester) async {
@@ -301,11 +320,12 @@ void main() {
       await pumpDock(
         tester,
         dockState(
-          pausedLabel: '게임 창이 최소화되어 일시정지했습니다.',
+          phase: ScanCompanionPhase.paused,
           onResume: () => resumed += 1,
         ),
       );
-      expect(find.text('게임 창이 최소화되어 일시정지했습니다.'), findsOneWidget);
+      expect(find.text('게임 창이 최소화되어 멈췄습니다'), findsOneWidget);
+      expect(find.text('일시정지 · 창 최소화'), findsOneWidget);
       expect(_key('scan-dock-pause'), findsNothing);
       await tester.tap(_key('scan-dock-resume'));
       expect(resumed, 1);

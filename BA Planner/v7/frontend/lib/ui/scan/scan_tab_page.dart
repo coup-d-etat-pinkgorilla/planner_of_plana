@@ -10,6 +10,9 @@
 // 컨트롤러를 그 화면에서 찾는다(FE8-f1 · f2와 같은 경로). 고르기 화면은 컨트롤러의 고르기 값만 바꾸고, 시작은
 // [ScanSessionController.startPick](지금 시작 동작 그대로)이다.
 //
+// 아이템 차례 스캔(FE8-g3, FD-143 (a))은 큐가 끝날 때까지 진행이다(진행 창이 플래너를 덮는다). 여러 종류가 끝나면 지금 검토
+// 화면 위에 종류별 검토 줄([ScanQueueReviewBar])을 붙여 종류마다 결과를 연다(FE8-g5 전까지 검토 화면은 [ScanPage]).
+//
 // 미연결이면(앱 전역 게임 창 연결이 없으면) 시작이 막히고 오른쪽 섹션 자리에 홈과 같은 창 선택 패널이 붙는다(FD-155).
 // 취소하면 접고, 연결이 다시 끊기면 다시 붙인다. `게임 창 다시 선택` · 준비 상태 게임 창 행도 같은 패널을 연다.
 // 종류별 마지막 스캔은 FB-2b `repository.history.scan_latest`(by_kind)를 고르기 화면이 보일 때 읽는다(실패하면 '—').
@@ -23,6 +26,7 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../pages/scan_page.dart';
 import 'connected_target_controller.dart';
+import 'scan_item_queue.dart';
 import 'scan_pick_logic.dart';
 import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
@@ -231,6 +235,7 @@ class _ScanTabPageState extends State<ScanTabPage> {
     final sessionShown = view == ScanTabView.session;
     final runShown = sessionShown && scanRunVisible(_controller);
     final pageShown = sessionShown && !runShown;
+    final queueBarShown = pageShown && scanQueueReviewVisible(_controller);
     final connectedTarget = widget.connectedTarget;
     final panelVisible =
         widget.active &&
@@ -244,12 +249,26 @@ class _ScanTabPageState extends State<ScanTabPage> {
           offstage: !pageShown,
           child: TickerMode(
             enabled: pageShown,
-            child: ScanPage(
-              service: widget.service,
-              onCandidateHandoff: widget.onCandidateHandoff,
-              controller: _controller,
-              active: widget.active,
-              connectedTarget: connectedTarget,
+            child: Column(
+              children: [
+                if (queueBarShown)
+                  ScanQueueReviewBar(
+                    key: const ValueKey('scan-queue-review'),
+                    controller: _controller,
+                    appliedElsewhere: widget.appliedElsewhere,
+                  )
+                else
+                  const SizedBox.shrink(),
+                Expanded(
+                  child: ScanPage(
+                    service: widget.service,
+                    onCandidateHandoff: widget.onCandidateHandoff,
+                    controller: _controller,
+                    active: widget.active,
+                    connectedTarget: connectedTarget,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

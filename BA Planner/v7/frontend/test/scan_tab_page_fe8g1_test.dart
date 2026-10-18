@@ -304,7 +304,9 @@ void main() {
       expect(controller.pick.isNone, isTrue);
     });
 
-    test('startPick never starts several item kinds or nothing', () async {
+    // 여러 종류는 FE8-g3부터 차례 스캔으로 시작한다(scan_item_queue_fe8g3_test). 여기서는 시작 조건이 없으면(준비 · 계정 ·
+    // 창 없음) 여러 종류든 아무것도 고르지 않았든 시작하지 않는 것만 본다.
+    test('startPick starts nothing without a ready start or a pick', () async {
       final service = MockAppService();
       addTearDown(service.dispose);
       final controller = ScanSessionController(service: service);
@@ -389,7 +391,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('picking items releases students and blocks several kinds', (
+    testWidgets('picking items releases students; several kinds can start', (
       tester,
     ) async {
       await _openScanTab(tester);
@@ -404,9 +406,9 @@ void main() {
       expect(_text(tester, 'scan-pick-start-title'), '아이템 2종 스캔 시작');
       expect(_text(tester, 'scan-detail-title'), '아이템 2종');
       expect(_text(tester, 'scan-detail-summary'), '기술 노트 · 전술 교육 BD');
-      // 여러 종류 큐는 FE8-g3: 이번에는 시작을 막고 이유를 쓴다.
-      expect(_start(tester).onPressed, isNull);
-      expect(_text(tester, 'scan-start-note'), startsWith('여러 종류는 차례로 스캔합니다.'));
+      // 여러 종류는 차례 스캔으로 시작한다(FE8-g3, FD-143 (a)) — 시안 Scan-Items 설명 그대로.
+      expect(_start(tester).onPressed, isNotNull);
+      expect(_text(tester, 'scan-start-note'), startsWith('시작하면 플래너는 뒤로 갑니다.'));
 
       await tester.tap(_key('scan-pick-items-all'));
       await tester.pump();

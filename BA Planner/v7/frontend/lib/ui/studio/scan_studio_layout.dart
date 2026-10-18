@@ -252,3 +252,133 @@ abstract final class ScanMetrics {
   static double scaleFor(double sectionHeight) =>
       (sectionHeight / referenceHeight).clamp(0.4, 1.0).toDouble();
 }
+
+/// 아이템 진행 창(FE8-g3, 시안 Scan-Item-Run `진행 창` 375×750 — 게임 창 옆 가로 1 : 세로 2, FD-141 (a)).
+///
+/// 진행 창은 플래너 창을 줄인 것이라 3-Section 문서가 아니라 한 장짜리 설계 좌표다. 창이 작아지면(시안 각주 "게임 창이
+/// 작아지면(예: 높이 540) 같은 비율로 줄어듭니다") 이 설계 크기를 통째로 같은 비율로 줄인다. 값은 시안 진행 창 rect
+/// (1382, 254) 기준이다. 종류 줄 수에 따라 아래 블록(NOW READING 카드 · KPI 타일 · 최근 기록)이 내려간다([ScanDockLayout]).
+abstract final class ScanDockMetrics {
+  static const width = 375.0;
+  static const height = 750.0;
+
+  /// 안쪽 왼쪽 · 오른쪽 여백(내용 폭 347).
+  static const inset = 14.0;
+  static const contentWidth = 347.0;
+
+  /// 머리 띠(0, 0, 375×34, 바탕 #0d151f, 아래 선 1px): 안쪽 0 10, 간격 8, 분홍 표지 16×16 r4 skewX(−10°), 글자 12 w700.
+  static const headerHeight = 34.0;
+  static const headerPadding = 10.0;
+  static const headerMark = 16.0;
+
+  /// 종류 이름 줄(14, 48, 347): 이름 11 w700 + 칩 h24.
+  static const namesTop = 48.0;
+  static const namesHeight = 24.0;
+
+  /// 큰 수치 줄(14, 78, 347): 경기천년제목 43.9 + 설명 12.
+  static const numbersTop = 78.0;
+  static const numbersHeight = 46.0;
+  static const numberSize = 43.88;
+
+  /// 진행 막대(14, 131.6, 347.1×12).
+  static const barTop = 131.6;
+  static const barHeight = 12.0;
+
+  /// 종류 줄(14, 162 · 203, 347): 그림 41×33 · 이름 12.5 w700 · 칩. 줄 피치 41. 4종 이상이면 피치 34 · 그림 34×27.5로 줄인다.
+  static const kindsTop = 162.0;
+  static const kindPitch = 41.0;
+  static const kindIconWidth = 41.0;
+  static const kindIconHeight = 33.0;
+  static const compactKindFrom = 4;
+  static const compactKindPitch = 34.0;
+  static const compactKindIconWidth = 34.0;
+  static const compactKindIconHeight = 27.5;
+
+  /// NOW READING 카드(14, 253.3, 347.1×129.7): 마지막 종류 줄 아래 9.3, 안쪽 24 10 10 10, 그림 85×69.
+  static const cardGap = 9.3;
+  static const cardHeight = 129.7;
+  static const cardPaddingLeft = 24.0;
+  static const cardPadding = 10.0;
+  static const cardIconWidth = 85.0;
+  static const cardIconHeight = 69.0;
+
+  /// KPI 타일 3칸(14 · 132.3 · 250.7, 396.9, 110.4×53.9): 카드 아래 13.9, 피치 118.35, 안쪽 11 0 9 0.
+  static const tileGap = 13.9;
+  static const tileHeight = 53.9;
+  static const tileWidth = 110.4;
+  static const tilePitch = 118.35;
+
+  /// `최근 기록` 머리(14, 467)와 줄(14, 485, 347, 간격 5): 타일 아래 16.2, 머리 아래 18, 줄 피치 19.4(11.5px 한 줄 + 5).
+  static const logHeaderGap = 16.2;
+  static const logGap = 18.0;
+  static const logPitch = 19.4;
+  static const logRowHeight = 14.4;
+  static const logMaxRows = 5;
+
+  /// 경고 줄(14, 658, 347)과 버튼 줄(14, 692, 347×44, 두 버튼 같은 폭 · 간격 8). 최근 기록은 경고 줄 위 8까지만 쓴다.
+  static const warningTop = 658.0;
+  static const warningHeight = 18.0;
+  static const logBottom = 650.0;
+  static const buttonsTop = 692.0;
+  static const buttonHeight = 44.0;
+  static const buttonGap = 8.0;
+}
+
+/// 종류 [kinds]줄일 때 진행 창 아래 블록의 세로 자리(시안 2종 = 카드 253.3 · 타일 396.9 · 머리 467 · 줄 485).
+class ScanDockLayout {
+  factory ScanDockLayout.of(int kinds) {
+    final compact = kinds >= ScanDockMetrics.compactKindFrom;
+    final pitch = compact
+        ? ScanDockMetrics.compactKindPitch
+        : ScanDockMetrics.kindPitch;
+    final cardTop =
+        ScanDockMetrics.kindsTop + pitch * kinds + ScanDockMetrics.cardGap;
+    final tilesTop =
+        cardTop + ScanDockMetrics.cardHeight + ScanDockMetrics.tileGap;
+    final logHeaderTop =
+        tilesTop + ScanDockMetrics.tileHeight + ScanDockMetrics.logHeaderGap;
+    final logTop = logHeaderTop + ScanDockMetrics.logGap;
+    final room = ScanDockMetrics.logBottom - logTop;
+    final rows = room < ScanDockMetrics.logRowHeight
+        ? 0
+        : ((room - ScanDockMetrics.logRowHeight) / ScanDockMetrics.logPitch)
+                  .floor() +
+              1;
+    return ScanDockLayout._(
+      kindPitch: pitch,
+      kindIconWidth: compact
+          ? ScanDockMetrics.compactKindIconWidth
+          : ScanDockMetrics.kindIconWidth,
+      kindIconHeight: compact
+          ? ScanDockMetrics.compactKindIconHeight
+          : ScanDockMetrics.kindIconHeight,
+      cardTop: cardTop,
+      tilesTop: tilesTop,
+      logHeaderTop: logHeaderTop,
+      logTop: logTop,
+      logRows: rows.clamp(0, ScanDockMetrics.logMaxRows).toInt(),
+    );
+  }
+
+  const ScanDockLayout._({
+    required this.kindPitch,
+    required this.kindIconWidth,
+    required this.kindIconHeight,
+    required this.cardTop,
+    required this.tilesTop,
+    required this.logHeaderTop,
+    required this.logTop,
+    required this.logRows,
+  });
+
+  final double kindPitch;
+  final double kindIconWidth;
+  final double kindIconHeight;
+  final double cardTop;
+  final double tilesTop;
+  final double logHeaderTop;
+  final double logTop;
+
+  /// 경고 줄 위에 들어가는 최근 기록 줄 수(0이면 머리도 그리지 않는다).
+  final int logRows;
+}

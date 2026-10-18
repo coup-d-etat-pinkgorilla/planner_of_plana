@@ -7,6 +7,7 @@ import '../../services/scanner_service.dart';
 import '../kit/kit_overlay.dart' show kitOverlayShadows;
 import '../kit/kit_pressable.dart';
 import 'scan_header_progress.dart';
+import 'scan_item_queue.dart' show ScanQueueEnd;
 import 'scan_session_controller.dart';
 
 /// 완료 토스트가 떠 있는 시간. 지나면 저절로 닫힌다(탭 점은 검토 대기 동안 남는다).
@@ -22,10 +23,28 @@ class ScanEndNotice {
     required this.resultCount,
   });
 
-  /// [ScanSessionController.lastEndedSession]이 있을 때 그 순간의 끝 · 후보 수로 만든다.
+  /// [ScanSessionController.lastEndedSession]이 있을 때 그 순간의 끝 · 후보 수로 만든다. 아이템 차례 스캔(FE8-g3)은 종류마다
+  /// 끝나도 큐가 끝날 때까지 알리지 않고, 끝나면 큐 전체(모든 종류의 후보 수 · 큐 결과)로 한 번 알린다.
   static ScanEndNotice? of(ScanSessionController controller) {
     final session = controller.lastEndedSession;
     if (session == null) return null;
+    final queue = controller.itemQueue;
+    if (queue != null && queue.running) return null;
+    if (queue != null && queue.indexOf(session) != null) {
+      return ScanEndNotice(
+        sessionKey: scanSessionKey(session),
+        kind: ScannerKind.inventory,
+        outcome: switch (queue.end) {
+          ScanQueueEnd.completed || ScanQueueEnd.partial => 'completed',
+          ScanQueueEnd.cancelled => 'cancelled',
+          _ => 'failed',
+        },
+        resultCount: [
+          for (final kind in queue.kinds)
+            ...?controller.itemQueueResult(kind)?.candidates,
+        ].length,
+      );
+    }
     return ScanEndNotice(
       sessionKey: scanSessionKey(session),
       kind: session.kind,

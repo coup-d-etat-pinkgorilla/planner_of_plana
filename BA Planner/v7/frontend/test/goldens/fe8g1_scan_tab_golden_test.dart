@@ -7,10 +7,14 @@
 // - `scan-pick-students`(Scan): 기본 고르기 `전체 학생`. 주 버튼 `학생 전체 스캔 시작 · 백그라운드 · 약 8분`, 오른쪽 `전체 학생`
 //   안내(시작 전에 · 읽는 항목 · 끝나면), 아이템 7칸(선물 포함).
 // - `scan-pick-items`(Scan-Items): `기술 노트` · `전술 교육 BD`를 고른 상태. 아이템 줄 `2종 선택` + `모두 선택`, 오른쪽
-//   `아이템 2종` 안내(진행 표시 · 끝나면). 여러 종류 차례 스캔은 FE8-g3라 주 버튼은 꺼지고(.45) 옆에 이유 문구다.
+//   `아이템 2종` 안내(진행 표시 · 끝나면). 여러 종류는 차례 스캔으로 시작한다(FE8-g3, FD-143 (a)) — 주 버튼이 켜지고 옆에
+//   시안 설명(`시작하면 플래너는 뒤로 갑니다. …`)이다.
 // - `scan-student-run`(Scan-Student-Run, FE8-g2): `전체 학생`으로 시작한 뒤 Mock 진행 이벤트(FB-10 고정 범위)로 학생 34 / 128
 //   진행 중. identify feedback 6명(시안 순서: 노아 · 슌(수영복) · 오토기 · 유우카 · 히나 · 미카, 최근 먼저), 시작부터 130초
 //   (남은 시간 약 6분). 성장 값 · KPI · 학생별 차이 · 확인 필요는 고정 범위 밖이라 '—'.
+// - `scan-item-run`(Scan-Item-Run 진행 창, FE8-g3): `기술 노트` · `전술 교육 BD` 2종 큐의 1번째 진행 중(인식 entry 누계 28,
+//   total = null). 진행 창은 플래너 창을 게임 창 옆 1:2로 줄인 것이라 설계 크기 375×750 창 하나를 찍는다(시안 진행 창 rect와
+//   1:1 비교). 네이티브 창 붙이기는 시험용 대역이다.
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -21,10 +25,15 @@ library;
 import 'dart:async';
 
 import 'package:ba_planner_v7/app/app.dart';
+import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/app_clock.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/services/window_dock_service.dart';
+import 'package:ba_planner_v7/ui/scan/scan_session_controller.dart';
 import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
+import 'package:ba_planner_v7/ui/studio/scan_studio_layout.dart';
+import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -116,6 +125,21 @@ class _HeldRunGoldenService extends _ScanTabGoldenService {
     await events.close();
     await super.dispose();
   }
+}
+
+/// 네이티브 창 붙이기 대역(진행 창 장면).
+class _GoldenDock implements WindowDockService {
+  @override
+  Future<ScanDockPlacement> dockBeside(String targetId) async =>
+      const ScanDockPlacement(
+        side: 'right',
+        width: 375,
+        height: 750,
+        gameResized: false,
+      );
+
+  @override
+  Future<void> restore() async {}
 }
 
 const _target = ScannerTarget(
@@ -220,5 +244,68 @@ void main() {
       '남은 시간 약 6분',
     );
     await expectGoldenScene(tester, 'scan-student-run');
+  }, variant: goldenPlatform);
+
+  testWidgets('scan-item-run', (tester) async {
+    setGoldenViewport(tester);
+    tester.view.physicalSize = const Size(
+      ScanDockMetrics.width,
+      ScanDockMetrics.height,
+    );
+    final service = _HeldRunGoldenService();
+    addTearDown(service.dispose);
+    final companion = ValueNotifier<ScanCompanionState?>(null);
+    addTearDown(companion.dispose);
+    final controller = ScanSessionController(service: service)
+      ..windowDockService = _GoldenDock()
+      ..onCompanionChanged = (state) => companion.value = state;
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      goldenBoundary(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: BAPlannerTheme.dark(),
+          home: ValueListenableBuilder<ScanCompanionState?>(
+            valueListenable: companion,
+            builder: (context, state, _) => state == null
+                ? const SizedBox.shrink()
+                : ScanCompanionDock(state: state),
+          ),
+        ),
+      ),
+    );
+    controller.ensureStarted();
+    await tester.pumpAndSettle();
+    final profiles = await service.listProfiles();
+    await controller.selectProfile(
+      profiles.firstWhere(
+        (profile) => profile.selected,
+        orElse: () => profiles.first,
+      ),
+    );
+    controller.chooseTarget(_target.id);
+    controller.pickInventory(const [
+      InventoryScanProfile.techNotes,
+      InventoryScanProfile.tacticalBd,
+    ]);
+    await controller.startPick();
+    service.emit(ScannerEventKind.progress, {
+      'current': 28,
+      'total': null,
+      'message_key': 'scanner.inventory.grid',
+    });
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scan-dock')), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('scan-dock-count'))).data,
+      '28',
+    );
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('scan-dock-count-caption')))
+          .data,
+      '칸 · 1번째 / 2종류',
+    );
+    await expectGoldenScene(tester, 'scan-item-run');
   }, variant: goldenPlatform);
 }

@@ -2,7 +2,8 @@
 //
 // - 화면 전환: 진행(시작 중 · 진행 · 일시정지 · 중지 요청 중)과 검토 대기(끝났고 적용하지 않은 후보)는 지금 `ScanPage`를,
 //   그 밖에는 고르기를 보인다. 판단은 머리글 칩 · 탭 점과 같은 [ScanHeaderStatus]다(FE8-f2와 맞물림).
-// - 시작 판정: 고르지 않음 · 여러 종류(FE8-g3 큐 전까지 막음, FD-143) · 백엔드 · 서비스 · 게임 창 · 계정 · 인식 준비 · 진행 중.
+// - 시작 판정: 고르지 않음 · 백엔드 · 서비스 · 게임 창 · 계정 · 인식 준비 · 진행 중. 아이템 여러 종류는 차례 스캔으로 시작한다
+//   (FE8-g3, FD-143 (a) — 종류마다 세션을 차례로).
 // - 추정치(FD-154): 시간은 종류별 기본 상수(학생 전체 약 8분 · 1명 약 10초 · 아이템 종류마다 약 1분 — 시안 값), 칸 수는
 //   카탈로그에서 그 종류 `profileId`의 개수. 모르면 숨긴다.
 // - 시각 글자: 오늘 · 어제는 시각까지(`어제 21:40`), 7일까지 `n일 전`, 그 뒤 `9/12`. 막대 = 지난 날짜 / 14(FD-147).
@@ -61,7 +62,6 @@ ScanTabView scanTabViewFor(
 enum ScanStartBlock {
   none,
   noSelection,
-  multipleItems,
   backend,
   unavailable,
   noTarget,
@@ -76,9 +76,6 @@ enum ScanStartBlock {
 ScanStartBlock scanStartBlock(ScanSessionController controller) {
   final pick = controller.pick;
   if (pick.isNone) return ScanStartBlock.noSelection;
-  if (pick.inventoryScanProfiles.length > 1) {
-    return ScanStartBlock.multipleItems;
-  }
   if (!controller.connected) return ScanStartBlock.backend;
   if (!controller.scannerAvailable || !controller.repositoryAvailable) {
     return ScanStartBlock.unavailable;
@@ -109,8 +106,6 @@ String scanStartNote(ScanStartBlock block, ScanSessionController controller) {
           : '시작하면 플래너는 뒤로 갑니다. 진행은 게임 창 옆 작은 창에 나오고, '
                 '끝나면 플래너가 다시 앞으로 와 결과 검토를 엽니다.',
     ScanStartBlock.noSelection => '학생이나 아이템을 고르면 시작할 수 있습니다.',
-    ScanStartBlock.multipleItems =>
-      '여러 종류는 차례로 스캔합니다. 차례 스캔은 아직 열리지 않아 지금은 한 종류만 골라 시작할 수 있습니다.',
     ScanStartBlock.backend => '백엔드에 연결되어 있지 않습니다.',
     ScanStartBlock.unavailable => '스캐너를 쓸 수 없습니다.',
     ScanStartBlock.noTarget => '게임 창을 연결하면 시작할 수 있습니다.',

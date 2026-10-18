@@ -10158,3 +10158,166 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_021257\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE8-g3 착수 기록 (2026-10-18, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-g3 종료 기록), CF gate 미실행**. 범위: FE8-g3 아이템 진행 창(포그라운드, 시안 Scan-Item-Run) + 여러 종류 큐(FD-143 (a)). ① `ScanCompanionDock` 재작성(진행 · 일시정지 · 끝, 시안 문구, 고정 형식 밖 값은 '—' · 숨김), 아이템 시작 때 `dockBeside` · 끝나면 `restore` ② 스캔 탭 고르기에서 여러 종류를 고르면 시작을 켜고 종류마다 세션을 차례로(진행 창 유지, `n번째 / m종류`), 끝난 종류 후보는 세션 · generation · 후보로 따로 유지, 검토는 지금 아이템 검토 화면(`ScanPage`)에서 종류별로 ③ 홈 팝업 아이템 타일이 같은 진행 창을 쓰는지 확인(동작 그대로). 같은 시각 Lane B가 `lib/ui/scan/review/**`(새 파일만, FE8-g4a)를 만든다 — 이 slice는 그 폴더를 건드리지 않는다.
+- 착수 전 확인: 이 문서 끝에 다른 "FE8-g3 착수 기록" 없음(grep 0건, `debug/frontend_fe8g3/`도 없었음). 막힘: 대장 "slice별 막힘 요약" FE8-g3 행 = FD-141 · FD-142(부분: 일시정지) — 둘 다 확정 (a)(2026-10-06), 현재 `열림` 0건. FD-143은 프롬프트 · XB 01:30 선언대로 (a) 프론트 큐(백엔드 변경 0). 근거: XB 2026-10-18 01:30 "FB-10 FE8-g3·g4·g5 기존 형식 고정 선언"(inventory progress current = entries 누계 · total = null → 분모 · % · ETA 숨김, pause는 `paused` 이벤트 · 스냅숏만 멈춤으로 봄).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `0f4d51644de0ac09a0e7a0f9c387f0a4cbeeb54c`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8g3/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`):
+  - `frontend/lib/ui/widgets/scan_companion_dock.dart`: WIP 없음. 작업 트리 CRLF(유지). 진행 창 재작성.
+  - `frontend/lib/ui/scan/scan_session_controller.dart`: WIP 없음. LF. 아이템 시작 dock · 큐 · companion 발행.
+  - `frontend/lib/ui/scan/scan_pick_logic.dart`: WIP 없음. LF. 여러 종류 막음 해제.
+  - `frontend/lib/ui/scan/scan_header_progress.dart` · `scan_end_toast.dart` · `scan_tab_page.dart`: WIP 없음. LF. 큐 동안 진행으로 보기 · 큐 끝 토스트 · 종류별 검토 줄.
+  - `frontend/lib/ui/studio/scan_studio_layout.dart`: WIP 없음. LF. 진행 창 좌표.
+  - `frontend/lib/ui/pages/scan_page.dart`: WIP 없음. LF(사본만 — dock 호출부를 고칠 필요가 생길 때만).
+  - 바뀐 동작에 걸리는 시험: `frontend/test/scan_companion_dock_test.dart`(작업 트리 CRLF, 재작성) · `scan_page_pause_fb10a_test.dart`(dock 묶음) · `scan_session_controller_test.dart` · `scan_tab_page_fe8g1_test.dart`(여러 종류 막음 기대) · `scan_header_progress_fe8f2_test.dart` · `goldens/fe8g1_scan_tab_golden_test.dart`(장면 추가 · 조작만), 모두 WIP 없음(실제로 고친 것만 commit.json에).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_item_queue.dart`(큐 상태 · 순수 규칙 · 종류별 검토 줄), `frontend/test/scan_item_queue_fe8g3_test.dart`. 새 golden 장면 `scan-item-run` 1장(진행 창, 2종 큐 중 1번째 — 기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/ui/scan/review/**`(Lane B), `lib/services/**`(읽기만), `lib/ui/app_shell.dart`(필요한 것은 status 요청), 홈 · 전술 · 통계 · 학생 · 계획 · 인벤토리 화면 동작, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일.
+
+## FE8-g3 종료 기록 (2026-10-18, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+아이템 시작이 포그라운드가 됐다. 큐의 첫 종류에서 플래너 창을 게임 창 옆 진행 창으로 줄이고(`dockBeside`, FD-141 (a)), 재작성한 `ScanCompanionDock`(시안 Scan-Item-Run 375×750, 창 크기에 같은 비율)이 그 창을 덮는다. 스캔 탭에서 아이템 여러 종류를 고르면 시작이 켜지고(FE8-g1 막음 해제), 칸 순서대로 종류마다 세션을 하나씩 시작한다(FD-143 (a) 프론트 큐, 백엔드 변경 0). 진행 창은 큐 동안 유지되고 `n번째 / m종류`를 보인다. 끝나면 끝 카드 → 2초 뒤(또는 `결과 검토 열기`) 플래너 복원, 스캔 탭은 결과가 있는 첫 종류를 지금 검토 화면(`ScanPage`)에 열고 그 위에 종류별 검토 줄을 붙인다. 값은 XB 2026-10-18 01:30 고정 형식만 쓴다(inventory current = 인식 entry 누계, total = null → 분모 · % · 남은 시간 숨김). 홈 팝업 아이템 타일은 같은 `startPick` 경로라 같은 진행 창을 쓴다(홈 파일 수정 0). HEAD는 착수 때와 같다(`0f4d5164`). git 쓰기 0, 저장소 파일 삭제 0(내가 만든 일회성 렌더 사본 1개만 만들고 지움).
+
+### 실행한 명령과 결과
+
+모두 `frontend` 폴더(Flutter 3.44.6). 로그 `debug/frontend_fe8g3/logs/`(json 요약 · 실패 줄만 봤다).
+
+- `flutter analyze`(frontend 전체, 마지막 손질 · format · 줄바꿈 정정 뒤): 이 slice 파일 **0건(info 포함)**. 전체 출력은 **1건** — `lib/ui/scan/review/scan_review_list_section.dart:445` warning `unused_element_parameter`(Lane B FE8-g4a 작업 중 새 파일, 이 slice 파일 아님). 중간 실행에서는 같은 폴더의 Lane B 파일 error 2 · warning 여럿이었다 — 이 slice는 그 폴더를 읽지도 고치지도 않았다(발견 1).
+- 새 시험 `flutter test test/scan_item_queue_fe8g3_test.dart`: ① **+7 −2**(`logs/queue_1.log`) — 셸 시험 2건이 시작 중에 멈춤: 기본 `WindowsWindowDockService`의 MethodChannel이 시험(fake async)에서 응답하지 않음 → 제품 수정(기본 서비스는 Windows에서만 부르고, 응답 대기 5초 제한 `scanItemDockTimeout`) → ② **+9 −0**(`logs/queue_2.log`).
+- dock 시험 `scan_companion_dock_test` + `scan_page_pause_fb10a_test`: **+13 −0**(첫 실행부터).
+- 관련 일반 시험 55파일 한 명령(`flutter test <파일들> --reporter json`, 목록 `logs/general_files.txt`): 첫 실행(`logs/general_1.json`) **+587 −1** — `scan_tab_page_fe8g1` "여러 종류는 막는다" 기대(이 slice의 의도한 변화) → 기대만 바꿈. 마지막 실행(format · 줄바꿈 정정 뒤, `logs/general_final.json` · `general_final_summary.txt`) **+588 −0**: account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · home_scan_popup_fe8f3 +11 · inventory_analysis_page +8 · inventory_page +9 · inventory_review_fb10b +19 · inventory_shell_lazy +1 · mock_scanner_commit_history +9 · mock_scanner_service +4 · profile_delete_fb2d +17 · scan_companion_dock **+5**(재작성) · scan_header_progress_fe8f2 +7 · scan_inventory_identity_review +2 · scan_item_queue_fe8g3 **+9**(새) · scan_page_pause_fb10a +8 · scan_page_revision +14 · scan_page +17 · scan_run_view_fe8g2 +8 · scan_session_controller +7 · scan_student_review_logic +5 · scan_student_review_workspace +9 · scan_tab_page_fe8g1 +15 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_review_images_fb10c +6 · scanner_target_metadata_fb4 +19 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · student_page +9 · tactical_analysis +20 · tactical_excel_import +14 · tactical_fb6b_dart +9 · tactical_fe9b2 +14 · tactical_jokbo_panel +17 · tactical_lobby_fe9c +12 · tactical_lobby_scanner_service +2 · tactical_page_revision +5 · tactical_page +20 · tactical_records_controller +14 · tactical_service +6 · tactical_share_v1_contract +1 · tactical_slots +18 · tactical_v2_service +5 · title_page +25 · widget +16. (고른 기준: FE9-c 48파일 + grep `BAPlannerApp(|AppShell(|ScanPage(|ScanTabPage|ScanSessionController|ScanCompanion|scanStartBlock|ScanEndNotice|ScanHeaderStatus|startPick|scan_studio_layout|InventoryCandidateContext|onCandidateHandoff|top-tab-|header-connection-chip|home_page.dart`로 더 걸린 inventory_analysis_page · inventory_page · statistics_app_shell · statistics_filter, 인벤토리 후보 쪽 inventory_review_fb10b · student_page, 새 파일.)
+- process E2E(`--concurrency=1`, 파일마다 따로, `logs/process_final.log`): scanner_process_e2e **+1** · scanner_pause_process_e2e **+1** · scanner_review_images_fb10c_process_e2e **+1** · scanner_target_metadata_process_e2e **+1**.
+- 변이 확인: `ScanItemQueue.ended`의 "중지면 큐 끝"을 "완료가 아니면 큐 끝"으로 바꾸면 새 시험 **+7 −2**(실패 건너뛰기 규칙 시험 · 컨트롤러 실패 시험만 실패) → 원 바이트로 되돌림(SHA-256 `33c4a4310914…` 전후 같음).
+- 일회성 렌더: golden 파일 사본에서 `@Tags(['golden'])` · `library;` · `expectGoldenScene` 호출을 뺀 `test/goldens/zz_fe8g3_oneoff_render_test.dart`(grep 0건 확인)를 네 장면 모두 돌려 **+4**(예외 0), PNG를 `debug/frontend_fe8g3/render/`에 남기고 사본은 바로 지웠다(`zz_` 0건). golden 비교는 돌리지 않았다.
+- `dart format`: 이 slice 파일 경로만 하나씩(13파일). 기존 파일은 이 slice 줄만 바뀌었다(diff 확인).
+- 줄바꿈 · 끝: 고친 기존 파일은 원래 줄바꿈(LF, `scan_companion_dock.dart` · `scan_companion_dock_test.dart`만 작업 트리 CRLF — 다시 CRLF로 맞춤), 새 2파일 LF, 끝 개행 하나, 줄 끝 공백 0(바이트 검사). `git diff --check -- frontend almanac`: exit 0. 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-141**(확정 (a)): 진행 창 = 플래너 창을 `dockBeside`로 줄인 것, 끝나면 `restore`. 큐의 첫 종류에서 한 번만 붙이고 큐 끝에 되돌린다. 네이티브 실패 · 5초 무응답 · Windows 밖이면 진행 창 없이 스캔을 계속한다(진행은 스캔 탭 · 머리글 칩, 발견 5).
+- **FD-142**(확정 (a)): 일시정지는 `pause()` 응답(`pauseRequested`)이 아니라 `paused` 이벤트 · 스냅숏에서만 진행 창을 일시정지로 바꾼다(그 전에는 `멈추는 중…`, 버튼 끔). 사유별 카드(입력 감지 = 시안 문구, 창 최소화, 사용자), `이어서` · `중지`, Esc = 중지(진행 창에서도).
+- **FD-143**(프롬프트 확정 (a), 대장 표기는 워커 재량): 프론트 큐. 규칙은 아래 표.
+- FD-154(워커 재량): 아이템은 total = null이라 분모 · % · 남은 시간을 그리지 않는다(고르기 화면의 `약 n분`은 그대로). FD-156(워커 재량): NOW READING의 아이템 · 수량, KPI 3칸은 '—'(진행 중 후보 · 인벤토리 feedback은 고정 형식 밖). FD-148: 머리글 칩 · 탭 점 · 토스트가 큐를 한 번의 실행으로 본다.
+
+### 진행 창 값 출처 표 (시안 자리 → 값)
+
+| 시안 자리(Scan-Item-Run 진행 창) | 앱 값 | 출처 |
+|---|---|---|
+| 머리 `Plan A · 아이템 스캔` · 항상 위 표시 | 그대로(표시만) | 정적 |
+| `기술 노트 · 전술 교육 BD` | 고른 종류 이름(칸 순서) | 큐 |
+| 칩 `진행 중` | 진행 pk `진행 중` / 일시정지 wn `일시정지 · 입력 감지` · `일시정지 · 창 최소화` · `일시정지` / 중지 요청 gy `중지하는 중` / 끝 ok `완료` · wn `일부 완료` · dg `실패` · gy `중지` | 단계 · `paused` 이벤트 사유 · 큐 끝 |
+| 큰 `69%` | **누계 칸 수**(끝난 종류의 마지막 current + 지금 종류 current), 모르면 '—' — 비율은 분모가 없어 그리지 않음 | FB-10 progress current(entry 누계) |
+| `40 / 58칸 · 남은 시간 약 40초` | `칸 · 1번째 / 2종류`(1종이면 `칸`, 끝나면 `칸 · 2종류`) — 분모 · 남은 시간 숨김 | 큐 위치 |
+| 진행 막대 69% | 빗금(모름), 끝(모두 완료)이면 100% ok | 큐 끝만 |
+| 종류 줄 `완료 · 28 / 28칸` · `12 / 30칸` | `완료 · 28칸` · `12칸`(분모 없음), `대기` · `실패` · `중지 · n칸` · `읽지 않음`, 진행 값 전이면 '—' | 큐 · progress |
+| 종류 그림 | 카탈로그 그 종류의 정렬 첫 항목 그림(없으면 이름 글자) | 카탈로그(고르기 칸과 같은 규칙) |
+| NOW READING `전술 교육 BD` · `밀레니엄 · 최상급` · `40 → 40 일치` | 지금 종류 이름 · 그림, 아이템 '—', 수량 '—' | 큐 / 아이템 feedback은 고정 형식 밖 |
+| KPI `바뀐 수량 4` · `확인 필요 1` · `그대로 35` | 3칸 모두 '—'(회색) | 진행 중 후보 필요 → 범위 밖 |
+| `최근 기록` 5줄 | 끝난 종류 줄만(최근 먼저): `기술 노트 28칸 완료` ok · `… 읽지 못함` wn · `… 중지 · n칸까지 읽음` wn · `… 읽지 않음` gy. 아이템 단위 줄 없음. 자리가 모자라면(4종 이상) 줄 수를 줄이고 0이면 머리도 숨김 | 큐 |
+| 경고 `마우스 · 키보드를 쓰면 일시정지합니다 · Esc 중지` | 그대로(진행 중에만) | 정적 |
+| `일시정지` · `중지` | `일시정지` / `멈추는 중…`(끔) / `이어서`(pri), `중지` / `중지하는 중…`(끔). 종류 사이 · 시작 중에는 둘 다 끔 | fb10a 제어 상태 · 단계 |
+| 일시정지 카드 `마우스 입력이 감지되어 멈췄습니다` + 본문 | 사유별 제목, 본문 `… 읽은 n칸은 그대로 남습니다.`(n = 누계, 모르면 `읽은 칸은`) | `paused` reason · 누계 |
+| 완료 카드 `스캔을 마쳤습니다` + `곧 플래너가 …` · `결과 검토 열기` | 끝별 제목(완료 · `일부 종류를 읽지 못했습니다` · `스캔이 실패했습니다`), 본문 시안 그대로, 버튼 = 지금 복원 | 큐 끝 |
+
+### 큐 규칙 표
+
+| 사건 | 그 종류 | 큐 | 진행 창 |
+|---|---|---|---|
+| 성공(terminal completed) | `완료 · n칸`, 결과 = 그 세션의 최근 기록(세션 · generation · 후보) | 다음 종류 시작(같은 창 대상). 마지막이면 끝(모두 완료 = 완료, 일부 = 일부 완료) | 유지 → 끝 카드 |
+| 실패(terminal failed · 시작 응답 실패) | `실패`(후보가 왔으면 결과로 남김) | 그 종류만 건너뛰고 다음 종류 | 유지 |
+| 취소(진행 창 `중지` · Esc · 예전 화면 중지) | `중지 · n칸`(그때까지 읽은 후보는 남음) | **큐 전체 중지**, 남은 종류 `읽지 않음` | 바로 닫고 복원(끝 카드 없음) |
+| 다음 종류 시작 조건 상실(창 선택 없음 · 최소화 · 백엔드 끊김 · 인식 준비 · 계정) | 지금 차례 `읽지 않음` | 남은 종류 모두 `읽지 않음`으로 끝 | 끝 카드 → 복원 |
+| 일시정지 | 그 세션 안에서만(`paused` 이벤트로만 전환) | 다음 종류로 가지 않고 기다린다 | 일시정지 카드 · `이어서` |
+| 앱 복귀(큐 끝) | — | 여러 종류면 후보가 있는 첫 종류를 검토 화면에 연다 | 끝 카드 2초(`scanItemDockCloseDelay`) 뒤 또는 `결과 검토 열기`로 `restore` |
+| 계정 변경 · 셸 종료(컨트롤러 dispose) | — | 버려짐(세션은 예전처럼 버려짐) | `restore` + 셸 덮개 내림(FE8-f1 버그 표 4 수정) |
+| 진행 중 백엔드 끊김 | 기존 `sessionError` 그대로 | 그대로(스냅숏 복구로 terminal이 오면 위 규칙으로 이어짐) | 그대로(발견 4) |
+
+- 결과는 종류마다 따로다: 다음 세션 시작은 투영(`candidates`)을 비우지만, 끝난 종류의 후보는 최근 기록(최대 8)과 큐가 기억한 기록에 세션 · generation · 후보로 남는다. 검토 화면에서 종류를 바꾸면 지금 종류 후보의 오른 revision(미식별 칸 지정 등)을 그 세션 기록에 먼저 적어 둔다.
+- 검토(FE8-g5 전까지): 스캔 탭 검토 화면(`ScanPage`) 위에 종류별 줄 `아이템 n종 차례 스캔 결과 · 종류별로 검토합니다` + 종류 버튼(`이름 · 검토 n` / `확정` / `결과 없음` / `실패` / `읽지 않음` — 최근 스캔 행과 같은 칩). 누르면 그 종류를 연다(`openQueueKind`). 끝난 큐의 다른 종류에 후보가 남아 있으면 머리글 · 탭 점은 검토 대기다.
+
+### dock 수명
+
+- 열기: 아이템 시작(스캔 탭 `startPick` · 홈 팝업 아이템 타일 · 예전 화면 `start()`는 1종 큐) → 큐 첫 종류의 `start()`에서 저장소 다시 읽기 뒤 `dockBeside(target)`(5초 제한) → `companionActive` → 셸 `onCompanionChanged`(셸 `Positioned.fill` 덮개, 기존 경로).
+- 갱신: 이벤트 · 일시정지/이어서 요청 · 스냅숏 복구(FE8-f1 버그 표 3 수정) · 종류 사이마다 `scanCompanionStateFor(controller)`를 다시 낸다.
+- 닫기: 큐 끝(중지 = 바로, 그 밖 = 끝 카드 2초 · `결과 검토 열기`) · 시작 실패(큐가 끝났을 때) · dispose(`restore` + 덮개 null). 학생 · 전술 로비는 dock을 쓰지 않는다(FE8-g2 그대로).
+
+### 고친 · 더한 파일
+
+- `lib/ui/widgets/scan_companion_dock.dart`(재작성, CRLF): `ScanCompanionPhase` · `ScanCompanionKind` · `ScanCompanionLogLine` · `ScanCompanionCard` · `ScanCompanionState`(이름 · 칩 · 누계 · 캡션 · 막대 · 종류 줄 · NOW READING · 카드 · 기록 · 콜백 4), `ScanCompanionDock`(Esc = 중지, 설계 크기 `FittedBox` 비례 — 시안 각주 "같은 비율로 줄어듭니다", 진행 창은 앱 화면이 아니라 1:2 작은 창). 키트 `BaChip` · `SkewBar` · `ItemIconTile` · `KitPressable` · `TonalButtonColors`를 쓴다(키트 수정 0). 예전 `ScanDockStudentFeedback` · 학생 카드는 쓰는 곳이 없어 뺐다.
+- `lib/ui/scan/scan_item_queue.dart`(새): `ScanItemQueue` · `ScanQueueKind` · 상태/끝 enum, 글자 규칙(위치 · 이름 · 칩 · 기록 · 카드), `scanCompanionStateFor`, 종류별 검토 줄 `ScanQueueReviewBar`.
+- `lib/ui/scan/scan_session_controller.dart`: 큐(`itemQueue` · `itemQueueRunning` · `itemQueueResult` · `itemQueuePendingCandidates` · `startItemQueue` · `openQueueKind` · `closeItemDock`), `startPick` 아이템 = 큐, `start()` 아이템 dock · 1종 큐 감싸기 · 시작 실패 = 그 종류 실패, terminal · 스냅숏 · 시작 버퍼에서 큐 정리(`_settleQueueOnTerminal` → `_continueQueue` → `_finishQueue`), `_publishCompanion` 재작성, dispose 덮개 내림. 학생 경로 변화 0(기존 시험 그대로 통과).
+- `lib/ui/scan/scan_pick_logic.dart`: `ScanStartBlock.multipleItems`와 그 문구를 뺐다(여러 종류도 시안 아이템 설명).
+- `lib/ui/scan/scan_header_progress.dart`: 큐 진행 중이면 종류 사이까지 진행(아이템, 누계, 분모 없음), 끝난 큐의 다른 종류 후보도 검토 대기.
+- `lib/ui/scan/scan_end_toast.dart`: 큐 진행 중에는 토스트 없음, 큐 끝에 한 번(모든 종류 후보 수 · 큐 결과).
+- `lib/ui/scan/scan_tab_page.dart`: `ScanPage` 자리를 `Column[종류별 검토 줄 | SizedBox.shrink, Expanded(ScanPage)]`로(같은 자리라 화면 state 유지).
+- `lib/ui/studio/scan_studio_layout.dart`(+130): `ScanDockMetrics`(시안 진행 창 좌표) · `ScanDockLayout.of(종류 수)`(종류 줄 피치 41, 4종 이상 34 · 카드 · 타일 · 기록 자리 · 줄 수).
+- `lib/ui/pages/scan_page.dart`: 고치지 않음(사본만 — `ScanCompanionState` 이름 그대로라 호출부 변경 불필요). `app_shell.dart` 수정 0.
+
+### 바꾼 시험과 이유
+
+- `scan_companion_dock_test.dart`(CRLF, 재작성 3 → 5): 예전 3건(학생 dock `STUDENT SCAN` · 현재 학생 카드 · 대기 글자)은 학생이 FE8-g2부터 dock을 쓰지 않고 진행 창이 재작성돼 대상이 없어 **지움**. 대체: 진행(이름 · 칩 · 누계 · 캡션 · % · 남은 시간 없음 · 종류 칩 · NOW READING '—' · KPI · 기록 · 경고 · 일시정지/중지 · Esc), 일시정지(카드 · `이어서` · 경고 없음), 끝(`결과 검토 열기`만), 중지 요청(버튼 끔), 크기(270×540 · 1280×720 · 200×300에서 7종 넘침 0 · 기록 숨김, 2종 기록 5줄, 설계 크기에서 막대 · 종류 줄 · 버튼 rect ±2px).
+- `scan_page_pause_fb10a_test.dart`(dock 묶음 2건): 새 상태 모양으로 같은 의도(진행 → `일시정지` 누름 · `멈추는 중…` 끔, 일시정지 → 사유 카드 · `이어서`). 머리 주석.
+- `scan_tab_page_fe8g1_test.dart`: "여러 종류는 막는다" → "여러 종류도 시작 가능 · 시안 설명"(시험 이름 변경), 컨트롤러 시험 이름 · 주석을 "시작 조건이 없으면 시작하지 않는다"로(기대값 그대로).
+- `goldens/fe8g1_scan_tab_golden_test.dart`: 장면 `scan-item-run` 추가 · 머리 주석(`scan-pick-items` 설명 갱신), 기존 장면 조작 변화 0.
+- 새 `scan_item_queue_fe8g3_test.dart`(+9): 규칙 2(진행 · 실패 건너뜀 · 중지 · 시작 조건 상실 · 누계, 칩 · 카드 글자), 컨트롤러 5(2종이 한 창에서 차례로 → 칸 순서 · dock 1회 · 캡션 · 누계 28→40 · 종류 사이 진행 · 토스트 없음 → 끝 카드 · 2초 뒤 restore · 첫 종류 검토 · 다른 종류 검토 대기 · 종류 바꿔 열기 · 다른 탭 적용 시 풀림 / 시작 실패 · terminal 실패 건너뜀 · 일부 완료 · 중지 = 큐 전체 · 바로 restore / `pauseRequested`는 멈춤 아님 → `paused` 카드 · 머리글 일시정지 · 큐 대기 → `resumed` / 네이티브 실패면 진행 창 없이 · 창 선택 사라지면 남은 종류 읽지 않음 / dispose = restore + 덮개 null), 셸 스캔 탭 2(2560×1392 · 1280×720: 2종 고르기 → 시작 켜짐 · 시안 설명 → Mock으로 두 종류 차례 완료 → 종류별 검토 줄 · 첫 종류 → 두 번째 열기, 예외 0).
+- `scan_session_controller_test.dart` · `scan_header_progress_fe8f2_test.dart`: 사본만, 수정 0(commit.json에 없음).
+
+### golden 변화 예상 (비교 미실행)
+
+- **`scan-pick-items` 바뀜**(`whole`에 기준 이미지 1개): 주 버튼 `아이템 2종 스캔 시작`이 흐림(.45) → 켜짐(분홍), 옆 글자가 노랑 이유 문구 → 시안 설명 `시작하면 플래너는 뒤로 갑니다. 진행은 게임 창 옆 작은 창에 나오고, 끝나면 플래너가 다시 앞으로 와 결과 검토를 엽니다.`(일회성 렌더 `debug/frontend_fe8g3/render/scan-pick-items.png`).
+- 다른 장면 변화 0 예상: `scan-pick-students` · `scan-student-run` · `header-scan-progress` · 홈 · 셸 장면은 아이템을 시작하지 않는다. 스캔 탭 안 `ScanPage` 자리에 Column · `SizedBox.shrink()`가 생겼지만 Offstage이거나 높이 0이다. 학생 시작 · 머리글 · 토스트 계산은 큐가 없을 때 예전과 같다(`itemQueue == null` 분기).
+- **새 장면 `scan-item-run`**(기준 이미지 없음 → CF `-UpdateGoldens`, `optional_added`): **375×750 창 하나**(진행 창은 플래너 창을 1:2로 줄인 것이라 시안 진행 창 rect와 1:1로 비교하려고 이 장면만 view 크기를 바꿨다 — harness 수정 0). 컨트롤러 단독(대역 dock) · `기술 노트 · 전술 교육 BD` 2종 큐의 1번째, progress current 28 · total null. 기대 모습: 위 띠 분홍 표지 · `Plan A · 아이템 스캔` · 깃발, `기술 노트 · 전술 교육 BD` + 분홍 `진행 중`, 큰 `28` + `칸 · 1번째 / 2종류`, 빗금 막대, 종류 줄 `기술 노트` 분홍 `28칸` · `전술 교육 BD` 회색 `대기`(Mock 카탈로그에 BD 그림이 없어 이름 글자 칸), 분홍 테두리 사선 카드 `NOW READING` + 기술 노트 그림 · `기술 노트` · '—' · '—', KPI 3칸 '—', 최근 기록 없음, 노랑 경고 줄, `일시정지` · 빨강 `중지`(렌더 `debug/frontend_fe8g3/render/scan-item-run.png`).
+
+### 미검증(미실행)
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · 나머지 process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 기준 이미지 갱신(`scan-pick-items`) · 새 기준(`scan-item-run`): **미실행**(CF `-UpdateGoldens`).
+- 실제 Windows 러너 `dockBeside` · `restore`(1:2 크기 · 왼쪽 붙음 · 게임 창 크기 조정), 줄어든 창에서 셸 레이아웃(발견 3), 실제 백엔드 아이템 스캔(종류 사이 전환 지연, total null 확인, 입력 감지 일시정지), 진행 창 포커스와 Esc(게임 창이 앞일 때), Windows release 빌드: **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 검수표 (artboard → 앱에서 여는 방법 → 확인 포인트)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scan-Items | mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 기준 viewport 최대화. 홈에서 Mock 창 연결 → 탭 `스캔` → `기술 노트` · `전술 교육 BD` | 주 버튼 켜짐 · 시안 설명, 막음 이유 문구 없음(golden `scan-pick-items`) |
+| Scan-Item-Run(진행) | Windows 앱(실제 러너)에서 위처럼 2종 시작. Mock은 종류마다 금방 끝나 진행 창이 잠깐만 보인다 — 진행 모습은 golden `scan-item-run`과 렌더 PNG로 본다 | 플래너가 게임 창 옆 1:2 창으로 줄고 진행 창이 덮음, `1번째 / 2종류` → `2번째 / 2종류`, 종류 칩 `완료 · n칸`, 분모 · % 없음 |
+| Scan-Item-Run(일시정지) | 실제 백엔드에서 스캔 중 마우스 입력 | `paused` 이벤트 뒤에만 wn 칩 · 카드 `마우스 입력이 감지되어 멈췄습니다` · `이어서`, 그 전에는 `멈추는 중…` |
+| Scan-Item-Run(완료) | 끝까지 둔다 | 끝 카드 `스캔을 마쳤습니다` 약 2초 → 플래너 원래 크기, 스캔 탭이면 첫 종류 검토 + 종류별 줄. `결과 검토 열기`는 바로 복원 |
+| (중지) | 진행 창 `중지` 또는 Esc | 바로 복원, 남은 종류 `읽지 않음`, 읽은 후보는 검토에 남음 |
+| (홈 팝업 아이템 타일) | 홈 연결 메뉴 `스캔` → 아이템 타일 | 같은 진행 창(1종, 캡션 `칸`), 끝나면 홈에 토스트(발견 2) |
+
+### XB 요청 후보 (고정 형식 밖 — 이 slice는 '—' · 숨김)
+
+1. 아이템 progress의 신뢰 가능한 전체 분모(종류별 예상 칸 수) — 있으면 `% · n / m칸 · 남은 시간`(시안). 없으면 계속 숨김.
+2. 인벤토리 `feedback`(지금 읽는 아이템 id · 수량 · 이전값 비교) — NOW READING `밀레니엄 · 최상급 · 40 → 40 일치`, 아이템 단위 `최근 기록` 줄.
+3. 진행 중 아이템 후보 · 차이 집계(바뀐 수량 · 확인 필요 · 그대로) — KPI 3칸(FD-156, 학생 쪽 요청 2와 같은 설계로 묶으면 된다).
+4. (선택) 종류 사이 전환 지연이 크면 FD-143 (b) `inventory_scan_profiles` 배열 start — 지금은 필요 0.
+
+### 발견 사항
+
+1. **Lane B 동시 작업**: `lib/ui/scan/review/`(FE8-g4a 새 파일)가 작업 중 analyze error · warning을 냈다(마지막에는 warning 1). 이 slice 파일과 겹침 0, 그 폴더를 읽지 · 고치지 않았다.
+2. **완료 → 결과 검토 자동 이동(app_shell 요청)**: 스캔 탭에서 시작했으면 복원 뒤 바로 검토가 보이지만, 홈 팝업 등 다른 탭에서 시작했으면 셸은 탭을 바꾸지 않고 완료 토스트(`아이템 스캔을 마쳤습니다 · 읽은 결과 n건이 있습니다. 누르면 결과 검토를 엽니다.`)만 띄운다(FE8-f2 규칙). 시안 ④ "플래너가 다시 앞으로 오고 아이템 결과 검토를 엽니다"를 다 맞추려면 셸 `_scanSessionChanged`에서 아이템 큐 끝(토스트를 띄울 자리)일 때 `_open(AppSection.scan)` 1~3줄이면 된다. app_shell 수정 금지라 하지 않았다.
+3. **줄어든 창 아래 셸 레이아웃(app_shell 요청)**: 진행 창은 셸 `Positioned.fill` 덮개라 그 아래 셸은 375 폭 등 작은 창 크기로 계속 배치된다(디버그 빌드에서 넘침 경고 가능, 릴리스는 가려짐). 덮개가 있는 동안 셸 본문을 Offstage로 두는 것은 app_shell 몫(이번 golden은 진행 창만 찍어 해당 없음).
+4. **진행 중 백엔드 끊김**: 진행 창이 남고 중지 요청도 실패할 수 있다(FE8-f1 이전부터 있던 세션 동작과 같다). 끊김 때 진행 창을 접을지는 후속 판단.
+5. **dock 실패 = 계속(워커 재량)**: 예전 학생 전체 dock은 실패하면 스캔을 시작하지 않았다. 아이템은 게임 창이 앞에서 진행되므로 진행 창 없이 계속하게 했다. 기본 서비스는 Windows에서만 부른다(MethodChannel이 Windows 러너에만 있고, 시험 fake async에서는 응답하지 않는다). 네이티브가 5초 뒤에 늦게 붙이면 덮개 없이 창만 줄 수 있다(드문 경우).
+6. **최근 스캔 행 묶음**: 큐 종류는 최근 스캔에 종류마다 한 행(`아이템 · 기술 노트`)이다. 시안 Scan 레일 `아이템 · 기술 노트 · BD` 묶음 행은 하지 않았다(FE8-g5에서 검토 보드와 함께). 최근 기록 열기(`openRecent`)는 예전처럼 기록 그대로 연다(종류별 줄의 revision 적어 두기는 큐 줄에만).
+7. **키트 승격 후보(Lane A 판단)**: 가운데 정렬 꽉 찬 tonal 버튼(`_DockButton` — 키트 `TonalButton`은 글자를 왼쪽에 둔다), 사선 패널 painter(`_SkewPanelPainter`, 진행 화면 타일과 비슷).
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8g3/pre/<경로>` 15파일(고친 12 + 고치지 않은 `scan_page.dart` · `scan_session_controller_test.dart` · `scan_header_progress_fe8f2_test.dart` — commit.json에는 없음). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8g3/commit.json`: slice `fe8g3`, modified 12(이 문서 포함), added 2, `whole` = [`frontend/test/goldens/baseline/scan-pick-items.png`], `optional_added` = [`frontend/test/goldens/baseline/scan-item-run.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe8g3/output.md`. 로그 `debug/frontend_fe8g3/logs/`, 렌더 `debug/frontend_fe8g3/render/`.
+
+### 다음 행동
+
+- FE8-g3 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(FE8-g4a)가 멈춘 뒤 gate 1회(예상: analyze 0(Lane B 파일이 정리됐다면), 일반 시험에 scan_item_queue_fe8g3 +9 추가 · scan_companion_dock 3→5, process 스캐너 4 GREEN, golden `scan-pick-items` RED(주 버튼 켜짐 · 설명 글자) · 새 `scan-item-run` 기준 없음 · 나머지 GREEN → 실패 이미지 검토(렌더 PNG와 비교) → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8g3`. 발견 2 · 3(app_shell 각 몇 줄)은 app_shell을 고칠 수 있는 slice에 넘긴다.
+- **FE8-g5 입력**: 아이템 검토 보드는 `controller.itemQueue`(종류 · 상태 · `itemQueueResult(kind)` = 세션 · generation · 후보)를 읽어 종류를 합쳐 보이면 된다 — 지금 `ScanQueueReviewBar` + `ScanPage`를 그 보드로 바꾸고 `scanQueueReviewVisible` · `openQueueKind`를 대신한다. 종류별 후보는 섞지 말고 (세션, generation, candidate) 열쇠로 적용(FB10b subset)한다. 검토 대기 판단은 `ScanHeaderStatus.of`(지금 후보 + `itemQueuePendingCandidates`) 그대로 쓰면 된다. 최근 스캔 묶음 행(발견 6)도 이때.
+
+### fe8g3 commit record (2026-10-18 15:28, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_151238\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
