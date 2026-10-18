@@ -33,6 +33,10 @@ Optional keys (orchestrator only)
                                         "this slice's end content" instead of the working tree
                                         (next slice's pre copy = this slice's end).
   "inspect":        ["path"]            DryRun review only: drops HEAD and working copies into the run folder.
+  "deleted":        ["path"]            tracked file removed by this slice (2026-10-18, FE10). The orchestrator
+                                        deletes the file from the working tree BEFORE the gate, so the gate runs
+                                        without it; this script then stages the removal (git rm --cached).
+                                        The file must be tracked and already absent from the working tree.
 
 Usage (from the v7 folder)
   powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
@@ -126,6 +130,7 @@ $added = @($m.added | Where-Object { $_ })
 $whole = @($m.whole | Where-Object { $_ })
 $optAdded = @($m.optional_added | Where-Object { $_ })
 $inspect = @($m.inspect | Where-Object { $_ })
+$deleted = @($m.deleted | Where-Object { $_ })
 $snapshot = @()
 if ($null -ne $m.snapshot) { foreach ($p in $m.snapshot.PSObject.Properties) { $snapshot += [pscustomobject]@{ Rel = $p.Name; Src = [string]$p.Value } } }
 $postDir = ''
@@ -134,7 +139,7 @@ $withStatus = $true
 if ($null -ne $m.status) { $withStatus = [bool]$m.status }
 $msgLines = @($m.message)
 if ($msgLines.Count -eq 0 -or -not $msgLines[0]) { throw 'commit.json message is empty.' }
-Say ("modified " + $modified.Count + " / added " + $added.Count + " / snapshot " + $snapshot.Count + " / optional_added " + $optAdded.Count + " / whole " + $whole.Count + " / status " + $withStatus)
+Say ("modified " + $modified.Count + " / added " + $added.Count + " / snapshot " + $snapshot.Count + " / optional_added " + $optAdded.Count + " / whole " + $whole.Count + " / deleted " + $deleted.Count + " / status " + $withStatus)
 if ($postDir) { Say ("post_dir: " + $postDir + $(if (Test-Path $postDir) { '' } else { ' (not present yet -> working tree used)' })) }
 
 # Slice end content: the next slice pre copy if present, else the working tree.
@@ -198,6 +203,14 @@ foreach ($rel in $optAdded) {
   $ot = (Get-Item (V7Path $rel)).LastWriteTime
   if ($ot -gt $sumTime) { throw "optional_added file changed after the gate ($sumTime): $rel ($ot)." }
   Say "will add (untracked): $rel"; $optToAdd += $rel
+}
+# 2b. deleted files must be tracked and already gone from the working tree (the gate ran without them)
+foreach ($rel in $deleted) {
+  if (@($modified + $added + $whole + $optAdded) -contains $rel) { throw "deleted file is also listed in another key: $rel" }
+  $t = Git-Lines @('ls-files', '--', $rel)
+  if ($t.Count -eq 0) { throw "deleted file is not tracked: $rel" }
+  if (Test-Path (V7Path $rel)) { throw "deleted file still exists in the working tree (delete it, rerun the gate): $rel" }
+  Say "will delete (tracked, absent): $rel"
 }
 
 # 3a. modified -> 3-way merge builds "HEAD + slice change" (index untouched yet)
@@ -267,11 +280,11 @@ if ($inspect.Count -gt 0 -or $snapshot.Count -gt 0) {
   [System.IO.File]::WriteAllBytes((Join-Path $work 'frontend-status.txt'), $st.Bytes)
 }
 
-Say ("ready: merge/snapshot " + $plan.Count + ", added from working tree " + $addedFromWork.Count + ", optional " + $optToAdd.Count)
+Say ("ready: merge/snapshot " + $plan.Count + ", added from working tree " + $addedFromWork.Count + ", optional " + $optToAdd.Count + ", deleted " + $deleted.Count)
 if ($DryRun) { Say 'DryRun: checks passed. Nothing staged.'; Say "review files: $work"; exit 0 }
 
 # 4. stage
-$restore = @($modified + $added + $whole + $optToAdd + @($snapshot | ForEach-Object { $_.Rel }))
+$restore = @($modified + $added + $whole + $optToAdd + $deleted + @($snapshot | ForEach-Object { $_.Rel }))
 try {
   foreach ($x in $plan) {
     if ($x.Filtered) { $sha = (Git-Run @('hash-object', '-w', ('--path=' + $x.Rel), $x.File)).Text.Trim() }
@@ -284,6 +297,7 @@ try {
   if ($addedFromWork.Count -gt 0) { Git-Run (@('add', '--') + $addedFromWork) | Out-Null }
   if ($optToAdd.Count -gt 0) { Git-Run (@('add', '--') + $optToAdd) | Out-Null }
   if ($whole.Count -gt 0) { Git-Run (@('add', '--') + $whole) | Out-Null }
+  if ($deleted.Count -gt 0) { Git-Run (@('rm', '--cached', '-q', '--') + $deleted) | Out-Null }
 } catch {
   Git-Run (@('reset', '-q', '--') + $restore) -AllowFail | Out-Null
   throw

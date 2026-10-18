@@ -242,6 +242,10 @@
 | FD-137 | 어떤 코드를 죽은 코드로 지우는가? | B §1-4·§2-4, C §8(slice 6), D §3.4, E §1.4, G §1.4 | — | 학생 Section 5 필터 코드와 `StudentRangeConditionSection`, `studentCardInfoAreaFraction` 등 카드 정보 띠 상수, `DiagonalSection`(교체 완료 후), `_DeckEditor`, `_ComparisonCandidate*`, 계획 메인 Section 1 버튼 묶음과 `_PlanWorkspaceSnapshot` 왕복 로직, `dummyPlan*`·`planPrimaryBottleneck*` 등 상수(projection 연결 후) | FE10 | 워커 재량 |
 | FD-138 | goals v1과 `calculateShortages` 경로를 남기는가? | FD-003, FD-026 | — | 남긴다(파생 goals로 동작, 백엔드 메서드 삭제 안 함). 새 화면은 활성 문서 경로만 사용 | FE10 | 워커 재량 |
 | FD-139 | ValueKey 기반 기존 테스트는 언제 고치는가? | `planning_page_test`, `plan_element_builder_test`, `statistics_page_test`, `inventory_page_test`, `tactical_page_test`, `title_page_test` 등. 출처 C §8, F §4, G §7.2, A §2.4 | — | 각 화면 slice에서 재작성, FE10은 전체 회귀만 | FE10 | 워커 재량 |
+| FD-177 | 계획 만들기 1단계 "한 명 모드"(Flow-1-Students-One)를 만드는가? | FE10-a artboard 감사(57장 중 미구현 1), artboard-map Flow-1-Students-One 행 | (a) 만든다(FE4-b2) (b) 시안 범위에서 뺀다 | (a). 57장 시안을 모두 채운다 | FE4-b2 | 확정 2026-10-19 (a) |
+| FD-178 | 지금 앱에 없는 기능(검수 포인트 S3·I2·T3·SE3)의 범위는? | FE10-a `review-points-decision-draft.md`, section-direction §5·§6·§7·§10 검수 포인트 | 기능마다 (a) 개편 뒤 만든다 (b) 범위 밖 | 학생 탭 현재값 직접 수정(S3)·전체 육성 부족 화면(I2)·백업·복원(SE3) = (a) 개편 뒤 별도 slice(FE11 후보, 이번 FE10 범위 밖). 전술 기록 캡처·붙여넣기·폴더 가져오기(T3) = (b) 범위 밖(Excel/CSV·로비 스캔 유지) | — | 확정 2026-10-19 |
+| FD-179 | 시안이 없는 설정 탭을 어떻게 하는가? | FE10-a 검수 포인트 SE1, FD-020(현행 유지), `settings_page.dart` 옛 Material 카드 | (a) 내용·순서(프로필 → Backend 연결 → Scanner 준비 → 고급 진단)는 그대로 두고 다른 탭과 같은 사선 섹션·키트로 다시 그린다 (b) 지금 그대로 | (a). 동작 변화 0, 모양만 | FE10-s | 확정 2026-10-19 (a) |
+| FD-180 | "페이즈로 추가" 병합에서 새 앞 단계 목표가 기존 "나중에" 단계 목표보다 높아지면(`target_regression`)? | orchestrator-log FE4-g2 발견 2, FE10-a findings "사용자 결정 필요" | (a) 나중 단계를 새 값까지 올리고 무엇을 올렸는지 알린다 (b) 막고 이유를 보인다(현행) (c) 그 학생만 빼고 추가 | (a). FE4-e "몰래 올리지 않는다"는 알림 문구로 지킨다 | FE4-g4 | 확정 2026-10-19 (a) |
 
 ---
 

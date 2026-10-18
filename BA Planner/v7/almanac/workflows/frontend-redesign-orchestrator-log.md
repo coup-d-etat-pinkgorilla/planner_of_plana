@@ -3836,3 +3836,13 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - CF 판단: FE8-g4b 발견 2(`학생 전체 · —명`)는 total=null이라 '—'가 맞음. 발견 1(Retry·Recover snapshot 진입점)은 FE8-g5b에서 닿는지 확인·없으면 레일 아래 최소 버튼, 진단 JSON은 FD-152로 미룸. 발견 3(두 보드가 함께 남음)은 FE8-g5b — 권장 "가장 최근 실행의 보드 + 레일 행으로 전환". FE8-g5a 발견 4(부분 review가 후보 payload를 줄임)는 FE8-g5b에서 컨트롤러 보존 규칙·시험으로. 발견 5(고친 값을 resource key로 유지) 수용.
 - XB: 15:30 알림 뒤 새 기록 없음. XB 요청 후보 추가(급하지 않음): 인벤토리 entry 그리드 행·열, 수량 판독 이유의 사람용 글자.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g5b-worker-prompt-20261018.md`(아이템 보드 연결·옛 인계 제거 — FE8 마지막) · Lane B `debug/frontend_redesign_handoff/fe10a-worker-prompt-20261018.md`(결정 대장·artboard 지도 감사, 발견 사항 수집, Lane A 파일 밖 죽은 코드 — 동작 변화 0).
+## 2026-10-19 00:30 — FE8-g5b·FE10-a 검토·gate·커밋, 사용자 결정 FD-177~180, 다음 라운드
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8g5b 24행, fe10a 10행), 겹침 0. 이번 라운드 밖 문서 수정 0(저장소의 다른 레인 WIP는 그대로).
+- FE8-g5b: 컨트롤러 `approveInventoryCandidateSubset`·`commitApprovedInventoryCandidate`, 어댑터 `scan_item_review_board_adapter.dart`, 스캔 탭 아이템 검토 = 레일 + 보드. 옛 인계 제거(인벤토리 `_CandidatePanel`·`InventoryCandidateContext`, 학생 탭 후보 띠, 셸 `_handoffCandidate` 학생·인벤토리 분기 — 전술 로비만 남김). 지운 시험 3건은 `scan_item_review_fe8g5b_test`로 같은 의미 대체(제거 표 확인). 레일에 `다시 스캔`·`결과 다시 읽기`(FE8-g4b 발견 1). app_shell +9/−47.
+- FE10-a: 감사 보고서 6개(`debug/frontend_fe10a/artifacts/`) — 대장 FD 173행·열림 0·갱신 누락 8, artboard 57장 중 완료 55(+ g5b 1)·미구현 1(Flow-1-Students-One), 남은 발견 사항 334줄 분류. `SectionTemplateSurface`·`AttachedSectionTemplateSurface` 계열 제거(−197/−34, 시험 1건은 같은 파일 나머지 4건이 덮음). `section_surface.dart:6` 낡은 주석은 FE10-b.
+- gate ① `20261018_233222`: 모두 PASS(process 101), golden RED 2 = 예측(`scan-review-students` 레일 버튼 2개만, 새 `scan-review-items`) → 승인 ② `-UpdateGoldens` `20261018_234539` **GREEN**(golden 65).
+- 커밋: **fe8g5b `7508ee42`** → **fe10a `e1941271`**. **FE8 표 전부 완료.**
+- 사용자 결정(AskUserQuestion, 2026-10-19): FD-177 한 명 모드 만든다 · FD-178 학생 현재값 직접 수정·전체 육성 부족·백업 복원은 개편 뒤, 전술 캡처·붙여넣기·폴더는 범위 밖 · FD-179 설정 탭 새 스타일(내용 그대로) · FD-180 병합 목표 역전은 나중 단계를 올리고 알림. 대장 §10에 FD-177~180 추가.
+- CF: `frontend/tool/fe_commit.ps1`에 `deleted` 키(CF 전용 — 파일을 먼저 지우고 gate, 그 뒤 `git rm --cached`; 추적 중·작업 트리에 없음 확인). FE10-b 파일 삭제 후보 5개(`dead-code.md`)에 쓴다.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4b2-worker-prompt-20261019.md`(계획 1단계 한 명 모드) · Lane B `debug/frontend_redesign_handoff/fe10s-worker-prompt-20261019.md`(설정 탭 새 스타일, 동작 변화 0). 그다음: FE4-g4(FD-180) · FE10-b(죽은 코드 2차·파일 삭제·버그 의심 2) · FE10-d(문서 반영) → FE10-z(Release·최종 둘러보기).
