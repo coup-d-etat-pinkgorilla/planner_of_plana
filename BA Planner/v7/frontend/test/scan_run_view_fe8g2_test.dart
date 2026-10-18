@@ -507,7 +507,9 @@ void main() {
     await _settle(tester);
     expect(controller.candidates, hasLength(1));
     expect(_key('scan-run'), findsNothing);
-    expect(_key('scan-page'), findsOneWidget);
+    // 학생 결과는 결과 검토 보드다(FE8-g4b — 예전 검토 화면 `scan-page`는 아이템 · 전술 로비만).
+    expect(_key('scan-review'), findsOneWidget);
+    expect(_key('scan-page'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

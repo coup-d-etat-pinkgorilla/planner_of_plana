@@ -345,10 +345,30 @@ class _AppShellState extends State<AppShell>
             notice.kind == ScannerKind.tacticalLobby)) {
       return;
     }
+    // 아이템 차례 스캔이 끝나면 플래너가 앞으로 와 결과 검토를 연다(시안 Scan-Item-Run ④, FE8-g3 발견 2).
+    if (notice.kind == ScannerKind.inventory) {
+      _open(AppSection.scan);
+      return;
+    }
     _scanEndNoticeTimer?.cancel();
     _scanEndNoticeTimer = Timer(scanEndToastDuration, _dismissScanEndNotice);
     setState(() => _scanEndNotice = notice);
   }
+
+  /// 아이템 진행 창이 덮는 동안(플래너 창이 줄어 있다) 셸 본문은 그리지 · 누르지 않는다. 크기 · 상태는 그대로다(FE8-g3 발견 3).
+  Widget _hiddenWhileDocked(Widget body) =>
+      ValueListenableBuilder<ScanCompanionState?>(
+        valueListenable: _scanCompanion,
+        builder: (context, companion, child) => Visibility(
+          key: const ValueKey('shell-body'),
+          visible: companion == null,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: true,
+          child: child!,
+        ),
+        child: body,
+      );
 
   void _dismissScanEndNotice() {
     _scanEndNoticeTimer?.cancel();
@@ -629,12 +649,12 @@ class _AppShellState extends State<AppShell>
                 );
 
                 if (canShowPanel || !_showDevelopmentPanel) {
-                  return mainContent;
+                  return _hiddenWhileDocked(mainContent);
                 }
 
                 return Stack(
                   children: [
-                    mainContent,
+                    _hiddenWhileDocked(mainContent),
                     Positioned.fill(
                       child: GestureDetector(
                         onTap: () =>

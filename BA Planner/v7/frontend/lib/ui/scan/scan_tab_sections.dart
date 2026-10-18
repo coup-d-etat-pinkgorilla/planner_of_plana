@@ -197,6 +197,24 @@ class ScanPickWorkspace extends StatelessWidget {
   }
 }
 
+/// 왼쪽 레일만(FE8-g4b): 학생 결과 검토 보드는 가운데 · 오른쪽 섹션만 그리므로 스캔 탭이 같은 자리에 같은 레일을 둔다.
+class ScanRailWorkspace extends StatelessWidget {
+  const ScanRailWorkspace({super.key, required this.view});
+
+  final ScanPickView view;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Stack(
+      children: [
+        Positioned.fill(
+          child: _RailSection(size: constraints.biggest, view: view),
+        ),
+      ],
+    ),
+  );
+}
+
 /// 자리가 [minWidth]보다 좁으면 그 폭으로 배치하고 넘친 부분을 자른다(통계 `_MinBox`와 같은 규칙).
 class _MinBox extends StatelessWidget {
   const _MinBox({required this.minWidth, required this.child});

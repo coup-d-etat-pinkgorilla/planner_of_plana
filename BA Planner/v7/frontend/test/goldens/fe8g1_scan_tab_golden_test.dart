@@ -15,6 +15,9 @@
 // - `scan-item-run`(Scan-Item-Run 진행 창, FE8-g3): `기술 노트` · `전술 교육 BD` 2종 큐의 1번째 진행 중(인식 entry 누계 28,
 //   total = null). 진행 창은 플래너 창을 게임 창 옆 1:2로 줄인 것이라 설계 크기 375×750 창 하나를 찍는다(시안 진행 창 rect와
 //   1:1 비교). 네이티브 창 붙이기는 시험용 대역이다.
+// - `scan-review-students`(Scan-Student-Review, FE8-g4b): `전체 학생`으로 시작해 Mock 후보 5개로 끝난 뒤 스캔 탭 = 왼쪽 레일 +
+//   학생 결과 검토 보드. 확정값이 있는 학생(id 순) 첫 4명 중 1명은 레벨 근거 `uncertain`(확인 필요), 3명은 레벨 +1 · EX
+//   스킬 등 바뀐 값(계산 검증 `verified` = 바뀐 학생), 확정값이 없는 학생 1명(새 학생). 시작 = 지역 11:57(제목 칩 `오늘 11:57`).
 // 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
@@ -173,6 +176,42 @@ Future<ScanTabPage> _openScanTab(
   return page;
 }
 
+/// 학생 후보 이벤트 payload(FB-10 형식: 계산 검증 `verified`, [uncertain]이면 레벨 근거 `uncertain` · review_required).
+Map<String, dynamic> _studentCandidateWire(
+  ScannerSession session,
+  String studentId,
+  Map<String, dynamic> values, {
+  bool uncertain = false,
+}) => {
+  'candidate': {
+    'candidate_id': 'golden-$studentId',
+    'session_id': session.id,
+    'generation': session.generation,
+    'revision': 1,
+    'scan_kind': 'student',
+    'payload': {'version': 1, 'student_id': studentId, 'values': values},
+    'evidence': [
+      {
+        'field': 'level',
+        'status': uncertain ? 'uncertain' : 'ok',
+        'source': 'golden_fixture',
+        'confidence': uncertain ? 0.61 : 0.99,
+        'note': '',
+      },
+      {
+        'field': 'student_stat_validation',
+        'status': 'verified',
+        'source': 'student_stats_v1',
+        'confidence': 1,
+        'note': '',
+      },
+    ],
+    'review_required': uncertain,
+    'approved': false,
+    'audit': const <dynamic>[],
+  },
+};
+
 void main() {
   setUpAll(loadGoldenFonts);
 
@@ -307,5 +346,76 @@ void main() {
       '칸 · 1번째 / 2종류',
     );
     await expectGoldenScene(tester, 'scan-item-run');
+  }, variant: goldenPlatform);
+
+  testWidgets('scan-review-students', (tester) async {
+    final service = _HeldRunGoldenService();
+    final page = await _openScanTab(tester, service: service);
+    final controller = page.controller;
+    controller.now = () => DateTime(2026, 10, 4, 11, 57, 50);
+    await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
+    await tester.pumpAndSettle();
+    final session = service.session!;
+    final owned = [
+      for (final student in [
+        ...?controller.repositoryState?.students,
+      ]..sort((a, b) => a.studentId.compareTo(b.studentId)))
+        if (student.values['level'] is int) student,
+    ].take(4).toList();
+    expect(owned, hasLength(4));
+    Map<String, dynamic> changed(Map<String, dynamic> values) {
+      final level = values['level'] as int;
+      final ex = values['ex_skill'] as int? ?? 1;
+      return {
+        ...values,
+        'level': level >= 90 ? level - 1 : level + 1,
+        'ex_skill': ex >= 5 ? ex - 1 : ex + 1,
+      };
+    }
+
+    service.emit(
+      ScannerEventKind.candidate,
+      _studentCandidateWire(
+        session,
+        owned[0].studentId,
+        changed(owned[0].values),
+        uncertain: true,
+      ),
+    );
+    for (final student in owned.skip(1)) {
+      service.emit(
+        ScannerEventKind.candidate,
+        _studentCandidateWire(
+          session,
+          student.studentId,
+          changed(student.values),
+        ),
+      );
+    }
+    final ownedIds = {
+      for (final student in [...?controller.repositoryState?.students])
+        student.studentId,
+    };
+    final newcomer = (controller.studentCatalog.keys.toList()..sort())
+        .firstWhere((id) => !ownedIds.contains(id));
+    service.emit(
+      ScannerEventKind.candidate,
+      _studentCandidateWire(session, newcomer, const {
+        'level': 90,
+        'student_star': 5,
+        'ex_skill': 5,
+      }),
+    );
+    service.emit(ScannerEventKind.terminal, {'outcome': 'completed'});
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scan-review')), findsOneWidget);
+    expect(find.byKey(const ValueKey('scan-review-rail')), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('scan-review-count-changed')))
+          .data,
+      '3',
+    );
+    await expectGoldenScene(tester, 'scan-review-students');
   }, variant: goldenPlatform);
 }

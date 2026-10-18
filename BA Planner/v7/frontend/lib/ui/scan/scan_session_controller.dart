@@ -57,6 +57,17 @@ class ScanPick {
 }
 
 /// 최근 스캔 행이 쓰는 앱 실행 기록 보탬(FD-149 (a)): 시작 시각과 아이템 종류. [ScannerRecentSummary]에는 없는 값이라
+/// 학생 결과 적용([ScanSessionController.approveStudentCandidate] ·
+/// [ScanSessionController.commitApprovedStudentCandidate])을 시작할 수 없을 때 던진다. [message]가 그대로 보인다.
+class ScanStudentApplyException implements Exception {
+  const ScanStudentApplyException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// 세션(id + generation)마다 컨트롤러가 기억한다.
 @immutable
 class ScanRecentDetail {
@@ -219,6 +230,11 @@ class ScanSessionController extends ChangeNotifier {
 
   RepositoryProfile? get profile => _profile;
   RepositoryState? get repositoryState => _repositoryState;
+
+  /// 다음 적용의 expected repository revision(권위값, FB-1b). state를 아직 읽지 못했으면 null(적용할 수 없다).
+  /// commit 응답 revision을 state 다시 읽기보다 먼저 받는다.
+  int? get repositoryRevision =>
+      _repositoryState == null ? null : _repositoryRevision;
   Map<String, StudentCatalogEntry> get studentCatalog => _studentCatalog;
   List<InventoryCatalogEntry> get inventoryCatalog => _inventoryCatalog;
   ScannerKind get kind => _kind;
@@ -1526,18 +1542,11 @@ class ScanSessionController extends ChangeNotifier {
       _update(() => _candidateNotice = '적용 차례를 기다리는 동안 계정이 바뀌어 적용하지 않았습니다.');
       return;
     }
-    final pinned = session == null
-        ? null
-        : _pendingApplies[scanPendingApplySlot(session, candidate.id)];
     // 같은 의도의 재시도: 고정한 요청을 그대로 다시 보낸다(review 재호출·새 expected 없음). 고정한 expected를
     // 쓰므로 지금 state cache가 비어 있어도 보낼 수 있다.
-    final retry =
-        pinned != null &&
-            session != null &&
-            profile != null &&
-            pinned.isRetryOf(session, candidate, profile.id)
-        ? pinned
-        : null;
+    final retry = session == null || profile == null
+        ? null
+        : _pinnedRetryFor(session, candidate, profile.id);
     final expected = retry != null
         ? retry.expectedRepositoryRevision
         : (_repositoryState == null ? null : _repositoryRevision);
@@ -1546,13 +1555,145 @@ class ScanSessionController extends ChangeNotifier {
         profile == null ||
         expected == null ||
         session == null) {
-      _update(() {
-        const message = '적용에 필요한 프로필 또는 세션 상태가 없습니다.';
-        _candidateErrors[candidate.id] = message;
-        _candidateNotice = message;
-      });
+      _recordMissingApplyState(candidate);
       return;
     }
+    try {
+      await _commitStudentCandidate(
+        candidate,
+        scanner: scanner,
+        session: session,
+        profileId: profile.id,
+        expected: expected,
+        retry: retry,
+        approve: () => _approveStudentCandidate(candidate),
+      );
+    } catch (_) {
+      // 실패는 _commitStudentCandidate가 후보 오류 · 안내에 적었다(한 명 적용은 던지지 않는다).
+    }
+  }
+
+  /// [session]의 [candidate]에 고정해 둔 같은 의도의 요청(같은 세션 · 후보 revision · 계정). 없으면 null.
+  ScanPendingApply? _pinnedRetryFor(
+    ScannerSession session,
+    ScannerCandidate candidate,
+    String profileId,
+  ) {
+    final pinned = _pendingApplies[scanPendingApplySlot(session, candidate.id)];
+    return pinned != null && pinned.isRetryOf(session, candidate, profileId)
+        ? pinned
+        : null;
+  }
+
+  /// 적용에 필요한 계정 · 세션 · 저장소 상태가 없을 때(한 명 적용 · 보드 commit 공용 문구).
+  String _recordMissingApplyState(ScannerCandidate candidate) {
+    const message = '적용에 필요한 프로필 또는 세션 상태가 없습니다.';
+    _update(() {
+      _candidateErrors[candidate.id] = message;
+      _candidateNotice = message;
+    });
+    return message;
+  }
+
+  /// FD-144 순차 적용 1단계(학생 결과 검토 보드 · 한 명 적용 공용): `scanner.candidate.review`(approve = true)로
+  /// 승인한 새 revision 후보를 돌려준다. 이미 승인된 후보는 그대로 돌려준다. 받은 후보를 지금 후보로 두고(revision 유지),
+  /// 백엔드가 승인 때 지운 crop을 이미 받은 사본에서도 지운다(FB-10c). 실패하면 던진다(후보 오류는 적지 않는다 —
+  /// 보드가 그 학생에서 멈추고 표시한다). 처리하는 동안 후보는 바쁨이다.
+  Future<ScannerCandidate> approveStudentCandidate(
+    ScannerCandidate candidate,
+  ) async {
+    _update(() => _busyCandidateIds.add(candidate.id));
+    try {
+      return await _approveStudentCandidate(candidate);
+    } finally {
+      if (!_disposed) _update(() => _busyCandidateIds.remove(candidate.id));
+    }
+  }
+
+  Future<ScannerCandidate> _approveStudentCandidate(
+    ScannerCandidate candidate,
+  ) async {
+    final scanner = _scanner;
+    final session = _sessionFor(candidate);
+    if (scanner == null || session == null) {
+      throw const ScanStudentApplyException('적용에 필요한 프로필 또는 세션 상태가 없습니다.');
+    }
+    final approved = candidate.approved
+        ? candidate
+        : await scanner.reviewScannerCandidate(
+            session,
+            candidate,
+            candidate.payload,
+            approve: true,
+            reason: 'applied_in_scan_page',
+          );
+    if (!_disposed) {
+      _update(() {
+        _keepCandidate(approved);
+        // 백엔드는 승인 때 자기 crop을 지웠다. 이미 받은 사본도 같은 시점에 지운다.
+        _releaseStudentCandidateImages(approved);
+      });
+    }
+    return approved;
+  }
+
+  /// FD-144 순차 적용 2단계(학생 결과 검토 보드): 승인한 후보 [approved]를 `scanner.candidate.commit`으로 적용하고
+  /// 응답 repository revision을 돌려준다. 한 명 적용과 같은 규칙이다 — 새 idempotency key, 같은 의도(같은 세션 · 후보
+  /// revision · 계정)의 재시도는 고정한 요청(key · expected)을 그대로 다시 보내고 [expectedRepositoryRevision]은 쓰지
+  /// 않는다, 저장소 busy는 다시 시도, 실패는 분류해 후보 오류 · 안내에 적고, 성공하면 revision을 받고 후보를 빼고 state를
+  /// 다시 읽는다. 실패하면 던진다(보드가 그 학생에서 멈추고 나머지를 남긴다). 다른 적용과 차례로 한다.
+  Future<int> commitApprovedStudentCandidate(
+    ScannerCandidate approved, {
+    required int expectedRepositoryRevision,
+  }) {
+    _update(() => _busyCandidateIds.add(approved.id));
+    final run = _applyQueue.then((_) async {
+      try {
+        if (_disposed) throw StateError('scan session disposed');
+        final scanner = _scanner;
+        final profile = _profile;
+        final session = _sessionFor(approved);
+        if (scanner == null ||
+            _repository == null ||
+            profile == null ||
+            session == null) {
+          throw ScanStudentApplyException(_recordMissingApplyState(approved));
+        }
+        final retry = _pinnedRetryFor(session, approved, profile.id);
+        final committed = await _commitStudentCandidate(
+          approved,
+          scanner: scanner,
+          session: session,
+          profileId: profile.id,
+          expected:
+              retry?.expectedRepositoryRevision ?? expectedRepositoryRevision,
+          retry: retry,
+        );
+        final revision = committed ?? repositoryRevision;
+        if (revision == null) {
+          throw StateError('commit response has no repository revision');
+        }
+        return revision;
+      } finally {
+        if (!_disposed) _update(() => _busyCandidateIds.remove(approved.id));
+      }
+    });
+    _applyQueue = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
+
+  /// 적용 본체(한 명 적용 · 보드 commit 공용). [retry]가 있으면 고정한 요청을 그대로 다시 보내고, 없으면 [approve]
+  /// (없으면 [candidate]가 이미 승인된 후보)로 승인한 뒤 새 key · [expected]로 보낸다. 성공하면 commit 응답 revision
+  /// (정수가 아니거나 dispose 뒤면 null), 실패하면 분류해 후보 오류 · 안내에 적은 뒤 다시 던진다.
+  Future<int?> _commitStudentCandidate(
+    ScannerCandidate candidate, {
+    required ScannerService scanner,
+    required ScannerSession session,
+    required String profileId,
+    required int expected,
+    required ScanPendingApply? retry,
+    Future<ScannerCandidate> Function()? approve,
+  }) async {
     final slot = scanPendingApplySlot(session, candidate.id);
     if (retry == null) _pendingApplies.remove(slot);
     // 안내 문구는 지우지 않는다: 앞 적용의 "다시 적용하면 같은 요청을…" 안내가 이 적용의 결과가 나올 때까지 남는다.
@@ -1563,30 +1704,17 @@ class ScanSessionController extends ChangeNotifier {
       if (retry != null) {
         request = retry;
       } else {
-        final approved = candidate.approved
-            ? candidate
-            : await scanner.reviewScannerCandidate(
-                session,
-                candidate,
-                candidate.payload,
-                approve: true,
-                reason: 'applied_in_scan_page',
-              );
-        if (_disposed) return;
+        final approved = approve == null ? candidate : await approve();
+        if (_disposed) return null;
         final created = ScanPendingApply(
           session: session,
           candidate: approved,
-          profileId: profile.id,
+          profileId: profileId,
           expectedRepositoryRevision: expected,
           idempotencyKey: _newApplyKey(approved),
         );
         _pendingApplies[slot] = created;
         request = created;
-        _update(() {
-          _keepCandidate(approved);
-          // 백엔드는 승인 때 자기 crop을 지웠다. 이미 받은 사본도 같은 시점에 지운다.
-          _releaseStudentCandidateImages(approved);
-        });
       }
       sent = request;
       final committed = await retryRepositoryBusy(
@@ -1601,7 +1729,7 @@ class ScanSessionController extends ChangeNotifier {
       if (identical(_pendingApplies[slot], request)) {
         _pendingApplies.remove(slot);
       }
-      if (_disposed) return;
+      if (_disposed) return null;
       final committedRevision = committed['revision'];
       _update(() {
         if (committedRevision is int) {
@@ -1627,6 +1755,7 @@ class ScanSessionController extends ChangeNotifier {
           );
         }
       }
+      return committedRevision is int ? committedRevision : null;
     } catch (error) {
       final request = sent;
       final failure = request == null
@@ -1640,11 +1769,11 @@ class ScanSessionController extends ChangeNotifier {
           identical(_pendingApplies[slot], request)) {
         _pendingApplies.remove(slot);
       }
-      if (_disposed) return;
+      if (_disposed) rethrow;
       try {
-        await _reloadRepositoryState(profile.id);
+        await _reloadRepositoryState(profileId);
       } catch (_) {}
-      if (_disposed) return;
+      if (_disposed) rethrow;
       final wasRetry = retry != null;
       _update(() {
         final shown = _isShownCandidate(candidate);
@@ -1678,6 +1807,7 @@ class ScanSessionController extends ChangeNotifier {
             }
         }
       });
+      rethrow;
     } finally {
       if (!_disposed) _update(() => _busyCandidateIds.remove(candidate.id));
     }

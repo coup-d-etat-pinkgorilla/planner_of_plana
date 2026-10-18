@@ -31,6 +31,7 @@ class ScanPage extends StatefulWidget {
     this.now = DateTime.now,
     this.active = true,
     this.connectedTarget,
+    this.showStudentReview = true,
   });
 
   final AppService service;
@@ -52,6 +53,10 @@ class ScanPage extends StatefulWidget {
 
   /// 앱 전역 게임 창 연결(FE8-d). 있으면 대상 창 선택은 이 값을 읽고 쓴다. 없으면 이 화면만의 선택이다.
   final ConnectedTargetController? connectedTarget;
+
+  /// 학생 후보 검토(기존 [ScanStudentReviewWorkspace])를 그리는가. 스캔 탭은 학생 검토를 새 보드로만 하므로 false를
+  /// 준다(FE8-g4b, 마운트 해제). 단독 화면 · 기존 시험은 그대로(true).
+  final bool showStudentReview;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -376,9 +381,10 @@ class _ScanPageState extends State<ScanPage> {
           const SizedBox(height: AppSpacing.sm),
           _buildSession(progress),
         ],
-        if (_controller.candidates.values.any(
-          (item) => item.kind == ScannerKind.student,
-        )) ...[
+        if (widget.showStudentReview &&
+            _controller.candidates.values.any(
+              (item) => item.kind == ScannerKind.student,
+            )) ...[
           const SizedBox(height: AppSpacing.sm),
           ScanStudentReviewWorkspace(
             candidates: _controller.candidates.values

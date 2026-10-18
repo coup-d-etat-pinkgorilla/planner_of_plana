@@ -4,25 +4,8 @@ import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> _reveal(
-  WidgetTester tester,
-  Finder scrollable,
-  Finder target,
-) async {
-  final scrollableState = tester.state<ScrollableState>(
-    find.descendant(of: scrollable, matching: find.byType(Scrollable)).first,
-  );
-  for (var attempt = 0; target.evaluate().isEmpty && attempt < 4; attempt++) {
-    scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
-    await tester.pump();
-  }
-  expect(target, findsOneWidget);
-  await tester.ensureVisible(target);
-  await tester.pump();
-}
-
 void main() {
-  testWidgets('AppShell keeps a held student candidate in the scan workspace', (
+  testWidgets('AppShell keeps a held student candidate in the scan review', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
@@ -47,10 +30,13 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
     await tester.pump(const Duration(milliseconds: 35));
+    await tester.pump();
+    // 끝난 학생 결과는 학생 결과 검토 보드(FE8-g4b): 확인 필요 행의 `보류`.
+    expect(find.byKey(const ValueKey('scan-review')), findsOneWidget);
     final hold = find.byKey(
-      const ValueKey('scan-student-hold-mock-candidate-1'),
+      const ValueKey('scan-review-hold-mock-candidate-1'),
     );
-    await _reveal(tester, find.byKey(const ValueKey('scan-page')), hold);
+    expect(hold, findsOneWidget);
     await tester.tap(hold);
     await tester.pump();
     expect(find.textContaining('보류했습니다'), findsOneWidget);

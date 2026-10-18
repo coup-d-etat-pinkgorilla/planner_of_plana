@@ -5,6 +5,10 @@
 // 머리글 칩 · 탭 점과 같은 [ScanHeaderStatus]라서 칩 · 토스트를 누르면 같은 화면이 열린다(FE8-f2). 검토까지 마치면 고르기로
 // 돌아온다. 학생 진행만은 새 진행 3섹션([ScanRunWorkspace], FE8-g2 · 시안 Scan-Student-Run)이다 — 세션은 셸 소유라 다른 탭에
 // 다녀와도 같은 진행 화면이고, 끝나면 위 규칙대로 검토 대기(결과 있음) 또는 고르기(결과 없음)다.
+// 학생 검토 대기(끝났고 적용 · 폐기하지 않은 학생 후보)는 학생 결과 검토 보드([ScanStudentReviewBoard], FE8-g4 · 시안
+// Scan-Student-Review)다. 보드는 가운데 · 오른쪽 섹션만 그리므로 왼쪽 레일([ScanRailWorkspace])은 고르기 · 진행과 같은
+// 자리에 이 화면이 둔다. 보드의 적용 · 재검증 · 보류 · 폐기는 셸 소유 컨트롤러로 간다([ScanReviewBoardControllerActions]).
+// 이 탭의 [ScanPage]는 학생 검토(기존 workspace)를 그리지 않는다(마운트 해제, FE8-g4b) — 아이템 · 전술 로비 검토만이다.
 //
 // [ScanPage]는 고르기 화면 동안에도 Offstage로 붙여 둔다: 계정 패널이 컨트롤러에 계정을 넘기고(시작 전제), 셸 · 테스트가
 // 컨트롤러를 그 화면에서 찾는다(FE8-f1 · f2와 같은 경로). 고르기 화면은 컨트롤러의 고르기 값만 바꾸고, 시작은
@@ -26,8 +30,11 @@ import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
 import '../pages/scan_page.dart';
 import 'connected_target_controller.dart';
+import 'review/scan_student_review_board.dart';
+import 'scan_header_progress.dart' show scanCandidateKey;
 import 'scan_item_queue.dart';
 import 'scan_pick_logic.dart';
+import 'scan_review_board_adapter.dart';
 import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
 import 'scan_tab_sections.dart';
@@ -226,6 +233,21 @@ class _ScanTabPageState extends State<ScanTabPage> {
     }
   }
 
+  /// 학생 결과 검토 보드 제목 칩의 범위 · 시각(시각은 이 컨트롤러로 시작한 세션만, 아니면 '—').
+  ({String scope, String? time}) _reviewLabels() {
+    final session = _controller.session;
+    final mode = session?.studentScanMode ?? _controller.studentScanMode;
+    final startedAt = session == null
+        ? null
+        : _controller.recentDetail(session)?.startedAt;
+    return (
+      scope: mode == StudentScanMode.full ? '학생 전체' : '학생 1명',
+      time: startedAt == null
+          ? null
+          : scanWhenText(startedAt, appClockNow(widget.service)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final view = scanTabViewFor(
@@ -234,13 +256,32 @@ class _ScanTabPageState extends State<ScanTabPage> {
     );
     final sessionShown = view == ScanTabView.session;
     final runShown = sessionShown && scanRunVisible(_controller);
-    final pageShown = sessionShown && !runShown;
+    final studentReview = sessionShown && !runShown
+        ? scanReviewStudentCandidates(
+            _controller,
+            appliedElsewhere: widget.appliedElsewhere,
+          )
+        : const <ScannerCandidate>[];
+    final reviewShown = studentReview.isNotEmpty;
+    final pageShown = sessionShown && !runShown && !reviewShown;
     final queueBarShown = pageShown && scanQueueReviewVisible(_controller);
     final connectedTarget = widget.connectedTarget;
     final panelVisible =
         widget.active &&
         connectedTarget != null &&
         (_panelRequested || (!_connected && !_panelDismissed));
+    ScanPickView pickView({required bool panel}) => ScanPickView(
+      controller: _controller,
+      service: widget.service,
+      now: appClockNow(widget.service),
+      lastScans: _lastScans,
+      appliedElsewhere: widget.appliedElsewhere,
+      connectedTarget: connectedTarget,
+      panelVisible: panel && panelVisible,
+      onOpenPanel: panel && connectedTarget != null ? _openPanel : null,
+      onClosePanel: _closePanel,
+      onUseTarget: _useTarget,
+    );
     return Stack(
       key: const ValueKey('scan-tab-page'),
       fit: StackFit.expand,
@@ -266,6 +307,7 @@ class _ScanTabPageState extends State<ScanTabPage> {
                     controller: _controller,
                     active: widget.active,
                     connectedTarget: connectedTarget,
+                    showStudentReview: false,
                   ),
                 ),
               ],
@@ -276,36 +318,58 @@ class _ScanTabPageState extends State<ScanTabPage> {
           ScanRunWorkspace(
             key: const ValueKey('scan-run'),
             onOpenStudents: widget.onOpenStudents,
-            view: ScanPickView(
-              controller: _controller,
-              service: widget.service,
-              now: appClockNow(widget.service),
-              lastScans: _lastScans,
-              appliedElsewhere: widget.appliedElsewhere,
-              connectedTarget: connectedTarget,
-              panelVisible: false,
-              onOpenPanel: null,
-              onClosePanel: _closePanel,
-              onUseTarget: _useTarget,
-            ),
+            view: pickView(panel: false),
           ),
+        if (reviewShown) ...[
+          _reviewBoard(studentReview),
+          ScanRailWorkspace(
+            key: const ValueKey('scan-review-rail'),
+            view: pickView(panel: false),
+          ),
+        ],
         if (!sessionShown)
           ScanPickWorkspace(
             key: const ValueKey('scan-pick'),
-            view: ScanPickView(
-              controller: _controller,
-              service: widget.service,
-              now: appClockNow(widget.service),
-              lastScans: _lastScans,
-              appliedElsewhere: widget.appliedElsewhere,
-              connectedTarget: connectedTarget,
-              panelVisible: panelVisible,
-              onOpenPanel: connectedTarget == null ? null : _openPanel,
-              onClosePanel: _closePanel,
-              onUseTarget: _useTarget,
-            ),
+            view: pickView(panel: true),
           ),
       ],
     );
   }
+
+  /// 학생 결과 검토 보드(FE8-g4b 값 연결 — 모르는 값은 보드가 '—').
+  Widget _reviewBoard(List<ScannerCandidate> candidates) {
+    final labels = _reviewLabels();
+    return ScanStudentReviewBoard(
+      key: const ValueKey('scan-review'),
+      candidates: candidates,
+      currentStudents: {
+        for (final student
+            in _controller.repositoryState?.students ??
+                const <ConfirmedStudentState>[])
+          student.studentId: student,
+      },
+      catalog: _controller.studentCatalog,
+      repositoryRevision: _controller.repositoryRevision,
+      actions: ScanReviewBoardControllerActions(_controller),
+      busyCandidateIds: _controller.busyCandidateIds,
+      candidateErrors: _controller.candidateErrors,
+      scopeLabel: labels.scope,
+      timeLabel: labels.time,
+    );
+  }
+}
+
+/// 학생 결과 검토 보드에 넘길 후보: 끝난 세션의 학생 후보 중 적용 · 폐기하지 않았고 다른 탭이 적용하지 않은 것(정렬은
+/// 보드 몫). 끝나지 않았으면 빈 목록이다.
+List<ScannerCandidate> scanReviewStudentCandidates(
+  ScanSessionController controller, {
+  Set<String> appliedElsewhere = const {},
+}) {
+  if (controller.stage != ScanSessionStage.terminal) return const [];
+  return [
+    for (final candidate in controller.candidates.values)
+      if (candidate.kind == ScannerKind.student &&
+          !appliedElsewhere.contains(scanCandidateKey(candidate)))
+        candidate,
+  ];
 }

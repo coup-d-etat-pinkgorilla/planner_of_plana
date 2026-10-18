@@ -10326,3 +10326,155 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_151238\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE8-g4b 착수 기록 (2026-10-18, Lane A)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-g4b 종료 기록), CF gate 미실행**. 범위: FE8-g4b — 학생 결과 검토 보드(`ScanStudentReviewBoard`, FE8-g4a)를 스캔 탭에 연결하고 FE8-g3가 남긴 셸 후속 2건을 한다. ① 컨트롤러 `_applyStudentCandidateInOrder` 흐름을 `approveStudentCandidate` · `commitApprovedStudentCandidate`로 나눠 공개(기존 한 명 적용은 이 둘로 동작 그대로) ② `ScanStudentReviewBoardActions` 컨트롤러 어댑터(새 파일) ③ 스캔 탭: 끝남 + 남은 학생 후보면 `ScanPage` 대신 보드, 왼쪽 레일은 고르기 · 진행과 같은 자리 ④ 스캔 탭에서 `ScanPage`의 학생 workspace 경로 마운트 해제(파일 · 시험 · golden `scan-student-review` 그대로) ⑤ 셸: 아이템 큐 끝에 스캔 탭이 아니면 스캔 탭 열기, 진행 창 덮개 동안 셸 본문 숨김. 같은 시각 Lane B가 `lib/ui/scan/item_review/**`(새 파일만, FE8-g5a)를 만든다 — 이 slice는 그 폴더를 건드리지 않는다.
+- 착수 전 확인: 이 문서에 다른 "FE8-g4b 착수 기록" 없음(grep 0건, `debug/frontend_fe8g4b/`도 없었음). 대장 "slice별 막힘 요약" FE8-g4 행 `—`, 현재 `열림` 0건 → 시작. FD-144 · FD-145 · FD-148 · FD-152는 `워커 재량`(권장안). 형식은 backend 로그 2026-10-18 01:30 FB-10 고정 선언(review/commit, 후보 revision · repository revision · idempotency).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `d285c0d82c79be1a1bded06ce4bcb55dbfa27cd4`.
+- 고칠 기존 파일(착수 사본 `debug/frontend_fe8g4b/pre/<v7 기준 경로>`, 모두 작업 트리와 cmp 일치) · WIP(`git status --short <경로>` 0줄 = 모두 WIP 없음 → `post_dir` 불필요) · 줄바꿈(`git ls-files --eol`, 모두 LF):
+  - `frontend/lib/ui/scan/scan_session_controller.dart`: approve/commit 공개 분리, repository revision getter.
+  - `frontend/lib/ui/scan/scan_tab_page.dart`: 보드 자리.
+  - `frontend/lib/ui/scan/scan_tab_sections.dart`: 레일(`_RailSection`)이 이 라이브러리 private라 보드 옆에 같은 레일을 두는 공개 위젯이 필요할 때만(최소, 종료 기록에 줄 수).
+  - `frontend/lib/ui/pages/scan_page.dart`: 학생 workspace 경로를 끄는 인자(최소).
+  - `frontend/lib/ui/app_shell.dart`: 셸 후속 2건(최소).
+  - 시험: `frontend/test/home_app_shell_test.dart`(스캔 탭 학생 보류가 workspace → 보드) · `frontend/test/goldens/fe8g1_scan_tab_golden_test.dart`(장면 추가 · 조작만) · `frontend/test/scan_tab_page_fe8g1_test.dart` · `frontend/test/scan_session_controller_test.dart` · `frontend/test/scan_item_queue_fe8g3_test.dart`(사본만 — 실제로 고친 것만 commit.json에).
+  - 이 문서: WIP 없음. LF.
+- 새 파일(예정): `frontend/lib/ui/scan/scan_review_board_adapter.dart`(어댑터), `frontend/test/scan_review_board_fe8g4b_test.dart`. 새 golden 장면 최대 1장 `scan-review-students`(기준 이미지는 CF `-UpdateGoldens`).
+- 고치지 않는 것: `lib/ui/scan/review/**`(원칙 0), `lib/ui/scan/item_review/**`(Lane B), `lib/ui/widgets/scan_student_review_workspace.dart`, `lib/services/**`(읽기만), 홈 · 전술 · 통계 · 학생 · 계획 · 인벤토리 화면 동작, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, backend · contracts, 택틱 세션 소유 파일.
+
+## FE8-g4b 종료 기록 (2026-10-18, Lane A, 코드 작성 완료 · CF gate 미실행)
+
+학생 결과 검토 보드(`ScanStudentReviewBoard`, FE8-g4a)가 스캔 탭에 연결됐다. 학생 세션이 끝났고 적용 · 폐기하지 않은 학생 후보가 있으면 스캔 탭은 지금 `ScanPage` 대신 왼쪽 레일 + 보드를 보이고, 보드의 승인 · 적용 · 재검증 · 보류 · 폐기는 셸 소유 컨트롤러로 간다(FD-144 프론트 순차). 컨트롤러의 한 명 적용 흐름은 `approveStudentCandidate` · `commitApprovedStudentCandidate` 두 공개 단계로 나눴고, 기존 한 명 적용은 같은 내부 본체를 써서 동작이 같다. 스캔 탭의 `ScanPage`는 학생 검토(기존 workspace)를 더 그리지 않는다(아이템 · 전술 로비 검토는 FE8-g5b 전까지 그대로). 셸: 다른 탭에서 시작한 아이템 차례 스캔이 끝나면 토스트 대신 스캔 탭을 연다(FE8-g3 발견 2), 진행 창 덮개가 있는 동안 셸 본문을 그리지 · 누르지 않는다(발견 3). HEAD는 착수 때와 같다(`d285c0d8`). git 쓰기 0, 저장소 파일 삭제는 내가 만든 일회성 렌더 사본 1개(만들고 바로 지움)뿐이다. 보드 폴더(`lib/ui/scan/review/**`) 수정 0.
+
+### 실행한 명령과 결과
+
+모두 `frontend` 폴더(이 PC). 로그 `debug/frontend_fe8g4b/logs/`(json 요약 · 실패 줄만 봤다).
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze <이 slice lib 파일>`(중간 여러 번) | 이 slice 파일 0. 한 번은 Lane B 작업 중 `lib/ui/scan/item_review/scan_item_review_logic.dart` info 2(이 slice 파일 아님 — 다음 실행에서 0) |
+| 관련 일반 시험 57파일 한 명령(`--reporter json`, 1회, `logs/general_1.json`) | **+601 −3** — 스캔 탭 학생 검토를 예전 `ScanPage`로 기대한 3건(home_app_shell · scan_run_view_fe8g2 · scan_tab_page_fe8g1, 이 slice의 의도한 변화) → 기대만 바꿈 |
+| 새 시험 + 바꾼 3파일(`logs/new_1.json`) | +26 −7 — 새 시험 7건이 Mock 기본 상태에 확정 학생이 없어 실패(시험 도우미 문제) → 시험 서비스에 `fullStudentCatalog: true` |
+| `flutter test test/scan_review_board_fe8g4b_test.dart`(`logs/new_2.json`) | **+9 −0** |
+| 변이 확인 2건(`app_shell.dart`): ① 셸 본문 `visible: true` 고정 ② 아이템 큐 끝 `_open(scan)` 줄 삭제 | 둘 다 새 시험 "shell follow-ups" **+1 −1**(덮개 · 큐 끝 시험만 실패) → 원 바이트로 되돌림(SHA-256 `e4b6be1d37b0…` 전후 같음) |
+| 일회성 렌더(golden 사본 `test/goldens/zz_fe8g4b_oneoff_render_test.dart`에서 `@Tags` · `library;` · `expectGoldenScene`을 뺌 — grep 0건 확인, `--plain-name scan-review-students`) | **+1**, 예외 0, PNG `debug/frontend_fe8g4b/render/scan-review-students.png`. 사본은 바로 지움(`ls test/goldens/zz_*` 0건) |
+| `dart format <파일>` 이 slice 파일 하나씩 | 마지막 실행 모두 0 changed. `app_shell.dart`만 HEAD부터 format이 다른 `_TopTab` fontWeight 줄 1곳(FE8-f1 발견 4)을 원래대로 둬서 `-o none` 검사 1 changed(이 slice 줄 아님) |
+| `flutter analyze`(frontend 전체, 최종, `logs/analyze_final.log`) | **No issues found(0, info 포함)**. `pubspec.yaml` · `pubspec.lock` 변경 0 |
+| 관련 일반 시험 58파일 한 명령(최종, `logs/general_final.json`) | **+613 −0**(exit 0, `logs/general_final_summary.txt`): account_editor_fe8c +9 · account_manager_fe8b +6 · app_navigation_fe7d +14 · app_navigation_tidy1 +11 · connected_target_fe8d +8 · growth_calculator_view +24 · home_app_shell +1 · home_connect_fe8e +10 · home_page +5 · home_scan_popup_fe8f3 +11 · inventory_analysis_page +8 · inventory_page +9 · inventory_review_fb10b +19 · inventory_shell_lazy +1 · mock_scanner_commit_history +9 · mock_scanner_service +4 · profile_delete_fb2d +17 · scan_companion_dock +5 · scan_header_progress_fe8f2 +7 · scan_inventory_identity_review +2 · scan_item_queue_fe8g3 +9 · scan_page_pause_fb10a +8 · scan_page_revision +14 · scan_page +17 · **scan_review_board_fe8g4b +9(새)** · scan_run_view_fe8g2 +8 · scan_session_controller +7 · scan_student_review_board +14 · scan_student_review_logic +5 · scan_student_review_workspace +9 · scan_tab_page_fe8g1 +15 · scanner_pause_fb10a +39 · scanner_protocol_client +6 · scanner_review_images_fb10c +6 · scanner_target_metadata_fb4 +19 · section_template_studio +15 · statistics_app_shell +2 · statistics_filter +10 · student_filter_followups +4 · student_filter_modal +8 · student_page +9 · student_scan_diagnostic +2 · tactical_analysis +20 · tactical_excel_import +14 · tactical_fb6b_dart +9 · tactical_fe9b2 +14 · tactical_jokbo_panel +17 · tactical_lobby_fe9c +12 · tactical_lobby_scanner_service +2 · tactical_page_revision +5 · tactical_page +20 · tactical_records_controller +14 · tactical_service +6 · tactical_share_v1_contract +1 · tactical_slots +18 · tactical_v2_service +5 · title_page +25 · widget +16 |
+| process E2E(`--concurrency=1`, 파일마다 따로, `logs/process_*.log`) | scanner_process_e2e **+1** · scanner_pause_process_e2e **+1** · scanner_review_images_fb10c_process_e2e **+1** · scanner_target_metadata_process_e2e **+1** |
+| 바이트 검사(고친 · 새 파일 12) | 모두 LF(CR 0), 끝 개행 하나, 줄 끝 공백 0 |
+
+- 시험 파일 고른 기준: FE8-g3 목록 55파일 + grep(`BAPlannerApp(|AppShell(|ScanPage(|ScanTabPage|ScanSessionController|ScanCompanion|scanStartBlock|ScanEndNotice|ScanHeaderStatus|startPick|scan_studio_layout|InventoryCandidateContext|onCandidateHandoff|top-tab-|header-connection-chip|home_page.dart|ScanStudentReviewBoard|applyStudentCandidate|scan_review_board`)으로 더 걸린 `scan_student_review_board_test` + `scanner_review_images_fb10c_test` · `student_scan_diagnostic_test` + 새 시험(목록 `logs/general_files.txt`).
+- golden 비교 · 전체 gate · 맨 `flutter test` · Python 시험은 돌리지 않았다. 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-144**(워커 재량 → (a) 프론트 순차): 보드의 `runScanReviewSequentialApply`(g4a)가 후보마다 `approve` → `commit(expected = 앞 응답 revision)`, 실패하면 멈추고 나머지를 둔다. 컨트롤러 commit은 다른 적용과 같은 차례 큐(`_applyQueue`)를 탄다. 서버 분류 · live summary · atomic bulk 가정 0(XB 01:30).
+- **FD-145**(워커 재량): 보드 그대로(weapon_level/star_fallback crop만, 그 밖 '—'). 컨트롤러는 승인 · 폐기 · 적용 성공 때 crop 사본을 지운다(기존 FB-10c 규칙 그대로 — approve 단계에 포함).
+- **FD-148**(워커 재량): 학생 검토 대기는 머리글 · 탭 점 · 토스트 규칙 그대로(검토 화면이 보드로 바뀌었을 뿐). 아이템 큐 끝은 다른 탭이면 토스트 대신 스캔 탭을 연다(시안 Scan-Item-Run ④ "결과 검토를 엽니다" — FE8-g3 발견 2). 학생 · 전술 로비 끝은 토스트 그대로.
+- **FD-152**(워커 재량 → 권장안): `화면 확인` · 다른 의상 인연 랭크는 보드(g4a). 진단 JSON 추출은 개발 상태 패널(이후) — 아래 "workspace 마운트 해제 범위"에 없어지는 경로를 적었다.
+- 막는 `열림` FD 0(착수 기록).
+
+### 컨트롤러 API 분리 표 (`lib/ui/scan/scan_session_controller.dart`)
+
+| 이전(private 한 흐름 `_applyStudentCandidateInOrder`) | 이후 | 동작 동일 근거 시험 |
+|---|---|---|
+| 계정 바뀜 확인 · 같은 의도 재시도 찾기(`_pendingApplies` + `isRetryOf`) · expected(재시도면 고정값, 아니면 state가 있을 때 `_repositoryRevision`) · 필요한 상태 없음 오류 | `_applyStudentCandidateInOrder`에 그대로 남김(재시도 찾기 = `_pinnedRetryFor`, 없음 오류 = `_recordMissingApplyState`, 같은 문구) | scan_page_revision +14(재시도 고정 key · expected, busy, 응답 잃음, 충돌) |
+| review approve(이미 승인이면 건너뜀) → `_keepCandidate` · crop 해제 | **`approveStudentCandidate(c) → Future<ScannerCandidate>`**(공개, 후보 바쁨 표시 + `_approveStudentCandidate`). 실패면 던지고 후보 오류는 적지 않는다(보드가 멈춘 학생에 표시). 세션 · 스캐너 없음 = `ScanStudentApplyException('적용에 필요한 프로필 또는 세션 상태가 없습니다.')` | scanner_review_images_fb10c +6(승인 때 crop 해제), 새 시험 1 |
+| 새 idempotency key(`scan-apply-<id>-<rev>-<now36>-<seq>`) · 의도 고정 · `retryRepositoryBusy` commit · 고정 해제 · `_acceptCommittedRevision` · 후보 제거 · 해결 표시 · crop 해제 · 안내 · state 다시 읽기 / 실패 분류(unknownOutcome · busy · revisionConflict · rejected) · 고정 유지/버림 · state 다시 읽기 · 오류 · 안내 | 내부 본체 `_commitStudentCandidate(...)`(한 명 적용 · 보드 공용, 줄 그대로 옮김). 실패는 지금처럼 적은 뒤 **다시 던진다**(한 명 적용은 받아서 버림 — 예전처럼 던지지 않음) | scan_page_revision +14 · scan_page +17 · mock_scanner_commit_history +9 · scanner_review_images_fb10c +6 |
+| — | **`commitApprovedStudentCandidate(approved, {required int expectedRepositoryRevision}) → Future<int>`**(공개): 같은 차례 큐, 후보 바쁨, 상태 없음이면 같은 오류를 적고 던짐, 같은 의도 재시도면 고정 요청(key · expected)을 그대로 보내고 인자 expected는 쓰지 않음, 성공 = 응답 revision(정수가 아니면 다시 읽은 `repositoryRevision`, 그것도 없으면 `StateError`) | 새 시험 2(순차 expected · 새 key · 후보 제거 · revision / 거절 = 오류 · 후보 유지, 응답 잃음 = 오류 없음 · 고정 key · 고정 expected 재전송 · review 1회) |
+| `_repositoryRevision`(private) | **`int? get repositoryRevision`** = state를 읽었으면 `_repositoryRevision`, 아니면 null(예전 expected 규칙 그대로) | 새 시험 |
+| — | `ScanStudentApplyException`(`toString` = 문구) | — |
+
+- 한 명 적용의 순서 차이(관측 불가): 예전에는 의도 고정(`_pendingApplies[slot] = …`) 뒤에 `_keepCandidate` · crop 해제를 알렸고, 이제는 approve 단계에서 먼저 알린 뒤 의도를 고정한다. 둘 다 같은 microtask 안이고 `_pendingApplies`는 바깥에 보이지 않는다.
+
+### 어댑터 규칙 (`lib/ui/scan/scan_review_board_adapter.dart`, `ScanReviewBoardControllerActions`)
+
+| 보드 actions | 컨트롤러 |
+|---|---|
+| `approve(c)` | `approveStudentCandidate(c)` |
+| `commit(approved, expected)` | `commitApprovedStudentCandidate(approved, expectedRepositoryRevision: expected)` |
+| `revalidate(c, payload, ranks, confirmed)` | `revalidateStudentCandidate(...)`(void) 뒤 `candidates[c.id]`가 같은 세션 · generation이고 revision이 바뀌었으면 그 후보, 아니면 null(실패 글자는 컨트롤러 `candidateErrors` → 보드) |
+| `hold(c)` · `discard(c)` | `holdStudentCandidate` · `discardStudentCandidate` |
+
+### 스캔 탭 표시 규칙 표 (`scan_tab_page.dart`)
+
+| 종류 \ 상태 | 진행(시작 중 · 진행 · 일시정지 · 중지 요청) | 끝남 + 남은 후보 | 끝남 · 후보 없음 |
+|---|---|---|---|
+| 학생 | 진행 3섹션 `ScanRunWorkspace`(FE8-g2, 그대로) | **레일 `ScanRailWorkspace`(`scan-review-rail`) + 보드(`scan-review`)**, `ScanPage`는 Offstage · 학생 검토 안 그림 | 고르기(`scan-pick`) |
+| 아이템(큐) | 큐가 끝날 때까지 진행 = 지금 `ScanPage`(진행 창이 덮음, FE8-g3 그대로) | 종류별 검토 줄 + `ScanPage`(FE8-g5b 전까지 그대로) | 고르기 |
+| 전술 로비 | 지금 `ScanPage`(그대로) | 지금 `ScanPage`(그대로) | 고르기 |
+
+- 보드 값 연결(g4b 입력 2): `candidates` = `scanReviewStudentCandidates`(끝난 세션 · 학생 · 다른 탭이 적용하지 않은 후보, 정렬은 보드), `currentStudents` = `repositoryState.students`(id 맵), `catalog` = `studentCatalog`, `repositoryRevision` = 새 getter, `busyCandidateIds` · `candidateErrors` = 컨트롤러 그대로, `scopeLabel` = 세션 `studentScanMode`(`학생 전체` / `학생 1명`), `timeLabel` = 이 컨트롤러로 시작한 세션의 시작 시각(`scanWhenText` — 최근 스캔 행과 같은 `오늘 11:57`), 모르면 null(보드가 '—').
+- 레일: 고르기 · 진행과 같은 `_RailSection`(최근 스캔 첫 행 = 지금 검토 세션 선택 표시, 다른 최근 기록 열기 그대로). 보드가 오른쪽 섹션을 쓰므로 창 선택 패널은 붙이지 않는다(진행 화면과 같이 `게임 창 다시 선택`은 꺼짐). 다른 최근 기록(아이템)을 열면 그 검토(`ScanPage`)로 바뀐다.
+- 머리글 부제(`학생 스캔 결과 검토 · 후보 확인 → 적용`)는 `app_section` · 셸 몫이라 바꾸지 않았다(FE8-g1 발견 1과 같다).
+
+### workspace 마운트 해제 범위
+
+- `ScanPage`에 `showStudentReview`(기본 true) 추가, 스캔 탭만 false → 스캔 탭에서는 `ScanStudentReviewWorkspace`를 만들지 않는다(Offstage 안에서도 0 — 새 시험 `find.byType(ScanStudentReviewWorkspace, skipOffstage: false)` 0). 단독 `ScanPage` · 기존 시험(scan_page · scan_page_revision · workspace 시험) · golden `scan-student-review` · `scan_student_review_workspace.dart` 파일은 그대로(FE10 제거).
+- **없어지는 경로(스캔 탭 안)**: 학생 검토 대기 동안 `ScanPage`가 Offstage라 ① 진단 JSON 추출 버튼(`scan-export-student-diagnostic`, `exportStudentDiagnostic`) ② 세션 줄(Retry · Recover snapshot) ③ 컨트롤러 안내 글자(`scan-student-candidate-notice`)를 누르거나 볼 곳이 없다. 컨트롤러 메서드 · 단독 `ScanPage` 진입점은 그대로다. ①은 FD-152 권장안대로 개발 상태 패널(이후 slice), ③은 보드가 자기 안내(`<이름> 후보를 보류했습니다.` · 일괄 결과)를 보인다.
+
+### `app_shell.dart` diff (+22 −2)
+
+- 아이템 큐 끝(`_scanSessionChanged`, 완료 토스트를 띄우는 자리): `notice.kind == ScannerKind.inventory`(아이템 시작은 모두 큐라 큐 끝 알림만 이 종류)이고 스캔 탭이 아니면 `_open(AppSection.scan)` 후 return(토스트 없음) — +5. 이유: 시안 Scan-Item-Run ④(FE8-g3 발견 2). 학생 · 전술 로비는 그대로 토스트.
+- `_hiddenWhileDocked(body)`(+15): `_scanCompanion`을 듣는 `ValueListenableBuilder` + `Visibility(key: shell-body, visible: 덮개 없음, maintainState · maintainAnimation · maintainSize)` — 덮개가 있는 동안 셸 본문은 그리지 않고(넘침 경고는 그릴 때 난다) 누르지 · 의미 구조에 넣지 않으며, 크기 · 상태 · 애니메이션은 그대로라 복원하면 같은 화면이다. `Offstage`는 크기를 0으로 줄여 셸 Stack(느슨한 제약)과 덮개(`Positioned.fill`)까지 0이 되므로 같은 효과의 `Visibility`를 썼다. 이유: FE8-g3 발견 3.
+- 쓰는 곳 2줄: `return mainContent;` → `return _hiddenWhileDocked(mainContent);`, 좁은 창 개발 패널 Stack의 `mainContent,` → `_hiddenWhileDocked(mainContent),`. SafeArea를 통째로 감싸면 250줄이 다시 들여써져서 이 자리로 줄였다. 좁은 창(폭 < 1050)에서 개발 패널을 연 채 덮개가 뜨면 패널 · 바탕막은 계속 그려진다(덮개가 가림, 발견 4).
+- 학생 백그라운드 진행(FE8-g2) · 홈 팝업은 그대로(학생은 dock을 쓰지 않아 덮개가 없다).
+
+### 바꾼 · 더한 시험
+
+- `test/home_app_shell_test.dart`: 스캔 탭 학생 보류를 예전 workspace(`scan-student-hold-…` + `scan-page` 스크롤)에서 보드 행 `보류`(`scan-review-hold-mock-candidate-1`)로. 기대(`보류했습니다` 글자 · 홈 · 학생 탭 인계 없음) 그대로. 쓰지 않게 된 `_reveal` 도우미를 지웠다.
+- `test/scan_tab_page_fe8g1_test.dart`: "student run view, then ScanPage review, then pick" → "…then review board, then pick" — 끝난 뒤 `scan-review` · `scan-review-rail`, `scan-page` 없음, `ScanPage.showStudentReview == false`, 폐기 뒤 고르기 · 최근 행 `폐기`(그대로).
+- `test/scan_run_view_fe8g2_test.dart`: 결과 있는 끝 → `scan-page` 대신 `scan-review`(1건).
+- 새 `test/scan_review_board_fe8g4b_test.dart`(+9): 컨트롤러 3(approve → commit 순차 · 새 key · 후보 제거 · 이미 승인 건너뜀 / 거절 · 응답 잃음 재전송 / 어댑터 revalidate 새 revision · null · hold · discard), 스캔 탭 4(2560×1392 · 1280×720: 끝난 학생 전체 → 레일 + 보드 · workspace 0 · 값 연결 · 3명 일괄 적용 expected = 시작 revision → +1 → +2 · 고르기 복귀 / 둘째 commit 거절 → 멈춤 · 나머지 유지 · 확인 필요 1 · 바뀐 학생 1 / 아이템 결과는 `ScanPage`), 셸 2(홈에서 아이템 큐 → 덮개 동안 본문 숨김 · 375×750에서 예외 0 · 큐 끝 토스트 없이 스캔 탭 · 복원 뒤 본문 보임 / 학생 끝은 토스트 그대로 · 누르면 보드).
+- `test/goldens/fe8g1_scan_tab_golden_test.dart`: 장면 `scan-review-students` 추가 · 머리 주석, 기존 4장면 조작 변화 0.
+- `scan_session_controller_test.dart` · `scan_item_queue_fe8g3_test.dart`: 사본만, 수정 0(commit.json에 없음).
+
+### golden 변화 예상 (비교 미실행)
+
+- 기존 장면 변화 0 예상. 셸이 보이는 장면(`scan-pick-students` · `scan-pick-items` · `scan-student-run` · 셸 장면들)은 덮개가 없어 `Visibility(visible: true)`가 그대로 그린다(크기 · 그리기 같음). `scan-item-run`은 셸 없이 진행 창만 찍는다. `scan-student-review`(workspace 단독) · `scan-student-review-board`(보드 단독)는 그 파일 · 시험을 고치지 않았다(보드 폴더 수정 0). 스캔 탭 레일은 같은 `_RailSection`을 공개 감쌈만 했다.
+- **새 장면 `scan-review-students`**(기준 이미지 없음 → CF `-UpdateGoldens`, `optional_added`): 2560×1392 셸. 머리 탭 `스캔` 선택, 머리글 `스캔` · `화면 스캔과 진행 상태` · 녹색 `연결됨 · Blue Archive`. 왼쪽 레일: 준비 상태 3행(게임 창 `Blue Archive · 2560×1440` · `준비됨` · `Main`), 최근 스캔 분홍 선택 행 `학생 전체 · —명` · `오늘 11:57` · 칩 `확인 5`, 각주 `이 실행 중 기록 1건 · 앱을 끄면 지워집니다`, 아래 `게임 창 다시 선택`. 가운데 보드: `학생 스캔 결과 검토` (i) · 칩 `학생 전체 · 오늘 11:57 · 5명`, 분류 `전체 5`(분홍) · `확인 필요 1` · `바뀐 학생 3` · `새 학생 1` · `그대로 0`, `확인 필요 · 1명` 아이리 행(`레벨 5 → 6` `신뢰도 낮음`, `같이 바뀜 · EX 스킬 3 → 4`, 2건 고치기 · 보류), `바뀐 학생 · 3명 · 값 6건` 일괄 행(`3명 모두 계산값이 화면과 일치합니다` · `값 6건 · 레벨 3 · 스킬 3` · 분홍 `3명 한 번에 적용`) + 아카네 · 아카리 · 아코 행 `일치`, `새 학생 · 1명` 아이리(밴드) 행(`레벨 없음 → 90` · `성급 없음 → ★5` · `스킬 없음 → 5`, `재검증 필요`, 3건). 오른쪽: `아이리 · 학생 정보` `확인 필요 · 레벨`, seg `스캔 결과` · `현재 확정값`, 범례 `바뀐 값 2` · `확인 필요 1`, 값 카드(`이전 5` + `확인 필요` Lv. 6 · EX `이전 3` 4/5 …), 폴백 카드 없음(crop 근거 없음), `보류 · 폐기 … 다음`, 흐린 주 버튼 `아이리 2건 적용`. 렌더 PNG `debug/frontend_fe8g4b/render/scan-review-students.png`(CF 검토용, 커밋 대상 아님).
+
+### 미검증 항목
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · 나머지 process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지(`scan-review-students`): **미실행**(CF `-UpdateGoldens`).
+- 실제 Windows 러너 `dockBeside` · `restore`와 줄어든 창의 셸 숨김 · 복원(시험은 대역 dock · surface 크기 바꾸기), 실제 백엔드 학생 후보로 보드 적용(실제 evidence 분포 · 응답 지연), Windows release 빌드: **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 검수표 (artboard → 앱에서 여는 방법 → 확인 포인트)
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scan-Student-Review | mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`), 기준 viewport 최대화. 홈에서 Mock 창 연결 → 탭 `스캔` → `전체 학생` 시작 → 끝 | 왼쪽 레일은 고르기 · 진행과 같은 자리, 가운데 · 오른쪽 = 보드(golden `scan-review-students`). Mock 기본 후보 1건(aru)은 확정값과 비교한 분류로 보인다 |
+| (일괄 적용) | 바뀐 학생이 있을 때 `n명 한 번에 적용` | 차례로 적용 · 끝나면 고르기로 돌아옴, 홈 · 학생 탭 값이 바뀜 |
+| (보류 · 폐기 · 재검증) | 확인 필요 행 `보류` · 상세 `폐기` · `고치기` → `재검증` | 보류 안내, 폐기 확인 모달, 재검증 뒤 새 revision 값 |
+| Scan-Item-Run ④ | Windows 앱(실제 러너)에서 홈 연결 메뉴 `스캔` → 아이템 타일 시작 | 끝 카드 → 플래너 복원 때 스캔 탭(아이템 검토)이 열려 있고 토스트 없음. 진행 창 동안 줄어든 창에 셸이 비치지 않음 |
+| (학생 다른 탭) | 학생 전체 시작 → 홈 이동 → 끝 | 토스트 그대로, 누르면 보드 |
+
+### 발견 사항
+
+1. **스캔 탭 학생 검토 중 없어진 진입점**: 진단 JSON 추출 · Retry · Recover snapshot · 컨트롤러 안내 글자(위 "마운트 해제 범위"). 진단 JSON은 FD-152 개발 상태 패널 slice에서 다시 둔다(CF 판단: 그 전까지 보드 옆에 임시 버튼을 둘지).
+2. **레일 최근 스캔 행 제목 `학생 전체 · —명`**: 끝난 학생 전체 세션의 행 제목이 진행 수(`progress.current`)를 몰라 '—'다(FE8-g1 · g2 규칙 그대로). 시안 `학생 전체 · 128명`은 후보 수가 아니라 진행 분모라 고정 형식 밖(total null)일 때는 '—'가 맞다 — CF 확인.
+3. **보드와 아이템 큐 결과가 함께 남을 때**: 끝난 아이템 큐에 남은 후보가 있는데 최근 학생 기록을 열면 보드가 보이고, 큐의 종류별 검토 줄은 학생 후보가 끝날 때까지 보이지 않는다(검토 대기 점은 그대로). FE8-g5b(아이템 보드)에서 둘을 함께 보일지 정한다.
+4. **좁은 창 개발 패널**: 셸 본문 숨김은 `mainContent`만이라, 폭 < 1050에서 개발 패널을 연 채 아이템 진행 창이 뜨면 패널 · 바탕막은 덮개 아래에서 계속 그려진다(드문 경우, 덮개가 가린다).
+5. **보드 수정 0**: 연결에 필요한 이름 변경 없이 g4a 공개 API 그대로 붙였다. 레일만 스캔 탭 라이브러리 private라 `scan_tab_sections.dart`에 공개 감쌈 `ScanRailWorkspace`(+18, 기존 줄 변화 0)를 더했다(착수 기록에 예고한 최소 변경).
+6. **Lane B 동시 작업**: 작업 중 `lib/ui/scan/item_review/**`(FE8-g5a 새 파일) · `lib/ui/studio/scan_item_review_studio_layout.dart` · `test/fixtures/scan_item_review_board_fixture.dart`가 생겼다. 이 slice는 읽지도 고치지도 않았고 겹침 0. 중간 analyze info 2는 그 폴더였다.
+
+### 사본 · commit.json
+
+- pre 사본(착수 때 = HEAD 내용, cmp 일치): `debug/frontend_fe8g4b/pre/<경로>` 12파일(고친 10 + 고치지 않은 `scan_session_controller_test.dart` · `scan_item_queue_fe8g3_test.dart` — commit.json에는 없음). `scan_run_view_fe8g2_test.dart`는 고치기 직전에 사본을 만들었다(그때까지 이 slice 변경 0, WIP 0). 착수 때 WIP 0 → `post_dir` 없음.
+- `debug/frontend_fe8g4b/commit.json`: slice `fe8g4b`, modified 10(이 문서 포함), added 2, `whole` = [](기존 기준 이미지 변화 0 예상), `optional_added` = [`frontend/test/goldens/baseline/scan-review-students.png`](CF가 `-UpdateGoldens`로 만들 때만), `status=true`.
+- 인계: `debug/frontend_fe8g4b/output.md`. 로그 `debug/frontend_fe8g4b/logs/`, 렌더 `debug/frontend_fe8g4b/render/`.
+
+### 다음 행동
+
+- FE8-g4b 코드는 끝났다. Lane A는 여기서 멈춘다.
+- CF: Lane B(FE8-g5a)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 새 `scan_review_board_fe8g4b_test` +9, 기존 수 그대로, process 스캐너 4 GREEN, golden 기존 장면 GREEN · 새 `scan-review-students` 기준 없음 → `failures/` 확인(렌더 PNG와 비교) → `-UpdateGoldens` → 재비교) → `fe_commit.ps1 -Slice fe8g4b`. 발견 1 · 2 · 3은 CF 판단.
+- **FE8-g5b 입력**: ① 스캔 탭 자리는 `scan_tab_page.dart` build의 `reviewShown`(학생 보드)과 같은 방식으로 `ScanItemReviewBoard`를 넣으면 된다 — 아이템 끝남(`stage == terminal` 또는 큐 끝) + 남은 아이템 후보면 `pageShown` 대신 보드 + `ScanRailWorkspace`. 지금 `ScanQueueReviewBar` + `ScanPage`(`queueBarShown`)를 그 보드로 바꾸고, `ScanPage`는 학생처럼 아이템 검토를 그리지 않는 인자(`showStudentReview`와 같은 모양)를 더하면 전술 로비만 남는다. ② 어댑터는 `scan_review_board_adapter.dart`와 같은 자리에 새 파일로, 적용은 컨트롤러의 기존 인벤토리 적용 경로(FB10b subset, (세션, generation, candidate) 열쇠)와 `repositoryRevision` getter를 쓴다. ③ 아이템 큐 끝은 이제 셸이 스캔 탭을 연다(토스트 없음) — 보드가 결과 있는 첫 종류(`openQueueKind`)를 받는다. ④ 발견 3(학생 보드와 큐 결과 동시)을 함께 정한다.
+
+### fe8g4b commit record (2026-10-18 21:49, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261018_214037\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
