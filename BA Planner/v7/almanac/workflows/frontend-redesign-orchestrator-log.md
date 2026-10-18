@@ -3826,3 +3826,13 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 커밋: **fe8g3 `c0d72dbd`** → **fe8g4a `280f135c`**.
 - XB: 01:32 이후 새 기록 없음. FE9-c 커밋(`333bc952`)으로 XB의 "FE9-c 전 scanner 메인 반영 금지"는 풀림 — backend 로그에 알림.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g4b-worker-prompt-20261018.md`(보드 스캔 탭 연결·컨트롤러 approve/commit 공개 분리·workspace 마운트 해제·셸 후속 2건) · Lane B `debug/frontend_redesign_handoff/fe8g5a-worker-prompt-20261018.md`(아이템 결과 검토 보드 **새 파일만**·가짜 actions — 연결·`_CandidatePanel`·`_handoffCandidate` 분기 제거는 FE8-g5b).
+## 2026-10-18 22:00 — FE8-g4b·FE8-g5a 검토·gate·커밋, 다음 라운드
+
+- 첫 호출 때는 두 세션 산출물이 없어(output.md 0, 변경 0) 다시 돌리도록 안내. 재실행 뒤 `TASK_OUTPUT_READY` 둘, SHA 일치(fe8g4b 14행, fe8g5a 12행), 겹침 0. FE8-g5a는 기존 파일 수정 0.
+- FE8-g4b: 컨트롤러 `approveStudentCandidate`·`commitApprovedStudentCandidate`·`repositoryRevision` 공개(기존 한 명 적용은 같은 본문), 어댑터 `scan_review_board_adapter.dart`, 스캔 탭 학생 검토 = `ScanRailWorkspace` + 보드, `ScanPage(showStudentReview: false)`. app_shell +22/−2(아이템 큐 끝 → 스캔 탭, 진행 창 동안 셸 본문 `Visibility` 숨김 — 크기·상태 유지). `home_app_shell_test`는 같은 기대를 보드 key로 옮김(쓰지 않게 된 도우미만 삭제).
+- FE8-g5a: `ScanItemReviewBoard`(lib/ui/scan/item_review/**) — 종류 탭·분류(전체/확인 필요/바뀐 수량/그대로)·칸 타일(읽지 못함 빗금)·부분 적용(확인 필요 칸 제외)·S3 검사기. FD-098 티어 이름을 따름(시안 `하급·중급` 대신).
+- gate ① `20261018_213039`: 모두 PASS(process 101), golden RED 2 = 새 장면 기준 없음(`scan-review-students`·`scan-item-review-board`), 기존 장면 변화 0 → 렌더 확인 후 승인 ② `-UpdateGoldens` `20261018_214037` **GREEN**(golden 64).
+- 커밋: **fe8g4b `0e869636`** → **fe8g5a `4bc7a2c8`**.
+- CF 판단: FE8-g4b 발견 2(`학생 전체 · —명`)는 total=null이라 '—'가 맞음. 발견 1(Retry·Recover snapshot 진입점)은 FE8-g5b에서 닿는지 확인·없으면 레일 아래 최소 버튼, 진단 JSON은 FD-152로 미룸. 발견 3(두 보드가 함께 남음)은 FE8-g5b — 권장 "가장 최근 실행의 보드 + 레일 행으로 전환". FE8-g5a 발견 4(부분 review가 후보 payload를 줄임)는 FE8-g5b에서 컨트롤러 보존 규칙·시험으로. 발견 5(고친 값을 resource key로 유지) 수용.
+- XB: 15:30 알림 뒤 새 기록 없음. XB 요청 후보 추가(급하지 않음): 인벤토리 entry 그리드 행·열, 수량 판독 이유의 사람용 글자.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g5b-worker-prompt-20261018.md`(아이템 보드 연결·옛 인계 제거 — FE8 마지막) · Lane B `debug/frontend_redesign_handoff/fe10a-worker-prompt-20261018.md`(결정 대장·artboard 지도 감사, 발견 사항 수집, Lane A 파일 밖 죽은 코드 — 동작 변화 0).
