@@ -5563,3 +5563,126 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - tidy4 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE9-c)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 statistics_a6_ranking +13(11 → 13) · plan 두 파일 수 그대로, process 변화 0, golden 전 장면 GREEN) → `fe_commit.ps1 -Slice tidy4`. 새 fixture 3개가 index에 오르는지(`added`) 확인.
 - 발견 1(계획 Studio 문서 원본 자리) · 2(통계 차트 키보드 경로) · 3(시작만 고른 상태 안내 문구)은 CF 판단.
+
+## FE8-g4a 착수 기록 (2026-10-18)
+
+- 상태: **진행 중 → 코드 작성 완료(아래 FE8-g4a 종료 기록), CF gate 미실행**. 범위: FE8-g4a — 새 학생 결과 검토 보드 `ScanStudentReviewBoard`를 단독 위젯으로 만든다(시안 Scan-Student-Review, S2 분류 목록 + S3 학생 상세). 분류(전체 / 확인 필요 / 바뀐 학생 / 새 학생 / 그대로, CF 비교값), 목록 · 상세(이전값 → 새 값 주석, 확인 필요 표시, 편집 · 화면 확인 · 다른 의상 인연 랭크, 폴백 카드), 계산 일치 일괄 적용(FD-144 프론트 순차, 보드가 받는 actions 인터페이스). 스캔 탭 연결은 FE8-g4b.
+- 착수 전 확인: 이 문서에 다른 "FE8-g4a 착수 기록" 없음(grep 0건). 대장 "slice별 막힘 요약" FE8-g4 행 `—`, 현재 `열림` 0건 → 시작. 근거 FD-144 · FD-145 · FD-152는 `워커 재량`(권장안대로 처리 예정), 형식은 backend 로그 2026-10-18 01:30 FB-10 고정 선언(`debug/xb_fb10_g3g5_freeze_20261018/artifacts/format-freeze.md`).
+- 시작 SHA(`git rev-parse HEAD`, 브랜치 `scanner-consolidation`): `0f4d51644de0ac09a0e7a0f9c387f0a4cbeeb54c`.
+- 만들 새 파일(예정, 모두 LF · 끝 개행 하나):
+  - `frontend/lib/ui/scan/review/scan_review_board_logic.dart`(순수: 분류 · 바뀐 값 · 글자 · 일괄 적용 순서)
+  - `frontend/lib/ui/scan/review/scan_review_board_actions.dart`(보드가 받는 actions 인터페이스 · 결과형)
+  - `frontend/lib/ui/scan/review/scan_student_review_board.dart`(보드 위젯 · 상태, library)
+  - `frontend/lib/ui/scan/review/scan_review_list_section.dart` · `frontend/lib/ui/scan/review/scan_review_detail_section.dart`(S2 · S3, `part of` 보드)
+  - `frontend/lib/ui/studio/scan_review_studio_layout.dart`(시안 좌표)
+  - `frontend/test/scan_student_review_board_test.dart`, `frontend/test/goldens/fe8g4_student_review_board_golden_test.dart`, `frontend/test/fixtures/scan_review_board_fixture.dart`(가짜 후보 · 가짜 actions)
+- **기존 파일 수정 0** 확인: 고치는 기존 파일은 이 문서(착수 · 종료 기록 append, 사본 `debug/frontend_fe8g4a/pre/almanac/workflows/frontend-redesign-status-lane-b.md`)뿐이다. `scan_tab_page` · `scan_session_controller` · `scan_page` · `scan_student_review_workspace` · `app_shell` · 서비스 · kit · golden harness는 읽기만 한다. 착수 때 `git status --short` 이 문서 · `frontend/lib/ui/scan` · `frontend/lib/ui/studio` · `frontend/test/goldens` 0줄.
+
+## FE8-g4a 종료 기록 (2026-10-18, 코드 작성 완료 · CF gate 미실행)
+
+새 학생 결과 검토 보드 `ScanStudentReviewBoard`를 단독 위젯으로 만들었다(시안 Scan-Student-Review S2 · S3). 분류 · 목록 · 상세 · 편집(FD-152) · 폴백 카드(FD-145) · 계산 일치 일괄 적용(FD-144 프론트 순차)이 보드 안에 있고, 바깥 일은 `ScanStudentReviewBoardActions` 인터페이스로만 받는다. 스캔 탭 연결은 FE8-g4b. HEAD는 착수 때와 같다(`0f4d5164`). **기존 파일 수정 0**(이 문서 append만), git 쓰기 0, 저장소 파일 삭제는 일회성 렌더 사본 1개(만들고 바로 지움, 두 번)뿐이다.
+
+### 실행한 명령과 결과(이 PC, `frontend` 폴더, 로그 `debug/frontend_fe8g4a/logs/` — 실패 줄 · 요약만 봤다)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze lib/ui/scan/review lib/ui/studio/scan_review_studio_layout.dart`(1 · 2회) | 1회 error 3(`schaledbId is int ? …`가 `int?` 형으로 읽힘) → 고침 → **No issues found** |
+| `flutter analyze` 새 lib + 새 시험 + fixture(3 · 4회) | 3회 info 1 · error 1(fixture cascade가 화살표 함수 본문에 붙음) → 고침 → **No issues found** |
+| `flutter test test/scan_student_review_board_test.dart`(1회) | 다수 실패 — `_ClippedRow`의 `OverflowBox`가 Column 안에서 높이 무한(넘침 예외). 높이 고정으로 고침 |
+| 같은 명령(2회) | **+11 −3** — 시험 도우미가 `BaChip`을 `Text`로 읽음(2) · 보드 버그 1(아래 발견 2) → 고침 |
+| 같은 명령(3회 · 값 카드 자리 손질 뒤 4회) | **+14 −0** |
+| 일회성 렌더(새 golden 사본에서 `@Tags` · `library;` · `expectGoldenScene`을 뺀 `test/goldens/fe8g4_oneoff_render_test.dart`, grep 0건 확인, 2회) | **+1** · 예외 0, PNG `debug/frontend_fe8g4a/render/scan-student-review-board.png` · `oneoff-edit.png`. 사본은 매번 바로 지웠다(`ls test/goldens/fe8g4*` = golden 시험 1개) |
+| `dart format <파일>` 새 9파일 하나씩 | 5파일 바뀜(줄바꿈만), 손질 뒤 다시 0 changed |
+| `flutter analyze`(frontend 전체, 최종) | **No issues found(0, info 포함)**. `pubspec.yaml` · `pubspec.lock` 변경 0(analyze가 pub get 출력만 냈다) |
+| `flutter test test/scan_student_review_board_test.dart test/scan_student_review_logic_test.dart`(최종, json) | **+19 −0**(새 14 + 기존 로직 5) |
+| 바이트 검사(새 9파일) | 모두 LF, 끝 개행 하나, 줄 끝 공백 0 |
+
+- golden 비교 · 전체 gate · 맨 `flutter test`는 돌리지 않았다. 잠금 충돌 0.
+
+### 처리한 FD
+
+- **FD-144**(워커 재량 → 권장안 (a)): 분류는 CF 비교값(아래 표), 일괄 적용은 프론트 순차(approve → commit, 반환 revision을 다음 expected로, 실패하면 멈추고 나머지 보존 · 표시). 백엔드 분류 enum · 진행 중 집계 · atomic bulk는 가정하지 않는다(FB-10 고정 선언 01:30).
+- **FD-145**(워커 재량 → (a)의 프론트 몫): 폴백 카드는 근거 필드가 `weapon_level_fallback` · `weapon_star_fallback`일 때만 보이고, crop은 `details.crop_png_base64`가 있을 때만 그린다(없으면 빗금 + '—'). 계산 줄은 근거의 `expected` · `observed` `AttackPower`가 실제로 있을 때만, 계산 역산은 늘 '—'(공개 inverse 없음). 각주는 시안 문구 그대로.
+- **FD-152**(워커 재량 → 권장안): `화면 확인` = S3 편집 칸 줄마다 토글 + 폴백 카드 `재검증` 옆 토글(README 학습 규칙 그대로: 고친 필드 + 화면 확인한 필드만 `confirmed_fields`). 다른 의상 인연 랭크 = 그 학생 S3 편집 칸 아래 입력 줄(1~100, 기존 검증 문구). 진단 JSON 추출 = 보드에 두지 않는다(개발 상태 패널 — FE8-g4b 입력).
+- 막는 `열림` FD 0(착수 기록). FD-028은 이 보드가 육성도를 쓰지 않아 해당 없음.
+
+### 분류 규칙 표(`scan_review_board_logic.dart` `scanReviewEntryFor`, 위에서 먼저 맞는 줄)
+
+| 순서 | 조건 | 분류 | 행 칩 | 이유(`ScanReviewReason`) |
+|---|---|---|---|---|
+| 1 | 적용 실패 오류 · 편집 오류 · 안전하지 않은 근거(`scanStudentSafeEvidenceStatuses` 밖) · `review_required` 중 하나(FE8-f1 `scanStudentCandidateHasProblem`) | 확인 필요 | 안전하지 않은 근거가 있으면 `신뢰도 낮음`, 아니면 `확인 필요` | applyFailed > invalidEdit > lowConfidence > reviewRequired |
+| 2 | 지금 확정값에 그 학생이 없다 | 새 학생 | `재검증 필요` | — |
+| 3 | 읽은 값이 확정값과 모두 같다(읽지 못한 null은 바뀐 값이 아님) | 그대로 | `그대로` | — |
+| 4 | 바뀐 값이 있고 계산 검증 근거 `student_stat_validation`이 `verified` | 바뀐 학생(일괄 대상) | `일치` | — |
+| 5 | 바뀐 값이 있는데 계산 검증이 `verified`가 아니거나 없다 | 확인 필요 | `확인 필요` | calcUnconfirmed |
+
+- "계산 일치" = 백엔드 `verified`(화면과 ±2 안, `backend/core/student_candidate_validation.py` STAT_SCAN_TOLERANCE). delta = 0만 보지 않는다. partial · dependency_missing · suspicious는 1번(안전하지 않은 근거)으로 확인 필요다.
+- 바뀐 값 = 읽은 값 중 숫자 · 글자이고 확정값과 다른 필드(새 학생은 읽은 값 전부, 이전 `없음`). `form_combat_stats` 같은 지도 값은 뺀다.
+- 확인 필요 행의 주 값 = 확인이 필요한 필드(근거 필드에서 `_fallback`을 뗀 값 필드) 중 첫 바뀐 값, 없으면 첫 바뀐 값. 상세 머리 칩 `확인 필요 · <값 묶음>`(시안 `확인 필요 · 전용무기`).
+- 분류 버튼 숫자 = 각 분류 수, `전체` = 전부. **전체 보기 목록**은 시안대로 확인 필요 · 바뀐 학생(일괄 행 + 4행 + `나머지 n명 · m건 · 바뀐 학생 탭에서 보기`) · 새 학생만 보이고, 그대로는 `그대로` 버튼에서 본다.
+- 상세 주 버튼(`이름 n건 적용`): 바뀐 학생은 바로, 새 학생은 이 보드에서 재검증해 받은 revision이 지금 revision이고 계산 일치일 때만, 확인 필요 · 그대로는 꺼짐(고쳐서 재검증하면 분류가 바뀐다). repository revision을 모르거나 바쁘거나 편집 중이면 꺼짐.
+
+### 일괄 적용 규칙(`runScanReviewSequentialApply`, 일괄 행 · 한 명 적용 공용)
+
+| 경우 | 동작 |
+|---|---|
+| 시작 | 대상 = 바뀐 학생 전부(목록 순서). 시작 revision = `max(repositoryRevision 인자, 마지막 commit 응답 revision)`, 둘 다 없으면 시작하지 않고 `적용에 필요한 저장소 상태가 없습니다.` |
+| 후보마다 | 이미 `approved`면 approve를 건너뛰고, 아니면 `actions.approve` → 받은 후보로 `actions.commit(expected = 지금 revision)` → 응답 revision이 다음 expected |
+| 성공 | 적용한 후보는 바깥 목록에서 빠질 때까지 보드가 숨긴다. 일괄 행 제목 `n명을 적용했습니다` |
+| 중간 실패(approve 또는 commit이 던짐) | 그 후보에서 멈춘다. 앞 성공은 그대로, 멈춘 후보는 `적용 실패: <오류>`와 함께 확인 필요로, 나머지는 바뀐 학생에 그대로. 일괄 행 부제(빨강) `<이름>에서 멈췄습니다: <오류> · 적용 a명 · 남은 r명은 그대로 둡니다`(r = 멈춘 후보 포함). 다음 적용은 마지막 성공 revision부터 잇는다 |
+| 진행 중 | 부제 `적용 중 · k / n명`, 모든 적용 · 고치기 · 보류 버튼 꺼짐 |
+| 보드가 사라짐 | 다음 후보를 시작하지 않는다(`isActive`), dispose 뒤 setState 0 |
+
+- 적용 실패 표시는 다음 적용 · 재검증 성공에서만 지운다(같은 후보의 새 revision으로는 지우지 않는다 — 발견 2).
+- 시험(가짜 actions): 성공 6명 expected 40 → 45, 셋째(토키) commit 실패 → 2명 적용 · 4명 남김 · 토키 확인 필요, 다음 일괄은 42부터, 보드가 사라지면 첫 commit 뒤 멈춤.
+
+### 보드 공개 API · actions 인터페이스
+
+- `ScanStudentReviewBoard({candidates, currentStudents, catalog, repositoryRevision (int?), actions, busyCandidateIds = {}, candidateErrors = {}, scopeLabel = '학생 전체', timeLabel (null → '—'), initialFilter = ScanReviewFilter.all})`. 스캔 탭 콘텐츠 영역 전체(헤더 아래, 기준 2560×1208)를 받아 `scanReviewStudioDocument`의 두 섹션만 그린다(왼쪽 레일은 스캔 탭 몫). 안에 폐기 확인 `BaModal`(Overlay 필요).
+- `abstract interface class ScanStudentReviewBoardActions`: `Future<ScannerCandidate> approve(c)` · `Future<int> commit(approved, {required int expectedRepositoryRevision})` · `Future<ScannerCandidate?> revalidate(c, payload, relationshipRanks, confirmedFields)`(실패 = null) · `Future<void> hold(c)` · `Future<void> discard(c)`.
+- 순수 로직(`scan_review_board_logic.dart`, 보드 라이브러리가 export): `ScanReviewCategory` · `ScanReviewFilter` · `ScanReviewReason` · `ScanReviewEntry` · `ScanReviewChange` · `ScanReviewChip` · `scanReviewEntryFor` · `scanReviewEntries` · `scanReviewCounts` · `scanReviewBulkTargets` · `scanReviewChangeSummary` · `scanReviewChips` · `scanReviewNewStudentScope` · `scanReviewApplyLabel` · `scanReviewCanApply` · `scanReviewAttackLine` · 필드 이름 · 값 글자 표. 순차 적용 `runScanReviewSequentialApply` · `ScanReviewApplyRun`(actions 파일).
+- 주요 key: `scan-review-board` · `scan-review-filter-<filter>` · `scan-review-count-<filter>` · `scan-review-row-<id>` · `scan-review-fix-<id>` · `scan-review-hold-<id>` · `scan-review-expand-<id>` · `scan-review-bulk-apply` · `scan-review-more` · `scan-review-detail-title` · `scan-review-card` · `scan-review-field-<field>` · `scan-review-confirm-<field>` · `scan-review-revalidate` · `scan-review-fallback*` · `scan-review-discard(-confirm)` · `scan-review-next` · `scan-review-apply`.
+
+### FE8-g4b 입력(연결에 필요한 것)
+
+1. **컨트롤러 API(지금 없음)**: `approve`와 `commit`이 따로 공개되어 있지 않다(`_applyStudentCandidateInOrder` 안 private). 보드 순차를 그대로 쓰려면 컨트롤러에 ① `approveStudentCandidate(c) → ScannerCandidate`(review approve, `_keepCandidate` · crop 해제 포함) ② `commitApprovedStudentCandidate(approved, expected) → int`(지금의 idempotency key · 같은 의도 재전송 고정 · busy 재시도 · 실패 분류 · `_acceptCommittedRevision` · 후보 제거 · state 다시 읽기를 그대로, 실패면 던짐)가 필요하다. `revalidateStudentCandidate`는 void라 어댑터가 끝난 뒤 `controller.candidates[c.id]`의 revision이 바뀌었으면 그 후보를, 아니면 null을 돌려주면 된다. `hold` · `discard`는 지금 공개 메서드 그대로.
+2. **값 연결**: `candidates` = 컨트롤러 후보 중 학생 · 끝난 세션, `currentStudents` = `repositoryState.students`(id 맵), `catalog` = `studentCatalog`, `repositoryRevision` = `repositoryState?.revision`(또는 컨트롤러 `_repositoryRevision` 공개 getter), `busyCandidateIds` · `candidateErrors` = 컨트롤러 그대로, `scopeLabel` = 세션 `studentScanMode`(전체 · 1명), `timeLabel` = 최근 기록 시각(없으면 '—').
+3. **scan_tab_page 자리**: 지금 `pageShown`(끝남 + 남은 후보)일 때 학생 후보면 `ScanPage` 대신 보드(`key: scan-review`)를 보이고, 왼쪽 레일(`_RailSection`)은 고르기 · 진행과 같은 자리에 그대로 둔다. 아이템 · 전술 로비는 지금처럼 `ScanPage`(FE8-g5 전까지). 머리글 부제 `학생 스캔 결과 검토 · 후보 확인 → 적용`은 `app_section` · 셸 몫.
+4. **기존 workspace 마운트 해제 범위**: `ScanPage`가 학생 후보에 `ScanStudentReviewWorkspace`를 그리는 경로만 쓰지 않게(스캔 탭에서 학생 검토가 보드로 가면 `ScanPage`는 Offstage) 한다. `scan_student_review_workspace.dart` 파일 · 시험 · golden `scan-student-review`는 그대로(FE10 제거). 진단 JSON 추출(`exportStudentDiagnostic`)은 개발 상태 패널로(FD-152).
+5. **학생 상세 인디케이터**: 시안 S3 카드는 W-Student-Detail이지만 학생 탭 `_StudentStatusIndicators`가 private라 보드는 같은 칸 이름 · 순서의 단순 값 카드(LEVEL · Position/Class/Weapon · SKILL SUMMARY · EQUIPMENT · Ability Release · STATS · 인연)를 그렸다. 인디케이터를 공개하면(Lane A/FE3 요청) `_ValueCard`만 바꾸면 된다.
+
+### 새 장면 기대 모습(`scan-student-review-board`, 기준 이미지 없음 → CF `-UpdateGoldens`)
+
+2560×1392, 셸 없이 보드만(머리글 · 탭 줄 · 왼쪽 레일 자리는 비어 있음). 가운데: `학생 스캔 결과 검토` (i) · 회색 칩 `학생 전체 · 방금 · 11명`, 분류 버튼 `전체 11`(분홍) · `확인 필요 2`(호박 숫자) · `바뀐 학생 6` · `새 학생 1`(호박 숫자) · `그대로 2`(흐린 숫자), `확인 필요 · 2명` + 노아 행(선택 분홍, `전용무기 레벨 — → Lv.30` `신뢰도 낮음`, `같이 바뀜 · 레벨 85 → 90` · `EX 스킬 3 → 4`, `3건` 고치기 · 보류) · 오토기 행(7건), `바뀐 학생 · 6명 · 값 16건` + 일괄 행(`6명 모두 계산값이 화면과 일치합니다` / `값 16건 · 레벨 2 · 스킬 8 · 장비 4 · 인연 2` / 분홍 `6명 한 번에 적용`) + 리오(무장) · 히마리(무장) · 토키 · 노도카(`펼치기`) 행 `일치`, `나머지 2명 · 2건 바뀐 학생 탭에서 보기`, `새 학생 · 1명` + 슌(수영복) 행(`레벨 · 성급 · 스킬 · 장비 전체` `재검증 필요`, 12건). 오른쪽: `노아 · 학생 정보` `확인 필요 · 전용무기`, seg `스캔 결과`(on) · `현재 확정값`, 범례 `바뀐 값 3` · `확인 필요 1`, 값 카드(초상 · `이전 85` + 분홍 `Lv. 90` · Middle · Striker · `확인 필요` + `Lv. 30 ?` · `이전 3` + 분홍 EX `4/5` · M · M · 7/10 · 장비 T9 · Lv.65 … · HP 52,480 · 5,812 · 436 · 1,240), 폴백 카드(회색 1×1 합성 crop을 늘린 상자 + `폴백 캡처` · `전용무기 숫자 부분`, `전용무기 레벨 · 확정할 값` `Lv.30` 재검증 · 화면 확인, `계산 공격력 5,812 = 화면 5,812`, `자동 판독 Lv.30 · 신뢰도 0.61` / `이전 확정값 없음 · 계산 역산 —`), 각주, `보류 · 폐기 … 다음`, 흐린(.45) 분홍 주 버튼 `노아 3건 적용` / `레벨 90 · 전용무기 Lv.30 · EX 4 → 확정값 · 나머지 값은 그대로`. 일회성 렌더 PNG: `debug/frontend_fe8g4a/render/scan-student-review-board.png`(CF 검토용, 커밋 대상 아님).
+- 기존 장면 변화 0: 기존 파일 · harness · 기준 이미지 수정 0이고 새 파일은 기존 화면에서 import되지 않는다.
+
+### 미검증 항목
+
+- 전체 `frontend/tool/fe_gate.ps1`(golden 비교 · 전체 일반 시험 · process 시험 · almanac validate · 저장소 `git diff --check`): **미실행**(CF 몫).
+- golden 비교 · 새 기준 이미지 생성: **미실행**(CF `-UpdateGoldens`).
+- 실제 컨트롤러 · 실제 백엔드 후보(실제 evidence 상태 분포 · crop 크기) · 스캔 탭 안 배치 · Windows release: **미실행**(FE8-g4b).
+- 2560×1392 · 1280×720 밖의 창 비율(예: 폭만 좁은 창): **미실행** — 행은 `_MinBox`로 자르지만 시험하지 않았다.
+- 키보드 경로: 버튼 · 행은 키트 `KitPressable`(포커스 가능), 별도 키보드 시험 **미실행**.
+- Python 시험: **미실행**(backend 변경 0).
+
+### 발견 사항
+
+1. **Lane A 동시 편집**: 착수 때 0줄이던 `frontend/lib/ui/scan/scan_tab_page.dart`(13:41) · `scan_session_controller.dart`(13:47) 등 스캔 파일이 세션 중 Lane A(FE8-g3)로 바뀌었다. 이 slice는 그 파일을 읽기만 했고, 최종 analyze · 시험은 그 WIP 위에서 돌았다(보드는 컨트롤러를 import하지 않음). FE8-g4b 입력 1 · 3의 줄 이름은 착수 때 HEAD 기준이다.
+2. **(고친) approve 새 revision과 실패 commit의 순서**: 바깥이 approve가 만든 새 revision을 다음 프레임에 넘기면, 그 사이 commit이 실패해 기록한 실패 표시가 `didUpdateWidget`의 "새 revision이면 지움"에 지워졌다(시험 2회에서 발견). 실패 표시는 다음 적용 · 재검증 성공에서만 지우게 했다. g4b 컨트롤러 연결에서도 같은 순서가 생길 수 있다.
+3. **계산 일치 = `verified`(±2 허용)**: 폴백 카드 줄은 백엔드 판정을 따라 `=`를 쓰므로 숫자가 1~2 달라도 `계산 공격력 5,811 = 화면 5,812`가 될 수 있다. 시안 예시는 같은 값이다. CF 판단(≠ · ≈ 표기 등).
+4. **계산 검증 근거가 없는 바뀐 학생은 적용할 수 없다**: FD-144 정의대로 확인 필요(calcUnconfirmed)다. 예전 workspace는 문제만 없으면 적용을 허용했다. 실제 백엔드는 학생 후보마다 `student_stat_validation`을 내지만 Mock 후보에 그 근거가 없으면 g4b mock 검수에서 바뀐 학생이 0명일 수 있다 — g4b에서 Mock 확인.
+5. **시안에 없는 최소 문구(워커 재량, CF 확인)**: `펼치기`(시안은 `접기`만), `적용 중 · k / n명`, `n명을 적용했습니다`, `<이름>에서 멈췄습니다: … · 적용 a명 · 남은 r명은 그대로 둡니다`, `<이름> 후보를 보류했습니다.`, `적용에 필요한 저장소 상태가 없습니다.`, 주 버튼 부제 `외 n건`, 폴백 `전용무기 성급 부분`, 전용무기 상태 값 `해금` · `잠김`, 그대로 행 칩 `그대로`, 편집 줄 `이전 …` · `계산 …`. 폐기 확인은 기존 workspace 문구 그대로(키트 모달).
+6. **전체 보기 숫자와 목록**: `전체 11`인데 전체 목록에는 그대로가 없다(시안 구성 그대로). 혼동되면 CF가 문구 · 구성을 정한다.
+7. **값 카드 단순화**: 위 g4b 입력 5. 시안 stusec 축소 배치(PLAN 표 · 심상개화 · 인연 게이지)는 그리지 않았다.
+
+### 사본 · commit.json
+
+- 착수 사본: `debug/frontend_fe8g4a/pre/almanac/workflows/frontend-redesign-status-lane-b.md`(이 문서 HEAD 내용). 기존 코드 파일 수정 0 → 코드 사본 · `post_dir` 없음.
+- `debug/frontend_fe8g4a/commit.json`: slice `fe8g4a`, modified [], added 9, `whole` = [이 문서], `optional_added` = [`frontend/test/goldens/baseline/scan-student-review-board.png`], `status=true`.
+- 인계: `debug/frontend_fe8g4a/output.md`. 로그 `debug/frontend_fe8g4a/logs/`, 렌더 `debug/frontend_fe8g4a/render/`.
+
+### 다음 행동
+
+- FE8-g4a 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE8-g3)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험에 새 `scan_student_review_board_test` +14, 기존 수 그대로, golden은 새 장면 `scan-student-review-board` 기준 이미지 없음 → `failures/` 확인 → `-UpdateGoldens` → 재비교 GREEN, 기존 장면 변화 0) → `fe_commit.ps1 -Slice fe8g4a`(added 9 + baseline PNG).
+- FE8-g4b: 위 "FE8-g4b 입력" 1~5(컨트롤러 approve/commit 공개, scan_tab_page 자리, workspace 경로 해제, 진단 JSON 자리, 인디케이터 공개 요청). 발견 3 · 5 · 6은 CF 판단.
