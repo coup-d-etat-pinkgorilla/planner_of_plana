@@ -3815,3 +3815,14 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - gate ① `20261018_015932`: 모두 PASS(process 101), golden RED 6 = 예측(전술 4 S2 자리 + `scan-student-run` "학생 탭으로 이동" 켜짐 + 새 `tactical-lobby`) → 승인 ② `-UpdateGoldens` `20261018_021257` **GREEN**(golden 60).
 - 커밋: **fe9c `333bc952`** → **tidy4 `b53b44bd`**. FE9 표 마지막 행(FE9-c) 완료.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g3-worker-prompt-20261018.md`(아이템 진행 창 재작성·여러 종류 큐) · Lane B `debug/frontend_redesign_handoff/fe8g4a-worker-prompt-20261018.md`(학생 결과 검토 보드 **새 파일만**·단독 위젯·가짜 actions — 스캔 탭 연결은 FE8-g4b). g3·g4가 컨트롤러·scan_tab_page를 같이 만지지 않게 나눔.
+
+
+## 2026-10-18 15:30 — FE8-g3·FE8-g4a 검토·gate·커밋, 다음 라운드
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe8g3 17행, fe8g4a 13행), 겹침 0. FE8-g4a는 기존 파일 수정 0(새 파일 9 + status-lane-b append). 미추적 `frontend/assets/item_icons/**` 4경로는 2026-01 이전 로컬 파일로 이번 slice 밖.
+- FE8-g3: `ScanCompanionDock` 재작성(진행·일시정지(paused 이벤트 뒤)·완료), 프론트 큐 `scan_item_queue.dart`(실패 = 그 종류 건너뜀, 취소 = 큐 전체 중지), 고르기 여러 종류 시작 켜짐, dock 실패·5초 무응답이면 진행 창 없이 계속(워커 재량). 셸 후속 2건(큐 끝 → 스캔 탭, 진행 창 동안 셸 본문 Offstage)은 app_shell 금지라 FE8-g4b로.
+- FE8-g4a: `ScanStudentReviewBoard`(lib/ui/scan/review/**) — 분류 5종, 계산 일치(`student_stat_validation` verified) 일괄 적용을 `ScanStudentReviewBoardActions`로 순차 approve → commit, 반환 revision 잇기·중간 실패 멈춤·보존.
+- gate ① `20261018_145847`: 모두 PASS(analyze 0, process 101), golden RED 3 = 예측(`scan-pick-items` 주 버튼·설명 글자만 변경, 새 `scan-item-run`·`scan-student-review-board`) → 렌더 확인 후 승인 ② `-UpdateGoldens` `20261018_151238` **GREEN**(golden 62).
+- 커밋: **fe8g3 `c0d72dbd`** → **fe8g4a `280f135c`**.
+- XB: 01:32 이후 새 기록 없음. FE9-c 커밋(`333bc952`)으로 XB의 "FE9-c 전 scanner 메인 반영 금지"는 풀림 — backend 로그에 알림.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe8g4b-worker-prompt-20261018.md`(보드 스캔 탭 연결·컨트롤러 approve/commit 공개 분리·workspace 마운트 해제·셸 후속 2건) · Lane B `debug/frontend_redesign_handoff/fe8g5a-worker-prompt-20261018.md`(아이템 결과 검토 보드 **새 파일만**·가짜 actions — 연결·`_CandidatePanel`·`_handoffCandidate` 분기 제거는 FE8-g5b).
