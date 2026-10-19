@@ -6126,3 +6126,127 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - FE10-b 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE4-g4)가 멈춘 뒤 `delete-list.txt` 5파일 삭제 → `fe_gate.ps1` 1회(예상: analyze 0, 일반 시험은 `section_template_studio_test` 15 → 14와 `student_range_condition_section_test` 전체가 빠짐, golden 변화 0) → `fe_commit.ps1 -Slice fe10b`(commit.json에 `deleted` 키 추가).
 - CF 판단: 단독 `ScanPage` 축소(별도 slice), `statistics_projection.dart`, 새 0/0 멤버 3개, Lane A 파일 후보, 키트 · 서비스 목록, 포맷 일괄 적용.
+
+## FE10-d 착수 기록 (2026-10-19)
+
+- 진행 중: FE10-d 문서 반영(FD-136, 코드 변화 0). 시작 SHA `15091aee65ffd076893e6de84926f0b7c799279e`(브랜치 scanner-consolidation). 이 문서 끝에 다른 "FE10-d 착수 기록"은 없었다.
+- 막힘: 대장 `| 열림` 0건(fd-audit §1) → 막히지 않는다. 동시 작업 Lane A FE4-g5(`frontend/lib` · `test`의 계획 파일)는 읽기만 한다.
+- 고칠 문서와 기존 미커밋 변경(WIP):
+  - `almanac/design/frontend-section-direction-and-user-flows.md` — WIP 없음(LF).
+  - `almanac/design/section-template-studio.md` — **WIP 있음**(다른 레인, 끝의 「2026-09-08 시나리오 비교 UI 정리」 · 「2026-09-08 후속」 두 절 41줄 추가). 그 줄은 건드리지 않는다(LF).
+  - `README.md` — **WIP 있음**(다른 레인, 「학생 스캔 진단 파일」 절의 `재검증` 학습 문단 `:176-182`). 그 줄은 건드리지 않는다(LF).
+  - `almanac/README.md` — WIP 있음(끝 6줄 추가). 목차 변경이 필요 없으면 고치지 않는다.
+  - 이 문서(`frontend-redesign-status-lane-b.md`) — WIP 없음.
+- 사본: `debug/frontend_fe10d/pre/<v7 기준 경로>`에 위 4파일(README · 두 design 문서 · 이 문서, cmp 일치).
+
+## FE10-d 종료 기록 (2026-10-19, 문서 반영 완료 · CF gate 미실행)
+
+### 한 일
+
+1. fd-audit §3의 FD 반영 누락 8건 + FD-020 부분을 대상 문서에 FD ID와 함께 반영했다. FD-136은 2·4번(결정문 · README)으로 처리했고 대장 확정 행 문서 링크는 CF 요청으로 남긴다.
+2. `frontend-section-direction-and-user-flows.md` §4~§10 `사용자 검수 포인트` 20개를 `결정 (옛 사용자 검수 포인트, 2026-10-19)` 절로 바꿨다(§13 규칙, FD-136). 문서 머리말과 §13에 한 줄씩 기록.
+3. 낡은 서술 정리: `section-template-studio.md:179`(지금 `:179-180`) · `:844`(지금 `:849-854`), 페이즈 편집 절 머리 표시, section-direction §1.4 placeholder 문장. 역사 기록(status · orchestrator log · dated lessons · survey)은 고치지 않았다.
+4. README: "현재 상태"에 개편 · 화면 목록 추가, 낡은 스캐너 서술 2곳("스캐너는 아직 이전하지 않았으며", "P1 … `스캐너 미연결`") 교체, "검증"을 `fe_gate.ps1`로 바꾸고 시험 수 · golden 68장 화면별 표 추가.
+
+- 코드 변화 0(frontend · backend · contracts 손대지 않음). WIP 줄(README 「학생 스캔 진단 파일」의 재검증 학습 문단, section-template-studio 끝 「2026-09-08」 두 절 41줄)은 그대로 두었다.
+
+### 실행한 명령과 결과
+
+| 명령 | 결과 |
+|---|---|
+| `codealmanac validate` | `validate: ok`, index 45 pages(exit 0) — 편집 후 · LF 복원 후 · 최종 |
+| `git diff --check -- README.md almanac/design/frontend-section-direction-and-user-flows.md almanac/design/section-template-studio.md` | 출력 없음(exit 0) |
+| `git merge-file -p -L HEAD -L pre -L slice`(HEAD · pre · 현재 사본을 scratchpad에 두고, git 쓰기 없음) | 3문서 충돌 0. 첫 시도에서 section-template-studio 충돌 1 — 페이즈 편집 절 끝 줄이 WIP 추가 바로 앞이라 인접 hunk였다. 그 줄은 원문으로 되돌리고 절 머리 표시로 대신했다. 병합 결과에는 WIP 줄이 들어가지 않는다(grep 0) |
+| 줄바꿈 확인 | Edit 도구가 CRLF로 저장해 `sed` CR 제거로 LF 복원(4문서 CR 0, pre 사본도 CR 0) |
+| 수치 확인(읽기만) | golden `frontend/test/goldens/baseline/*.png` 68, `*_test.dart` 223 = goldens 15 + 그 밖 208, process 분류 32(fe_gate 패턴; gate `20261019_193503` `test-split.txt` 32 · 176과 일치) |
+
+flutter · Python 시험은 돌리지 않았다(코드 변화 0).
+
+### FD 반영 표
+
+| FD | 문서 · 절 | 반영 요약 |
+|---|---|---|
+| FD-019 | section-direction §1.1 끝 · §1.2 끝 | §1.1 "떠 있는 섹션 금지"에 "예외는 §1.2 끝" 연결, §1.2 끝 **예외(FD-019)** 문단: 모달(홈 스캔 팝업 · 계정 추가 · 필터 · 전술 Excel 가져오기), 앵커 팝업(족보 전체), 부유 패널(Title-Accounts 편집 패널 · Inventory-Tiers T2), T2 80°/260° |
+| FD-020 | section-template-studio 「Studio 구성을 실제 화면에 적용할 때의 규칙」 표면 문단 뒤 | 상시 안내 문장 → 키트 `InfoPopover` (i). 설정은 문장 유지(FD-179로 모양만). 스캔은 10-06 시안(FD-120) 뒤 (i) 사용 — 코드 현실(발견 1) |
+| FD-026 | section-template-studio 「계획 탭 페이즈 편집 화면 (2026-07-30)」 머리 표시 | 활성 계획 = 저장된 PlanningDocument(FB-1), 수치 = `planning.document.calculate` 결과 하나. 끝 줄의 "후속 범위"는 끝났다고 명시(끝 줄 원문은 WIP 인접이라 그대로) |
+| FD-033 | section-direction §3 병목 기준 · §8 결정 ST2 | "구체적인 시각화는 후속" → 통계 계획 집계 C3 페이즈별 누적 부족 계단선, 모름 ≠ 0 빗금, 이종 합산 금지. ST2에 원 · 도넛 · 이중 축 금지 |
+| FD-070 | section-template-studio 페이즈 편집 절 머리 표시 · section-direction §3 진입점 | 4섹션 `PlanPhaseEditor` → 계획 만들기 3단계(FE4-d)가 대체, `plan_phase_editor.dart` FE5-f2 삭제, `페이즈 편집` = 활성 계획을 3단계로 |
+| FD-081 | section-direction §3 새 항목 "계획 만들기 진입점" | 계획 탭 S1 `시나리오 생성` → 1단계, 계획 탭 · 시나리오 `페이즈 편집` → 3단계, 성장 계산기 `이 목표로 계획에 추가` → 2단계(FD-160 · FD-171). 시나리오 "이걸로 새로 만들기 → 1단계"는 코드에서 `복제해서 새로`(목록 복제) — 발견 2 |
+| FD-094 | section-direction §6 결정 I1 | 기본 진입 = 부족 진단 `부족한 것`, 보유량 전체는 사이드바 `전체` |
+| FD-127 | section-direction §7 P6 범위 문단 | "고급 추천과 승률 분석은 별도 범위" → FD-127 (a) 관측 계약(관측 승률 · 근거 비중 · 모집단 경고만, 확률 · 보정 · 상위 500위는 숨김 + 빈 상태 설명). 고급 추천은 계속 제외 |
+| FD-136 | section-direction 머리말 · §4~§10 · §13, README 현재 상태 · 검증 | 결정문화와 README 테스트 · 화면 목록. 대장 확정 행 문서 링크는 CF 요청 1 |
+
+### 결정문 표
+
+| 검수 포인트 | 결정문(요약) | 근거 |
+|---|---|---|
+| H1 | 첫 시선 = 연결 · 스캔 시작, 문제 · 검토는 머리글 칩, 계획 요약은 홈에 없음 | 사용자 승인 2026-10-19 (FD-115 · FD-121 인용) |
+| H2 | 홈 = 빠른 런처, 요약은 통계 | 사용자 승인 2026-10-19 |
+| S1 | 기본 초점 = 상세 조회, 계획 추가는 성장 계산기 → 2단계 | 사용자 승인 2026-10-19 (FD-160 · FD-171) |
+| S2 | 프리셋은 필수 아님(2단계에서 선택), 계산기 목표는 그대로 | 사용자 승인 2026-10-19 (FD-074 · FD-075) |
+| S3 | 현재값 출처 = 스캔 확정, 후보 수정은 스캔 탭만, 학생 탭 직접 수정은 개편 뒤 별도(FE11 후보) | FD-178 (FD-120) |
+| I1 | 기본 진입 = 부족 진단 | FD-094 |
+| I2 | 인벤토리 부족 = 활성 계획 기준 하나, 전체 육성 부족 화면은 개편 뒤 별도 | FD-178 (FD-026 · FD-031) |
+| I3 | 스캔 비교 · 확정은 스캔 탭 결과 검토 | FD-120 |
+| T1 | 첫 화면 = 기록 목록 + 편집, 로비 · 족보는 옆 섹션 | 사용자 승인 2026-10-19 |
+| T2 | 하나의 v2 기록 모델, 족보 자동 연결 | FD-128 |
+| T3 | Excel/CSV · 로비 스캔 유지, 캡처 · 붙여넣기 · 폴더는 범위 밖 | FD-178 (FD-131) |
+| ST1 | 통계 전용 필터 + 학생 탭 필터 불러오기 | FD-104 |
+| ST2 | 주제별 KPI 5개, 타일 A1~A6 · B1~B3 · C1~C5, 데이터 규칙 | FD-033 · FD-105 |
+| ST3 | 세 주제 = 하위 모드, 기본 학생 성장 | 사용자 승인 2026-10-19 |
+| SC1 | 학생(2) · 아이템(다중 선택), 로비 스캔은 전술 탭만 | 사용자 승인 2026-10-19 (FD-120 · FD-150) |
+| SC2 | 변경 요약 일괄 적용, 확인 필요만 개별 검토 | 사용자 승인 2026-10-19 (FD-144) |
+| SC3 | 일반 상태 = 머리글 칩 · 스캔 탭, 진단 = 개발 상태 패널 · 설정 고급 진단 | 사용자 승인 2026-10-19 (FD-152) |
+| SE1 | 첫 초점 = 프로필, 순서 유지 · 새 스타일, 게임 창은 홈 | FD-179 (FD-120) |
+| SE2 | 일반 복구와 개발자 진단 분리 | 사용자 승인 2026-10-19 |
+| SE3 | 계정 삭제 · v6 가져오기 유지, 백업 · 복원은 개편 뒤 별도 | FD-178 |
+
+### 낡은 서술 정리 목록
+
+| 위치(지금 줄) | 전 | 후 |
+|---|---|---|
+| `almanac/design/section-template-studio.md:179-180` | `SectionTemplateSurface` · `AttachedSectionTemplateSurface`가 `SectionSurface` 래퍼 | 래퍼는 `DiagonalSection`만, 두 위젯은 FE10-a에서 지움(FD-174) |
+| `almanac/design/section-template-studio.md:849-854` | `StudentDiagonalFilterList`를 계획 학생 선택기가 FE4-b 전까지 씀 | 선택기(FE5-f2) · 목록(FE10-b) 지움, group row 기하 규칙은 사선 행 일반 규칙으로 남김 |
+| `almanac/design/section-template-studio.md:1240-1246` | 옛 4섹션 페이즈 편집기를 현재형으로 서술 | 절 머리 "옛 화면 기록" 표시(FD-070 · FD-026) |
+| `almanac/design/frontend-section-direction-and-user-flows.md` §1.4 | "현재 placeholder의 임시 모션 값" | placeholder 화면은 FE10에서 지웠다(`section_placeholder_page.dart`, FE10-b) |
+| `README.md` 「현재 상태」 끝 · 「실제 Python backend로 실행」 | 스캐너 미이전 · `스캐너 미연결`(lib grep 0) | session 경계 · scanner protocol v1, 홈 `싯딤의 상자와 연결` → `스캔` |
+
+grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` · `section_placeholder_page` · `plan_studio_layout` · `ScanQueueReviewBar` · `StudentDiagonalFilterList` · `PlanPhaseEditor` · `PlanStudentSelector` · `section-title-1.ba-section-studio.json`)의 almanac(workflows 제외) · README 남은 언급은 모두 과거형이거나, 폐기 기록 머리 표시가 있는 dated 문서(`plan-phase-editor-lessons-2026-07-31.md`, `plan-student-selector-lessons-2026-08-04.md`, `diagonal-parent-child-layout-guidelines-2026-08-04.md:154`)다.
+
+### README 확인 결과
+
+- 테스트 · 화면 목록이 README에 없었다 → 「검증」에 추가: `*_test.dart` 208(process 32) + golden 시험 15, golden 장면 68(타이틀 · 계정 5, 홈 · 머리글 3, 학생 7, 계획 메인 · 프리셋 4, 계획 만들기 13, 시나리오 8, 인벤토리 5, 전술 8, 통계 5, 스캔 9, 설정 1 — 합 68). 파일 · 장면 이름은 `ls`로 확인.
+- 「검증」의 맨 `flutter test`는 AGENTS.md(fe_gate만)와 어긋나 `fe_gate.ps1`로 바꿨다.
+- 화면 목록은 `app_section.dart`(기본 탭 8 + Adaptive-Sync + Section Template Studio)와 맞췄다.
+- `almanac/README.md`는 새 페이지가 없어 고치지 않았다.
+
+### 발견 사항
+
+1. FD-020 "시안 없는 스캔 · 설정 탭은 현행 유지"는 2026-10-06 스캔 시안 전 결정이다. 지금 스캔 탭은 `InfoPopover`를 쓴다(`frontend/lib/ui/scan/scan_tab_sections.dart` 등). 문서는 코드 현실대로 썼다.
+2. FD-081 (i)의 "시나리오 이걸로 새로 만들기 → 1단계"에 해당하는 동작이 없다. 시나리오 상세의 `복제해서 새로`(`plan_scenario_detail.dart` 키 `plan-scenario-detail-duplicate`)는 `duplicateScenario`로 목록에서 복제만 하고 계획 만들기를 열지 않는다(`plan_scenario_list.dart` `_duplicate`).
+3. Edit 도구가 LF 문서를 CRLF로 저장한다. 이 slice에서는 매번 LF로 되돌렸다. 다음 문서 워커도 확인 필요.
+
+### CF 요청(대장 — 이 slice는 고치지 않음)
+
+1. FD-136: 대장 확정 행에 문서 링크(FD-019 · 033 · 081 · 094 · 127 → section-direction 해당 절, FD-020 · 026 · 070 → section-template-studio 해당 절, FD-178 · 179 → section-direction §5 · §6 · §7 · §10 결정).
+2. FD-157 · FD-158 · FD-159 결번 사유 한 줄(ID 규칙 "번호는 지우거나 재사용하지 않는다", fd-audit §1).
+3. FD-052 근거 칸의 "771–818행"은 지금 줄 번호와 다르다(fd-audit §2) — 절 이름으로 바꾸기.
+4. FD-020 권장안 칸 "시안 없는 스캔 · 설정 탭"에 스캔 시안(10-06) 뒤 사실 한 줄(발견 1).
+5. FD-081: 시나리오 → 1단계 진입점을 두지 않은 것으로 확정할지, 후속 slice로 둘지(발견 2).
+
+### CF 판단
+
+1. section-direction §3의 "계획 홈 Section 역할"(Section 1 메뉴 · Section 4 빈 예약 영역 · Section 5 재화 헤더)은 FE5-c2 이후 계획 메인(활성 계획 Detail 3섹션)과 다르다. 대장 "갱신" 칸이 가리키지 않아 고치지 않았다.
+2. section-direction §4~§10의 "예상 흐름" 본문(학생 탭 현재값 수정 · 스캔 후보 보조 흐름, 인벤토리 수동 수정 등)은 가설 기록으로 두고 머리말에 "결정이 우선"만 적었다. 본문까지 지금 화면으로 다시 쓸지.
+3. `docs/frontend-redesign/artboard-map.md` Dart 칸(`PlanStudentSelector` · `PlanPhaseEditor` · `_CandidatePanel` · `StudentDiagonalFilterList` 등)은 머리에 "조사 보고서 시점 grep" 기록이라고 적혀 있어 고치지 않았다. FE10-z 둘러보기용으로 지금 파일로 갱신할지.
+4. README 스캐너 문장은 있는 파일(`backend/core/scanner_session.py`, `contracts/scanner-protocol-v1.schema.json`)만 근거로 짧게 썼다. P5 완료 여부 같은 XB 상태 서술은 넣지 않았다 — 필요하면 XB 확인.
+
+### 미검증
+
+- `fe_gate.ps1`(CF 몫). 문서만 바꿔 영향은 almanac-validate · git-diff-check 단계뿐이다.
+- 결정문의 화면 동작 서술은 FE10-a 초안과 코드 grep 기준이며 앱을 띄워 보지 않았다(FE10-z 둘러보기에서 확인).
+- `fe_commit.ps1` 3-way 병합은 같은 `git merge-file`을 scratchpad에서 돌려 충돌 0을 확인했을 뿐 스크립트 자체는 돌리지 않았다.
+
+### 다음 행동
+
+- CF: `debug/frontend_fe10d/output.md` 확인 → gate → `fe_commit.ps1`(`debug/frontend_fe10d/commit.json`) → 위 CF 요청 1~5를 대장에 반영 → FE10-z.

@@ -176,10 +176,15 @@ Section의 기본 표면은 앱 전체에서 하나다(FE1-c, 2026-10-06, 시안
 `AppColors.surface` alpha 0.76, 블러(`BackdropFilter`) 없음, 테두리 없음, 그 아래 최종 polygon
 path를 따르는 `defaultLiftedSectionShadow` 4층. 코드는 `frontend/lib/ui/widgets/section_surface.dart`의
 `SectionSurface`(위젯)·`paintSectionSurface`(painter 함수)·`sectionSurfaceColor` 하나만 쓴다.
-`DiagonalSection`, `SectionTemplateSurface`, `AttachedSectionTemplateSurface`는 그 래퍼이고, 이전의
+`DiagonalSection`은 그 래퍼이고(`SectionTemplateSurface` · `AttachedSectionTemplateSurface`는 런타임
+사용처가 없어 FE10-a에서 지웠다, FD-174), 이전의
 surface 0.92·0.88 + blur 8 + 1px outline은 폐기했다. Studio 편집기(`SectionCanvasPainter`)도 선택되지
 않은 Section을 같은 표면으로 미리 보여 준다. 선택된 Section의 primaryMuted 채움과 primary 외곽선은
 편집 표시이며 시안 근거가 없어 유지한다. 삼각 무늬 텍스처 Container 표면은 이 규칙 밖이다(FD-015).
+
+화면의 상시 안내 문장은 시안이 있는 화면에서 키트 `InfoPopover`의 (i) 뒤로 옮긴다(FD-020). 시안이
+없는 설정 탭은 안내 문장을 그대로 두고 모양만 사선 섹션으로 다시 그렸다(FD-179). FD-020 당시 시안이
+없던 스캔 탭은 2026-10-06 스캔 시안(FD-120)이 생겨 다른 탭처럼 (i)를 쓴다.
 
 Section의 기본 표면은 테두리가 없고 반투명이다. 그러나 같은 영역에 부모 Section 표면과
 삼각 무늬 Container를 차례로 그리면 두 반투명 색이 합성되어 원하지 않는 원본 색이 남는다.
@@ -841,10 +846,12 @@ shadow의 약 3배 두께이며, scroll content가 고정 경계에서 잘려 �
 사라지게 한다. fog는 pointer를 받지 않고 grid/list의 wheel, drag, hit target과
 사선 scrollbar 동작을 그대로 보존한다.
 
-`StudentDiagonalFilterList`(체크박스 group row)는 학생 탭에서 쓰지 않지만 계획 학생 선택기가 FE4-b 전까지
-쓴다. 그 group row는 중심 Y 이동과 자체 사선 깊이를 중복 적용하지 않고 row 밑변의 viewport Y를 기준으로
-한 번만 이동하며, 각 row의 높이에 따른 우측 사선 깊이를 폭에 포함해 우측 두 끝점이 하나의 80도 rail
-위에 놓이게 한다.
+옛 학생 필터 `StudentDiagonalFilterList`(체크박스 group row)와 그것을 쓰던 계획 학생 선택기
+(`PlanStudentSelector`)는 필터 모달(FE3-d)과 계획 만들기 1단계(FE4-b)로 바뀐 뒤 지웠다(선택기 FE5-f2,
+목록 FE10-b).
+그 group row가 지킨 규칙은 사선 행 일반에 그대로 남는다: 중심 Y 이동과 자체 사선 깊이를 중복 적용하지 않고
+row 밑변의 viewport Y를 기준으로 한 번만 이동하며, 각 row의 높이에 따른 우측 사선 깊이를 폭에 포함해 우측 두
+끝점이 하나의 80도 rail 위에 놓이게 한다.
 
 ### 학생 페이지 viewport와 Section canvas 높이
 
@@ -1229,6 +1236,13 @@ Section 2의 viewport fog는 고정 장식이 아니라 실제 `ScrollPosition`�
     실화면 확인을 완료 조건으로 남긴다.
 
 ## 계획 탭 페이즈 편집 화면 (2026-07-30)
+
+> **옛 화면 기록(FD-070 · FD-026, 2026-10-19 FE10-d)**: 이 절의 4섹션 편집 화면(`PlanPhaseEditor`)은
+> 계획 만들기 3단계 `단계 순서`(FE4-d)가 대체했고 `plan_phase_editor.dart`는 FE5-f2에서 지웠다(FD-070).
+> 지금 `페이즈 편집`은 저장된 활성 계획을 3단계로 연다. 아래 끝 줄의 "더미 데이터와 인메모리 상태 · 저장과
+> 재시작 복원은 후속" 범위도 끝났다: 활성 계획은 저장된 PlanningDocument(FB-1)이고, 화면의 활성 계획 수치는
+> 그 문서를 `planning.document.calculate`로 계산한 결과 하나다(FD-026). 아래 본문은 2026-07-30 기록으로
+> 남긴다(당시 문장 그대로).
 
 - 계획-메인 Section 1의 임시 `페이즈 만들기` action이 인메모리 편집 화면을 연다.
   메인 Section들이 각자의 outro 방향으로 퇴장한 뒤 편집 Section 1~4가 진입한다.

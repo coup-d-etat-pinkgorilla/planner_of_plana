@@ -19,10 +19,19 @@ BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔�
 - profile catalog, confirmed current, inventory와 goal의 atomic repository persistence
 - immutable Flutter repository state와 실제 Dart↔Python process restart 복원 E2E
 - Studio 좌표를 직접 투영한 Title 계정 생성·사진 선택·다중 계정 관리 섹션 클러스터
+- 2026-10-05 UI/UX 개선 시안(택틱 제외 57장)을 옮긴 프론트 개편(FE1~FE10,
+  [Frontend Redesign Implementation Workflow](almanac/workflows/frontend-redesign-workflow.md),
+  결정은 `docs/frontend-redesign/decision-register.md`의 `FD-###`)
 
-저장소는 scanner DTO와 분리해 이전했습니다. 스캐너는 아직 이전하지 않았으며 v6
-`repository`가 scanner DTO를 직접 import하고 scanner가 캡처·입력·matcher·상태 callback에
-결합되어 있으므로, P5에서 독립 session/application-service 경계로 옮깁니다.
+화면은 타이틀(계정 생성·관리) 뒤 기본 탭 8개 — 홈(스캔 팝업), 학생(성장 계산기), 계획(계획 만들기
+4단계·시나리오·활성 계획 보기), 인벤토리, 전술대항전, 통계, 스캔, 설정 — 와 보조 화면 Adaptive-Sync
+진단, 개발용 Section Template Studio입니다(`frontend/lib/ui/app_section.dart`). 탭별 흐름과 결정은
+[Frontend Section Direction and User Flows](almanac/design/frontend-section-direction-and-user-flows.md)에
+있습니다.
+
+저장소는 scanner DTO와 분리해 이전했습니다. 스캐너는 v6의 캡처·입력·matcher·상태 callback 결합을
+떼어 낸 session 경계(`backend/core/scanner_session.py`)와 `contracts/scanner-protocol-v1.schema.json`으로
+옮겨 홈 스캔 팝업과 스캔 탭에서 씁니다. 스캐너 구조 정리는 scanner 워크플로가 이어서 맡습니다.
 
 ## 구조
 
@@ -41,11 +50,36 @@ BA Planner v7은 Flutter for Windows 프론트엔드와 headless Python 백엔�
 cd backend
 py -3.11 -m unittest discover -s tests -v
 
-cd ../frontend
-flutter analyze
-flutter test
+cd ..
+powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1
+
+cd frontend
 flutter build windows --release
 ```
+
+`fe_gate.ps1`은 `flutter analyze` → 단위·위젯 시험 → 실제 Python backend를 띄우는 process 시험(한 파일씩)
+→ golden 비교 → `codealmanac validate` → `git diff --check`를 차례로 돌리고 요약을
+`debug/frontend_gate/<시각>/summary.txt`에 남깁니다. 맨 `flutter test`는 golden과 process 시험을 함께
+돌려 시간 초과가 날 수 있어 쓰지 않습니다. golden은 화면을 일부러 바꾼 slice에서만
+`fe_gate.ps1 -UpdateGoldens`로 다시 만듭니다.
+
+2026-10-19 기준 Flutter 시험은 `frontend/test/` 아래 `*_test.dart` 208개(그중 process 시험 32개,
+`fe_gate.ps1`의 분류 기준)와 golden 시험 `frontend/test/goldens/*_golden_test.dart` 15개입니다. golden
+장면은 `frontend/test/goldens/baseline/`의 68장입니다.
+
+| 화면 | golden 장면 |
+| --- | ---: |
+| 타이틀·계정(`title`, `account-*`) | 5 |
+| 홈·머리글(`home`, `home-scan-popup`, `header-scan-progress`) | 3 |
+| 학생·성장 계산기(`students-*`) | 7 |
+| 계획 메인(활성 계획 보기)·프리셋 관리(`plan-bottleneck`, `plan-by-phase`, `plan-overall`, `plan-preset-manager`) | 4 |
+| 계획 만들기(`plan-flow-*`) | 13 |
+| 시나리오(`plan-scenario-*`) | 8 |
+| 인벤토리(`inventory*`) | 5 |
+| 전술대항전(`tactical*`) | 8 |
+| 통계(`statistics-*`) | 5 |
+| 스캔(`scan-*`) | 9 |
+| 설정(`settings`) | 1 |
 
 ## 실제 Python backend로 실행
 
@@ -63,8 +97,8 @@ flutter run -d windows `
 기본 Python launcher는 Windows의 `py -3.11`입니다. 별도 실행 파일을 쓰려면
 `--dart-define="BA_PLANNER_PYTHON=C:\path\to\python.exe"`를 추가합니다.
 backend 경로는 실제 연결을 시작할 때 확인하므로 경로가 잘못되어도 앱 shell은
-연결 끊김 상태로 실행됩니다. P1에는 scanner가 포함되지 않아 실제 backend 모드의
-스캔 버튼은 `스캐너 미연결` 상태로 비활성화됩니다.
+연결 끊김 상태로 실행됩니다. 스캔은 홈의 `싯딤의 상자와 연결`로 게임 창을 고른 뒤 같은 자리의
+`스캔` 버튼(홈 스캔 팝업)이나 스캔 탭에서 시작합니다.
 Windows Release에는 backend source/data와 검증된 Python 3.11 가상환경이
 `release/backend/`로 함께 복사됩니다. 앱은 명시적인 Python 경로가 없으면 이
 가상환경을 우선 사용하고, 가상환경이 없는 개발 트리에서만 시스템 `py -3.11`로
