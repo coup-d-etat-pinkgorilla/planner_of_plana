@@ -10960,3 +10960,121 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_193503\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-g5 착수 기록 (2026-10-19 20:28, Lane A, 로컬 Claude Code)
+
+- 상태: **진행 중** — FE4-g5 계획 흐름 작은 후속 둘: ① 한 명 모드 "이미 잡혀 있는 목표" 상태 칩(FE4-b2 발견 6) ② 올림 알림 시제(FE4-g4 발견 1, 저장 전 미래형 · 저장 뒤 완료형).
+- 시작 SHA: `15091aee65ffd076893e6de84926f0b7c799279e`(브랜치 `scanner-consolidation`).
+- 막힘: 대장 "slice별 막힘 요약"에 FE4-g5 행 없음(FE4-g "—"), `열림` 0건. FD-180 · FD-177 확정. 앞선 "FE4-g5 착수 기록" 없음 — 멈출 사유 없음.
+- 고칠 기존 파일(착수 때 모두 작업트리 = HEAD, **기존 미커밋 변경(WIP) 없음**, 사본 `debug/frontend_fe4g5/pre/<v7 기준 경로>`, cmp 일치):
+
+| 파일 | WIP |
+|---|---|
+| `frontend/lib/ui/models/plan_flow_draft.dart` | 없음 |
+| `frontend/lib/ui/models/plan_flow_save.dart` | 없음 |
+| `frontend/lib/ui/widgets/plan_section_layout.dart`(흐름 context 생성부만, CRLF) | 없음 |
+| `frontend/lib/ui/widgets/plan_flow_student_one.dart` | 없음 |
+| `frontend/lib/ui/widgets/plan_flow_save_step.dart` | 없음 |
+| `frontend/lib/ui/widgets/plan_flow_workspace.dart`(필요할 때만, 사본만 미리 둠) | 없음 |
+| `frontend/test/goldens/fe1g_baseline_golden_test.dart`(장면 조작만) | 없음 |
+| `frontend/test/plan_flow_save_test.dart` · `plan_flow_student_one_test.dart` · `planning_page_test.dart`(필요할 때만) | 없음 |
+
+- 이 status 문서는 `status=true`가 통째로 커밋하므로 사본 · commit.json `modified`에 넣지 않는다.
+- 고치지 않음: `lib/services/**`(읽기만), backend · contracts, `lib/ui/kit/**`, golden harness, `frontend/tool/**`, almanac · docs(Lane B FE10-d), 택틱 소유 파일.
+
+## FE4-g5 종료 기록 (2026-10-19 20:41, Lane A, 코드 작성 완료 · gate 미실행)
+
+- 상태: **완료(gate 전)**. 근거 FE4-b2 발견 6, FE4-g4 발견 1, FD-180 (a). 새 백엔드 호출 0, 서비스 · kit · harness 수정 0.
+- 이 레인이 고친 기존 파일은 사본 `debug/frontend_fe4g5/pre/`와 비교한다. 사본만 둔 `plan_flow_workspace.dart` · `planning_page_test.dart`는 고치지 않았다(cmp 일치).
+
+### 실행한 명령과 결과
+
+| 명령(`frontend`에서) | 결과 |
+|---|---|
+| `flutter analyze` | No issues found(info 포함 0). 마지막 실행은 시험 수정 뒤 4.0s |
+| `flutter test test/plan_flow_student_one_test.dart test/plan_flow_save_test.dart` | 첫 실행 3건 실패(새 시험 쪽 — 계획 화면 시험의 저장 문서가 누적 snapshot이 아님 · `goal_metadata` 빠짐, 의미 값 찾기가 다른 노드) → 시험 고친 뒤 **+40, All tests passed**(로그 `debug/frontend_fe4g5/logs/slice_tests.txt`) |
+| 관련 시험 27파일(grep `PlanFlowContext` · `PlanFlowCalculation` · `planFlowRaised` · `plan_flow_student_one` · `PlanningPage(` · `plan_section_layout` · `PlanFlowController` · `plan-scenario-create-launch` + `student_page_test` · `widget_test`; 위 두 파일 · golden · process E2E 제외) | **+289, All tests passed**, 실패 0(로그 `logs/related_tests.txt`). 파일: app_navigation_fe7d · app_navigation_tidy1 · plan_detail_tabs · plan_flow_authoring · plan_flow_goal_step · plan_flow_handoff · plan_flow_order_step · plan_flow_presets · plan_flow_student_step · plan_flow · plan_home_detail · plan_preset_manager · plan_scenario_compare · plan_scenario_comparison · plan_scenario_detail · plan_scenario_list · plan_scenario_preview · planning_page · tidy1_followups · student_page · widget_test · geometry/diagonal_geometry · kit/diagonal_scroll_viewport · kit/diagonal_scrollbar · kit/item_icon_tile · kit/skew_bar · widgets/section_surface |
+| 일회성 렌더: `fe1g_baseline_golden_test.dart` 사본(`@Tags(['golden'])` 제거, `expectGoldenScene` → PNG 쓰기, grep 0건 확인) `--plain-name "plan-flow-step"` | +13 All tests passed(장면 안 기대 — `부족 1종` · `부족 2종` · `저장하면 나중 단계 1개를 함께 올립니다` 포함 — 모두 통과). 사본은 실행 직후 지움. PNG `debug/frontend_fe4g5/render/`(13장) |
+| `git diff --check -- frontend/` | 0건 |
+
+- `dart format`: 처음에 고친 파일 8개를 하나씩 포맷했더니 이 SDK(3.12.2) 포매터가 **이 slice와 무관한 줄까지** 다시 접었다(예 `plan_flow_save_test.dart` 146줄). 무관한 diff를 남기지 않으려고 pre 사본으로 되돌린 뒤 같은 편집만 다시 적용했고, 포매터 결과는 **고친 줄에 걸친 덩어리만** 손으로 반영했다(scratch 사본 포맷과 비교, 고친 줄 안 차이 0). 파일 줄바꿈 유지(`plan_section_layout.dart` CRLF, 나머지 LF).
+
+### 1. 한 명 모드 상태 칩 — 값 출처
+
+- **값 출처**: 지시는 `RepositoryPlanState.calculation`의 단계 결과였으나 그 필드는 `PlanningScenarioCalculationSummary`(크레딧 · 필요 종 수 · 부족 종 수 · 첫 병목 페이즈 · 대표 부족)라 **단계 결과가 없다**(`lib/services/scenario_service.dart` 62행). 계획 화면이 이미 가진 단계 결과는 Detail 홈 계산 응답 `_homeProjection`(`planning.document.calculate`, `stage_results[]` 포함, `_loadRepositoryPlan` → `_calculateDocument`)이다. 지시의 "흐름을 여는 쪽이 이미 가진 상태만 넘긴다"에 맞춰 이것을 넘겼다(새 호출 0 — 시험 `계획 화면은 흐름을 열 때 이미 가진 활성 계획 계산을 넘긴다(새로 계산하지 않음)`이 계산 횟수 불변 확인).
+- **연결**(`plan_section_layout.dart` `_flowContext`만): `_homeProjection`은 **같은 활성 문서 · 같은 상태로 계산한 것일 때만** 넘긴다 — `identical(_document, _repositoryPlan.document)` 그리고 `identical(state, _repositoryState)`. `_ensureRepositoryContext(refresh: true)`로 다시 읽어 문서 객체가 바뀌었거나, 계산 전 · 계산 불가(`plan.get calculation=null`이면 계산을 부르지 않음) · 계산 오류면 비어 있고 칩은 '—'다.
+- **모델**(`plan_flow_draft.dart`): `PlanFlowContext.activeStageCosts`(단계 id → `PlanFlowStageCost`, 기본 빈 맵, unmodifiable). `stage_results[]` 읽기를 `planFlowProjectionStageCosts(projection)`로 빼서 초안 계산(`PlanFlowCalculation.fromProjection`)과 함께 쓴다(동작 같음).
+- **칩 판정 규칙** — 계획 탭 2단계 단계 카드 칩 `planFlowGoalStageStatus`(`plan_flow_goal_step.dart` 178행)를 그대로 재사용, 앞에 "단계 결과 없음 → '—'"만 둔다(`planFlowActiveStageStatus`, `plan_flow_student_one.dart`):
+
+| 순서 | 조건 | 칩 | 톤 | 값 출처 |
+|---|---|---|---|---|
+| 1 | 그 단계 결과 없음(계산 없음 · 계산 전 · 다시 읽은 뒤 · 응답에 그 `stage_id` 없음) | '—'(칩 없이 글자, 기존 그대로) | muted | `activeStageCosts[stageId] == null` |
+| 2 | 앞 단계보다 올리는 키 없음 | 목표 없음 | gray | `planFlowGoalChanges(before, targets)` 비어 있음 |
+| 3 | 미보유 학생 | 모집 필요 | warn | 1단계 picker `ownedIds`(확정 현재값) |
+| 4 | 보유량을 아는 재화가 하나도 없음 | 보유 모름 | gray | `PlanFlowStageCost.shortageKinds == null`(`shortage_at_entry` 모두 null) |
+| 5 | 들어설 때 모자라는 재화 0종 | 지금 가능 | ok | `shortageKinds == 0` |
+| 6 | 모자라는 재화 n종 | 부족 n종 | warn | `shortageKinds` = `resources[].shortage_at_entry > 0`인 재화 종류 수(서로 다른 재화 양을 더하지 않음) |
+
+- 화면: 행 오른쪽 '—' 자리에 `BaChip`(키 `plan-flow-one-stage-<id>-status`, `FittedBox.scaleDown` — 1280×720 시험 넘침 0). 행 의미 값은 칩이 있을 때만 `<요약> · <칩>`(없으면 예전 그대로 요약).
+- "들어설 때"는 **활성 계획 문서 순서 기준**이다(Detail 홈과 같은 계산). 2단계 카드 칩은 초안 계산 기준이라 같은 단계라도 숫자가 다를 수 있다(발견 1).
+
+### 2. 올림 알림 시제
+
+| 시점 | 문구 | 함수 · 위치 |
+|---|---|---|
+| 저장 전(4단계 C 미리보기, 저장 버튼 아래 제목 줄) | **저장하면 나중 단계 n개를 함께 올립니다** | 새 `planFlowRaisingTitle`(`plan_flow_save.dart`), `plan_flow_save_step.dart` 제목 줄 |
+| 저장 뒤(결과 SnackBar 요약) | **나중 단계 n개를 함께 올렸습니다**(…) | `planFlowRaisedTitle` 그대로 → `planFlowRaisedSummary` |
+
+- 목록(학생 · 나중에 칸 단계 · 키 이전→새 값, "외 n개 단계")은 그대로. 시험: `plan_flow_save_test` 제목 두 함수 · 4단계 위젯(2560 · 1280폭, 미래형 있음 · 완료형 없음), 저장 결과 문구(완료형) 그대로 통과.
+
+### 시험 변경
+
+- `plan_flow_student_one_test.dart`(+7건): 칩 규칙 표 6줄 + null, `stage_results` 읽기(빈 · 잘못된 줄), 칩 표시 · 의미 값, 일부 단계만 결과(나머지 '—'), 1280×720 넘침 0, **계획 화면 연결 2건**(`PlanningPage(loadRepositoryPlan: true)` → "시나리오 생성" → 한 명: 계산 단계 결과 → 칩 · 계산 횟수 불변 / 단계 결과 없는 응답 → '—').
+- `plan_flow_save_test.dart`: 기대 문구 2곳(제목 함수 · 4단계 위젯). 지운 시험 0.
+- `fe1g_baseline_golden_test.dart`(조작만): `_openPlanFlow`에 `loadRepositoryPlan` 인자(기본 false — 다른 장면 그대로), `plan-flow-step1-one`만 `true`(앱처럼 활성 계획을 읽고 계산한 뒤 흐름을 연다) + 칩 기대 2줄, `plan-flow-step4-raised` 기대 문구 1줄. harness · fixture 수정 0(계산 대역의 고정 단계 부족 그대로: 1단계 네브라 −14, 2단계 파이스토스 −30 · 볼프세크 −8).
+
+### golden 변화 예상(장면별)
+
+- **바뀜 1 — `plan-flow-step1-one`**: 짧은 C "이미 잡혀 있는 목표" 두 행 오른쪽 '—' → 칩 **`부족 1종`**(P1 · 1단계) · **`부족 2종`**(P2 · 2단계), 둘 다 warn 톤. 나머지 그대로 — 렌더와 현재 기준 이미지의 차이는 두 행 오른쪽 끝 64×82px 상자 안 3,041px뿐(`loadRepositoryPlan: true`로 다른 곳이 바뀌지 않음 확인). 렌더 `render/plan-flow-step1-one.png`.
+- **바뀜 2 — `plan-flow-step4-raised`**: 저장 버튼 아래 굵은 제목 "나중 단계 1개를 함께 올렸습니다" → **"저장하면 나중 단계 1개를 함께 올립니다"**. 아래 학생 줄 그대로. 차이 상자 191×12px(제목 줄만). 렌더 `render/plan-flow-step4-raised.png`.
+- **그대로**: 나머지 전부. 일회성 렌더한 `plan-flow-step*` 11장(`step1` · `-filter` · `-many` · `step2` · `-more` · `-saved` · `step3` · `-deferred` · `-many` · `step4` · `-append`)은 현재 기준 이미지와 **바이트까지 같다**. 다른 탭 장면은 이 코드를 지나지 않는다(한 명 모드 · 4단계 올림 알림만).
+- 그래서 CF gate 예상: golden **2건 RED**(위 두 장면), 나머지 GREEN. 새 장면 0.
+
+### 미검증("미실행")
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` — 미실행(CF 몫). 위 바이트 비교는 렌더 PNG와 기준 PNG 해시 비교일 뿐 golden 시험 실행이 아니다.
+- process E2E와 실제 Python 백엔드에서 계획 화면 → 흐름 칩 — 미실행. 실제 `planning.document.calculate` 응답의 `stage_results[].resources[].shortage_at_entry` 모양은 이미 2단계 카드가 쓰는 같은 파서다.
+- 이 slice와 무관한 일반 시험(스캔 · 인벤토리 · 통계 · 택틱) — 미실행(gate에서).
+- 실제 앱(mock 모드) 클릭 검수 — 미실행(검수표).
+
+### 검수표 (mock 모드 `--dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`, 2560×1392 최대화)
+
+| artboard · 확인 | 여는 방법 | 확인 포인트 | 자동 확인 |
+|---|---|---|---|
+| Flow-1-Students-One 상태 칩 | 계획 탭 홈이 다 뜬 뒤(Detail 계산 끝) "시나리오 생성" → 활성 계획에 단계가 있는 학생 한 명 | "이미 잡혀 있는 목표" 행 오른쪽 `지금 가능`(초록) · `부족 n종`(노랑) 칩; 계획에 없는 학생은 빈 상태 줄 | 시험 7건, golden `plan-flow-step1-one` |
+| (계산 전) | 앱을 막 열고 홈 계산이 끝나기 전에 흐름 열기 | 칩 자리 '—'(흐름이 따로 계산하지 않음) | 시험 "단계 결과가 없으면 '—'" |
+| Flow-4-Save 올림 알림 | FE4-g4 검수표와 같은 경로(활성 나중에 단계보다 높은 목표 → "활성 계획에 페이즈로 추가") | 저장 전 제목 "저장하면 나중 단계 1개를 함께 올립니다", 저장 뒤 SnackBar "… 나중 단계 1개를 함께 올렸습니다(…)" | `plan_flow_save_test`, golden `plan-flow-step4-raised` |
+| (작은 창) | 1280×720 | 칩 · 알림 줄 넘침 예외 없음 | 위젯 시험 |
+
+### 발견 사항
+
+1. **칩 기준 순서 차이**: 한 명 모드 칩은 활성 계획 문서 순서의 "들어설 때 부족"이고, 2단계 단계 카드 칩은 초안 계산(단계 번호마다 임시 칸) 기준이다. 같은 학생이 활성 계획과 초안에 함께 있으면 두 칩 숫자가 다를 수 있다(둘 다 의도대로 각 문서 기준).
+2. **흐름을 홈 계산 전에 열면 '—'**: 흐름이 열린 뒤 홈 계산이 끝나도 흐름 context는 다시 만들지 않으므로 그 흐름 동안 '—'다(새 호출을 만들지 않는 조건). 채우려면 흐름 context를 늦게 갱신하는 경로가 필요하다(별도 판단).
+3. **`dart format` 전체 파일 실행 시 무관한 줄이 바뀐다**: 이 SDK(3.12.2) 포매터와 기존 파일 포맷이 어긋나 있다(이 slice 파일만으로도 수백 줄). 이번에는 고친 줄만 반영했다. 저장소 전체 포맷 정리는 별도 slice 후보(golden 영향 0, 순수 서식).
+4. `RepositoryPlanState.calculation`(요약)에는 단계 결과가 없다 — 지시 문구와 실제 값 출처가 다르다(위 1절). 서비스는 읽기만 했다.
+
+### 사본 · commit.json
+
+- pre 사본: `debug/frontend_fe4g5/pre/<경로>` 10파일(고친 8 + 고치지 않은 `plan_flow_workspace.dart` · `planning_page_test.dart`). 착수 때 WIP 0 → `post_dir` 없음. 이 status 문서는 `status=true` 관례로 사본 · `modified` 없음.
+- `debug/frontend_fe4g5/commit.json`: slice `fe4g5`, modified 8, added 0, `whole` = [`frontend/test/goldens/baseline/plan-flow-step1-one.png`, `frontend/test/goldens/baseline/plan-flow-step4-raised.png`], `status=true`. 메시지 ASCII.
+- 인계: `debug/frontend_fe4g5/output.md`.
+
+### 다음 행동
+
+- CF: 다른 레인 워커가 멈춘 뒤 `fe_gate.ps1` 1회 → golden 2건(`plan-flow-step1-one` · `plan-flow-step4-raised`) `failures/` 확인(`debug/frontend_fe4g5/render/` 두 장과 비교) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice fe4g5 -DryRun` → `fe_commit.ps1 -Slice fe4g5`.
+- CF 판단: 발견 2(홈 계산 전 흐름의 '—' 유지 여부), 3(포맷 정리 slice).
+
+### fe4g5 commit record (2026-10-19 21:27, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_211135\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

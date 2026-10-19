@@ -104,13 +104,20 @@ Future<GoldenPlanFlowMockAppService> _planFlowService() async {
   return service;
 }
 
-/// 계획 탭 S1 "시나리오 생성"으로 계획 만들기 1단계를 연다.
+/// 계획 탭 S1 "시나리오 생성"으로 계획 만들기 1단계를 연다. [loadRepositoryPlan]이면 앱처럼 활성 계획을 먼저 읽고
+/// 계산해 둔다(흐름이 그 계산 단계 결과를 받는다, FE4-g5).
 Future<void> _openPlanFlow(
   WidgetTester tester,
   AppService service, {
   List<PlanElementPreset> presets = const [],
+  bool loadRepositoryPlan = false,
 }) async {
-  await _openPlanning(tester, service, presets: presets);
+  await _openPlanning(
+    tester,
+    service,
+    presets: presets,
+    loadRepositoryPlan: loadRepositoryPlan,
+  );
   await _tapKey(tester, 'plan-scenario-create-launch');
   expect(find.byKey(const ValueKey('plan-flow-rail')), findsOneWidget);
   expect(
@@ -735,7 +742,10 @@ void main() {
   testWidgets('plan-flow-step1-one', (tester) async {
     setGoldenViewport(tester);
     final service = await _planFlowService();
-    await _openPlanFlow(tester, service);
+    // FE4-g5(FE4-b2 발견 6): 앱처럼 계획 탭이 활성 계획을 읽고 계산해 둔 뒤 흐름을 연다. 흐름은 그 계산 단계 결과로
+    // "이미 잡혀 있는 목표" 상태 칩을 채운다(계산 대역: 학생 1단계 네브라 −14 → 부족 1종, 2단계 파이스토스 −30 ·
+    // 볼프세크 −8 → 부족 2종).
+    await _openPlanFlow(tester, service, loadRepositoryPlan: true);
     // FE4-b2 한 명 모드(시안 Flow-1-Students-One): 아야네 한 명(보유 + PLAN, 활성 계획 P1 · P2 두 단계, 인연 24 → 45).
     // B가 4칸 좁아지고 C가 짧은 사다리꼴, 그 아래 학생 탭 S3(인연 게이지 →45 빗금)가 겹친다.
     await _tapFlowCard(tester, 'ayane');
@@ -745,6 +755,16 @@ void main() {
     expect(find.text('활성 계획 P1에 있음'), findsOneWidget);
     expect(find.text('P1 · 1단계'), findsOneWidget);
     expect(find.text('P2 · 2단계'), findsOneWidget);
+    for (final chip in const ['부족 1종', '부족 2종']) {
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('plan-flow-one-aside')),
+          matching: find.text(chip),
+        ),
+        findsOneWidget,
+        reason: chip,
+      );
+    }
     // FE4-g4(FE4-b2 발견 4): 레일 1 · 2단계 부제가 한 명 모드 글자다.
     expect(find.text('1명 · 한 명 모드'), findsOneWidget);
     expect(find.text('아야네 · 설정 중'), findsOneWidget);
@@ -1041,7 +1061,8 @@ void main() {
     await _seedActivePlanLaterStage(service);
     await _openPlanFlowSave(tester, service);
     // FE4-g4(FD-180 (a)): 활성 계획 호시노 "나중에" 단계(레벨 70)가 새 앞 단계(레벨 80)보다 낮아 페이즈로 추가가 그
-    // 단계를 올린다. C 저장 버튼 아래 안내 줄: "나중 단계 1개를 함께 올렸습니다" + 학생 · 단계 · 키 이전→새 값.
+    // 단계를 올린다. C 저장 버튼 아래 안내 줄: "저장하면 나중 단계 1개를 함께 올립니다"(저장 전 미래형, FE4-g5) + 학생 ·
+    // 단계 · 키 이전→새 값.
     await _tapKey(tester, 'plan-flow-save-target-appendPhases');
     expect(find.text('지금 P2 뒤에 P3~P5로 붙입니다'), findsOneWidget);
     final save = tester
@@ -1052,7 +1073,7 @@ void main() {
     expect(save.raisedTargets.map((item) => item.stageId).toSet(), {
       'golden-hoshino-later',
     });
-    expect(find.text('나중 단계 1개를 함께 올렸습니다'), findsOneWidget);
+    expect(find.text('저장하면 나중 단계 1개를 함께 올립니다'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('plan-flow-save-raised-0')),

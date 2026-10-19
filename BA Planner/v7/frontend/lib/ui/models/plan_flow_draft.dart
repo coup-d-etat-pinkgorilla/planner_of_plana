@@ -1430,15 +1430,7 @@ class PlanFlowCalculation {
       );
     }
     shortages.sort((a, b) => b.shortage.compareTo(a.shortage));
-    final rawStages = projection['stage_results'];
-    final stageCosts = <String, PlanFlowStageCost>{};
-    for (final raw in rawStages is List ? rawStages : const <Object?>[]) {
-      if (raw is! Map) continue;
-      final stageCost = PlanFlowStageCost.fromWire(
-        Map<String, dynamic>.from(raw),
-      );
-      if (stageCost != null) stageCosts[stageCost.stageId] = stageCost;
-    }
+    final stageCosts = planFlowProjectionStageCosts(projection);
     final rawBottlenecks = projection['bottlenecks'];
     final bottlenecks = <PlanFlowBottleneck>[];
     for (final raw
@@ -1466,6 +1458,23 @@ class PlanFlowCalculation {
       phaseResources: planFlowPhaseResources(projection),
     );
   }
+}
+
+/// 계산 응답의 `stage_results[]`를 단계 id → 단계 비용으로 읽는다. 응답이 없거나 목록이 아니면 빈 맵이고, 단계 id가
+/// 없는 줄은 버린다(초안 계산 [PlanFlowCalculation.fromProjection] · 활성 계획 계산 [PlanFlowContext.activeStageCosts]).
+Map<String, PlanFlowStageCost> planFlowProjectionStageCosts(
+  Map<String, dynamic>? projection,
+) {
+  final rawStages = projection?['stage_results'];
+  final stageCosts = <String, PlanFlowStageCost>{};
+  for (final raw in rawStages is List ? rawStages : const <Object?>[]) {
+    if (raw is! Map) continue;
+    final stageCost = PlanFlowStageCost.fromWire(
+      Map<String, dynamic>.from(raw),
+    );
+    if (stageCost != null) stageCosts[stageCost.stageId] = stageCost;
+  }
+  return stageCosts;
 }
 
 /// 계산 응답의 `phase_results[]`를 페이즈 id → 재화 줄로 읽는다(FE4-e).
@@ -1514,7 +1523,9 @@ class PlanFlowContext {
     required this.repositoryState,
     required Map<String, StudentCatalogEntry> catalog,
     this.activePlan,
-  }) : catalog = Map.unmodifiable(catalog);
+    Map<String, PlanFlowStageCost> activeStageCosts = const {},
+  }) : catalog = Map.unmodifiable(catalog),
+       activeStageCosts = Map.unmodifiable(activeStageCosts);
 
   final RepositoryState repositoryState;
   final Map<String, StudentCatalogEntry> catalog;
@@ -1522,6 +1533,10 @@ class PlanFlowContext {
   /// 흐름을 열 때 [repositoryState]와 같은 revision으로 읽은 저장된 활성 계획 문서(FE4-h, `plan.get`).
   /// 서비스가 문서를 주지 않으면 null이다(계획에 있는 학생이 없다).
   final PlanningDocument? activePlan;
+
+  /// [activePlan] 계산의 단계 결과(단계 id → 비용, `stage_results`, FE4-g5). 흐름을 여는 계획 화면이 이미 가진 활성
+  /// 계획 계산을 그대로 넘긴다(새로 계산하지 않는다). 계산이 없거나 아직 끝나지 않았으면 비어 있고, 그 단계 칩은 '—'다.
+  final Map<String, PlanFlowStageCost> activeStageCosts;
 
   /// 활성 계획 문서에 단계가 있는 학생(1단계 PLAN 배지·계획 칩). goals v1은 보지 않는다.
   Set<String> get plannedStudentIds => activePlanStudentIds(activePlan);

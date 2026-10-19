@@ -1146,6 +1146,8 @@ void main() {
         ),
       ];
       String name(String id) => id == 'aru' ? '아루' : '히나';
+      // FE4-g5(FE4-g4 발견 1): 저장 전 미리보기는 미래형, 저장 뒤 결과 안내(요약)는 완료형이다.
+      expect(planFlowRaisingTitle(2), '저장하면 나중 단계 2개를 함께 올립니다');
       expect(planFlowRaisedTitle(2), '나중 단계 2개를 함께 올렸습니다');
       expect(planFlowRaisedStageLines(items, name), [
         '아루 · 나중에 칸 목표 · 레벨 70→80, EX —→5',
@@ -1276,7 +1278,9 @@ void main() {
             find.byKey(const ValueKey('plan-flow-save-target-appendPhases')),
           );
           await tester.pump();
-          expect(find.text('나중 단계 1개를 함께 올렸습니다'), findsOneWidget);
+          // 저장 전 미리보기라 미래형이다(FE4-g5). 완료형은 저장 뒤 안내에만 쓴다.
+          expect(find.text('저장하면 나중 단계 1개를 함께 올립니다'), findsOneWidget);
+          expect(find.textContaining('함께 올렸습니다'), findsNothing);
           final name = flow.context.displayName('aru');
           expect(
             find.text('$name · 나중에 칸 총력전 · 레벨 60→70, EX —→4'),

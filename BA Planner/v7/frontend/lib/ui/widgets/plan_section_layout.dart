@@ -1395,16 +1395,26 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
   }
 
   /// 흐름을 열 때 한 번 읽는 프로필 상태(확정 현재값·재고·카탈로그)와 저장된 활성 계획 문서(FE4-h).
+  /// 활성 계획 계산(Detail 홈 [_homeProjection]의 단계 결과, FE4-g5)은 지금 가진 것을 그대로 넘긴다: 같은 문서 ·
+  /// 같은 상태로 계산한 것만이고, 다시 읽어 문서나 상태가 바뀌었거나 아직 계산 전이면 넘기지 않는다(칩 '—').
   Future<PlanFlowContext?> _flowContext({bool refresh = false}) async {
     final service = widget.service;
     if (service == null) return null;
     final state = await _ensureRepositoryContext(refresh: refresh);
     if (state == null) return null;
     final catalog = await service.listStudents();
+    final plan = _repositoryPlan;
+    final projection =
+        plan != null &&
+            identical(_document, plan.document) &&
+            identical(state, _repositoryState)
+        ? _homeProjection
+        : null;
     return PlanFlowContext(
       repositoryState: state,
       catalog: {for (final entry in catalog) entry.studentId: entry},
-      activePlan: _repositoryPlan?.document,
+      activePlan: plan?.document,
+      activeStageCosts: planFlowProjectionStageCosts(projection),
     );
   }
 

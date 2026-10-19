@@ -1239,7 +1239,7 @@ class PlanFlowSaveAside extends StatelessWidget {
     top = button.bottom + 12 * sy;
 
     // 나중 단계 올림 알림(FD-180 (a), FE4-g4): 시안에 자리가 없어 아래 안내 줄 문법(muted · 말줄임)으로 제목 한 줄 +
-    // 단계마다 한 줄(학생 · 단계 · 키 이전→새 값). 패널 아래까지 남은 높이만큼만 줄을 보이고 나머지는 "외 n개 단계"다.
+    // 단계마다 한 줄(학생 · 단계 · 키 이전→새 값). 저장 전 미리보기라 제목은 미래형이다(FE4-g5, 저장 뒤 안내는 완료형). 패널 아래까지 남은 높이만큼만 줄을 보이고 나머지는 "외 n개 단계"다.
     final raised = save.raisedTargets;
     if (raised.isNotEmpty) {
       final lines = planFlowRaisedStageLines(raised, flow.context.displayName);
@@ -1260,7 +1260,7 @@ class PlanFlowSaveAside extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              planFlowRaisedTitle(lines.length),
+              planFlowRaisingTitle(lines.length),
               key: const ValueKey('plan-flow-save-raised-title'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

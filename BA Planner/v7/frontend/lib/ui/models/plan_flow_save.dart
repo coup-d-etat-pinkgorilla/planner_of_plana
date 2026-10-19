@@ -488,7 +488,12 @@ String planFlowRaisedTargetText(PlanFlowRaisedTarget raised) {
       '${value(raised.before)}→${value(raised.after)}';
 }
 
-/// 나중 단계 올림 알림 제목(4단계 C, FD-180 (a)).
+/// 나중 단계 올림 알림 제목 — 저장 전 미리보기(4단계 C, FD-180 (a)). 아직 저장하지 않았으므로 미래형이다(FE4-g5,
+/// FE4-g4 발견 1).
+String planFlowRaisingTitle(int stageCount) =>
+    '저장하면 나중 단계 $stageCount개를 함께 올립니다';
+
+/// 나중 단계 올림 알림 제목 — 저장 뒤 결과 안내([planFlowRaisedSummary], 저장 SnackBar). 완료형이다(FE4-g5).
 String planFlowRaisedTitle(int stageCount) => '나중 단계 $stageCount개를 함께 올렸습니다';
 
 /// 함께 올린 목표를 단계마다 한 줄로 묶는다(학생 · 단계 · 키 이전→새 값): `호시노 · 나중에 칸 목표 · 레벨 70→80, EX
@@ -508,8 +513,8 @@ List<String> planFlowRaisedStageLines(
   ];
 }
 
-/// 저장 결과 안내에 붙이는 같은 요약(한 문장). 단계가 [maxLines]개를 넘으면 "외 n개 단계"로 줄인다. 올린 것이 없으면
-/// null.
+/// 저장 결과 안내에 붙이는 같은 요약(한 문장, 완료형 [planFlowRaisedTitle]). 단계가 [maxLines]개를 넘으면 "외 n개
+/// 단계"로 줄인다. 올린 것이 없으면 null.
 String? planFlowRaisedSummary(
   List<PlanFlowRaisedTarget> raised,
   String Function(String studentId) displayName, {

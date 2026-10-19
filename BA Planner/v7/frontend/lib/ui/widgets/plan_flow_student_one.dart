@@ -4,6 +4,8 @@
 // ([planFlowOneStudioDocument]). 바뀌는 동안은 360ms 동안 두 모양 사이를 보간한다(FD-078 권장안).
 // - C 짧은 사다리꼴([PlanFlowStudentOneAside]): "선택한 학생" + (i) + 활성 계획 칩, 학생 행, "이미 잡혀 있는 목표"
 //   (저장된 활성 계획 문서에서 그 학생 단계를 읽기만 한다, [PlanFlowContext.activeStagesOf]), "이 학생 목표 정하기".
+//   단계 행 상태 칩은 흐름을 연 계획 화면의 활성 계획 계산 단계 결과([PlanFlowContext.activeStageCosts], FE4-g5)를
+//   2단계 단계 카드와 같은 규칙으로 읽는다([planFlowActiveStageStatus]). 계산이 없으면 '—'다.
 // - 학생 탭 S3 겹침([PlanFlowStudentOneDetail]): 학생 탭과 같은 자리(`element-3`)·같은 위젯
 //   ([StudentSectionFoundationPainter]·[StudentStatusIndicators])으로 그 학생의 확정 현재값을 보인다. 인연 게이지
 //   목표는 학생 탭과 같은 규칙(활성 계획 마지막 단계 `bond_rank`, FE3-b)이다. 누르는 곳이 없어 입력은 그리드로 지난다.
@@ -23,6 +25,7 @@ import '../models/plan_flow_order_editor.dart' show planFlowGoalChanges;
 import '../studio/plan_flow_studio_layout.dart';
 import 'asset_image_grid.dart';
 import 'bond_rank_portrait.dart';
+import 'plan_flow_goal_step.dart' show planFlowGoalStageStatus;
 import 'plan_flow_order_step.dart' show planFlowOrderGoalSummary;
 import 'plan_flow_rail.dart' show planFlowSectionPath, planFlowSectionPolygon;
 import 'plan_flow_student_step.dart';
@@ -30,6 +33,24 @@ import 'section_surface.dart';
 import 'section_template_surface.dart' show buildRoundedSectionPolygon;
 import 'student_form_cycle.dart';
 import 'student_section_layout.dart';
+
+/// "이미 잡혀 있는 목표" 한 줄의 상태 칩(FE4-g5, FE4-b2 발견 6). 활성 계획 계산에 그 단계 결과([cost])가 없으면
+/// null이고 행은 '—'를 그대로 보인다. 결과가 있으면 2단계 단계 카드 칩([planFlowGoalStageStatus])과 같은 규칙이다:
+/// 올리는 키가 없으면 `목표 없음`, 미보유면 `모집 필요`, 보유량을 아는 재화가 없으면 `보유 모름`, 들어설 때 모자라는
+/// 재화가 0종이면 `지금 가능`, n종이면 `부족 n종`.
+({String label, AppTone tone})? planFlowActiveStageStatus({
+  required PlanFlowActiveStudentStage stage,
+  required PlanFlowStageCost? cost,
+  required bool owned,
+}) {
+  if (cost == null) return null;
+  return planFlowGoalStageStatus(
+    effective: planFlowGoalChanges(stage.before, stage.targets).isNotEmpty,
+    owned: owned,
+    cost: cost,
+    calculating: false,
+  );
+}
 
 /// 한 명/여러 명 모드 전환 보간 시간(FD-078 권장안).
 const planFlowOneModeDuration = Duration(milliseconds: 360);
@@ -270,6 +291,11 @@ class PlanFlowStudentOneAside extends StatelessWidget {
               planFlowGoalChanges(stage.before, stage.targets),
               owned: owned,
             ),
+            status: planFlowActiveStageStatus(
+              stage: stage,
+              cost: flow.context.activeStageCosts[stage.stageId],
+              owned: owned,
+            ),
           ),
         ),
       );
@@ -380,13 +406,19 @@ class _StudentRow extends StatelessWidget {
   }
 }
 
-/// "이미 잡혀 있는 목표" 한 줄(시안 `P1 · 1단계 | Lv.90 · EX 4 | 지금 가능`). 상태 칩은 활성 계획 계산이 흐름에 없어
-/// '—'로 둔다(활성 계획 문서에 없는 값).
+/// "이미 잡혀 있는 목표" 한 줄(시안 `P1 · 1단계 | Lv.90 · EX 4 | 지금 가능`). 상태 칩([status])이 없으면(활성 계획
+/// 계산이 흐름에 없거나 그 단계 결과가 없음) '—'로 둔다.
 class _StageRow extends StatelessWidget {
-  const _StageRow({super.key, required this.stage, required this.summary});
+  const _StageRow({
+    super.key,
+    required this.stage,
+    required this.summary,
+    required this.status,
+  });
 
   final PlanFlowActiveStudentStage stage;
   final String summary;
+  final ({String label, AppTone tone})? status;
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +429,10 @@ class _StageRow extends StatelessWidget {
       child: Semantics(
         container: true,
         label: label,
-        value: summary,
+        value: switch (status) {
+          null => summary,
+          final status => '$summary · ${status.label}',
+        },
         child: ExcludeSemantics(
           child: Row(
             children: [
@@ -423,7 +458,19 @@ class _StageRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('—', maxLines: 1, style: _mutedStyle),
+              switch (status) {
+                null => const Text('—', maxLines: 1, style: _mutedStyle),
+                final status => FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: BaChip(
+                    key: ValueKey(
+                      'plan-flow-one-stage-${stage.stageId}-status',
+                    ),
+                    label: status.label,
+                    tone: status.tone,
+                  ),
+                ),
+              },
             ],
           ),
         ),
