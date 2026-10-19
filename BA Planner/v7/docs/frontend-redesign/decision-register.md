@@ -1,6 +1,6 @@
 # Frontend Redesign Decision Register
 
-- **ID 규칙**: `FD-###` 일련번호. 새 항목은 절과 상관없이 다음 빈 번호를 받고, 번호는 지우거나 재사용하지 않는다(폐기는 상태에 `폐기`와 날짜를 적는다). slice ID는 `almanac/workflows/frontend-redesign-workflow.md`의 정의를 그대로 쓴다.
+- **ID 규칙**: `FD-###` 일련번호. 새 항목은 절과 상관없이 다음 빈 번호를 받고, 번호는 지우거나 재사용하지 않는다(폐기는 상태에 `폐기`와 날짜를 적는다). FD-157~159는 결번이다(행이 만들어진 적 없음, 사유 기록 없음 — 2026-10-19 FE10-a 감사에서 확인, 재사용하지 않는다). slice ID는 `almanac/workflows/frontend-redesign-workflow.md`의 정의를 그대로 쓴다.
 - **상태 값**: `확정`(사용자가 정함, 날짜 표기) · `확정(FD-001 적용)`/`확정(FD-003 적용)`(이미 확정된 결정으로 답이 정해짐, 근거 칸에 갱신할 문서·절) · `열림`(사용자 결정 필요, 그 전에는 "막는 slice"를 시작하지 않는다) · `워커 재량`(되돌리기 쉬운 것, 권장안대로 처리).
 - **갱신 규칙**: 오케스트레이터만 사용자 답을 받아 `열림` → `확정 YYYY-MM-DD`로 바꾸고 고른 선택지를 권장안 칸에 적는다. 워커는 `워커 재량` 항목만 권장안대로 처리하고, 처리 결과(또는 권장안과 다르게 한 이유)를 slice status 보고에 FD ID로 남긴다. 워커가 새 모호점을 찾으면 status에 보고만 하고 이 대장은 고치지 않는다.
 - **근거 문서**: 출처 ID가 가리키는 조사 보고서는 `docs/frontend-redesign/survey/<A~J>-*.md`, artboard는 `docs/frontend-redesign/prototype/2026-10-05/`(읽기 도구 `docs/frontend-redesign/tools/dc_outline.py`)에 있다.
@@ -38,7 +38,7 @@
 | FD-017 | 섹션 모션 값을 어떻게 토큰화하는가? | H §7.4, UI-Elements 블록 7. 상수 6벌(`student_section_layout.dart`, `plan_section_layout.dart`, `plan_element_builder.dart`, `plan_phase_editor.dart`, `plan_student_selector.dart`, `plan_preset_manager.dart`), `DirectionalSectionEntrance`(easeOutCubic) | — | `AppMotion`(섹션 360ms easeInOutCubic, 셸 460ms, 탭 본문 970ms, 헤더 220ms, 탭 180ms). FE1에서는 현재 값 그대로 토큰화(곡선 변경 없음) | FE1 | 워커 재량 |
 | FD-018 | 사선 목록 2모드(resize·translate)와 스크롤 포그 3종을 모두 공용 옵션으로 두는가? | H-8, H §3.6, W-Layout-Widgets, Stats-* `sv*`, Tactical `rs*` | (a) 둘 다 옵션 (b) 하나로 통일 | (a) `DiagonalScrollViewport(mode: resize/translate)` + `ScrollViewportFog`(extent·color·fade 파라미터). slice FE2-a 정의와 같음 | FE2-a | 워커 재량 |
 | FD-019 | 모달·앵커 팝업·시안이 그린 부유 패널을 "부유 섹션 금지·모든 섹션 사선" 규칙의 예외로 보는가? | 갱신: frontend-section-direction-and-user-flows.md §1.1(부유 섹션 금지), §1.2(모든 섹션 사선). 출처 G-A12, A-S-5, A-P-2, E§5.6-1 | — | 예외로 명시: 모달(홈 스캔, 계정 추가, 필터, 엑셀), 앵커 팝업(족보 전체), 부유 패널(Title-Accounts 편집 패널, Inventory-Tiers T2). T2 intro/outro는 아래 기준 80°/260° | FE2-c, FE6-e, FE8-c, FE8-f | 확정(FD-001 적용) |
-| FD-020 | 화면의 상시 안내 문장을 (i) 도움말 뒤로 옮기는가? | 갱신: section-template-studio.md의 화면별 안내 문구 서술. 출처 H §5.5, W-Info-Popover | — | 시안이 있는 화면은 (i)로 이동. 시안 없는 스캔·설정 탭은 현행 유지 | FE2-c 이후 각 화면 slice | 확정(FD-001 적용) |
+| FD-020 | 화면의 상시 안내 문장을 (i) 도움말 뒤로 옮기는가? | 갱신: section-template-studio.md의 화면별 안내 문구 서술. 출처 H §5.5, W-Info-Popover | — | 시안이 있는 화면은 (i)로 이동. 시안 없는 스캔·설정 탭은 현행 유지. 2026-10-19 사실: 스캔 탭은 10-06 시안이 생겨 FE8에서 시안대로, 설정 탭은 FD-179로 새 스타일(문구는 현행) | FE2-c 이후 각 화면 slice | 확정(FD-001 적용) |
 | FD-021 | (i)·플라이아웃을 무엇으로 구현하는가? | H §5.4, H §8 H6 | (a) `OverlayPortal` 기반 `AnchoredFlyout` (b) Material `Tooltip` | (a). Tooltip은 탭 고정 열기·리치 내용·좌/우 정렬 선택을 못 함(추정) | FE2-c | 워커 재량 |
 | FD-022 | 시안 `.tile`의 두 의미(재화 타일·위젯 카드)를 Flutter에서 어떻게 부르는가? | H-14, H §2.6 | — | `ResourceTile`(재화 타일)과 `WidgetTile`(위젯 카드)로 분리 | FE2 | 워커 재량 |
 | FD-023 | 통계·인벤토리 차트를 라이브러리로 그리는가? | F §7, `pubspec.yaml`(차트 패키지 없음) | (a) CustomPainter primitive (b) 차트 패키지 추가 | (a). 80° 막대·빗금·viewBox×1.25 균일 배율은 일반 라이브러리 마크로 안 나오고, 의존성 추가는 Release 재빌드를 부름 | FE2-d | 워커 재량 |
@@ -80,7 +80,7 @@
 | FD-049 | 인연 목표(→N)는 어디서 가져오는가? | 갱신: student-detail-indicator-lessons-2026-08-01.md 인연 게이지 계약. `services/repository_service.dart` `RepositoryGoalState.fromWire`(target_bond_rank 없음). 출처 B-3 | — | 활성 계획 문서에서 그 학생 단계 목표의 `bond_rank` | FE3-b | 확정(FD-003 적용) |
 | FD-050 | 활성 계획에 그 학생 단계가 여러 개이거나 없을 때(FB-1 전 포함) 게이지는? | B-3, W-Student-Detail, Flow-1-Students-One | — | 마지막(최종) 단계 목표를 표시, 목표가 없거나 현재 이하이면 빗금·점선·→N 숨김. 계획 화면 inverted 모드도 같은 표현 | FE3-b | 워커 재량 |
 | FD-051 | 인연 B안 채움을 rank/100 비율 그대로 두는가("20은 거의 비어 보임" 미해소)? | 갱신: student-detail-indicator-lessons-2026-08-01.md(목표 겹침 추가). 출처 B-16, W-Bond-Variants | — | 시안 B안 그대로(rank/100 + 목표 빗금 + 점선 + →N) | FE3-b | 확정(FD-001 적용) |
-| FD-052 | 필터를 Section 5에서 전체 화면 모달로 바꾸고 Section 5·범위 카드 2장 코드를 폐기하는가? | 갱신: section-template-studio.md 771–818행 "학생 Section 5 필터…"와 표 Section 5 행. 출처 B-4, H-15 | — | 그대로. 폐기 목록은 B §2-4(`StudentDiagonalFilterList`, `StudentRangeConditionSection` 등) | FE3-d | 확정(FD-001 적용) |
+| FD-052 | 필터를 Section 5에서 전체 화면 모달로 바꾸고 Section 5·범위 카드 2장 코드를 폐기하는가? | 갱신: section-template-studio.md의 "학생 Section 5 필터…" 절과 표 Section 5 행. 출처 B-4, H-15 | — | 그대로. 폐기 목록은 B §2-4(`StudentDiagonalFilterList`, `StudentRangeConditionSection` 등) | FE3-d | 확정(FD-001 적용) |
 | FD-053 | 범위 필터 의미 변경(행마다 최소~최대, 장비 티어·레벨 = 3칸 중 가장 낮은 칸, 성급 = 학생★+무기★ 9단계, 초안 → 적용, 닫아도 유지)을 받아들이는가? | 코드 계약: `student_range_condition_section.dart` `StudentRangeConditions.matchesStudent`, `ui/pages/student_page.dart` 353–360행(닫으면 초기화). 출처 B-18, F-8, W-Filter-Widgets | — | 시안 의미로 재구성. 문서 갱신 대상 없음 | FE3-d | 확정(FD-001 적용) |
 | FD-054 | 데이터가 없는 심상개화 그룹을 보이는가? | 갱신: section-template-studio.md "catalog protocol이 직접 제공하지 않는 v6 성장·스킬 metadata 그룹은 빈 동작으로 노출하지 않는다"(예외 추가). 출처 B-5 | — | 시안의 "v7 준비 중 자리"대로 비활성 그룹으로 표시, 조건에는 넣지 않음 | FE3-d | 확정(FD-001 적용) |
 | FD-055 | "추가 능력치 = HP·ATK·HEAL 합"의 범위 0~25를 그대로 쓰는가? | B-12, F-8, `planElementTargetMaximums`(각 25) | (a) 합, 0~75 (b) 각각, 0~25 | (a) 라벨은 시안대로 "합", 범위만 바로잡음 | FE3-d | 워커 재량 |
@@ -238,7 +238,7 @@
 | ID | 질문(한 문장) | 근거 | 선택지 | 권장안과 이유 | 막는 slice | 상태 |
 |---|---|---|---|---|---|---|
 | FD-135 | 택틱 탭(9탭, 선반 860px)을 위해 셸 규칙을 어떻게 바꾸는가? | `app_shell.dart` `_buildLGlassPath`(min(760, …)), Tactic-*(범위 밖). 출처 H-12 | (a) 선반 폭을 탭 수로 계산 (b) 760 유지 + 가로 스크롤 | (a) 8탭 760 → 9탭 860. 택틱 탭 추가 자체는 택틱 워크플로 소관 | FE10 | 워커 재량 |
-| FD-136 | FE10에서 정리할 문서는 무엇인가? | FD-001 적용 행의 "갱신" 목록 | — | FD-001 적용 문서는 각 slice에서 갱신(FD-001). FE10은 frontend-section-direction-and-user-flows.md §8·§13 결정문화 확인, README·테스트 목록 갱신, 이 대장의 확정 행에 문서 링크를 달아 마감 | FE10 | 워커 재량 |
+| FD-136 | FE10에서 정리할 문서는 무엇인가? | FD-001 적용 행의 "갱신" 목록 | — | FD-001 적용 문서는 각 slice에서 갱신(FD-001). FE10은 frontend-section-direction-and-user-flows.md §8·§13 결정문화 확인, README·테스트 목록 갱신, 이 대장의 확정 행에 문서 링크를 달아 마감. **FE10-d 반영 2026-10-19**(커밋 `21ffa562`): FD-019·033·081·094·127 → section-direction 해당 절, FD-020·026·070 → section-template-studio, FD-178·179와 검수 포인트 20건 → section-direction §4~§10 결정문(§13), README 화면·시험 목록 | FE10 | 워커 재량 |
 | FD-137 | 어떤 코드를 죽은 코드로 지우는가? | B §1-4·§2-4, C §8(slice 6), D §3.4, E §1.4, G §1.4 | — | 학생 Section 5 필터 코드와 `StudentRangeConditionSection`, `studentCardInfoAreaFraction` 등 카드 정보 띠 상수, `DiagonalSection`(교체 완료 후), `_DeckEditor`, `_ComparisonCandidate*`, 계획 메인 Section 1 버튼 묶음과 `_PlanWorkspaceSnapshot` 왕복 로직, `dummyPlan*`·`planPrimaryBottleneck*` 등 상수(projection 연결 후) | FE10 | 워커 재량 |
 | FD-138 | goals v1과 `calculateShortages` 경로를 남기는가? | FD-003, FD-026 | — | 남긴다(파생 goals로 동작, 백엔드 메서드 삭제 안 함). 새 화면은 활성 문서 경로만 사용 | FE10 | 워커 재량 |
 | FD-139 | ValueKey 기반 기존 테스트는 언제 고치는가? | `planning_page_test`, `plan_element_builder_test`, `statistics_page_test`, `inventory_page_test`, `tactical_page_test`, `title_page_test` 등. 출처 C §8, F §4, G §7.2, A §2.4 | — | 각 화면 slice에서 재작성, FE10은 전체 회귀만 | FE10 | 워커 재량 |

@@ -428,10 +428,10 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 | FE4-b2 계획 1단계 한 명 모드 | Flow-1-Students-One: 한 명 골랐을 때 B 1595·C 짧은 사다리꼴, 학생 상세 인디케이터 재사용, "이미 잡혀 있는 목표" 행 | FD-177 (a) — **완료 2026-10-19**: 커밋 `aaf4445b`, gate `20261019_004710`(새 `plan-flow-step1-one`, `-filter` 배경이 한 명 모드로 · `-many` 8px 경계 AA). 모드 = 고른 수 1명(시안의 "한 명 | 여러 명" 세그먼트·교체 고르기는 그리지 않음 — 발견 1) |
 | FE10-s 설정 탭 새 스타일 | 내용·순서 그대로 사선 섹션·키트로 다시 그림(동작 변화 0) | FD-179 (a) — **완료 2026-10-19**: 커밋 `7f1269a1`, gate `20261019_004710`(새 `settings`). 머리 띠 + 2×2, 대화상자·SnackBar는 Material 그대로 |
 | FE4-g4 병합 목표 역전 | "페이즈로 추가"에서 나중 단계를 새 값까지 올리고 알림 + FE4-b2 후속(레일 부제·filter 장면 3명) + Detail 칩 분류(기술 노트·BD·설계도) | FD-180 (a) — **완료 2026-10-19**: 커밋 `86a3e12c`, gate `20261019_193503`(새 `plan-flow-step4-raised`) |
-| FE4-g5 계획 흐름 후속 | 한 명 모드 상태 칩(활성 계획 계산 연결), 올림 알림 시제(저장 전 미래형 · 저장 뒤 완료형) | FE4-b2 발견 6, FE4-g4 발견 1 |
+| FE4-g5 계획 흐름 후속 | 한 명 모드 상태 칩(활성 계획 계산 연결), 올림 알림 시제(저장 전 미래형 · 저장 뒤 완료형) | FE4-b2 발견 6, FE4-g4 발견 1 — **완료 2026-10-19**: 커밋 `6c21b88f`, gate `20261019_211135` |
 | FE10-b 죽은 코드 2차 | Lane A 파일 안 죽은 코드(`dead-code.md` §2·§4), 파일 통째 삭제(CF가 먼저 지우고 gate → `fe_commit.ps1` `deleted` 키), 버그 의심(`scan_page.dart` 깨진 글자, `skill_book` 오파츠 분류) | FD-137 — **완료 2026-10-19**: 커밋 `1fbb9a22`(줄 정리 + 파일 5개 삭제 — `fe_commit.ps1` `deleted` 첫 사용, almanac 안내 페이지 sources 정리), gate `20261019_193503` |
-| FE10-d 문서 반영 | `fd-audit.md` §3 누락 8건(section-direction·section-template-studio), 검수 포인트 결정문(§13) | FD-136 |
-| FE10-z 마감 | 전체 회귀 + Windows Release + 사용자 최종 둘러보기(`walkthrough-checklist.md`) | — |
+| FE10-d 문서 반영 | `fd-audit.md` §3 누락 8건(section-direction·section-template-studio), 검수 포인트 결정문(§13) | FD-136 — **완료 2026-10-19**: 커밋 `21ffa562`(문서만, 다른 레인 README·section-template-studio WIP 보존). 대장 후속 4건은 CF가 반영 |
+| FE10-z 마감 | 전체 회귀 + Windows Release + 사용자 최종 둘러보기(`walkthrough-checklist.md`) | — **진행 중 2026-10-19**: 전체 gate `20261019_211135` GREEN(golden 68, process 101), `flutter build windows --release` 성공(`build/windows/x64/runner/Release/ba_planner_v7.exe`), 체크리스트 `debug/frontend_fe10z/walkthrough-checklist.md`(알려진 차이 8). **사용자 최종 둘러보기 대기** |
 
 FD-178: 학생 탭 현재값 직접 수정·전체 육성 부족 화면·백업·복원은 개편 뒤 별도 slice(FE11 후보), 전술 기록 캡처·붙여넣기·폴더 가져오기는 범위 밖.
 
@@ -603,3 +603,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-19(00:30): FE8-g5b `7508ee42`(FE8 끝) · FE10-a `e1941271`, gate `20261018_234539` GREEN(golden 65). 사용자 결정 FD-177~180. `fe_commit.ps1`에 `deleted` 키. 배정: Lane A FE4-b2(한 명 모드) · Lane B FE10-s(설정 탭). 다음: FE4-g4 · FE10-b · FE10-d → FE10-z.
 - 2026-10-19(01:10): FE4-b2 `aaf4445b` · FE10-s `7f1269a1`, gate `20261019_004710` GREEN(golden 67). 배정: Lane A FE4-g4(FD-180 병합 목표 올림·알림 + FE4-b2 후속 + `skill_book` 분류) · Lane B FE10-b(계획 밖 죽은 코드 2차·삭제 목록·깨진 글자). 다음: FE10-d(문서 반영) → FE10-z(Release·최종 둘러보기).
 - 2026-10-19(20:00): FE4-g4 `86a3e12c` · FE10-b `1fbb9a22`, gate `20261019_193503` GREEN(golden 68). 사용자: 검수 포인트 "승인만" 10건 지금 동작대로 승인. 배정: Lane A FE4-g5(상태 칩·알림 시제) · Lane B FE10-d(문서 반영). 다음: FE10-z(전체 회귀 + Windows Release + 사용자 최종 둘러보기).
+- 2026-10-19(21:40): FE4-g5 `6c21b88f` · FE10-d `21ffa562`, gate `20261019_211135` GREEN(golden 68). 대장 FD-020·052·136·ID 규칙(결번) 갱신. Windows Release 빌드 성공. FE10-z = 사용자 최종 둘러보기 대기(`debug/frontend_fe10z/walkthrough-checklist.md`). 남은 결정 후보: 한 명 모드 세그먼트, 설정 영어 문구, FD-081 시나리오 → 1단계 진입점.

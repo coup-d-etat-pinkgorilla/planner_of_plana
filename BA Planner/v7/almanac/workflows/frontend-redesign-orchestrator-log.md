@@ -3863,3 +3863,12 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 커밋: **fe4g4 `86a3e12c`**(CF: commit.json `modified`에서 status 문서 제거 — pre 사본 없음, `status=true`가 처리) → **fe10b `1fbb9a22`**(CF: `deleted` 5 + almanac 페이지 `whole`; 첫 시도는 CF가 Get-Content 결과를 그대로 JSON에 넣어 경로가 객체로 직렬화돼 멈춤 → 문자열로 다시 써서 통과). `fe_commit.ps1` `deleted` 키 동작 확인.
 - 사용자 결정(AskUserQuestion, 2026-10-19): 검수 포인트 "승인만" 10건(H1·H2·S1·S2·T1·ST3·SC1·SC2·SC3·SE2)은 지금 동작대로 승인.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4g5-worker-prompt-20261019.md`(한 명 모드 상태 칩 · 올림 알림 시제) · Lane B `debug/frontend_redesign_handoff/fe10d-worker-prompt-20261019.md`(FD 반영 누락 8건 · 검수 포인트 결정문 · 낡은 서술 · README 목록 — 문서만). 그다음 FE10-z(CF: 전체 gate + `flutter build windows --release` + 사용자 최종 둘러보기 체크리스트).
+## 2026-10-19 21:40 — FE4-g5·FE10-d 커밋, 대장 후속, Windows Release, 최종 둘러보기 준비
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe4g5 15행, fe10d 8행), 겹침 0. FE10-d는 문서만(README·section-template-studio는 다른 레인 WIP가 있어 pre 사본 3-way — 커밋 뒤 그 WIP는 작업 트리에 그대로 남음 확인).
+- FE4-g5: 한 명 모드 "이미 잡혀 있는 목표" 상태 칩(`부족 1종` 등 — 활성 계획 문서 순서 기준), 올림 알림 저장 전 "저장하면 … 함께 올립니다" / 저장 뒤 "… 올렸습니다". 발견: 흐름을 홈 계산 전에 열면 그 흐름 동안 '—', 포매터 버전 차이로 전체 파일 format 시 무관 줄 변경(고친 줄만 반영).
+- FE10-d: FD 반영 누락 8건 + FD-020, 검수 포인트 20건 결정문(10건 사용자 승인 2026-10-19, 5건 FD 링크, 5건 FD-178·179), 낡은 서술 정리, README 화면·시험 목록(golden 68).
+- gate ① `20261019_205650`: 시험·almanac 전부 PASS, golden RED 2 = 예측(`plan-flow-step1-one` 칩 `—` → `부족 1종`, `plan-flow-step4-raised` 문구 미래형 — 확대 비교 확인) → ② `-UpdateGoldens` `20261019_211135` **GREEN**(golden 68).
+- 커밋: **fe4g5 `6c21b88f`** → **fe10d `21ffa562`**.
+- CF 대장 갱신(FE10-d CF 요청 1~4): FD-020 사실 한 줄(스캔 시안 · FD-179), FD-052 줄 번호 → 절 이름, FD-136 반영 기록, ID 규칙에 FD-157~159 결번. 요청 5(FD-081 시나리오 → 1단계 진입점)는 사용자 둘러보기 결정 후보로.
+- **FE10-z**: `flutter build windows --release` 성공(74.7s, `frontend/build/windows/x64/runner/Release/ba_planner_v7.exe`, 추적 파일 변화 0). 최종 체크리스트 `debug/frontend_fe10z/walkthrough-checklist.md`(FE10-a 초안 + Scan-Item-Review · Flow-1-Students-One · FD-180 · 설정 + 알려진 차이 8). 사용자 둘러보기 결과에 따라 후속 slice를 정한다.
