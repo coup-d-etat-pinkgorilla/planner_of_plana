@@ -6020,3 +6020,109 @@ CF 결정(2026-10-17) 네 항목을 모두 했다 — 기록 S4 · 분석 · 슬
 - FE10-s 코드는 끝났다. Lane B는 여기서 멈춘다.
 - CF: Lane A(FE4-b2)가 멈춘 뒤 gate 1회(예상: analyze 0, 일반 시험 +1(`settings_page_test` 10 → 11), golden 기존 변화 0 · 새 `settings` 기준 없음 RED) → `failures/` 확인 → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe10s`.
 - CF 판단: 발견 사항 1(배치) · 2(작은 창 배율) · 4(키보드 그룹) · 문구 목록.
+
+## FE10-b 착수 기록 (2026-10-19)
+
+- 진행 중: FE10-b 죽은 코드 2차 정리(계획 파일 밖) + 깨진 글자 1건(동작 변화 0). 시작 SHA `0fd6abbeb181c082bafc323e7611c9e3c132f71d`(브랜치 scanner-consolidation). 이 문서 끝에 다른 "FE10-b 착수 기록"은 없었다.
+- 막힘: 대장 "slice별 막힘 요약" FE10 행 = "모든 열림 항목 종결", 대장 `| 열림` 0건 → 막히지 않는다.
+- 동시 작업: Lane A FE4-g4(`lib/ui/widgets/plan_*` · `lib/ui/models/plan_*` · `plan_section_layout` · `plan_flow_studio_layout` · fe1g golden 시험)는 읽기만 한다.
+- 고칠 기존 파일(12 + 이 문서, 모두 기존 미커밋 변경(WIP) 없음 — `git status --porcelain` 빈 줄): `frontend/lib/ui/scan/scan_item_queue.dart`, `frontend/lib/ui/scan/scan_session_controller.dart`, `frontend/test/scan_item_queue_fe8g3_test.dart`, `frontend/lib/ui/pages/home_page.dart`(CRLF), `frontend/lib/ui/pages/scan_page.dart`(스캐너 동결 창 — WIP 0 확인), `frontend/lib/ui/widgets/section_template_surface.dart`(CRLF), `frontend/lib/ui/studio/section_template.dart`, `frontend/test/section_template_studio_test.dart`, `frontend/lib/ui/widgets/student_section_layout.dart`, `frontend/lib/ui/statistics/statistics_history_charts.dart`, `frontend/lib/ui/models/repository_presets_controller.dart`, `frontend/lib/ui/widgets/section_surface.dart`. 나머지는 LF.
+- 사본: `debug/frontend_fe10b/pre/<v7 기준 경로>`에 13파일(cmp 일치). 파일 삭제는 하지 않고 `debug/frontend_fe10b/delete-list.txt`로 남긴다.
+
+## FE10-b 종료 기록 (2026-10-19, 코드 작성 완료 · CF gate 미실행)
+
+### 한 일
+
+1. 줄 단위 죽은 코드 정리(계획 파일 밖, 동작 변화 0): `dead-code.md` §2 · §4와 FE8-g5b "다음 행동" 목록 중 lib · test grep 0(또는 시험 전용)이고 analyze로 확인된 것만 지웠다(아래 정리 표). 지우며 새로 쓰는 곳이 없어진 import 2 · 비공개 인자 1 · 비공개 위젯 2도 함께 지웠다.
+2. 파일 통째 삭제 목록 `debug/frontend_fe10b/delete-list.txt`(5줄, 아래 확인 표). 파일은 지우지 않았다. 다섯 파일만 참조하던 줄은 다른 파일에 없었다(정리할 줄 0).
+3. 깨진 글자: `frontend/lib/ui/pages/scan_page.dart:696`(지금 `:691`) `Tactical lobby 쨌 current rank $current 쨌 ` → `·`(U+00B7, 바이트 `c2 b7` 확인). lib · test 전체 검사에서 다른 깨짐은 없었다(아래 "깨진 글자").
+
+### 실행한 명령과 결과
+
+- `flutter analyze`(frontend): 1차 5건(이 slice 3건 — `scan_item_queue.dart` 안 쓰는 import 2, `student_section_layout.dart` `fogColor` 안 넘기는 인자 1; 나머지 2건은 Lane A `fe1g_baseline_golden_test.dart` 작업 중 파일) → 고친 뒤 **"No issues found!"**(info 포함 0). 로그 `debug/frontend_fe10b/logs/analyze.txt`.
+- `flutter test` 고친 lib 파일 10개를 import하는 시험 45파일(golden · fixture 제외, `debug/frontend_fe10b/logs/direct_tests.txt`): **`+534 -2`**. 실패 2건은 둘 다 `test/plan_flow_test.dart`(`레일: 스텝 상태·부제…`, `레일 의미 구조…`): 기대 `1명 · 여러 명 모드`, 실제 `1명 · 한 명 모드`. 원인은 Lane A의 미커밋 `lib/ui/widgets/plan_flow_rail.dart` 변경(`git diff` — 한 명이면 `1명 · 한 명 모드`, FE4-g4 진행 중)이고 이 slice 파일은 그 문자열 · 경로를 건드리지 않는다. 로그 `logs/test.txt`.
+- `flutter test` `BAPlannerApp`을 띄우는 나머지 시험 11파일(`account_manager_fe8b` · `app_navigation_fe7d` · `home_app_shell` · `inventory_shell_lazy` · `profile_delete_fb2d` · `statistics_app_shell` · `statistics_filter` · `tactical_analysis` · `tactical_excel_import` · `tactical_slots` · `widget_test`): **`+119: All tests passed!`**. 로그 `logs/test_shell.txt`.
+- `flutter test test/section_template_studio_test.dart test/scan_item_queue_fe8g3_test.dart`(고친 시험 2파일): `+23: All tests passed!`(`section_template_studio_test` 시험 15 → 14). 로그 `logs/test_edited.txt`.
+- `dart format --output=none --set-exit-if-changed`(고친 12파일 각각, 착수 사본과 비교): 착수 때 깨끗하던 8파일은 지금도 깨끗. `section_template_studio_test.dart`만 이 slice 줄 때문에 달라져 그 파일 하나만 `dart format` 적용. `section_template_surface.dart` · `student_section_layout.dart` · `repository_presets_controller.dart`는 착수 사본부터 다름 → 적용하지 않음(최소 diff).
+- `git diff --check -- frontend/`: 출력 없음(exit 0). 줄끝 유지: `home_page.dart` · `section_template_surface.dart` CRLF, 나머지 LF, 모두 끝 개행 하나.
+- 일회성 스크립트(scratchpad, `py -3.11 -I`): 공개 선언의 선언 파일 밖 lib 참조 수 · import 0 파일 · CP949 오독 흔적 검사. 커밋 대상 아님.
+- 실행하지 않음: `fe_gate.ps1`, golden 비교, `-UpdateGoldens`, `fe_commit.ps1`, 맨 `flutter test`, `codealmanac validate`, git 쓰기, 파일 삭제.
+
+### 정리 표
+
+| 기호 | 사용처 0 증거(지우기 전) | 처리 | 파일 · 줄 |
+|---|---|---|---|
+| `ScanQueueReviewBar` · `scanQueueReviewChip` · `scanQueueReviewVisible` + 절 머리 주석 | Bar: lib · test 0. Chip: Bar 안(`:552`)뿐. Visible: 시험 `scan_item_queue_fe8g3_test.dart:390`뿐(FE8-g5b 다음 행동) | 제거 + 이것만 쓰던 import 2(`../kit/buttons.dart`, `scan_header_progress.dart show scanCandidateKey`) | `lib/ui/scan/scan_item_queue.dart` 573 → 450(−123) |
+| `ScanSessionController.openQueueKind` | lib: 위 Bar `:562`뿐, 시험 `fe8g3_test.dart:391`뿐 | 제거 | `lib/ui/scan/scan_session_controller.dart` 2231 → 2219(−12) |
+| (시험) `openQueueKind` · `scanQueueReviewVisible` 단언 | 위 두 기호만 시험 | 그 7줄 제거. 큐 끝 · 검토 대기 · 다른 탭 적용 단언은 그대로 | `test/scan_item_queue_fe8g3_test.dart` 679 → 672(−7) |
+| `HomePage.studentCandidatePending` · `inventoryCandidatePending` | 선언 4줄뿐(셸이 FE8-g5b부터 넘기지 않음, lib · test 0) | 제거 | `lib/ui/pages/home_page.dart` 885 → 881(−4, CRLF) |
+| `_CandidateSummary._payloadSummary` 학생 분기 | 유일한 생성 자리(`scan_page.dart:570-576`)가 `kind != student`만 넘김 → 닿지 않는 분기 | 제거 + `쨌` 고침 | `lib/ui/pages/scan_page.dart` 749 → 744(+1 −6) |
+| `buildSectionTemplatePath` | lib 0, 시험 `section_template_studio_test.dart:43-44`뿐 | 제거 | `lib/ui/widgets/section_template_surface.dart` 1159 → 1096(−63, CRLF) |
+| `buildAttachedSectionPath` | lib 0, 시험 `:87-110`뿐 | 제거 | 같은 파일 |
+| `hitTestSectionResizeHandle` | lib 0, 시험 `:208`뿐(편집기는 `:736` 자기 루프를 씀) | 제거 | 같은 파일 |
+| `SectionShape` enum · `sectionTemplateSectionGap` · `copyGridRectWithin` · `resizeAspectLockedGridRect` | enum: 위 `buildSectionTemplatePath` + 시험 `:58`뿐, 나머지 lib · test 0, asset JSON에 이름 0 | 제거 | `lib/ui/studio/section_template.dart` 638 → 570(−68) |
+| (시험) 템플릿 자르기 시험 1건, `SectionShape` 이름 단언 3줄, `hitTestSectionResizeHandle` 단언 | 위 기호만 시험 | 시험 1건 · 단언 제거. 붙은 면 기하 시험 2건은 앱이 쓰는 `buildSectionCanvasElementPath`(판 전체 element, `_boardPath`)로 돌려 형상 계약 유지, 핸들 단언은 `sectionCanvasResizeHandleCenters` = element rect 꼭짓점으로 바꿈 | `test/section_template_studio_test.dart` 697 → 687(+23 −33) |
+| `StudentDiagonalFilterList` · `_StudentDiagonalFilterListState` · `_StudentFilterGroupCard` · `_StudentFilterGroupPainter` | 공개 위젯 lib · test 0, 비공개 둘은 그 위젯 안에서만 생성 | 제거 + 그 위젯만 넘기던 `_StudentDiagonalScrollbar.fogColor`(analyze `unused_element_parameter`; 늘 null이라 `StudentViewportFog` 기본색 그대로) | `lib/ui/widgets/student_section_layout.dart` 6167 → 5904(−263) |
+| `StatisticsBaseDataValue` typedef | lib · test 0 | 제거(doc 주석 포함) | `lib/ui/statistics/statistics_history_charts.dart` 739 → 736(−3) |
+| `RepositoryPresetsController.clearMessage` | lib · test 0 | 제거 | `lib/ui/models/repository_presets_controller.dart` 438 → 431(−7) |
+| `section_surface.dart:6` 주석 | FE10-a에서 지운 두 위젯 이름이 남음 | `DiagonalSection`만 남김 | `lib/ui/widgets/section_surface.dart` 121 → 121(+1 −1) |
+
+합계: 12파일, +25 −590(그 밖 파일 수정 0).
+
+### 삭제 목록 확인 표 (`debug/frontend_fe10b/delete-list.txt`)
+
+| 경로 | import | 문자열 경로 | pubspec | 시험 |
+|---|---|---|---|---|
+| `frontend/lib/ui/widgets/student_range_condition_section.dart`(503줄) | lib 0 | 0 | 해당 없음 | 아래 시험만 |
+| `frontend/test/student_range_condition_section_test.dart`(380줄) | — | 0 | 해당 없음 | 위 파일만 시험 |
+| `frontend/lib/ui/pages/section_placeholder_page.dart`(260줄) | lib · test 0, `SectionPlaceholderPage` 0 | 0 | 해당 없음 | 0 |
+| `frontend/lib/ui/studio/plan_studio_layout.dart`(69줄) | lib · test 0, `planStudioDocument` 0 | 0 | 해당 없음 | 0 |
+| `frontend/assets/studio_sections/section-title-1.ba-section-studio.json`(239줄) | 해당 없음 | `section-title-1`은 `title_studio_layout.dart:14` 주석뿐. `studio_sections` 경로를 쓰는 코드 · 시험은 다른 두 파일만 이름으로 읽음(`title_page_test.dart:323`·`:410`) | `pubspec.yaml:77` 폴더 번들 → 수정 불필요. 폴더를 나열하는 `AssetManifest` 사용은 `student_portraits/`만 | 0 |
+
+- 5파일 모두 git 추적 · WIP 없음. backend · `windows/` · `tool/`에서도 이름 0(`release/`는 추적 밖 옛 빌드 사본).
+- 지운 뒤 생기는 것: `PlanPresetElementLayout.condition`(Lane A `plan_element_builder.dart:50`)이 lib 사용 0 · 시험 전용이 된다(지금 lib 사용은 `student_range_condition_section.dart`뿐). 공개 enum 값이라 analyze 영향 없음 → CF 판단(Lane A 파일).
+
+### 깨진 글자
+
+- 고친 것: `frontend/lib/ui/pages/scan_page.dart` 한 줄 두 곳(`쨌` → `·`). 시험 · golden에 이 문구 0(`Tactical lobby` grep: lib 2줄 — 이 줄과 `mock_app_service.dart:704` 주석).
+- 검사: lib · test `.dart` 전체를 UTF-8로 읽고(실패 0, U+FFFD 0), 한글 · 한자 연속 구간을 CP949로 되돌려 UTF-8이 되는 것을 찾았다. 결과는 `째`(°) 116 · `짜`(¥) 92 · `짧`(ª) 24 · `짝`(¦) 20 · `짙`(£) 1 · `쨌`(·) 2 — `째`(첫째) · `날짜` · `짧은` · `짝` · `짙은`은 정상 낱말이고 `쨌` 2건만 깨짐이었다. 한자 2건(`repository_history_service_test.dart:81-82` `未知` · `未来`)은 알 수 없는 kind 시험 값이다(의도).
+
+### 남긴 것과 이유
+
+- FD-138: goals v1 · `calculateShortages` 경로 그대로. 같은 계열로 `lib/statistics/statistics_projection.dart`(442줄) + `test/statistics_projection_test.dart`(389줄)는 lib import 0 · 시험 전용인 새 통째 후보지만 `state.goals` · `InventoryShortageResult`를 읽는 옛 통계 projection이라 삭제 목록에 넣지 않았다 → CF 판단.
+- 스캐너 소유: `ScanStudentReviewWorkspace`(`scan_page.dart:397`에서만 마운트, 시험 · golden `scan-student-review`) 목록만. `DiagonalSection`은 아직 쓰는 곳이 있다 — `scan_page.dart` 4곳(`:188` · `:268` · `:433` · `:629`)과 스캐너 소유 `scan_student_review_workspace.dart` 3곳 → FD-137 "교체 완료 후"가 아니어서 남김(인벤토리 · 학생 · 설정은 이미 교체됨).
+- CF 판단(공개 API · 구조 변경):
+  - 단독 `ScanPage`의 아이템 경로(`showItemReview`, 인벤토리 `_CandidateSummary`, `ScanInventoryIdentityReview` 마운트, 컨트롤러 id 읽기 `unresolvedLoading` · `unresolvedSlots(id)` · `identityBusy/Skipped/Error(id)`)와 학생 경로(`showStudentReview`), "미사용" 인자(`onRecentChanged` · `onCompanionChanged` · `windowDockService` · `studentScanDiagnosticFileService` · `now`): 앱(스캔 탭)은 둘 다 false · 컨트롤러를 넘겨 쓰지 않지만, 단독 `ScanPage` 시험(`scan_page_test` · `scan_page_pause_fb10a_test` · `scanner_review_images_fb10c_test` · `scan_item_review_fe8g5b_test:931`)이 이 경로 · 인자로 화면을 만든다. 줄이려면 `ScanPage`를 전술 로비 검토로 다시 짜고 시험 여러 개를 옮겨야 하며, 스캐너 소유 위젯 두 개의 마운트가 함께 사라진다 → 별도 slice.
+  - 새로 찾은 0/0 멤버(목록에 없던 것): `maxBinCount`(`lib/statistics/statistics_growth_projection.dart:211`), `StatisticsMode.filterNote`(`lib/ui/statistics/statistics_topics.dart:120`), `StudentGridImageWarmup.completedAssets`(`lib/ui/widgets/student_grid_warmup.dart:48`, `@visibleForTesting`인데 시험 0).
+- Lane A 파일(읽기만): `PlanElementBuilder` 위젯 · `planElementTargetSummary` · `planPresetElementUnionPath`(`plan_element_builder.dart`), `PlanFlowDraft.editStudent`, `planPrimaryBottleneck*` 등 아이콘 상수 4개(`plan_section_layout.dart`), 위 `PlanPresetElementLayout.condition`.
+- 목록만(수정 금지 영역): 키트 `skewedTrackPath` · `paintStatSurface`(`ui/kit/stat_chart.dart`), 서비스 `AppServiceResourceAcquisition` · `AppServiceStudentCalculation`(`services/app_service.dart`).
+- 포맷: `section_template_surface.dart` · `student_section_layout.dart` · `repository_presets_controller.dart`(착수 때부터 `dart format`과 다름)와 FE8-g5b 발견 9의 6파일은 포맷하지 않았다 → FE10 정리 때 한 번에(CF 판단).
+
+### golden 변화 0 근거
+
+- 지운 기호는 모두 lib에서 그려지는 곳이 없다(위 증거). `fogColor`는 늘 null이었다.
+- `·` 고침: `_CandidateSummary`는 단독 `ScanPage`의 전술 로비 후보에서만 그려진다. golden에서 `ScanPage`는 셸 안 Offstage(`fe8f2_header_scan_progress_golden_test.dart:66`은 컨트롤러만 읽음)이고, `tactical-lobby` 장면(`fe9a_tactical_golden_test.dart`)은 전술 탭 로비 카드다 → 예측 장면 없음.
+- 따라서 기존 golden 변화 0 · 새 장면 0 예상.
+
+### 미검증 항목
+
+- golden 비교 · 전체 일반 시험 · process E2E · `fe_gate.ps1` · `codealmanac validate` · Windows release: 미실행(CF 몫).
+- 삭제 목록 적용 뒤 analyze · 시험: 미실행(지우지 않았다 — 참조 0은 grep으로만 확인).
+- `plan_flow_test` 2건: Lane A 작업이 끝난 뒤 다시 돌려 보지 않았다(미실행).
+
+### 발견 사항
+
+1. `plan_flow_test.dart` 2건 실패는 Lane A FE4-g4 진행 중 변경(한 명 모드 부제) 때문이다. Lane A가 시험을 맞추는지 CF gate에서 확인.
+2. Lane A 작업 트리에 추적 밖 `frontend/test/zz_fe4g4_debug_test.dart`가 있다(이 slice 아님). gate 전에 남아 있으면 일반 시험에 섞인다.
+3. 삭제 목록을 적용하면 `PlanPresetElementLayout.condition` 분기가 시험 전용이 된다(위).
+4. `statistics_projection.dart`는 FD-138 계열 판단이 필요하다(위).
+
+### 사본 · commit.json
+
+- 사본 `debug/frontend_fe10b/pre/`(13파일), `debug/frontend_fe10b/commit.json`(slice `fe10b`, modified 12, added 0, `whole` = 이 문서, `status=true`, 삭제는 넣지 않음), 삭제 목록 `debug/frontend_fe10b/delete-list.txt`, 인계 `debug/frontend_fe10b/output.md`, 로그 `debug/frontend_fe10b/logs/`.
+
+### 다음 행동
+
+- FE10-b 코드는 끝났다. Lane B는 여기서 멈춘다.
+- CF: Lane A(FE4-g4)가 멈춘 뒤 `delete-list.txt` 5파일 삭제 → `fe_gate.ps1` 1회(예상: analyze 0, 일반 시험은 `section_template_studio_test` 15 → 14와 `student_range_condition_section_test` 전체가 빠짐, golden 변화 0) → `fe_commit.ps1 -Slice fe10b`(commit.json에 `deleted` 키 추가).
+- CF 판단: 단독 `ScanPage` 축소(별도 slice), `statistics_projection.dart`, 새 0/0 멤버 3개, Lane A 파일 후보, 키트 · 서비스 목록, 포맷 일괄 적용.

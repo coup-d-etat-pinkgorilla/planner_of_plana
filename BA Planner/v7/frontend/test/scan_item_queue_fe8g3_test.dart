@@ -387,13 +387,6 @@ void main() {
         expect(notice.kind, ScannerKind.inventory);
         expect(notice.outcome, 'completed');
         expect(notice.resultCount, 2);
-        expect(scanQueueReviewVisible(controller), isTrue);
-        controller.openQueueKind(InventoryScanProfile.tacticalBd);
-        expect(controller.session?.id, 'q-2');
-        expect(controller.candidates.keys, ['c-bd']);
-        expect(controller.itemQueuePendingCandidates().map((item) => item.id), [
-          'c-tech',
-        ]);
         // 다른 탭에서 둘 다 적용하면 검토 대기가 풀린다.
         final applied = {
           for (final id in ['c-tech', 'c-bd'])

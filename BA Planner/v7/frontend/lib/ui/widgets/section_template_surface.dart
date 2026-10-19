@@ -9,16 +9,6 @@ import '../studio/section_template.dart';
 import 'ba_triangle_background.dart';
 import 'section_surface.dart';
 
-Path buildAttachedSectionPath(Size size, AttachedSectionSpec spec) {
-  final points = buildAttachedSectionPolygon(size, spec);
-  final raw = buildRoundedSectionPolygon(points);
-  final roundedBounds = Path()
-    ..addRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(14)),
-    );
-  return Path.combine(PathOperation.intersect, raw, roundedBounds);
-}
-
 List<Offset> buildAttachedSectionPolygon(
   Size size,
   AttachedSectionSpec spec, {
@@ -134,19 +124,6 @@ Map<SectionResizeHandle, Offset> sectionCanvasResizeHandleCenters(
     SectionResizeHandle.bottomLeft: rect.bottomLeft,
     SectionResizeHandle.bottomRight: rect.bottomRight,
   };
-}
-
-SectionResizeHandle? hitTestSectionResizeHandle(
-  Size size,
-  SectionCanvasElement element,
-  Offset position,
-) {
-  for (final entry in sectionCanvasResizeHandleCenters(size, element).entries) {
-    if ((entry.value - position).distance <= sectionCanvasHandleHitRadius) {
-      return entry.key;
-    }
-  }
-  return null;
 }
 
 Path buildSectionCanvasElementPath(Size size, SectionCanvasElement element) {
@@ -1113,46 +1090,6 @@ List<Offset> _sideParallelogramPoints(
     Offset(size.width - depth, faceEnd + rise),
     Offset(size.width - depth, faceStart + rise),
   ];
-}
-
-Path buildSectionTemplatePath(Size size, SectionShape shape) {
-  final horizontalCut = sectionTemplateCutDepth(size.height);
-  final polygon = switch (shape) {
-    SectionShape.rightCut => <Offset>[
-      Offset.zero,
-      Offset(size.width, 0),
-      Offset(size.width - horizontalCut, size.height),
-      Offset(0, size.height),
-    ],
-    SectionShape.leftCut => <Offset>[
-      Offset(horizontalCut, 0),
-      Offset(size.width, 0),
-      Offset(size.width, size.height),
-      Offset.zero.translate(0, size.height),
-    ],
-    SectionShape.bilateral => <Offset>[
-      Offset(horizontalCut, 0),
-      Offset(size.width, 0),
-      Offset(size.width - horizontalCut, size.height),
-      Offset.zero.translate(0, size.height),
-    ],
-    SectionShape.triangleLeft => <Offset>[
-      Offset.zero,
-      Offset(horizontalCut, 0),
-      Offset(0, size.height),
-    ],
-    SectionShape.triangleRight => <Offset>[
-      Offset(size.width, 0),
-      Offset(size.width, size.height),
-      Offset(size.width - horizontalCut, size.height),
-    ],
-  };
-  final raw = buildRoundedSectionPolygon(polygon);
-  final roundedBounds = Path()
-    ..addRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(14)),
-    );
-  return Path.combine(PathOperation.intersect, raw, roundedBounds);
 }
 
 double sectionTemplateCutDepth(double height) =>

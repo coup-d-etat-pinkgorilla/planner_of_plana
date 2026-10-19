@@ -303,13 +303,6 @@ class RepositoryPresetsController extends ChangeNotifier {
     return false;
   }
 
-  /// 안내를 지운다.
-  void clearMessage() {
-    if (_disposed || _message == null) return;
-    _message = null;
-    notifyListeners();
-  }
-
   Future<bool> _edit(_Edit edit, {bool retrying = false}) async {
     final state = _state;
     if (_disposed || !canEdit || state == null) return false;

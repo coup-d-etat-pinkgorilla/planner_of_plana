@@ -24,9 +24,6 @@ import '../../statistics/statistics_supply_projection.dart';
 import '../kit/stat_chart.dart';
 import 'statistics_growth_charts.dart';
 
-/// 기준 데이터 한 행 값(시안 칩 색: 학생 스캔 ok · 인벤토리 wn · 스냅샷 gy, 모르면 회색 '—').
-typedef StatisticsBaseDataValue = ({String text, bool known});
-
 /// 통계 이력 화면 값.
 @immutable
 class StatisticsHistoryView {

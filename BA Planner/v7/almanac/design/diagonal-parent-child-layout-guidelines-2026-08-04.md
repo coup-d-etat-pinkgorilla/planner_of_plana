@@ -3,15 +3,9 @@ title: "평행사변형 부모 안의 자식 요소 배치 가이드"
 summary: "Flutter 사선 섹션 안에서 카드·행·버튼을 부모 rail에 맞춰 배치하기 위한 경계 함수, normal inset, 스케일, clip, hit test, 회귀 검증 규칙을 정리한다."
 topics: [design, flutter, diagonal-layout, geometry, testing]
 sources:
-  - id: condition-section
-    type: file
-    path: frontend/lib/ui/widgets/student_range_condition_section.dart
   - id: preset-card
     type: file
     path: frontend/lib/ui/widgets/plan_element_builder.dart
-  - id: condition-tests
-    type: file
-    path: frontend/test/student_range_condition_section_test.dart
   - id: preset-tests
     type: file
     path: frontend/test/plan_element_builder_test.dart
@@ -155,4 +149,6 @@ childRight = parentRight(childTop) - normalInset / sin(80°)
 - paint/clip은 축소된 local path를 사용하되, animation과 상위 layout이 기대하는 host bounds는 그대로 둘 수 있다. 이 경우 실제 foundation만 `Positioned`로 축소하여 형제 배치나 퇴장 벡터 계약을 바꾸지 않는다.
 - 회귀 테스트는 외곽 폭/높이뿐 아니라 상·하 수직 여백, 좌·우 법선 여백, 기준 rail 고정, 내부 위젯 간 gap을 각각 수치로 검사한다.
 
-[@condition-section] [@preset-card] [@condition-tests] [@preset-tests]
+[@preset-card] [@preset-tests]
+
+이 가이드의 "조건 section" 사례였던 학생 범위 조건 카드(`student_range_condition_section.dart`와 그 시험)는 FE3-d2에서 폐기된 뒤 FE10-b(2026-10-19)에 파일째 지웠다. 그 구현은 git 기록에서 볼 수 있다.

@@ -682,18 +682,13 @@ class _CandidateSummary extends StatelessWidget {
   final VoidCallback? onHandoff;
 
   String get _payloadSummary {
-    if (candidate.kind == ScannerKind.student) {
-      final values = candidate.payload['values'];
-      return 'Student ${candidate.payload['student_id']} · '
-          '${values is Map ? values.length : 0} observed field(s)';
-    }
     if (candidate.kind == ScannerKind.tacticalLobby) {
       final rank = candidate.payload['current_rank'];
       final rows = candidate.payload['rows'];
       final current = rank is Map
           ? rank['value'] ?? rank['proposed_value']
           : '?';
-      return 'Tactical lobby 쨌 current rank $current 쨌 '
+      return 'Tactical lobby · current rank $current · '
           '${rows is List ? rows.length : 0} opponent row(s)';
     }
     final entries = candidate.payload['entries'];

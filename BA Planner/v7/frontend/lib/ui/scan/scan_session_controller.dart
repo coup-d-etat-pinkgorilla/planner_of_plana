@@ -587,18 +587,6 @@ class ScanSessionController extends ChangeNotifier {
     await start();
   }
 
-  /// 끝난 큐의 [profile] 결과를 지금 검토 화면에 연다(종류별 검토). 큐가 진행 중이거나 그 종류의 기록이 없으면 무시한다.
-  void openQueueKind(InventoryScanProfile profile) {
-    final queue = _itemQueue;
-    if (queue == null || queue.running) return;
-    final kind = queue.kinds
-        .where((item) => item.profile == profile)
-        .firstOrNull;
-    final result = kind == null ? null : itemQueueResult(kind);
-    if (result == null) return;
-    _update(() => _showSummary(result));
-  }
-
   /// 진행 창 끝 카드의 `결과 검토 열기`: 예약을 기다리지 않고 지금 플래너를 되돌린다.
   void closeItemDock() {
     _dockCloseTimer?.cancel();

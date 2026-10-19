@@ -3,7 +3,7 @@
 // 시안의 모든 실화면 섹션은 같은 표면이다: `AppColors.surface`@.76, 블러 없음, 테두리 없음,
 // 그 아래 lifted path shadow 4층(`paintLiftedPathShadow` + `defaultLiftedSectionShadow`).
 // 섹션을 그리는 곳은 이 파일의 [SectionSurface] 위젯이나 [paintSectionSurface] 함수만 쓴다.
-// 기존 `DiagonalSection`·`SectionTemplateSurface`·`AttachedSectionTemplateSurface`는 이 위젯의 래퍼다.
+// 기존 `DiagonalSection`은 이 위젯의 래퍼다.
 //
 // 범위: 섹션 바탕만. 섹션 안의 행·타일·칩·스크롤바·포그(FE2)와 삼각 무늬 텍스처(FD-015)는 다루지 않는다.
 import 'package:flutter/material.dart';

@@ -25,8 +25,6 @@ class HomePage extends StatefulWidget {
     required this.service,
     required this.onOpen,
     this.reloadToken = 0,
-    this.studentCandidatePending = false,
-    this.inventoryCandidatePending = false,
     this.recentScans = const [],
     this.entranceAnimation = const AlwaysStoppedAnimation(1),
     this.connectedTarget,
@@ -41,8 +39,6 @@ class HomePage extends StatefulWidget {
   final AppService service;
   final ValueChanged<AppSection> onOpen;
   final int reloadToken;
-  final bool studentCandidatePending;
-  final bool inventoryCandidatePending;
   final List<ScannerRecentSummary> recentScans;
   final Animation<double> entranceAnimation;
 

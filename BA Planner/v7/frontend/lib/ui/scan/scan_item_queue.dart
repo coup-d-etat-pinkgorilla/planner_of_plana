@@ -17,10 +17,8 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/scanner_service.dart';
-import '../kit/buttons.dart';
 import '../models/planning_resource_assets.dart';
 import '../widgets/scan_companion_dock.dart';
-import 'scan_header_progress.dart' show scanCandidateKey;
 import 'scan_pick_logic.dart';
 import 'scan_session_controller.dart';
 
@@ -449,125 +447,4 @@ ScanCompanionState? scanCompanionStateFor(ScanSessionController controller) {
         ? controller.closeItemDock
         : null,
   );
-}
-
-// ---- 종류별 검토 줄(스캔 탭, FE8-g5 전까지 지금 아이템 검토 화면 위) ----
-
-/// 큐 종류 하나의 검토 칩. 끝난 기록이 있으면 최근 스캔 행과 같은 칩(`검토 n` · `확정` · `결과 없음` …), 아니면 큐 칩.
-(String, AppTone) scanQueueReviewChip(
-  ScanSessionController controller,
-  ScanQueueKind kind, {
-  Set<String> appliedElsewhere = const {},
-}) {
-  final result = controller.itemQueueResult(kind);
-  if (result == null) return scanQueueKindChip(kind);
-  bool appliedOutside(ScannerCandidate candidate) =>
-      appliedElsewhere.contains(scanCandidateKey(candidate));
-  final pending = [
-    for (final candidate in result.candidates)
-      if (controller.candidateResolution(candidate) == null &&
-          !appliedOutside(candidate))
-        candidate,
-  ];
-  return scanRecentChip(
-    result,
-    pending,
-    applied: result.candidates.any(
-      (candidate) =>
-          controller.candidateResolution(candidate) == true ||
-          appliedOutside(candidate),
-    ),
-  );
-}
-
-/// 큐 결과를 종류별로 여는 줄을 보이는가: 끝난 큐(2종 이상)의 세션을 검토 화면이 보이고 있을 때.
-bool scanQueueReviewVisible(ScanSessionController controller) {
-  final queue = controller.itemQueue;
-  return queue != null &&
-      !queue.running &&
-      queue.length > 1 &&
-      queue.indexOf(controller.session) != null;
-}
-
-/// 종류별 검토 줄(FD-143 (a) "검토는 합쳐 표시"): 제목 + 종류 버튼(이름 · 칩). 누르면 그 종류의 결과를 지금 검토 화면에 연다.
-class ScanQueueReviewBar extends StatelessWidget {
-  const ScanQueueReviewBar({
-    super.key,
-    required this.controller,
-    this.appliedElsewhere = const {},
-  });
-
-  static const height = 56.0;
-
-  final ScanSessionController controller;
-  final Set<String> appliedElsewhere;
-
-  @override
-  Widget build(BuildContext context) {
-    final queue = controller.itemQueue;
-    if (queue == null) return const SizedBox.shrink();
-    final shown = queue.indexOf(controller.session);
-    return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xff0d151f),
-        border: Border(
-          bottom: BorderSide(color: Color.fromRGBO(56, 81, 107, 0.8)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Flexible(
-            child: Text(
-              '아이템 ${queue.length}종 차례 스캔 결과 · 종류별로 검토합니다',
-              key: const ValueKey('scan-queue-review-title'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: AppFonts.body,
-                fontFamilyFallback: AppFonts.fallback,
-                fontSize: AppType.bodySize,
-                fontWeight: AppType.bold,
-                color: AppColors.text,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              reverse: true,
-              child: Row(
-                children: [
-                  for (final (index, kind) in queue.kinds.indexed) ...[
-                    if (index > 0) const SizedBox(width: 8),
-                    TonalButton(
-                      key: ValueKey(
-                        'scan-queue-review-${kind.profile.wireName}',
-                      ),
-                      label:
-                          '${scanInventoryProfileLabel(kind.profile)} · '
-                          '${scanQueueReviewChip(controller, kind, appliedElsewhere: appliedElsewhere).$1}',
-                      variant: index == shown
-                          ? TonalButtonVariant.primary
-                          : TonalButtonVariant.normal,
-                      height: 34,
-                      // 지금 연 종류는 누를 일이 없지만 흐리게 하지 않는다(선택 표시는 pri 색).
-                      onPressed: index == shown
-                          ? () {}
-                          : controller.itemQueueResult(kind) == null
-                          ? null
-                          : () => controller.openQueueKind(kind.profile),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
