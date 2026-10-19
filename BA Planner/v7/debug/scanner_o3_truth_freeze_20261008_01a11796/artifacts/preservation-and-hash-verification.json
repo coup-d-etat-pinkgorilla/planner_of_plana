@@ -1,0 +1,116 @@
+{
+  "protected_files": [
+    {
+      "path": "backend/core/student_attribute_filter.py",
+      "bytes": 13452,
+      "sha256": "2a3afc21f2a2321d88824bee3b2ece68d132ef217c697c080341583b50c2101a"
+    },
+    {
+      "path": "backend/core/student_identity_recovery.py",
+      "bytes": 16309,
+      "sha256": "ad02113e4700d9a5b44c2bff3fea4a6ca73d6b6a6593c312b3a39b5fe5d0061a"
+    },
+    {
+      "path": "backend/core/student_matcher_adapter.py",
+      "bytes": 56244,
+      "sha256": "0ce3e5d790d6f863f4fed7ad14d6acee0b42342e5efcda8f4cac989338b76afb"
+    },
+    {
+      "path": "backend/core/scanner_matching.py",
+      "bytes": 8793,
+      "sha256": "159710abae9bcc4ee457020c96c7aa789214116ea158165f7971acb310533474"
+    },
+    {
+      "path": "backend/core/recognition_image_ops.py",
+      "bytes": 10712,
+      "sha256": "09e0c2f6d6ae28ba24be60f40b2344ee99eb407507e3b277d28baf04923cebee"
+    },
+    {
+      "path": "backend/core/recognition_thresholds.py",
+      "bytes": 39425,
+      "sha256": "cc6d4ecc49a063a87f330e8c99b964364bf100a5c4e209051b77e313ab5f86e9"
+    },
+    {
+      "path": "backend/core/student_scan_recognizer.py",
+      "bytes": 50495,
+      "sha256": "5d40f9ea622ac39a8fb7f23478fa183728758aea29742d6bd734af38d0b93a00"
+    },
+    {
+      "path": "backend/core/student_meta.py",
+      "bytes": 14196,
+      "sha256": "8708c54604f8cb172005953586a6681b8d3173957d3ab6eb24da0016be795484"
+    },
+    {
+      "path": "backend/core/student_meta_data.py",
+      "bytes": 1607261,
+      "sha256": "9528259b6b56395ce9639c444d38b8162d6fc60a92b3ece8a154668aa0bd1982"
+    },
+    {
+      "path": "backend/core/student_name_matcher.py",
+      "bytes": 27708,
+      "sha256": "be33234fb5b5eeec79dbc728f4b19e3d01427dc046148ef2be160051dbb915a2"
+    },
+    {
+      "path": "backend/core/scanner_protocol_v1.py",
+      "bytes": 11330,
+      "sha256": "25e1cb4907d1540cf0c50dd94d338a42d2542b530d8ce918fbf051175228d28c"
+    },
+    {
+      "path": "backend/core/scanner_session.py",
+      "bytes": 43761,
+      "sha256": "84ffe3ec540d51bed59cf7477010f62f0e2b01649e536adf8e908fa02dca940f"
+    },
+    {
+      "path": "backend/core/windows_scanner_adapter.py",
+      "bytes": 37599,
+      "sha256": "21b9b52120b1f124f5a205079d0da446dba674a109d5879ddc0f16d8d433f852"
+    },
+    {
+      "path": "backend/tests/test_student_selected_filters.py",
+      "bytes": 13559,
+      "sha256": "878ba2a773bde53c8331f66026430dc5a55bf9c02a5d27662ae741763c603037"
+    },
+    {
+      "path": "backend/data/metadata/v1/student_catalog.json",
+      "bytes": 1340586,
+      "sha256": "545cd8aa5a7b2aa1cdd6fbe2cffbe011bd4a65437aef40711ef597bee734ecef"
+    },
+    {
+      "path": "backend/assets/recognition/spec/student-attribute-prefilter-v1.json",
+      "bytes": 6334,
+      "sha256": "904be82a06fbd100f0e843929cb15a73a5fec507cc405e75bdd700c3ae8f16ff"
+    },
+    {
+      "path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+      "bytes": 1339,
+      "sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+    },
+    {
+      "path": "backend/assets/recognition/v1/student_identity_manifest.json",
+      "bytes": 9620,
+      "sha256": "124a6df50a0b8af64c812daaad361054efc658d44e642f7cc4fc720149db0aa1"
+    },
+    {
+      "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/human-review-2026-10-08.csv",
+      "bytes": 4449,
+      "sha256": "a4c158abe7a23e7e0111d7969dbcaf25c70ce30921a1159f6442d889c9e9e5cc"
+    },
+    {
+      "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/human-review-template.csv",
+      "bytes": 1163,
+      "sha256": "b67dc9d45e0cddc8fe860027a6cb4614f58fbda72ce3b9d980f86c16bbe99e8b"
+    },
+    {
+      "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/README-human-review-2026-10-08.md",
+      "bytes": 1092,
+      "sha256": "c1b1ed21d5265fd7bd08a8372efc1cc6a2936ebb955a1dcab83e2465ece3d537"
+    }
+  ],
+  "changes": [],
+  "evaluation_matches_final_candidate_before_and_after": true,
+  "all_15_human_values_and_notes_preserved": true,
+  "review_csv_sha256": "a4c158abe7a23e7e0111d7969dbcaf25c70ce30921a1159f6442d889c9e9e5cc",
+  "truth_sha256": "dfeaffd607d054883627c22295a557b1a785343643f5a8f16539328e10ad091a",
+  "holdout_or_evaluator_only_read": false,
+  "source_snapshots_byte_identical": true
+}

@@ -1,18 +1,36 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show listEquals, mapEquals, setEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../geometry/diagonal_geometry.dart';
+import '../kit/ba_chip.dart';
+import '../kit/ba_modal.dart';
+import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
+import '../kit/hatch.dart';
+import '../kit/kit_pressable.dart';
+import '../kit/skew_box.dart';
+import '../models/active_plan_bond_target.dart';
+import '../models/growth_calculator_rules.dart';
+import '../models/growth_calculator_state.dart';
+import '../models/student_filter_controller.dart';
+import '../models/student_filter_selection.dart';
 import '../studio/section_template.dart';
 import '../studio/student_studio_layout.dart';
 import 'animated_section_stack.dart';
 import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
+import 'growth_calculator_section.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_student_step_tile.dart';
 import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
+import 'student_filter_modal.dart';
+import 'student_form_cycle.dart';
 import 'student_portrait_status_overlay.dart';
 
 const studentTextureTessellationContrast = 0.030;
@@ -47,10 +65,8 @@ const _studentActionTexture = BATriangleTextureConfig(
 );
 
 const studentSectionBevelGap = 12.0;
-const studentSectionOpacity = 0.76;
+const studentSectionOpacity = sectionSurfaceOpacity;
 const studentViewportFogExtent = scrollViewportFogExtent;
-const studentFilterResetButtonSize = 44.0;
-const studentFilterCompanionSectionGap = 24.0;
 const studentSortAccentColor = Color(0xffe9b0ee);
 const studentSortCompactFontSize = 15.0;
 const studentSortMenuFontSize = 18.0;
@@ -243,6 +259,8 @@ final List<StudentFilterDefinition> studentFilterDefinitions = [
 const Map<String, Map<String, String>> studentFilterValueLabels = {
   'ownership': {'owned': '보유', 'unowned': '미보유'},
   'plan_status': {'planned': '계획 포함', 'unplanned': '미계획'},
+  // 계획 만들기 1단계 필터 모달의 계획 칩 그룹(FE4-b1).
+  'plan': {'unplanned': '계획에 없는 학생만', 'planned': '계획에 있는 학생만'},
   'school': {
     'Abydos': '아비도스',
     'Arius': '아리우스',
@@ -299,21 +317,8 @@ String studentFilterValueLabel(String key, String value) {
           .join(' ');
 }
 
-bool studentMatchesCatalogFilters(
-  StudentCatalogEntry student,
-  Map<String, Set<String>> selected,
-) {
-  for (final definition in studentFilterDefinitions) {
-    final values = selected[definition.key];
-    if (values == null || values.isEmpty) continue;
-    final value = definition.read(student);
-    if (value == null || !values.contains(value)) return false;
-  }
-  return true;
-}
-
 double studentStarSegmentDepth(Rect rect) =>
-    math.min(rect.width * 0.45, rect.height / math.tan(80 * math.pi / 180));
+    math.min(rect.width * 0.45, diagonalCutDepth(rect.height));
 
 Path studentStarSegmentPath(Rect rect) {
   final depth = studentStarSegmentDepth(rect);
@@ -356,7 +361,7 @@ void paintStudentStarStatus(
     final currentValue = studentSegment ? studentStars : weaponStars;
     final targetValue = studentSegment ? targetStudentStars : targetWeaponStars;
     final activeColor = studentSegment
-        ? const Color(0xfff3c96b)
+        ? AppColors.starDisplay
         : AppColors.primary;
     final path = studentStarSegmentPath(rects[index]);
     canvas.drawPath(
@@ -466,7 +471,7 @@ Rect studentSectionRect(Size size, String id) {
     size,
     studentStudioDocument.elements.firstWhere((item) => item.id == 'element-3'),
   );
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final left = detail.left + (detail.bottom - rect.bottom) / tangent;
   return Rect.fromLTRB(left, rect.top, rect.right, rect.bottom);
 }
@@ -497,7 +502,7 @@ Path studentSectionPath(Size size, String id) {
   );
   final actionRect = sectionCanvasElementRect(size, actionSection);
   final rect = sectionCanvasElementRect(size, element);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(rect.height);
   final leftTop = actionRect.right + studentSectionBevelGap;
   final raw = buildRoundedSectionPolygon([
     Offset(leftTop, rect.top),
@@ -512,102 +517,6 @@ Path studentSectionPath(Size size, String id) {
   return Path.combine(PathOperation.intersect, raw, canvasBounds);
 }
 
-List<Offset> studentFilterSectionPolygon(Size size) {
-  final actionSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-1',
-  );
-  final filterSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-2',
-  );
-  final actionRect = sectionCanvasElementRect(size, actionSection);
-  final rect = sectionCanvasElementRect(size, filterSection);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
-  final leftTop = actionRect.right + studentSectionBevelGap;
-  final originalTopRight = Offset(rect.right + depth, rect.top);
-  final bottomLeft = Offset(leftTop - depth, rect.bottom);
-  final reducedEdgeLength = (originalTopRight.dx - leftTop) / 4;
-  return [
-    Offset(leftTop, rect.top),
-    Offset(leftTop + reducedEdgeLength, rect.top),
-    Offset(bottomLeft.dx + reducedEdgeLength, rect.bottom),
-    bottomLeft,
-  ];
-}
-
-double studentListSectionEdgeLength(Size size) {
-  final actionSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-1',
-  );
-  final listSection = studentStudioDocument.elements.firstWhere(
-    (item) => item.id == 'element-2',
-  );
-  final actionRect = sectionCanvasElementRect(size, actionSection);
-  final rect = sectionCanvasElementRect(size, listSection);
-  final depth = rect.height / math.tan(80 * math.pi / 180);
-  return rect.right + depth - (actionRect.right + studentSectionBevelGap);
-}
-
-Path studentFilterSectionPath(Size size) {
-  final raw = buildRoundedSectionPolygon(
-    studentFilterSectionPolygon(size),
-    radius: 8,
-  );
-  final canvasBounds = Path()
-    ..addRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(8)),
-    );
-  return Path.combine(PathOperation.intersect, raw, canvasBounds);
-}
-
-Rect studentFilterCompanionSectionRect(Size size) {
-  final filterBounds = studentFilterSectionPath(size).getBounds();
-  final fullBounds = studentSectionPath(size, 'element-2').getBounds();
-  final depth = filterBounds.height / math.tan(80 * math.pi / 180);
-  final left = filterBounds.right + studentFilterCompanionSectionGap - depth;
-  return Rect.fromLTRB(
-    left,
-    filterBounds.top,
-    fullBounds.right,
-    filterBounds.bottom,
-  );
-}
-
-(double, double) studentFilterSectionHorizontalInterval(Size size, double y) {
-  final polygon = studentFilterSectionPolygon(size);
-  final bottom = polygon[3].dy;
-  final clampedY = y.clamp(polygon[0].dy, bottom);
-  final shift = (bottom - clampedY) / math.tan(80 * math.pi / 180);
-  return (polygon[3].dx + shift, polygon[2].dx + shift);
-}
-
-List<Offset> studentFilterContainerPolygon(Size size) {
-  final sectionPolygon = studentFilterSectionPolygon(size);
-  final sectionTop = sectionPolygon[0].dy;
-  final sectionBottom = sectionPolygon[3].dy;
-  final sectionHeight = sectionBottom - sectionTop;
-  final bottomReserve = studentFilterResetButtonSize + 16;
-  final top = sectionTop + 10;
-  final bottom = math.max(
-    top + 40,
-    sectionBottom - math.min(bottomReserve, sectionHeight * 0.22),
-  );
-  final topInterval = studentFilterSectionHorizontalInterval(size, top);
-  final bottomInterval = studentFilterSectionHorizontalInterval(size, bottom);
-  return [
-    Offset(topInterval.$1 + 10, top),
-    Offset(topInterval.$2 - 10, top),
-    Offset(bottomInterval.$2 - 10, bottom),
-    Offset(bottomInterval.$1 + 10, bottom),
-  ];
-}
-
-Path studentFilterContainerPath(Size size) {
-  return buildRoundedSectionPolygon(
-    studentFilterContainerPolygon(size),
-    radius: 10,
-  );
-}
-
 double studentDiagonalRowHorizontalOffset({
   required double viewportHeight,
   required double rowTop,
@@ -615,7 +524,10 @@ double studentDiagonalRowHorizontalOffset({
   required double scrollOffset,
 }) {
   final bottomViewportY = rowTop + rowHeight - scrollOffset;
-  return (viewportHeight - bottomViewportY) / math.tan(80 * math.pi / 180);
+  return diagonalRowTranslateOffset(
+    viewportHeight: viewportHeight,
+    rowBottomInViewport: bottomViewportY,
+  );
 }
 
 double studentDiagonalFilterRowWidth({
@@ -625,7 +537,7 @@ double studentDiagonalFilterRowWidth({
   required double horizontalInset,
   required double scrollbarReserve,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   return math.max(
     120.0,
     viewportWidth -
@@ -636,31 +548,7 @@ double studentDiagonalFilterRowWidth({
 }
 
 double studentFilterGroupContentInset(double height) =>
-    height / math.tan(80 * math.pi / 180) + 8;
-
-bool studentFoundationUsesLegacySectionChildren({
-  required bool filterSection,
-  required String parentSectionId,
-}) => !(filterSection && parentSectionId == 'element-2');
-
-Path studentFilterResetPath(Size size) {
-  final polygon = studentFilterSectionPolygon(size);
-  final section = studentFilterSectionPath(size).getBounds();
-  final bottomRight = polygon[2].dx;
-  final rect = Rect.fromLTWH(
-    bottomRight - studentFilterResetButtonSize - 12,
-    section.bottom - studentFilterResetButtonSize - 8,
-    studentFilterResetButtonSize,
-    studentFilterResetButtonSize,
-  );
-  final depth = rect.height / math.tan(80 * math.pi / 180);
-  return buildRoundedSectionPolygon([
-    Offset(rect.left + depth, rect.top),
-    rect.topRight,
-    Offset(rect.right - depth, rect.bottom),
-    rect.bottomLeft,
-  ], radius: 7);
-}
+    diagonalCutDepth(height) + 8;
 
 List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailSection = studentStudioDocument.elements.firstWhere(
@@ -669,7 +557,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailRect = sectionCanvasElementRect(size, detailSection);
   final aspect = detailRect.height / detailRect.width;
   final source = studentStudioDocument.containers;
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   const stackIds = ['container-5', 'container-6', 'container-7', 'container-9'];
   final sourceById = {for (final item in source) item.id: item};
   final firstStackRect = sourceById[stackIds.first]!.rect;
@@ -692,7 +580,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   final detailGapPixels = stackGap * detailRect.height;
   final c4Source = sourceById['container-4']!.rect;
   final c4RailGap =
-      detailGapPixels / (detailRect.width * math.sin(80 * math.pi / 180));
+      detailGapPixels / (detailRect.width * diagonalSin80);
   final c4Left =
       stackRightRail + c4RailGap - c4Source.bottom * aspect / tangent;
   final c4Rect = c4Source.copyWith(
@@ -703,7 +591,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
   const actionInset = _studentSection1ControlInset;
   const actionGap = _studentSection1ControlGap;
   const actionLeft = _studentSection1ControlLeft;
-  final actionRightInset = actionLeft / math.sin(80 * math.pi / 180);
+  final actionRightInset = diagonalNormalInset(actionLeft);
   const actionIds = ['container-16', 'container-13', 'container-11'];
   final actionSection = studentStudioDocument.elements.firstWhere(
     (item) => item.id == 'element-1',
@@ -779,7 +667,7 @@ List<StudioContainerElement> studentRuntimeContainers(Size size) {
 
 StudioPlacementRect _studentSection1ControlRowPlacement(Size size, double top) {
   const actionLeft = _studentSection1ControlLeft;
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final actionSection = studentStudioDocument.elements.firstWhere(
     (item) => item.id == 'element-1',
   );
@@ -799,7 +687,7 @@ StudioPlacementRect _studentSection1ControlRowPlacement(Size size, double top) {
       searchRect.height / sectionRect.height,
     ),
   );
-  final rightInset = actionLeft / math.sin(80 * math.pi / 180);
+  final rightInset = diagonalNormalInset(actionLeft);
   final sectionAspect = sectionRect.height / sectionRect.width;
   final rightEdgeAtTop = 1 - top * sectionAspect / tangent;
   return StudioPlacementRect(
@@ -857,8 +745,7 @@ List<List<Offset>> studentViewTogglePolygons(Size size) {
     rowRect.bottom - 0.001,
   );
   final rightInset =
-      _studentSection1ControlLeft /
-      math.sin(80 * math.pi / 180) *
+      diagonalNormalInset(_studentSection1ControlLeft) *
       sectionRect.width;
   final rightTop = topSpan.right - rightInset;
   final rightBottom = bottomSpan.right - rightInset;
@@ -958,16 +845,22 @@ class StudentSectionLayout extends StatefulWidget {
     required this.selectedValues,
     this.studentValuesById = const {},
     this.plannedIds = const {},
+    this.selectedBondTarget,
+    this.filterController,
+    this.totalStudentCount,
+    this.recentStudents = const [],
     required this.searchController,
     required this.onSearchChanged,
     required this.onStudentSelected,
     required this.onAddToPlan,
     required this.onOpenScan,
     required this.onOpenFilter,
-    this.onFilterVisibilityChanged,
-    this.filterCompanion,
-    this.rangeConditionMatches,
+    this.onOpenCalculator,
+    this.calculator,
     this.active = true,
+    this.restrictedIds,
+    this.restrictionLabel,
+    this.onClearRestriction,
   });
 
   final List<StudentCatalogEntry> students;
@@ -977,20 +870,39 @@ class StudentSectionLayout extends StatefulWidget {
   final Map<String, dynamic>? selectedValues;
   final Map<String, Map<String, dynamic>> studentValuesById;
   final Set<String> plannedIds;
+
+  /// 선택 학생의 활성 계획 인연 목표(FD-049). 없으면 null. 보일지는 게이지가 정한다(FD-050).
+  final int? selectedBondTarget;
+
+  /// 필터 상태(FE3-c). 페이지가 소유하고 필터 모달에 주입한다(FD-104). 없으면 레이아웃이 자기 것을 만든다.
+  final StudentFilterController? filterController;
+
+  /// S4 결과 수 줄의 "전체" 수(검색 전 catalog 크기). 없으면 [students] 수.
+  final int? totalStudentCount;
+
+  /// S4 최근 본 학생(가장 최근이 앞, 최대 6명, FD-061).
+  final List<StudentCatalogEntry> recentStudents;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onStudentSelected;
   final VoidCallback? onAddToPlan;
   final VoidCallback? onOpenScan;
+  /// 필터 모달을 연 뒤 알린다(S1 필터 버튼 · S4 "+n" 칩).
   final VoidCallback? onOpenFilter;
-  final ValueChanged<bool>? onFilterVisibilityChanged;
-  final Widget? filterCompanion;
-  final bool Function(
-    StudentCatalogEntry student,
-    Map<String, dynamic>? currentValues,
-  )?
-  rangeConditionMatches;
+
+  /// S1 "성장 계산기 열기"(FD-160 (a), 예전 "포커스 학생으로 계획 열기" 자리).
+  final VoidCallback? onOpenCalculator;
+
+  /// 성장 계산기 모드(FE3-f2a). 있으면 S1 버튼 세트와 S2 본문을 계산기로 바꾼다. S3·S4는 f2b에서 바꾼다.
+  final GrowthCalculatorModeData? calculator;
   final bool active;
+
+  /// 통계 근거에서 넘긴 이동용 임시 학생 목록(FE7-d). 있으면 그리드 · 목록에 이 학생만 보인다(필터와 함께 건다). 필터
+  /// 상태에는 넣지 않는다(FD-104). S4 적용 필터 줄 맨 앞에 [restrictionLabel] 제거형 칩이 있고, × · "모두 지우기"가
+  /// [onClearRestriction]을 부른다.
+  final Set<String>? restrictedIds;
+  final String? restrictionLabel;
+  final VoidCallback? onClearRestriction;
 
   @override
   State<StudentSectionLayout> createState() => _StudentSectionLayoutState();
@@ -998,27 +910,88 @@ class StudentSectionLayout extends StatefulWidget {
 
 class _StudentSectionLayoutState extends State<StudentSectionLayout>
     with TickerProviderStateMixin {
-  static const _motionDuration = Duration(milliseconds: 360);
+  static const _motionDuration = AppMotion.section;
   late final AnimationController _section1Controller;
   late final AnimationController _listController;
   late final AnimationController _section3Controller;
   late final AnimationController _section4Controller;
-  bool _showFilters = false;
+  final _filterModal = BaModalController();
   bool _switchingListSection = false;
   bool _showStudentAttributes = true;
   bool _showStudentNames = true;
-  bool _hideUnownedStudents = false;
-  bool _hideJpOnlyStudents = false;
   StudentSection2View _section2View = StudentSection2View.grid;
   StudentGridSort _gridSort = StudentGridSort.nameAscending;
-  final Map<String, Set<String>> _selectedCatalogFilters = {
-    for (final definition in studentFilterDefinitions)
-      definition.key: <String>{},
-  };
+  StudentFilterController? _ownFilter;
+  String? _revealStudentId;
+  int _revealRequest = 0;
+  List<StudentFilterCandidate>? _candidates;
+
+  StudentFilterController get _filter =>
+      widget.filterController ?? (_ownFilter ??= StudentFilterController());
+
+  void _filterChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// 필터를 거는 학생들(속성 + 보유 + 현재 성장 값). 학생·보유·현재 값이 바뀔 때만 다시 만든다.
+  List<StudentFilterCandidate> get _filterCandidates =>
+      _candidates ??= [
+        for (final student in widget.students)
+          StudentFilterCandidate.fromValues(
+            student: student,
+            owned: widget.ownedIds.contains(student.studentId),
+            currentValues:
+                widget.studentValuesById[student.studentId] ?? const {},
+          ),
+      ];
+
+  /// 페이지는 빌드마다 새 목록을 넘기므로 내용으로 비교한다(학생 값 맵은 같은 객체인지만 본다).
+  static bool _sameFilterInputs(StudentSectionLayout a, StudentSectionLayout b) {
+    if (!listEquals(a.students, b.students) ||
+        !setEquals(a.ownedIds, b.ownedIds) ||
+        a.studentValuesById.length != b.studentValuesById.length) {
+      return false;
+    }
+    for (final entry in a.studentValuesById.entries) {
+      if (!identical(b.studentValuesById[entry.key], entry.value)) return false;
+    }
+    return true;
+  }
+
+  /// 필터 모달을 연다(S1 필터 버튼 · S4 "+n" 칩). 적용 값을 초안으로 복사한다.
+  void _openFilterModal() {
+    if (_filterModal.isOpen) return;
+    _filter.beginEdit();
+    _filterModal.open();
+    widget.onOpenFilter?.call();
+  }
+
+  /// "적용": 초안을 그리드에 걸고 닫는다.
+  void _applyFilterModal() {
+    _filter.applyDraft();
+    _filterModal.close();
+  }
+
+  /// 모달이 닫히면(닫기 · Esc · 스크림) 적용하지 않은 초안을 버린다.
+  void _filterModalChanged() {
+    if (!_filterModal.isOpen) _filter.discardDraft();
+    if (mounted) setState(() {});
+  }
+
+  /// 최근 본 학생 썸네일: 그 학생을 고르고 그리드 · 목록 보기를 그 학생까지 스크롤한다(FD-061, 목록은 tidy1).
+  void _openRecentStudent(String studentId) {
+    setState(() {
+      _revealStudentId = studentId;
+      _revealRequest += 1;
+    });
+    widget.onStudentSelected(studentId);
+  }
 
   @override
   void initState() {
     super.initState();
+    _filter.addListener(_filterChanged);
+    _filterModal.addListener(_filterModalChanged);
     _section1Controller = _controller();
     _listController = _controller();
     _section3Controller = _controller();
@@ -1035,8 +1008,36 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
   @override
   void didUpdateWidget(StudentSectionLayout oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.filterController != widget.filterController) {
+      (oldWidget.filterController ?? _ownFilter)?.removeListener(
+        _filterChanged,
+      );
+      _filter.addListener(_filterChanged);
+    }
+    if (!_sameFilterInputs(oldWidget, widget)) _candidates = null;
+    // 이동용 임시 목록이 새로 오면(FE7-d) 고른 학생이 보이게 그리드 · 목록 보기를 스크롤한다(최근 본 학생과 같은 길).
+    final restrictedIds = widget.restrictedIds;
+    if (restrictedIds != null &&
+        !identical(restrictedIds, oldWidget.restrictedIds) &&
+        restrictedIds.contains(widget.selectedId)) {
+      _revealStudentId = widget.selectedId;
+      _revealRequest += 1;
+    }
+    // 계산기 모드를 열고 닫을 때 S1·S2 내용이 바뀌므로 그 두 섹션만 다시 들어온다.
+    if (widget.active &&
+        (oldWidget.calculator == null) != (widget.calculator == null)) {
+      _section1Controller.forward(from: 0);
+      _listController.forward(from: 0);
+      _section4Controller.forward(from: 0);
+    }
     if (oldWidget.active != widget.active) {
       _setTabSectionsActive(widget.active);
+      // 탭을 떠나면 열린 필터 모달을 닫는다(초안은 버린다). 숨은 탭이 모달 자리를 의미 구조에서 빼기 전에.
+      if (!widget.active && _filterModal.isOpen) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _filterModal.close();
+        });
+      }
     }
   }
 
@@ -1057,6 +1058,10 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
 
   @override
   void dispose() {
+    _filter.removeListener(_filterChanged);
+    _filterModal.removeListener(_filterModalChanged);
+    _filterModal.dispose();
+    _ownFilter?.dispose();
     _section1Controller.dispose();
     _listController.dispose();
     _section3Controller.dispose();
@@ -1064,32 +1069,16 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     super.dispose();
   }
 
-  Future<void> _toggleFilterSection() async {
-    if (_switchingListSection) return;
-    setState(() => _switchingListSection = true);
-    try {
-      await _listController.reverse();
-      if (!mounted) return;
-      final nextVisibility = !_showFilters;
-      setState(() => _showFilters = nextVisibility);
-      widget.onFilterVisibilityChanged?.call(nextVisibility);
-      await _listController.forward();
-      widget.onOpenFilter?.call();
-    } on TickerCanceled {
-      return;
-    } finally {
-      if (mounted) setState(() => _switchingListSection = false);
-    }
-  }
-
   Future<void> _switchSection2View(StudentSection2View nextView) async {
     if (_switchingListSection || nextView == _section2View) return;
     setState(() => _switchingListSection = true);
     try {
-      await _listController.reverse();
+      // 계산기 모드를 열고 닫을 때 S2를 다시 들이면(forward(from: 0)) 이 애니메이션이 끊긴다. orCancel로
+      // 끊김을 받아야 아래 finally가 전환 표시를 푼다.
+      await _listController.reverse().orCancel;
       if (!mounted) return;
       setState(() => _section2View = nextView);
-      await _listController.forward();
+      await _listController.forward().orCancel;
     } on TickerCanceled {
       return;
     } finally {
@@ -1097,23 +1086,274 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
     }
   }
 
-  void _toggleCatalogFilter(String key, String value) {
-    setState(() {
-      final values = _selectedCatalogFilters[key]!;
-      values.contains(value) ? values.remove(value) : values.add(value);
-    });
+  /// S4 아래쪽 확장(FE3-c, W-Student-Search): 구분선, 결과 수, 적용 필터 칩, 최근 본 학생.
+  /// 각 줄 왼쪽은 S4 왼쪽 80° 변을 따라 줄 밑변 높이에서 22px 안쪽, 오른쪽은 검색 상자 오른쪽이다.
+  /// S4 높이를 넘는 줄은 그리지 않는다(작은 창에서 축소하지 않는다).
+  List<Widget> _section4Extension({
+    required Size size,
+    required Rect searchBounds,
+    required int shownCount,
+  }) {
+    final section = studentSectionRect(size, 'element-4');
+    final right = searchBounds.right;
+    double leftAt(double bottom) =>
+        section.left +
+        (section.bottom - bottom) / diagonalTan80 +
+        studentSearchRowRailInset;
+    final limit = section.bottom - studentSearchRowBottomMargin;
+    final rows = <Widget>[];
+    var top =
+        searchBounds.bottom +
+        studentSearchToggleTopGap +
+        studentSearchToggleRowHeight * 4 +
+        studentSearchDividerGap;
+
+    void add(double height, double gapAfter, Widget Function(Rect) builder) {
+      final rect = Rect.fromLTRB(
+        leftAt(top + height),
+        top,
+        right,
+        top + height,
+      );
+      top = rect.bottom + gapAfter;
+      if (rect.bottom > limit || rect.width <= 0) return;
+      rows.add(Positioned.fromRect(rect: rect, child: builder(rect)));
+    }
+
+    final filter = _filter;
+    final restrictionLabel = widget.restrictedIds == null
+        ? null
+        : widget.restrictionLabel;
+    add(
+      studentSearchDividerHeight,
+      studentSearchDividerGap - studentSearchDividerHeight,
+      (_) => const ColoredBox(
+        key: ValueKey('student-search-divider'),
+        color: studentSearchDividerColor,
+      ),
+    );
+    add(
+      studentSearchCountRowHeight,
+      studentSearchCountRowGap,
+      (_) => StudentResultCountRow(
+        key: const ValueKey('student-result-count'),
+        shown: shownCount,
+        total: widget.totalStudentCount ?? widget.students.length,
+        owned: widget.ownedIds.length,
+        planned: widget.plannedIds.length,
+      ),
+    );
+    add(
+      studentSearchChipRowHeight,
+      studentSearchChipRowGap,
+      (_) => StudentAppliedFilterRow(
+        key: const ValueKey('student-applied-filters'),
+        filters: [
+          if (restrictionLabel != null)
+            StudentFilterChipItem(
+              groupKey: studentNavigationChipGroupKey,
+              value: 'statistics',
+              label: restrictionLabel,
+            ),
+          ...filter.searchRowChips,
+        ],
+        onRemove: (item) => item.groupKey == studentNavigationChipGroupKey
+            ? widget.onClearRestriction?.call()
+            : filter.removeApplied(item),
+        onClearAll: () {
+          filter.clearApplied();
+          if (restrictionLabel != null) widget.onClearRestriction?.call();
+        },
+        onShowMore: _openFilterModal,
+      ),
+    );
+    add(
+      studentSearchRecentLabelHeight,
+      studentSearchRecentLabelGap,
+      (_) => const Align(
+        key: ValueKey('student-recent-label'),
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '최근 본 학생',
+          maxLines: 1,
+          style: studentSearchLabelStyle,
+        ),
+      ),
+    );
+    add(
+      studentRecentThumbSize.height,
+      0,
+      (_) => StudentRecentStrip(
+        key: const ValueKey('student-recent-strip'),
+        students: widget.recentStudents,
+        selectedId: widget.selectedId,
+        onSelected: _openRecentStudent,
+      ),
+    );
+    return rows;
   }
 
-  void _resetCatalogFilters() {
-    setState(() {
-      for (final values in _selectedCatalogFilters.values) {
-        values.clear();
-      }
-    });
+  /// 계산기 S4(Calc-Student): 검색창 아래 선택 학생 요약("기준: …" 칩) → 구분선 → "최근 계산" 줄
+  /// (FD-170). 학생 S4의 토글 4개·결과 수·적용 필터·최근 본 학생 자리를 대신한다. 행은 학생 S4와 같은
+  /// 80° 레일을 따른다.
+  List<Widget> _calculatorSection4({
+    required Size size,
+    required Rect searchBounds,
+    required GrowthCalculatorModeData calculator,
+    required StudentCatalogEntry? selectedStudent,
+  }) {
+    final section = studentSectionRect(size, 'element-4');
+    final right = searchBounds.right;
+    double leftAt(double bottom) =>
+        section.left +
+        (section.bottom - bottom) / diagonalTan80 +
+        studentSearchRowRailInset;
+    final limit = section.bottom - studentSearchRowBottomMargin;
+    final rows = <Widget>[];
+    var top = searchBounds.bottom + studentSearchToggleTopGap + 4;
+
+    void add(double height, double gapAfter, Widget child) {
+      final rect = Rect.fromLTRB(leftAt(top + height), top, right, top + height);
+      top = rect.bottom + gapAfter;
+      if (rect.bottom > limit || rect.width <= 0) return;
+      rows.add(Positioned.fromRect(rect: rect, child: child));
+    }
+
+    final state = calculator.state;
+    add(
+      calculatorSearchSummaryHeight,
+      studentSearchDividerGap,
+      GrowthCalculatorStudentSummary(
+        key: const ValueKey('calculator-s4-summary'),
+        student: calculator.student ?? selectedStudent,
+        basis: state.basis,
+        planMembership: calculator.planMembership,
+      ),
+    );
+    add(
+      studentSearchDividerHeight,
+      studentSearchDividerGap,
+      const ColoredBox(
+        key: ValueKey('calculator-s4-divider'),
+        color: studentSearchDividerColor,
+      ),
+    );
+    add(
+      studentSearchRecentLabelHeight,
+      studentSearchRecentLabelGap + 2,
+      const Row(
+        key: ValueKey('calculator-recent-label'),
+        children: [
+          Text('최근 계산', maxLines: 1, style: studentSearchLabelStyle),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '누르면 그때 목표로 다시 엽니다',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppFonts.body,
+                fontFamilyFallback: AppFonts.fallback,
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    add(
+      studentRecentThumbSize.height,
+      0,
+      GrowthCalculatorRecentStrip(
+        key: const ValueKey('calculator-recent-strip'),
+        entries: calculator.recent,
+        selectedId: state.studentId,
+        onSelected: calculator.onOpenRecent,
+      ),
+    );
+    return rows;
+  }
+
+  /// 계산기 S1 버튼 세트(Calc-Student, 학생 S1과 같은 자리):
+  /// 보기 토글 → 확정값 기준/직접 입력(FD-168), 정렬 → 빠른 목표(FD-169), 계획 열기 → 이 목표로 계획에 추가
+  /// (FE4-g, FD-171 (a)), 학생 스캔 → 학생 스캔으로 현재값 갱신, 필터 → 현재값으로 되돌리기.
+  List<Widget> _calculatorRail(Size size, GrowthCalculatorModeData calculator) {
+    final state = calculator.state;
+    final paths = studentViewTogglePaths(size);
+    return [
+      _StudentViewModeButton(
+        path: paths[0],
+        buttonKey: const ValueKey('calculator-basis-confirmed'),
+        tooltip: '확정값 기준',
+        icon: Icons.fact_check_outlined,
+        selected: state.basis == GrowthCalculatorBasis.confirmed,
+        onTap: () => state.setBasis(GrowthCalculatorBasis.confirmed),
+      ),
+      _StudentViewModeButton(
+        path: paths[1],
+        buttonKey: const ValueKey('calculator-basis-direct'),
+        tooltip: '직접 입력',
+        icon: Icons.edit_note_rounded,
+        selected: state.basis == GrowthCalculatorBasis.direct,
+        onTap: () => state.setBasis(GrowthCalculatorBasis.direct),
+      ),
+      _CalculatorQuickTargetDropdown(
+        canvasSize: size,
+        onSelected: state.applyQuickTarget,
+        presets: calculator.presetTargets,
+        onPresetSelected: state.applyPresetTarget,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-16',
+        key: const ValueKey('calculator-add-to-plan'),
+        tooltip: '이 목표로 계획에 추가',
+        icon: Icons.playlist_add_rounded,
+        onPressed: calculator.onAddToPlan,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-13',
+        key: const ValueKey('calculator-open-scan'),
+        tooltip: '학생 스캔으로 현재값 갱신',
+        icon: Icons.document_scanner_outlined,
+        onPressed: calculator.onOpenScan,
+      ),
+      _StudentActionButton(
+        canvasSize: size,
+        containerId: 'container-11',
+        key: const ValueKey('calculator-revert-all'),
+        tooltip: '현재값으로 되돌리기',
+        icon: Icons.restart_alt_rounded,
+        onPressed: state.cellCounts.changing == 0 ? null : state.resetToCurrent,
+      ),
+    ];
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context) => BaModal(
+    controller: _filterModal,
+    scrim: BaScrim.filter,
+    label: '필터',
+    builder: (context) {
+      final filter = _filter;
+      return StudentFilterModal(
+        key: const ValueKey('student-filter-modal'),
+        selection: filter.draft ?? filter.applied,
+        onChanged: filter.updateDraft,
+        candidates: _filterCandidates,
+        groups: filter.groups,
+        totalCount: widget.totalStudentCount ?? widget.students.length,
+        onApply: _applyFilterModal,
+        onReset: filter.resetDraft,
+        onClose: _filterModal.close,
+      );
+    },
+    child: _buildLayout(),
+  );
+
+  Widget _buildLayout() => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(
         constraints.maxWidth,
@@ -1124,9 +1364,6 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
       }
 
       final listBounds = containerBounds('container-12');
-      final filterBounds = studentFilterContainerPath(size).getBounds();
-      final resetPath = studentFilterResetPath(size);
-      final resetBounds = resetPath.getBounds();
       final portraitBounds = containerBounds('container-1');
       final searchBounds = containerBounds('container-14');
       final selectedStudent =
@@ -1135,44 +1372,39 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
             (student) => student?.studentId == widget.selectedId,
             orElse: () => null,
           );
-      final filteredGridStudents = widget.students
-          .where(
-            (student) =>
-                (!_hideUnownedStudents ||
-                    widget.ownedIds.contains(student.studentId)) &&
-                (!_hideJpOnlyStudents || !student.jpOnly),
-          )
-          .where(
-            (student) =>
-                studentMatchesCatalogFilters(student, _selectedCatalogFilters),
-          )
-          .where(
-            (student) =>
-                widget.rangeConditionMatches?.call(
-                  student,
-                  widget.studentValuesById[student.studentId],
-                ) ??
-                true,
-          )
-          .toList(growable: false);
+      final filter = _filter;
+      final calculator = widget.calculator;
+      final restrictedIds = widget.restrictedIds;
+      final filteredGridStudents = [
+        for (final candidate in _filterCandidates)
+          if ((restrictedIds == null ||
+                  restrictedIds.contains(candidate.student.studentId)) &&
+              filter.matches(candidate))
+            candidate.student,
+      ];
       final gridStudents = sortStudentGridEntries(
         filteredGridStudents,
         _gridSort,
         widget.studentValuesById,
       );
 
-      return SizedBox.fromSize(
+      // 계산기 모드(FE3-f2b): S3는 목표값으로 그리고(현재값은 태그), S4는 선택 학생 요약·최근 계산이다.
+      Widget content() {
+        final calcState = calculator?.state;
+        int? starTarget(String key) {
+          if (calcState == null) return null;
+          final target = calcState.targets[key]!;
+          return target > calcState.current[key]! ? target : null;
+        }
+
+        return SizedBox.fromSize(
         size: size,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned.fill(
               child: StudentSectionMotion(
-                key: ValueKey(
-                  _showFilters
-                      ? 'student-section-5-motion'
-                      : 'student-section-2-motion',
-                ),
+                key: const ValueKey('student-section-2-motion'),
                 animation: _listController,
                 introDegrees: 80,
                 outroDegrees: 260,
@@ -1181,108 +1413,69 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                   children: [
                     IgnorePointer(
                       child: CustomPaint(
-                        key: ValueKey(
-                          _showFilters
-                              ? 'student-section-5-foundation'
-                              : 'student-section-2-foundation',
-                        ),
-                        painter: _StudentSectionFoundationPainter(
+                        key: const ValueKey('student-section-2-foundation'),
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: widget.selectedValues,
                           sectionIds: const {'element-2'},
-                          filterSection: _showFilters,
+                          bare: calculator != null,
                         ),
                       ),
                     ),
-                    if (_showFilters) ...[
-                      Positioned.fromRect(
-                        rect: filterBounds,
-                        child: ClipPath(
-                          clipper: _LocalPathClipper(
-                            studentFilterContainerPath(
-                              size,
-                            ).shift(-filterBounds.topLeft),
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              StudentDiagonalFilterList(
-                                key: const ValueKey('student-filter-section-5'),
-                                students: widget.students,
-                                selected: _selectedCatalogFilters,
-                                onToggle: _toggleCatalogFilter,
-                              ),
-                            ],
-                          ),
+                    if (calculator != null)
+                      Positioned.fill(
+                        child: GrowthCalculatorSection(
+                          key: const ValueKey('growth-calculator-section'),
+                          canvasSize: size,
+                          state: calculator.state,
+                          engine: calculator.engine,
+                          student: calculator.student,
+                          onAddToPlan: calculator.onAddToPlan,
                         ),
-                      ),
-                      Positioned.fromRect(
-                        rect: resetBounds,
-                        child: Tooltip(
-                          message: '필터 초기화',
-                          child: ClipPath(
-                            clipper: _LocalPathClipper(
-                              resetPath.shift(-resetBounds.topLeft),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                key: const ValueKey('student-filter-reset'),
-                                onTap: _resetCatalogFilters,
-                                child: const Icon(
-                                  Icons.restart_alt_rounded,
-                                  size: 23,
-                                  color: AppColors.text,
+                      )
+                    else
+                    Positioned.fromRect(
+                      rect: listBounds,
+                      child: ClipPath(
+                        clipper: _ContainerBoundsClipper(
+                          'container-12',
+                          size,
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (_section2View == StudentSection2View.grid)
+                              StudentDiagonalGrid(
+                                key: const ValueKey(
+                                  'student-section-2-grid-view',
                                 ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.filterCompanion != null)
-                        Positioned.fromRect(
-                          rect: studentFilterCompanionSectionRect(size),
-                          child: widget.filterCompanion!,
-                        ),
-                    ] else
-                      Positioned.fromRect(
-                        rect: listBounds,
-                        child: ClipPath(
-                          clipper: _ContainerBoundsClipper(
-                            'container-12',
-                            size,
-                          ),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              if (_section2View == StudentSection2View.grid)
-                                StudentDiagonalGrid(
-                                  key: const ValueKey(
-                                    'student-section-2-grid-view',
-                                  ),
-                                  students: gridStudents,
-                                  ownedIds: widget.ownedIds,
-                                  studentValuesById: widget.studentValuesById,
-                                  plannedIds: widget.plannedIds,
-                                  selectedId: widget.selectedId,
-                                  showAttributes: _showStudentAttributes,
-                                  showNames: _showStudentNames,
-                                  onSelected: widget.onStudentSelected,
-                                )
-                              else
-                                StudentDiagonalList(
-                                  key: const ValueKey(
-                                    'student-section-2-list-view',
-                                  ),
-                                  students: gridStudents,
-                                  ownedIds: widget.ownedIds,
-                                  studentValuesById: widget.studentValuesById,
-                                  selectedId: widget.selectedId,
-                                  onSelected: widget.onStudentSelected,
+                                students: gridStudents,
+                                ownedIds: widget.ownedIds,
+                                studentValuesById: widget.studentValuesById,
+                                plannedIds: widget.plannedIds,
+                                selectedId: widget.selectedId,
+                                showAttributes: _showStudentAttributes,
+                                showNames: _showStudentNames,
+                                onSelected: widget.onStudentSelected,
+                                revealStudentId: _revealStudentId,
+                                revealRequest: _revealRequest,
+                              )
+                            else
+                              StudentDiagonalList(
+                                key: const ValueKey(
+                                  'student-section-2-list-view',
                                 ),
-                            ],
-                          ),
+                                students: gridStudents,
+                                ownedIds: widget.ownedIds,
+                                studentValuesById: widget.studentValuesById,
+                                selectedId: widget.selectedId,
+                                onSelected: widget.onStudentSelected,
+                                revealStudentId: _revealStudentId,
+                                revealRequest: _revealRequest,
+                              ),
+                          ],
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -1299,7 +1492,7 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-4-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: null,
                           sectionIds: {'element-4'},
                         ),
@@ -1332,9 +1525,36 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                             ),
                           ),
                           onChanged: widget.onSearchChanged,
+                          // 계산기 모드에서는 검색 결과 목록이 없다. Enter로 첫 결과 학생을 계산기로 연다
+                          // (여러 줄 입력칸이라 Enter가 줄바꿈이 되지 않게 입력 동작을 "검색"으로 둔다).
+                          textInputAction: calculator == null
+                              ? null
+                              : TextInputAction.search,
+                          onSubmitted: calculator == null
+                              ? null
+                              : (text) {
+                                  // 빈 검색이거나 첫 결과가 지금 학생이면 바꾼 목표를 지우지 않도록 그대로 둔다.
+                                  if (text.trim().isEmpty ||
+                                      widget.students.isEmpty) {
+                                    return;
+                                  }
+                                  final first = widget.students.first.studentId;
+                                  if (first == calculator.state.studentId) {
+                                    return;
+                                  }
+                                  widget.onStudentSelected(first);
+                                },
                         ),
                       ),
                     ),
+                    if (calculator != null)
+                      ..._calculatorSection4(
+                        size: size,
+                        searchBounds: searchBounds,
+                        calculator: calculator,
+                        selectedStudent: selectedStudent,
+                      )
+                    else ...[
                     Positioned(
                       left: searchBounds.left,
                       top: searchBounds.bottom + 6,
@@ -1361,20 +1581,24 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                           _StudentGridDisplayToggle(
                             key: const ValueKey('student-toggle-hide-unowned'),
                             label: '미보유 학생 숨김',
-                            value: _hideUnownedStudents,
-                            onChanged: (value) =>
-                                setState(() => _hideUnownedStudents = value),
+                            value: filter.hideUnowned,
+                            onChanged: (value) => filter.hideUnowned = value,
                           ),
                           _StudentGridDisplayToggle(
                             key: const ValueKey('student-toggle-hide-jp-only'),
                             label: '일본 서버 전용 숨김',
-                            value: _hideJpOnlyStudents,
-                            onChanged: (value) =>
-                                setState(() => _hideJpOnlyStudents = value),
+                            value: filter.hideJpOnly,
+                            onChanged: (value) => filter.hideJpOnly = value,
                           ),
                         ],
                       ),
                     ),
+                    ..._section4Extension(
+                      size: size,
+                      searchBounds: searchBounds,
+                      shownCount: gridStudents.length,
+                    ),
+                    ],
                   ],
                 ),
               ),
@@ -1391,9 +1615,18 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-3-foundation'),
-                        painter: _StudentSectionFoundationPainter(
-                          selectedValues: widget.selectedValues,
+                        painter: StudentSectionFoundationPainter(
+                          selectedValues: calcState == null
+                              ? widget.selectedValues
+                              : {
+                                  'student_star':
+                                      calcState.current['student_star'],
+                                  'weapon_star':
+                                      calcState.current['weapon_star'],
+                                },
                           sectionIds: {'element-3'},
+                          targetStudentStars: starTarget('student_star'),
+                          targetWeaponStars: starTarget('weapon_star'),
                         ),
                       ),
                     ),
@@ -1403,29 +1636,37 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         fit: StackFit.expand,
                         clipBehavior: Clip.none,
                         children: [
-                          AssetImageGrid(
-                            key: const ValueKey('student-focused-portrait'),
-                            items: [
-                              AssetImageGridItem(
-                                asset: bondRankPortraitBackgroundAsset(
-                                  widget.selectedValues?['bond_rank'] as int?,
-                                ),
-                                column: 0,
-                                row: 0,
-                                edgeCropFraction: 0.11,
-                                clipPathBuilder: studentGridCardPath,
-                              ),
-                              if (widget.selectedId != null)
+                          // 선택 카드도 다중 폼이면 공용 시계로 교대한다(FD-064).
+                          StudentFormCycleBuilder(
+                            active: selectedStudent?.isMultiForm ?? false,
+                            builder: (context, formStep) => AssetImageGrid(
+                              key: const ValueKey('student-focused-portrait'),
+                              items: [
                                 AssetImageGridItem(
-                                  asset:
-                                      'assets/student_portraits/${widget.selectedId}.png',
+                                  asset: bondRankPortraitBackgroundAsset(
+                                    widget.selectedValues?['bond_rank'] as int?,
+                                  ),
                                   column: 0,
                                   row: 0,
-                                  scale: 0.98,
-                                  clipRadiusFraction: 0.12,
-                                  alphaThreshold: 0.04,
+                                  edgeCropFraction: 0.11,
+                                  clipPathBuilder: studentGridCardPath,
                                 ),
-                            ],
+                                if (widget.selectedId != null)
+                                  AssetImageGridItem(
+                                    asset: selectedStudent == null
+                                        ? 'assets/student_portraits/${widget.selectedId}.png'
+                                        : studentPortraitAssetAt(
+                                            selectedStudent,
+                                            formStep,
+                                          ),
+                                    column: 0,
+                                    row: 0,
+                                    scale: 0.98,
+                                    clipRadiusFraction: 0.12,
+                                    alphaThreshold: 0.04,
+                                  ),
+                              ],
+                            ),
                           ),
                           Positioned.fill(
                             child: IgnorePointer(
@@ -1453,11 +1694,39 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         ],
                       ),
                     ),
-                    _StudentStatusIndicators(
-                      canvasSize: size,
-                      student: selectedStudent,
-                      values: widget.selectedValues,
-                    ),
+                    if (calcState == null)
+                      StudentStatusIndicators(
+                        canvasSize: size,
+                        student: selectedStudent,
+                        values: widget.selectedValues,
+                        bondTarget: widget.selectedBondTarget,
+                      )
+                    else ...[
+                      StudentStatusIndicators(
+                        key: const ValueKey('calculator-s3-indicators'),
+                        canvasSize: size,
+                        student: selectedStudent,
+                        values: growthCalculatorIndicatorValues(
+                          calcState,
+                          base: widget.selectedValues,
+                        ),
+                        bondTarget: growthCalculatorIndicatorBondTarget(
+                          calcState,
+                        ),
+                        changedRows: {
+                          for (final row in calcState.rows)
+                            if (calcState.isRowChanged(row)) row,
+                        },
+                      ),
+                      Positioned.fill(
+                        child: GrowthCalculatorIndicatorOverlay(
+                          key: const ValueKey('calculator-s3-overlay'),
+                          canvasSize: size,
+                          state: calcState,
+                          student: calculator!.student ?? selectedStudent,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1474,21 +1743,30 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                     IgnorePointer(
                       child: CustomPaint(
                         key: const ValueKey('student-section-1-foundation'),
-                        painter: _StudentSectionFoundationPainter(
+                        painter: StudentSectionFoundationPainter(
                           selectedValues: null,
                           sectionIds: {'element-1'},
                         ),
                       ),
                     ),
+                    if (calculator != null)
+                      ListenableBuilder(
+                        listenable: calculator.state,
+                        builder: (context, _) => Stack(
+                          fit: StackFit.expand,
+                          children: _calculatorRail(size, calculator),
+                        ),
+                      )
+                    else ...[
                     _StudentActionButton(
                       canvasSize: size,
                       containerId: 'container-16',
-                      key: const ValueKey('student-add-to-plan'),
-                      tooltip: '포커스 학생으로 계획 열기',
-                      icon: Icons.playlist_add_rounded,
+                      key: const ValueKey('student-open-calculator'),
+                      tooltip: '성장 계산기 열기',
+                      icon: Icons.calculate_outlined,
                       onPressed: widget.selectedId == null
                           ? null
-                          : widget.onAddToPlan,
+                          : widget.onOpenCalculator,
                     ),
                     _StudentActionButton(
                       canvasSize: size,
@@ -1502,13 +1780,14 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       canvasSize: size,
                       containerId: 'container-11',
                       key: const ValueKey('student-open-filter'),
-                      tooltip: _showFilters ? '학생 목록 열기' : '필터 열기',
-                      icon: _showFilters
-                          ? Icons.groups_2_outlined
-                          : Icons.tune_rounded,
-                      onPressed: _switchingListSection
+                      tooltip: '필터 열기',
+                      icon: Icons.tune_rounded,
+                      // "필터 · n" 배지(FD-058): 모달이 닫혀 있고 조건이 걸려 있을 때. 열려 있으면 모달이 시안
+                      // 위치에 같은 배지를 그린다.
+                      badgeCount: _filterModal.isOpen || filter.activeCount == 0
                           ? null
-                          : _toggleFilterSection,
+                          : filter.activeCount,
+                      onPressed: _openFilterModal,
                     ),
                     _StudentSortDropdown(
                       canvasSize: size,
@@ -1520,12 +1799,21 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                       value: _section2View,
                       onChanged: _switchSection2View,
                     ),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
         ),
+      );
+      }
+
+      // 계산기 모드에서는 목표가 바뀔 때마다 S3·S4도 다시 그린다. 학생 모드와 계산기 모드의 뿌리 위젯을
+      // 같게 두어 모드를 바꿔도 네 섹션의 상태(검색창 포커스·초상 등)가 다시 만들어지지 않게 한다.
+      return ListenableBuilder(
+        listenable: Listenable.merge([?calculator?.state]),
+        builder: (context, _) => content(),
       );
     },
   );
@@ -1580,6 +1868,381 @@ class _StudentGridDisplayToggle extends StatelessWidget {
   );
 }
 
+// --- S4 확장(FE3-c, W-Student-Search) ------------------------------------------
+// 시안 값(기준 viewport): 토글 4줄(27) 아래 6 → 구분선 1(#71c7f4@.28, 구분선 위끝에서 6) → 결과 수 줄 24 → 8 →
+// 적용 필터 줄 26 → 10 → "최근 본 학생" 20 → 2 → 썸네일 50×40.5(간격 5). 줄 왼쪽은 S4 왼쪽 80° 변에서
+// 줄 밑변 높이 기준 22px 안쪽, 오른쪽 끝은 검색 상자 오른쪽.
+
+/// S4 적용 필터 줄의 이동용 임시 목록 칩(FE7-d) 그룹 키. 필터 상태의 그룹 키와 겹치지 않는다.
+const studentNavigationChipGroupKey = 'navigation';
+
+const studentSearchToggleTopGap = 6.0;
+const studentSearchToggleRowHeight = 27.0;
+const studentSearchDividerGap = 6.0;
+const studentSearchDividerHeight = 1.0;
+const studentSearchCountRowHeight = 24.0;
+const studentSearchCountRowGap = 8.0;
+const studentSearchChipRowHeight = 26.0;
+const studentSearchChipRowGap = 10.0;
+const studentSearchRecentLabelHeight = 20.0;
+const studentSearchRecentLabelGap = 2.0;
+const studentSearchRowRailInset = 22.0;
+const studentSearchRowBottomMargin = 4.0;
+const studentSearchDividerColor = Color.fromRGBO(113, 199, 244, 0.28);
+const studentRecentThumbSize = Size(50, 40.5);
+
+/// 계산기 S4 선택 학생 요약 줄 높이(이름 + 학교 · 클래스 · 계획 포함).
+const calculatorSearchSummaryHeight = 40.0;
+const studentRecentThumbGap = 5.0;
+const studentSearchLabelStyle = TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: AppColors.textMuted,
+  fontSize: AppType.bodySmallSize,
+  height: 1.2,
+);
+
+/// 적용 필터 칩 색(시안 `rgba(233,176,238,.12)` 바탕 + `#e9b0ee` 글자).
+const studentAppliedFilterTone = AppTone(
+  base: studentSortAccentColor,
+  backgroundAlpha: 0.12,
+  foreground: studentSortAccentColor,
+);
+
+/// 결과 수 줄: "표시 48 / 전체 170 · 보유 128 · 계획 중 8".
+class StudentResultCountRow extends StatelessWidget {
+  const StudentResultCountRow({
+    super.key,
+    required this.shown,
+    required this.total,
+    required this.owned,
+    required this.planned,
+  });
+
+  final int shown;
+  final int total;
+  final int owned;
+  final int planned;
+
+  static String detail({
+    required int total,
+    required int owned,
+    required int planned,
+  }) => '/ 전체 $total · 보유 $owned · 계획 중 $planned';
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Text(
+        '표시',
+        style: studentSearchLabelStyle.copyWith(fontSize: AppType.bodySize),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        '$shown',
+        key: const ValueKey('student-result-count-shown'),
+        style: const TextStyle(
+          fontFamily: AppFonts.display,
+          fontFamilyFallback: AppFonts.fallback,
+          color: AppColors.text,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          detail(total: total, owned: owned, planned: planned),
+          key: const ValueKey('student-result-count-detail'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: studentSearchLabelStyle.copyWith(fontSize: AppType.bodySize),
+        ),
+      ),
+    ],
+  );
+}
+
+/// 칩이 한 줄에 몇 개 들어가는지(넘치면 "+n" 칩 자리를 남긴다, FD-060).
+/// [chipWidths]는 칩 폭, [gap]은 칩 사이, [moreWidth]는 "+n" 칩 폭이다.
+int studentVisibleChipCount({
+  required List<double> chipWidths,
+  required double maxWidth,
+  required double gap,
+  required double Function(int hidden) moreWidth,
+}) {
+  var used = 0.0;
+  for (var index = 0; index < chipWidths.length; index++) {
+    final next = used + (index == 0 ? 0 : gap) + chipWidths[index];
+    final hiddenAfter = chipWidths.length - index - 1;
+    final reserve = hiddenAfter == 0 ? 0.0 : gap + moreWidth(hiddenAfter);
+    if (next + reserve > maxWidth) return index;
+    used = next;
+  }
+  return chipWidths.length;
+}
+
+/// [label] 제거형 [BaChip]의 폭(테두리 변형: 가로 여백 9 + 글자 + 5 + × 11 + 9).
+double studentRemovableChipWidth(String label, TextScaler scaler) =>
+    BaChip.widthFor(
+      label,
+      textScaler: scaler,
+      removable: true,
+      shape: BaChipShape.outlined,
+    );
+
+/// "+n"처럼 × 없는 [BaChip]의 폭.
+double studentPlainChipWidth(String label, TextScaler scaler) =>
+    BaChip.widthFor(label, textScaler: scaler, shape: BaChipShape.outlined);
+
+/// 적용 필터 줄: "적용 필터" · 칩(×) 한 줄 + "+n" · "모두 지우기"(FD-060).
+class StudentAppliedFilterRow extends StatelessWidget {
+  const StudentAppliedFilterRow({
+    super.key,
+    required this.filters,
+    required this.onRemove,
+    required this.onClearAll,
+    this.onShowMore,
+  });
+
+  final List<StudentFilterChipItem> filters;
+  final ValueChanged<StudentFilterChipItem> onRemove;
+  final VoidCallback onClearAll;
+
+  /// "+n" 칩을 누르면(필터 모달을 연다, FE3-d2).
+  final VoidCallback? onShowMore;
+
+  static const chipGap = 8.0;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const Text('적용 필터', maxLines: 1, style: studentSearchLabelStyle),
+      const SizedBox(width: 8),
+      Expanded(
+        child: filters.isEmpty
+            ? Text(
+                '없음',
+                key: const ValueKey('student-applied-filter-empty'),
+                maxLines: 1,
+                style: studentSearchLabelStyle.copyWith(
+                  color: AppColors.textDim,
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final scaler = MediaQuery.textScalerOf(context);
+                  final visible = studentVisibleChipCount(
+                    chipWidths: [
+                      for (final filter in filters)
+                        studentRemovableChipWidth(filter.label, scaler),
+                    ],
+                    maxWidth: constraints.maxWidth,
+                    gap: chipGap,
+                    moreWidth: (hidden) =>
+                        studentPlainChipWidth('+$hidden', scaler),
+                  );
+                  final hidden = filters.length - visible;
+                  return ClipRect(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Row(
+                        children: [
+                          for (var index = 0; index < visible; index++) ...[
+                            if (index > 0) const SizedBox(width: chipGap),
+                            BaChip(
+                              key: ValueKey(
+                                'student-applied-filter-${filters[index].id}',
+                              ),
+                              label: filters[index].label,
+                              tone: studentAppliedFilterTone,
+                              shape: BaChipShape.outlined,
+                              onRemove: () => onRemove(filters[index]),
+                            ),
+                          ],
+                          if (hidden > 0) ...[
+                            if (visible > 0) const SizedBox(width: chipGap),
+                            KitPressable(
+                              key: const ValueKey(
+                                'student-applied-filter-more',
+                              ),
+                              onPressed: onShowMore,
+                              semanticLabel: '적용 필터 $hidden개 더 보기',
+                              builder: (context, state) => ExcludeSemantics(
+                                child: BaChip(
+                                  label: '+$hidden',
+                                  tone: AppTones.gray,
+                                  shape: BaChipShape.outlined,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      if (filters.isNotEmpty) ...[
+        const SizedBox(width: 8),
+        TextButton(
+          key: const ValueKey('student-filter-clear-all'),
+          onPressed: onClearAll,
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            foregroundColor: AppColors.primary,
+            textStyle: const TextStyle(
+              fontFamily: AppFonts.body,
+              fontSize: AppType.bodySmallSize,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          child: const Text('모두 지우기'),
+        ),
+      ],
+    ],
+  );
+}
+
+/// 최근 본 학생 줄: 50×40.5 카드 썸네일, 간격 5, 지금 선택은 핑크 외곽선(FD-061).
+class StudentRecentStrip extends StatelessWidget {
+  const StudentRecentStrip({
+    super.key,
+    required this.students,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<StudentCatalogEntry> students;
+  final String? selectedId;
+  final ValueChanged<String> onSelected;
+
+  /// [width]에 들어가는 썸네일 수(넘치는 썸네일은 그리지 않는다).
+  static int fittingCount(double width) => math.max(
+    0,
+    ((width + studentRecentThumbGap) /
+            (studentRecentThumbSize.width + studentRecentThumbGap))
+        .floor(),
+  );
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final count = math.min(
+        students.length,
+        fittingCount(constraints.maxWidth),
+      );
+      return Row(
+        children: [
+          for (var index = 0; index < count; index++) ...[
+            if (index > 0) const SizedBox(width: studentRecentThumbGap),
+            StudentRecentThumb(
+              key: ValueKey('student-recent-${students[index].studentId}'),
+              student: students[index],
+              selected: students[index].studentId == selectedId,
+              onTap: () => onSelected(students[index].studentId),
+            ),
+          ],
+        ],
+      );
+    },
+  );
+}
+
+/// 최근 본 학생 썸네일 하나(그리드 카드와 같은 경로·배경·초상).
+class StudentRecentThumb extends StatelessWidget {
+  const StudentRecentThumb({
+    super.key,
+    required this.student,
+    required this.selected,
+    required this.onTap,
+    this.semanticPrefix = '최근 본 학생',
+  });
+
+  final StudentCatalogEntry student;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// 접근성 이름 앞말(계산기 S4는 "최근 계산").
+  final String semanticPrefix;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: '$semanticPrefix ${student.displayName}',
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox.fromSize(
+        size: studentRecentThumbSize,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            StudentFormCycleBuilder(
+              active: student.isMultiForm,
+              builder: (context, formStep) => AssetImageGrid(
+                items: [
+                  AssetImageGridItem(
+                    asset: bondRankPortraitBackgroundAsset(null),
+                    column: 0,
+                    row: 0,
+                    edgeCropFraction: 0.11,
+                    clipPathBuilder: studentGridCardPath,
+                  ),
+                  AssetImageGridItem(
+                    asset: studentPortraitAssetAt(student, formStep),
+                    column: 0,
+                    row: 0,
+                    scale: 0.98,
+                    clipRadiusFraction: 0.12,
+                    alphaThreshold: 0.04,
+                  ),
+                ],
+              ),
+            ),
+            IgnorePointer(
+              child: CustomPaint(
+                painter: _StudentRecentThumbOutlinePainter(selected: selected),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _StudentRecentThumbOutlinePainter extends CustomPainter {
+  const _StudentRecentThumbOutlinePainter({required this.selected});
+
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      studentGridCardPath(studentGridCardFittedRect(Offset.zero & size)),
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = selected ? 1.6 : 1
+        ..color = selected
+            ? studentGridCardSelectionColor
+            : Colors.white.withValues(alpha: 0.85),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StudentRecentThumbOutlinePainter oldDelegate) =>
+      oldDelegate.selected != selected;
+}
+
 class StudentSectionMotion extends StatelessWidget {
   const StudentSectionMotion({
     super.key,
@@ -1632,7 +2295,7 @@ Offset studentSectionMotionTranslation({
   required double progress,
   required bool exiting,
 }) {
-  final curved = Curves.easeInOutCubic.transform(
+  final curved = AppMotion.sectionCurve.transform(
     progress.clamp(0.0, 1.0).toDouble(),
   );
   final remaining = 1 - curved;
@@ -1651,6 +2314,7 @@ class _StudentActionButton extends StatelessWidget {
     required this.tooltip,
     required this.icon,
     required this.onPressed,
+    this.badgeCount,
   });
 
   final Size canvasSize;
@@ -1658,6 +2322,9 @@ class _StudentActionButton extends StatelessWidget {
   final String tooltip;
   final IconData icon;
   final VoidCallback? onPressed;
+
+  /// 아이콘 오른쪽 위 개수 배지(S1 필터 버튼 "필터 · n", FD-058). null이면 없다.
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1691,6 +2358,15 @@ class _StudentActionButton extends StatelessWidget {
                           : AppColors.text,
                     ),
                   ),
+                  if (badgeCount case final count?)
+                    Positioned(
+                      left: iconCenter.dx + iconSize * 0.18,
+                      top: iconCenter.dy - iconSize / 2 - 7,
+                      child: StudentFilterButtonBadge(
+                        key: const ValueKey('student-filter-count-badge'),
+                        count: count,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1699,6 +2375,46 @@ class _StudentActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// S1 필터 버튼 개수 배지(FD-058, 워커 재량): 모달이 닫힌 뒤 걸린 조건 수. 모달 배지와 같은 색
+/// (#0d151f + 1.5px 핑크 링, 글자 #f7c9f4)의 작은 알약이다.
+class StudentFilterButtonBadge extends StatelessWidget {
+  const StudentFilterButtonBadge({super.key, required this.count});
+
+  final int count;
+
+  static const height = 18.0;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '필터 · $count',
+    child: ExcludeSemantics(
+      child: Container(
+        height: height,
+        constraints: const BoxConstraints(minWidth: height),
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.popover,
+          borderRadius: BorderRadius.all(Radius.circular(height / 2)),
+          boxShadow: [BoxShadow(color: AppColors.accent, spreadRadius: 1.5)],
+        ),
+        child: Text(
+          '$count',
+          maxLines: 1,
+          style: const TextStyle(
+            fontFamily: AppFonts.body,
+            fontFamilyFallback: AppFonts.fallback,
+            fontSize: AppType.captionSize,
+            height: 1,
+            fontWeight: AppType.bold,
+            color: AppColors.accentText,
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _StudentSortDropdown extends StatelessWidget {
@@ -1759,6 +2475,112 @@ class _StudentSortDropdown extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
+                            color: studentSortAccentColor,
+                            fontSize: studentSortCompactFontSize,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 계산기 S1 "빠른 목표 고르기"(FD-169). 학생 정렬 드롭다운과 같은 자리·모양이다. 고정 항목 뒤에 선택 프로필에
+/// 저장된 단계 프리셋 마지막 단계([presets], FE4-i)를 붙인다.
+class _CalculatorQuickTargetDropdown extends StatelessWidget {
+  const _CalculatorQuickTargetDropdown({
+    required this.canvasSize,
+    required this.onSelected,
+    this.presets = const [],
+    this.onPresetSelected,
+  });
+
+  final Size canvasSize;
+  final ValueChanged<GrowthCalculatorQuickTarget> onSelected;
+  final List<GrowthCalculatorPresetTarget> presets;
+  final ValueChanged<GrowthCalculatorPresetTarget>? onPresetSelected;
+
+  void _select(Object value) {
+    switch (value) {
+      case final GrowthCalculatorQuickTarget quickTarget:
+        onSelected(quickTarget);
+      case final GrowthCalculatorPresetTarget preset:
+        onPresetSelected?.call(preset);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final path = studentSortDropdownPath(canvasSize);
+    final bounds = path.getBounds();
+    final localPath = path.shift(-bounds.topLeft);
+    return Positioned.fromRect(
+      rect: bounds,
+      child: CustomPaint(
+        painter: _StudentSortDropdownBorderPainter(localPath),
+        child: ClipPath(
+          clipper: _LocalPathClipper(localPath),
+          child: Material(
+            color: Colors.transparent,
+            child: PopupMenuButton<Object>(
+              key: const ValueKey('calculator-quick-target-dropdown'),
+              tooltip: '빠른 목표 고르기',
+              color: AppColors.surfaceRaised,
+              padding: EdgeInsets.zero,
+              onSelected: _select,
+              itemBuilder: (context) => [
+                for (final option in GrowthCalculatorQuickTarget.values)
+                  PopupMenuItem<Object>(
+                    key: ValueKey('calculator-quick-target-${option.name}'),
+                    value: option,
+                    child: Text(
+                      option.label,
+                      style: const TextStyle(
+                        color: studentSortAccentColor,
+                        fontSize: studentSortMenuFontSize,
+                      ),
+                    ),
+                  ),
+                if (onPresetSelected != null &&
+                    presets.any((preset) => preset.hasTargets)) ...[
+                  const PopupMenuDivider(),
+                  for (final preset in presets)
+                    if (preset.hasTargets)
+                      PopupMenuItem<Object>(
+                        key: ValueKey('calculator-quick-target-preset-${preset.id}'),
+                        value: preset,
+                        child: Text(
+                          '${preset.name} · 마지막 단계',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: studentSortAccentColor,
+                            fontSize: studentSortMenuFontSize,
+                          ),
+                        ),
+                      ),
+                ],
+              ],
+              child: bounds.width < 26
+                  ? const SizedBox.expand()
+                  : Padding(
+                      padding: EdgeInsets.only(
+                        left: math.min(11, bounds.width * 0.16),
+                        right: math.min(20, bounds.width * 0.28),
+                      ),
+                      child: const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '빠른 목표',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
                             color: studentSortAccentColor,
                             fontSize: studentSortCompactFontSize,
                             fontWeight: FontWeight.w700,
@@ -1935,7 +2757,7 @@ class _StudentViewModeButtonPainter extends CustomPainter {
 
 Offset studentActionIconCenter(Rect bounds) {
   final y = bounds.height / 2;
-  final cutAtY = y / math.tan(80 * math.pi / 180);
+  final cutAtY = diagonalCutDepth(y);
   final horizontalLength = math.max(0.0, bounds.width - cutAtY);
   return Offset(horizontalLength / 2, y);
 }
@@ -1959,16 +2781,29 @@ StudentContainerTextureRole studentContainerTextureRole(
 
 bool studentContainerShowsOutline(StudioContainerElement container) => true;
 
-class _StudentStatusIndicators extends StatelessWidget {
-  const _StudentStatusIndicators({
+class StudentStatusIndicators extends StatelessWidget {
+  const StudentStatusIndicators({
+    super.key,
     required this.canvasSize,
     required this.student,
     required this.values,
+    this.bondTarget,
+    this.changedRows = const {},
   });
 
   final Size canvasSize;
   final StudentCatalogEntry? student;
   final Map<String, dynamic>? values;
+  final int? bondTarget;
+
+  /// 계산기 S3에서 목표가 현재값과 다른 행(그 칸 글자를 분홍으로, FD-167). 학생 모드는 비어 있다.
+  final Set<GrowthCalculatorRow> changedRows;
+
+  Color _valueColor(GrowthCalculatorRow row) =>
+      changedRows.contains(row) ? growthCalculatorChangedColor : AppColors.text;
+
+  Color? _highlight(GrowthCalculatorRow row) =>
+      changedRows.contains(row) ? growthCalculatorChangedColor : null;
 
   int? _integer(String key) => values?[key] as int?;
   String? _text(String key) => values?[key] as String?;
@@ -2058,6 +2893,7 @@ class _StudentStatusIndicators extends StatelessWidget {
           StudentLevelStatus(
             level: level,
             schoolLogoAsset: studentSchoolLogoAsset(student?.school),
+            valueColor: _valueColor(GrowthCalculatorRow.level),
           ),
         ),
         _feature(
@@ -2085,6 +2921,7 @@ class _StudentStatusIndicators extends StatelessWidget {
             label: 'Weapon',
             value: 'Lv. ${_hasWeapon ? weaponLevel ?? '--' : '--'}',
             valueLeftInset: metadataValueLeft - metadataBounds[2].left,
+            valueColor: _valueColor(GrowthCalculatorRow.weapon),
           ),
         ),
         _container(
@@ -2095,6 +2932,15 @@ class _StudentStatusIndicators extends StatelessWidget {
               _skillValue('skill1', 10),
               _skillValue('skill2', 10),
               _skillValue('skill3', 10),
+            ],
+            valueColors: [
+              for (final row in const [
+                GrowthCalculatorRow.exSkill,
+                GrowthCalculatorRow.normalSkill,
+                GrowthCalculatorRow.enhancedSkill,
+                GrowthCalculatorRow.subSkill,
+              ])
+                _valueColor(row),
             ],
           ),
         ),
@@ -2110,6 +2956,12 @@ class _StudentStatusIndicators extends StatelessWidget {
             ],
             favoriteItem: _favoriteItemValue(),
             favoriteItemLocked: _favoriteItemLocked,
+            slotHighlights: [
+              _highlight(GrowthCalculatorRow.equipment1),
+              _highlight(GrowthCalculatorRow.equipment2),
+              _highlight(GrowthCalculatorRow.equipment3),
+            ],
+            favoriteItemHighlight: _highlight(GrowthCalculatorRow.favoriteItem),
           ),
         ),
         _container(
@@ -2118,6 +2970,7 @@ class _StudentStatusIndicators extends StatelessWidget {
             hp: _integer('stat_hp'),
             atk: _integer('stat_atk'),
             heal: _integer('stat_heal'),
+            valueColor: _valueColor(GrowthCalculatorRow.abilityRelease),
           ),
         ),
         _container('container-9', const StudentPotentialStatus()),
@@ -2134,8 +2987,12 @@ class _StudentStatusIndicators extends StatelessWidget {
         ),
         _containerWithPath(
           'container-10',
-          (outerPath) =>
-              StudentBondStatus(bondRank: bondRank, outerPath: outerPath),
+          (outerPath) => StudentBondStatus(
+            bondRank: bondRank,
+            outerPath: outerPath,
+            targetRank: bondTarget,
+            solidFill: true,
+          ),
         ),
       ],
     );
@@ -2166,9 +3023,7 @@ String? studentSchoolLogoAsset(String? school) {
     'etc' => 'ETC',
     _ => null,
   };
-  return assetName == null
-      ? null
-      : 'assets/item_icons/school_logo/School_Icon_$assetName.png';
+  return assetName == null ? null : GameAssets.schoolLogo(assetName);
 }
 
 class StudentLevelStatus extends StatelessWidget {
@@ -2177,17 +3032,21 @@ class StudentLevelStatus extends StatelessWidget {
     required this.level,
     required this.schoolLogoAsset,
     this.showSchool = true,
+    this.valueColor = AppColors.text,
   });
 
   final int? level;
   final String? schoolLogoAsset;
   final bool showSchool;
 
+  /// 레벨 글자색(계산기 S3의 바뀐 칸은 분홍, FD-167).
+  final Color valueColor;
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(constraints.maxWidth, constraints.maxHeight);
-      final railInset = size.height / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(size.height);
       return CustomPaint(
         key: ValueKey(
           showSchool
@@ -2217,6 +3076,7 @@ class StudentLevelStatus extends StatelessWidget {
                         style: TextStyle(
                           color: AppColors.primary,
                           fontFamily: 'GyeonggiTitle',
+                          fontFamilyFallback: AppFonts.fallback,
                           fontSize: 8,
                           fontWeight: FontWeight.w700,
                           height: 1,
@@ -2230,9 +3090,10 @@ class StudentLevelStatus extends StatelessWidget {
                         child: Text(
                           'Lv. ${level ?? '--'}',
                           key: const ValueKey('student-detail-level'),
-                          style: const TextStyle(
-                            color: AppColors.text,
+                          style: TextStyle(
+                            color: valueColor,
                             fontFamily: 'GyeonggiTitle',
+                            fontFamilyFallback: AppFonts.fallback,
                             fontSize: 31,
                             fontWeight: FontWeight.w800,
                             height: 1,
@@ -2283,7 +3144,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
     if (!showSchool) {
       canvas.drawRect(
         Offset.zero & size,
-        Paint()..color = const Color(0xff203243),
+        Paint()..color = AppColors.indicatorSurface,
       );
       return;
     }
@@ -2302,7 +3163,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
       ..lineTo(size.width, size.height)
       ..lineTo(splitBottom, size.height)
       ..close();
-    canvas.drawPath(left, Paint()..color = const Color(0xff203243));
+    canvas.drawPath(left, Paint()..color = AppColors.indicatorSurface);
     canvas.drawPath(school, Paint()..color = const Color(0xff28445a));
     canvas.drawLine(
       Offset(splitTop, 0),
@@ -2320,7 +3181,7 @@ class _StudentLevelSplitPainter extends CustomPainter {
 
 List<Offset> studentLevelSplitEndpoints(Size size) {
   final splitTop = size.width * 0.73;
-  final run = size.height / math.tan(80 * math.pi / 180);
+  final run = diagonalCutDepth(size.height);
   return [Offset(splitTop, 0), Offset(splitTop - run, size.height)];
 }
 
@@ -2345,11 +3206,13 @@ class _StudentMetadataValue extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueLeftInset,
+    this.valueColor = AppColors.text,
   });
 
   final String label;
   final String value;
   final double valueLeftInset;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -2368,6 +3231,7 @@ class _StudentMetadataValue extends StatelessWidget {
             style: const TextStyle(
               color: studentSortAccentColor,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 9,
               fontWeight: FontWeight.w800,
               height: 1,
@@ -2387,9 +3251,10 @@ class _StudentMetadataValue extends StatelessWidget {
             value,
             maxLines: 1,
             key: ValueKey('student-detail-metadata-value-$label'),
-            style: const TextStyle(
-              color: AppColors.text,
+            style: TextStyle(
+              color: valueColor,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 15,
               fontWeight: FontWeight.w700,
               height: 1,
@@ -2402,18 +3267,21 @@ class _StudentMetadataValue extends StatelessWidget {
 }
 
 class StudentSkillStatus extends StatelessWidget {
-  const StudentSkillStatus({super.key, required this.values});
+  const StudentSkillStatus({super.key, required this.values, this.valueColors});
 
   static const _labels = ['EX', 'Normal', 'Passive', 'Sub-skill'];
   final List<String> values;
+
+  /// 칸마다 값 글자색(계산기 S3의 바뀐 칸은 분홍). 없으면 흰색.
+  final List<Color>? valueColors;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => Padding(
       padding: EdgeInsets.fromLTRB(
-        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        diagonalCutDepth(constraints.maxHeight) + 9,
         7,
-        constraints.maxHeight / math.tan(80 * math.pi / 180) + 9,
+        diagonalCutDepth(constraints.maxHeight) + 9,
         4,
       ),
       child: Column(
@@ -2438,6 +3306,7 @@ class StudentSkillStatus extends StatelessWidget {
                       label: _labels[index],
                       value: values[index],
                       index: index,
+                      valueColor: valueColors?[index] ?? AppColors.text,
                     ),
                   ),
                 ],
@@ -2476,6 +3345,7 @@ class _StudentSectionTitle extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 8,
             fontWeight: FontWeight.w800,
             height: 1,
@@ -2513,11 +3383,13 @@ class _StudentSkillColumn extends StatelessWidget {
     required this.label,
     required this.value,
     required this.index,
+    required this.valueColor,
   });
 
   final String label;
   final String value;
   final int index;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -2538,6 +3410,7 @@ class _StudentSkillColumn extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.textMuted,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   height: 1,
@@ -2548,9 +3421,10 @@ class _StudentSkillColumn extends StatelessWidget {
             Text(
               value,
               key: ValueKey('student-detail-skill-$index'),
-              style: const TextStyle(
-                color: AppColors.text,
+              style: TextStyle(
+                color: valueColor,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 31.5,
                 fontWeight: FontWeight.w800,
                 height: 1,
@@ -2580,7 +3454,7 @@ class _StudentDiagonalDivider extends StatelessWidget {
 List<Offset> studentDiagonalDividerEndpoints(Size size) {
   final top = math.min(2.0, size.height);
   final bottom = math.max(top, size.height - 2);
-  final run = (bottom - top) / math.tan(80 * math.pi / 180);
+  final run = diagonalCutDepth(bottom - top);
   return [
     Offset((size.width + run) / 2, top),
     Offset((size.width - run) / 2, bottom),
@@ -2612,16 +3486,18 @@ class StudentAbilityStatus extends StatelessWidget {
     required this.hp,
     required this.atk,
     required this.heal,
+    this.valueColor = AppColors.text,
   });
 
   final int? hp;
   final int? atk;
   final int? heal;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       final contentWidth = math.max(0.0, constraints.maxWidth - railInset - 18);
       final titleWidth = math.min(90.0, contentWidth * 0.36);
       final titleGap = math.min(12.0, contentWidth * 0.06);
@@ -2645,9 +3521,10 @@ class StudentAbilityStatus extends StatelessWidget {
                     'HEAL ${heal ?? '-'}',
                     key: const ValueKey('student-detail-ability-values'),
                     maxLines: 1,
-                    style: const TextStyle(
-                      color: AppColors.text,
+                    style: TextStyle(
+                      color: valueColor,
                       fontFamily: 'GyeonggiTitle',
+                      fontFamilyFallback: AppFonts.fallback,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -2672,6 +3549,8 @@ class StudentEquipmentStatus extends StatelessWidget {
     required this.favoriteItem,
     required this.favoriteItemLocked,
     this.equipmentTypes,
+    this.slotHighlights,
+    this.favoriteItemHighlight,
   });
 
   final StudentCatalogEntry? student;
@@ -2680,6 +3559,10 @@ class StudentEquipmentStatus extends StatelessWidget {
   final String favoriteItem;
   final bool favoriteItemLocked;
   final List<String?>? equipmentTypes;
+
+  /// 칸마다 강조 글자색(계산기 S3의 바뀐 칸은 분홍, 티어·레벨 모두). 없으면 기본 색.
+  final List<Color?>? slotHighlights;
+  final Color? favoriteItemHighlight;
 
   String? _assetPath(int index) {
     final equipmentType =
@@ -2695,14 +3578,13 @@ class StudentEquipmentStatus extends StatelessWidget {
     if (equipmentType == null || tier == null || tier < 1 || tier > 10) {
       return null;
     }
-    return 'assets/item_icons/equipment/'
-        'Equipment_Icon_${equipmentType}_Tier$tier.png';
+    return GameAssets.equipmentIcon(equipmentType, tier);
   }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railInset + 9, 7, railInset + 9, 3),
         child: Column(
@@ -2731,6 +3613,7 @@ class StudentEquipmentStatus extends StatelessWidget {
                         level: levels[index],
                         assetPath: _assetPath(index),
                         edgeShift: railInset * 0.22,
+                        highlight: slotHighlights?[index],
                       ),
                     ),
                   ],
@@ -2741,6 +3624,7 @@ class StudentEquipmentStatus extends StatelessWidget {
                     child: _StudentFavoriteItemSlot(
                       value: favoriteItem,
                       locked: favoriteItemLocked,
+                      highlight: favoriteItemHighlight,
                     ),
                   ),
                 ],
@@ -2760,12 +3644,14 @@ class _StudentEquipmentSlot extends StatelessWidget {
     required this.level,
     required this.assetPath,
     required this.edgeShift,
+    this.highlight,
   });
 
   final String tier;
   final int? level;
   final String? assetPath;
   final double edgeShift;
+  final Color? highlight;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -2778,9 +3664,10 @@ class _StudentEquipmentSlot extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               tier,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: highlight ?? AppColors.textMuted,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
                 height: 1,
               ),
@@ -2820,9 +3707,10 @@ class _StudentEquipmentSlot extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               level == null ? '-' : 'Lv. $level',
-              style: const TextStyle(
-                color: AppColors.text,
+              style: TextStyle(
+                color: highlight ?? AppColors.text,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13.5,
                 height: 1,
               ),
@@ -2835,10 +3723,15 @@ class _StudentEquipmentSlot extends StatelessWidget {
 }
 
 class _StudentFavoriteItemSlot extends StatelessWidget {
-  const _StudentFavoriteItemSlot({required this.value, required this.locked});
+  const _StudentFavoriteItemSlot({
+    required this.value,
+    required this.locked,
+    this.highlight,
+  });
 
   final String value;
   final bool locked;
+  final Color? highlight;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -2851,6 +3744,7 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
           style: TextStyle(
             color: AppColors.textMuted,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 8,
             height: 1,
           ),
@@ -2870,9 +3764,10 @@ class _StudentFavoriteItemSlot extends StatelessWidget {
           child: Text(
             value,
             key: const ValueKey('student-detail-favorite-value'),
-            style: const TextStyle(
-              color: AppColors.text,
+            style: TextStyle(
+              color: highlight ?? AppColors.text,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 21,
               fontWeight: FontWeight.w800,
               height: 1,
@@ -2924,6 +3819,7 @@ class StudentPotentialStatus extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 18.5,
                   fontWeight: FontWeight.w800,
                   height: 1,
@@ -2943,7 +3839,7 @@ double studentCombatRowOffset({
   int itemCount = 4,
 }) {
   if (height <= 0 || itemCount <= 0) return 0;
-  final railRun = height / math.tan(80 * math.pi / 180);
+  final railRun = diagonalCutDepth(height);
   final normalizedCenter = (index + 0.5) / itemCount;
   return -railRun * normalizedCenter;
 }
@@ -2954,7 +3850,7 @@ double studentCombatDividerOffset({
   int itemCount = 4,
 }) {
   if (height <= 0 || itemCount <= 0) return 0;
-  final railRun = height / math.tan(80 * math.pi / 180);
+  final railRun = diagonalCutDepth(height);
   final normalizedBoundary = (index + 1) / itemCount;
   return -railRun * normalizedBoundary;
 }
@@ -2968,7 +3864,7 @@ class _StudentCombatStatus extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final entries = values.entries.toList(growable: false);
-      final railRun = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railRun = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railRun + 9, 9, 9, 9),
         child: Column(
@@ -3040,6 +3936,7 @@ class _StudentCombatValue extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: 19,
             fontWeight: FontWeight.w800,
             height: 1,
@@ -3109,6 +4006,11 @@ class _StudentSwordPainter extends CustomPainter {
   bool shouldRepaint(_StudentSwordPainter oldDelegate) => false;
 }
 
+/// 인연 랭크 삼각형 게이지(학생 S3 container-10, 계획 요소 초상 옆).
+///
+/// [targetRank]가 있으면 W-Bond-Variants B안(FE3-b, FD-049~051)처럼 그린다: 현재 랭크 채움은
+/// 그대로(rank/100), 현재 위 목표까지는 빗금, 목표 높이에 점선, 점선 위 오른쪽에 `→N`.
+/// 목표가 없거나 현재 이하이면 목표 표시를 하지 않는다([studentBondVisibleTarget]).
 class StudentBondStatus extends StatelessWidget {
   const StudentBondStatus({
     super.key,
@@ -3116,12 +4018,21 @@ class StudentBondStatus extends StatelessWidget {
     required this.outerPath,
     this.inverted = false,
     this.fillFromBottom = true,
+    this.targetRank,
+    this.solidFill = false,
   });
 
   final int? bondRank;
   final Path outerPath;
   final bool inverted;
   final bool fillFromBottom;
+
+  /// 활성 계획 문서의 인연 목표(FD-049). 그대로 넘기고, 보일지는 위젯이 정한다.
+  final int? targetRank;
+
+  /// B안의 현재 채움(불투명 #e9b0ee). false면 이전 채움(@.78)이다. 학생 S3는 true,
+  /// 계획 요소 초상(inverted)은 계획 화면을 B안으로 바꾸는 slice까지 false다.
+  final bool solidFill;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -3132,6 +4043,19 @@ class StudentBondStatus extends StatelessWidget {
         outerPath: outerPath,
         inverted: inverted,
       );
+      final target = studentBondVisibleTarget(
+        current: bondRank,
+        target: targetRank,
+      );
+      final targetLine = target == null
+          ? null
+          : studentBondTargetLine(
+              size,
+              outerPath,
+              target,
+              inverted: inverted,
+              fillFromBottom: fillFromBottom,
+            );
       return Stack(
         children: [
           CustomPaint(
@@ -3142,8 +4066,23 @@ class StudentBondStatus extends StatelessWidget {
               outerPath: outerPath,
               inverted: inverted,
               fillFromBottom: fillFromBottom,
+              target: target,
+              solidFill: solidFill,
             ),
           ),
+          if (target != null && targetLine != null)
+            Positioned(
+              key: const ValueKey('student-detail-bond-target'),
+              right:
+                  size.width - targetLine.right + studentBondTargetLabelInset,
+              bottom:
+                  size.height - targetLine.y + studentBondTargetLabelGap - 2,
+              child: Text(
+                studentBondTargetLabel(target),
+                maxLines: 1,
+                style: studentBondTargetLabelStyle,
+              ),
+            ),
           Positioned.fromRect(
             rect: rankRect,
             child: FittedBox(
@@ -3154,6 +4093,7 @@ class StudentBondStatus extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 43.2,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -3165,6 +4105,58 @@ class StudentBondStatus extends StatelessWidget {
       );
     },
   );
+}
+
+// --- 인연 목표 겹침(B안) ------------------------------------------------------
+// 시안 W-Bond-Variants B · W-Student-Detail: 빗금 pattern 6×6 rotate(−35°), 바탕
+// rgba(233,176,238,.16) + 폭 2.4 줄 .55. 점선 #e9b0ee 1.6, dash 3 2, 바깥 삼각형 왼쪽 변에서
+// 오른쪽 끝까지. `→N`은 경기천년제목 10 w800 #e9b0ee, 오른쪽 끝 − 3에 오른쪽 정렬, 점선 5 위가 글자 바닥.
+
+const studentBondTargetHatchStyle = HatchStyle(
+  background: Color.fromRGBO(233, 176, 238, 0.16),
+  line: Color.fromRGBO(233, 176, 238, 0.55),
+  lineWidth: 2.4,
+  spacing: 6,
+  angleDegrees: -35,
+);
+const studentBondTargetLineColor = studentSortAccentColor;
+const studentBondTargetLineWidth = 1.6;
+const studentBondTargetDash = 3.0;
+const studentBondTargetDashGap = 2.0;
+const studentBondTargetLabelInset = 3.0;
+const studentBondTargetLabelGap = 5.0;
+const studentBondTargetLabelStyle = TextStyle(
+  color: studentSortAccentColor,
+  fontFamily: 'GyeonggiTitle',
+  fontFamilyFallback: AppFonts.fallback,
+  fontSize: 10,
+  fontWeight: FontWeight.w800,
+  height: 1,
+);
+
+String studentBondTargetLabel(int target) => '→$target';
+
+/// 목표 높이의 점선 위치: y와 바깥 삼각형의 그 높이 가로 범위.
+({double y, double left, double right}) studentBondTargetLine(
+  Size size,
+  Path outerPath,
+  int target, {
+  bool inverted = false,
+  bool fillFromBottom = true,
+}) {
+  final bounds = studentBondGaugeHostPath(
+    size,
+    outerPath,
+    inverted: inverted,
+  ).getBounds();
+  final edge = studentBondGaugeFillRect(
+    bounds,
+    target / 100,
+    fillFromBottom: fillFromBottom,
+  );
+  final y = fillFromBottom ? edge.top : edge.bottom;
+  final span = _studentPathHorizontalSpan(outerPath, y);
+  return (y: y, left: span.left, right: span.right);
 }
 
 List<Offset> studentBondOuterTrianglePoints(Size size) {
@@ -3307,12 +4299,18 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
     required this.outerPath,
     required this.inverted,
     required this.fillFromBottom,
+    this.target,
+    this.solidFill = false,
   });
 
   final int? rank;
   final Path outerPath;
   final bool inverted;
   final bool fillFromBottom;
+
+  /// 보이는 목표([studentBondVisibleTarget] 결과). null이면 목표 표시 없음.
+  final int? target;
+  final bool solidFill;
 
   void _drawInsetPath(
     Canvas canvas,
@@ -3353,6 +4351,23 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
       const Color(0xff111f2c).withValues(alpha: 0.94),
       inset + 0.5,
     );
+    final target = this.target;
+    if (target != null) {
+      // 목표까지 빗금. 현재 채움이 그 위를 덮으므로 현재 ~ 목표 구간만 남는다.
+      canvas.save();
+      canvas.clipRect(
+        studentBondGaugeFillRect(
+          bounds,
+          target / 100,
+          fillFromBottom: fillFromBottom,
+        ),
+      );
+      canvas.saveLayer(Offset.zero & size, Paint());
+      paintHatch(canvas, gauge, style: studentBondTargetHatchStyle);
+      _clearInsetBorder(canvas, gauge, inset + 0.5);
+      canvas.restore();
+      canvas.restore();
+    }
     final progress = ((rank ?? 0) / 100).clamp(0.0, 1.0);
     if (progress > 0) {
       canvas.save();
@@ -3367,11 +4382,47 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
         canvas,
         size,
         gauge,
-        studentSortAccentColor.withValues(alpha: 0.78),
+        solidFill
+            ? studentSortAccentColor
+            : studentSortAccentColor.withValues(alpha: 0.78),
         inset + 0.5,
       );
       canvas.restore();
     }
+    if (target != null) {
+      final line = studentBondTargetLine(
+        size,
+        outerPath,
+        target,
+        inverted: inverted,
+        fillFromBottom: fillFromBottom,
+      );
+      final paint = Paint()
+        ..color = studentBondTargetLineColor
+        ..strokeWidth = studentBondTargetLineWidth;
+      for (
+        var x = line.left;
+        x < line.right;
+        x += studentBondTargetDash + studentBondTargetDashGap
+      ) {
+        canvas.drawLine(
+          Offset(x, line.y),
+          Offset(math.min(line.right, x + studentBondTargetDash), line.y),
+          paint,
+        );
+      }
+    }
+  }
+
+  void _clearInsetBorder(Canvas canvas, Path path, double inset) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..blendMode = BlendMode.clear
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = inset * 2
+        ..strokeJoin = StrokeJoin.round,
+    );
   }
 
   @override
@@ -3379,7 +4430,9 @@ class _StudentTriangleBondGaugePainter extends CustomPainter {
       oldDelegate.rank != rank ||
       oldDelegate.outerPath != outerPath ||
       oldDelegate.inverted != inverted ||
-      oldDelegate.fillFromBottom != fillFromBottom;
+      oldDelegate.fillFromBottom != fillFromBottom ||
+      oldDelegate.target != target ||
+      oldDelegate.solidFill != solidFill;
 }
 
 Rect studentBondGaugeFillRect(
@@ -3396,16 +4449,24 @@ Rect studentBondGaugeFillRect(
   );
 }
 
-class _StudentSectionFoundationPainter extends CustomPainter {
-  const _StudentSectionFoundationPainter({
+class StudentSectionFoundationPainter extends CustomPainter {
+  const StudentSectionFoundationPainter({
     required this.selectedValues,
     required this.sectionIds,
-    this.filterSection = false,
+    this.bare = false,
+    this.targetStudentStars,
+    this.targetWeaponStars,
   });
 
   final Map<String, dynamic>? selectedValues;
   final Set<String> sectionIds;
-  final bool filterSection;
+
+  /// 계산기 S3의 ★ 목표(현재 ★는 채우고 목표 ★는 테두리, FE3-f2b). 학생 모드는 null.
+  final int? targetStudentStars;
+  final int? targetWeaponStars;
+
+  /// 섹션 바탕만 그리고 안쪽 container·feature는 그리지 않는다(계산기 S2, FE3-f2a).
+  final bool bare;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3419,46 +4480,12 @@ class _StudentSectionFoundationPainter extends CustomPainter {
     for (final section in sectionOrder.where(
       (section) => sectionIds.contains(section.id),
     )) {
-      final path = filterSection && section.id == 'element-2'
-          ? studentFilterSectionPath(size)
-          : studentSectionPath(size, section.id);
+      final path = studentSectionPath(size, section.id);
       paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-      if (filterSection && section.id == 'element-2') {
-        final containerPath = studentFilterContainerPath(size);
-        canvas.drawPath(
-          Path.combine(PathOperation.difference, path, containerPath),
-          Paint()
-            ..color = AppColors.surface.withValues(alpha: studentSectionOpacity)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.save();
-        canvas.clipPath(containerPath, doAntiAlias: true);
-        BATriangleTexturePainter(_studentTexture).paint(canvas, size);
-        canvas.restore();
-        canvas.drawPath(
-          containerPath,
-          Paint()
-            ..color = AppColors.outline.withValues(alpha: 0.75)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.9,
-        );
-        final resetPath = studentFilterResetPath(size);
-        canvas.save();
-        canvas.clipPath(resetPath, doAntiAlias: true);
-        BATriangleTexturePainter(_studentActionTexture).paint(canvas, size);
-        canvas.restore();
-        canvas.drawPath(
-          resetPath,
-          Paint()
-            ..color = AppColors.outline.withValues(alpha: 0.75)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.9,
-        );
-        continue;
-      }
       var fillPath = path;
       for (final container in studentRuntimeContainers(size)) {
-        if (container.parentSectionId != section.id ||
+        if (bare ||
+            container.parentSectionId != section.id ||
             container.id == 'container-1' ||
             container.id == 'container-3') {
           continue;
@@ -3480,14 +4507,9 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       );
     }
 
+    if (bare) return;
     for (final container in studentRuntimeContainers(size)) {
-      if (!sectionIds.contains(container.parentSectionId) ||
-          !studentFoundationUsesLegacySectionChildren(
-            filterSection: filterSection,
-            parentSectionId: container.parentSectionId,
-          )) {
-        continue;
-      }
+      if (!sectionIds.contains(container.parentSectionId)) continue;
       if (container.id == 'container-1' || container.id == 'container-3') {
         continue;
       }
@@ -3527,18 +4549,12 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       final parentContainer = document.containers.firstWhere(
         (container) => container.id == feature.parentContainerId,
       );
-      if (!sectionIds.contains(parentContainer.parentSectionId) ||
-          !studentFoundationUsesLegacySectionChildren(
-            filterSection: filterSection,
-            parentSectionId: parentContainer.parentSectionId,
-          )) {
-        continue;
-      }
+      if (!sectionIds.contains(parentContainer.parentSectionId)) continue;
       final path = studentFeaturePath(size, feature.id);
       if (path == null) continue;
       canvas.drawPath(
         path,
-        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
+        Paint()..color = AppColors.indicatorSurface.withValues(alpha: 0.98),
       );
     }
 
@@ -3556,14 +4572,18 @@ class _StudentSectionFoundationPainter extends CustomPainter {
       bounds,
       studentStars: studentStars,
       weaponStars: weaponStars,
+      targetStudentStars: targetStudentStars,
+      targetWeaponStars: targetWeaponStars,
     );
   }
 
   @override
-  bool shouldRepaint(_StudentSectionFoundationPainter oldDelegate) =>
+  bool shouldRepaint(StudentSectionFoundationPainter oldDelegate) =>
       oldDelegate.selectedValues != selectedValues ||
       oldDelegate.sectionIds != sectionIds ||
-      oldDelegate.filterSection != filterSection;
+      oldDelegate.bare != bare ||
+      oldDelegate.targetStudentStars != targetStudentStars ||
+      oldDelegate.targetWeaponStars != targetWeaponStars;
 }
 
 ({bool showTop, bool showBottom}) studentViewportFogVisibility({
@@ -3601,266 +4621,6 @@ class StudentViewportFog extends StatelessWidget {
   );
 }
 
-class StudentDiagonalFilterList extends StatefulWidget {
-  const StudentDiagonalFilterList({
-    super.key,
-    required this.students,
-    required this.selected,
-    required this.onToggle,
-    this.definitions,
-    this.fogColor,
-  });
-
-  final List<StudentCatalogEntry> students;
-  final Map<String, Set<String>> selected;
-  final void Function(String key, String value) onToggle;
-  final List<StudentFilterDefinition>? definitions;
-  final Color? fogColor;
-
-  @override
-  State<StudentDiagonalFilterList> createState() =>
-      _StudentDiagonalFilterListState();
-}
-
-class _StudentDiagonalFilterListState extends State<StudentDiagonalFilterList> {
-  static const _inset = 8.0;
-  static const _gap = 8.0;
-  static const _checkboxHeight = 27.0;
-  static const _titleHeight = 28.0;
-  static const _scrollbarReserve = 14.0;
-  final ScrollController _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  List<(StudentFilterDefinition, List<String>)> _groups() => [
-    for (final definition in widget.definitions ?? studentFilterDefinitions)
-      () {
-        final values = widget.students
-            .map(definition.read)
-            .whereType<String>()
-            .where(
-              (value) =>
-                  definition.key != 'school' ||
-                  (value != 'Sakugawa' && value != 'Tokiwadai'),
-            )
-            .toSet()
-            .toList();
-        if (definition.key == 'rarity') {
-          values.sort(
-            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0),
-          );
-        } else {
-          values.sort(
-            (a, b) => studentFilterValueLabel(
-              definition.key,
-              a,
-            ).compareTo(studentFilterValueLabel(definition.key, b)),
-          );
-        }
-        return (definition, values);
-      }(),
-  ];
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final groups = _groups().where((group) => group.$2.isNotEmpty).toList();
-      final heights = [
-        for (final group in groups)
-          _titleHeight + ((group.$2.length + 1) ~/ 2) * _checkboxHeight + 10,
-      ];
-      final contentHeight =
-          _inset * 2 +
-          heights.fold<double>(0, (sum, item) => sum + item) +
-          _gap * math.max(0, groups.length - 1);
-
-      return _StudentDiagonalScrollbar(
-        controller: _controller,
-        keyPrefix: 'student-filter',
-        fogColor: widget.fogColor,
-        child: SingleChildScrollView(
-          key: const ValueKey('student-diagonal-filter-scroll'),
-          controller: _controller,
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              final scroll = _controller.hasClients ? _controller.offset : 0.0;
-              var top = _inset;
-              final children = <Widget>[];
-              for (var index = 0; index < groups.length; index++) {
-                final group = groups[index];
-                final height = heights[index];
-                final horizontalOffset = studentDiagonalRowHorizontalOffset(
-                  viewportHeight: constraints.maxHeight,
-                  rowTop: top,
-                  rowHeight: height,
-                  scrollOffset: scroll,
-                );
-                final width = studentDiagonalFilterRowWidth(
-                  viewportWidth: constraints.maxWidth,
-                  viewportHeight: constraints.maxHeight,
-                  rowHeight: height,
-                  horizontalInset: _inset,
-                  scrollbarReserve: _scrollbarReserve,
-                );
-                children.add(
-                  Positioned(
-                    key: ValueKey('student-filter-group-${group.$1.key}'),
-                    left: _inset + horizontalOffset,
-                    top: top,
-                    width: width,
-                    height: height,
-                    child: _StudentFilterGroupCard(
-                      definition: group.$1,
-                      values: group.$2,
-                      selected: widget.selected[group.$1.key] ?? const {},
-                      onToggle: widget.onToggle,
-                    ),
-                  ),
-                );
-                top += height + _gap;
-              }
-              return SizedBox(
-                height: contentHeight,
-                width: constraints.maxWidth,
-                child: Stack(clipBehavior: Clip.none, children: children),
-              );
-            },
-          ),
-        ),
-      );
-    },
-  );
-}
-
-class _StudentFilterGroupCard extends StatelessWidget {
-  const _StudentFilterGroupCard({
-    required this.definition,
-    required this.values,
-    required this.selected,
-    required this.onToggle,
-  });
-
-  final StudentFilterDefinition definition;
-  final List<String> values;
-  final Set<String> selected;
-  final void Function(String key, String value) onToggle;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final safeHorizontalInset = studentFilterGroupContentInset(
-        constraints.maxHeight,
-      );
-      return CustomPaint(
-        painter: const _StudentFilterGroupPainter(),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            safeHorizontalInset,
-            7,
-            safeHorizontalInset,
-            5,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                definition.label,
-                style: const TextStyle(
-                  color: AppColors.text,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Expanded(
-                child: Wrap(
-                  children: [
-                    for (final value in values)
-                      FractionallySizedBox(
-                        widthFactor: 0.5,
-                        child: InkWell(
-                          key: ValueKey(
-                            'student-filter-${definition.key}-$value',
-                          ),
-                          onTap: () => onToggle(definition.key, value),
-                          child: SizedBox(
-                            height:
-                                _StudentDiagonalFilterListState._checkboxHeight,
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 24,
-                                  child: Transform.scale(
-                                    scale: 0.68,
-                                    child: IgnorePointer(
-                                      child: Checkbox(
-                                        value: selected.contains(value),
-                                        onChanged: (_) {},
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    studentFilterValueLabel(
-                                      definition.key,
-                                      value,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.text,
-                                      fontSize: 10.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-class _StudentFilterGroupPainter extends CustomPainter {
-  const _StudentFilterGroupPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final depth = size.height / math.tan(80 * math.pi / 180);
-    final path = buildRoundedSectionPolygon([
-      Offset(depth, 0),
-      Offset(size.width, 0),
-      Offset(size.width - depth, size.height),
-      Offset(0, size.height),
-    ], radius: 7);
-    canvas.drawPath(path, Paint()..color = const Color(0xc735526b));
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.outline.withValues(alpha: 0.55)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StudentFilterGroupPainter oldDelegate) => false;
-}
-
 const studentListItemHeight = 97.5;
 const studentListItemExtent = 101.5;
 
@@ -3872,6 +4632,8 @@ class StudentDiagonalList extends StatefulWidget {
     required this.studentValuesById,
     required this.selectedId,
     required this.onSelected,
+    this.revealStudentId,
+    this.revealRequest = 0,
   });
 
   final List<StudentCatalogEntry> students;
@@ -3879,6 +4641,11 @@ class StudentDiagonalList extends StatefulWidget {
   final Map<String, Map<String, dynamic>> studentValuesById;
   final String? selectedId;
   final ValueChanged<String> onSelected;
+
+  /// [revealRequest]가 바뀌면 이 학생의 행이 viewport 가운데에 오게 스크롤한다(그리드 [StudentDiagonalGrid]와 같은 요청 —
+  /// 최근 본 학생 FD-061, 통계 이동 FE7-d. tidy1, FE7-d 발견 3).
+  final String? revealStudentId;
+  final int revealRequest;
 
   @override
   State<StudentDiagonalList> createState() => _StudentDiagonalListState();
@@ -3888,6 +4655,36 @@ class _StudentDiagonalListState extends State<StudentDiagonalList> {
   static const _inset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
+
+  @override
+  void didUpdateWidget(StudentDiagonalList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final studentId = widget.revealStudentId;
+    if (studentId != null && oldWidget.revealRequest != widget.revealRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(studentId));
+    }
+  }
+
+  void _reveal(String studentId) {
+    if (!mounted || !_controller.hasClients) return;
+    final index = widget.students.indexWhere(
+      (student) => student.studentId == studentId,
+    );
+    if (index < 0) return;
+    final position = _controller.position;
+    final offset = studentListRevealOffset(
+      index: index,
+      contentTop: _inset,
+      viewportHeight: position.viewportDimension,
+      maxScrollExtent: position.maxScrollExtent,
+    );
+    if ((offset - _controller.offset).abs() < 0.5) return;
+    _controller.animateTo(
+      offset,
+      duration: AppMotion.header,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -3906,7 +4703,7 @@ class _StudentDiagonalListState extends State<StudentDiagonalList> {
           ),
         );
       }
-      final tangent = math.tan(80 * math.pi / 180);
+      final tangent = diagonalTan80;
       final trajectoryDepth = constraints.maxHeight / tangent;
       final rowWidth = math.max(
         116.0,
@@ -4001,6 +4798,12 @@ class StudentDiagonalGrid extends StatefulWidget {
     this.showAttributes = true,
     this.showNames = true,
     this.columns = 8,
+    this.revealStudentId,
+    this.revealRequest = 0,
+    this.selectionOrder = const {},
+    this.showRemoveMarks = false,
+    this.semanticLabelOf,
+    this.scrollKey = const ValueKey('student-diagonal-grid-scroll'),
   });
 
   final List<StudentCatalogEntry> students;
@@ -4014,6 +4817,22 @@ class StudentDiagonalGrid extends StatefulWidget {
   final bool showNames;
   final int columns;
 
+  /// [revealRequest]가 바뀌면 이 학생의 행이 보이도록 스크롤한다(최근 본 학생, FD-061).
+  final String? revealStudentId;
+  final int revealRequest;
+
+  /// 학생 ID → 고른 순서(1부터). 있으면 카드 오른쪽 아래에 순서 배지를 그린다(계획 만들기 1단계, FE4-b1).
+  final Map<String, int> selectionOrder;
+
+  /// 카드 오른쪽 위에 "빼기" × 표시를 그린다(계획 만들기 C 압축 그리드). 누르면 [onSelected]가 불린다.
+  final bool showRemoveMarks;
+
+  /// 카드 누르기 대상의 의미 이름. 없으면 학생 이름이다(예: "호시노 빼기").
+  final String Function(StudentCatalogEntry student)? semanticLabelOf;
+
+  /// 스크롤 뷰 키. 한 화면에 그리드가 둘이면 서로 다르게 준다.
+  final Key scrollKey;
+
   @override
   State<StudentDiagonalGrid> createState() => _StudentDiagonalGridState();
 }
@@ -4021,10 +4840,41 @@ class StudentDiagonalGrid extends StatefulWidget {
 class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   static const _rowBuffer = 1;
   static const _gridGap = 4.8;
-  static const _rowGap = 3.84;
   static const _gridInset = 8.0;
   static const _scrollbarReserve = 14.0;
   final ScrollController _controller = ScrollController();
+  ({StudentGridRowGeometry geometry, int columns, double viewport})? _layout;
+
+  @override
+  void didUpdateWidget(StudentDiagonalGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final studentId = widget.revealStudentId;
+    if (studentId != null && oldWidget.revealRequest != widget.revealRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(studentId));
+    }
+  }
+
+  void _reveal(String studentId) {
+    final layout = _layout;
+    if (!mounted || layout == null || !_controller.hasClients) return;
+    final index = widget.students.indexWhere(
+      (student) => student.studentId == studentId,
+    );
+    if (index < 0) return;
+    final offset = studentGridRevealOffset(
+      row: index ~/ layout.columns,
+      geometry: layout.geometry,
+      contentTop: _gridInset,
+      viewportHeight: layout.viewport,
+      maxScrollExtent: _controller.position.maxScrollExtent,
+    );
+    if ((offset - _controller.offset).abs() < 0.5) return;
+    _controller.animateTo(
+      offset,
+      duration: AppMotion.header,
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -4037,9 +4887,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
     builder: (context, constraints) {
       final columns = math.max(1, widget.columns);
       final rows = math.max(1, (widget.students.length / columns).ceil());
-      final tangent = math.tan(80 * math.pi / 180);
-      final trajectoryDepth = constraints.maxHeight / tangent;
-      final cellSize = math.max(
+      final trajectoryDepth = constraints.maxHeight / diagonalTan80;
+      final cardWidth = math.max(
         1.0,
         (constraints.maxWidth -
                 _gridInset * 2 -
@@ -4048,13 +4897,27 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 _gridGap * (columns - 1)) /
             columns,
       );
+      // DE 그리드(FD-045): 셀 = 카드(252:204)이고 그 아래에 카드 밖 이름 줄이 붙는다.
+      // 이미지·overlay·hit target은 모두 이 기하를 쓰며 행 간격은 "이름 줄 + 3.84"다.
+      final geometry = studentGridRowGeometry(
+        cardWidth: cardWidth,
+        showNames: widget.showNames,
+      );
+      _layout = (
+        geometry: geometry,
+        columns: columns,
+        viewport: constraints.maxHeight,
+      );
       final contentHeight =
-          _gridInset * 2 + rows * cellSize + _rowGap * math.max(0, rows - 1);
+          _gridInset * 2 +
+          rows * geometry.cardHeight +
+          geometry.imageRowGap * math.max(0, rows - 1) +
+          geometry.nameExtent;
       return _StudentDiagonalScrollbar(
         controller: _controller,
         keyPrefix: 'student-grid',
         child: SingleChildScrollView(
-          key: const ValueKey('student-diagonal-grid-scroll'),
+          key: widget.scrollKey,
           controller: _controller,
           child: AnimatedBuilder(
             animation: _controller,
@@ -4064,8 +4927,8 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 rowCount: rows,
                 scrollOffset: scroll,
                 viewportHeight: constraints.maxHeight,
-                cellHeight: cellSize,
-                rowGap: _rowGap,
+                cellHeight: geometry.cardHeight,
+                rowGap: geometry.imageRowGap,
                 contentTop: _gridInset,
                 bufferRows: _rowBuffer,
               );
@@ -4074,63 +4937,84 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                 widget.students.length,
                 activeRows.end * columns,
               );
-              final offsets = List<double>.generate(rows, (row) {
-                final centerY =
-                    _gridInset +
-                    row * (cellSize + _rowGap) +
-                    cellSize / 2 -
-                    scroll;
-                return (constraints.maxHeight - centerY) / tangent;
-              }, growable: false);
+              final offsets = List<double>.generate(
+                rows,
+                (row) => studentGridRowHorizontalOffset(
+                  viewportHeight: constraints.maxHeight,
+                  contentTop: _gridInset,
+                  row: row,
+                  geometry: geometry,
+                  scrollOffset: scroll,
+                ),
+                growable: false,
+              );
               final padding = EdgeInsets.fromLTRB(
                 _gridInset,
                 _gridInset,
                 _gridInset + trajectoryDepth + _scrollbarReserve,
-                _gridInset,
+                _gridInset + geometry.nameExtent,
               );
+              // 보이는 행(+ 버퍼)에 다중 폼 학생이 있는가. 스크롤 위치가 줄어든 목록보다 뒤면 범위가 비어 있다.
+              var hasMultiForm = false;
+              for (
+                var index = firstStudentIndex;
+                index < lastStudentIndex;
+                index++
+              ) {
+                if (widget.students[index].isMultiForm) {
+                  hasMultiForm = true;
+                  break;
+                }
+              }
               return SizedBox(
                 height: contentHeight,
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: AssetImageGrid(
-                        key: const ValueKey('student-image-grid'),
-                        items: [
-                          for (
-                            var index = firstStudentIndex;
-                            index < lastStudentIndex;
-                            index++
-                          ) ...[
-                            AssetImageGridItem(
-                              asset: bondRankPortraitBackgroundAsset(
-                                widget.studentValuesById[widget
-                                        .students[index]
-                                        .studentId]?['bond_rank']
-                                    as int?,
+                      // 보이는 행에 다중 폼 학생이 있을 때만 공용 시계를 듣는다(FD-064).
+                      child: StudentFormCycleBuilder(
+                        active: hasMultiForm,
+                        builder: (context, formStep) => AssetImageGrid(
+                          key: const ValueKey('student-image-grid'),
+                          items: [
+                            for (
+                              var index = firstStudentIndex;
+                              index < lastStudentIndex;
+                              index++
+                            ) ...[
+                              AssetImageGridItem(
+                                asset: bondRankPortraitBackgroundAsset(
+                                  widget.studentValuesById[widget
+                                          .students[index]
+                                          .studentId]?['bond_rank']
+                                      as int?,
+                                ),
+                                column: index % columns,
+                                row: index ~/ columns,
+                                scale: 1,
+                                edgeCropFraction: 0.11,
+                                clipPathBuilder: studentGridCardPath,
                               ),
-                              column: index % columns,
-                              row: index ~/ columns,
-                              scale: 1,
-                              edgeCropFraction: 0.11,
-                              clipPathBuilder: studentGridCardPath,
-                            ),
-                            AssetImageGridItem(
-                              asset:
-                                  'assets/student_portraits/${widget.students[index].studentId}.png',
-                              column: index % columns,
-                              row: index ~/ columns,
-                              scale: 0.98,
-                              clipRadiusFraction: 0.12,
-                              alphaThreshold: 0.04,
-                            ),
+                              AssetImageGridItem(
+                                asset: studentPortraitAssetAt(
+                                  widget.students[index],
+                                  formStep,
+                                ),
+                                column: index % columns,
+                                row: index ~/ columns,
+                                scale: 0.98,
+                                clipRadiusFraction: 0.12,
+                                alphaThreshold: 0.04,
+                              ),
+                            ],
                           ],
-                        ],
-                        columns: columns,
-                        rows: rows,
-                        columnGap: _gridGap,
-                        rowGap: _rowGap,
-                        rowHorizontalOffsets: offsets,
-                        contentPadding: padding,
+                          columns: columns,
+                          rows: rows,
+                          columnGap: _gridGap,
+                          rowGap: geometry.imageRowGap,
+                          rowHorizontalOffsets: offsets,
+                          contentPadding: padding,
+                        ),
                       ),
                     ),
                     Positioned.fill(
@@ -4143,7 +5027,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                             columns: columns,
                             rows: rows,
                             columnGap: _gridGap,
-                            rowGap: _rowGap,
+                            rowGap: geometry.imageRowGap,
                             rowHorizontalOffsets: offsets,
                             contentPadding: padding,
                             showAttributes: widget.showAttributes,
@@ -4168,6 +5052,18 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                                 ))
                                   index,
                             },
+                            orderBadges: {
+                              if (widget.selectionOrder.isNotEmpty)
+                                for (
+                                  var index = 0;
+                                  index < widget.students.length;
+                                  index++
+                                )
+                                  index: ?widget.selectionOrder[widget
+                                      .students[index]
+                                      .studentId],
+                            },
+                            removeMarks: widget.showRemoveMarks,
                           ),
                         ),
                       ),
@@ -4178,7 +5074,7 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
                       columns,
                       rows,
                       _gridGap,
-                      _rowGap,
+                      geometry.imageRowGap,
                       padding,
                       offsets,
                       activeRows.start,
@@ -4230,7 +5126,9 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
             selected:
                 widget.students[index].studentId == widget.selectedId ||
                 widget.selectedIds.contains(widget.students[index].studentId),
-            label: widget.students[index].displayName,
+            label:
+                widget.semanticLabelOf?.call(widget.students[index]) ??
+                widget.students[index].displayName,
             child: ClipPath(
               clipper: const _StudentGridCardHitClipper(),
               child: GestureDetector(
@@ -4243,6 +5141,37 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
         ),
     ];
   }
+}
+
+/// 목록 보기 [index]번째 행이 viewport 가운데에 오는 스크롤 위치(0 ~ [maxScrollExtent]로 자름, tidy1).
+double studentListRevealOffset({
+  required int index,
+  required double contentTop,
+  required double viewportHeight,
+  required double maxScrollExtent,
+}) {
+  final rowCenter =
+      contentTop + index * studentListItemExtent + studentListItemHeight / 2;
+  return (rowCenter - viewportHeight / 2).clamp(
+    0.0,
+    math.max(0.0, maxScrollExtent),
+  );
+}
+
+/// [row]행 카드가 viewport 가운데에 오는 스크롤 위치(0 ~ [maxScrollExtent]로 자름).
+double studentGridRevealOffset({
+  required int row,
+  required StudentGridRowGeometry geometry,
+  required double contentTop,
+  required double viewportHeight,
+  required double maxScrollExtent,
+}) {
+  final cardCenter =
+      contentTop + row * geometry.rowPitch + geometry.cardHeight / 2;
+  return (cardCenter - viewportHeight / 2).clamp(
+    0.0,
+    math.max(0.0, maxScrollExtent),
+  );
 }
 
 ({int start, int end}) studentGridActiveRowRange({
@@ -4266,52 +5195,233 @@ class _StudentDiagonalGridState extends State<StudentDiagonalGrid> {
   );
 }
 
-const studentCardInfoAreaFraction = 0.16;
-const studentCardAttributeAreaFraction = 0.03;
 const studentGridCardSourceSize = Size(252, 204);
 const studentGridCardOutlineColor = Colors.white;
 const studentGridCardSelectionColor = Color(0xffff72b6);
 const studentGridCardOutlineWidthFraction = 0.01;
 const studentGridCardSelectionWidthFraction = 0.02;
 
-({Rect unowned, Rect plan, Rect jp}) studentGridStatusBadgeRects(Rect card) {
-  final badgeHeight = (card.height * 0.14).clamp(14.0, 28.0);
-  final unownedWidth = (card.width * 0.42).clamp(32.0, 92.0);
-  final planWidth = (card.width * 0.28).clamp(28.0, 64.0);
-  final jpWidth = (card.width * 0.18).clamp(24.0, 44.0);
-  final depth = math.min(
-    card.width * 0.25,
-    card.height / math.tan(80 * math.pi / 180),
-  );
-  final cornerRadius = math.min(12.0, card.shortestSide * 0.1);
-  final outlineGap = card.shortestSide * studentGridCardOutlineWidthFraction;
-  final top = card.top + outlineGap * 0.5;
-  final unowned = Rect.fromLTWH(
-    card.left + depth,
-    top,
-    unownedWidth,
-    badgeHeight,
-  );
-  final jp = Rect.fromLTWH(
-    card.right - cornerRadius * 0.35 - jpWidth,
-    top,
-    jpWidth,
-    badgeHeight,
-  );
-  final plan = Rect.fromLTWH(
-    unowned.left - (badgeHeight + outlineGap) / math.tan(80 * math.pi / 180),
-    unowned.bottom + outlineGap,
-    planWidth,
-    badgeHeight,
-  );
-  return (unowned: unowned, plan: plan, jp: jp);
+// --- DE 카드: 카드 밖 이름 줄(FD-043, FD-045, FD-046) ------------------------
+// 시안 Student·W-Card-States·W-Card-Grid-DE: 이름 span은 카드 아래 3px에서 높이 16,
+// 폭 = 카드 하단 변 길이(카드 폭 − 80° 깊이), Pretendard 13 w700, 보유 #f4f8fb · 미보유 #9eb0c2.
+// 행 피치 = 카드 + 이름 줄 20 + 행 간격 3.84(카드 폭 206.87 → 167.47 + 23.84 = 191.31).
+
+/// 카드 아래 이름 줄이 차지하는 세로 길이(카드 아래 3 + 글자 줄 16 + 1).
+const studentGridNameLineExtent = 20.0;
+
+/// 카드 밑변과 이름 글자 줄 사이 간격.
+const studentGridNameTopGap = 3.0;
+
+/// 이름 글자 줄 높이.
+const studentGridNameHeight = 16.0;
+const studentGridNameFontSize = AppType.bodySize;
+const studentGridOwnedNameColor = AppColors.text;
+
+/// 미보유 학생 이름은 흐리게(FD-043).
+const studentGridUnownedNameColor = AppColors.textMuted;
+
+/// 행 사이 간격(이름 줄 아래). 열 간격은 4.8이다.
+const studentGridRowGap = 3.84;
+
+/// DE 그리드 한 행의 기하.
+@immutable
+class StudentGridRowGeometry {
+  const StudentGridRowGeometry({
+    required this.cardWidth,
+    required this.cardHeight,
+    required this.nameExtent,
+  });
+
+  final double cardWidth;
+  final double cardHeight;
+
+  /// 이름 줄 높이. "학생 이름 표시"를 끄면 0이다(FD-046 (a)).
+  final double nameExtent;
+
+  /// 이미지 셀(= 카드) 사이 세로 간격: 이름 줄 + [studentGridRowGap].
+  double get imageRowGap => nameExtent + studentGridRowGap;
+
+  /// 한 행의 세로 피치.
+  double get rowPitch => cardHeight + imageRowGap;
 }
 
-Path studentGridCardPath(Rect rect) {
-  final depth = math.min(
-    rect.width * 0.25,
-    rect.height / math.tan(80 * math.pi / 180),
+StudentGridRowGeometry studentGridRowGeometry({
+  required double cardWidth,
+  required bool showNames,
+}) => StudentGridRowGeometry(
+  cardWidth: cardWidth,
+  cardHeight:
+      cardWidth *
+      studentGridCardSourceSize.height /
+      studentGridCardSourceSize.width,
+  nameExtent: showNames ? studentGridNameLineExtent : 0,
+);
+
+/// [row]행의 가로 이동: 카드 중심 높이에서 viewport 밑변까지의 80° 레일 거리(FD-045).
+double studentGridRowHorizontalOffset({
+  required double viewportHeight,
+  required double contentTop,
+  required int row,
+  required StudentGridRowGeometry geometry,
+  double scrollOffset = 0,
+}) {
+  final cardCenterY =
+      contentTop +
+      row * geometry.rowPitch +
+      geometry.cardHeight / 2 -
+      scrollOffset;
+  return (viewportHeight - cardCenterY) / diagonalTan80;
+}
+
+/// 카드 밖 이름 글자 줄 rect. 왼쪽은 카드 왼쪽, 폭은 카드 하단 변 길이다.
+Rect studentGridNameRect(Rect card) => Rect.fromLTWH(
+  card.left,
+  card.bottom + studentGridNameTopGap,
+  math.max(0.0, card.width - studentGridCardCutDepth(card)),
+  studentGridNameHeight,
+);
+
+/// 카드 평행사변형의 80° 가로 깊이.
+double studentGridCardCutDepth(Rect card) =>
+    math.min(card.width * 0.25, diagonalCutDepth(card.height));
+
+// --- 상태 배지: 왼쪽 80° 변 채워 쌓기(FD-044) --------------------------------
+
+enum StudentGridStatusBadge {
+  unowned('UNOWNED'),
+  plan('PLAN'),
+  jp('JP');
+
+  const StudentGridStatusBadge(this.label);
+  final String label;
+}
+
+typedef StudentGridStatusBadgePlacement = ({
+  StudentGridStatusBadge badge,
+  Rect rect,
+});
+
+/// 있는 배지만 UNOWNED → PLAN → JP 순서로 왼쪽 80° 변을 따라 위에서부터 쌓는다.
+///
+/// 첫 칸은 카드 왼쪽 위 꼭짓점(깊이만큼 들어간 자리), 다음 칸은 (배지 높이 + 간격)만큼
+/// 아래로, 그 높이의 80° 깊이만큼 왼쪽으로 간다. 크기는 기존 계약 그대로다
+/// (높이 = 카드 높이 14%, 폭 UNOWNED 42% · PLAN 28% · JP 18%).
+List<StudentGridStatusBadgePlacement> studentGridStatusBadgeStack(
+  Rect card, {
+  required bool owned,
+  required bool planned,
+  required bool jpOnly,
+}) {
+  final badges = [
+    if (!owned) StudentGridStatusBadge.unowned,
+    if (planned) StudentGridStatusBadge.plan,
+    if (jpOnly) StudentGridStatusBadge.jp,
+  ];
+  return [
+    for (var slot = 0; slot < badges.length; slot++)
+      (
+        badge: badges[slot],
+        rect: studentGridStatusBadgeSlotRect(card, slot, badges[slot]),
+      ),
+  ];
+}
+
+/// [slot]번째(0부터) 배지 칸.
+Rect studentGridStatusBadgeSlotRect(
+  Rect card,
+  int slot,
+  StudentGridStatusBadge badge,
+) {
+  final badgeHeight = (card.height * 0.14).clamp(14.0, 28.0);
+  final width = switch (badge) {
+    StudentGridStatusBadge.unowned => (card.width * 0.42).clamp(32.0, 92.0),
+    StudentGridStatusBadge.plan => (card.width * 0.28).clamp(28.0, 64.0),
+    StudentGridStatusBadge.jp => (card.width * 0.18).clamp(24.0, 44.0),
+  };
+  final gap = card.shortestSide * studentGridCardOutlineWidthFraction;
+  final step = badgeHeight + gap;
+  return Rect.fromLTWH(
+    card.left + studentGridCardCutDepth(card) - slot * diagonalCutDepth(step),
+    card.top + gap * 0.5 + slot * step,
+    width,
+    badgeHeight,
   );
+}
+
+// --- 속성 글자 칩: 오른쪽 위, 80° 계단(D안, FD-043·FD-047) --------------------
+// 시안 값: 칩 높이 max(14, 카드 높이 × .11), 위 4, 칩 사이 3, 글자 = 높이 × .55 w800 흰색,
+// 좌우 안쪽 여백 = 높이 × .45, r3, skewX(−10°), 그림자 0 1 2 rgba(0,0,0,.4).
+// 칩 상자 오른쪽 끝은 칩 밑변 높이에서 카드 오른쪽 80° 변보다 6px 안쪽이다
+// (카드 높이 161.9 → right 9.8 / 13.5, 167.47 → 10.0 / 13.7).
+
+const studentAttributeChipTop = 4.0;
+const studentAttributeChipGap = 3.0;
+const studentAttributeChipEdgeInset = 6.0;
+const studentAttributeChipRadius = 3.0;
+const studentAttributeChipHeightFraction = 0.11;
+const studentAttributeChipMinHeight = 14.0;
+const studentAttributeChipFontFraction = 0.55;
+const studentAttributeChipPaddingFraction = 0.45;
+const studentAttributeChipShadowColor = Color(0x66000000);
+
+/// 카드 칩용 공격 타입 축약 라벨(FD-047).
+const Map<String, String> studentAttackChipLabels = {
+  'Explosive': '폭발',
+  'Piercing': '관통',
+  'Mystic': '신비',
+  'Sonic': '진동',
+  'Chemical': '화학',
+};
+
+/// 카드 칩용 방어 타입 축약 라벨(FD-047). 필터 팝업은 전체 라벨(`studentFilterValueLabels`)을 쓴다.
+const Map<String, String> studentDefenseChipLabels = {
+  'Light': '경장',
+  'Heavy': '중장',
+  'Special': '특수',
+  'Elastic': '탄력',
+  'Composite': '복합',
+};
+
+String? studentAttackChipLabel(String? attackType) =>
+    studentAttackChipLabels[attackType];
+
+String? studentDefenseChipLabel(String? defenseType) =>
+    studentDefenseChipLabels[defenseType];
+
+double studentAttributeChipHeight(Rect card) => math.max(
+  studentAttributeChipMinHeight,
+  card.height * studentAttributeChipHeightFraction,
+);
+
+/// [slot]번째 칩 상자(기울이기 전). 오른쪽 끝이 카드 오른쪽 80° 변을 따라 계단을 이룬다.
+Rect studentAttributeChipBox(Rect card, int slot, double width) {
+  final height = studentAttributeChipHeight(card);
+  final top =
+      studentAttributeChipTop + slot * (height + studentAttributeChipGap);
+  final right =
+      card.right -
+      studentAttributeChipEdgeInset -
+      diagonalCutDepth(top + height);
+  return Rect.fromLTRB(
+    right - width,
+    card.top + top,
+    right,
+    card.top + top + height,
+  );
+}
+
+/// 칩에 들어가는 (라벨, 색) 목록. 라벨을 모르는 타입은 칩을 그리지 않고 다음 칩이 올라온다.
+List<({String label, Color color})> studentAttributeChips(
+  StudentCatalogEntry student,
+) => [
+  if (studentAttackChipLabel(student.attackType) case final label?)
+    (label: label, color: studentAttackTypeColor(student.attackType)),
+  if (studentDefenseChipLabel(student.defenseType) case final label?)
+    (label: label, color: studentDefenseTypeColor(student.defenseType)),
+];
+
+Path studentGridCardPath(Rect rect) {
+  final depth = studentGridCardCutDepth(rect);
   return buildRoundedSectionPolygon([
     Offset(rect.left + depth, rect.top),
     Offset(rect.right, rect.top),
@@ -4326,10 +5436,7 @@ Rect studentGridCardFittedRect(Rect cell) => Alignment.center.inscribe(
 );
 
 Path studentGridCardHitPath(Rect rect) {
-  final depth = math.min(
-    rect.width * 0.25,
-    rect.height / math.tan(80 * math.pi / 180),
-  );
+  final depth = studentGridCardCutDepth(rect);
   return Path()
     ..moveTo(rect.left + depth, rect.top)
     ..lineTo(rect.right, rect.top)
@@ -4349,27 +5456,32 @@ class _StudentGridCardHitClipper extends CustomClipper<Path> {
   bool shouldReclip(_StudentGridCardHitClipper oldClipper) => false;
 }
 
+/// 공격 타입 색(FD-024). 타입 색은 [AppColors] 토큰만 쓴다.
 Color studentAttackTypeColor(String? attackType) => switch (attackType) {
-  'Explosive' => const Color(0xff920008),
-  'Piercing' => const Color(0xffbd8901),
-  'Mystic' => const Color(0xff226f9b),
-  'Sonic' => const Color(0xff9945a8),
+  'Explosive' => AppColors.typeExplosive,
+  'Piercing' => AppColors.typePiercing,
+  'Mystic' => AppColors.typeMystic,
+  'Sonic' => AppColors.typeSonic,
   'Break' ||
   'Demolition' ||
   'Disassembly' ||
-  'Composite' => const Color(0xff228b22),
-  _ => const Color(0xff5c6ea8),
-};
-
-Color studentDefenseTypeColor(String? defenseType) => switch (defenseType) {
-  'Light' => studentAttackTypeColor('Explosive'),
-  'Heavy' => studentAttackTypeColor('Piercing'),
-  'Special' => studentAttackTypeColor('Mystic'),
-  'Elastic' => studentAttackTypeColor('Sonic'),
-  'Composite' => const Color(0xff228b22),
+  'Composite' => AppColors.typeComposite,
   _ => AppColors.outline,
 };
 
+/// 방어 타입 색. 경장=폭발, 중장=관통, 특수=신비, 탄력=진동, 복합=composite.
+Color studentDefenseTypeColor(String? defenseType) => switch (defenseType) {
+  'Light' => AppColors.typeExplosive,
+  'Heavy' => AppColors.typePiercing,
+  'Special' => AppColors.typeMystic,
+  'Elastic' => AppColors.typeSonic,
+  'Composite' => AppColors.typeComposite,
+  _ => AppColors.outline,
+};
+
+/// 학생 카드 overlay(DE). 셀마다 카드(252:204 contain)를 잡고 그 위에
+/// 속성 글자 칩(오른쪽 위), 미보유 암전, 흰 외곽선·선택 외곽선, 왼쪽 변 배지 스택을,
+/// 카드 아래에는 이름 줄을 그린다. 그리드는 셀을 카드와 같게 잡고 이름 줄만큼 행 간격을 둔다.
 class StudentGridCardOverlayPainter extends CustomPainter {
   const StudentGridCardOverlayPainter({
     required this.students,
@@ -4385,6 +5497,8 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     required this.selectedIndex,
     this.selectedIndices = const {},
     required this.plannedIds,
+    this.orderBadges = const {},
+    this.removeMarks = false,
     this.firstRow = 0,
     this.lastRow,
     this.outlineColor = studentGridCardOutlineColor,
@@ -4402,10 +5516,18 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final List<double> rowHorizontalOffsets;
   final EdgeInsets contentPadding;
   final bool showAttributes;
+
+  /// 카드 밖 이름 줄. 켜면 카드 밑변 아래 [studentGridNameRect]에 그린다.
   final bool showNames;
   final int? selectedIndex;
   final Set<int> selectedIndices;
   final Set<String> plannedIds;
+
+  /// 학생 인덱스 → 고른 순서 배지 숫자(FE4-b1).
+  final Map<int, int> orderBadges;
+
+  /// 카드마다 오른쪽 위 × 표시(FE4-b1 압축 그리드).
+  final bool removeMarks;
   final int firstRow;
   final int? lastRow;
   final Color outlineColor;
@@ -4413,12 +5535,34 @@ class StudentGridCardOverlayPainter extends CustomPainter {
   final double outlineWidthFraction;
   final double selectionWidthFraction;
 
+  /// [index] 학생의 카드 rect(그리기와 같은 계산). 범위를 벗어나면 null.
+  Rect? cardRectAt(Size size, int index) {
+    if (index < 0 || index >= students.length) return null;
+    final row = index ~/ columns;
+    if (row >= rows) return null;
+    final content = contentPadding.deflateRect(Offset.zero & size);
+    final cellWidth = (content.width - columnGap * (columns - 1)) / columns;
+    final cellHeight = (content.height - rowGap * (rows - 1)) / rows;
+    final cell = Rect.fromLTWH(
+      content.left +
+          _rowOffset(row) +
+          (index % columns) * (cellWidth + columnGap),
+      content.top + row * (cellHeight + rowGap),
+      cellWidth,
+      cellHeight,
+    );
+    return studentGridCardFittedRect(cell);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final content = contentPadding.deflateRect(Offset.zero & size);
     final cellWidth = (content.width - columnGap * (columns - 1)) / columns;
     final cellHeight = (content.height - rowGap * (rows - 1)) / rows;
+    // 외곽선 두께 기준은 셀의 짧은 변이다. DE 그리드는 셀 = 카드라서 카드 높이의 1%·2%가
+    // 되고(시안 1.67 / 3.35), 1×1 초상 슬롯은 기존 두께를 유지한다.
+    final strokeBase = math.min(cellWidth, cellHeight);
     final cards = <int, Rect>{};
     final visibleLastRow = math.min(rows, lastRow ?? rows);
     final firstIndex = math.min(
@@ -4427,28 +5571,16 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     );
     final lastIndex = math.min(students.length, visibleLastRow * columns);
     for (var index = firstIndex; index < lastIndex; index++) {
-      final column = index % columns;
-      final row = index ~/ columns;
-      if (row >= rows) break;
-      final cell = Rect.fromLTWH(
-        content.left + _rowOffset(row) + column * (cellWidth + columnGap),
-        content.top + row * (cellHeight + rowGap),
-        cellWidth,
-        cellHeight,
-      );
-      final fitted = studentGridCardFittedRect(cell);
+      final fitted = cardRectAt(size, index);
+      if (fitted == null) break;
       cards[index] = fitted;
       _paintCardOverlay(canvas, fitted, students[index]);
     }
-    final outlineWidth = math.max(
-      1.0,
-      math.min(cellWidth, cellHeight) * outlineWidthFraction,
-    );
     final outlinePaint = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = outlineWidth
+      ..strokeWidth = math.max(1.0, strokeBase * outlineWidthFraction)
       ..color = outlineColor;
     for (final card in cards.values) {
       canvas.drawPath(studentGridCardPath(card), outlinePaint);
@@ -4463,26 +5595,37 @@ class StudentGridCardOverlayPainter extends CustomPainter {
           ..isAntiAlias = true
           ..style = PaintingStyle.stroke
           ..strokeJoin = StrokeJoin.round
-          ..strokeWidth = math.max(
-            1.0,
-            math.min(cellWidth, cellHeight) * selectionWidthFraction,
-          )
+          ..strokeWidth = math.max(1.0, strokeBase * selectionWidthFraction)
           ..color = selectionColor,
       );
     }
     for (final entry in cards.entries) {
-      final index = entry.key;
-      final student = students[index];
-      final badges = studentGridStatusBadgeRects(entry.value);
-      if (!ownedIds.contains(student.studentId)) {
-        paintStudentPortraitStatusBadge(canvas, badges.unowned, 'UNOWNED');
+      final student = students[entry.key];
+      final owned = ownedIds.contains(student.studentId);
+      for (final placement in studentGridStatusBadgeStack(
+        entry.value,
+        owned: owned,
+        planned: plannedIds.contains(student.studentId),
+        jpOnly: student.jpOnly,
+      )) {
+        paintStudentPortraitStatusBadge(
+          canvas,
+          placement.rect,
+          placement.badge.label,
+        );
       }
-      if (student.jpOnly) {
-        paintStudentPortraitStatusBadge(canvas, badges.jp, 'JP');
+      if (showNames) {
+        paintStudentGridName(
+          canvas,
+          entry.value,
+          student.displayName,
+          owned: owned,
+        );
       }
-      if (plannedIds.contains(student.studentId)) {
-        paintStudentPortraitStatusBadge(canvas, badges.plan, 'PLAN');
+      if (orderBadges[entry.key] case final order?) {
+        paintStudentGridOrderBadge(canvas, entry.value, order);
       }
+      if (removeMarks) paintStudentGridRemoveMark(canvas, entry.value);
     }
   }
 
@@ -4494,96 +5637,15 @@ class StudentGridCardOverlayPainter extends CustomPainter {
     Rect card,
     StudentCatalogEntry student,
   ) {
-    final infoTop = card.bottom - card.height * studentCardInfoAreaFraction;
-    final attributeBottom =
-        infoTop + card.height * studentCardAttributeAreaFraction;
     canvas.save();
     canvas.clipPath(studentGridCardPath(card), doAntiAlias: true);
-
-    if (showNames) {
-      canvas.drawRect(
-        Rect.fromLTRB(card.left, infoTop, card.right, card.bottom),
-        Paint()..color = const Color(0xb35b626b),
-      );
-    }
     if (showAttributes) {
-      final topBounds = _rowBounds(card, infoTop);
-      final bottomBounds = _rowBounds(card, attributeBottom);
-      final topMiddle = (topBounds.$1 + topBounds.$2) / 2;
-      final bottomMiddle = (bottomBounds.$1 + bottomBounds.$2) / 2;
-      final attackPath = Path()
-        ..moveTo(topBounds.$1, infoTop)
-        ..lineTo(topMiddle, infoTop)
-        ..lineTo(bottomMiddle, attributeBottom)
-        ..lineTo(bottomBounds.$1, attributeBottom)
-        ..close();
-      final defensePath = Path()
-        ..moveTo(topMiddle, infoTop)
-        ..lineTo(topBounds.$2, infoTop)
-        ..lineTo(bottomBounds.$2, attributeBottom)
-        ..lineTo(bottomMiddle, attributeBottom)
-        ..close();
-      canvas.drawPath(
-        attackPath,
-        Paint()..color = studentAttackTypeColor(student.attackType),
-      );
-      canvas.drawPath(
-        defensePath,
-        Paint()..color = studentDefenseTypeColor(student.defenseType),
-      );
-    }
-    if (showNames) {
-      _paintName(canvas, card, attributeBottom, student.displayName);
+      paintStudentAttributeChips(canvas, card, studentAttributeChips(student));
     }
     if (!ownedIds.contains(student.studentId)) {
       paintUnownedStudentPortraitStatus(canvas, card, showBadge: false);
     }
-
     canvas.restore();
-  }
-
-  (double, double) _rowBounds(Rect card, double y) {
-    final progress = ((y - card.top) / card.height).clamp(0.0, 1.0);
-    final depth = card.height / math.tan(80 * math.pi / 180);
-    return (card.left + (1 - progress) * depth, card.right - progress * depth);
-  }
-
-  void _paintName(Canvas canvas, Rect card, double top, String name) {
-    final bottom = card.bottom;
-    final topBounds = _rowBounds(card, top);
-    final bottomBounds = _rowBounds(card, bottom);
-    final left = math.max(topBounds.$1, bottomBounds.$1) + 1;
-    final right = math.min(topBounds.$2, bottomBounds.$2) - 1;
-    final height = math.max(1.0, bottom - top);
-    final painter = TextPainter(
-      text: TextSpan(
-        text: name,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: studentCardNameFontSize(height),
-          fontWeight: FontWeight.w700,
-          height: 1,
-          shadows: const [
-            Shadow(
-              color: Color(0xaa000000),
-              blurRadius: 1,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      ellipsis: '…',
-    )..layout(maxWidth: math.max(1.0, right - left));
-    painter.paint(
-      canvas,
-      Offset(
-        left + (right - left - painter.width) / 2,
-        top + (height - painter.height) / 2,
-      ),
-    );
   }
 
   @override
@@ -4601,6 +5663,8 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.selectedIndex != selectedIndex ||
       oldDelegate.selectedIndices != selectedIndices ||
       oldDelegate.plannedIds != plannedIds ||
+      !mapEquals(oldDelegate.orderBadges, orderBadges) ||
+      oldDelegate.removeMarks != removeMarks ||
       oldDelegate.firstRow != firstRow ||
       oldDelegate.lastRow != lastRow ||
       oldDelegate.outlineColor != outlineColor ||
@@ -4609,225 +5673,207 @@ class StudentGridCardOverlayPainter extends CustomPainter {
       oldDelegate.selectionWidthFraction != selectionWidthFraction;
 }
 
-double studentCardNameFontSize(double nameAreaHeight) =>
-    math.max(6.0, math.min(12.0, nameAreaHeight * 0.8));
+// --- 고른 순서 배지 · 빼기 표시(계획 만들기 1단계, FE4-b1) ------------------
+// 시안 Flow-1-Students: 카드 172.6×139.7에 지름 26 원(#f2b3ef, 13px w900 #2a1330), 오른쪽은 카드 아래 80° 모서리보다
+// 4 안쪽, 아래 4. Flow-1-Students-Many C 압축 그리드: 카드 86.2×69.8에 지름 21(11px), 3 안쪽, × 22×22
+// (rgba(6,8,14,.8), 오른쪽 위 4·3).
 
+/// 고른 순서 배지 원 상자.
+Rect studentGridOrderBadgeRect(Rect card) {
+  final size = math.max(21.0, card.height * 0.186);
+  final right = card.right - studentGridCardCutDepth(card) - size * 0.15;
+  final bottom = card.bottom - math.max(3.0, card.height * 0.0287);
+  return Rect.fromLTRB(right - size, bottom - size, right, bottom);
+}
+
+/// 고른 순서 배지를 그린다(원 + 숫자).
+void paintStudentGridOrderBadge(Canvas canvas, Rect card, int order) {
+  final rect = studentGridOrderBadgeRect(card);
+  canvas.drawOval(rect, Paint()..color = AppColors.accent);
+  final text = TextPainter(
+    text: TextSpan(
+      text: '$order',
+      style: TextStyle(
+        fontFamily: AppFonts.body,
+        fontFamilyFallback: AppFonts.fallback,
+        color: AppColors.onAccent,
+        fontSize: rect.height * 0.5,
+        fontWeight: FontWeight.w900,
+        height: 1,
+      ),
+    ),
+    maxLines: 1,
+    textDirection: TextDirection.ltr,
+  )..layout();
+  text.paint(
+    canvas,
+    Offset(
+      rect.center.dx - text.width / 2,
+      rect.center.dy - text.height / 2,
+    ),
+  );
+}
+
+/// 빼기 × 상자(카드 오른쪽 위).
+Rect studentGridRemoveMarkRect(Rect card) {
+  final size = math.max(16.0, card.height * 0.315);
+  final right = card.right - math.max(3.0, card.width * 0.046);
+  final top = card.top + math.max(2.0, card.height * 0.043);
+  return Rect.fromLTWH(right - size, top, size, size);
+}
+
+/// 빼기 × 표시를 그린다.
+void paintStudentGridRemoveMark(Canvas canvas, Rect card) {
+  final rect = studentGridRemoveMarkRect(card);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(rect, Radius.circular(rect.height * 0.25)),
+    Paint()..color = const Color.fromRGBO(6, 8, 14, 0.8),
+  );
+  final arm = rect.height * 0.22;
+  final paint = Paint()
+    ..color = AppColors.text
+    ..strokeWidth = math.max(1.2, rect.height * 0.08)
+    ..strokeCap = StrokeCap.round;
+  final center = rect.center;
+  canvas
+    ..drawLine(center - Offset(arm, arm), center + Offset(arm, arm), paint)
+    ..drawLine(center - Offset(-arm, arm), center + Offset(-arm, arm), paint);
+}
+
+/// 속성 글자 칩 글자 스타일(카드 높이에 따라 크기만 바뀐다).
+TextStyle studentAttributeChipTextStyle(double chipHeight) => TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: Colors.white,
+  fontSize: chipHeight * studentAttributeChipFontFraction,
+  fontWeight: FontWeight.w800,
+  height: 1,
+);
+
+/// 칩 [chips]를 카드 오른쪽 위에 계단으로 그린다. 카드 clip 안에서 부른다.
+/// 그린 칩 상자(기울이기 전)를 돌려준다.
+List<Rect> paintStudentAttributeChips(
+  Canvas canvas,
+  Rect card,
+  List<({String label, Color color})> chips,
+) {
+  final height = studentAttributeChipHeight(card);
+  final padding = height * studentAttributeChipPaddingFraction;
+  final boxes = <Rect>[];
+  for (var slot = 0; slot < chips.length; slot++) {
+    final chip = chips[slot];
+    final text = TextPainter(
+      text: TextSpan(
+        text: chip.label,
+        style: studentAttributeChipTextStyle(height),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final box = studentAttributeChipBox(card, slot, text.width + padding * 2);
+    final path = skewBoxPath(
+      box.size,
+      radius: studentAttributeChipRadius,
+    ).shift(box.topLeft);
+    canvas.drawPath(
+      path.shift(const Offset(0, 1)),
+      Paint()
+        ..color = studentAttributeChipShadowColor
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1),
+    );
+    canvas.drawPath(path, Paint()..color = chip.color);
+    text.paint(
+      canvas,
+      Offset(
+        box.center.dx - text.width / 2,
+        box.center.dy - text.height / 2,
+      ),
+    );
+    boxes.add(box);
+  }
+  return boxes;
+}
+
+/// 이름 글자 스타일. 미보유는 흐리게(FD-043).
+TextStyle studentGridNameTextStyle({required bool owned}) => TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  color: owned ? studentGridOwnedNameColor : studentGridUnownedNameColor,
+  fontSize: studentGridNameFontSize,
+  fontWeight: FontWeight.w700,
+  height: 1,
+);
+
+/// 카드 밖 이름 줄을 [studentGridNameRect]의 가운데에 그린다(넘치면 말줄임).
+void paintStudentGridName(
+  Canvas canvas,
+  Rect card,
+  String name, {
+  required bool owned,
+}) {
+  final rect = studentGridNameRect(card);
+  if (rect.width <= 0) return;
+  final painter = TextPainter(
+    text: TextSpan(text: name, style: studentGridNameTextStyle(owned: owned)),
+    textDirection: TextDirection.ltr,
+    textAlign: TextAlign.center,
+    maxLines: 1,
+    ellipsis: '…',
+  )..layout(maxWidth: rect.width);
+  painter.paint(
+    canvas,
+    Offset(
+      rect.left + (rect.width - painter.width) / 2,
+      rect.top + (rect.height - painter.height) / 2,
+    ),
+  );
+}
+
+/// 학생 화면의 사선 스크롤바: 공용 [DiagonalScrollbar](FE2-a)에 학생 화면 값을 넘긴다.
+///
+/// 포그는 [StudentViewportFog](키 `<keyPrefix>-fog`), 드래그는 레일 띠다.
 class _StudentDiagonalScrollbar extends StatelessWidget {
   const _StudentDiagonalScrollbar({
     required this.controller,
     required this.keyPrefix,
     required this.child,
-    this.fogColor,
   });
 
   final ScrollController controller;
   final String keyPrefix;
   final Widget child;
-  final Color? fogColor;
 
   @override
-  Widget build(BuildContext context) => ScrollConfiguration(
-    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-    child: LayoutBuilder(
-      builder: (context, constraints) => AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final size = constraints.biggest;
-          final hasClients = controller.hasClients;
-          final maxScroll = hasClients
-              ? controller.position.maxScrollExtent
-              : 0.0;
-          final viewport = hasClients
-              ? controller.position.viewportDimension
-              : size.height;
-          final offset = hasClients ? controller.offset : 0.0;
-          final fogVisibility = hasClients
-              ? studentViewportFogVisibility(
-                  minScrollExtent: controller.position.minScrollExtent,
-                  maxScrollExtent: controller.position.maxScrollExtent,
-                  pixels: controller.position.pixels,
-                )
-              : (showTop: false, showBottom: false);
-          const trackInset = 10.0;
-          final trackHeight = math.max(1.0, size.height - trackInset * 2);
-          final handleHeight = maxScroll <= 0
-              ? trackHeight
-              : math.max(28.0, trackHeight * viewport / (viewport + maxScroll));
-          final travel = math.max(1.0, trackHeight - handleHeight);
-          final handleTop =
-              trackInset +
-              travel *
-                  (maxScroll <= 0 ? 0 : (offset / maxScroll).clamp(0.0, 1.0));
-          final handleCenter = studentScrollbarTrackPoint(
-            size,
-            handleTop + handleHeight / 2,
-            trackInset: trackInset,
-          );
-          final dragPath = studentScrollbarDragPath(
-            size,
-            trackInset: trackInset,
-          );
-          final dragBounds = dragPath.getBounds();
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              child,
-              Positioned.fill(
-                child: StudentViewportFog(
-                  key: ValueKey('$keyPrefix-fog'),
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                  color: fogColor,
-                ),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    key: ValueKey('$keyPrefix-diagonal-scrollbar'),
-                    painter: _StudentDiagonalScrollbarPainter(
-                      offset: offset,
-                      maxScrollExtent: maxScroll,
-                      handleHeight: handleHeight,
-                      trackInset: trackInset,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                key: ValueKey('$keyPrefix-scrollbar-handle-center'),
-                left: handleCenter.dx - 0.5,
-                top: handleCenter.dy - 0.5,
-                width: 1,
-                height: 1,
-                child: const IgnorePointer(),
-              ),
-              if (maxScroll > 0)
-                Positioned.fromRect(
-                  rect: dragBounds,
-                  child: ClipPath(
-                    clipper: _LocalPathClipper(
-                      dragPath.shift(-dragBounds.topLeft),
-                    ),
-                    child: GestureDetector(
-                      key: ValueKey('$keyPrefix-diagonal-scrollbar-drag'),
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragUpdate: (details) {
-                        controller.jumpTo(
-                          (controller.offset +
-                                  details.delta.dy * maxScroll / travel)
-                              .clamp(0.0, maxScroll),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+  Widget build(BuildContext context) => DiagonalScrollbar(
+    keyPrefix: keyPrefix,
+    controller: controller,
+    drag: DiagonalScrollbarDrag.rail,
+    fogBuilder: (context, visibility) => StudentViewportFog(
+      key: ValueKey('$keyPrefix-fog'),
+      showTop: visibility.showTop,
+      showBottom: visibility.showBottom,
     ),
+    child: child,
   );
 }
 
+/// 학생 스크롤바 레일 점. 공용 [diagonalScrollbarTrackPoint]와 같은 식이다.
 Offset studentScrollbarTrackPoint(
   Size size,
   double y, {
   double trackInset = 10,
-}) {
-  final tangent = math.tan(80 * math.pi / 180);
-  final depth = size.height / tangent;
-  final clampedY = y.clamp(0.0, size.height);
-  return Offset(
-    size.width - trackInset - depth + (size.height - clampedY) / tangent,
-    clampedY,
-  );
-}
+}) => diagonalScrollbarTrackPoint(size, y, trackInset: trackInset);
 
+/// 학생 스크롤바 드래그 띠. 공용 [diagonalScrollbarDragPath]와 같다.
 Path studentScrollbarDragPath(
   Size size, {
   double trackInset = 10,
   double hitSlop = 8,
-}) {
-  final start = studentScrollbarTrackPoint(
-    size,
-    trackInset,
-    trackInset: trackInset,
-  );
-  final end = studentScrollbarTrackPoint(
-    size,
-    size.height - trackInset,
-    trackInset: trackInset,
-  );
-  final direction = end - start;
-  final length = direction.distance;
-  if (length <= 0) return Path();
-  final normal =
-      Offset(-direction.dy / length, direction.dx / length) * hitSlop;
-  return Path()
-    ..moveTo((start + normal).dx, (start + normal).dy)
-    ..lineTo((end + normal).dx, (end + normal).dy)
-    ..lineTo((end - normal).dx, (end - normal).dy)
-    ..lineTo((start - normal).dx, (start - normal).dy)
-    ..close();
-}
-
-class _StudentDiagonalScrollbarPainter extends CustomPainter {
-  const _StudentDiagonalScrollbarPainter({
-    required this.offset,
-    required this.maxScrollExtent,
-    required this.handleHeight,
-    required this.trackInset,
-  });
-
-  final double offset;
-  final double maxScrollExtent;
-  final double handleHeight;
-  final double trackInset;
-
-  Path _segment(Size size, double top, double bottom) {
-    final start = studentScrollbarTrackPoint(size, top, trackInset: trackInset);
-    final end = studentScrollbarTrackPoint(
-      size,
-      bottom,
-      trackInset: trackInset,
-    );
-    return Path()
-      ..moveTo(start.dx, start.dy)
-      ..lineTo(end.dx, end.dy);
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final trackBottom = size.height - trackInset;
-    canvas.drawPath(
-      _segment(size, trackInset, trackBottom),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = AppColors.outline.withValues(alpha: 0.48),
-    );
-    if (maxScrollExtent <= 0) return;
-    final travel = math.max(0.0, trackBottom - trackInset - handleHeight);
-    final top =
-        trackInset + travel * (offset / maxScrollExtent).clamp(0.0, 1.0);
-    canvas.drawPath(
-      _segment(size, top, top + handleHeight),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xffe5a0ea),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StudentDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.maxScrollExtent != maxScrollExtent ||
-      oldDelegate.handleHeight != handleHeight ||
-      oldDelegate.trackInset != trackInset;
-}
+}) => diagonalScrollbarDragPath(
+  size,
+  trackInset: trackInset,
+  hitSlop: hitSlop,
+);
 
 class _ContainerBoundsClipper extends CustomClipper<Path> {
   _ContainerBoundsClipper(this.id, this.canvasSize);

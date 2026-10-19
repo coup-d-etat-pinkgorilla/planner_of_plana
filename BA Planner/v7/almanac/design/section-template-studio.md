@@ -47,7 +47,10 @@ sources:
     path: frontend/lib/ui/widgets/account_section_cluster.dart
   - id: account-studio-document
     type: file
-    path: release/section-account-create-manager.ba-section-studio.json
+    path: frontend/assets/studio_sections/section-account-create-manager.ba-section-studio.json
+  - id: account-editor-tests
+    type: file
+    path: frontend/test/account_editor_fe8c_test.dart
   - id: lifted-path-shadow
     type: file
     path: frontend/lib/ui/widgets/lifted_path_shadow.dart
@@ -60,6 +63,12 @@ sources:
   - id: student-tests
     type: file
     path: frontend/test/student_studio_layout_test.dart
+  - id: student-filter-modal
+    type: file
+    path: frontend/lib/ui/widgets/student_filter_modal.dart
+  - id: student-filter-modal-tests
+    type: file
+    path: frontend/test/student_filter_modal_test.dart
   - id: student-studio-document
     type: file
     path: release/section-student.ba-section-studio.json
@@ -163,11 +172,26 @@ Container/Feature 상대 rect를 typed projection으로 읽고 Studio와 같은 
 유지해야 하는 경우처럼 서로 다른 부모 rect를 섞는 작업은 암묵적인 좌표 재계산에 맡기지 않는다.
 [@title-layout] [@title-tests]
 
+Section의 기본 표면은 앱 전체에서 하나다(FE1-c, 2026-10-06, 시안 우선 FD-001·FD-006·FD-007):
+`AppColors.surface` alpha 0.76, 블러(`BackdropFilter`) 없음, 테두리 없음, 그 아래 최종 polygon
+path를 따르는 `defaultLiftedSectionShadow` 4층. 코드는 `frontend/lib/ui/widgets/section_surface.dart`의
+`SectionSurface`(위젯)·`paintSectionSurface`(painter 함수)·`sectionSurfaceColor` 하나만 쓴다.
+`DiagonalSection`은 그 래퍼이고(`SectionTemplateSurface` · `AttachedSectionTemplateSurface`는 런타임
+사용처가 없어 FE10-a에서 지웠다, FD-174), 이전의
+surface 0.92·0.88 + blur 8 + 1px outline은 폐기했다. Studio 편집기(`SectionCanvasPainter`)도 선택되지
+않은 Section을 같은 표면으로 미리 보여 준다. 선택된 Section의 primaryMuted 채움과 primary 외곽선은
+편집 표시이며 시안 근거가 없어 유지한다. 삼각 무늬 텍스처 Container 표면은 이 규칙 밖이다(FD-015).
+
+화면의 상시 안내 문장은 시안이 있는 화면에서 키트 `InfoPopover`의 (i) 뒤로 옮긴다(FD-020). 시안이
+없는 설정 탭은 안내 문장을 그대로 두고 모양만 사선 섹션으로 다시 그렸다(FD-179). FD-020 당시 시안이
+없던 스캔 탭은 2026-10-06 스캔 시안(FD-120)이 생겨 다른 탭처럼 (i)를 쓴다.
+
 Section의 기본 표면은 테두리가 없고 반투명이다. 그러나 같은 영역에 부모 Section 표면과
 삼각 무늬 Container를 차례로 그리면 두 반투명 색이 합성되어 원하지 않는 원본 색이 남는다.
 Container 텍스처가 최종 표면인 구성에서는 부모 Section fill을 먼저 그리지 않고 실제 Container
 path에 텍스처를 한 번만 그린다. 반투명은 화면 배경과의 관계에서 유지하며, 서로 겹친 두 표면으로
-만들지 않는다. 회귀 test는 해당 모션 그룹 아래 배경/blur 표면의 개수를 검사해야 한다.
+만들지 않는다. 회귀 test는 해당 모션 그룹 아래 배경 표면의 개수를 검사해야 한다(FE1-c 이후 Section
+바탕에는 blur가 없고, blur는 텍스처 Container 표면에만 남는다).
 [@title-runtime] [@title-tests]
 
 Title 패널에 속한 모든 최상위 Section은 최종 polygon path를 따르는 얇은 lifted shadow를 가진다.
@@ -226,135 +250,147 @@ Section 3은 90°로 위쪽 퇴장한다. 중간 animation frame에서 translati
 
 ### Title 계정 생성·관리 클러스터 적용
 
-`section-account-create-manager.ba-section-studio.json`의 Section 1·4·5, Container 3~16·18·19와
-Feature 4~8은 `accountStudioDocument`에 수치 그대로 투영한다. 특히 Container 15 목록 행 안의
-Container 16 프로필 이미지와 Feature 5 계정명·Feature 6 구분선·Feature 7 보유 학생 수는 각각의
-저장 좌표를 사용하고, Feature 8 polygon을 계정명 입력 표면과 clip 영역으로 사용한다. typed 문서의
-encode 결과를 저장 JSON 전체와 비교해 누락된 저장이나 임시 runtime 좌표의 재도입을 막는다.
-삼각 무늬 여부는 저장 JSON의 geometry가 아니라 사용자가 지정한 계정 관리 버튼·목록 행의 runtime
-표현 규칙을 따른다. [@account-layout] [@title-tests]
+`section-account-create-manager.ba-section-studio.json`(git 추적 사본 `frontend/assets/studio_sections/`,
+FE8-b부터 원본)의 Section 1·4·5, Container 3~16·18~24와 Feature 4~13은 `accountStudioDocument`에 수치
+그대로 투영한다. 관리 화면(Section 5)은 시안 `Title-Accounts.dc.html` 목록·레일·행 값이고, 편집 패널
+(Section 1 접힘·Section 4 펼침)은 같은 artboard의 편집 패널과 `Title-Accounts-Portrait.dc.html` 값이다
+(FE8-b·FE8-c, FD-113, FD-001 시안 우선). Container 15 목록 행 안의 Container 16 프로필 이미지와
+Feature 5 계정명·Feature 6 진행 막대·Feature 7 보유 학생 수는 각각의 저장 좌표를 사용한다. typed
+문서의 encode 결과를 저장 JSON 전체와 비교해 누락된 저장이나 임시 runtime 좌표의 재도입을 막는다.
+삼각 무늬 여부는 저장 JSON의 geometry가 아니라 계정 관리 버튼의 runtime 표현 규칙을 따른다.
+[@account-studio-document] [@account-layout] [@title-tests]
 
-Section의 남는 영역에만 기본 반투명 표면을 그리고, 삼각 무늬 버튼·목록 Container와 입력 표면은
-Section path에서 차감한 뒤 각 polygon에 한 번만 그린다. 따라서 부모 Section fill과 자식 표면이
-중복 합성되지 않는다. 목록 행의 hit target, 버튼 정렬과 입력 clip도 같은 최종 polygon path를
+관리 섹션(Section 5)은 표면을 그리지 않는다. 섹션 rect는 이동·검수용 표지이고, 보이는 표면은
+Container 11 목록 평행사변형(r14, 채움 rgba(29,42,58,.9) = 공용 표면 .76의 예외, lifted shadow)이다.
+편집 패널도 섹션이 아니라 Container 20(접힘)·21(펼침) 평행사변형(r16, 채움 .95, lifted shadow)이
+보이는 표면이다. 삼각 무늬 버튼은 패널 표면 path에서 차감한 뒤 각 polygon에 한 번만 그려 부모 fill과
+겹치지 않게 한다. 계정명 입력(채움 rgba(10,16,24,.55))과 초상 viewport(채움 .45)는 패널과 다른 색이라
+시안처럼 패널 위에 합성한다. 목록 행의 hit target, 버튼 정렬과 입력 clip은 같은 최종 polygon path를
 사용한다. [@account-runtime] [@title-tests]
 
-첫 계정 생성은 Title Section 1·2가 퇴장한 뒤 Section 1만 진입한다. Title 설정은 Section 5만
-진입하고, 추가·수정은 Section 1, 사진 변경은 Section 4를 중첩 호출한다. Section 5는 0°로
-호출되고 180°로 퇴장하며, Section 1·4는 80°로 호출되고 260°로 퇴장한다. 비직교 각도는
-`(cos(d), -sin(d))`의 두 축 성분을 모두 보존하며 호출 시작점은 호출 벡터의 반대편에 둔다.
-Title로 돌아갈 때는 기존 Title 퇴장 controller를 reverse해 각 요소가 퇴장 방향의 반대로 등장한다.
-[@account-runtime] [@title-tests]
+첫 계정 생성과 관리 화면의 "추가"는 Studio 섹션이 아니라 키트 모달(이름만 받는 1000×330 패널)이다.
+Title 설정은 Section 5만 진입하고, "수정"은 편집 패널(Section 1)을 연다. "초상 변경"은 별도 섹션을
+중첩 호출하지 않고 같은 패널을 펼친다(Section 4는 펼친 상태의 rect다). Section 5는 0°로 호출되고
+180°로 퇴장하며, 편집 패널은 어느 경계에도 붙지 않는 부유 패널(FD-019 예외)로 80°로 호출되고 260°로
+퇴장한다. 비직교 각도는 `(cos(d), -sin(d))`의 두 축 성분을 모두 보존하며 호출 시작점은 호출 벡터의
+반대편에 둔다. 펼침·접힘은 방향 이동이 아니라 짝 요소 rect의 보간이다: 패널 20↔21, stucard 4↔22,
+초상 변경 3↔23, 입력 묶음 5↔24(계정명 4↔10, 입력 8↔11, 메타 줄 9↔12), 저장 7↔10을 같은 진행률
+(`AppMotion.sectionCurve`, `AppMotion.shell`)로 옮긴다. 접힘에만 있는 뒤로(6)와 펼침에만 있는 닫기(9)·
+초상 그리드(8)·머리(13)는 진행률만큼 흐려지고, 전이 중에는 누르지 않는다. 그리드는 펼친 자리에 고정한 채
+보간되는 패널 path로만 드러낸다. Title로 돌아갈 때는 기존 Title 퇴장 controller를 reverse해 각 요소가
+퇴장 방향의 반대로 등장한다. [@account-runtime] [@title-tests]
 
-Section 5·1·4는 각각 독립 animation controller를 가진다. Section 5에서 추가·수정으로 Section 1을
-열 때 두 Section은 겹치지 않으므로 Section 5를 퇴장시키지 않는다. Section 4 닫기·저장은 Section
-4만 퇴장시키고 Section 1을 유지한다. Section 1 뒤로는 첫 계정 경로에서는 Title로 돌아가고,
-Section 5에서 시작한 경로에서 Section 4가 닫혀 있으면 Section 1만 퇴장시켜 Section 5로 돌아간다.
-반면 Section 5·1·4가 모두 열린 상태에서 Section 1 뒤로를 누르면 Section 4, Section 1, Section 5를
-차례로 퇴장시키고 Title로 돌아간다. [@account-runtime] [@title-tests]
+Section 5, 편집 패널 진입, 펼침은 각각 독립 animation controller를 가진다. Section 5에서 "수정"으로
+편집 패널을 열 때 둘은 겹치지 않으므로 Section 5를 퇴장시키지 않는다. 펼친 패널의 닫기는 고른 초상을
+버리고, 저장은 고른 초상을 편집 중인 값에만 반영한 뒤 접는다(저장소는 부르지 않는다). "고르는 중"(펼침의
+초상 변경 버튼)을 다시 누르는 것은 닫기와 같다. 편집기 뒤로·저장은 접힌 상태에만 있고, 저장은 저장소에
+이름·초상을 쓰고(원 revision) 패널을 내보낸다. 관리 레일의 뒤로는 펼친 패널이 열려 있으면 접힘, 편집 패널,
+Section 5를 차례로 퇴장시키고 Title로 돌아간다. [@account-runtime] [@title-tests]
 
-Section 5의 Container 12·13·14·18·19는 같은 높이와 같은 세로 간격을 사용한다. 각 버튼의
-우측 80° 사선은 Container 11의 실제 좌측 polygon 경계를 현재 viewport에서 샘플링한 뒤 일정한
-pixel 간격만 남도록 폭을 다시 계산한다. 따라서 Studio의 top·height·left는 유지하되 폭은 창 크기와
-Container 11 경계에 맞춰 유동적으로 강제한다. Container 11 자체에는 삼각 무늬를 그리지 않고 outline과 clip만 사용한다.
-Container 15 목록 행은 좌우 내부 여백을 두고 Container 11 안에 놓으며, 스크롤 offset과 현재
-viewport Y로 X를 다시 계산해 모든 가시 행이 사선 경계를 따라 이동한다. Container 11도 실제
-vertical ScrollController를 값 원본으로 삼는 80° custom track·handle을 표시하며 wheel·drag·키보드
-scroll 동작을 유지한다. [@account-layout]
-[@account-runtime] [@title-tests]
+Section 5의 Container 12·13·14·18·19는 높이 74·같은 세로 간격(피치 91)의 레일이다. 각 버튼의 오른쪽
+80° 사선은 Container 11의 왼쪽 사선과 가로 22px(기준 viewport, 창 높이 비례) 떨어지도록 폭을 다시
+계산하므로 아래 레일일수록 좁다. Studio의 top·height·left는 유지하고 폭만 창 크기와 Container 11 경계에
+맞춰 강제한다. 지금 열린 모드(추가 모달·편집 패널)의 레일은 외곽선이 #f2b3ef 3.2px이고, 고른 계정이
+지금 쓰는 계정이면 "이 계정으로 전환"은 비활성 + `지금 쓰는 계정`이다. Container 15 목록 행(597×142,
+그라데이션 120° + 외곽선, 고른 행 #f2b3ef 3.2px)은 왼쪽 사선이 Container 11 왼쪽 사선에서 22px 안쪽이
+되도록 스크롤 offset과 현재 viewport Y로 X를 다시 계산해 모든 가시 행이 사선 경계를 따라 이동한다.
+Container 11도 실제 vertical ScrollController를 값 원본으로 삼는 80° 공용 track·handle과 하단 포그를
+표시하며 wheel·drag·키보드 scroll 동작을 유지한다. [@account-layout] [@account-runtime] [@title-tests]
 
-Section 1의 계정명 입력은 별도 반투명 input surface를 합성하지 않는다. Section 기본 유리 표면
-위에 TextField의 text·hint·cursor만 표시하고 모든 InputBorder와 fill을 끈다. 기존 계정명을 편집할
-때 controller selection을 문자열 끝에 두고 LTR text direction을 명시한다. Windows IME의
-composing text·selection·range는 controller listener로 변경하지 않는다. composing range가 활성인
-동안에만 `showCursor`를 false로 두고, 조합이 확정되어 range가 비면 기본 cursor를 다시 표시한다.
-Container 3 변경 버튼은 Container 4에 놓인 252×204
-`square.png`의 전체 캔버스 폭이 아니라 중앙 정사각 이미지의 204px 한 변에 `BoxFit.contain`
-배율을 적용한 길이로 보정하고, 두 path 중심을 잇는 선을 80°로 맞춘다. [@account-runtime]
-[@title-tests]
+편집 패널의 계정명 입력은 Feature 8(펼침 11) 평행사변형(r7) 입력 path에 채움 rgba(10,16,24,.55)와
+외곽선(포커스 #f2b3ef 2.4px, 평소 rgba(56,81,107,.9) 1.6px)을 그리고, 그 위의 TextField는 InputBorder와
+fill을 끈 채 text·hint·cursor만 표시한다(시안 A-A-3). 접힘·펼침에서 같은 TextField 하나가 보간되는
+rect를 따라가므로 포커스와 IME 상태가 끊기지 않는다. 기존 계정명을 편집할 때 controller selection을 문자열
+끝에 두고 LTR text direction을 명시한다. Windows IME의 composing text·selection·range는 controller
+listener로 변경하지 않는다. composing range가 활성인 동안에만 `showCursor`를 false로 두고, 조합이
+확정되어 range가 비면 기본 cursor를 다시 표시한다. Container 3 "초상 변경"(158.6×44, 펼침에서는
+"고르는 중" + 분홍 3.2px)은 Studio rect를 쓰되, Container 4 stucard와 두 중심을 잇는 선이 80°가 되도록
+가로 위치만 맞춘다(기준 viewport에서는 시안 값 그대로). 메타 줄(Feature 9·12)은 `보유 n / 전체 · 마지막
+스캔 …`이고, 마지막 스캔은 이력 요약 `last_scan_at`(계정의 모든 종류 scan 적용 중 최근, FD-041)을 지역
+달력 날짜 차로 `오늘 21:40`·`어제 21:40`·`n일 전`으로 쓴다. 모르면 '—'다. [@account-runtime]
+[@account-editor-tests] [@title-tests]
 
 프로필 사진은 계정 데이터의 `avatar_student_id`로 저장하며 기존 필드가 없는 profile summary는
 `hasumi`를 기본값으로 읽는다. 사진 선택 목록은 asset manifest의 모든
-`assets/student_portraits/*.png`를 4열 scroll grid로 구성한다. 각 셀은 `square.png` 뒤에 98%
-portrait를 놓고, 간격·내부 여백·2% pink 선택 테두리와 hit cell을 하나의 `AssetImageGrid`
-CustomPainter 경로에서 처리한다. 목록 행도 같은 painter를 사용하며 별도의 이미지 placeholder를
-만들지 않는다. [@account-runtime]
+`assets/student_portraits/*.png`를 6열 scroll grid로 구성한다(시안 6열 × 4행 가시, 칸 112×90.67,
+간격 14·17.33). 각 셀은 학생 카드와 같은 stucard(`square.png` 테두리를 잘라 채운 평행사변형 + 흰 1px
+외곽선) 위에 98% portrait를 놓고, 간격·내부 여백·선택선과 hit cell을 하나의 `AssetImageGrid`
+CustomPainter 경로에서 처리한다. 편집 패널 stucard와 목록 행도 같은 painter를 사용하며 별도의 이미지
+placeholder를 만들지 않는다. [@account-runtime] [@account-editor-tests]
 
-Section 4의 portrait grid는 scroll offset에 따라 각 행의 viewport Y와 X를 함께 다시 계산한다.
-모든 행은 위치와 무관하게 80°의 한 직선 궤적을 따라 위로 진행하고, 반대 방향은 260°가 된다.
-수평 offset은 `x = (viewportHeight - y) / tan(80°)`로 계산한다. 수직 Scrollable·Scrollbar의
-접근성 동작은 유지하고 painter 배치와 cell hit test에 같은 행별 X offset을 적용한다. 선택 강조는
-cell의 둥근 사각형을 그리지 않고 실제 `square.png`의 alpha silhouette를 확대해 pink 외곽을 만든
-뒤 원래 silhouette를 `dstOut`으로 제거한다. 따라서 투명 모서리와 기울어진 외곽까지 원본 이미지
-모양을 따른다. [@asset-image-grid] [@account-runtime] [@title-tests]
+초상 grid는 scroll offset에 따라 각 행의 viewport Y와 X를 함께 다시 계산한다. 모든 행은 위치와 무관하게
+80°의 한 직선 궤적을 따라 위로 진행하고, 반대 방향은 260°가 된다. 수평 offset은
+`x = (viewportHeight - y) / tan(80°)`로 계산한다. 수직 Scrollable·Scrollbar의 접근성 동작은 유지하고
+painter 배치와 cell hit test에 같은 행별 X offset을 적용한다. 선택 강조는 고른 칸 stucard path의
+#ff72b6 1.88px 외곽선이다(시안 stucard stroke, FE8-c 이전의 alpha silhouette 팽창은 쓰지 않는다).
+펼칠 때 고른 초상이 viewport 밖이면 그 행이 가운데 오도록 옮겨 둔다. [@asset-image-grid]
+[@account-runtime] [@title-tests]
 
-Section 4의 scroll viewport 안에서는 grid painter에 viewport와 같은 tight width를 전달해야 한다.
-`Stack`이나 `SingleChildScrollView`의 loose cross-axis constraint 때문에 paint 폭이 0으로 축소되지
-않도록 하며, 실제 grid RenderBox 폭을 Container 8 폭과 대조한다. [@account-runtime] [@title-tests]
+초상 scroll viewport(Container 8, 평행사변형 r12) 안에서는 grid painter에 viewport와 같은 tight width를
+전달해야 한다. `Stack`이나 `SingleChildScrollView`의 loose cross-axis constraint 때문에 paint 폭이 0으로
+축소되지 않도록 하며, 실제 grid RenderBox 폭을 Container 8 사선 포함 bounds 폭과 대조한다.
+[@account-runtime] [@title-tests]
 
-Section 4의 scrollbar는 기본 직선 Scrollbar paint를 사용하지 않는다. 실제 ScrollController의
-viewport·max extent·offset을 값 원본으로 유지하면서 grid와 같은 고정 80° 직선 track과
-handle을 그린다. handle drag의 수직 이동량은 실제 scroll 범위에 선형 매핑하고, handle 중심은
-이동할 때 Y와 직선 기울기에 따른 X가 함께 바뀌며 반대 이동 방향은 260°다. wheel·키보드·기본 Scrollable 동작은 기존 controller를
-계속 사용한다. [@account-runtime] [@title-tests]
+초상 grid의 scrollbar는 기본 직선 Scrollbar paint를 사용하지 않는다. 공용 사선 스크롤바(표준 썸
+#e5a0ea)와 공용 포그를 쓰고, 실제 ScrollController의 viewport·max extent·offset을 값 원본으로 유지하면서
+grid와 같은 고정 80° 직선 track과 handle을 그린다. 레일은 viewport 오른쪽 사선에서 가로 5.94px, 위·아래
+10px 여백이다(시안). handle drag의 수직 이동량은 실제 scroll 범위에 선형 매핑하고, handle 중심은 이동할 때
+Y와 직선 기울기에 따른 X가 함께 바뀌며 반대 이동 방향은 260°다. wheel·키보드·기본 Scrollable 동작은 기존
+controller를 계속 사용한다. [@account-runtime] [@title-tests]
 
-Section 5의 각 계정 행은 Container 11의 수평 중앙을 지나는 80° 기준선에 중심을 맞춘다. 행의
-viewport Y가 바뀌면 `1 / tan(80°)` 기울기로 X도 함께 바뀌므로 중앙 배치와 사선 스크롤을 동시에
-유지하며, 행과 자식 portrait·text·line은 같은 translation을 공유한다. Title의 Space 시작 단축키는
-Title Section이 화면에 남아 있고 account cluster가 닫힌 상태에서만 처리한다. [@account-runtime]
-[@title-tests]
+Title의 Space 시작 단축키는 Title Section이 화면에 남아 있고 account cluster가 닫힌 상태에서만 처리한다.
+[@account-runtime] [@title-tests]
 
 ### 계정 클러스터 요소별 작업 스타일
 
-계정 클러스터는 Section 단위로 세 UI archetype을 정의한다. Section 1은 이미지와 이름을 한 번에
-편집하는 `editor`, Section 4는 다수의 asset 중 하나를 고르는 `asset picker`, Section 5는 여러
-계정과 행 단위 행동을 제공하는 `manager`다. 이후 같은 archetype의 Section은 별도 디자인 지시가
-없는 한 아래 스타일을 출발점으로 삼는다. Studio 번호는 설계 추적용이며, placeholder Container는
-runtime에 빈 표면을 추가하라는 의미가 아니다. [@account-studio-document] [@account-layout]
+계정 클러스터는 세 UI archetype을 정의한다. Section 1(접힘)·Section 4(펼침)는 한 부유 패널이 이미지와
+이름을 한 번에 편집하는 `editor`와, 같은 패널을 펼쳐 다수의 asset 중 하나를 고르는 `asset picker`다.
+Section 5는 여러 계정과 행 단위 행동을 제공하는 `manager`다. 이후 같은 archetype은 별도 디자인 지시가
+없는 한 아래 스타일을 출발점으로 삼는다. Studio 번호는 설계 추적용이며, 섹션 rect·placeholder
+Container는 runtime에 빈 표면을 추가하라는 의미가 아니다. [@account-studio-document] [@account-layout]
 [@account-runtime]
 
-#### Section 1: 단일 항목 편집기
+#### Section 1·4: 펼치는 편집 패널
 
-| 요소 | 역할 | 작업 스타일 |
+| 요소(접힘 / 펼침) | 역할 | 작업 스타일 |
 |---|---|---|
-| Container 3 | `변경` 버튼 | 최종 polygon path 중앙에 text를 배치하고 같은 path로 clip·hit test한다. 폭은 Container 4의 PNG 캔버스가 아니라 실제 square 이미지 한 변을 따르고 두 요소의 중심선은 80°로 맞춘다. |
-| Container 4 | 프로필 이미지 기준 영역 | Studio에서는 크기·위치 placeholder다. runtime에서는 별도 placeholder 표면 대신 `square.png`를 먼저 그리고 98% portrait를 겹친다. 기본 portrait는 `hasumi`다. |
-| Container 5 | 계정명 field group | label과 입력 영역을 묶는 구조적 부모다. 부모와 입력 표면의 반투명 fill을 중복 합성하지 않는다. |
-| Feature 4 | `계정명 :` label | 저장된 text rect를 사용하고 입력값보다 먼저 읽히는 고정 label로 유지한다. 작은 viewport에서는 scale-down하되 입력 영역을 침범하지 않는다. |
-| Feature 8 | 계정명 입력 영역 | polygon은 배치·clip·hit 영역으로 사용하되 진한 box, border, fill은 그리지 않는다. text·hint·cursor만 표시하며 IME composing 값은 변경하지 않는다. |
-| Container 6 | `뒤로` 버튼 | 호출 출처를 기준으로 닫을 Section 집합을 결정한다. 최종 polygon 전체가 클릭 가능해야 하며 text는 path 중앙에 둔다. |
-| Container 7 | `저장` 버튼 | 첫 계정과 관리 화면 편집의 저장 후 목적지를 분리한다. 저장 완료 전 화면을 먼저 닫지 않으며 polygon path를 시각·클릭 기준으로 공유한다. |
-
-#### Section 4: asset 선택 그리드
-
-| 요소 | 역할 | 작업 스타일 |
-|---|---|---|
-| Container 8 | 4열 portrait grid viewport | 좌우 내부 여백과 작은 cell gap을 두고 `AssetImageGrid`가 직접 paint한다. 일반 grid/list 규칙에 따라 80° 사선으로 스크롤하며 painter·hit test·scrollbar가 같은 변환을 쓴다. cross-axis에는 tight width를 전달한다. |
-| grid cell | portrait 선택 항목 | `square.png` 위에 98% portrait를 쌓는다. 선택선은 사각 cell이 아니라 square asset의 alpha silhouette를 따라 약 2% pink 외곽선으로 그린다. 셀의 이미지 path와 hit target이 일치해야 한다. |
-| Container 9 | `닫기` 버튼 | 선택 draft를 commit하지 않고 Section 4만 퇴장시킨다. |
-| Container 10 | `저장` 버튼 | 현재 선택을 Section 1의 draft에 commit한 뒤 Section 4만 퇴장시킨다. |
-| diagonal scrollbar | grid 위치 표시·drag | 기본 수직 Scrollbar를 시각 표면으로 사용하지 않는다. 실제 ScrollController를 유지하면서 80° track과 handle을 그리고, handle의 Y 이동을 scroll extent에 선형 매핑해 X도 함께 이동한다. |
+| Section 1 / Section 4 | 접힘·펼침 상태의 감싸는 rect | grid(정수 칸)에 맞춘 표지다. 시안 패널 위·아래 y가 grid 줄 사이라 보이는 패널은 컨테이너다. |
+| Container 20 / 21 | 편집 패널 표면 | 1010,470 1000×262 / 1010,270 1000×850(기준 viewport, 사선 포함 bounds). 평행사변형 r16, 채움 .95, lifted shadow. 두 rect를 펼침 진행률로 보간한다. |
+| Container 4 / 22 | stucard | 176×142.48. 학생 카드 평행사변형 stucard(흰 1.5px) 위에 98% portrait. 기본 portrait는 `hasumi`다. |
+| Container 3 / 23 | `초상 변경` / `고르는 중` | 158.6×44, 글자 13 w700. 펼침에서는 외곽선 #f2b3ef 3.2px이고 다시 누르면 닫기다. stucard 중심과의 선을 80°로 맞춘다. |
+| Container 5 / 24 | 계정명 field group | label·입력·메타 줄을 묶는 구조적 부모다. 표면을 그리지 않는다. |
+| Feature 4 / 10 | `계정명` | 시안 `.ihdr`(파란 점 5×5 + 경기천년제목 11 w800). 작은 viewport에서는 scale-down한다. |
+| Feature 8 / 11 | 계정명 입력 | 평행사변형 r7 입력 path에 채움 .55 + 외곽선(포커스 분홍 2.4, 평소 .9 1.6). TextField는 border·fill 없이 text·hint·cursor만 표시하며 IME composing 값은 변경하지 않는다. |
+| Feature 9 / 12 | 메타 줄 | `보유 n / 전체 · 마지막 스캔 …`(12px muted, 한 줄, 말줄임). 모르는 값은 '—'. |
+| Container 6 | `뒤로`(접힘만) | 편집 패널을 내보내고 Section 5로 돌아간다. 펼침에서는 흐려져 사라진다. |
+| Container 7 / 10 | `저장` | 외곽선 rgba(242,179,239,.9) 1.8. 접힘: 저장소에 이름·초상을 쓴 뒤 패널을 내보낸다(완료 전 닫지 않는다). 펼침: 고른 초상을 편집 중인 값에 반영하고 접는다. |
+| Container 9 | `닫기`(펼침만) | 고른 초상을 버리고 접는다. |
+| Feature 13 | `초상 고르기` + (i) | 머리 칸 오른쪽 끝 24×24에 키트 `InfoPopover`(시안 문구). |
+| Container 8 | 6열 portrait grid viewport | 평행사변형 r12, 채움 .45 + 외곽선 .6 1px. `AssetImageGrid`가 직접 paint하고 80° 사선으로 스크롤하며 painter·hit test·scrollbar가 같은 변환을 쓴다. cross-axis에는 tight width를 전달한다. |
+| grid cell | portrait 선택 항목 | 112×90.67 stucard 위에 98% portrait. 선택선은 그 칸 stucard path의 #ff72b6 1.88px 외곽선이다. 셀의 이미지 path와 hit target이 일치해야 한다. |
+| diagonal scrollbar | grid 위치 표시·drag | 공용 사선 스크롤바(표준) + 공용 포그. 실제 ScrollController를 유지하면서 80° track과 handle을 그리고, handle의 Y 이동을 scroll extent에 선형 매핑해 X도 함께 이동한다. |
 
 #### Section 5: 선택 가능한 관리 목록
 
 | 요소 | 역할 | 작업 스타일 |
 |---|---|---|
-| Container 11 | 계정 목록 viewport | 목록을 담는 구조적 outline·clip이며 삼각 무늬 fill을 그리지 않는다. 목록을 polygon의 시각적 중앙에 두고 80° 사선 scrollbar를 제공한다. |
-| Container 15 | 반복 계정 행 template | 실제 목록에서는 데이터 개수만큼 반복한다. 삼각 무늬가 있는 polygon row로 그리고, row 전체 path를 선택 hit target으로 사용한다. 행과 모든 자식은 하나의 사선 scroll translation을 공유한다. |
-| Container 16 | 행 portrait 기준 영역 | Studio에서는 이미지 크기·위치 placeholder다. runtime에서는 Section 1과 같은 square→98% portrait 레이어를 사용한다. |
-| Feature 5 | 계정명 | Feature 6의 실제 왼쪽 끝을 공통 text 기준으로 삼고 긴 이름은 지정 rect 안에서 scale-down한다. |
-| Feature 6 | 구분선 | 계정명과 학생 수의 정렬 기준이다. row path 안에서 둥근 cap의 얇은 선으로 그린다. |
-| Feature 7 | 등록 학생 수 / 전체 학생 수 | Feature 5와 같은 왼쪽 기준을 사용하며 실제 profile 데이터에서 값을 만든다. |
-| Container 12 | `이 계정으로 전환` | 선택된 행에 적용되는 주 행동이다. |
-| Container 13 | `추가` | Section 5를 유지한 채 Section 1을 새 계정 mode로 연다. |
-| Container 14 | `수정` | 선택 행이 있을 때 Section 1을 편집 mode로 연다. |
+| Section 5 | 관리 화면 표지 | 표면을 그리지 않는다(이동·검수용 rect). |
+| Container 11 | 계정 목록 viewport | 평행사변형 r14, 채움 .9 + lifted shadow. 80° 공용 사선 scrollbar(목록 오른쪽 사선에서 24px 안쪽)와 하단 포그를 제공한다. |
+| Container 15 | 반복 계정 행 template | 실제 목록에서는 데이터 개수만큼 반복한다. 597×142 그라데이션 polygon row + 외곽선(고른 행 분홍 3.2)이고, row 전체 path를 선택 hit target으로 사용한다. 행과 모든 자식은 하나의 사선 scroll translation을 공유한다. |
+| Container 16 | 행 portrait 기준 영역 | Studio에서는 이미지 크기·위치 placeholder다. runtime에서는 편집 패널과 같은 stucard→98% portrait 레이어를 사용한다. |
+| Feature 5 | 계정명 | 경기천년제목 17, 지금 쓰는 계정이면 분홍 `지금` 칩. 긴 이름은 지정 rect 안에서 줄인다. |
+| Feature 6 | 보유율 진행 막대 | feature 중심에 높이 4의 기운 막대(키트 `SkewBar`). |
+| Feature 7 | `보유 n / 전체` | Feature 5와 같은 왼쪽 기준. state를 읽지 못한 계정은 `보유 읽지 못함`. |
+| Container 12 | `이 계정으로 전환` | 선택된 행에 적용되는 주 행동이다. 지금 쓰는 계정이면 비활성 + `지금 쓰는 계정`. |
+| Container 13 | `추가` | Section 5를 유지한 채 이름만 받는 계정 추가 모달을 연다. |
+| Container 14 | `수정` | 선택 행이 있을 때 편집 패널을 연다. |
 | Container 18 | `삭제` | 선택 행을 대상으로 확인 절차를 거친 뒤 삭제한다. |
-| Container 19 | `뒤로` | Section 5를 퇴장시키고 Title을 퇴장 방향의 반대로 다시 호출한다. |
+| Container 19 | `뒤로` | 열린 편집 패널(펼침 포함)과 Section 5를 퇴장시키고 Title을 퇴장 방향의 반대로 다시 호출한다. |
 
-Container 12·13·14·18·19는 같은 높이와 같은 세로 간격을 갖는 하나의 action rail이다. 모두
-삼각 무늬가 있는 사다리꼴 버튼으로 표현하고, 현재 viewport에서 Container 11의 실제 사선과 같은
-간격을 남기도록 폭만 유동적으로 계산한다. label의 정렬과 hover·press·click 판정은 최종 polygon
-path 하나를 공유한다. [@account-runtime] [@title-tests]
+Container 12·13·14·18·19는 높이 74와 같은 세로 간격을 갖는 하나의 action rail이다. 모두 삼각 무늬가
+있는 사다리꼴 버튼(아이콘 17 + 글자 15 w700, 외곽선 .72 1.8)으로 표현하고, 현재 viewport에서
+Container 11의 실제 사선과 22px 간격을 남기도록 폭만 유동적으로 계산한다. label의 정렬과
+hover·press·click 판정은 최종 polygon path 하나를 공유한다. [@account-runtime] [@title-tests]
 
 #### 유사 위젯에 적용할 기본 경향
 
@@ -387,6 +423,11 @@ path 하나를 공유한다. [@account-runtime] [@title-tests]
 [@asset-image-grid] [@account-runtime] [@title-tests]
 
 ### 계정 클러스터 적용 시행착오와 재발 방지
+
+아래 표와 문단은 FE8-a 이전 적용의 기록이다. FE8-b·FE8-c(2026-10-11·13)가 시안으로 바꾼 규칙(4열 그리드,
+alpha silhouette 선택선, 변경 버튼 폭, 목록 행 중앙 기준선, Section 4 중첩 호출, 입력 표면 없음)은 위 절이
+이긴다. 재발 방지 원칙(저장 JSON 원본, 하나의 궤적 함수, tight width, IME 상태 비소유)은 그대로다.
+[@account-runtime] [@account-editor-tests]
 
 이번 적용에서 가장 먼저 확인된 문제는 작업 지시를 받은 시점의 Studio 문서와 이후 사용자가 다시
 저장한 문서의 좌표가 달랐다는 점이다. 임시 runtime 좌표나 앞선 export를 기준으로 보정하면 화면은
@@ -523,15 +564,18 @@ service에서 직접 복원한다.
 
 Section 2는 Container 12 하나만 소유하는 공용 사선 grid viewport다. 표준 수직 ScrollController가
 scroll extent를 소유하고, 모든 가시 행은 viewport Y에 따라 `1 / tan(80°)`만큼 X를 함께 이동한다.
-계정 portrait picker와 같은 `gridInset=8`을 유지하고 8열의 가로 gap은 4.8, 행 gap은 그 80%인
-3.84 px를 적용한다.
-80° custom scrollbar의 trajectory와 14 px 전용 폭을 먼저 제외한 나머지 폭으로 셀 크기를 역산한다.
+계정 portrait picker와 같은 `gridInset=8`을 유지하고 8열의 가로 gap은 4.8이다. 셀은 카드(252:204)와
+같고, 행 사이에는 카드 밖 이름 줄 20 px와 행 gap 3.84 px를 둔다(행 피치 = 카드 + 23.84, 기준
+viewport에서 ≈191.3, FD-045). 행 X 이동은 카드 중심 높이를 기준으로 한다.
+80° custom scrollbar의 trajectory와 14 px 전용 폭을 먼저 제외한 나머지 폭으로 카드 폭을 역산한다.
 `square.png`는 셀 전체 크기, portrait는 98% 크기로 확대한다. `square.png`와
-portrait는 전체 grid의 단일 `AssetImageGrid` painter에서 순서대로 그린다. 별도의 overlay painter는
-`square.png`의 alpha를 최종 mask로 사용해 카드 하단 16%에만 정보를 합성한다. 이 영역의 상단 3%는
-v6 학생 카드와 같은 좌우 공격/방어 속성 색상 띠이고, 남은 13%는 회색 반투명 이름 영역과 흰색 이름이다.
-Section 4의 `학생 공격/방어 속성 표시`, `학생 이름 표시` checkbox가 두 overlay를 독립적으로
-토글한다. `미보유 학생 숨김`은 repository 보유 ID 집합을, `일본 서버 전용 숨김`은 protocol v1의
+portrait는 전체 grid의 단일 `AssetImageGrid` painter에서 순서대로 그린다. 별도의 overlay painter가
+카드 위에 DE 정보(2026-10-07 FE3-a, FD-043)를 그린다: 오른쪽 위 공격·방어 글자 칩 2개(축약 라벨,
+80° 계단), 미보유 암전, 왼쪽 80° 변을 따라 채워 쌓는 UNOWNED → PLAN → JP 배지, 카드 밖 아래 이름 줄
+(미보유는 흐리게). 카드 안 하단 16% 정보 띠(속성 색 3% + 이름 13%)는 폐기했다. 자세한 수치는
+`student-card-rendering-lessons-2026-08-02.md`의 "현재 그리드 카드 렌더링 계약"이 소유한다.
+Section 4의 `학생 공격/방어 속성 표시`는 칩을, `학생 이름 표시`는 이름 줄을 토글하며, 이름을 끄면
+이름 줄을 접어 행 피치가 카드 + 3.84가 된다(FD-046 (a)). `미보유 학생 숨김`은 repository 보유 ID 집합을, `일본 서버 전용 숨김`은 protocol v1의
 `jp_only` 정적 metadata를 기준으로 grid 항목을 제외한다. 셀 hit target과 overlay painter는 같은 행 offset을 공유한다. Mock runtime도 backend
 metadata에서 생성한 `assets/student_catalog.json`의 265명을 전부 사용한다.
 검색은 `StudentCatalogEntry.searchTags`와 `krSearchTags`를 그대로 사용하므로 v6에서 이관한
@@ -549,9 +593,8 @@ Container 4의 왼쪽 80° rail과 상태 Container 오른쪽 rail 사이의 법
 
 Container 12와 Container 2·4는 Container 5·6·7·9와 같은 어두운 상태용 삼각 texture·outline을
 사용한다. Container 10만 Section 1 행동 버튼과 같은 연핑크 행동 texture를 사용한다. Filter 행동은
-Section 2를 260°로 완전히 퇴장시킨 뒤 Section 5로 교체하고 Section 5를 80°로
-진입시킨다. 다시 누르면 같은 순서로 Section 5에서 Section 2로 복귀한다. Section별 motion은
-  Section 1 `intro 0° / outro 180°`, Section 2·5 `80° / 260°`, Section 3·4 `180° / 0°`다.
+(2026-10-07 FE3-d2부터) Section 2를 바꾸지 않고 필터 모달을 연다(아래 “학생 필터 모달” 절). Section별 motion은
+  Section 1 `intro 0° / outro 180°`, Section 2 `80° / 260°`, Section 3·4 `180° / 0°`다.
   runtime은 forward 중 각 Section의 intro 벡터를 사용하고 reverse 중에는 해당 Section의 outro
   벡터를 직접 사용한다. outro를 intro의 반대 방향이라고 암묵적으로 추론하거나 검증용 값으로만
   남겨 두지 않는다.
@@ -560,10 +603,8 @@ Section 2를 260°로 완전히 퇴장시킨 뒤 Section 5로 교체하고 Secti
 시에는 `active`를 먼저 끄고 같은 controller를 reverse하여 각자의 outro를 사용한다. 따라서
 페이지 전체의 90°/270° 이동을 Section motion과 합성하지 않으며, 학생 페이지와 선택·filter 상태는
 기존처럼 mount된 채 motion lifecycle만 탭 활성 상태에 연결한다.
-Section 5는 Section 2의 높이와 왼쪽 80° rail을 유지하되 윗변과 밑변 길이를 모두 Section 2의
-50%로 줄여 평행사변형을 유지한다. 내부 Container 12도 축소된 Section 5 bounds에서 normalized
-placement를 다시 계산하고 최종 Section path와 교차해 바깥으로 넘치지 않게 한다. Filter 버튼은
-Section 5가 열린 동안 `tune_rounded` 대신 현재 학생 탭과 같은 `groups_2_outlined` 아이콘을 표시한다.
+학생 탭 Section 5(필터 교체 영역)와 그 옆 범위 조건 카드 2장은 FE3-d2에서 폐기했다(FD-052, B §2-4).
+Filter 버튼은 늘 `tune_rounded`·“필터 열기”이며, 모달이 닫혀 있고 조건이 걸려 있으면 개수 배지를 단다.
 각 foundation painter는 hit test를 받지 않아 위 레이어의 빈 영역이 아래 학생 grid 입력을 막지 않는다.
 
 Section 1~4는 공통 alpha 0.76의 반투명 기본 표면을 사용하고 각각 최종 polygon path에
@@ -649,20 +690,20 @@ Section 5의 낮은 높이는 viewport에 따라 탭과 중첩 헤더 높이를 
 
 | 항목 | 최초 토대·초기 해석 | 피드백 이후 확정된 계약 | 재사용 시 교훈 |
 |---|---|---|---|
-| 화면 범위 | Section 1~4를 배치하고 기존 하단 편집 영역을 함께 유지했다. | 헤더 사이와 canvas 하단의 legacy 영역을 제거하고 Section 1~4, 전환 중의 Section 5만 남긴다. | 새 토대를 추가하기 전에 유지·제거할 기존 영역을 명시한다. |
+| 화면 범위 | Section 1~4를 배치하고 기존 하단 편집 영역을 함께 유지했다. | 헤더 사이와 canvas 하단의 legacy 영역을 제거하고 Section 1~4만 남긴다(전환용 Section 5는 FE3-d2에서 필터 모달로 대체). | 새 토대를 추가하기 전에 유지·제거할 기존 영역을 명시한다. |
 | Section 외곽 | 일반 outline과 shadow를 함께 쓰는 보통 glass section으로 해석했다. | Section outline은 없고 alpha 0.76 surface와 lifted shadow만 사용한다. child surface는 parent fill에서 차감한다. | border, shadow, transparency는 서로 독립된 질문이다. |
 | Section 1 버튼 | Studio의 개별 rect와 일반 bounds 중앙 정렬을 우선했다. | 세 버튼 크기는 Section inset과 동일 gap에서 유동 계산한다. 오른쪽 사선 inset까지 포함하고 아이콘은 중간 Y의 실제 수평 선분 중앙에 둔다. | 사다리꼴 자식은 bounding-box 중앙을 사용하지 않는다. |
 | Section 1 texture | 버튼별 색만 유지하고 무늬는 후속으로 보았다. | 세 버튼 모두 연핑크 BA 삼각 texture를 사용한다. Container 10도 같은 action 역할이며 Container 4는 status 역할이다. | “같은 효과”가 fill, texture, outline, shadow 중 무엇인지 묻는다. |
 | Section 1·2 관계 | 두 section을 독립 rect로 배치했다. | 마주 보는 80° 사선 사이에 모든 viewport에서 12px의 명시적 평행 gap을 둔다. | 인접 사선은 각 section 좌표가 아니라 공유 seam 계약으로 설계한다. |
 | Section 2 구조 | 반복 카드나 복수 container 가능성을 남기고 소수 sample 학생을 먼저 표시했다. | Container 12 하나 안에서 전체 265명 catalog를 8열 단일 grid painter로 렌더링한다. | sample 데이터가 최종 데이터 범위로 오인되지 않게 전체/부분 여부를 먼저 묻는다. |
-| Section 2 간격·scroll | 일반 grid gap과 수직 scrollbar를 사용했다. | 외곽 inset 8, 열 gap 4.8, 행 gap 3.84이며 scrollbar의 14px 예약 폭을 cell 산식에서 먼저 뺀다. 행과 scrollbar는 80° trajectory를 공유한다. | 사선 scroll은 painter, hit test, content와 handle이 한 변환을 공유해야 한다. |
-| 학생 카드 | portrait만 표시하고 이름과 속성은 후속으로 두었다. | `square.png` alpha 안의 하단 16%를 사용한다. 상단 3%는 v6 공격/방어 색상 띠, 나머지 13%는 반투명 회색 이름 영역과 흰색 이름이다. | overlay 비율, 층 순서, mask 기준을 숫자로 확인한다. |
+| Section 2 간격·scroll | 일반 grid gap과 수직 scrollbar를 사용했다. | 외곽 inset 8, 열 gap 4.8, 행 사이 = 이름 줄 20 + 3.84(FE3-a DE 그리드)이며 scrollbar의 14px 예약 폭을 cell 산식에서 먼저 뺀다. 행과 scrollbar는 80° trajectory를 공유하고 행 이동은 카드 중심 기준이다. | 사선 scroll은 painter, hit test, content와 handle이 한 변환을 공유해야 한다. |
+| 학생 카드 | portrait만 표시하고 이름과 속성은 후속으로 두었다. | (2026-10-07 FE3-a로 대체) DE 카드: 오른쪽 위 공격·방어 글자 칩(축약 라벨, 80° 계단), 이름은 카드 밖 아래 줄(미보유 흐림), 배지는 왼쪽 80° 변 채워 쌓기. 예전 하단 16% 정보 띠(3% 속성 띠 + 13% 이름)는 폐기. | overlay 비율, 층 순서, mask 기준을 숫자로 확인한다. |
 | Section 3 placeholder | Container 1·3도 일반 surface처럼 그렸다. | Container 1·3 surface를 제거하고 내부 portrait와 9개 성작 평행사변형만 남긴다. | “컨테이너”가 시각 surface인지 배치 placeholder인지 확인한다. |
 | Section 3 정렬 | 각 container의 저장 rect를 개별 적용했다. | portrait·성작·5·6·7·9의 왼쪽은 한 80° rail, 5·6·7·9의 오른쪽은 다른 한 rail에 맞춘다. 4와 stack의 간격도 stack 내부 gap과 같다. | 여러 요소가 같은 사선에 맞는지는 공통 rail로 모델링한다. |
 | Section 4 | 높은 검색 입력 하나만 우선 배치했다. | 검색 bar 높이와 상단 inset을 줄이고 text를 수직 중앙에 둔다. 속성·이름 표시, 미보유·JP 전용 숨김의 네 toggle을 둔다. | 검색, 표시 옵션, 데이터 제외 filter를 별도 상태로 구분한다. |
 | 데이터·정렬 | sample 학생과 화면용 이름을 직접 둘 수 있었다. | backend catalog 전체, 한국어 display name 정렬, v6 alias, repository 보유 ID, protocol의 `jp_only`를 사용한다. | UI filter에 필요한 정적 metadata가 protocol에 있는지 먼저 확인한다. |
-| Section 5 | Section 2와 같은 geometry의 빈 교체 영역으로 시작했다. | 높이와 왼쪽 rail은 유지하고 윗변·밑변과 내부 Container를 50%로 줄인 평행사변형이다. | 외곽만 바꾸지 말고 내부 normalized container도 새 path에서 다시 계산한다. |
-| 전환·역할 표시 | 정적인 네 section을 우선했다. | Section 1=0/180, Section 2·5=80/260, Section 3·4=180/0이다. Filter 버튼은 Section 5에서 학생 탭 아이콘으로 바뀐다. | 상태가 버튼의 역할을 바꾸면 tooltip과 icon도 함께 바꾼다. |
+| Section 5 | Section 2와 같은 geometry의 빈 교체 영역으로 시작했다. | (2026-10-07 FE3-d2로 폐기) 필터는 셸 위에 뜨는 모달이다. Section 2는 교체되지 않는다. | 화면 안 교체 영역과 떠 있는 모달 중 무엇인지 시안·결정 기록으로 먼저 확인한다. |
+| 전환·역할 표시 | 정적인 네 section을 우선했다. | Section 1=0/180, Section 2=80/260, Section 3·4=180/0이다. Filter 버튼은 역할이 바뀌지 않고(늘 필터 열기), 적용 개수 배지만 단다. | 상태가 버튼의 역할을 바꾸면 tooltip과 icon도 함께 바꾼다. |
 | 탭 호출 lifecycle | AppShell의 공용 페이지 이동과 내부 Section 이동을 함께 적용했다. | 학생 페이지 자체 translation은 끄고, 이전 탭 퇴장 완료 뒤 Section별 intro를 시작한다. 학생 탭 퇴장 시에는 Section별 controller가 각자의 outro로 reverse한다. | 페이지 전환과 내부 Section 전환을 합성할지 먼저 정하고, 독립 motion이면 탭 활성 lifecycle을 자식에게 명시적으로 전달한다. |
 
 현재 runtime과 회귀 test는 위 확정 계약을 기준으로 한다. 이후 Studio 값이나 유사 화면을 가져올 때
@@ -768,53 +809,60 @@ controller를 재사용해 같은 Section instance/flow를 여는 것인지도 �
 data와 child 구성은 새로 만든다”처럼 조합된 최종 계약을 한 문단으로 확인한 후 구현한다.
 [@student-runtime] [@student-tests]
 
-## 학생 Section 5 필터와 Section 2 고정 viewport 후속 계약
+## 학생 필터 모달과 Section 2 고정 viewport 후속 계약
 
-2026-07-27 후속 보정에서 Section 5의 `container-12`는 Section path 안쪽의 남은 높이에
-고정된 filter viewport가 되었다. 아래쪽에는 container와 겹치지 않는 44px 초기화 action을
-두며, 항목 수가 늘어도 Section이나 container 높이를 늘리지 않는다. Section 2의 학생 grid도
-같은 고정 viewport 정책을 사용한다.
+2026-10-07 FE3-d2에서 학생 탭 Section 5 필터(교체 영역 + 초기화 action)와 범위 조건 카드 2장을
+폐기하고, 시안 Student-Filter의 필터 모달로 바꿨다(FD-052, B §2-4). 모달 내용은
+`StudentFilterModal`이며 학생 탭·계획 만들기 1단계(FE4-b)·통계(FE7-e)가 함께 쓴다. 상태는 쓰는 쪽이
+`StudentFilterController`를 주입한다(FD-104). [@student-filter-modal] [@student-filter-modal-tests]
 
-두 viewport는 표준 수직 `ScrollController`를 유지하면서 행 중심의 viewport Y를 80도
-trajectory의 X로 변환한다. Section 5는 v6의 그룹명과 표시값을 사용하는 학교, 초기 성급,
-공격 타입, 방어 타입, 편성, 역할, 포지션 그룹을 제공한다. 같은 그룹에서 선택한 값은 OR,
-서로 다른 그룹은 AND이며, Section 2로 돌아가도 선택을 보존하고 초기화 action만 모든 선택을
-지운다. 현재 planning catalog protocol이 직접 제공하지 않는 v6 성장·스킬 metadata 그룹은
-빈 동작으로 노출하지 않는다.
+- 진입: S1 Filter 버튼, S4 적용 필터 줄의 `+n` 칩. 열면 적용 값을 초안으로 복사하고, “적용”만 초안을
+  그리드에 건다. 닫기 ×·Esc·스크림 누르기는 초안을 버린다. “초기화”는 초안만 비운다.
+- 바깥 틀: `BaModal` 필터 스크림(rgba(6,10,16,.8) + blur 2), 포커스 가두기, Esc 한 번 처리. 모달이 열려
+  있는 동안 학생 탭 내용은 BaModal이, 셸 머리 탭 줄·배너·개발 패널·스캔 독은 AppShell의
+  `BaModalBackdrop` 범위가 의미 구조에서 뺀다. 셸 전체를 한 ExcludeSemantics로 덮지 않는 이유는 모달
+  OverlayPortal 자리(의미 트리의 traversal parent)가 그 안에 있기 때문이다.
+- 배치(기준 viewport 2560×1392, 페이지 좌표): 머리 바 (453.8, 206, 1876.2×92), 속성 패널
+  (285.9, 320, 984×930), 성장 범위 패널 (1127.9, 320, 1182×930). 두 패널은 아래 변 사이 22의 평행사변형이고,
+  가로는 viewport 비율, 머리 바·행 높이는 고정, 패널은 머리 바 아래 22부터 1250/1392 높이까지다.
+- 패널 행은 패널 왼쪽 80° 변을 행 밑변 높이에서, 오른쪽 80° 변을 행 윗변 높이에서 평가한 뒤 안쪽으로
+  26/30(속성)·26/34(성장)을 둔다. 제목 행만 20/30·24/30이다. 칩 줄은 한 줄 34, 여러 줄은
+  30·줄 + 8·(줄−1) + 8(학교 두 줄 76)이다. 내용이 패널 높이를 넘으면 패널 안에서 세로로 스크롤하고
+  행은 80° 변을 따라 민다.
+- 속성: 학교·초기 성급·공격·방어·편성·역할·포지션 + “보유 · 서버”. 같은 줄은 OR, 줄끼리는 AND다.
+  칩 옆 학생 수는 학교 줄에만 둔다(오케스트레이터 15:51 결정 2). “보유 · 서버”는 S4 “미보유 학생 숨김”·
+  “일본 서버 전용 숨김”과 같은 상태다(FD-057).
+- 성장 범위: 기본·스킬·장비 · 능력치 그룹의 `.srow` 범위 행(좁힌 행만 분홍), “범위 모두 풀기”. 심상개화는
+  데이터가 없어 비활성 칩 자리만 둔다(FD-054). 육성도 행은 FE7-d(FD-063)에서 다룬다.
+- “필터 · n”은 걸린 조건 전부(머리 칩 수)다(15:51 결정 1). 모달이 열려 있는 동안 (18, 226)에 두고, 닫힌
+  뒤에는 S1 Filter 버튼에 개수 배지로 단다(FD-058). 필터 프리셋 칩은 숨긴다(FD-074 (b)).
+
+Section 2의 학생 grid는 Section path 안쪽 높이에 고정된 viewport다. 항목 수가 늘어도 Section이나
+container 높이를 늘리지 않는다. viewport는 표준 수직 `ScrollController`를 유지하면서 행 중심의
+viewport Y를 80도 trajectory의 X로 변환한다.
 
 viewport 위·아래에는 container 기본색과 같은 36px gradient fog를 둔다. 이는 기본 lifted
 shadow의 약 3배 두께이며, scroll content가 고정 경계에서 잘려 보이지 않고 자연스럽게
-사라지게 한다. fog는 pointer를 받지 않고 grid/list의 wheel, drag, checkbox hit target과
+사라지게 한다. fog는 pointer를 받지 않고 grid/list의 wheel, drag, hit target과
 사선 scrollbar 동작을 그대로 보존한다.
 
-실화면 재검수에서는 container polygon을 사각 bounds로 만든 뒤 부모 path와 교차시키는 방식이
-둥근 꼭짓점을 잘라내는 것을 확인했다. Section 5 container의 위·아래 좌우 점은 부모 80도 경계를
-각 Y에서 직접 평가하고 10px 안쪽에 배치한다. 필터 group row도 중심 Y 이동과 자체 사선 깊이를
-중복 적용하지 않고 row 밑변의 viewport Y를 기준으로 한 번만 이동한다. 제목·checkbox의 좌우
-안전영역은 row 전체 높이에서 생기는 최대 사선 깊이와 8px 여백을 합한 값으로 고정해 상단 제목이
-사선에 잘리지 않게 한다.
-
-필터 group row의 폭은 모든 row에 같은 상수를 사용하지 않는다. 각 row의 높이에 따른 자체 우측
-사선 깊이를 폭에 포함해, viewport 상단·하단에서 평가한 row의 우측 두 끝점이 하나의 80도 rail
-위에 놓이도록 계산한다. 따라서 checkbox 개수로 row 높이가 달라져도 우측 사선이 서로 평행하게
-어긋나는 대신 같은 경계선에 정렬되며, scroll offset이 바뀌어도 이 관계를 유지한다.
+옛 학생 필터 `StudentDiagonalFilterList`(체크박스 group row)와 그것을 쓰던 계획 학생 선택기
+(`PlanStudentSelector`)는 필터 모달(FE3-d)과 계획 만들기 1단계(FE4-b)로 바뀐 뒤 지웠다(선택기 FE5-f2,
+목록 FE10-b).
+그 group row가 지킨 규칙은 사선 행 일반에 그대로 남는다: 중심 Y 이동과 자체 사선 깊이를 중복 적용하지 않고
+row 밑변의 viewport Y를 기준으로 한 번만 이동하며, 각 row의 높이에 따른 우측 사선 깊이를 폭에 포함해 우측 두
+끝점이 하나의 80도 rail 위에 놓이게 한다.
 
 ### 학생 페이지 viewport와 Section canvas 높이
 
 학생 페이지의 Section canvas 높이는 `StudentPage` viewport에서 페이지 상하 padding을 뺀 값이어야
 한다. `SingleChildScrollView`의 바깥 constraint를 padding 차감 없이 그대로 canvas 높이로 사용하면
-Section 2·5의 하단과 Section 5 초기화 버튼이 화면 아래로 padding 합계만큼 밀린다. 최소 canvas
+Section 2의 하단이 화면 아래로 padding 합계만큼 밀린다. 최소 canvas
 높이 590은 유지하되, 충분한 높이에서는 `maxHeight - padding.vertical`을 사용한다.
 
-필터 모드의 `_StudentSectionFoundationPainter`는 새 Section 5 container와 reset surface를 직접
-그린 뒤, 일반 Section 2용 runtime container/feature paint loop에서 `element-2` 자식을 제외해야
-한다. 그렇지 않으면 기존 `container-12`가 새 필터 container 뒤에 원래 크기로 다시 그려져
-이전 viewport와 비슷한 중복 면·윤곽이 남는다.
-
-Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPosition`에서 파생되는 상태다.
+Section 2의 viewport fog는 고정 장식이 아니라 실제 `ScrollPosition`에서 파생되는 상태다.
 스크롤 범위가 없으면 위·아래 fog를 모두 그리지 않는다. `pixels`가 최소 extent에 있으면 위 fog를,
-최대 extent에 있으면 아래 fog를 그리지 않으며, 두 끝점 사이에서만 양쪽 fog를 표시한다. 두
-섹션은 `_StudentDiagonalScrollbar`의 동일한 계산과 overlay를 공유한다.
+최대 extent에 있으면 아래 fog를 그리지 않으며, 두 끝점 사이에서만 양쪽 fog를 표시한다.
 
 ## 학생 Section 1 정렬 드롭다운 계약
 
@@ -834,12 +882,14 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
   이름 오름차순으로 안정화한다. 인연 랭크는 repository protocol에 필드가 추가되기 전까지 전원이
   미구현 값이므로 이름순 fallback만 동작한다.
 
-## 학생 카드 이름 크기 계약
+## 학생 카드 이름 계약
 
-- 하단 16% overlay 중 속성 띠를 제외한 13% 이름 영역은 유지한다.
-- 이름 글꼴은 이전 4~8px 범위에서 1.5배인 6~12px 범위로 키우고, 가용 이름 영역 높이의 80%를
-  목표값으로 사용한다. 긴 이름은 기존처럼 한 줄 ellipsis와 `square.png` alpha mask 안에서만
-  렌더링한다.
+2026-10-07 FE3-a(FD-043, FD-046)로 대체했다. 카드 안 13% 이름 영역과 6~12px 가변 글꼴은 폐기했다.
+
+- 이름은 카드 밖, 카드 밑변 아래 3 px에서 높이 16 px 줄에 둔다. 폭은 카드 하단 변 길이(카드 폭 − 80°
+  깊이)이고 가운데 정렬, Pretendard 13 px w700, 보유 `#f4f8fb` · 미보유 `#9eb0c2`다. 긴 이름은 한 줄
+  ellipsis로 줄인다. 이름 줄은 hit target이 아니다.
+- 그리드는 이름 줄 20 px(3 + 16 + 1)를 행 간격에 포함한다. `학생 이름 표시`를 끄면 이름 줄을 접는다.
 
 ## 학생 Section 4 표시 토글 텍스트 계약
 
@@ -1186,6 +1236,13 @@ Section 2·5의 viewport fog는 고정 장식이 아니라 실제 `ScrollPositio
     실화면 확인을 완료 조건으로 남긴다.
 
 ## 계획 탭 페이즈 편집 화면 (2026-07-30)
+
+> **옛 화면 기록(FD-070 · FD-026, 2026-10-19 FE10-d)**: 이 절의 4섹션 편집 화면(`PlanPhaseEditor`)은
+> 계획 만들기 3단계 `단계 순서`(FE4-d)가 대체했고 `plan_phase_editor.dart`는 FE5-f2에서 지웠다(FD-070).
+> 지금 `페이즈 편집`은 저장된 활성 계획을 3단계로 연다. 아래 끝 줄의 "더미 데이터와 인메모리 상태 · 저장과
+> 재시작 복원은 후속" 범위도 끝났다: 활성 계획은 저장된 PlanningDocument(FB-1)이고, 화면의 활성 계획 수치는
+> 그 문서를 `planning.document.calculate`로 계산한 결과 하나다(FD-026). 아래 본문은 2026-07-30 기록으로
+> 남긴다(당시 문장 그대로).
 
 - 계획-메인 Section 1의 임시 `페이즈 만들기` action이 인메모리 편집 화면을 연다.
   메인 Section들이 각자의 outro 방향으로 퇴장한 뒤 편집 Section 1~4가 진입한다.

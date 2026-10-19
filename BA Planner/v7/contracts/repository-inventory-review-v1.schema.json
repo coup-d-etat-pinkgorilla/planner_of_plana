@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/repository-inventory-review-v1.schema.json",
+  "title": "Sparse inventory review flags v1",
+  "$defs": {
+    "keys": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "version",
+        "needs_review_keys"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "needs_review_keys": {
+          "$ref": "#/$defs/keys"
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "version",
+        "profile_id",
+        "revision",
+        "needs_review_keys"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "needs_review_keys": {
+          "$ref": "#/$defs/keys"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#/$defs/result"
+}

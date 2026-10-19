@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 
 from jsonschema import Draft202012Validator
+from referencing import Registry, Resource
 
 from core.repository_dto import ConfirmedStudent, InventorySnapshot, StudentGoalRecord
 
@@ -16,7 +17,9 @@ class RepositoryProtocolContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.schema = json.loads((ROOT / "contracts/repository-protocol-v1.schema.json").read_text(encoding="utf-8"))
-        cls.validator = Draft202012Validator(cls.schema)
+        schemas = [json.loads(path.read_text(encoding="utf-8")) for path in (ROOT / "contracts").glob("*.schema.json")]
+        registry = Registry().with_resources((schema["$id"], Resource.from_contents(schema)) for schema in schemas)
+        cls.validator = Draft202012Validator(cls.schema, registry=registry)
 
     def test_shared_fixture_matches_repository_schema(self) -> None:
         fixture = json.loads((ROOT / "contracts/fixtures/repository_protocol_v1.json").read_text(encoding="utf-8"))

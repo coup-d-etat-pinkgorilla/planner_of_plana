@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'app/app.dart';
 import 'services/app_service.dart';
-import 'services/mock_app_service.dart';
+import 'services/mock_design_review_scenario.dart';
 import 'services/process_app_service.dart';
 
 void main() {
@@ -15,6 +15,8 @@ void main() {
   );
   const backendDirectory = String.fromEnvironment('BA_PLANNER_BACKEND_DIR');
   const pythonExecutable = String.fromEnvironment('BA_PLANNER_PYTHON');
+  // mock 모드에서만 읽는다(mockdemo): 비어 있으면 기본 Mock, `design-review`면 검수 시나리오.
+  const mockScenario = String.fromEnvironment('BA_PLANNER_MOCK_SCENARIO');
 
   final AppService service;
   if (useRealBackend) {
@@ -24,7 +26,7 @@ void main() {
     );
     unawaited(_connect(service));
   } else {
-    service = MockAppService(fullStudentCatalog: true);
+    service = createMockAppService(scenario: mockScenario);
   }
   runApp(BAPlannerApp(service: service, showTitle: true));
 }

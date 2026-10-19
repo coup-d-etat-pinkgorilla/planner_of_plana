@@ -8,11 +8,13 @@ sources:
     path: frontend/lib/ui/widgets/plan_section_layout.dart
   - id: plan-phase-editor
     type: file
-    path: frontend/lib/ui/widgets/plan_phase_editor.dart
+    path: frontend/lib/ui/widgets/plan_preset_manager.dart
   - id: planning-page
     type: file
     path: frontend/lib/ui/pages/planning_page.dart
 ---
+
+> **폐기 기록(2026-10-13).** `plan_phase_editor.dart`(옛 페이즈 편집기)는 2026-10-13 FE5-f2에서 삭제됐다. 이 문서는 시행착오 기록으로 남긴다. 아직 쓰이는 버튼·기하·색은 `plan_preset_manager.dart`(`_PlanPresetPathButton`·`planPresetButtonHoverColor` 등)와 `plan_element_builder.dart`(`planPresetListTexture`)로 옮겨졌고, 섹션 rect morph는 키트 `lib/ui/kit/section_morph.dart`가 맡는다. 아래 [@plan-phase-editor] 인용은 그 이관 위치를 가리킨다.
 
 # 계획 페이즈 편집기 시행착오와 프리셋 제조 재발 방지
 

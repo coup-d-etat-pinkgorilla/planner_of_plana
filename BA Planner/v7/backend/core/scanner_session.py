@@ -1,17 +1,26 @@
 from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
+import base64
 from copy import deepcopy
 from dataclasses import dataclass, field
+from io import BytesIO
+import inspect
+import json
 from threading import Event, RLock
 from typing import Any, Callable, Mapping, Protocol
 from uuid import uuid4
 
 from PIL import Image
 
-from core.inventory_catalog import CATALOG_REVISION, SCAN_PROFILES
+from core.inventory_catalog import BY_KEY, CATALOG_REVISION, SCAN_PROFILES, canonical_resource_key
+from core.repository_inventory import rebase_inventory_snapshot
+from core.current_history import HistoryError, canonical_students
+from core.scan_commit_history_context import ScanCommitHistoryContext
 from core.scan_context import ScanContext
-from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError
+from core.scanner_pause_control import ScannerPauseControl
+from core.student_fallback_evidence import attach_student_fallback_details, remove_student_crop_images
+from core.repository_dto import ConfirmedStudent, InventorySnapshot, RepositoryDTOError, canonical_json
 
 
 NON_REVIEW_EVIDENCE_STATUSES = {
@@ -45,12 +54,12 @@ class RepositoryCommitPort(Protocol):
 
     def update_students(
         self, profile_id: str, students: list[dict[str, Any]], expected_revision: int,
-        idempotency_key: str,
+        idempotency_key: str, *, history_context: ScanCommitHistoryContext | None = None,
     ) -> dict[str, Any]: ...
 
     def update_inventory(
         self, profile_id: str, inventory: dict[str, Any], expected_revision: int,
-        idempotency_key: str,
+        idempotency_key: str, *, history_context: ScanCommitHistoryContext | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -69,7 +78,10 @@ Matcher = Callable[[dict[str, Any], Event, Callable[..., None]], list[dict[str, 
 EventSink = Callable[[dict[str, Any]], None]
 TacticalLobbyCommitter = Callable[[str, dict[str, Any], int, str], dict[str, Any]]
 StudentValidator = Callable[[Mapping[str, Any], str | None, Mapping[int, int] | None], dict[str, Any]]
-CandidateReviewHook = Callable[[str, str, str, dict[str, Any], dict[str, Any], str, bool], int | None]
+CandidateReviewHook = Callable[[str, str, str, dict[str, Any], dict[str, Any], str, bool, tuple[str, ...]], int | None]
+InventoryIdentityAssignmentHook = Callable[
+    [str | None, tuple[int, int], str, Image.Image, str, int, bool], str | None
+]
 
 
 @dataclass(slots=True)
@@ -86,6 +98,7 @@ class SessionCandidate:
     audit: list[dict[str, Any]] = field(default_factory=list)
     validation_relationship_ranks: dict[int, int] = field(default_factory=dict)
     answer_specimen: dict[str, Any] = field(default_factory=dict, repr=False)
+    identified_inventory_keys: tuple[str, ...] = field(default=(), repr=False)
 
     def to_wire(self) -> dict[str, Any]:
         return {
@@ -116,6 +129,23 @@ class _Session:
     events: list[dict[str, Any]] = field(default_factory=list)
     candidates: dict[str, SessionCandidate] = field(default_factory=dict)
     future: Future[None] | None = None
+    control: ScannerPauseControl | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _FrozenCurrentCommit:
+    public_request_json: str
+    bucket: str
+    current_json: str
+    context: ScanCommitHistoryContext
+
+
+@dataclass(slots=True)
+class _CurrentCommitReceipt:
+    public_request_json: str
+    request: _FrozenCurrentCommit | None
+    response_json: str | None = None
+    in_flight: bool = False
 
 
 class ScannerSessionService:
@@ -136,6 +166,7 @@ class ScannerSessionService:
         executor: ThreadPoolExecutor | None = None,
         student_validator: StudentValidator | None = None,
         candidate_review_hook: CandidateReviewHook | None = None,
+        inventory_identity_assignment_hook: InventoryIdentityAssignmentHook | None = None,
         resource_close_hook: Callable[[], None] | None = None,
     ) -> None:
         self._target_provider = target_provider
@@ -150,12 +181,14 @@ class ScannerSessionService:
         self._executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="scanner")
         self._student_validator = student_validator
         self._candidate_review_hook = candidate_review_hook
+        self._inventory_identity_assignment_hook = inventory_identity_assignment_hook
         self._resource_close_hook = resource_close_hook
         self._owns_executor = executor is None
         self._lock = RLock()
         self._generation = 0
         self._active: _Session | None = None
         self._sessions: dict[str, _Session] = {}
+        self._current_commits: dict[tuple[str, str], _CurrentCommitReceipt] = {}
 
     def targets(self) -> list[dict[str, Any]]:
         targets = self._target_provider()
@@ -207,6 +240,10 @@ class ScannerSessionService:
                 student_scan_mode if scan_kind == "student" else "single",
             )
             self._active = session
+            session.control = ScannerPauseControl(
+                self._lock, session.cancel,
+                lambda kind, payload: self._emit_unchecked(session, kind, payload),
+            )
             self._sessions[session.session_id] = session
             # The session is registered before the worker can publish its first event.
             session.future = self._executor.submit(self._run, session)
@@ -224,7 +261,23 @@ class ScannerSessionService:
         with self._lock:
             already_terminal = session.terminal is not None
             session.cancel.set()
+            session.control.wake()
             return {"accepted": not already_terminal, "terminal": session.terminal}
+
+    def pause(self, session_id: str, generation: int) -> dict[str, Any]:
+        return self._session(session_id, generation).control.pause()
+
+    def resume(self, session_id: str, generation: int) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        if session.control.wire()['control_state'] != 'paused':
+            return session.control.wire()
+        diagnose = getattr(self._target_provider, 'diagnose', None)
+        if callable(diagnose):
+            ready = diagnose(session.target).get('status') == 'ready'
+        else:
+            ready = any(t.get('target_id') == session.target['target_id'] and t.get('status') == 'ready'
+                        for t in self.targets())
+        return session.control.resume(ready)
 
     def snapshot(self, session_id: str, generation: int) -> dict[str, Any]:
         session = self._session(session_id, generation)
@@ -235,6 +288,8 @@ class ScannerSessionService:
                 "scan_kind": session.scan_kind,
                 "last_sequence": session.sequence,
                 "terminal": session.terminal,
+                "control_state": session.control.state,
+                "reason": session.control.reason,
                 "events": deepcopy(session.events),
                 "candidates": [item.to_wire() for item in session.candidates.values()],
             }
@@ -246,6 +301,138 @@ class ScannerSessionService:
             if item is None:
                 raise ScannerError("candidate_not_found", "scanner candidate was not found")
             return item.to_wire()
+
+    def unresolved_slots(
+        self, session_id: str, generation: int, candidate_id: str,
+    ) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        with self._lock:
+            item = session.candidates.get(candidate_id)
+            if item is None:
+                raise ScannerError("candidate_not_found", "scanner candidate was not found")
+            if item.scan_kind != "inventory":
+                raise ScannerError("invalid_candidate", "unresolved slots are only available for inventory candidates")
+            return {
+                "candidate_id": item.candidate_id,
+                "candidate_revision": item.revision,
+                "slots": self._unresolved_slots_wire(item),
+            }
+
+    def assign_inventory_identity(
+        self,
+        session_id: str,
+        generation: int,
+        candidate_id: str,
+        expected_candidate_revision: int,
+        slot: int,
+        identity: str,
+        persist: bool,
+    ) -> dict[str, Any]:
+        session = self._session(session_id, generation)
+        with self._lock:
+            item = session.candidates.get(candidate_id)
+            if item is None:
+                raise ScannerError("candidate_not_found", "scanner candidate was not found")
+            if item.revision != expected_candidate_revision:
+                raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
+            if item.scan_kind != "inventory":
+                raise ScannerError("invalid_candidate", "identity assignment requires an inventory candidate")
+            unresolved = item.answer_specimen.get("unresolved_slots")
+            slot_crops = item.answer_specimen.get("slot_crops")
+            source_size = item.answer_specimen.get("source_size")
+            if (not isinstance(unresolved, dict) or slot not in unresolved
+                    or not isinstance(slot_crops, dict) or not isinstance(slot_crops.get(slot), Image.Image)
+                    or not isinstance(source_size, tuple) or len(source_size) != 2):
+                raise ScannerError("unresolved_slot_not_found", "unresolved inventory slot was not found")
+            metadata = unresolved[slot]
+            profile = metadata.get("profile") if isinstance(metadata, dict) else None
+            row = BY_KEY.get(canonical_resource_key(identity))
+            if not isinstance(profile, str) or row is None or row.profile_id != profile:
+                raise ScannerError("invalid_identity", "identity is not part of the unresolved slot profile")
+            entries = item.payload.get("entries")
+            if not isinstance(entries, list):
+                raise ScannerError("invalid_candidate", "inventory candidate entries are invalid")
+            if any(entry.get("item_id") == row.item_id for entry in entries if isinstance(entry, dict)):
+                raise ScannerError("identity_conflict", "identity is already present in this candidate")
+            if self._inventory_identity_assignment_hook is None:
+                raise ScannerError("assignment_unavailable", "inventory identity assignment is unavailable")
+            try:
+                sample_id = self._inventory_identity_assignment_hook(
+                    session.profile_id, source_size, row.item_id, slot_crops[slot],
+                    item.candidate_id, slot, persist,
+                )
+            except (OSError, ValueError) as exc:
+                raise ScannerError("sample_storage_failed", str(exc)) from exc
+
+            entries.append({
+                "key": row.resource_key,
+                "quantity": None,
+                "item_id": row.item_id,
+                "name": row.display_name,
+                "observed_slot": slot,
+                "profile_id": profile,
+                "inventory_scan_profile": profile,
+            })
+            self._remember_inventory_keys(item, item.payload)
+            item.evidence = [
+                evidence for evidence in item.evidence
+                if not (isinstance(evidence, dict) and evidence.get("field") == f"slots[{slot}]")
+            ]
+            item.evidence.extend([
+                {"field": f"entries[{slot}].item_id", "status": "verified", "source": "user_label",
+                 "confidence": 1.0, "note": "identity assigned by user"},
+                {"field": f"entries[{slot}].quantity", "status": "deferred", "source": "user_label",
+                 "confidence": None, "note": "identity assignment does not infer quantity"},
+            ])
+            unresolved.pop(slot)
+            assigned_slots = item.answer_specimen.setdefault("assigned_slots", set())
+            if not isinstance(assigned_slots, set):
+                raise ScannerError("invalid_candidate", "inventory assignment specimen is invalid")
+            assigned_slots.add(slot)
+            item.audit.append({
+                "from_revision": item.revision,
+                "source": "user_identity_assignment",
+                "slot": slot,
+                "identity": row.item_id,
+                "persistence": "user_confirmed" if persist else "session",
+                **({"sample_id": sample_id} if sample_id is not None else {}),
+            })
+            item.revision += 1
+            item.approved = False
+            item.review_required = True
+            return {
+                "candidate": item.to_wire(),
+                "candidate_revision": item.revision,
+                "slots": self._unresolved_slots_wire(item),
+            }
+
+    @staticmethod
+    def _unresolved_slots_wire(item: SessionCandidate) -> list[dict[str, Any]]:
+        unresolved = item.answer_specimen.get("unresolved_slots")
+        crops = item.answer_specimen.get("slot_crops")
+        source_size = item.answer_specimen.get("source_size")
+        if not isinstance(unresolved, dict) or not isinstance(crops, dict):
+            return []
+        resolution = (
+            {"width": source_size[0], "height": source_size[1]}
+            if isinstance(source_size, tuple) and len(source_size) == 2 else None
+        )
+        result = []
+        for slot in sorted(unresolved):
+            metadata = unresolved[slot]
+            crop = crops.get(slot)
+            if not isinstance(slot, int) or not isinstance(metadata, dict) or not isinstance(crop, Image.Image):
+                continue
+            buffer = BytesIO()
+            crop.save(buffer, format="PNG")
+            result.append({
+                "slot": slot,
+                "profile": metadata.get("profile"),
+                "resolution": resolution,
+                "crop_png_base64": base64.b64encode(buffer.getvalue()).decode("ascii"),
+                "candidates": deepcopy(metadata.get("candidates", [])),
+            })
+        return result
 
     def revalidate(
         self, session_id: str, generation: int, candidate_id: str,
@@ -287,6 +474,7 @@ class ScannerSessionService:
         approve: bool,
         reason: str,
         relationship_ranks: Mapping[int, int] | None = None,
+        confirmed_fields: list[str] | tuple[str, ...] | None = None,
     ) -> dict[str, Any]:
         session = self._session(session_id, generation)
         with self._lock:
@@ -296,60 +484,87 @@ class ScannerSessionService:
             if item.revision != expected_candidate_revision:
                 raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
             self._validated_payload(item.scan_kind, payload)
-            self._train_answer_sample(session, item, payload, reason, approve)
-            if item.answer_specimen and (
-                approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}
-            ):
-                self._close_specimen(item.answer_specimen)
-                item.answer_specimen = {}
+            fields = self._confirmed_fields(item.scan_kind, payload, confirmed_fields)
+            report = self._train_answer_sample(session, item, payload, reason, approve, fields)
+            if approve or reason in {"discarded_in_scan_page", "discarded_in_student_page"}:
+                self._release_candidate_images(session, item)
             if (
                 item.scan_kind == "student"
                 and reason == "edited_and_revalidated_in_scan_page"
             ):
-                self._mark_user_verified(item, payload)
+                self._mark_user_verified(item, payload, fields, report.get("blocked_fields", []))
+                for field in report.get("blocked_fields", []):
+                    item.evidence.append({"field": field, "status": "uncertain",
+                        "source": "recognition_sample_safety", "confidence": 0.0,
+                        "note": "cross-label collision; confirm the value against the captured screen"})
             item.audit.append({
                 "from_revision": item.revision,
                 "reason": reason,
                 "approved": approve,
                 "source": "user_review",
+                "confirmed_fields": list(fields),
             })
+            if item.scan_kind == "inventory":
+                self._remember_inventory_keys(item, payload)
             item.payload = deepcopy(payload)
             if item.scan_kind == "student" and self._student_validator is not None:
                 self._revalidate_student(session, item, relationship_ranks)
+            elif item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page":
+                item.review_required = any(
+                    row.get("status") not in NON_REVIEW_EVIDENCE_STATUSES for row in item.evidence
+                )
             item.revision += 1
             item.approved = approve
             return item.to_wire()
 
-    def _train_answer_sample(self, session, item, payload, reason: str, approve: bool) -> None:
+    @staticmethod
+    def _confirmed_fields(scan_kind, payload, fields) -> tuple[str, ...]:
+        if fields is None:
+            return ()
+        if (not isinstance(fields, (list, tuple)) or any(not isinstance(field, str) for field in fields)
+                or len(set(fields)) != len(fields)):
+            raise ScannerError("invalid_payload", "confirmed_fields must be distinct field names")
+        values = payload.get("values", {}) if scan_kind == "student" else {}
+        if any(field not in values for field in fields):
+            raise ScannerError("invalid_payload", "confirmed_fields must belong to student values")
+        return tuple(fields)
+
+    def _train_answer_sample(self, session, item, payload, reason: str, approve: bool,
+                             confirmed_fields: tuple[str, ...]) -> dict:
         """Only an explicit user answer becomes a stored recognition sample."""
         if not (
             self._candidate_review_hook is not None
             and session.profile_id is not None
             and item.answer_specimen
             and (
-                (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page")
+                (item.scan_kind == "student" and reason == "edited_and_revalidated_in_scan_page" and confirmed_fields)
                 or (item.scan_kind == "inventory" and approve)
             )
         ):
-            return
+            return {}
         try:
             sample_count = self._candidate_review_hook(
                 item.scan_kind, session.profile_id, item.candidate_id,
                 item.answer_specimen, payload, reason, approve,
+                confirmed_fields,
             )
+            report = item.answer_specimen.pop("_sample_training_report", {})
             item.audit.append({
                 "source": "user_confirmed_answer_sample",
                 "sample_count": sample_count or 0,
+                **report,
             })
+            return report
         except (OSError, ValueError) as exc:
             item.audit.append({
                 "source": "user_confirmed_answer_sample",
                 "status": "storage_failed",
                 "message": str(exc),
             })
+            return {}
 
     @staticmethod
-    def _mark_user_verified(item, payload) -> None:
+    def _mark_user_verified(item, payload, confirmed_fields, blocked_fields=()) -> None:
         """Fields the user edited and revalidated no longer count as unresolved evidence."""
         values = payload.get("values") if isinstance(payload, dict) else None
         if not isinstance(values, dict):
@@ -359,7 +574,8 @@ class ScannerSessionService:
             replacement = deepcopy(evidence)
             if (
                 isinstance(replacement, dict)
-                and replacement.get("field") in values
+                and replacement.get("field") in confirmed_fields
+                and replacement.get("field") not in blocked_fields
                 and replacement.get("status")
                 not in {"ok", "inferred", "skipped", "verified", "deferred"}
             ):
@@ -395,57 +611,136 @@ class ScannerSessionService:
         expected_repository_revision: int,
         idempotency_key: str,
     ) -> dict[str, Any]:
-        session = self._session(session_id, generation)
+        request = {
+            "session_id": session_id, "generation": generation,
+            "candidate_id": candidate_id, "candidate_revision": candidate_revision,
+            "profile_id": profile_id, "expected_repository_revision": expected_repository_revision,
+            "idempotency_key": idempotency_key,
+        }
         with self._lock:
-            item = session.candidates.get(candidate_id)
-            if item is None:
-                raise ScannerError("candidate_not_found", "scanner candidate was not found")
-            if item.revision != candidate_revision:
-                raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
-            if session.terminal != "completed":
-                raise ScannerError("session_not_committable", "only a completed session can commit")
-            if item.review_required and not item.approved:
-                raise ScannerError("review_required", "candidate requires explicit review approval")
+            cached = self._current_commits.get((session_id, idempotency_key))
+            if cached is not None and cached.public_request_json != canonical_json(request):
+                raise ScannerError("idempotency_conflict", "idempotency key belongs to another scanner request")
+            session = self._session(session_id, generation)
+            if session.scan_kind in {"student", "inventory"}:
+                return self._commit_current(session, request)
+            item = self._committable_candidate(session, candidate_id, candidate_revision)
             payload = self._validated_payload(item.scan_kind, item.payload)
-            if item.scan_kind == "inventory":
-                self._require_catalog_revision(item, payload)
-
-        if item.scan_kind == "student":
-            state = self._repository.get_state(profile_id)
-            student = payload.to_dict()
-            students = [
-                existing for existing in state["students"]
-                if existing.get("student_id") != student["student_id"]
-            ]
-            students.append(student)
-            result = self._repository.update_students(
-                profile_id, students, expected_repository_revision, idempotency_key
-            )
-        elif item.scan_kind == "inventory":
-            inventory = self._merged_inventory(
-                self._repository.get_state(profile_id)["inventory"], payload.to_dict()
-            )
-            result = self._repository.update_inventory(
-                profile_id, inventory, expected_repository_revision, idempotency_key
-            )
-        else:
-            if self._tactical_lobby_committer is None:
-                raise ScannerError(
-                    "persistence_deferred",
-                    "tactical lobby persistence is not configured",
-                )
-            result = self._tactical_lobby_committer(
-                profile_id, payload, expected_repository_revision, idempotency_key
-            )
+        # Tactical persistence remains its existing four-argument path.
+        if self._tactical_lobby_committer is None:
+            raise ScannerError("persistence_deferred", "tactical lobby persistence is not configured")
+        result = self._tactical_lobby_committer(
+            profile_id, payload, expected_repository_revision, idempotency_key,
+        )
         with self._lock:
             self._close_specimen(item.answer_specimen)
             item.answer_specimen = {}
-        return {
-            "candidate_id": candidate_id,
-            "candidate_revision": candidate_revision,
-            "profile_id": profile_id,
-            **result,
-        }
+        return {"candidate_id": candidate_id, "candidate_revision": candidate_revision,
+                "profile_id": profile_id, **result}
+
+    @staticmethod
+    def _committable_candidate(session, candidate_id, candidate_revision):
+        item = session.candidates.get(candidate_id)
+        if item is None:
+            raise ScannerError("candidate_not_found", "scanner candidate was not found")
+        if item.revision != candidate_revision:
+            raise ScannerError("candidate_revision_conflict", "candidate revision is stale")
+        if session.terminal != "completed":
+            raise ScannerError("session_not_committable", "only a completed session can commit")
+        if item.review_required and not item.approved:
+            raise ScannerError("review_required", "candidate requires explicit review approval")
+        return item
+
+    @staticmethod
+    def _inventory_keys(payload):
+        return tuple(dict.fromkeys(canonical_resource_key(entry.get("item_id") or entry["key"])
+                                  for entry in payload.get("entries", [])))
+
+    @classmethod
+    def _remember_inventory_keys(cls, item, payload):
+        item.identified_inventory_keys = tuple(dict.fromkeys(
+            (*item.identified_inventory_keys, *cls._inventory_keys(payload)),
+        ))
+
+    def _prepare_current_commit(self, session, item, request, public_request_json):
+        payload = self._validated_payload(item.scan_kind, item.payload)
+        bucket = "students" if item.scan_kind == "student" else "inventory"
+        if bucket == "inventory":
+            self._require_catalog_revision(item, payload)
+        scanned = payload.to_dict()
+        applied = ([scanned["student_id"]] if bucket == "students" else
+                   [entry.get("item_id") or entry["key"] for entry in scanned["entries"]])
+        canonical_applied = set(canonical_resource_key(key) for key in applied) if bucket == "inventory" else set(applied)
+        excluded = [key for key in item.identified_inventory_keys if key not in canonical_applied] if bucket == "inventory" else []
+        try:
+            context = ScanCommitHistoryContext.from_wire({
+                "source": "scan", "session_id": session.session_id, "generation": session.generation,
+                "candidate_id": item.candidate_id, "candidate_revision": item.revision,
+                "scan_kind": session.scan_kind,
+                "inventory_scan_profile": session.target.get("inventory_scan_profile"),
+                "applied_keys": applied, "excluded_keys": excluded, "retry_of": None,
+            }, bucket=bucket)
+            # Validate scope before get_state; empty/all-excluded never becomes an application.
+            state = self._repository.get_state(request["profile_id"])
+            if bucket == "students":
+                current = canonical_students([
+                    row for row in state["students"] if row["student_id"] != scanned["student_id"]
+                ] + [scanned])
+            else:
+                current = rebase_inventory_snapshot(self._merged_inventory(state["inventory"], scanned))
+        except (HistoryError, RepositoryDTOError) as error:
+            raise ScannerError("invalid_candidate", str(error), details={"reason": getattr(error, "reason", "invalid_candidate")}) from error
+        return _FrozenCurrentCommit(public_request_json, bucket, canonical_json(current), context)
+
+    @staticmethod
+    def _invoke_current_writer(writer, request, frozen):
+        try:
+            parameters = inspect.signature(writer).parameters
+        except (TypeError, ValueError) as error:
+            raise ScannerError("persistence_deferred", "repository writer signature is unavailable") from error
+        supports_context = ("history_context" in parameters and
+                            parameters["history_context"].kind != inspect.Parameter.POSITIONAL_ONLY)
+        supports_context = supports_context or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values())
+        args = (request["profile_id"], json.loads(frozen.current_json),
+                request["expected_repository_revision"], request["idempotency_key"])
+        # Legacy four-argument test/callback ports remain usable; never retry a TypeError after a write.
+        return writer(*args, history_context=frozen.context) if supports_context else writer(*args)
+
+    def _commit_current(self, session, request):
+        """Called under the service lock: freeze once, replay before revision/merge checks."""
+        cache_key = (request["session_id"], request["idempotency_key"])
+        public_request_json = canonical_json(request)
+        receipt = self._current_commits.get(cache_key)
+        if receipt is not None:
+            if receipt.public_request_json != public_request_json:
+                raise ScannerError("idempotency_conflict", "idempotency key belongs to another scanner request")
+            if receipt.response_json is not None:
+                return json.loads(receipt.response_json)
+            if receipt.in_flight:
+                raise ScannerError("persistence_deferred", "scanner commit is already in flight")
+        else:
+            item = self._committable_candidate(session, request["candidate_id"], request["candidate_revision"])
+            frozen = self._prepare_current_commit(session, item, request, public_request_json)
+            receipt = _CurrentCommitReceipt(public_request_json, frozen)
+            self._current_commits[cache_key] = receipt
+        receipt.in_flight = True
+        try:
+            frozen = receipt.request
+            assert frozen is not None  # Pending receipts always retain the original submission.
+            writer = self._repository.update_students if frozen.bucket == "students" else self._repository.update_inventory
+            result = self._invoke_current_writer(writer, request, frozen)
+            response = {"candidate_id": request["candidate_id"],
+                        "candidate_revision": request["candidate_revision"],
+                        "profile_id": request["profile_id"], **result}
+            # The receipt is ready even if closing the accepted specimen fails after durable write.
+            receipt.response_json = canonical_json(response)
+            receipt.request = None  # Keep signature/response; release full bucket/context before cleanup.
+            item = session.candidates.get(request["candidate_id"])
+            if item is not None:
+                self._release_candidate_images(session, item)
+            return json.loads(receipt.response_json)
+        finally:
+            receipt.in_flight = False
 
     def wait(self, session_id: str, timeout: float = 5.0) -> None:
         session = self._sessions.get(session_id)
@@ -459,6 +754,7 @@ class ScannerSessionService:
             active = self._active
             if active is not None:
                 active.cancel.set()
+                active.control.wake()
         if self._owns_executor:
             self._executor.shutdown(wait=True, cancel_futures=True)
         if self._resource_close_hook is not None:
@@ -466,8 +762,19 @@ class ScannerSessionService:
         with self._lock:
             for session in self._sessions.values():
                 for candidate in session.candidates.values():
-                    self._close_specimen(candidate.answer_specimen)
-                    candidate.answer_specimen = {}
+                    self._release_candidate_images(session, candidate)
+
+    def _release_candidate_images(self, session, item) -> None:
+        specimen, item.answer_specimen = item.answer_specimen, {}
+        if item.scan_kind == "student":
+            remove_student_crop_images(item.evidence)
+            for event in session.events:
+                candidate = event.get("payload", {}).get("candidate")
+                if isinstance(candidate, dict) and candidate.get("candidate_id") == item.candidate_id:
+                    remove_student_crop_images(candidate.get("evidence"))
+        # Redact retained copies before closing PIL resources, including when a
+        # resource close raises after a durable repository write.
+        self._close_specimen(specimen)
 
     @classmethod
     def _close_specimen(cls, value: object) -> None:
@@ -511,7 +818,7 @@ class ScannerSessionService:
     def _merged_inventory(saved: dict[str, Any], scanned: dict[str, Any]) -> dict[str, Any]:
         """Upsert scanned entries by identity; a scan never deletes entries it did not observe."""
         def identity(entry: dict[str, Any]) -> str:
-            return entry.get("item_id") or entry["key"]
+            return canonical_resource_key(entry.get("item_id") or entry["key"])
         updates = {identity(entry): entry for entry in scanned["entries"]}
         entries = [updates.pop(identity(entry), entry) for entry in saved.get("entries", [])]
         entries.extend(updates.values())
@@ -559,6 +866,7 @@ class ScannerSessionService:
 
             context = ScanContext.of(session.target).replace(
                 cancel=session.cancel, session_id=session.session_id, generation=session.generation,
+                control=session.control,
             )
             result = self._matchers[session.scan_kind](context, session.cancel, progress)
             batch = result if isinstance(result, ScanBatchResult) else ScanBatchResult(result)
@@ -573,11 +881,12 @@ class ScannerSessionService:
                 else {}
             )
             for raw in candidates:
-                candidate = self._make_candidate(session, raw, batch_relationship_ranks)
-                with self._lock:
-                    session.candidates[candidate.candidate_id] = candidate
-                transferred += 1
-                self._emit(session, "candidate", {"candidate": candidate.to_wire()})
+                with session.control.operation():
+                    candidate = self._make_candidate(session, raw, batch_relationship_ranks)
+                    with self._lock:
+                        session.candidates[candidate.candidate_id] = candidate
+                    transferred += 1
+                    self._emit(session, "candidate", {"candidate": candidate.to_wire()})
             outcome = "cancelled" if session.cancel.is_set() else batch.outcome
             self._terminal(
                 session, outcome,
@@ -611,20 +920,21 @@ class ScannerSessionService:
             isinstance(item, dict) and item.get("status") not in NON_REVIEW_EVIDENCE_STATUSES
             for item in evidence
         )
+        evidence = deepcopy(evidence)
+        specimen = dict(raw.get("_answer_specimen", {})) if isinstance(raw.get("_answer_specimen"), Mapping) else {}
+        if session.scan_kind == "student":
+            attach_student_fallback_details(evidence, specimen)
         return SessionCandidate(
             candidate_id=str(raw.get("candidate_id") or self._id_factory()),
             session_id=session.session_id,
             generation=session.generation,
             scan_kind=session.scan_kind,
             payload=deepcopy(payload),
-            evidence=deepcopy(evidence),
+            evidence=evidence,
             review_required=review_required,
+            identified_inventory_keys=(self._inventory_keys(payload) if session.scan_kind == "inventory" else ()),
             validation_relationship_ranks=dict(relationship_ranks or {}),
-            answer_specimen=(
-                dict(raw.get("_answer_specimen", {}))
-                if isinstance(raw.get("_answer_specimen"), Mapping)
-                else {}
-            ),
+            answer_specimen=specimen,
         )
 
     def _batch_relationship_ranks(self, candidates: list[dict[str, Any]]) -> dict[int, int]:
@@ -659,6 +969,10 @@ class ScannerSessionService:
         return self._student_validator(payload, profile_id, relationship_ranks)
 
     def _emit(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
+        with session.control.operation():
+            self._emit_unchecked(session, event_kind, data)
+
+    def _emit_unchecked(self, session: _Session, event_kind: str, data: dict[str, Any]) -> None:
         with self._lock:
             if session.terminal is not None:
                 return
@@ -683,11 +997,13 @@ class ScannerSessionService:
         self, session: _Session, outcome: str, *, code: str | None = None,
         message: str | None = None,
     ) -> None:
+        session.control.checkpoint()
         with self._lock:
             if session.terminal is not None:
                 return
             session.sequence += 1
             session.terminal = outcome
+            session.control.finish(outcome)
             payload: dict[str, Any] = {
                 "session_id": session.session_id,
                 "generation": session.generation,

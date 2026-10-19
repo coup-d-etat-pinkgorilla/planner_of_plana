@@ -1,0 +1,4115 @@
+{
+  "schema": "ba-planner.mika-skilllogic-slice.v1",
+  "rows": [
+    {
+      "source": {
+        "database": "LevelSkillDataDBSchema.db",
+        "databaseSha256": "410185d9e06d2ee1c191b4ea810c6a62b69a95a0da40fb30403da9e7a0e1fb6b",
+        "table": "Student",
+        "key": "CH0069Ex01",
+        "rowSha256": "644268b25e112f113c21b02f751b817644e0f0d7ead1e6577ba29571780cf0b3"
+      },
+      "status": "full",
+      "consumedBytes": 7589,
+      "totalBytes": 7589,
+      "decodeError": null,
+      "decodedSha256": "492d4c506e29dbce0527484b4a05f1f0b6a25e7a7be8d8095fc26c314d34eff2",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.TimelineSkillActionDAO",
+        "name": "CH0069_Ex01_TimelineSkillAction01",
+        "SkillDataKey": "CH0069Ex01",
+        "Range": 650,
+        "Angle": 0,
+        "MinRange": 0,
+        "CheckCanUseSkillPoint": false,
+        "IsWeaponMountAfterSkill": false,
+        "IsWeaponUnmountUseSkill": false,
+        "InvokerDirection": {
+          "value": 3,
+          "name": "ToTarget"
+        },
+        "InvokerDirectionWorldPosition": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "RootMotionMoveData": null,
+        "SkipAttackEnterAfterRootMotion": false,
+        "MainEntityData": {
+          "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+          "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+          "EntityName": "CH0069Ex01Entity01",
+          "SpawnRate": 10000,
+          "SpawnDelay": 0,
+          "ApplyType": {
+            "value": 2,
+            "name": "Direct"
+          },
+          "DecideTiming": {
+            "value": 0,
+            "name": "SkillStart"
+          },
+          "EntitySpawnIncludeOutOfRangeInputTarget": false,
+          "SpawnPositionType": {
+            "value": 1,
+            "name": "Invoker"
+          },
+          "SpawnWorldPosition": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "PositionOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "PositionRandomOffsetRange": 0,
+          "OffsetDirectionType": {
+            "value": 0,
+            "name": "None"
+          },
+          "SpawnDirectionType": {
+            "value": 0,
+            "name": "None"
+          },
+          "OverrideTargetingRule": false,
+          "TargetSortRule": {
+            "$type": "MX.Logic.Skills.TargetSortRule",
+            "IsValid": false,
+            "SortCriteria": {
+              "value": 0,
+              "name": "None"
+            },
+            "SortStat": {
+              "value": 0,
+              "name": "None"
+            },
+            "SortParameter": null,
+            "OrderBy": {
+              "value": 0,
+              "name": "None"
+            },
+            "Reindexing": 0,
+            "AllowedSummonedCount": 0,
+            "RandomTargetSelect": false
+          },
+          "EssentialCandidateRule": {
+            "$type": "MX.Logic.Skills.EssentialCandidateRule",
+            "TargetSide": {
+              "value": 0,
+              "name": "None"
+            },
+            "TargetingType": {
+              "value": 0,
+              "name": "None"
+            },
+            "ApplyEntityType": {
+              "value": 0,
+              "name": "None"
+            },
+            "MaxTargetCount": 0
+          },
+          "OptionalCandidateRule": {
+            "$type": "MX.Logic.Skills.OptionalCandidateRule",
+            "IgnoreUntargetable": false,
+            "AliveState": {
+              "value": 0,
+              "name": "None"
+            },
+            "SchoolConstraint": {
+              "$type": "MX.Logic.Data.SchoolConstraint",
+              "School": {
+                "value": 0,
+                "name": "None"
+              },
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "PersonalityIdConstraint": {
+              "$type": "MX.Logic.Data.PersonalityIdConstraint",
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              },
+              "PersonalityIds": []
+            },
+            "WeaponConstraint": {
+              "$type": "MX.Logic.Data.WeaponConstraint",
+              "Weapon": {
+                "value": 0,
+                "name": "None"
+              },
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "SquadTypeConstraint": {
+              "$type": "MX.Logic.Data.SquadTypeConstraint",
+              "SquadType": {
+                "value": 0,
+                "name": "None"
+              },
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "AdaptationConstraint": {
+              "$type": "MX.Logic.Data.AdaptationConstraint",
+              "AdaptationType": {
+                "value": 0,
+                "name": "None"
+              },
+              "AdaptationValues": [],
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "BulletConstraint": {
+              "$type": "MX.Logic.Data.BulletConstraint",
+              "BulletType": {
+                "value": 5,
+                "name": "None"
+              },
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "TacticRangeConstraint": {
+              "$type": "MX.Logic.Data.TacticRangeConstraint",
+              "TacticRanges": [],
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "TagConstraint": {
+              "$type": "MX.Logic.Data.TagConstraint",
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              },
+              "TagNamesInt": []
+            },
+            "CoverState": {
+              "value": 0,
+              "name": "None"
+            },
+            "HPRateConstraint": {
+              "$type": "MX.Logic.Data.HPRateConstraint",
+              "ConstraintType": {
+                "value": 0,
+                "name": "None"
+              },
+              "HPRate": 0
+            },
+            "TacticRoleConstraint": {
+              "$type": "MX.Logic.Data.TacticRoleConstraint",
+              "TacticRole": [],
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "SpawnSourceConstraint": {
+              "$type": "MX.Logic.Data.SpawnSourceConstraint",
+              "SpawnSources": [],
+              "IncludeType": {
+                "value": 0,
+                "name": "None"
+              }
+            },
+            "BlackboardConstraint": {
+              "$type": "MX.Logic.Data.BlackboardConstraint",
+              "KeyType": {
+                "value": 0,
+                "name": "Invalid"
+              },
+              "KeyString": ""
+            }
+          },
+          "HighlightOption": {
+            "value": 2,
+            "name": "HighlightAndFactor"
+          },
+          "CheckSpawnPositionMovable": false,
+          "TargetContainerIndex": 0,
+          "DestinationType": {
+            "value": 3,
+            "name": "InputBattleEntity"
+          },
+          "DestinationWorldPosition": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "DestinationPositionOffset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "DestinationPositionRandomOffsetRange": 0,
+          "DestinationOffsetDirectionType": {
+            "value": 0,
+            "name": "None"
+          },
+          "ReduceDamageRatePerHit": 0,
+          "MaxReducedDamageRate": 0,
+          "ProjectileType": {
+            "value": 1,
+            "name": "TargetCharacter"
+          },
+          "ShapeType": {
+            "value": 3,
+            "name": "Circle"
+          },
+          "Width": 10,
+          "Height": 10,
+          "Speed": 2000,
+          "FireDelayFrame": 0,
+          "IsStickToTargetAfterHit": false,
+          "Abilities": [
+            {
+              "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+              "name": "CH0069_Ex01_LevelOneTimeAbility01",
+              "StartDelay": 0,
+              "LogicEffectGroupIds": [
+                "CH0069_Ex01_Effect01"
+              ],
+              "Modifiers": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                  "CheckTarget": {
+                    "value": 1,
+                    "name": "Target"
+                  },
+                  "MinHpRate": 0,
+                  "MaxHpRate": 10000,
+                  "MinDamageMultiplier": 10000,
+                  "MaxDamageMultiplier": 20000
+                }
+              ],
+              "IsReferenceSkillSlot": false,
+              "ReferenceSkillSlot": {
+                "value": 0,
+                "name": "None"
+              }
+            }
+          ],
+          "SplashDelayFrame": 0,
+          "SplashAreaEntityData": null,
+          "AreaSpawnerData": null,
+          "SkillEntitySpawnerData": null,
+          "SplashEachTarget": false
+        },
+        "TargetSortRule": {
+          "$type": "MX.Logic.Skills.TargetSortRule",
+          "IsValid": true,
+          "SortCriteria": {
+            "value": 4,
+            "name": "Distance"
+          },
+          "SortStat": {
+            "value": 0,
+            "name": "None"
+          },
+          "SortParameter": null,
+          "OrderBy": {
+            "value": 2,
+            "name": "Lowest"
+          },
+          "Reindexing": 0,
+          "AllowedSummonedCount": 0,
+          "RandomTargetSelect": false
+        },
+        "EssentialCandidateRule": {
+          "$type": "MX.Logic.Skills.EssentialCandidateRule",
+          "TargetSide": {
+            "value": 8,
+            "name": "Enemy"
+          },
+          "TargetingType": {
+            "value": 1,
+            "name": "Target"
+          },
+          "ApplyEntityType": {
+            "value": 5,
+            "name": "Character"
+          },
+          "MaxTargetCount": 1
+        },
+        "OptionalCandidateRule": {
+          "$type": "MX.Logic.Skills.OptionalCandidateRule",
+          "IgnoreUntargetable": false,
+          "AliveState": {
+            "value": 0,
+            "name": "None"
+          },
+          "SchoolConstraint": {
+            "$type": "MX.Logic.Data.SchoolConstraint",
+            "School": {
+              "value": 0,
+              "name": "None"
+            },
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "PersonalityIdConstraint": {
+            "$type": "MX.Logic.Data.PersonalityIdConstraint",
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            },
+            "PersonalityIds": []
+          },
+          "WeaponConstraint": {
+            "$type": "MX.Logic.Data.WeaponConstraint",
+            "Weapon": {
+              "value": 0,
+              "name": "None"
+            },
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "SquadTypeConstraint": {
+            "$type": "MX.Logic.Data.SquadTypeConstraint",
+            "SquadType": {
+              "value": 0,
+              "name": "None"
+            },
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "AdaptationConstraint": {
+            "$type": "MX.Logic.Data.AdaptationConstraint",
+            "AdaptationType": {
+              "value": 0,
+              "name": "None"
+            },
+            "AdaptationValues": [],
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "BulletConstraint": {
+            "$type": "MX.Logic.Data.BulletConstraint",
+            "BulletType": {
+              "value": 5,
+              "name": "None"
+            },
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "TacticRangeConstraint": {
+            "$type": "MX.Logic.Data.TacticRangeConstraint",
+            "TacticRanges": [],
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "TagConstraint": {
+            "$type": "MX.Logic.Data.TagConstraint",
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            },
+            "TagNamesInt": []
+          },
+          "CoverState": {
+            "value": 0,
+            "name": "None"
+          },
+          "HPRateConstraint": {
+            "$type": "MX.Logic.Data.HPRateConstraint",
+            "ConstraintType": {
+              "value": 0,
+              "name": "None"
+            },
+            "HPRate": 0
+          },
+          "TacticRoleConstraint": {
+            "$type": "MX.Logic.Data.TacticRoleConstraint",
+            "TacticRole": [],
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "SpawnSourceConstraint": {
+            "$type": "MX.Logic.Data.SpawnSourceConstraint",
+            "SpawnSources": [],
+            "IncludeType": {
+              "value": 0,
+              "name": "None"
+            }
+          },
+          "BlackboardConstraint": {
+            "$type": "MX.Logic.Data.BlackboardConstraint",
+            "KeyType": {
+              "value": 0,
+              "name": "Invalid"
+            },
+            "KeyString": ""
+          }
+        },
+        "AutoUseRule": {
+          "$type": "AutoUseRuleDAO",
+          "ConditionType": {
+            "value": 0,
+            "name": "None"
+          },
+          "ConditionArgument": "",
+          "ConditionCheckTarget": {
+            "value": 0,
+            "name": "Caster"
+          },
+          "CoolTimeNotTrigger": 0,
+          "TryCount": 0,
+          "ResetTryCountUseSkill": false,
+          "TriggerRate": 0,
+          "MaxTriggerCount": 0,
+          "CheckMountStatus": false,
+          "TryToUseSkillModifiers": [],
+          "IsValid": true
+        },
+        "Duration": 177,
+        "DistributeType": {
+          "value": 0,
+          "name": "None"
+        },
+        "RotateTurretOnly": false,
+        "RotateTurretDirectionTargetTracking": false,
+        "RotatingTurretFrameMin": 0,
+        "RotatingTurretFrameMax": 0,
+        "RotateInvokerDirectionEveryFrame": true,
+        "EntityTimeline": [
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 0,
+            "DamageDistributeRate": 0,
+            "Entity": null,
+            "Tag": {
+              "value": 1,
+              "name": "ActionStart"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 30,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 32,
+            "DamageDistributeRate": 5000,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.SkillEntitySpawnerDAO",
+              "name": "CH0069_Ex01_SkillEntitySpawnerData01",
+              "EntityName": "CH0069Ex01Entity03",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 4,
+                "name": "Hitscan"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 3,
+                "name": "ToTarget"
+              },
+              "SpawnDirectionType": {
+                "value": 3,
+                "name": "ToTarget"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 0,
+                "name": "None"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "Duration": 100,
+              "SpawnRule": {
+                "value": 0,
+                "name": "SpawnAll"
+              },
+              "RemoveEntityIfSkillCancel": false,
+              "OverrideSkillStartTimingWithSpawnerSpawn": true,
+              "DistributeType": {
+                "value": 0,
+                "name": "None"
+              },
+              "FireToNextTargetWhenEachToEach": false,
+              "EntityTimeline": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.SkillEntitySpawnerTimelineDAO",
+                  "Frame": 5,
+                  "DamageDistributeRate": 0,
+                  "Entity": {
+                    "$type": "MX.GameData.DAO.Battle.TargetAttachedEntityDAO",
+                    "name": "CH0069_Ex01_LevelTargetAttachedEntity01",
+                    "EntityName": "CH0069Ex01Entity04",
+                    "SpawnRate": 10000,
+                    "SpawnDelay": 0,
+                    "ApplyType": {
+                      "value": 4,
+                      "name": "Hitscan"
+                    },
+                    "DecideTiming": {
+                      "value": 0,
+                      "name": "SkillStart"
+                    },
+                    "EntitySpawnIncludeOutOfRangeInputTarget": false,
+                    "SpawnPositionType": {
+                      "value": 3,
+                      "name": "InputBattleEntity"
+                    },
+                    "SpawnWorldPosition": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "PositionOffset": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "PositionRandomOffsetRange": 0,
+                    "OffsetDirectionType": {
+                      "value": 3,
+                      "name": "ToTarget"
+                    },
+                    "SpawnDirectionType": {
+                      "value": 3,
+                      "name": "ToTarget"
+                    },
+                    "OverrideTargetingRule": false,
+                    "TargetSortRule": {
+                      "$type": "MX.Logic.Skills.TargetSortRule",
+                      "IsValid": false,
+                      "SortCriteria": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SortStat": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SortParameter": null,
+                      "OrderBy": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "Reindexing": 0,
+                      "AllowedSummonedCount": 0,
+                      "RandomTargetSelect": false
+                    },
+                    "EssentialCandidateRule": {
+                      "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                      "TargetSide": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "TargetingType": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "ApplyEntityType": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "MaxTargetCount": 0
+                    },
+                    "OptionalCandidateRule": {
+                      "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                      "IgnoreUntargetable": false,
+                      "AliveState": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SchoolConstraint": {
+                        "$type": "MX.Logic.Data.SchoolConstraint",
+                        "School": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "PersonalityIdConstraint": {
+                        "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "PersonalityIds": []
+                      },
+                      "WeaponConstraint": {
+                        "$type": "MX.Logic.Data.WeaponConstraint",
+                        "Weapon": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "SquadTypeConstraint": {
+                        "$type": "MX.Logic.Data.SquadTypeConstraint",
+                        "SquadType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "AdaptationConstraint": {
+                        "$type": "MX.Logic.Data.AdaptationConstraint",
+                        "AdaptationType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "AdaptationValues": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "BulletConstraint": {
+                        "$type": "MX.Logic.Data.BulletConstraint",
+                        "BulletType": {
+                          "value": 5,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "TacticRangeConstraint": {
+                        "$type": "MX.Logic.Data.TacticRangeConstraint",
+                        "TacticRanges": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "TagConstraint": {
+                        "$type": "MX.Logic.Data.TagConstraint",
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "TagNamesInt": []
+                      },
+                      "CoverState": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "HPRateConstraint": {
+                        "$type": "MX.Logic.Data.HPRateConstraint",
+                        "ConstraintType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "HPRate": 0
+                      },
+                      "TacticRoleConstraint": {
+                        "$type": "MX.Logic.Data.TacticRoleConstraint",
+                        "TacticRole": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "SpawnSourceConstraint": {
+                        "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                        "SpawnSources": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "BlackboardConstraint": {
+                        "$type": "MX.Logic.Data.BlackboardConstraint",
+                        "KeyType": {
+                          "value": 0,
+                          "name": "Invalid"
+                        },
+                        "KeyString": ""
+                      }
+                    },
+                    "HighlightOption": {
+                      "value": 0,
+                      "name": "None"
+                    },
+                    "CheckSpawnPositionMovable": false,
+                    "TargetContainerIndex": 0,
+                    "Abilities": []
+                  },
+                  "SpawnCondition": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "SpawnConditionParameter": "",
+                  "SpawnConditionParameterForTag": "",
+                  "SpawnConditionCheckTarget": {
+                    "value": 0,
+                    "name": "Caster"
+                  },
+                  "UsePlayTrackBranch": false,
+                  "PlayTrackBranch": {
+                    "$type": "MX.GameData.DAO.Battle.PlayTrachBranchDAO",
+                    "PlayTrackGroupName": [],
+                    "MuteTrackGroupName": [],
+                    "InterruptSkillAction": false,
+                    "InterruptSkillActionFrame": 0
+                  }
+                },
+                {
+                  "$type": "MX.GameData.DAO.Battle.SkillEntitySpawnerTimelineDAO",
+                  "Frame": 92,
+                  "DamageDistributeRate": 5000,
+                  "Entity": {
+                    "$type": "MX.GameData.DAO.Battle.TargetAttachedEntityDAO",
+                    "name": "CH0069_Ex01_LevelTargetAttachedEntity02",
+                    "EntityName": "CH0069Ex01Entity05",
+                    "SpawnRate": 10000,
+                    "SpawnDelay": 0,
+                    "ApplyType": {
+                      "value": 4,
+                      "name": "Hitscan"
+                    },
+                    "DecideTiming": {
+                      "value": 0,
+                      "name": "SkillStart"
+                    },
+                    "EntitySpawnIncludeOutOfRangeInputTarget": false,
+                    "SpawnPositionType": {
+                      "value": 3,
+                      "name": "InputBattleEntity"
+                    },
+                    "SpawnWorldPosition": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "PositionOffset": {
+                      "x": 0.0,
+                      "y": 0.0
+                    },
+                    "PositionRandomOffsetRange": 0,
+                    "OffsetDirectionType": {
+                      "value": 3,
+                      "name": "ToTarget"
+                    },
+                    "SpawnDirectionType": {
+                      "value": 3,
+                      "name": "ToTarget"
+                    },
+                    "OverrideTargetingRule": false,
+                    "TargetSortRule": {
+                      "$type": "MX.Logic.Skills.TargetSortRule",
+                      "IsValid": false,
+                      "SortCriteria": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SortStat": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SortParameter": null,
+                      "OrderBy": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "Reindexing": 0,
+                      "AllowedSummonedCount": 0,
+                      "RandomTargetSelect": false
+                    },
+                    "EssentialCandidateRule": {
+                      "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                      "TargetSide": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "TargetingType": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "ApplyEntityType": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "MaxTargetCount": 0
+                    },
+                    "OptionalCandidateRule": {
+                      "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                      "IgnoreUntargetable": false,
+                      "AliveState": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "SchoolConstraint": {
+                        "$type": "MX.Logic.Data.SchoolConstraint",
+                        "School": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "PersonalityIdConstraint": {
+                        "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "PersonalityIds": []
+                      },
+                      "WeaponConstraint": {
+                        "$type": "MX.Logic.Data.WeaponConstraint",
+                        "Weapon": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "SquadTypeConstraint": {
+                        "$type": "MX.Logic.Data.SquadTypeConstraint",
+                        "SquadType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "AdaptationConstraint": {
+                        "$type": "MX.Logic.Data.AdaptationConstraint",
+                        "AdaptationType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "AdaptationValues": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "BulletConstraint": {
+                        "$type": "MX.Logic.Data.BulletConstraint",
+                        "BulletType": {
+                          "value": 5,
+                          "name": "None"
+                        },
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "TacticRangeConstraint": {
+                        "$type": "MX.Logic.Data.TacticRangeConstraint",
+                        "TacticRanges": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "TagConstraint": {
+                        "$type": "MX.Logic.Data.TagConstraint",
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "TagNamesInt": []
+                      },
+                      "CoverState": {
+                        "value": 0,
+                        "name": "None"
+                      },
+                      "HPRateConstraint": {
+                        "$type": "MX.Logic.Data.HPRateConstraint",
+                        "ConstraintType": {
+                          "value": 0,
+                          "name": "None"
+                        },
+                        "HPRate": 0
+                      },
+                      "TacticRoleConstraint": {
+                        "$type": "MX.Logic.Data.TacticRoleConstraint",
+                        "TacticRole": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "SpawnSourceConstraint": {
+                        "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                        "SpawnSources": [],
+                        "IncludeType": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      },
+                      "BlackboardConstraint": {
+                        "$type": "MX.Logic.Data.BlackboardConstraint",
+                        "KeyType": {
+                          "value": 0,
+                          "name": "Invalid"
+                        },
+                        "KeyString": ""
+                      }
+                    },
+                    "HighlightOption": {
+                      "value": 0,
+                      "name": "None"
+                    },
+                    "CheckSpawnPositionMovable": false,
+                    "TargetContainerIndex": 0,
+                    "Abilities": [
+                      {
+                        "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                        "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                        "StartDelay": 0,
+                        "LogicEffectGroupIds": [
+                          "CH0069_Ex01_Effect01"
+                        ],
+                        "Modifiers": [
+                          {
+                            "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                            "CheckTarget": {
+                              "value": 1,
+                              "name": "Target"
+                            },
+                            "MinHpRate": 0,
+                            "MaxHpRate": 10000,
+                            "MinDamageMultiplier": 10000,
+                            "MaxDamageMultiplier": 20000
+                          }
+                        ],
+                        "IsReferenceSkillSlot": false,
+                        "ReferenceSkillSlot": {
+                          "value": 0,
+                          "name": "None"
+                        }
+                      }
+                    ]
+                  },
+                  "SpawnCondition": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "SpawnConditionParameter": "",
+                  "SpawnConditionParameterForTag": "",
+                  "SpawnConditionCheckTarget": {
+                    "value": 0,
+                    "name": "Caster"
+                  },
+                  "UsePlayTrackBranch": false,
+                  "PlayTrackBranch": {
+                    "$type": "MX.GameData.DAO.Battle.PlayTrachBranchDAO",
+                    "PlayTrackGroupName": [],
+                    "MuteTrackGroupName": [],
+                    "InterruptSkillAction": false,
+                    "InterruptSkillActionFrame": 0
+                  }
+                }
+              ]
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 34,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 38,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 42,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 53,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 57,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 62,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 66,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 71,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 75,
+            "DamageDistributeRate": 500,
+            "Entity": {
+              "$type": "MX.GameData.DAO.Battle.TargetProjectileEntityDAO",
+              "name": "CH0069_Ex01_LevelTargetProjectileEntity01",
+              "EntityName": "CH0069Ex01Entity01",
+              "SpawnRate": 10000,
+              "SpawnDelay": 0,
+              "ApplyType": {
+                "value": 2,
+                "name": "Direct"
+              },
+              "DecideTiming": {
+                "value": 0,
+                "name": "SkillStart"
+              },
+              "EntitySpawnIncludeOutOfRangeInputTarget": false,
+              "SpawnPositionType": {
+                "value": 1,
+                "name": "Invoker"
+              },
+              "SpawnWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "PositionRandomOffsetRange": 0,
+              "OffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "SpawnDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "OverrideTargetingRule": false,
+              "TargetSortRule": {
+                "$type": "MX.Logic.Skills.TargetSortRule",
+                "IsValid": false,
+                "SortCriteria": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortStat": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SortParameter": null,
+                "OrderBy": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "Reindexing": 0,
+                "AllowedSummonedCount": 0,
+                "RandomTargetSelect": false
+              },
+              "EssentialCandidateRule": {
+                "$type": "MX.Logic.Skills.EssentialCandidateRule",
+                "TargetSide": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "TargetingType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "ApplyEntityType": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "MaxTargetCount": 0
+              },
+              "OptionalCandidateRule": {
+                "$type": "MX.Logic.Skills.OptionalCandidateRule",
+                "IgnoreUntargetable": false,
+                "AliveState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "SchoolConstraint": {
+                  "$type": "MX.Logic.Data.SchoolConstraint",
+                  "School": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "PersonalityIdConstraint": {
+                  "$type": "MX.Logic.Data.PersonalityIdConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "PersonalityIds": []
+                },
+                "WeaponConstraint": {
+                  "$type": "MX.Logic.Data.WeaponConstraint",
+                  "Weapon": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SquadTypeConstraint": {
+                  "$type": "MX.Logic.Data.SquadTypeConstraint",
+                  "SquadType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "AdaptationConstraint": {
+                  "$type": "MX.Logic.Data.AdaptationConstraint",
+                  "AdaptationType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "AdaptationValues": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BulletConstraint": {
+                  "$type": "MX.Logic.Data.BulletConstraint",
+                  "BulletType": {
+                    "value": 5,
+                    "name": "None"
+                  },
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TacticRangeConstraint": {
+                  "$type": "MX.Logic.Data.TacticRangeConstraint",
+                  "TacticRanges": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "TagConstraint": {
+                  "$type": "MX.Logic.Data.TagConstraint",
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "TagNamesInt": []
+                },
+                "CoverState": {
+                  "value": 0,
+                  "name": "None"
+                },
+                "HPRateConstraint": {
+                  "$type": "MX.Logic.Data.HPRateConstraint",
+                  "ConstraintType": {
+                    "value": 0,
+                    "name": "None"
+                  },
+                  "HPRate": 0
+                },
+                "TacticRoleConstraint": {
+                  "$type": "MX.Logic.Data.TacticRoleConstraint",
+                  "TacticRole": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "SpawnSourceConstraint": {
+                  "$type": "MX.Logic.Data.SpawnSourceConstraint",
+                  "SpawnSources": [],
+                  "IncludeType": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                },
+                "BlackboardConstraint": {
+                  "$type": "MX.Logic.Data.BlackboardConstraint",
+                  "KeyType": {
+                    "value": 0,
+                    "name": "Invalid"
+                  },
+                  "KeyString": ""
+                }
+              },
+              "HighlightOption": {
+                "value": 2,
+                "name": "HighlightAndFactor"
+              },
+              "CheckSpawnPositionMovable": false,
+              "TargetContainerIndex": 0,
+              "DestinationType": {
+                "value": 3,
+                "name": "InputBattleEntity"
+              },
+              "DestinationWorldPosition": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionOffset": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "DestinationPositionRandomOffsetRange": 0,
+              "DestinationOffsetDirectionType": {
+                "value": 0,
+                "name": "None"
+              },
+              "ReduceDamageRatePerHit": 0,
+              "MaxReducedDamageRate": 0,
+              "ProjectileType": {
+                "value": 1,
+                "name": "TargetCharacter"
+              },
+              "ShapeType": {
+                "value": 3,
+                "name": "Circle"
+              },
+              "Width": 10,
+              "Height": 10,
+              "Speed": 2000,
+              "FireDelayFrame": 0,
+              "IsStickToTargetAfterHit": false,
+              "Abilities": [
+                {
+                  "$type": "MX.GameData.DAO.Battle.LevelOneTimeAbilityDAO",
+                  "name": "CH0069_Ex01_LevelOneTimeAbility01",
+                  "StartDelay": 0,
+                  "LogicEffectGroupIds": [
+                    "CH0069_Ex01_Effect01"
+                  ],
+                  "Modifiers": [
+                    {
+                      "$type": "MX.GameData.DAO.Battle.HpRateDamageModifierDAO",
+                      "CheckTarget": {
+                        "value": 1,
+                        "name": "Target"
+                      },
+                      "MinHpRate": 0,
+                      "MaxHpRate": 10000,
+                      "MinDamageMultiplier": 10000,
+                      "MaxDamageMultiplier": 20000
+                    }
+                  ],
+                  "IsReferenceSkillSlot": false,
+                  "ReferenceSkillSlot": {
+                    "value": 0,
+                    "name": "None"
+                  }
+                }
+              ],
+              "SplashDelayFrame": 0,
+              "SplashAreaEntityData": null,
+              "AreaSpawnerData": null,
+              "SkillEntitySpawnerData": null,
+              "SplashEachTarget": false
+            },
+            "Tag": {
+              "value": 2,
+              "name": "ActionRelease"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "$type": "MX.GameData.DAO.Battle.ExSkillEntityTimelineDAO",
+            "Frame": 177,
+            "DamageDistributeRate": 0,
+            "Entity": null,
+            "Tag": {
+              "value": 4,
+              "name": "ActionEnd"
+            },
+            "InvokerDirectionOverride": {
+              "value": 0,
+              "name": "None"
+            },
+            "InvokerDirectionOverrideWorldPosition": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,823 @@
+{
+  "current_students": [
+    {
+      "student_id": "ayane",
+      "level": 1,
+      "student_star": 1,
+      "ex_skill": 1,
+      "skill1": 1
+    }
+  ],
+  "inventory": {
+    "version": 1,
+    "entries": []
+  },
+  "document_a": {
+    "version": 1,
+    "document_id": "scenario-1",
+    "name": "시나리오",
+    "kind": "scenario",
+    "phases": [
+      {
+        "phase_id": "phase-1",
+        "name": "1단계",
+        "stages": [
+          {
+            "stage_id": "stage-1",
+            "student_id": "ayane",
+            "name": "Lv.5",
+            "targets": {
+              "level": 5,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 0,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 0,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      },
+      {
+        "phase_id": "phase-2",
+        "name": "2단계",
+        "stages": [
+          {
+            "stage_id": "stage-2",
+            "student_id": "ayane",
+            "name": "Lv.10",
+            "targets": {
+              "level": 10,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 1,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 1,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "document_b": {
+    "version": 1,
+    "document_id": "other",
+    "name": "시나리오",
+    "kind": "scenario",
+    "phases": [
+      {
+        "phase_id": "phase-1",
+        "name": "1단계",
+        "stages": [
+          {
+            "stage_id": "stage-1",
+            "student_id": "ayane",
+            "name": "Lv.5",
+            "targets": {
+              "level": 5,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 0,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 0,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      },
+      {
+        "phase_id": "phase-2",
+        "name": "2단계",
+        "stages": [
+          {
+            "stage_id": "stage-2",
+            "student_id": "ayane",
+            "name": "Lv.10",
+            "targets": {
+              "level": 40,
+              "bond_rank": 1,
+              "student_star": 1,
+              "weapon_level": 0,
+              "weapon_star": 0,
+              "ex_skill": 1,
+              "skill1": 1,
+              "skill2": 0,
+              "skill3": 0,
+              "equip1_tier": 1,
+              "equip2_tier": 1,
+              "equip3_tier": 0,
+              "equip1_level": 1,
+              "equip2_level": 1,
+              "equip3_level": 0,
+              "equip4_tier": 0,
+              "stat_hp": 0,
+              "stat_atk": 0,
+              "stat_heal": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "projection_a": {
+    "document_id": "scenario-1",
+    "kind": "scenario",
+    "stage_results": [
+      {
+        "stage_id": "stage-1",
+        "phase_id": "phase-1",
+        "student_id": "ayane",
+        "name": "Lv.5",
+        "cost": {
+          "credits": 910,
+          "level_exp": 130,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 3
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 910,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          }
+        ]
+      },
+      {
+        "stage_id": "stage-2",
+        "phase_id": "phase-2",
+        "student_id": "ayane",
+        "name": "Lv.10",
+        "cost": {
+          "credits": 2870,
+          "level_exp": 410,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 9
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 2870,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 9,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          }
+        ]
+      }
+    ],
+    "phase_results": [
+      {
+        "phase_id": "phase-1",
+        "name": "1단계",
+        "stage_ids": [
+          "stage-1"
+        ],
+        "cost": {
+          "credits": 910,
+          "level_exp": 130,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 3
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 910,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-1"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-1"
+            ]
+          }
+        ]
+      },
+      {
+        "phase_id": "phase-2",
+        "name": "2단계",
+        "stage_ids": [
+          "stage-2"
+        ],
+        "cost": {
+          "credits": 2870,
+          "level_exp": 410,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 9
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 2870,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 9,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          }
+        ]
+      }
+    ],
+    "overall": {
+      "cost": {
+        "credits": 3780,
+        "level_exp": 540,
+        "equipment_exp": 0,
+        "weapon_exp": 0,
+        "star_materials": {},
+        "equipment_materials": {},
+        "level_exp_items": {
+          "Item_Icon_ExpItem_0 T1": 12
+        },
+        "equipment_exp_items": {},
+        "weapon_exp_items": {},
+        "skill_books": {},
+        "ex_ooparts": {},
+        "skill_ooparts": {},
+        "favorite_item_materials": {},
+        "stat_materials": {},
+        "stat_levels": {},
+        "warnings": []
+      },
+      "resources": [
+        {
+          "resource_key": "credits",
+          "item_id": null,
+          "display_name": "크레딧",
+          "category": "credits",
+          "required": 3780,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-1",
+            "stage-2"
+          ]
+        },
+        {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "item_id": "Item_Icon_ExpItem_0",
+          "display_name": "초급 활동 보고서",
+          "category": "activity_report",
+          "required": 12,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-1",
+            "stage-2"
+          ]
+        }
+      ]
+    },
+    "bottlenecks": [],
+    "warnings": []
+  },
+  "projection_b": {
+    "document_id": "other",
+    "kind": "scenario",
+    "stage_results": [
+      {
+        "stage_id": "stage-1",
+        "phase_id": "phase-1",
+        "student_id": "ayane",
+        "name": "Lv.5",
+        "cost": {
+          "credits": 910,
+          "level_exp": 130,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 3
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 910,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          }
+        ]
+      },
+      {
+        "stage_id": "stage-2",
+        "phase_id": "phase-2",
+        "student_id": "ayane",
+        "name": "Lv.10",
+        "cost": {
+          "credits": 151690,
+          "level_exp": 21670,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T4": 2,
+            "Item_Icon_ExpItem_0 T2": 3,
+            "Item_Icon_ExpItem_0 T1": 4
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 151690,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_3",
+            "item_id": "Item_Icon_ExpItem_3",
+            "display_name": "최상급 활동 보고서",
+            "category": "activity_report",
+            "required": 2,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_1",
+            "item_id": "Item_Icon_ExpItem_1",
+            "display_name": "일반 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 4,
+            "owned_at_entry": null,
+            "shortage_at_entry": null
+          }
+        ]
+      }
+    ],
+    "phase_results": [
+      {
+        "phase_id": "phase-1",
+        "name": "1단계",
+        "stage_ids": [
+          "stage-1"
+        ],
+        "cost": {
+          "credits": 910,
+          "level_exp": 130,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T1": 3
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 910,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-1"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-1"
+            ]
+          }
+        ]
+      },
+      {
+        "phase_id": "phase-2",
+        "name": "2단계",
+        "stage_ids": [
+          "stage-2"
+        ],
+        "cost": {
+          "credits": 151690,
+          "level_exp": 21670,
+          "equipment_exp": 0,
+          "weapon_exp": 0,
+          "star_materials": {},
+          "equipment_materials": {},
+          "level_exp_items": {
+            "Item_Icon_ExpItem_0 T4": 2,
+            "Item_Icon_ExpItem_0 T2": 3,
+            "Item_Icon_ExpItem_0 T1": 4
+          },
+          "equipment_exp_items": {},
+          "weapon_exp_items": {},
+          "skill_books": {},
+          "ex_ooparts": {},
+          "skill_ooparts": {},
+          "favorite_item_materials": {},
+          "stat_materials": {},
+          "stat_levels": {},
+          "warnings": []
+        },
+        "resources": [
+          {
+            "resource_key": "credits",
+            "item_id": null,
+            "display_name": "크레딧",
+            "category": "credits",
+            "required": 151690,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_3",
+            "item_id": "Item_Icon_ExpItem_3",
+            "display_name": "최상급 활동 보고서",
+            "category": "activity_report",
+            "required": 2,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_1",
+            "item_id": "Item_Icon_ExpItem_1",
+            "display_name": "일반 활동 보고서",
+            "category": "activity_report",
+            "required": 3,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          },
+          {
+            "resource_key": "Item_Icon_ExpItem_0",
+            "item_id": "Item_Icon_ExpItem_0",
+            "display_name": "초급 활동 보고서",
+            "category": "activity_report",
+            "required": 4,
+            "owned": null,
+            "shortage": null,
+            "affected_stage_ids": [
+              "stage-2"
+            ]
+          }
+        ]
+      }
+    ],
+    "overall": {
+      "cost": {
+        "credits": 152600,
+        "level_exp": 21800,
+        "equipment_exp": 0,
+        "weapon_exp": 0,
+        "star_materials": {},
+        "equipment_materials": {},
+        "level_exp_items": {
+          "Item_Icon_ExpItem_0 T1": 7,
+          "Item_Icon_ExpItem_0 T4": 2,
+          "Item_Icon_ExpItem_0 T2": 3
+        },
+        "equipment_exp_items": {},
+        "weapon_exp_items": {},
+        "skill_books": {},
+        "ex_ooparts": {},
+        "skill_ooparts": {},
+        "favorite_item_materials": {},
+        "stat_materials": {},
+        "stat_levels": {},
+        "warnings": []
+      },
+      "resources": [
+        {
+          "resource_key": "credits",
+          "item_id": null,
+          "display_name": "크레딧",
+          "category": "credits",
+          "required": 152600,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-1",
+            "stage-2"
+          ]
+        },
+        {
+          "resource_key": "Item_Icon_ExpItem_0",
+          "item_id": "Item_Icon_ExpItem_0",
+          "display_name": "초급 활동 보고서",
+          "category": "activity_report",
+          "required": 7,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-1",
+            "stage-2"
+          ]
+        },
+        {
+          "resource_key": "Item_Icon_ExpItem_3",
+          "item_id": "Item_Icon_ExpItem_3",
+          "display_name": "최상급 활동 보고서",
+          "category": "activity_report",
+          "required": 2,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-2"
+          ]
+        },
+        {
+          "resource_key": "Item_Icon_ExpItem_1",
+          "item_id": "Item_Icon_ExpItem_1",
+          "display_name": "일반 활동 보고서",
+          "category": "activity_report",
+          "required": 3,
+          "owned": null,
+          "shortage": null,
+          "affected_stage_ids": [
+            "stage-2"
+          ]
+        }
+      ]
+    },
+    "bottlenecks": [],
+    "warnings": []
+  },
+  "comparison": {
+    "credits_a": 3780,
+    "credits_b": 152600,
+    "credits_delta_b_minus_a": 148820,
+    "resource_type_count_a": 2,
+    "resource_type_count_b": 4,
+    "known_shortage_type_count_a": 0,
+    "known_shortage_type_count_b": 0,
+    "students": [
+      {
+        "student_id": "ayane",
+        "presence": "both",
+        "target_differences": {
+          "level": {
+            "a": 10,
+            "b": 40
+          }
+        }
+      }
+    ],
+    "resources": [
+      {
+        "resource_key": "Item_Icon_ExpItem_0",
+        "item_id": "Item_Icon_ExpItem_0",
+        "display_name": "초급 활동 보고서",
+        "category": "activity_report",
+        "owned": null,
+        "required_a": 12,
+        "required_b": 7,
+        "required_delta_b_minus_a": -5,
+        "shortage_a": null,
+        "shortage_b": null,
+        "shortage_delta_b_minus_a": null
+      },
+      {
+        "resource_key": "Item_Icon_ExpItem_1",
+        "item_id": "Item_Icon_ExpItem_1",
+        "display_name": "일반 활동 보고서",
+        "category": "activity_report",
+        "owned": null,
+        "required_a": 0,
+        "required_b": 3,
+        "required_delta_b_minus_a": 3,
+        "shortage_a": null,
+        "shortage_b": null,
+        "shortage_delta_b_minus_a": null
+      },
+      {
+        "resource_key": "Item_Icon_ExpItem_3",
+        "item_id": "Item_Icon_ExpItem_3",
+        "display_name": "최상급 활동 보고서",
+        "category": "activity_report",
+        "owned": null,
+        "required_a": 0,
+        "required_b": 2,
+        "required_delta_b_minus_a": 2,
+        "shortage_a": null,
+        "shortage_b": null,
+        "shortage_delta_b_minus_a": null
+      },
+      {
+        "resource_key": "credits",
+        "item_id": null,
+        "display_name": "크레딧",
+        "category": "credits",
+        "owned": null,
+        "required_a": 3780,
+        "required_b": 152600,
+        "required_delta_b_minus_a": 148820,
+        "shortage_a": null,
+        "shortage_b": null,
+        "shortage_delta_b_minus_a": null
+      }
+    ],
+    "bottlenecks": []
+  }
+}

@@ -1,21 +1,23 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import os
 from pathlib import Path
 import re
-from types import SimpleNamespace
 from typing import Any, Callable
 import uuid
 
+from core.planning_authoring import AUTHORING_UNSET, PlanningAuthoringError, planning_authoring_from_wire
 from core.planning_document import (
     PlanningDocumentError,
-    calculate_document_projection,
     planning_document_from_wire,
     planning_document_to_wire,
 )
-from core.repository_dto import ConfirmedStudent, InventorySnapshot, canonical_json
+from core.repository_dto import canonical_json
+from core.planning_summary import calculation_summary
+from core.repository_transaction import Lease, acquire, release, locked
 
 
 STORE_VERSION = 1
@@ -84,7 +86,7 @@ class ScenarioStore:
             revision = self._profile_revision(profile_id)
         except Exception as error:
             code = getattr(error, "code", "profile_not_found")
-            raise ScenarioStoreError(code, str(error)) from error
+            raise ScenarioStoreError(code, str(error), retryable=getattr(error, "retryable", False), details=getattr(error, "details", {})) from error
         return self._integer(revision, "profile revision", corrupt=True)
 
     def _empty(self, profile_id: str) -> dict[str, Any]:
@@ -145,7 +147,7 @@ class ScenarioStore:
             "version", "scenario_id", "revision", "profile_id", "name", "description",
             "base_profile_revision", "document", "created_at", "updated_at",
         }
-        if not isinstance(value, dict) or set(value) != required or value.get("version") != 1:
+        if not isinstance(value, dict) or set(value) not in (required, required | {"authoring"}) or value.get("version") != 1:
             raise ScenarioStoreError(code, "scenario record has an invalid shape")
         if not isinstance(value["scenario_id"], str) or _ID.fullmatch(value["scenario_id"]) is None:
             raise ScenarioStoreError(code, "scenario_id is invalid")
@@ -165,6 +167,12 @@ class ScenarioStore:
             raise ScenarioStoreError(code, f"scenario document is invalid: {error}") from error
         if document.kind != "scenario":
             raise ScenarioStoreError(code, "scenario document kind must be scenario")
+        if "authoring" in value:
+            try:
+                value["authoring"] = planning_authoring_from_wire(value["authoring"], value["document"])
+            except PlanningAuthoringError as error:
+                stored_code = "migration_required" if corrupt and error.reason == "unsupported_version" else code
+                raise ScenarioStoreError(stored_code, str(error), details=error.details) from error
         return value
 
     def _canonical_document(self, value: object) -> dict[str, Any]:
@@ -176,16 +184,11 @@ class ScenarioStore:
             raise ScenarioStoreError("invalid_payload", "scenario document kind must be scenario")
         return planning_document_to_wire(document)
 
-    def _lock(self) -> int:
-        self.root.mkdir(parents=True, exist_ok=True)
-        try:
-            return os.open(self.root / ".repository.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise ScenarioStoreError("repository_busy", "another repository writer holds the lock", retryable=True) from error
+    def _lock(self) -> Lease:
+        return acquire(self.root, ScenarioStoreError)
 
-    def _unlock(self, descriptor: int) -> None:
-        os.close(descriptor)
-        (self.root / ".repository.lock").unlink(missing_ok=True)
+    def _unlock(self, descriptor: Lease) -> None:
+        release(descriptor)
 
     def _write(self, path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -208,47 +211,7 @@ class ScenarioStore:
         item: dict[str, Any],
         state: dict[str, Any] | None,
     ) -> dict[str, Any] | None:
-        if state is None:
-            return None
-        students = [ConfirmedStudent.from_dict(value) for value in state["students"]]
-        records = {
-            student.student_id: SimpleNamespace(
-                student_id=student.student_id,
-                **student.values,
-            )
-            for student in students
-        }
-        inventory = InventorySnapshot.from_dict(state["inventory"])
-        document = planning_document_from_wire(item["document"])
-        projection = calculate_document_projection(records, document, inventory)
-        resources = projection["overall"]["resources"]
-        known_shortages = [
-            resource
-            for resource in resources
-            if resource["shortage"] is not None and resource["shortage"] > 0
-        ]
-        representative = max(
-            known_shortages,
-            key=lambda resource: (resource["shortage"], resource["display_name"]),
-            default=None,
-        )
-        bottlenecks = projection["bottlenecks"]
-        return {
-            "credits": int(projection["overall"]["cost"]["credits"]),
-            "required_resource_type_count": len(resources),
-            "known_shortage_type_count": len(known_shortages),
-            "inventory_complete": all(resource["owned"] is not None for resource in resources),
-            "first_bottleneck_phase_number": (
-                int(bottlenecks[0]["phase_number"]) if bottlenecks else None
-            ),
-            "representative_shortage": None if representative is None else {
-                "resource_key": representative["resource_key"],
-                "item_id": representative["item_id"],
-                "display_name": representative["display_name"],
-                "category": representative["category"],
-                "shortage": int(representative["shortage"]),
-            },
-        }
+        return calculation_summary(item["document"], state)
 
     def _safe_calculation_summary(
         self,
@@ -284,6 +247,7 @@ class ScenarioStore:
             "updated_at": item["updated_at"],
         }
 
+    @locked(ScenarioStoreError)
     def list(self, profile_id: str) -> dict[str, Any]:
         collection = self._read(profile_id)
         state = self._profile_state(profile_id) if self._profile_state is not None else None
@@ -294,6 +258,7 @@ class ScenarioStore:
             "scenarios": [self._summary(item, state) for item in collection["scenarios"]],
         }
 
+    @locked(ScenarioStoreError)
     def get(self, profile_id: str, scenario_id: str) -> dict[str, Any]:
         collection = self._read(profile_id)
         item = self._find(collection, scenario_id)
@@ -334,6 +299,9 @@ class ScenarioStore:
         self._integer(expected_revision, "expected_revision")
         if not isinstance(idempotency_key, str) or not idempotency_key:
             raise ScenarioStoreError("invalid_payload", "idempotency_key must be non-empty")
+        # A legacy profile must migrate before this collection takes the shared
+        # repository lock. Inside the lock, callbacks read the migrated snapshot.
+        self._profile_current_revision(profile_id)
         descriptor = self._lock()
         try:
             collection = self._read(profile_id)
@@ -354,6 +322,14 @@ class ScenarioStore:
         finally:
             self._unlock(descriptor)
 
+    @staticmethod
+    def _canonical_authoring(value: object, document: object, *, preserving: bool = False) -> dict[str, Any]:
+        try:
+            return planning_authoring_from_wire(value, document)
+        except PlanningAuthoringError as error:
+            details = {"reason": "authoring_required", "authoring_reason": error.reason} if preserving else error.details
+            raise ScenarioStoreError("invalid_payload", str(error), details=details) from error
+
     def create(
         self,
         profile_id: str,
@@ -363,36 +339,44 @@ class ScenarioStore:
         description: object,
         base_profile_revision: object,
         document: object,
+        authoring: object = AUTHORING_UNSET,
     ) -> dict[str, Any]:
         canonical_name = self._text(name, "name")
         canonical_description = self._text(description, "description", allow_empty=True)
         base_revision = self._integer(base_profile_revision, "base_profile_revision")
         canonical_document = self._canonical_document(document)
+        canonical_authoring = self._canonical_authoring(authoring, canonical_document) if authoring is not AUTHORING_UNSET else AUTHORING_UNSET
 
         def callback(collection: dict[str, Any]) -> str:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
-            scenario_id = self._new_id(collection)
-            now = self._clock()
-            collection["scenarios"].append({
-                "version": 1,
-                "scenario_id": scenario_id,
-                "revision": 0,
-                "profile_id": profile_id,
-                "name": canonical_name,
-                "description": canonical_description,
-                "base_profile_revision": base_revision,
-                "document": canonical_document,
-                "created_at": now,
-                "updated_at": now,
-            })
-            return scenario_id
+            return self._append_record(collection, canonical_name, canonical_description, base_revision, canonical_document, authoring=canonical_authoring)
 
-        return self._mutate(profile_id, expected_revision, idempotency_key, {
+        operation = {
             "type": "create", "name": canonical_name, "description": canonical_description,
             "base_profile_revision": base_revision, "document": canonical_document,
-        }, callback)
+        }
+        if authoring is not AUTHORING_UNSET:
+            operation["authoring"] = canonical_authoring
+        return self._mutate(profile_id, expected_revision, idempotency_key, operation, callback)
+
+    def _append_record(self, collection: dict[str, Any], name: str, description: str, base_revision: int, document: dict[str, Any], *, archive: bool = False, authoring: object = AUTHORING_UNSET) -> str:
+        scenario_id = self._new_id(collection)
+        if archive:
+            # Comparison requires distinct document IDs, including repeated active snapshots.
+            document = {**document, "document_id": scenario_id}
+        now = self._clock()
+        record = {
+            "version": 1, "scenario_id": scenario_id, "revision": 0,
+            "profile_id": collection["profile_id"], "name": name, "description": description,
+            "base_profile_revision": base_revision, "document": self._canonical_document(document),
+            "created_at": now, "updated_at": now,
+        }
+        if authoring is not AUTHORING_UNSET:
+            record["authoring"] = authoring
+        collection["scenarios"].append(self._validate_record(record, collection["profile_id"]))
+        return scenario_id
 
     def update(
         self,
@@ -405,12 +389,14 @@ class ScenarioStore:
         description: object,
         base_profile_revision: object,
         document: object,
+        authoring: object = AUTHORING_UNSET,
     ) -> dict[str, Any]:
         canonical_name = self._text(name, "name")
         canonical_description = self._text(description, "description", allow_empty=True)
         base_revision = self._integer(base_profile_revision, "base_profile_revision")
         scenario_revision = self._integer(expected_scenario_revision, "expected_scenario_revision")
         canonical_document = self._canonical_document(document)
+        canonical_authoring = self._canonical_authoring(authoring, canonical_document) if authoring is not AUTHORING_UNSET else AUTHORING_UNSET
 
         def callback(collection: dict[str, Any]) -> str:
             item = self._find(collection, scenario_id)
@@ -419,6 +405,12 @@ class ScenarioStore:
             current_profile_revision = self._profile_current_revision(profile_id)
             if base_revision > current_profile_revision:
                 raise ScenarioStoreError("invalid_payload", "base_profile_revision cannot be newer than the profile")
+            # Fingerprints use request presence, never effective current metadata.
+            # _mutate checks the old response cache before this compatibility check.
+            if authoring is not AUTHORING_UNSET:
+                item["authoring"] = canonical_authoring
+            elif "authoring" in item:
+                item["authoring"] = self._canonical_authoring(item["authoring"], canonical_document, preserving=True)
             item.update({
                 "revision": item["revision"] + 1,
                 "name": canonical_name,
@@ -429,11 +421,14 @@ class ScenarioStore:
             })
             return scenario_id
 
-        return self._mutate(profile_id, expected_revision, idempotency_key, {
+        operation = {
             "type": "update", "scenario_id": scenario_id, "expected_scenario_revision": scenario_revision,
             "name": canonical_name, "description": canonical_description,
             "base_profile_revision": base_revision, "document": canonical_document,
-        }, callback)
+        }
+        if authoring is not AUTHORING_UNSET:
+            operation["authoring"] = canonical_authoring
+        return self._mutate(profile_id, expected_revision, idempotency_key, operation, callback)
 
     def delete(
         self,
@@ -481,11 +476,11 @@ class ScenarioStore:
                 suffix += 1
             now = self._clock()
             collection["scenarios"].append({
-                **source,
+                **deepcopy(source),
                 "scenario_id": scenario_id_new,
                 "revision": 0,
                 "name": name,
-                "document": {**source["document"], "document_id": scenario_id_new, "name": name},
+                "document": {**deepcopy(source["document"]), "document_id": scenario_id_new, "name": name},
                 "created_at": now,
                 "updated_at": now,
             })

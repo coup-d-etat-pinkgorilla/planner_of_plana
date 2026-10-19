@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/repository-history-scan-latest-v1.schema.json",
+  "title": "Repository scan latest query v1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/result"
+    }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": [
+        "profile_id"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "student_ids": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+          }
+        },
+        "resource_keys": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+          }
+        },
+        "include_by_kind": {
+          "type": "boolean",
+          "default": false
+        },
+        "by_kind_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 100
+        },
+        "by_kind_after_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "anchor_history_sequence": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "$comment": "Runtime: canonical alias uniqueness; controls require include_by_kind=true; after_sequence>0 requires anchor; after<=anchor; stale anchor is invalid_payload reason=stale_scan_latest.",
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "by_kind_limit"
+                ]
+              },
+              {
+                "required": [
+                  "by_kind_after_sequence"
+                ]
+              },
+              {
+                "required": [
+                  "anchor_history_sequence"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "include_by_kind"
+            ],
+            "properties": {
+              "include_by_kind": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "by_kind_after_sequence"
+            ],
+            "properties": {
+              "by_kind_after_sequence": {
+                "minimum": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "anchor_history_sequence"
+            ]
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "revision",
+        "history_sequence",
+        "last_scan_at",
+        "by_kind",
+        "by_student_id",
+        "by_resource_key",
+        "by_kind_next_after_sequence"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "history_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_scan_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "by_kind": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/$defs/scan"
+          }
+        },
+        "by_student_id": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "required": [
+              "student_id",
+              "latest_scan",
+              "reason"
+            ],
+            "properties": {
+              "student_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+              },
+              "latest_scan": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/scan"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "enum": [
+                  null,
+                  "unrecorded",
+                  "scan_not_found"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "latest_scan": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "unrecorded",
+                        "scan_not_found"
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "reason": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "by_resource_key": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "required": [
+              "resource_key",
+              "latest_scan",
+              "reason"
+            ],
+            "properties": {
+              "resource_key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+              },
+              "latest_scan": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/scan"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "enum": [
+                  null,
+                  "unrecorded",
+                  "scan_not_found"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "latest_scan": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "unrecorded",
+                        "scan_not_found"
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "reason": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "by_kind_next_after_sequence": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "last_scan_at": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "by_kind": {
+                "maxItems": 0
+              },
+              "by_kind_next_after_sequence": {
+                "type": "null"
+              },
+              "by_student_id": {
+                "items": {
+                  "properties": {
+                    "latest_scan": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              "by_resource_key": {
+                "items": {
+                  "properties": {
+                    "latest_scan": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "scan": {
+      "type": "object",
+      "required": [
+        "sequence",
+        "recorded_at",
+        "session_id",
+        "scan_kind",
+        "inventory_scan_profile"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "recorded_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z$",
+          "format": "date-time"
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+        },
+        "scan_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+        },
+        "inventory_scan_profile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime additionally enforces valid UTF-8 1..1024 bytes; raw, no trim/enum. Character maxLength alone is insufficient."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

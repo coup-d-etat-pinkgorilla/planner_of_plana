@@ -6,10 +6,16 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/diagnostics_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
-import '../widgets/diagonal_section.dart';
+import '../kit/ba_chip.dart';
+import '../kit/buttons.dart';
+import '../settings/settings_sections.dart';
+import '../studio/settings_studio_layout.dart';
 
+/// 설정 탭(FE10-s, FD-179 (a)): 머리 띠 + 2×2 사선 섹션([settingsStudioDocument]). 내용 · 순서 · 문구 · 콜백은 옛 카드
+/// 화면(프로필 → Backend 연결 → Scanner 준비 상태 → 고급 진단)과 같다(동작 변화 0).
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
@@ -191,7 +197,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await _profileMutation(() async {
       final created = await _repository!.createProfile(
         name,
-        'settings-create-${DateTime.now().microsecondsSinceEpoch}',
+        newIdempotencyKey('settings-create'),
       );
       if (!created.selected) {
         await _repository!.selectProfile(
@@ -369,363 +375,399 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final connection = widget.service.state.value.connection;
     final diagnostics = _diagnostics?.diagnostics.value;
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: DiagonalSection(
-        child: Column(
+    final actionError = _actionError;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        // 그리기 순서: 머리 띠 → 위 줄 → 아래 줄(인벤토리 KPI 띠 · 분석 섹션과 같은 순서).
+        return Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 38, 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.settings_outlined),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SETTINGS / RECOVERY',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        Text(
-                          '프로필과 연결',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        Text(
-                          '${_selected?.displayName ?? '선택 없음'} · ${connection.name}',
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: '설정 새로고침',
-                    onPressed: _loading ? null : _reload,
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
+            Positioned.fill(
+              child: SettingsHeaderBand(
+                size: size,
+                caption: 'SETTINGS / RECOVERY',
+                title: '프로필과 연결',
+                subtitle:
+                    '${_selected?.displayName ?? '선택 없음'} · ${connection.name}',
+                loading: _loading,
+                refreshTooltip: '설정 새로고침',
+                onRefresh: _loading ? null : _reload,
+                error: actionError == null
+                    ? null
+                    : SettingsHeaderError(
+                        title: '작업을 완료하지 못했습니다.',
+                        detail: actionError,
+                        actionLabel: '다시 불러오기',
+                        onAction: _reload,
+                      ),
               ),
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                key: const ValueKey('settings-scroll'),
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: [
-                  if (_loading) const LinearProgressIndicator(),
-                  if (_actionError != null)
-                    _ErrorCard(
-                      title: '작업을 완료하지 못했습니다.',
-                      detail: _actionError!,
-                      actionLabel: '다시 불러오기',
-                      onAction: _reload,
-                    ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth >= 980
-                          ? (constraints.maxWidth - AppSpacing.lg) / 2
-                          : constraints.maxWidth;
-                      return Wrap(
-                        spacing: AppSpacing.lg,
-                        runSpacing: AppSpacing.lg,
-                        children: [
-                          SizedBox(width: width, child: _profilesCard()),
-                          SizedBox(
-                            width: width,
-                            child: _connectionCard(connection),
-                          ),
-                          SizedBox(width: width, child: _scannerCard()),
-                          SizedBox(
-                            width: width,
-                            child: _diagnosticsCard(diagnostics),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            Positioned.fill(child: _profilesSection(size)),
+            Positioned.fill(child: _connectionSection(size, connection)),
+            Positioned.fill(child: _scannerSection(size)),
+            Positioned.fill(child: _diagnosticsSection(size, diagnostics)),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _profilesCard() => _SettingsCard(
-    title: '프로필',
-    icon: Icons.person_outline,
-    actions: [
-      FilledButton.icon(
-        onPressed: _profileAction ? null : _createProfile,
-        icon: const Icon(Icons.add),
-        label: const Text('새 프로필'),
-      ),
-      OutlinedButton.icon(
-        key: const ValueKey('settings-profile-v6-import'),
-        onPressed: _profileAction ? null : _importV6Profile,
-        icon: const Icon(Icons.drive_file_move_outline),
-        label: const Text('v6 가져오기'),
-      ),
-      OutlinedButton.icon(
-        onPressed: _profileAction || _selected == null ? null : _renameProfile,
-        icon: const Icon(Icons.edit_outlined),
-        label: const Text('이름 변경'),
-      ),
-    ],
-    child: _profileError != null
-        ? _InlineError(_profileError!)
-        : _profiles.isEmpty
-        ? const Text('프로필이 없습니다. 새 프로필을 만들어 시작하세요.')
-        : Column(
-            children: [
-              for (final profile in _profiles)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    profile.selected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                  ),
-                  title: Text(profile.displayName),
-                  subtitle: SelectableText(
-                    'ID ${profile.id} · revision ${profile.revision}',
-                  ),
-                  trailing: profile.selected
-                      ? const Chip(label: Text('현재 적용'))
-                      : TextButton(
-                          onPressed: _profileAction
-                              ? null
-                              : () => _selectProfile(profile),
-                          child: const Text('전환'),
-                        ),
-                ),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'v6 원본은 읽기 전용으로 유지되며 새 v7 계정으로 복사됩니다. '
-                  '백업은 아직 지원하지 않습니다.',
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
-              ),
-            ],
+  Widget _profilesSection(Size size) {
+    const id = settingsProfilesSectionId;
+    final profileError = _profileError;
+    final List<SettingsRowSpec> rows;
+    final String kind;
+    if (profileError != null) {
+      kind = 'error';
+      rows = [_errorRow(id, profileError)];
+    } else if (_profiles.isEmpty) {
+      kind = 'empty';
+      rows = [_textRow(id, '프로필이 없습니다. 새 프로필을 만들어 시작하세요.', muted: false)];
+    } else {
+      kind = 'list';
+      rows = [
+        for (final profile in _profiles)
+          SettingsRowSpec(
+            height: SettingsMetrics.profileRowHeight,
+            builder: (context) => _profileRow(profile),
           ),
-  );
-
-  Widget _connectionCard(BackendConnection connection) => _SettingsCard(
-    title: 'Backend 연결',
-    icon: Icons.dns_outlined,
-    actions: [
-      OutlinedButton.icon(
-        onPressed: _recoveryAction ? null : () => _recover(false),
-        icon: const Icon(Icons.link),
-        label: const Text('재연결'),
-      ),
-      FilledButton.tonalIcon(
-        onPressed: _recoveryAction ? null : () => _recover(true),
-        icon: const Icon(Icons.restart_alt),
-        label: const Text('Backend 재시작'),
-      ),
-    ],
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            connection == BackendConnection.connected
-                ? Icons.check_circle_outline
-                : connection == BackendConnection.connecting
-                ? Icons.sync
-                : Icons.cloud_off_outlined,
-          ),
-          title: Text(switch (connection) {
-            BackendConnection.connected => '연결됨',
-            BackendConnection.connecting => '연결 중',
-            BackendConnection.disconnected => '연결 끊김',
-          }),
-          subtitle: Text(
-            _recoveryAction
-                ? '복구 작업이 진행 중입니다. 중복 실행은 차단됩니다.'
-                : '재연결과 재시작은 저장되지 않은 draft나 scan 후보를 자동 확정하지 않습니다.',
-          ),
+        _textRow(
+          id,
+          'v6 원본은 읽기 전용으로 유지되며 새 v7 계정으로 복사됩니다. '
+          '백업은 아직 지원하지 않습니다.',
         ),
-      ],
-    ),
-  );
-
-  Widget _scannerCard() {
-    final ready = _readiness?['ready'] == true;
-    return _SettingsCard(
-      title: 'Scanner 준비 상태',
-      icon: Icons.document_scanner_outlined,
+      ];
+    }
+    return SettingsSection(
+      size: size,
+      sectionId: id,
+      title: '프로필',
+      listKey: ValueKey('$id-list-$kind'),
+      rows: rows,
       actions: [
-        FilledButton.tonalIcon(
-          onPressed: widget.onOpenScan,
-          icon: const Icon(Icons.open_in_new),
-          label: const Text('스캔 탭 열기'),
+        TonalButton(
+          label: '새 프로필',
+          icon: Icons.add,
+          variant: TonalButtonVariant.primary,
+          onPressed: _profileAction ? null : _createProfile,
+        ),
+        TonalButton(
+          key: const ValueKey('settings-profile-v6-import'),
+          label: 'v6 가져오기',
+          icon: Icons.drive_file_move_outline,
+          variant: TonalButtonVariant.ghost,
+          onPressed: _profileAction ? null : _importV6Profile,
+        ),
+        TonalButton(
+          label: '이름 변경',
+          icon: Icons.edit_outlined,
+          variant: TonalButtonVariant.ghost,
+          onPressed: _profileAction || _selected == null
+              ? null
+              : _renameProfile,
         ),
       ],
-      child: _scannerError != null
-          ? _InlineError(_scannerError!)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(ready ? '인식 asset 준비됨' : '인식 asset 확인 필요'),
-                const SizedBox(height: AppSpacing.sm),
-                Text('감지된 대상 ${_targets.length}개'),
-                for (final target in _targets.take(4))
-                  ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      target.status == ScannerTargetStatus.ready
-                          ? Icons.check
-                          : Icons.warning_amber,
-                    ),
-                    title: Text(target.title),
-                    subtitle: Text(
-                      '${target.status.name}${target.foreground ? ' · foreground' : ''}',
-                    ),
-                  ),
-                const Text(
-                  '대상 선택과 스캔 시작은 스캔 탭에서만 수행하며 설정에 저장하지 않습니다.',
-                  style: TextStyle(color: AppColors.textMuted),
-                ),
-              ],
-            ),
     );
   }
 
-  Widget _diagnosticsCard(BackendDiagnostics? value) => _SettingsCard(
-    title: '고급 진단',
-    icon: Icons.monitor_heart_outlined,
-    actions: [
-      OutlinedButton.icon(
-        onPressed: value == null ? null : _copyDiagnostics,
-        icon: const Icon(Icons.copy_outlined),
-        label: const Text('진단 복사'),
-      ),
-      FilledButton.tonalIcon(
-        onPressed: widget.onOpenDiagnostics,
-        icon: const Icon(Icons.display_settings_outlined),
-        label: const Text('Adaptive-Sync'),
-      ),
-    ],
-    child: value == null
-        ? const Text('이 서비스는 process 진단 정보를 제공하지 않습니다.')
-        : Column(
+  Widget _profileRow(RepositoryProfile profile) => SettingsRow(
+    key: ValueKey('settings-profile-${profile.id}'),
+    sectionId: settingsProfilesSectionId,
+    height: SettingsMetrics.profileRowHeight,
+    look: profile.selected ? SettingsRowLook.selected : SettingsRowLook.filled,
+    child: Row(
+      children: [
+        Icon(
+          profile.selected
+              ? Icons.radio_button_checked
+              : Icons.radio_button_off,
+          size: 18,
+          color: profile.selected ? AppColors.accent : AppColors.textMuted,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
-                'protocol ${value.protocolVersion} · generation ${value.processGeneration}\n'
-                'launcher ${value.launch.configured ? 'configured' : 'default'} / '
-                '${value.launch.resolved ? 'resolved' : 'unresolved'}\n'
-                '${value.launch.executable} ${value.launch.arguments.join(' ')}\n'
-                '${value.launch.workingDirectory}',
-              ),
-              const SizedBox(height: AppSpacing.md),
               Text(
+                profile.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: settingsTextStyle(
+                  AppType.bodyPlusSize,
+                  weight: AppType.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SelectableText(
+                'ID ${profile.id} · revision ${profile.revision}',
+                maxLines: 1,
+                style: settingsTextStyle(
+                  AppType.captionPlusSize,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        if (profile.selected)
+          const BaChip(label: '현재 적용', tone: AppTones.pink)
+        else
+          TonalButton(
+            label: '전환',
+            height: SettingsMetrics.rowButtonHeight,
+            fontSize: AppType.bodySmallSize,
+            onPressed: _profileAction ? null : () => _selectProfile(profile),
+          ),
+      ],
+    ),
+  );
+
+  Widget _connectionSection(Size size, BackendConnection connection) {
+    const id = settingsBackendSectionId;
+    return SettingsSection(
+      size: size,
+      sectionId: id,
+      title: 'Backend 연결',
+      listKey: const ValueKey('$id-list'),
+      rows: [
+        SettingsRowSpec(
+          height: SettingsMetrics.statusRowHeight,
+          builder: (context) => SettingsRow(
+            key: const ValueKey('settings-backend-status'),
+            sectionId: id,
+            height: SettingsMetrics.statusRowHeight,
+            child: _statusLine(
+              icon: connection == BackendConnection.connected
+                  ? Icons.check_circle_outline
+                  : connection == BackendConnection.connecting
+                  ? Icons.sync
+                  : Icons.cloud_off_outlined,
+              ok: connection == BackendConnection.connected,
+              title: switch (connection) {
+                BackendConnection.connected => '연결됨',
+                BackendConnection.connecting => '연결 중',
+                BackendConnection.disconnected => '연결 끊김',
+              },
+              subtitle: _recoveryAction
+                  ? '복구 작업이 진행 중입니다. 중복 실행은 차단됩니다.'
+                  : '재연결과 재시작은 저장되지 않은 draft나 scan 후보를 자동 확정하지 않습니다.',
+              subtitleLines: 2,
+            ),
+          ),
+        ),
+      ],
+      actions: [
+        TonalButton(
+          label: '재연결',
+          icon: Icons.link,
+          variant: TonalButtonVariant.ghost,
+          onPressed: _recoveryAction ? null : () => _recover(false),
+        ),
+        TonalButton(
+          label: 'Backend 재시작',
+          icon: Icons.restart_alt,
+          onPressed: _recoveryAction ? null : () => _recover(true),
+        ),
+      ],
+    );
+  }
+
+  Widget _scannerSection(Size size) {
+    const id = settingsScannerSectionId;
+    final ready = _readiness?['ready'] == true;
+    final scannerError = _scannerError;
+    return SettingsSection(
+      size: size,
+      sectionId: id,
+      title: 'Scanner 준비 상태',
+      listKey: ValueKey('$id-list-${scannerError == null ? 'state' : 'error'}'),
+      rows: scannerError != null
+          ? [_errorRow(id, scannerError)]
+          : [
+              SettingsRowSpec(
+                height: SettingsMetrics.lineRowHeight,
+                builder: (context) => SettingsRow(
+                  key: const ValueKey('settings-scanner-readiness'),
+                  sectionId: id,
+                  height: SettingsMetrics.lineRowHeight,
+                  child: Text(
+                    ready ? '인식 asset 준비됨' : '인식 asset 확인 필요',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: settingsTextStyle(
+                      AppType.bodyPlusSize,
+                      weight: AppType.bold,
+                    ),
+                  ),
+                ),
+              ),
+              _textRow(id, '감지된 대상 ${_targets.length}개', muted: false),
+              for (final target in _targets.take(4))
+                SettingsRowSpec(
+                  height: SettingsMetrics.targetRowHeight,
+                  builder: (context) => SettingsRow(
+                    sectionId: id,
+                    height: SettingsMetrics.targetRowHeight,
+                    child: _statusLine(
+                      icon: target.status == ScannerTargetStatus.ready
+                          ? Icons.check
+                          : Icons.warning_amber,
+                      ok: target.status == ScannerTargetStatus.ready,
+                      title: target.title,
+                      subtitle:
+                          '${target.status.name}${target.foreground ? ' · foreground' : ''}',
+                    ),
+                  ),
+                ),
+              _textRow(id, '대상 선택과 스캔 시작은 스캔 탭에서만 수행하며 설정에 저장하지 않습니다.'),
+            ],
+      actions: [
+        TonalButton(
+          label: '스캔 탭 열기',
+          icon: Icons.open_in_new,
+          onPressed: widget.onOpenScan,
+        ),
+      ],
+    );
+  }
+
+  Widget _diagnosticsSection(Size size, BackendDiagnostics? value) {
+    const id = settingsDiagnosticsSectionId;
+    return SettingsSection(
+      size: size,
+      sectionId: id,
+      title: '고급 진단',
+      listKey: ValueKey('$id-list-${value == null ? 'none' : 'process'}'),
+      rows: value == null
+          ? [_textRow(id, '이 서비스는 process 진단 정보를 제공하지 않습니다.', muted: false)]
+          : [
+              SettingsRowSpec(
+                height: SettingsMetrics.processRowHeight,
+                builder: (context) => SettingsRow(
+                  key: const ValueKey('settings-diagnostics-process'),
+                  sectionId: id,
+                  height: SettingsMetrics.processRowHeight,
+                  child: SelectableText(
+                    'protocol ${value.protocolVersion} · generation ${value.processGeneration}\n'
+                    'launcher ${value.launch.configured ? 'configured' : 'default'} / '
+                    '${value.launch.resolved ? 'resolved' : 'unresolved'}\n'
+                    '${value.launch.executable} ${value.launch.arguments.join(' ')}\n'
+                    '${value.launch.workingDirectory}',
+                    maxLines: 4,
+                    style: settingsTextStyle(
+                      AppType.bodySmallSize,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ),
+              _textRow(
+                id,
                 '최근 lifecycle ${value.lifecycle.length}건 · stderr ${value.stderr.length}건',
+                muted: false,
               ),
               for (final item in value.lifecycle.reversed.take(4))
-                Text(
-                  item,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.textMuted),
-                ),
-              const SizedBox(height: AppSpacing.sm),
-              const Text(
+                _textRow(id, item, height: SettingsMetrics.lifecycleRowHeight),
+              _textRow(
+                id,
                 '진단 보고서는 환경 변수 값, token, 사용자 payload와 프로필 데이터를 포함하지 않습니다.',
-                style: TextStyle(color: AppColors.textMuted),
               ),
             ],
-          ),
-  );
-}
+      actions: [
+        TonalButton(
+          label: '진단 복사',
+          icon: Icons.copy_outlined,
+          variant: TonalButtonVariant.ghost,
+          onPressed: value == null ? null : _copyDiagnostics,
+        ),
+        TonalButton(
+          label: 'Adaptive-Sync',
+          icon: Icons.display_settings_outlined,
+          onPressed: widget.onOpenDiagnostics,
+        ),
+      ],
+    );
+  }
 
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({
-    required this.title,
-    required this.icon,
-    required this.child,
-    this.actions = const [],
-  });
-
-  final String title;
-  final IconData icon;
-  final Widget child;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+  /// 아이콘 + 제목 + 흐린 설명 한 줄(옛 `ListTile`).
+  Widget _statusLine({
+    required IconData icon,
+    required bool ok,
+    required String title,
+    required String subtitle,
+    int subtitleLines = 1,
+  }) => Row(
+    children: [
+      Icon(
+        icon,
+        size: 18,
+        color: ok ? AppTones.ok.foreground : AppTones.warn.foreground,
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: settingsTextStyle(
+                AppType.bodyPlusSize,
+                weight: AppType.bold,
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          child,
-          if (actions.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: actions,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              maxLines: subtitleLines,
+              overflow: TextOverflow.ellipsis,
+              style: settingsTextStyle(
+                AppType.bodySmallSize,
+                color: AppColors.textMuted,
+              ),
             ),
           ],
-        ],
+        ),
+      ),
+    ],
+  );
+
+  /// 투명 행 글(각주 · 설명, 두 줄까지).
+  SettingsRowSpec _textRow(
+    String sectionId,
+    String text, {
+    bool muted = true,
+    double height = SettingsMetrics.noteRowHeight,
+  }) => SettingsRowSpec(
+    height: height,
+    builder: (context) => SettingsRow(
+      sectionId: sectionId,
+      height: height,
+      look: SettingsRowLook.plain,
+      child: Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: settingsTextStyle(
+          muted ? AppType.bodySmallSize : AppType.bodyPlusSize,
+          color: muted ? AppColors.textMuted : AppColors.text,
+        ),
       ),
     ),
   );
-}
 
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({
-    required this.title,
-    required this.detail,
-    required this.actionLabel,
-    required this.onAction,
-  });
-  final String title;
-  final String detail;
-  final String actionLabel;
-  final VoidCallback onAction;
-  @override
-  Widget build(BuildContext context) => Card(
-    color: Theme.of(context).colorScheme.errorContainer,
-    child: ListTile(
-      leading: const Icon(Icons.error_outline),
-      title: Text(title),
-      subtitle: Text(detail),
-      trailing: TextButton(onPressed: onAction, child: Text(actionLabel)),
-    ),
-  );
-}
-
-class _InlineError extends StatelessWidget {
-  const _InlineError(this.message);
-  final String message;
-  @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Icon(Icons.error_outline),
-      const SizedBox(width: AppSpacing.sm),
-      Expanded(child: Text(message)),
-    ],
-  );
+  SettingsRowSpec _errorRow(String sectionId, String message) =>
+      SettingsRowSpec(
+        height: SettingsMetrics.errorRowHeight,
+        builder: (context) => SettingsRow(
+          sectionId: sectionId,
+          height: SettingsMetrics.errorRowHeight,
+          child: SettingsInlineError(message),
+        ),
+      );
 }

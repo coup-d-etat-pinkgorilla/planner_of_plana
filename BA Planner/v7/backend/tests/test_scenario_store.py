@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -145,6 +146,21 @@ class ScenarioStoreTests(unittest.TestCase):
         self.assertFalse(scenario_path.exists())
 
     def test_list_includes_current_projection_and_ordered_student_ids(self) -> None:
+        source = self.root / "projection-import-fixture"
+        current = source / "profiles" / "profile_deadbeef" / "data" / "current"
+        current.mkdir(parents=True)
+        (source / "config.json").write_text(
+            json.dumps({"profiles": [{"key": "profile_deadbeef", "name": "Projection seed"}]}),
+            encoding="utf-8",
+        )
+        for filename, value in (
+            ("students.json", {}),
+            ("inventory.json", {"credits": {"quantity": 0}}),
+            ("growth_plan.json", {"version": 1, "goals": []}),
+        ):
+            (current / filename).write_text(json.dumps(value), encoding="utf-8")
+        imported = self.repository.import_v6_profile(str(source), "profile_deadbeef")
+        self.profile_id = imported["profile"]["profile_id"]
         self.repository.update_students(
             self.profile_id,
             [{"version": 1, "student_id": "ayane", "values": {"level": 1}}],

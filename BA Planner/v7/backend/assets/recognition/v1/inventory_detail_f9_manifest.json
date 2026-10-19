@@ -8493,14 +8493,14 @@
       "identity_value": "tech_notes:Item_Icon_SkillBook_Trinity_3"
     },
     {
-      "path": "templates/inventory_f9/inventory_detail/tech_notes/Item_Icon_SkillBook_Ultimate_Piece.png",
+      "path": "templates/inventory_f9/inventory_detail/tech_notes/Item_Icon_SkillBook_Ultimate.png",
       "scan_kind": "inventory",
       "purpose": "inventory-detail-icon",
       "required": true,
       "bytes": 84663,
       "sha256": "aa04e31398effac70c8269ae4cdcfde007db890df825d215fab14236a9525340",
       "source_path": "../v6/templates/inventory_detail/tech_notes/Item_Icon_SkillBook_Ultimate_Piece.png",
-      "identity_value": "tech_notes:Item_Icon_SkillBook_Ultimate_Piece"
+      "identity_value": "tech_notes:Item_Icon_SkillBook_Ultimate"
     },
     {
       "path": "templates/inventory_f9/inventory_detail/tech_notes/Item_Icon_SkillBook_Valkyrie_0.png",
@@ -8943,14 +8943,14 @@
       "identity_value": "tech_notes:Item_Icon_SkillBook_Trinity_3"
     },
     {
-      "path": "templates/inventory_f9/inventory_detail_names/tech_notes/Item_Icon_Skillbook_Ultimate_Piece.png",
+      "path": "templates/inventory_f9/inventory_detail_names/tech_notes/Item_Icon_SkillBook_Ultimate.png",
       "scan_kind": "inventory",
       "purpose": "inventory-detail-name",
       "required": true,
       "bytes": 22382,
       "sha256": "34c9c39f997b84450dcca68f94ec928ae6339e4fa68b225c4349dee84bb5a875",
       "source_path": "../v6/templates/inventory_detail_names/tech_notes/Item_Icon_Skillbook_Ultimate_Piece.png",
-      "identity_value": "tech_notes:Item_Icon_Skillbook_Ultimate_Piece"
+      "identity_value": "tech_notes:Item_Icon_SkillBook_Ultimate"
     },
     {
       "path": "templates/inventory_f9/inventory_detail_names/tech_notes/Item_Icon_SkillBook_Valkyrie_0.png",
@@ -10407,8 +10407,8 @@
       "scan_kind": "inventory",
       "purpose": "inventory-detail-regions",
       "required": true,
-      "bytes": 61952,
-      "sha256": "2a8acdb4c1a4b76f8de2bad7d2c5a6453dbc912ce4a3b2ea330b8fc68af87589",
+      "bytes": 61946,
+      "sha256": "97567d8793097a7c34c92338222af62ade0d3f431b84d4d1b9d413054ebd91e6",
       "source_path": "adapted:v6 inventory detail/count regions + F9 native UI flags",
       "identity_value": null
     }

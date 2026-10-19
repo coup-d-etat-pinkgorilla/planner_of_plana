@@ -24,48 +24,71 @@ void main() {
     },
   );
 
-  test('MockAppService exposes deterministic inventory unknown evidence', () async {
-    final service = MockAppService(
-      scannerScenario: MockScannerScenario.inventoryUnknown,
-    );
-    final events = <ScannerEvent>[];
-    final subscription = service.scannerEvents.listen(events.add);
-    final session = await service.startScannerSession(
-      ScannerKind.inventory,
-      'mock-window',
-    );
-    await Future<void>.delayed(const Duration(milliseconds: 40));
-    final candidateEvent = events.singleWhere(
-      (event) => event.eventKind == ScannerEventKind.candidate,
-    );
-    final candidate = ScannerCandidate.fromWire(
-      Map<String, dynamic>.from(candidateEvent.payload['candidate'] as Map),
-    );
-    expect(candidate.kind, ScannerKind.inventory);
-    expect(candidate.reviewRequired, isTrue);
-    expect((candidate.payload['entries'] as List).single['quantity'], isNull);
-    final snapshot = await service.scannerSnapshot(session);
-    expect(snapshot.terminal, 'completed');
-    expect(snapshot.candidates.single.id, candidate.id);
-    await subscription.cancel();
-    await service.dispose();
-  });
+  test(
+    'MockAppService exposes deterministic inventory unknown evidence',
+    () async {
+      final service = MockAppService(
+        scannerScenario: MockScannerScenario.inventoryUnknown,
+      );
+      final events = <ScannerEvent>[];
+      final subscription = service.scannerEvents.listen(events.add);
+      final session = await service.startScannerSession(
+        ScannerKind.inventory,
+        'mock-window',
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      final candidateEvent = events.singleWhere(
+        (event) => event.eventKind == ScannerEventKind.candidate,
+      );
+      final candidate = ScannerCandidate.fromWire(
+        Map<String, dynamic>.from(candidateEvent.payload['candidate'] as Map),
+      );
+      expect(candidate.kind, ScannerKind.inventory);
+      expect(candidate.reviewRequired, isTrue);
+      expect((candidate.payload['entries'] as List).single['quantity'], isNull);
+      final unresolved = await service.scannerUnresolvedSlots(
+        session,
+        candidate,
+      );
+      expect(
+        unresolved.slots.single.profile,
+        InventoryScanProfile.activityReports,
+      );
+      final assigned = await service.assignScannerIdentity(
+        session,
+        candidate,
+        slot: unresolved.slots.single.slot,
+        identity: unresolved.slots.single.candidates.single.identity,
+        persist: false,
+      );
+      expect(assigned.candidate.revision, 2);
+      expect(assigned.slots, isEmpty);
+      final snapshot = await service.scannerSnapshot(session);
+      expect(snapshot.terminal, 'completed');
+      expect(snapshot.candidates.single.id, candidate.id);
+      await subscription.cancel();
+      await service.dispose();
+    },
+  );
 
-  test('MockAppService keeps cancel acknowledgement separate from terminal', () async {
-    final service = MockAppService();
-    final terminal = service.scannerEvents.firstWhere(
-      (event) => event.eventKind == ScannerEventKind.terminal,
-    );
-    final session = await service.startScannerSession(
-      ScannerKind.student,
-      'mock-window',
-    );
-    final acknowledgement = await service.cancelScannerSession(session);
-    expect(acknowledgement['accepted'], isTrue);
-    expect(acknowledgement['terminal'], isNull);
-    expect((await terminal).payload['outcome'], 'cancelled');
-    await service.dispose();
-  });
+  test(
+    'MockAppService keeps cancel acknowledgement separate from terminal',
+    () async {
+      final service = MockAppService();
+      final terminal = service.scannerEvents.firstWhere(
+        (event) => event.eventKind == ScannerEventKind.terminal,
+      );
+      final session = await service.startScannerSession(
+        ScannerKind.student,
+        'mock-window',
+      );
+      final acknowledgement = await service.cancelScannerSession(session);
+      expect(acknowledgement['accepted'], isTrue);
+      expect(acknowledgement['terminal'], isNull);
+      expect((await terminal).payload['outcome'], 'cancelled');
+      await service.dispose();
+    },
+  );
 
   test('MockAppService emits a structured failed terminal', () async {
     final service = MockAppService(scannerScenario: MockScannerScenario.failed);

@@ -9,6 +9,9 @@ sources:
   - id: student-layout-tests
     type: file
     path: frontend/test/student_studio_layout_test.dart
+  - id: active-plan-bond-target
+    type: file
+    path: frontend/lib/ui/models/active_plan_bond_target.dart
   - id: mock-student-fixture
     type: file
     path: frontend/lib/services/mock_student_fixture.dart
@@ -167,8 +170,9 @@ Ability Release 제목은 좌측 안전 레일에 붙고, HP·ATK·HEAL 값 묶�
 3. 랭크 영역 직전에서 actual path의 수평 내부 span을 샘플링한다.
 4. 그 span으로 하단 양쪽이 둥근 mask를 만들고 actual path와 교차한다.
 5. `BlendMode.clear` stroke로 동일 폭을 안쪽에서 제거해 track inset을 만든다.
-6. outline, dark track, pink progress가 같은 host와 inset 계약을 사용한다.
-7. progress는 rank/100 비율로 아래에서 위로 채운다.
+6. outline, dark track, 목표 빗금, pink progress가 같은 host와 inset 계약을 사용한다.
+7. progress는 rank/100 비율로 아래에서 위로 채운다(FD-051: B안도 비율을 바꾸지 않는다).
+8. 목표가 보이면(아래 "목표 겹침") 빗금을 progress보다 먼저, 점선·`→N`을 가장 나중에 그린다.
 
 현재 주요 값은 다음과 같다.
 
@@ -181,6 +185,29 @@ Ability Release 제목은 좌측 안전 레일에 붙고, HP·ATK·HEAL 값 묶�
 | 게이지와 랭크 영역 간격 | 높이에 따라 3~4px |
 | 랭크 숫자 수평 위치 | 실제 하단 span 중앙, 추가 이동 없음 |
 | 랭크 글자 크기 | 43.2px |
+| 현재 채움(학생 S3, B안) | `#e9b0ee` 불투명(`solidFill: true`). 계획 요소 초상은 B안으로 바꾸는 slice까지 이전 값 @.78 |
+
+### 목표 겹침: W-Bond-Variants B안(2026-10-07 FE3-b, FD-049~051)
+
+시안 "인연도 표현 대안 · B 채택"과 W-Student-Detail에 맞춰 활성 계획의 인연 목표를 게이지에 겹친다.
+
+- **목표 출처(FD-049)**: 활성 계획 문서(PlanningDocument)에서 그 학생 단계 목표의 `bond_rank`.
+  조회는 `ui/models/active_plan_bond_target.dart` 한 곳이다(`loadStudentActivePlanDocument`,
+  `activePlanBondTarget`). 활성 계획 문서 저장(FB-1) 전에는 서비스가 `ActivePlanDocumentSource`를
+  구현할 때만 문서를 얻는다. goals v1은 `target_bond_rank`를 받지 않으므로 거기서 목표를 만들지 않는다.
+  FB-1에서는 `loadStudentActivePlanDocument`만 repository 조회로 바꾼다. [@active-plan-bond-target]
+- **여러 단계(FD-050)**: 그 학생 단계가 여러 개면 문서 순서상 마지막(최종) 단계 목표를 쓴다.
+- **숨김(FD-050)**: 목표가 없거나 현재 랭크 이하이면 빗금·점선·`→N`을 그리지 않는다
+  (`studentBondVisibleTarget`). 현재 랭크를 모르면(미보유) 목표만 그리고, 0은 목표가 아니다.
+- **빗금**: 바닥에서 목표 높이까지 inset host 안을 `HatchStyle`(간격 6, 줄 폭 2.4, −35°, 바탕
+  rgba(233,176,238,.16), 줄 .55)로 채우고 그 위에 현재 채움을 그린다. 그래서 현재 ~ 목표 구간만
+  빗금으로 남고, 현재가 0이어도 빗금이 보여 "목표 없음·0"과 구분된다.
+- **점선**: 목표 높이(rank/100과 같은 비율)에서 바깥 삼각형(container-10 실제 path)의 그 높이 가로 범위 전체에
+  `#e9b0ee` 1.6px, dash 3 · gap 2.
+- **`→N`**: 경기천년제목 10px w800 `#e9b0ee`, 오른쪽 끝 − 3에 오른쪽 정렬, 글자 바닥이 점선 약 5px 위.
+  Text 위젯(`student-detail-bond-target`)이라 위젯 테스트로 찾을 수 있다.
+- 계획 요소 초상의 inverted 게이지도 같은 위젯이 같은 표현을 지원한다(FD-050). 계획 쪽 목표 연결은
+  계획 만들기 slice(FE4)에서 한다.
 
 ## 삼각형 텍스처
 
@@ -230,3 +257,4 @@ Ability Release 제목은 좌측 안전 레일에 붙고, HP·ATK·HEAL 값 묶�
 - 필요하면 actual-path painter의 raster pixel test를 추가한다.
 - 외부 container-10 크기 자체를 바꾸는 요청과 내부 gauge inset 요청을 구분한다.
 - 미보유 및 여러 상태 표시는 현재 read-only indicator 작업과 분리해 구현한다.
+- FB-1 뒤 실제 활성 계획 문서로 `→N`이 보이는지, 목표가 현재 이하로 내려가면 사라지는지 확인한다.

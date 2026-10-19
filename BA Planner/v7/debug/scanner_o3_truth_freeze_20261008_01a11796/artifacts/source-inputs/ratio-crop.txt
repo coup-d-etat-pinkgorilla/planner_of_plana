@@ -1,0 +1,13 @@
+def ratio_crop(image: Image.Image, region: dict[str, Any]) -> Image.Image:
+    try:
+        box = (
+            round(image.width * float(region["x1"])),
+            round(image.height * float(region["y1"])),
+            round(image.width * float(region["x2"])),
+            round(image.height * float(region["y2"])),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ScannerError("region_missing", "invalid ratio region") from exc
+    if box[0] >= box[2] or box[1] >= box[3]:
+        raise ScannerError("region_missing", "ratio region is empty")
+    return image.crop(box)

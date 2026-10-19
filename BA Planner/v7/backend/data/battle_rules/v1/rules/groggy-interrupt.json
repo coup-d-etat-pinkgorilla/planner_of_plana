@@ -1,0 +1,198 @@
+{
+  "schema": "ba-planner-battle-rule/1",
+  "id": "groggy-interrupt",
+  "updated": "2026-10-08",
+  "status": "provisional_pending_observation",
+  "decision": "TD6",
+  "runtimeIntegrated": false,
+  "staticResearch": {
+    "status": "frozen",
+    "acceptedRounds": 16,
+    "acceptedFullBodyCount": 80,
+    "additionalRoundsAuthorized": false
+  },
+  "provenance": {
+    "decisionFile": "almanac/workflows/tactic-editor-boss-mechanics-workflow.md",
+    "decisionKey": "TD6",
+    "orchestratorLog": "almanac/workflows/tactic-editor-orchestrator-log.md",
+    "client": "Steam global",
+    "gameAssemblySha256": "bbe68ad3fd303884fe7d87abeeac3df0b6f7581b179d8fb16715c6037ae473ab",
+    "globalMetadataSha256": "b7d8373d419047bec25ebe6fe3ce76686e7ca979d151ad819d93c1c2fdbc8360",
+    "extractionTool": "backend/tools/battle_spec/dis_il2cpp.py",
+    "verificationTool": "docs/tactic-editor/evidence/build_t2_u6_index.py"
+  },
+  "rules": [
+    {
+      "id": "interrupt-in-progress-cast-on-groggy-enter",
+      "value": "immediate_interrupt",
+      "assumed": true,
+      "basis": "TD6 provisional timeline default; end-to-end cast interruption not established by static research.",
+      "promotionRequires": "cast_interruption_observation"
+    },
+    {
+      "id": "automatic-skill-counter-on-groggy",
+      "value": "preserve",
+      "assumed": true,
+      "basis": "TD6 provisional timeline default; interrupted automatic-skill return/lifetime not established end-to-end.",
+      "promotionRequires": "automatic_skill_return_observation"
+    }
+  ],
+  "confirmedStaticEvidence": [
+    {
+      "id": "groggy-blocks-ex-public-use-checks",
+      "assumed": false,
+      "scope": "Previously read EX/Public eligibility checks; not an end-to-end ongoing cast interruption guarantee.",
+      "evidence": "docs/tactic-editor/evidence/t2-u6-skill-interruption-steam-2026-09-30.json"
+    },
+    {
+      "id": "new-skill-interrupt-event-order",
+      "value": [
+        "Interrupted",
+        "Finished"
+      ],
+      "assumed": false,
+      "scope": "NewSkillAction.Interrupt concrete body only.",
+      "evidence": "docs/tactic-editor/evidence/t2-u6-skill-interruption-steam-2026-09-30.json"
+    },
+    {
+      "id": "interval-tick-conditional-decrease",
+      "assumed": false,
+      "conditions": [
+        "CanTrigger == true",
+        "BattleState == InProgress",
+        "IsActive == true"
+      ],
+      "scope": "Pinned AutoUseCheckInterval iterator decreases tickRemained, including below zero; no Groggy-specific stop in this local path. Does not prove all counter lifetimes.",
+      "evidence": "docs/tactic-editor/evidence/t2-u6-skill-interruption-steam-2026-09-30.json"
+    }
+  ],
+  "observationGate": {
+    "ownerPhase": "T3",
+    "boss": "Binah",
+    "minimumQualifyingCases": 2,
+    "questions": [
+      "cast_interruption_observation",
+      "automatic_skill_return_observation"
+    ],
+    "plan": "docs/tactic-editor/evidence/t2-u6-td6-observation-plan-2026-10-01.json",
+    "observations": [
+      {
+        "caseId": "C-P1",
+        "difficulty": "Lunatic",
+        "phase": 1,
+        "build": "kr-2026-07-01-season83",
+        "recording": "YouTube aqMPW5EmXrE",
+        "qualifying": false,
+        "qualifyingFor": {
+          "cast_interruption_observation": false,
+          "automatic_skill_return_observation": false
+        },
+        "castInterruption": "area_damage_stopped (not engine cast-interruption proof)",
+        "confounders": [
+          "Lunatic-specific data effect: BinahLunaticPassive02 (LocalizeSkill 708138417 '감춰진 자의 시야'; trigger GetCurrentBehavior()==Groggy -> RemoveAreaEntityEffectDAO BinahLunaticExSkill01Entity01, JP 1.73.0). Area damage stop is explained by data; excluded from general cast-interruption qualifying.",
+          "KR video2026-07 differs from JP1.73.0 saved extraction and Steam code hash.",
+          "Area appearance and last damage are not exact cast-start/animation-stop.",
+          "Uploader stats unavailable for T1; recording hash unknown."
+        ],
+        "scope": {
+          "kind": "observed",
+          "boss": "Binah",
+          "difficulty": "Lunatic",
+          "build": "kr-2026-07-01-season83"
+        },
+        "detail": "docs/tactic-editor/evidence/t2-u6-td6-observation-plan-2026-10-01.json#observedCases/C-P1"
+      },
+      {
+        "caseId": "D-P1",
+        "difficulty": "Torment",
+        "phase": 1,
+        "build": "jp-video-2024-07-05",
+        "recording": "YouTube urnRui1oQsk",
+        "qualifying": true,
+        "qualifyingFor": {
+          "cast_interruption_observation": true,
+          "automatic_skill_return_observation": false
+        },
+        "castInterruption": "interrupted_before_damage (107 f < slot1 first projectile spawn 123 f and slot2 first damage entity 151 f)",
+        "confounders": [
+          "Motion change01:59.766 is not a precisely identified cast-start.",
+          "Skill/slot unresolved between BinahInsaneExSkill02 and BinahInsaneExSkill03.",
+          "VideoJP2024-07 versus savedJP1.73.0/2026; exact revision equivalence unproven.",
+          "Recording hash and exact animation-stop latency unavailable."
+        ],
+        "scope": {
+          "kind": "observed",
+          "boss": "Binah",
+          "difficulty": "Torment",
+          "build": "jp-video-2024-07-05"
+        },
+        "detail": "docs/tactic-editor/evidence/t2-u6-td6-observation-plan-2026-10-01.json#observedCases/D-P1"
+      },
+      {
+        "caseId": "D-P2",
+        "difficulty": "Torment",
+        "phase": 2,
+        "build": "jp-video-2024-07-05",
+        "recording": "YouTube urnRui1oQsk",
+        "qualifying": true,
+        "qualifyingFor": {
+          "cast_interruption_observation": true,
+          "automatic_skill_return_observation": false
+        },
+        "castInterruption": "interrupted_before_damage_observed; actual_cast_start_and_stop_unknown",
+        "confounders": [
+          "Motion change00:50.033 is not a precisely identified cast-start.",
+          "Skill/slot unresolved between BinahExSkill02 and BinahExSkill03.",
+          "VideoJP2024-07 versus savedJP1.73.0/2026; exact revision equivalence unproven.",
+          "Recording hash and exact animation-stop latency unavailable."
+        ],
+        "scope": {
+          "kind": "observed",
+          "boss": "Binah",
+          "difficulty": "Torment",
+          "build": "jp-video-2024-07-05"
+        },
+        "detail": "docs/tactic-editor/evidence/t2-u6-td6-observation-plan-2026-10-01.json#observedCases/D-P2",
+        "observedMotionToGroggy": {
+          "remainingTimerStart": "00:50.033",
+          "remainingTimerEnd": "00:46.766",
+          "seconds": 3.267,
+          "videoFrames": 98,
+          "captureFps": 30,
+          "timingUncertaintySeconds": 0.033,
+          "observedDamage": 0,
+          "logicFramesInferred": false
+        },
+        "referenceCastEvents": [
+          {
+            "skill": "BinahExSkill02",
+            "event": "projectile_spawn",
+            "relativeFrame": 123,
+            "relativeSeconds": 4.1
+          },
+          {
+            "skill": "BinahExSkill03",
+            "event": "projectile_spawn",
+            "relativeFrame": 102,
+            "relativeSeconds": 3.4
+          },
+          {
+            "skill": "BinahExSkill03",
+            "event": "damage_entity_hit",
+            "relativeFrame": 151,
+            "relativeSeconds": 5.03
+          }
+        ],
+        "interpretation": "98 video frames precede both reference projectile-spawn frames; consistent with interrupted cast, observed-only and not a precisely identified cast-start or universal engine rule.",
+        "captureFps": 30,
+        "timingUncertaintySeconds": 0.033
+      }
+    ],
+    "status": "two_cast_interruption_observations_registered_observed_scope_only; automatic_skill_return_unverified",
+    "promotionPolicy": "Promote each rule only after >=2 qualifying observed cases support it; attach recording hash, timing uncertainty, client/build and boss/skill scope. Conflicting or confounded cases keep assumed=true.",
+    "qualifyingCount": {
+      "cast_interruption_observation": 2,
+      "automatic_skill_return_observation": 0
+    }
+  }
+}

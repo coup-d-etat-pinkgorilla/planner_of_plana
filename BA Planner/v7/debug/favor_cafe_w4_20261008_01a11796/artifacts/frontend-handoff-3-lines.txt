@@ -1,0 +1,3 @@
+data/extracted/jp-json/FavorLevelExcel.json 100행 sha3d76612c… + CafeInteractionExcel.json 276행 shafab6c94f…; evidence docs/tactic-editor/evidence/favor-cafe-tables-jp-1.73.0.json (전체 행·provenance 포함).
+ExpType 해석 미확정: 랭크별 필요/누적 임계값 후보2개; Level1..100, long벡터1열, FavorLevelupType 매핑·레벨 경계 미검증(합산·raw type 인덱싱 보류).
+쓰다듬기 보상 FavorExp(11)/Id0/Amount15(276행 동일); JP get_InteractCooltime RVA0x1338160 → FromHours(3.0), getter3시간 [코드]; 가능 횟수·서버 검증·리셋 미확인.

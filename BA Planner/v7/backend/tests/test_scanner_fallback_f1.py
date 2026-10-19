@@ -19,6 +19,17 @@ from core.scanner_session import ScanBatchResult, ScannerError, ScannerSessionSe
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter, _INPUT
 from core.windows_capture_worker import CaptureWorker
 from test_scanner_session import FakeRepository
+from input_guard_stub import patch_input_guard
+
+_GUARD = patch_input_guard()
+
+
+def setUpModule():
+    _GUARD.start()
+
+
+def tearDownModule():
+    _GUARD.stop()
 
 
 TARGET = {"target_id": "hwnd:1"}

@@ -95,6 +95,7 @@ class PlanningProtocolClient {
   static const _methodErrorCodes = <String, Set<String>>{
     'planning.student.get': {'invalid_payload', 'metadata_lookup_failed'},
     'planning.student.catalog': {'invalid_payload', 'metadata_lookup_failed'},
+    'planning.student.calculate': {'invalid_payload', 'calculation_failed'},
     'planning.plan.validate': {'invalid_payload'},
     'planning.plan.calculate': {'invalid_payload', 'calculation_failed'},
     'planning.document.calculate': {'invalid_payload', 'calculation_failed'},
@@ -107,12 +108,20 @@ class PlanningProtocolClient {
       'invalid_payload',
       'shortage_calculation_failed',
     },
+    // FB-3: 획득처 조회 오류 집합(protocol-error-v1 `inventoryAcquisition`). unknown_method는 받지 않는다.
+    'planning.inventory.acquisition.get': {
+      'invalid_payload',
+      'resource_not_found',
+      'resource_acquisition_failed',
+    },
     'repository': {
       'invalid_payload',
       'profile_not_found',
       'profile_name_conflict',
       'revision_conflict',
       'idempotency_conflict',
+      'legacy_goals_conflict',
+      'plan_lossy_write',
       'repository_busy',
       'corrupt_data',
       'migration_required',
@@ -145,6 +154,18 @@ class PlanningProtocolClient {
       'corrupt_data',
       'migration_required',
       'persistence_failed',
+      // FB-6(backend 2026-10-14 08:36): v2 기록·족보 쓰기·v7-v1 이관·v1 read-only typed 오류.
+      'import_review_required',
+      'import_source_changed',
+      'legacy_already_migrated',
+      'legacy_migration_required',
+      'lineage_conflict',
+      'migration_conflict',
+      'opponent_alias_required',
+      'tactical_v1_read_only',
+      // FB-7(XB `810a15f2`, dart-handoff-final.md): 엑셀·CSV 해석 맥락 변경 · 원본 읽기 실패(details.reason).
+      'import_interpretation_changed',
+      'import_source_unreadable',
       'unknown_method',
     },
     'scanner': {
@@ -176,6 +197,11 @@ class PlanningProtocolClient {
       'region_missing',
       'asset_manifest_invalid',
       'asset_version_mismatch',
+      'unresolved_slot_not_found',
+      'invalid_identity',
+      'identity_conflict',
+      'assignment_unavailable',
+      'sample_storage_failed',
       'unknown_method',
     },
   };
@@ -464,6 +490,7 @@ class PlanningProtocolClient {
             payload.containsKey('student') &&
             (payload['student'] == null || payload['student'] is Map),
       'planning.student.catalog' => _validStudentCatalog(payload),
+      'planning.student.calculate' => _validStudentCalculation(payload),
       'planning.plan.validate' =>
         payload.keys.toSet().length == 2 &&
             payload['valid'] == true &&
@@ -477,6 +504,9 @@ class PlanningProtocolClient {
         isValidScenarioSuccessPayload(method, payload),
       'planning.inventory.catalog' => _validInventoryCatalog(payload),
       'planning.plan.shortages' => _validInventoryShortages(payload),
+      'planning.inventory.acquisition.get' => _validResourceAcquisition(
+        payload,
+      ),
       _ when method.startsWith('repository.') =>
         isValidRepositorySuccessPayload(method, payload),
       _ when method.startsWith('scanner.') => _validScannerSuccessPayload(
@@ -489,6 +519,15 @@ class PlanningProtocolClient {
       ),
       _ => false,
     };
+  }
+
+  bool _validStudentCalculation(Map<String, dynamic> payload) {
+    try {
+      StudentCalculationResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
   }
 
   bool _validScenarioComparison(Map<String, dynamic> payload) {
@@ -519,6 +558,15 @@ class PlanningProtocolClient {
   bool _validInventoryCatalog(Map<String, dynamic> payload) {
     try {
       InventoryCatalogResult.fromWire(payload);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  bool _validResourceAcquisition(Map<String, dynamic> payload) {
+    try {
+      ResourceAcquisitionResult.fromWire(payload);
       return true;
     } on Object {
       return false;
@@ -638,6 +686,8 @@ class PlanningProtocolClient {
           'candidate',
           'diagnostic',
           'terminal',
+          'paused',
+          'resumed',
         }.contains(value['event_kind']);
     if (!baseValid) return false;
     return switch (value['event_kind']) {
@@ -694,6 +744,19 @@ class PlanningProtocolClient {
             }.contains(value['outcome']) &&
             (!value.containsKey('error') ||
                 _validScannerTerminalError(value['error'])),
+      // FB-10a: 기본 키 + `reason` 정확히. paused는 사유 셋 중 하나, resumed는 null.
+      'paused' =>
+        value.length == baseKeys.length + 1 &&
+            value.containsKey('reason') &&
+            const {
+              'user',
+              'input_detected',
+              'target_minimized',
+            }.contains(value['reason']),
+      'resumed' =>
+        value.length == baseKeys.length + 1 &&
+            value.containsKey('reason') &&
+            value['reason'] == null,
       _ => false,
     };
   }
@@ -705,6 +768,61 @@ class PlanningProtocolClient {
         value['code'] is String &&
         (value['code'] as String).isNotEmpty &&
         value['message'] is String;
+  }
+
+  /// FB-10a `sessionControl`(pause·resume 응답): 네 키 정확히, 끝난 세션은 accepted=false.
+  bool _validScannerSessionControl(Map<String, dynamic> payload) =>
+      payload.length == 4 &&
+      payload.containsKey('accepted') &&
+      payload['accepted'] is bool &&
+      _validScannerControlFields(payload) &&
+      !(payload['control_state'] == 'terminal' && payload['accepted'] == true);
+
+  /// FB-10a control_state·reason·terminal의 짝(schema `allOf`). 세 키가 모두 있어야 한다. running·terminal이면
+  /// reason이 null이고 그 밖에는 사유 셋 중 하나, terminal 값은 terminal 상태에서만 있다.
+  bool _validScannerControlFields(Map<String, dynamic> value) {
+    if (!value.containsKey('control_state') ||
+        !value.containsKey('reason') ||
+        !value.containsKey('terminal')) {
+      return false;
+    }
+    final state = value['control_state'];
+    final reason = value['reason'];
+    final terminal = value['terminal'];
+    if (!const {
+      'running',
+      'pause_requested',
+      'paused',
+      'terminal',
+    }.contains(state)) {
+      return false;
+    }
+    final reasonValid = state == 'running' || state == 'terminal'
+        ? reason == null
+        : const {
+            'user',
+            'input_detected',
+            'target_minimized',
+          }.contains(reason);
+    final terminalValid = state == 'terminal'
+        ? const {'completed', 'cancelled', 'failed'}.contains(terminal)
+        : terminal == null;
+    return reasonValid && terminalValid;
+  }
+
+  /// FB-4 optional target metadata. 키가 없거나 null이면 "모름"으로 통과하고, 값이 있으면
+  /// `client_width`·`client_height`는 양의 정수, `game`은 `blue_archive`만 받는다.
+  /// 그 밖의 추가 키는 지금처럼 허용한다(schema `additionalProperties: true`).
+  bool _validScannerTargetMetadata(Map<dynamic, dynamic> item) {
+    bool optionalPositiveInt(String key) {
+      final value = item[key];
+      return value == null || (value is int && value > 0);
+    }
+
+    final game = item['game'];
+    return optionalPositiveInt('client_width') &&
+        optionalPositiveInt('client_height') &&
+        (game == null || game == 'blue_archive');
   }
 
   bool _validScannerSuccessPayload(
@@ -725,7 +843,8 @@ class PlanningProtocolClient {
                     'minimized',
                     'closed',
                     'unsupported',
-                  }.contains(item['status']),
+                  }.contains(item['status']) &&
+                  _validScannerTargetMetadata(item),
             ),
       'scanner.recognition.status' =>
         payload['ready'] is bool &&
@@ -740,16 +859,31 @@ class PlanningProtocolClient {
               'tactical_lobby',
             }.contains(payload['scan_kind']),
       'scanner.session.cancel' => payload['accepted'] is bool,
+      'scanner.session.pause' ||
+      'scanner.session.resume' => _validScannerSessionControl(payload),
       'scanner.session.snapshot' =>
         payload['session_id'] is String &&
             payload['generation'] is int &&
             payload['events'] is List &&
-            payload['candidates'] is List,
+            payload['candidates'] is List &&
+            _validScannerControlFields(payload),
       'scanner.candidate.get' ||
       'scanner.candidate.review' ||
       'scanner.candidate.revalidate' => _validScannerCandidate(
         payload['candidate'],
       ),
+      'scanner.review.unresolved_slots' =>
+        payload.keys.toSet().length == 3 &&
+            payload['candidate_id'] is String &&
+            payload['candidate_revision'] is int &&
+            _validScannerUnresolvedSlots(payload['slots']),
+      'scanner.review.assign_identity' =>
+        payload.keys.toSet().length == 3 &&
+            _validScannerCandidate(payload['candidate']) &&
+            payload['candidate_revision'] is int &&
+            (payload['candidate'] as Map)['revision'] ==
+                payload['candidate_revision'] &&
+            _validScannerUnresolvedSlots(payload['slots']),
       'scanner.candidate.commit' =>
         payload['candidate_id'] is String &&
             payload['candidate_revision'] is int &&
@@ -775,6 +909,57 @@ class PlanningProtocolClient {
         value['review_required'] is bool &&
         value['approved'] is bool &&
         value['audit'] is List;
+  }
+
+  bool _validScannerUnresolvedSlots(Object? value) {
+    if (value is! List || value.length > 500) return false;
+    const profiles = {
+      'equipment',
+      'activity_reports',
+      'tech_notes',
+      'tactical_bd',
+      'ooparts',
+      'presents',
+      'student_elephs',
+    };
+    return value.every((raw) {
+      if (raw is! Map || raw.keys.toSet().length != 5) return false;
+      final resolution = raw['resolution'];
+      final candidates = raw['candidates'];
+      if (raw['slot'] is! int ||
+          (raw['slot'] as int) < 0 ||
+          !profiles.contains(raw['profile']) ||
+          resolution is! Map ||
+          resolution.keys.toSet().difference(const {
+            'width',
+            'height',
+          }).isNotEmpty ||
+          resolution['width'] is! int ||
+          (resolution['width'] as int) < 1 ||
+          resolution['height'] is! int ||
+          (resolution['height'] as int) < 1 ||
+          raw['crop_png_base64'] is! String ||
+          (raw['crop_png_base64'] as String).isEmpty ||
+          candidates is! List ||
+          candidates.length > 3) {
+        return false;
+      }
+      try {
+        base64Decode(raw['crop_png_base64'] as String);
+      } on FormatException {
+        return false;
+      }
+      return candidates.every(
+        (candidate) =>
+            candidate is Map &&
+            candidate.keys.toSet().length == 2 &&
+            candidate['identity'] is String &&
+            (candidate['identity'] as String).isNotEmpty &&
+            candidate['score'] is num &&
+            (candidate['score'] as num) >= 0 &&
+            (candidate['score'] as num) <= 1,
+      );
+    });
   }
 
   void _fatalProtocolError(String message, int generation) {

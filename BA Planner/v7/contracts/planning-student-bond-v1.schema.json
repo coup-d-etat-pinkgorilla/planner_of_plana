@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/planning-student-bond-v1.schema.json",
+  "title": "Optional FB-11b bond block for planning.student.calculate",
+  "$ref": "#/$defs/result",
+  "$defs": {
+    "nullableAmount": {"type": ["integer", "null"], "minimum": 0},
+    "nullableRank": {"type": ["integer", "null"], "minimum": 1, "maximum": 100},
+    "request": {
+      "type": "object", "required": ["current_rank"],
+      "properties": {"current_rank": {"$ref": "#/$defs/nullableRank"}},
+      "additionalProperties": false
+    },
+    "gift": {
+      "type": "object",
+      "required": ["gift_id", "resource_key", "display_name", "base_exp", "multiplier", "exp_per_gift", "owned", "required", "used_owned", "shortage"],
+      "properties": {
+        "gift_id": {"type": "integer", "minimum": 1},
+        "resource_key": {"type": "string", "minLength": 1},
+        "display_name": {"type": "string", "minLength": 1},
+        "base_exp": {"type": "integer", "minimum": 1},
+        "multiplier": {"type": "integer", "minimum": 1, "maximum": 4},
+        "exp_per_gift": {"type": "integer", "minimum": 1},
+        "owned": {"$ref": "#/$defs/nullableAmount"},
+        "required": {"type": "integer", "minimum": 1},
+        "used_owned": {"type": "integer", "minimum": 0},
+        "shortage": {"$ref": "#/$defs/nullableAmount"}
+      },
+      "additionalProperties": false
+    },
+    "giftPlan": {
+      "type": "object",
+      "required": ["available", "inventory_complete", "provided_exp", "shortage", "gifts"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "inventory_complete": {"type": "boolean"},
+        "provided_exp": {"type": "integer", "minimum": 0},
+        "shortage": {"$ref": "#/$defs/nullableAmount"},
+        "gifts": {"type": "array", "items": {"$ref": "#/$defs/gift"}}
+      },
+      "additionalProperties": false
+    },
+    "petting": {
+      "type": "object",
+      "required": ["exp_per_interaction", "interval_hours", "required_count", "minimum_hours", "first_interaction", "available_count"],
+      "properties": {
+        "exp_per_interaction": {"const": 15},
+        "interval_hours": {"const": 3},
+        "required_count": {"$ref": "#/$defs/nullableAmount"},
+        "minimum_hours": {"$ref": "#/$defs/nullableAmount"},
+        "first_interaction": {"const": "immediate"},
+        "available_count": {"type": "null"}
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": ["current_rank", "target_rank", "assumption", "source_version", "favor_levelup_type", "required_exp", "plans", "warnings"],
+      "properties": {
+        "current_rank": {"$ref": "#/$defs/nullableRank"},
+        "target_rank": {"type": "integer", "minimum": 1, "maximum": 100},
+        "assumption": {"const": "current_rank_start"},
+        "source_version": {"const": "jp-1.73.0"},
+        "favor_levelup_type": {"type": ["integer", "null"], "minimum": 1},
+        "required_exp": {"$ref": "#/$defs/nullableAmount"},
+        "plans": {
+          "type": "object", "required": ["preferred_large", "normal", "petting"],
+          "properties": {
+            "preferred_large": {"$ref": "#/$defs/giftPlan"},
+            "normal": {"$ref": "#/$defs/giftPlan"},
+            "petting": {"$ref": "#/$defs/petting"}
+          },
+          "additionalProperties": false
+        },
+        "warnings": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    }
+  }
+}

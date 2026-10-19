@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'app_service.dart';
 import 'planning_protocol_client.dart';
@@ -47,6 +49,12 @@ enum ScannerEventKind {
   candidate,
   diagnostic,
   terminal,
+
+  /// FB-10a: 안전 지점에서 실제로 멈췄다(`reason` = user·input_detected·target_minimized).
+  paused,
+
+  /// FB-10a: 이어서가 받아들여져 다시 진행한다(`reason` = null).
+  resumed,
 }
 
 enum ScannerEventDecision {
@@ -57,24 +65,180 @@ enum ScannerEventDecision {
   afterTerminal,
 }
 
+/// FB-10a 세션 제어 상태(`scanner.session.pause`·`resume` 응답과 snapshot의 `control_state`).
+///
+/// [pauseRequested]는 요청을 받아들였다는 뜻일 뿐이다. 실제 멈춤은 sequence가 붙은 `paused` 이벤트다.
+enum ScannerControlState {
+  running('running'),
+  pauseRequested('pause_requested'),
+  paused('paused'),
+  terminal('terminal');
+
+  const ScannerControlState(this.wireName);
+  final String wireName;
+
+  static ScannerControlState fromWire(Object? value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () =>
+        throw FormatException('Unknown scanner control state: $value'),
+  );
+}
+
+/// FB-10a 일시정지 사유. 어떤 사유든 자동으로 이어 가지 않는다(사용자가 이어서를 눌러야 한다).
+enum ScannerPauseReason {
+  user('user'),
+  inputDetected('input_detected'),
+  targetMinimized('target_minimized');
+
+  const ScannerPauseReason(this.wireName);
+  final String wireName;
+
+  static ScannerPauseReason fromWire(Object? value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () => throw FormatException('Unknown scanner pause reason: $value'),
+  );
+}
+
+const _scannerTerminalOutcomes = {'completed', 'cancelled', 'failed'};
+
+/// control_state·reason·terminal의 짝(schema `allOf`)을 확인한다. running·terminal이면 reason이 null이고,
+/// 그 밖에는 사유가 있다. terminal 값은 terminal 상태에서만 있다.
+void _checkScannerControlFields(
+  ScannerControlState state,
+  ScannerPauseReason? reason,
+  Object? terminal,
+) {
+  final reasonOk =
+      state == ScannerControlState.running ||
+          state == ScannerControlState.terminal
+      ? reason == null
+      : reason != null;
+  final terminalOk = state == ScannerControlState.terminal
+      ? _scannerTerminalOutcomes.contains(terminal)
+      : terminal == null;
+  if (!reasonOk || !terminalOk) {
+    throw FormatException(
+      'Invalid scanner control fields: ${state.wireName} / ${reason?.wireName} / $terminal',
+    );
+  }
+}
+
+/// `scanner.session.pause`·`scanner.session.resume` 응답(FB-10a). 네 키를 정확히 받고 모르는 키는 거부한다.
+///
+/// - pause가 받아들여지면 [controlState]는 `pauseRequested`다. 멈춤은 뒤따르는 `paused` 이벤트로 안다.
+/// - resume이 대상 창 미준비로 거절되면 `paused`에 남고 [reason]이 `targetMinimized`로 바뀐다(이벤트 없음).
+/// - 끝난 세션은 `terminal`이고 [accepted]는 항상 false다.
+class ScannerSessionControl {
+  const ScannerSessionControl({
+    required this.accepted,
+    required this.controlState,
+    this.reason,
+    this.terminal,
+  });
+
+  final bool accepted;
+  final ScannerControlState controlState;
+  final ScannerPauseReason? reason;
+
+  /// `completed`·`cancelled`·`failed`. 끝나지 않았으면 null.
+  final String? terminal;
+
+  static const wireKeys = {'accepted', 'control_state', 'reason', 'terminal'};
+
+  factory ScannerSessionControl.fromWire(Map<String, dynamic> wire) {
+    if (wire.length != wireKeys.length || !wire.keys.toSet().containsAll(wireKeys)) {
+      throw FormatException(
+        'Invalid scanner session control keys: ${wire.keys.toList()..sort()}',
+      );
+    }
+    final accepted = wire['accepted'];
+    if (accepted is! bool) {
+      throw const FormatException('Scanner session control accepted must be bool');
+    }
+    final state = ScannerControlState.fromWire(wire['control_state']);
+    final rawReason = wire['reason'];
+    final reason = rawReason == null
+        ? null
+        : ScannerPauseReason.fromWire(rawReason);
+    final terminal = wire['terminal'];
+    _checkScannerControlFields(state, reason, terminal);
+    if (state == ScannerControlState.terminal && accepted) {
+      throw const FormatException('A terminal scanner session never accepts');
+    }
+    return ScannerSessionControl(
+      accepted: accepted,
+      controlState: state,
+      reason: reason,
+      terminal: terminal as String?,
+    );
+  }
+}
+
+/// `scanner.target.list` 행의 `game` 판별값(FB-4, `blue_archive` 또는 null).
+///
+/// 값이 없으면(null) "모름"이다. 게임 창이 아니라는 뜻이 아니며, 서버·지역·스캔 지원 여부도
+/// 담지 않는다(계약 README "FB-4 target metadata").
+enum ScannerTargetGame {
+  blueArchive('blue_archive');
+
+  const ScannerTargetGame(this.wireName);
+  final String wireName;
+
+  static ScannerTargetGame fromWire(String value) => values.firstWhere(
+    (item) => item.wireName == value,
+    orElse: () => throw FormatException('Unknown scanner target game: $value'),
+  );
+}
+
 class ScannerTarget {
   const ScannerTarget({
     required this.id,
     required this.title,
     required this.status,
     this.foreground = false,
+    this.clientWidth,
+    this.clientHeight,
+    this.game,
   });
   final String id;
   final String title;
   final ScannerTargetStatus status;
   final bool foreground;
 
+  /// 게임 창 client 영역의 물리 픽셀 폭·높이(FB-4). 제목 표시줄·테두리 제외.
+  /// null = 모름: 구 provider가 키를 생략했거나(legacy) 최소화·닫힘·측정 실패로 null을 보냈다.
+  /// 0이나 다른 기본값으로 채우지 않는다.
+  final int? clientWidth;
+  final int? clientHeight;
+
+  /// 게임 판별(FB-4). null = 모름(생략 또는 null). 게임 아님으로 단정하지 않는다.
+  final ScannerTargetGame? game;
+
+  /// 폭·높이가 둘 다 알려져 있을 때만 참이다.
+  bool get hasClientSize => clientWidth != null && clientHeight != null;
+
   factory ScannerTarget.fromWire(Map<String, dynamic> wire) => ScannerTarget(
     id: wire['target_id'] as String,
     title: wire['title'] as String,
     status: ScannerTargetStatus.values.byName(wire['status'] as String),
     foreground: wire['foreground'] == true,
+    clientWidth: _optionalClientExtent(wire, 'client_width'),
+    clientHeight: _optionalClientExtent(wire, 'client_height'),
+    game: switch (wire['game']) {
+      null => null,
+      final String value => ScannerTargetGame.fromWire(value),
+      final Object value => throw FormatException(
+        'Invalid scanner target game: $value',
+      ),
+    },
   );
+
+  static int? _optionalClientExtent(Map<String, dynamic> wire, String key) {
+    final value = wire[key];
+    if (value == null) return null;
+    if (value is int && value > 0) return value;
+    throw FormatException('Invalid scanner target $key: $value');
+  }
 }
 
 class ScannerSession {
@@ -225,6 +389,140 @@ class ScannerCandidate {
       );
 }
 
+class ScannerIdentitySuggestion {
+  const ScannerIdentitySuggestion({
+    required this.identity,
+    required this.score,
+  });
+
+  final String identity;
+  final double score;
+
+  factory ScannerIdentitySuggestion.fromWire(Map<String, dynamic> wire) {
+    final identity = wire['identity'];
+    final score = wire['score'];
+    if (identity is! String || identity.isEmpty || score is! num) {
+      throw const FormatException('Invalid scanner identity suggestion');
+    }
+    return ScannerIdentitySuggestion(
+      identity: identity,
+      score: score.toDouble(),
+    );
+  }
+}
+
+class ScannerUnresolvedSlot {
+  ScannerUnresolvedSlot({
+    required this.slot,
+    required this.profile,
+    required this.width,
+    required this.height,
+    required Uint8List cropPng,
+    required List<ScannerIdentitySuggestion> candidates,
+  }) : cropPng = Uint8List.fromList(cropPng),
+       candidates = List.unmodifiable(candidates);
+
+  final int slot;
+  final InventoryScanProfile profile;
+  final int width;
+  final int height;
+  final Uint8List cropPng;
+  final List<ScannerIdentitySuggestion> candidates;
+
+  factory ScannerUnresolvedSlot.fromWire(Map<String, dynamic> wire) {
+    final resolution = wire['resolution'];
+    final encoded = wire['crop_png_base64'];
+    final candidates = wire['candidates'];
+    if (wire['slot'] is! int ||
+        resolution is! Map ||
+        resolution['width'] is! int ||
+        resolution['height'] is! int ||
+        encoded is! String ||
+        encoded.isEmpty ||
+        candidates is! List) {
+      throw const FormatException('Invalid unresolved scanner slot');
+    }
+    try {
+      return ScannerUnresolvedSlot(
+        slot: wire['slot'] as int,
+        profile: InventoryScanProfile.fromWire(wire['profile'] as String),
+        width: resolution['width'] as int,
+        height: resolution['height'] as int,
+        cropPng: base64Decode(encoded),
+        candidates: candidates
+            .map(
+              (item) => ScannerIdentitySuggestion.fromWire(
+                Map<String, dynamic>.from(item as Map),
+              ),
+            )
+            .toList(growable: false),
+      );
+    } on ArgumentError catch (error) {
+      throw FormatException('Invalid unresolved scanner slot: $error');
+    }
+  }
+}
+
+class ScannerUnresolvedSlots {
+  ScannerUnresolvedSlots({
+    required this.candidateId,
+    required this.candidateRevision,
+    required List<ScannerUnresolvedSlot> slots,
+  }) : slots = List.unmodifiable(slots);
+
+  final String candidateId;
+  final int candidateRevision;
+  final List<ScannerUnresolvedSlot> slots;
+
+  factory ScannerUnresolvedSlots.fromWire(Map<String, dynamic> wire) {
+    final slots = wire['slots'];
+    if (wire['candidate_id'] is! String ||
+        wire['candidate_revision'] is! int ||
+        slots is! List) {
+      throw const FormatException('Invalid unresolved scanner slots response');
+    }
+    return ScannerUnresolvedSlots(
+      candidateId: wire['candidate_id'] as String,
+      candidateRevision: wire['candidate_revision'] as int,
+      slots: slots
+          .map(
+            (item) => ScannerUnresolvedSlot.fromWire(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class ScannerIdentityAssignmentResult {
+  ScannerIdentityAssignmentResult({
+    required this.candidate,
+    required List<ScannerUnresolvedSlot> slots,
+  }) : slots = List.unmodifiable(slots);
+
+  final ScannerCandidate candidate;
+  final List<ScannerUnresolvedSlot> slots;
+
+  factory ScannerIdentityAssignmentResult.fromWire(Map<String, dynamic> wire) {
+    final candidate = ScannerCandidate.fromWire(
+      Map<String, dynamic>.from(wire['candidate'] as Map),
+    );
+    final remaining = ScannerUnresolvedSlots.fromWire({
+      'candidate_id': candidate.id,
+      'candidate_revision': wire['candidate_revision'],
+      'slots': wire['slots'],
+    });
+    if (remaining.candidateRevision != candidate.revision) {
+      throw const FormatException('Identity assignment revision mismatch');
+    }
+    return ScannerIdentityAssignmentResult(
+      candidate: candidate,
+      slots: remaining.slots,
+    );
+  }
+}
+
 class ScannerEvent {
   ScannerEvent({
     required this.sessionId,
@@ -247,14 +545,33 @@ class ScannerEvent {
   }
 
   factory ScannerEvent.fromPayload(Map<String, dynamic> wire) {
+    final eventKind = ScannerEventKind.values.byName(
+      wire['event_kind'] as String,
+    );
+    // FB-10a: paused는 사유가 꼭 있고, resumed는 `reason: null`을 꼭 싣는다.
+    if (eventKind == ScannerEventKind.paused) {
+      ScannerPauseReason.fromWire(wire['reason']);
+    } else if (eventKind == ScannerEventKind.resumed &&
+        (!wire.containsKey('reason') || wire['reason'] != null)) {
+      throw const FormatException('Scanner resumed event needs reason: null');
+    }
     return ScannerEvent(
       sessionId: wire['session_id'] as String,
       generation: wire['generation'] as int,
       sequence: wire['sequence'] as int,
       kind: ScannerKindWire.fromWire(wire['scan_kind'] as String),
-      eventKind: ScannerEventKind.values.byName(wire['event_kind'] as String),
+      eventKind: eventKind,
       payload: wire,
     );
+  }
+
+  /// `paused` 이벤트의 사유(FB-10a). 다른 종류이거나 사유를 읽지 못하면 null.
+  ScannerPauseReason? get pauseReason {
+    if (eventKind != ScannerEventKind.paused) return null;
+    for (final reason in ScannerPauseReason.values) {
+      if (reason.wireName == payload['reason']) return reason;
+    }
+    return null;
   }
 }
 
@@ -267,8 +584,15 @@ class ScannerSessionSnapshot {
     required this.terminal,
     required List<ScannerEvent> events,
     required List<ScannerCandidate> candidates,
+    ScannerControlState? controlState,
+    this.reason,
   }) : events = List.unmodifiable(events),
-       candidates = List.unmodifiable(candidates);
+       candidates = List.unmodifiable(candidates),
+       controlState =
+           controlState ??
+           (terminal == null
+               ? ScannerControlState.running
+               : ScannerControlState.terminal);
 
   final String sessionId;
   final int generation;
@@ -278,10 +602,28 @@ class ScannerSessionSnapshot {
   final List<ScannerEvent> events;
   final List<ScannerCandidate> candidates;
 
+  /// FB-10a 제어 상태. 이벤트 틈을 메우거나 거절된 이어서의 사유가 바뀌었을 때 이 값이 권위값이다.
+  final ScannerControlState controlState;
+
+  /// 일시정지 사유(FB-10a). running·terminal이면 null.
+  final ScannerPauseReason? reason;
+
   factory ScannerSessionSnapshot.fromWire(Map<String, dynamic> wire) {
     final events = wire['events'];
     final candidates = wire['candidates'];
     final terminal = wire['terminal'];
+    // FB-10a: control_state·reason·terminal은 필수 키다(값 null 허용 여부는 짝 규칙이 정한다).
+    if (!wire.containsKey('control_state') ||
+        !wire.containsKey('reason') ||
+        !wire.containsKey('terminal')) {
+      throw const FormatException('Scanner snapshot needs control fields');
+    }
+    final controlState = ScannerControlState.fromWire(wire['control_state']);
+    final rawReason = wire['reason'];
+    final reason = rawReason == null
+        ? null
+        : ScannerPauseReason.fromWire(rawReason);
+    _checkScannerControlFields(controlState, reason, terminal);
     if (wire['session_id'] is! String ||
         wire['generation'] is! int ||
         wire['scan_kind'] is! String ||
@@ -337,6 +679,8 @@ class ScannerSessionSnapshot {
       terminal: terminal as String?,
       events: parsedEvents,
       candidates: parsedCandidates,
+      controlState: controlState,
+      reason: reason,
     );
   }
 }
@@ -389,6 +733,13 @@ abstract interface class ScannerService {
     InventoryScanProfile? inventoryScanProfile,
   });
   Future<Map<String, dynamic>> cancelScannerSession(ScannerSession session);
+
+  /// FB-10a 일시정지 요청. `pauseRequested` 응답은 수락일 뿐이고, 실제 멈춤은 `paused` 이벤트다.
+  Future<ScannerSessionControl> pauseScannerSession(ScannerSession session);
+
+  /// FB-10a 이어서. 받아들여지면 `resumed` 이벤트가 따른다. 대상 창이 준비되지 않으면 거절되어 `paused`에
+  /// 남는다(사유 `targetMinimized`). 중지는 [cancelScannerSession]이다.
+  Future<ScannerSessionControl> resumeScannerSession(ScannerSession session);
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session);
   Future<ScannerCandidate> getScannerCandidate(
     ScannerSession session,
@@ -401,11 +752,23 @@ abstract interface class ScannerService {
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   });
   Future<ScannerCandidate> revalidateScannerCandidate(
     ScannerSession session,
     ScannerCandidate candidate, {
     Map<int, int>? relationshipRanks,
+  });
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  );
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
   });
   Future<Map<String, dynamic>> commitScannerCandidate(
     ScannerSession session,
@@ -521,6 +884,24 @@ class ScannerProtocolClient implements ScannerService {
         'generation': session.generation,
       });
   @override
+  Future<ScannerSessionControl> pauseScannerSession(
+    ScannerSession session,
+  ) async => ScannerSessionControl.fromWire(
+    await _client.send('scanner.session.pause', {
+      'session_id': session.id,
+      'generation': session.generation,
+    }),
+  );
+  @override
+  Future<ScannerSessionControl> resumeScannerSession(
+    ScannerSession session,
+  ) async => ScannerSessionControl.fromWire(
+    await _client.send('scanner.session.resume', {
+      'session_id': session.id,
+      'generation': session.generation,
+    }),
+  );
+  @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
     final snapshot = ScannerSessionSnapshot.fromWire(
       await _client.send('scanner.session.snapshot', {
@@ -562,6 +943,7 @@ class ScannerProtocolClient implements ScannerService {
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   }) async => ScannerCandidate.fromWire(
     Map<String, dynamic>.from(
       (await _client.send('scanner.candidate.review', {
@@ -572,6 +954,8 @@ class ScannerProtocolClient implements ScannerService {
             'candidate_payload': payload,
             'approve': approve,
             'reason': reason,
+            if (confirmedFields != null)
+              'confirmed_fields': confirmedFields.toList()..sort(),
             if (relationshipRanks != null)
               'relationship_ranks': {
                 for (final entry in relationshipRanks.entries)
@@ -601,6 +985,35 @@ class ScannerProtocolClient implements ScannerService {
           }))['candidate']
           as Map,
     ),
+  );
+  @override
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  ) async => ScannerUnresolvedSlots.fromWire(
+    await _client.send('scanner.review.unresolved_slots', {
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': candidate.id,
+    }),
+  );
+  @override
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
+  }) async => ScannerIdentityAssignmentResult.fromWire(
+    await _client.send('scanner.review.assign_identity', {
+      'session_id': session.id,
+      'generation': session.generation,
+      'candidate_id': candidate.id,
+      'expected_candidate_revision': candidate.revision,
+      'slot': slot,
+      'identity': identity,
+      'persist': persist,
+    }),
   );
   @override
   Future<Map<String, dynamic>> commitScannerCandidate(

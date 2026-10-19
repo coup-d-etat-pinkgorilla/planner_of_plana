@@ -1,0 +1,31 @@
+{
+  "attack_type": [
+    "explosive",
+    "mystic",
+    "piercing",
+    "sonic"
+  ],
+  "defense_type": [
+    "composite",
+    "elastic",
+    "heavy",
+    "light",
+    "special"
+  ],
+  "role": [
+    "dealer",
+    "healer",
+    "supporter",
+    "t_s",
+    "tanker"
+  ],
+  "position": [
+    "back",
+    "front",
+    "middle"
+  ],
+  "combat_class": [
+    "special",
+    "striker"
+  ]
+}

@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "contract_status": "finalized",
+  "notes": [
+    "Synthetic OS/provider rows; no live game observation.",
+    "game is identity heuristic; server and scan support are not inferred.",
+    "unsupported ratio is an existing provider status example, not a new adapter status rule."
+  ],
+  "cases": [
+    {
+      "name": "ready1280x720",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": 1280,
+              "client_height": 720,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ready2560x1440",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:102",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": false,
+              "client_width": 2560,
+              "client_height": 1440,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "minimized-null-size",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:103",
+              "title": "Blue Archive",
+              "status": "minimized",
+              "client_width": null,
+              "client_height": null,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unsupported-ratio-same-identity",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:104",
+              "title": "Blue Archive",
+              "status": "unsupported",
+              "client_width": 1600,
+              "client_height": 1000,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unknown-title-impostor",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:105",
+              "title": "Blue Archive - Editor",
+              "status": "ready",
+              "client_width": 1280,
+              "client_height": 720,
+              "game": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "legacy-omitted-metadata",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "fixture",
+              "title": "Fixture game",
+              "status": "ready"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "closed-null-metadata",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:106",
+              "title": "Blue Archive",
+              "status": "closed",
+              "client_width": null,
+              "client_height": null,
+              "game": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "unreadable-geometry-known-game",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:107",
+              "title": "Blue Archive",
+              "status": "ready",
+              "client_width": null,
+              "client_height": null,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "process-name-denied-size-known",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:108",
+              "title": "Blue Archive",
+              "status": "ready",
+              "client_width": 1280,
+              "client_height": 720,
+              "game": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "invalid-bool-width",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": true,
+              "client_height": 720,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "invalid-negative-height",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": 1280,
+              "client_height": -1,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "invalid-zero-width",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": 0,
+              "client_height": 720,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "invalid-string-width",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": "1280",
+              "client_height": 720,
+              "game": "blue_archive"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "invalid-game-value",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb4-targets",
+        "type": "response",
+        "method": "scanner.target.list",
+        "payload": {
+          "targets": [
+            {
+              "target_id": "hwnd:101",
+              "title": "Blue Archive",
+              "status": "ready",
+              "foreground": true,
+              "client_width": 1280,
+              "client_height": 720,
+              "game": "kr_steam"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

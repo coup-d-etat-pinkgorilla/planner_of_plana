@@ -5,39 +5,11 @@ from PIL import Image, ImageChops, ImageStat
 from core.recognition_assets import RecognitionAssetCatalog
 from core.student_scan_recognizer import Observation, ratio_crop
 from core import recognition_thresholds as rt
+from core.recognition_image_ops import ncc_signed_lanczos, color_similarity
 
-
-def _normalized_correlation(left: Image.Image, right: Image.Image) -> float:
-    size = right.size
-    source = left.convert("L").resize(size, Image.Resampling.LANCZOS)
-    template = right.convert("L")
-    try:
-        source_values = list(source.getdata())
-        template_values = list(template.getdata())
-        source_mean = sum(source_values) / max(1, len(source_values))
-        template_mean = sum(template_values) / max(1, len(template_values))
-        numerator = sum(
-            (a - source_mean) * (b - template_mean)
-            for a, b in zip(source_values, template_values, strict=True)
-        )
-        left_square = sum((value - source_mean) ** 2 for value in source_values)
-        right_square = sum((value - template_mean) ** 2 for value in template_values)
-        denominator = (left_square * right_square) ** 0.5
-        return 0.0 if denominator == 0 else max(-1.0, min(1.0, numerator / denominator))
-    finally:
-        source.close()
-        template.close()
-
-
-def _color_similarity(left: Image.Image, right: Image.Image) -> float:
-    source = left.convert("RGB").resize(right.size, Image.Resampling.LANCZOS)
-    template = right.convert("RGB")
-    try:
-        mean = ImageStat.Stat(ImageChops.difference(source, template)).mean
-        return max(0.0, min(1.0, 1.0 - sum(mean) / (3.0 * 255.0)))
-    finally:
-        source.close()
-        template.close()
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_normalized_correlation = ncc_signed_lanczos
+_color_similarity = color_similarity
 
 
 class StudentWeaponRecognizer:

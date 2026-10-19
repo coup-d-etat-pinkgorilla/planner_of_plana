@@ -6,11 +6,15 @@ inputs it sent and the distinct frames it saw are saved under --output.
   --profile P             explicit inventory scan profile (the game page must already show it)
   --cancel-after N        set the cancel token after N captures (cancel run)
   --restore-probe         scroll twice, then call restore_first_page and compare with page 0
+  --repeat N              run N scans on one adapter (second scans use the session tile/count banks, C5e-2/3)
+
+The adapter gets the same synthetic-tier provider as the app (C5e-6c; the first run extracts the client's assets).
 """
 import argparse
 import hashlib
 import json
 import sys
+import time
 from pathlib import Path
 from threading import Event
 
@@ -18,6 +22,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from core.inventory_detail_recovery import InventoryDetailRecognizer, InventoryDetailRecovery
 from core.inventory_navigation import InventoryNavigation
 from core.recognition_assets import RecognitionAssetCatalog
+from core.recognition_synth_provider import SynthProvider
+from core.runtime_paths import BACKEND_DIR, resolve_extracted_asset_root, resolve_synth_cache_root
 from core.scanner_matchers import InventoryMatcherAdapter
 from core.scanner_session import ScanBatchResult, ScannerError
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
@@ -62,6 +68,10 @@ class RecordingCapture:
         self.log.append({"input": "drag_scroll", "start": list(start), "end": list(end)})
         self.native.drag_scroll(target, start, end)
 
+    def drag_path(self, target, path, hold):
+        self.log.append({"input": "drag_path", "path": [list(point) for point in path], "hold": hold})
+        self.native.drag_path(target, path, hold)
+
     def press_key(self, target, key):
         self.log.append({"input": "key", "key": key})
         return self.native.press_key(target, key)
@@ -86,6 +96,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cancel-after", type=int)
     parser.add_argument("--restore-probe", action="store_true")
+    parser.add_argument("--repeat", type=int, default=1)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     native = WindowsCaptureInputAdapter()
@@ -106,20 +117,33 @@ def main() -> None:
             source = detail.classify(first)
             prepared = navigation.prepare(target, cancel, first)
             page0 = capture.wait_stable(target, cancel)
-            moved = navigation.advance(target, cancel, page0, source)
-            moved = navigation.advance(target, cancel, moved.frame, source)
+            moved = navigation.advance(target, cancel, page0, source, 3)
+            moved = navigation.advance(target, cancel, moved.frame, source, 3)
             report["scrolled_similarity_to_page0"] = navigation.page_similarity(
                 navigation.signatures(page0, source), navigation.signatures(moved.frame, source))
-            navigation.restore_first_page(target, Event(), moved.frame)
+            navigation.restore_first_page(target, Event(), moved.frame, page0, rows=10)
             back = capture.wait_stable(target, Event())
             report["restored_similarity_to_page0"] = navigation.page_similarity(
                 navigation.signatures(page0, source), navigation.signatures(back, source))
             report["prepared"] = prepared.profile_id
         else:
-            adapter = InventoryMatcherAdapter(capture, catalog, detail_recovery=InventoryDetailRecovery(capture, detail),
-                                              navigation=navigation)
-            report["result"] = summarize(adapter(target, cancel, lambda *_args: None))
+            adapter = InventoryMatcherAdapter(
+                capture, catalog, detail_recovery=InventoryDetailRecovery(capture, detail), navigation=navigation,
+                synth_provider=SynthProvider(resolve_extracted_asset_root(), resolve_synth_cache_root(),
+                                             BACKEND_DIR / "assets" / "recognition" / "spec" / "item-rarity-v1.json"))
+            for run in range(args.repeat):
+                started = time.monotonic()
+                result = summarize(adapter(target, cancel, lambda *_args: None))
+                elapsed = round(time.monotonic() - started, 1)
+                if run == 0:
+                    report["result"], report["elapsed_seconds"] = result, elapsed
+                else:
+                    report.setdefault("repeats", []).append({"result": result, "elapsed_seconds": elapsed})
+                if result["error"] is not None:
+                    break
         report["navigation_trace"] = navigation.trace
+        report["input_guard"] = {"user_events": native._guard.count, "idle_waits": native._guard.waits,
+                                 "busy_steps": native._guard.busy}
     except ScannerError as exc:
         report["error"] = {"code": exc.code, "message": exc.message, "details": exc.details}
     finally:
@@ -131,7 +155,7 @@ def main() -> None:
         native.close()
     result = report.get("result", {})
     print(json.dumps({key: report.get(key) for key in ("profile", "error", "scrolled_similarity_to_page0",
-                                                         "restored_similarity_to_page0")} | {
+                                                         "restored_similarity_to_page0", "elapsed_seconds", "input_guard")} | {
         "outcome": result.get("outcome"), "coverage_complete": result.get("coverage_complete"),
         "result_error": result.get("error"),
         "entries": [len(row["payload"]["entries"]) for row in result.get("candidates", [])],

@@ -38,26 +38,12 @@ void main() {
     );
   });
 
-  test('left and right template cuts remove opposite corners', () {
-    const size = Size(300, 180);
-    final rightCut = buildSectionTemplatePath(size, SectionShape.rightCut);
-    final leftCut = buildSectionTemplatePath(size, SectionShape.leftCut);
-
-    expect(rightCut.contains(const Offset(280, 160)), isFalse);
-    expect(rightCut.contains(const Offset(20, 20)), isTrue);
-    expect(leftCut.contains(const Offset(20, 20)), isFalse);
-    expect(leftCut.contains(const Offset(280, 20)), isTrue);
-  });
-
   test('every diagonal uses the fixed upward-right 80 degree track', () {
     const height = 240.0;
     final cut = sectionTemplateCutDepth(height);
     final angle = math.atan2(height, cut) * 180 / math.pi;
 
     expect(angle, closeTo(80, 1e-9));
-    final names = SectionShape.values.map((shape) => shape.name);
-    expect(names, isNot(contains('topCut')));
-    expect(names, isNot(contains('bottomCut')));
   });
 
   test('attached modes derive geometry from face grid and height', () {
@@ -83,22 +69,13 @@ void main() {
       height: 32,
     );
 
+    expect(_boardPath(size, triangle).contains(const Offset(5, 200)), isTrue);
     expect(
-      buildAttachedSectionPath(size, triangle).contains(const Offset(5, 200)),
+      _boardPath(size, trapezoid).contains(const Offset(300, 100)),
       isTrue,
     );
     expect(
-      buildAttachedSectionPath(
-        size,
-        trapezoid,
-      ).contains(const Offset(300, 100)),
-      isTrue,
-    );
-    expect(
-      buildAttachedSectionPath(
-        size,
-        parallelogram,
-      ).contains(const Offset(300, 500)),
+      _boardPath(size, parallelogram).contains(const Offset(300, 500)),
       isTrue,
     );
   });
@@ -107,7 +84,7 @@ void main() {
     const size = Size(600, 600);
     for (final mode in SectionShapeMode.values) {
       for (final face in SectionAttachmentFace.values) {
-        final path = buildAttachedSectionPath(
+        final path = _boardPath(
           size,
           AttachedSectionSpec(
             mode: mode,
@@ -205,12 +182,8 @@ void main() {
     const size = Size(480, 480);
     final centers = sectionCanvasResizeHandleCenters(size, element);
     expect(
-      hitTestSectionResizeHandle(
-        size,
-        element,
-        centers[SectionResizeHandle.bottomRight]!,
-      ),
-      SectionResizeHandle.bottomRight,
+      centers[SectionResizeHandle.bottomRight],
+      sectionCanvasElementRect(size, element).bottomRight,
     );
   });
 
@@ -695,3 +668,20 @@ void main() {
     expect(find.text('Section Template Studio'), findsWidgets);
   });
 }
+
+/// 판 전체(96×96)를 덮는 element의 섹션 path. 앱이 쓰는 [buildSectionCanvasElementPath] 그대로다.
+Path _boardPath(Size size, AttachedSectionSpec spec) =>
+    buildSectionCanvasElementPath(
+      size,
+      SectionCanvasElement(
+        id: 'board',
+        label: 'board',
+        rect: const SectionGridRect(
+          0,
+          0,
+          sectionTemplateGridSize,
+          sectionTemplateGridSize,
+        ),
+        spec: spec,
+      ),
+    );

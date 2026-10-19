@@ -38,5 +38,9 @@
 ## Validation
 
 - Python: `cd backend; py -3.11 -m unittest discover -s tests -v`
-- Flutter: `cd frontend; flutter analyze; flutter test`
+- Flutter: `powershell -ExecutionPolicy Bypass -File frontend/tool/fe_gate.ps1` (analyze, tests
+  excluding golden, golden comparison, almanac validate and `git diff --check` in sequence; summary
+  under `debug/frontend_gate/`). Do not run a bare `flutter test`: it runs the golden tests in
+  parallel with the process E2E tests, which can then time out. Regenerate goldens only with
+  `fe_gate.ps1 -UpdateGoldens` on the user PC when a slice intentionally changes the screen.
 - Windows release: `cd frontend; flutter build windows --release`

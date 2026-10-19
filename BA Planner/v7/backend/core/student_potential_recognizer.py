@@ -3,15 +3,14 @@ from __future__ import annotations
 
 from PIL import Image, ImageFilter, ImageOps
 
-from core.student_scan_recognizer import (
-    Observation,
-    ratio_crop,
-    _normalize_mask,
-    _binary_iou,
-    _ncc_difference_score,
-    _otsu_binary,
+from core.recognition_image_ops import (
+    binary_iou,
+    ncc_difference_score,
+    ncc_signed_lanczos,
+    normalize_mask,
+    otsu_binary,
 )
-from core.student_weapon_recognizer import _normalized_correlation
+from core.student_scan_recognizer import Observation, ratio_crop
 from core.student_panel_recovery import read_panel_fields
 from core import recognition_thresholds as rt
 
@@ -81,7 +80,7 @@ def _basic_template_pattern(image):
                 out[point] = 255
     text.close()
     try:
-        return _normalize_mask(cleaned, size=(64, 32))
+        return normalize_mask(cleaned, size=(64, 32))
     finally:
         cleaned.close()
 
@@ -92,7 +91,7 @@ def _detail_ui_feature(image, size):
     equalized = ImageOps.equalize(gray)
     gray.close()
     blurred = equalized.filter(ImageFilter.GaussianBlur(radius=.8))
-    binary = _otsu_binary(blurred)
+    binary = otsu_binary(blurred)
     blurred.close()
     equalized.close()
     box = (
@@ -110,7 +109,7 @@ def _detail_text_feature(image, size):
     """Reproduce the v6 text-only mask without splitting the numeric glyphs."""
     gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
     blurred = gray.filter(ImageFilter.GaussianBlur(radius=.8))
-    mask = _otsu_binary(blurred, inverse=True)
+    mask = otsu_binary(blurred, inverse=True)
     blurred.close()
     gray.close()
     box = mask.getbbox()
@@ -213,8 +212,8 @@ class StudentPotentialRecognizer:
         if glyph is None:
             return Observation(None, 0, "dependency_missing", "potential_"+kind+"_template", "level glyph missing")
         try:
-            scores = sorted(((value, max((.55*_binary_iou(glyph, template)
-                              + .45*max(0, min(1, (_normalized_correlation(glyph, template)+1)/2))
+            scores = sorted(((value, max((.55*binary_iou(glyph, template)
+                              + .45*max(0, min(1, (ncc_signed_lanczos(glyph, template)+1)/2))
                              for template in variants), default=0))
                              for value, variants in self._bank(kind).items()), key=lambda x:x[1], reverse=True)
         finally:
@@ -243,8 +242,8 @@ class StudentPotentialRecognizer:
                 if size not in ui_cache:
                     ui_cache[size] = _detail_ui_feature(crop, size)
                     text_cache[size] = _detail_text_feature(crop, size)
-                ui = _ncc_difference_score(ui_cache[size], template_ui)
-                text = _ncc_difference_score(text_cache[size], template_text)
+                ui = ncc_difference_score(ui_cache[size], template_ui)
+                text = ncc_difference_score(text_cache[size], template_text)
                 scores[value] = (.35 * ui + .65 * text, ui, text)
         finally:
             for image in (*ui_cache.values(), *text_cache.values()):

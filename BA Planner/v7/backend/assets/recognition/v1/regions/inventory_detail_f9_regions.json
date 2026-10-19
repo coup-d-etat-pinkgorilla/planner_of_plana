@@ -318,7 +318,7 @@
           },
           "background_rules": [
             {
-              "contains": "Item_Icon_SkillBook_Ultimate_Piece",
+              "contains": "Item_Icon_SkillBook_Ultimate",
               "background": "icons/temp/square_purple.png"
             }
           ],

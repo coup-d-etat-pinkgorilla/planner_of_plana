@@ -21,8 +21,8 @@
       "scan_kind": "inventory",
       "purpose": "grid-regions",
       "required": true,
-      "bytes": 8427,
-      "sha256": "301c154d00b601de169c066eb0e6f4cd788700ccda4948bc96f24c7c472bb778",
+      "bytes": 8421,
+      "sha256": "d7aa3c319f28faa7385c328d39696bcb319875e755635de4c380f099c10adaaa",
       "source_path": "adapted:../v6/regions/item_regions.json"
     },
     {

@@ -1,0 +1,1879 @@
+{
+ "profile": "tech_notes",
+ "cancel_after": null,
+ "size": [
+  1280,
+  720
+ ],
+ "result": {
+  "outcome": "completed",
+  "coverage_complete": false,
+  "error": null,
+  "candidates": [
+   {
+    "payload": {
+     "version": 1,
+     "catalog_revision": "757aea00267228d2e7b4485c3010d0f44b850f2eb48e301ae039e86d4a7b66d9",
+     "entries": [
+      {
+       "key": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "quantity": "2366",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_0",
+       "name": null,
+       "observed_slot": 0,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Hyakkiyako_1",
+       "quantity": "825",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_1",
+       "name": null,
+       "observed_slot": 1,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Hyakkiyako_2",
+       "quantity": "411",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_2",
+       "name": null,
+       "observed_slot": 2,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Hyakkiyako_3",
+       "quantity": "27",
+       "item_id": "Item_Icon_SkillBook_Hyakkiyako_3",
+       "name": null,
+       "observed_slot": 3,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_RedWinter_0",
+       "quantity": "4459",
+       "item_id": "Item_Icon_SkillBook_RedWinter_0",
+       "name": null,
+       "observed_slot": 4,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_RedWinter_1",
+       "quantity": "2135",
+       "item_id": "Item_Icon_SkillBook_RedWinter_1",
+       "name": null,
+       "observed_slot": 5,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_RedWinter_2",
+       "quantity": "1457",
+       "item_id": "Item_Icon_SkillBook_RedWinter_2",
+       "name": null,
+       "observed_slot": 6,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_RedWinter_3",
+       "quantity": "452",
+       "item_id": "Item_Icon_SkillBook_RedWinter_3",
+       "name": null,
+       "observed_slot": 7,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Trinity_0",
+       "quantity": "1756",
+       "item_id": "Item_Icon_SkillBook_Trinity_0",
+       "name": null,
+       "observed_slot": 8,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Trinity_1",
+       "quantity": "403",
+       "item_id": "Item_Icon_SkillBook_Trinity_1",
+       "name": null,
+       "observed_slot": 9,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Trinity_2",
+       "quantity": "351",
+       "item_id": "Item_Icon_SkillBook_Trinity_2",
+       "name": null,
+       "observed_slot": 10,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Trinity_3",
+       "quantity": "48",
+       "item_id": "Item_Icon_SkillBook_Trinity_3",
+       "name": null,
+       "observed_slot": 11,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Gehenna_0",
+       "quantity": "2819",
+       "item_id": "Item_Icon_SkillBook_Gehenna_0",
+       "name": null,
+       "observed_slot": 12,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Gehenna_1",
+       "quantity": "1077",
+       "item_id": "Item_Icon_SkillBook_Gehenna_1",
+       "name": null,
+       "observed_slot": 13,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Gehenna_2",
+       "quantity": "742",
+       "item_id": "Item_Icon_SkillBook_Gehenna_2",
+       "name": null,
+       "observed_slot": 14,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Gehenna_3",
+       "quantity": "198",
+       "item_id": "Item_Icon_SkillBook_Gehenna_3",
+       "name": null,
+       "observed_slot": 15,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Abydos_0",
+       "quantity": "3994",
+       "item_id": "Item_Icon_SkillBook_Abydos_0",
+       "name": null,
+       "observed_slot": 16,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Abydos_1",
+       "quantity": "1808",
+       "item_id": "Item_Icon_SkillBook_Abydos_1",
+       "name": null,
+       "observed_slot": 17,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Abydos_2",
+       "quantity": "1037",
+       "item_id": "Item_Icon_SkillBook_Abydos_2",
+       "name": null,
+       "observed_slot": 18,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Abydos_3",
+       "quantity": "384",
+       "item_id": "Item_Icon_SkillBook_Abydos_3",
+       "name": null,
+       "observed_slot": 19,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Millennium_0",
+       "quantity": "3115",
+       "item_id": "Item_Icon_SkillBook_Millennium_0",
+       "name": null,
+       "observed_slot": 20,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Millennium_1",
+       "quantity": "1039",
+       "item_id": "Item_Icon_SkillBook_Millennium_1",
+       "name": null,
+       "observed_slot": 21,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Millennium_2",
+       "quantity": "681",
+       "item_id": "Item_Icon_SkillBook_Millennium_2",
+       "name": null,
+       "observed_slot": 22,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Millennium_3",
+       "quantity": "96",
+       "item_id": "Item_Icon_SkillBook_Millennium_3",
+       "name": null,
+       "observed_slot": 23,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Arius_0",
+       "quantity": "2579",
+       "item_id": "Item_Icon_SkillBook_Arius_0",
+       "name": null,
+       "observed_slot": 24,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Arius_1",
+       "quantity": "1084",
+       "item_id": "Item_Icon_SkillBook_Arius_1",
+       "name": null,
+       "observed_slot": 25,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Arius_2",
+       "quantity": "721",
+       "item_id": "Item_Icon_SkillBook_Arius_2",
+       "name": null,
+       "observed_slot": 26,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Arius_3",
+       "quantity": "152",
+       "item_id": "Item_Icon_SkillBook_Arius_3",
+       "name": null,
+       "observed_slot": 27,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Shanhaijing_0",
+       "quantity": "3699",
+       "item_id": "Item_Icon_SkillBook_Shanhaijing_0",
+       "name": null,
+       "observed_slot": 28,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Shanhaijing_1",
+       "quantity": "1511",
+       "item_id": "Item_Icon_SkillBook_Shanhaijing_1",
+       "name": null,
+       "observed_slot": 29,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Shanhaijing_2",
+       "quantity": "1055",
+       "item_id": "Item_Icon_SkillBook_Shanhaijing_2",
+       "name": null,
+       "observed_slot": 30,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Shanhaijing_3",
+       "quantity": "338",
+       "item_id": "Item_Icon_SkillBook_Shanhaijing_3",
+       "name": null,
+       "observed_slot": 31,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Valkyrie_0",
+       "quantity": "3247",
+       "item_id": "Item_Icon_SkillBook_Valkyrie_0",
+       "name": null,
+       "observed_slot": 32,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Valkyrie_1",
+       "quantity": "1176",
+       "item_id": "Item_Icon_SkillBook_Valkyrie_1",
+       "name": null,
+       "observed_slot": 33,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Valkyrie_2",
+       "quantity": "601",
+       "item_id": "Item_Icon_SkillBook_Valkyrie_2",
+       "name": null,
+       "observed_slot": 34,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Valkyrie_3",
+       "quantity": "32",
+       "item_id": "Item_Icon_SkillBook_Valkyrie_3",
+       "name": null,
+       "observed_slot": 35,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Highlander_0",
+       "quantity": "1542",
+       "item_id": "Item_Icon_SkillBook_Highlander_0",
+       "name": null,
+       "observed_slot": 36,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Highlander_1",
+       "quantity": "768",
+       "item_id": "Item_Icon_SkillBook_Highlander_1",
+       "name": null,
+       "observed_slot": 37,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Highlander_2",
+       "quantity": "498",
+       "item_id": "Item_Icon_SkillBook_Highlander_2",
+       "name": null,
+       "observed_slot": 38,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Highlander_3",
+       "quantity": "186",
+       "item_id": "Item_Icon_SkillBook_Highlander_3",
+       "name": null,
+       "observed_slot": 39,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Wildhunt_0",
+       "quantity": "1395",
+       "item_id": "Item_Icon_SkillBook_Wildhunt_0",
+       "name": null,
+       "observed_slot": 40,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Wildhunt_1",
+       "quantity": "623",
+       "item_id": "Item_Icon_SkillBook_Wildhunt_1",
+       "name": null,
+       "observed_slot": 41,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Wildhunt_2",
+       "quantity": "385",
+       "item_id": "Item_Icon_SkillBook_Wildhunt_2",
+       "name": null,
+       "observed_slot": 42,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Wildhunt_3",
+       "quantity": "137",
+       "item_id": "Item_Icon_SkillBook_Wildhunt_3",
+       "name": null,
+       "observed_slot": 43,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      },
+      {
+       "key": "Item_Icon_SkillBook_Ultimate",
+       "quantity": "71",
+       "item_id": "Item_Icon_SkillBook_Ultimate",
+       "name": null,
+       "observed_slot": 44,
+       "profile_id": "tech_notes",
+       "inventory_scan_profile": "tech_notes"
+      }
+     ]
+    },
+    "evidence": [
+     {
+      "field": "entries[0].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9596019317513029,
+      "note": "margin=0.034567"
+     },
+     {
+      "field": "entries[0].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8372998825786866,
+      "note": ""
+     },
+     {
+      "field": "entries[1].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9577583947858409,
+      "note": "margin=0.019438"
+     },
+     {
+      "field": "entries[1].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8553920821500489,
+      "note": ""
+     },
+     {
+      "field": "entries[2].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.955480879758205,
+      "note": "margin=0.018304"
+     },
+     {
+      "field": "entries[2].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8838544019802154,
+      "note": ""
+     },
+     {
+      "field": "entries[3].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9541365627118209,
+      "note": "margin=0.072792"
+     },
+     {
+      "field": "entries[3].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8677649937569039,
+      "note": ""
+     },
+     {
+      "field": "entries[4].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9611872089014151,
+      "note": "margin=0.035223"
+     },
+     {
+      "field": "entries[4].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8530439306244033,
+      "note": ""
+     },
+     {
+      "field": "entries[5].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9586383762536327,
+      "note": "margin=0.020132"
+     },
+     {
+      "field": "entries[5].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8497582455745742,
+      "note": ""
+     },
+     {
+      "field": "entries[6].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9558160039193264,
+      "note": "margin=0.018328"
+     },
+     {
+      "field": "entries[6].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.846605368373429,
+      "note": ""
+     },
+     {
+      "field": "entries[7].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9543191697151567,
+      "note": "margin=0.072907"
+     },
+     {
+      "field": "entries[7].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.861621375487005,
+      "note": ""
+     },
+     {
+      "field": "entries[8].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9639163616423525,
+      "note": "margin=0.036767"
+     },
+     {
+      "field": "entries[8].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8372998825786866,
+      "note": ""
+     },
+     {
+      "field": "entries[9].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9619795929089409,
+      "note": "margin=0.020508"
+     },
+     {
+      "field": "entries[9].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8636483342812862,
+      "note": ""
+     },
+     {
+      "field": "entries[10].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9599205967730838,
+      "note": "margin=0.020250"
+     },
+     {
+      "field": "entries[10].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.861621375487005,
+      "note": ""
+     },
+     {
+      "field": "entries[11].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9578889917113081,
+      "note": "margin=0.076765"
+     },
+     {
+      "field": "entries[11].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8496377407521171,
+      "note": ""
+     },
+     {
+      "field": "entries[12].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9642301563340163,
+      "note": "margin=0.038213"
+     },
+     {
+      "field": "entries[12].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8530439306244033,
+      "note": ""
+     },
+     {
+      "field": "entries[13].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9619339107547124,
+      "note": "margin=0.022532"
+     },
+     {
+      "field": "entries[13].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.846605368373429,
+      "note": ""
+     },
+     {
+      "field": "entries[14].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9592887212116025,
+      "note": "margin=0.019995"
+     },
+     {
+      "field": "entries[14].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8679479472924738,
+      "note": ""
+     },
+     {
+      "field": "entries[15].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9581034358878407,
+      "note": "margin=0.078564"
+     },
+     {
+      "field": "entries[15].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8340887197257645,
+      "note": ""
+     },
+     {
+      "field": "entries[16].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9583963550129706,
+      "note": "margin=0.036403"
+     },
+     {
+      "field": "entries[16].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8388571563976529,
+      "note": ""
+     },
+     {
+      "field": "entries[17].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9579465587064865,
+      "note": "margin=0.021121"
+     },
+     {
+      "field": "entries[17].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8191421731341751,
+      "note": ""
+     },
+     {
+      "field": "entries[18].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9558355863408876,
+      "note": "margin=0.020066"
+     },
+     {
+      "field": "entries[18].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.846605368373429,
+      "note": ""
+     },
+     {
+      "field": "entries[19].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9543263589518111,
+      "note": "margin=0.066890"
+     },
+     {
+      "field": "entries[19].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8543286427634298,
+      "note": ""
+     },
+     {
+      "field": "scroll_overlap",
+      "status": "ok",
+      "source": "verified_pixel_shift",
+      "confidence": 1.0,
+      "note": "shift_px=283;reason=verified_pixel_shift;requested_px=283.3"
+     },
+     {
+      "field": "scroll_alignment",
+      "status": "ok",
+      "source": "gutter_phase",
+      "confidence": 1.0,
+      "note": "correction_px=-0.6"
+     },
+     {
+      "field": "overlap_identity",
+      "status": "ok",
+      "source": "overlap_identity",
+      "confidence": 0.99708,
+      "note": "compared=4"
+     },
+     {
+      "field": "entries[20].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9601267540815678,
+      "note": "margin=0.036045"
+     },
+     {
+      "field": "entries[20].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8497582455745742,
+      "note": ""
+     },
+     {
+      "field": "entries[21].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9578578110213543,
+      "note": "margin=0.021755"
+     },
+     {
+      "field": "entries[21].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8530439306244033,
+      "note": ""
+     },
+     {
+      "field": "entries[22].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9561070423392428,
+      "note": "margin=0.022329"
+     },
+     {
+      "field": "entries[22].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.851518359917308,
+      "note": ""
+     },
+     {
+      "field": "entries[23].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9544027747024146,
+      "note": "margin=0.073076"
+     },
+     {
+      "field": "entries[23].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8490000022258637,
+      "note": ""
+     },
+     {
+      "field": "entries[24].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9598712383543369,
+      "note": "margin=0.036805"
+     },
+     {
+      "field": "entries[24].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8530439306244033,
+      "note": ""
+     },
+     {
+      "field": "entries[25].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9581373958113197,
+      "note": "margin=0.020767"
+     },
+     {
+      "field": "entries[25].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8388571563976529,
+      "note": ""
+     },
+     {
+      "field": "entries[26].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9557237578717832,
+      "note": "margin=0.019597"
+     },
+     {
+      "field": "entries[26].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8827864312809877,
+      "note": ""
+     },
+     {
+      "field": "entries[27].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9549427159318973,
+      "note": "margin=0.064921"
+     },
+     {
+      "field": "entries[27].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.861621375487005,
+      "note": ""
+     },
+     {
+      "field": "entries[28].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9597633344608028,
+      "note": "margin=0.038102"
+     },
+     {
+      "field": "entries[28].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8530439306244033,
+      "note": ""
+     },
+     {
+      "field": "entries[29].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9584270450937242,
+      "note": "margin=0.020478"
+     },
+     {
+      "field": "entries[29].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8628699344531221,
+      "note": ""
+     },
+     {
+      "field": "entries[30].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9564535102689156,
+      "note": "margin=0.019526"
+     },
+     {
+      "field": "entries[30].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8497582455745742,
+      "note": ""
+     },
+     {
+      "field": "entries[31].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9560724295040242,
+      "note": "margin=0.056982"
+     },
+     {
+      "field": "entries[31].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8340887197257645,
+      "note": ""
+     },
+     {
+      "field": "entries[32].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9648503301802926,
+      "note": "margin=0.036937"
+     },
+     {
+      "field": "entries[32].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.846605368373429,
+      "note": ""
+     },
+     {
+      "field": "entries[33].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.962198835197514,
+      "note": "margin=0.019786"
+     },
+     {
+      "field": "entries[33].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8372998825786866,
+      "note": ""
+     },
+     {
+      "field": "entries[34].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9606692578634283,
+      "note": "margin=0.020494"
+     },
+     {
+      "field": "entries[34].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.851518359917308,
+      "note": ""
+     },
+     {
+      "field": "scroll_overlap",
+      "status": "ok",
+      "source": "verified_pixel_shift",
+      "confidence": 1.0,
+      "note": "shift_px=181;reason=verified_pixel_shift;requested_px=304.3"
+     },
+     {
+      "field": "scroll_alignment",
+      "status": "ok",
+      "source": "gutter_phase",
+      "confidence": 1.0,
+      "note": "correction_px=-0.3"
+     },
+     {
+      "field": "overlap_identity",
+      "status": "ok",
+      "source": "overlap_identity",
+      "confidence": 0.994113,
+      "note": "compared=9"
+     },
+     {
+      "field": "entries[35].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9593589694033722,
+      "note": "margin=0.054748"
+     },
+     {
+      "field": "entries[35].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8782616004694167,
+      "note": ""
+     },
+     {
+      "field": "entries[36].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9595956550126425,
+      "note": "margin=0.035291"
+     },
+     {
+      "field": "entries[36].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8492560496093965,
+      "note": ""
+     },
+     {
+      "field": "entries[37].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9575442290969249,
+      "note": "margin=0.019843"
+     },
+     {
+      "field": "entries[37].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8340887197257645,
+      "note": ""
+     },
+     {
+      "field": "entries[38].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9557474054400448,
+      "note": "margin=0.018978"
+     },
+     {
+      "field": "entries[38].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8340887197257645,
+      "note": ""
+     },
+     {
+      "field": "entries[39].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.955305693772003,
+      "note": "margin=0.071744"
+     },
+     {
+      "field": "entries[39].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.837984066602335,
+      "note": ""
+     },
+     {
+      "field": "entries[40].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.957444093015817,
+      "note": "margin=0.032951"
+     },
+     {
+      "field": "entries[40].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8497582455745742,
+      "note": ""
+     },
+     {
+      "field": "entries[41].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9562470205899745,
+      "note": "margin=0.019134"
+     },
+     {
+      "field": "entries[41].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.851518359917308,
+      "note": ""
+     },
+     {
+      "field": "entries[42].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9537514856422054,
+      "note": "margin=0.016575"
+     },
+     {
+      "field": "entries[42].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8569289683579776,
+      "note": ""
+     },
+     {
+      "field": "entries[43].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.953760108310346,
+      "note": "margin=0.070053"
+     },
+     {
+      "field": "entries[43].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8607890853894685,
+      "note": ""
+     },
+     {
+      "field": "entries[44].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9459559997243981,
+      "note": "margin=0.472965"
+     },
+     {
+      "field": "entries[44].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8914717339161811,
+      "note": ""
+     },
+     {
+      "field": "scroll_overlap",
+      "status": "ok",
+      "source": "verified_no_motion",
+      "confidence": 1.0,
+      "note": "shift_px=0;reason=verified_no_motion;requested_px=326.1"
+     },
+     {
+      "field": "scan_coverage",
+      "status": "ok",
+      "source": "inventory_navigation",
+      "confidence": 1.0,
+      "note": "profile=tech_notes;terminal=True;ordered=True"
+     }
+    ],
+    "review_required": false
+   }
+  ]
+ },
+ "elapsed_seconds": 115.5,
+ "navigation_trace": [
+  {
+   "input": "filtermenu_button",
+   "cleanup": false
+  },
+  {
+   "input": "filter_tab",
+   "cleanup": false
+  },
+  {
+   "observe": "filter_tab",
+   "active": true,
+   "attempt": 1
+  },
+  {
+   "input": "filter_reset_button",
+   "cleanup": false
+  },
+  {
+   "observe": "category",
+   "step": "reset",
+   "states": {
+    "eleph_filter": "all",
+    "note_filter": "all",
+    "bd_filter": "all",
+    "ooparts_filter": "all",
+    "reports_filter": "all",
+    "presents_filter": "all",
+    "coin_filter": "all",
+    "consumable_filter": "all",
+    "collectible_filter": "all",
+    "crafting_filter": "all",
+    "other_filter": "all"
+   },
+   "attempt": 1
+  },
+  {
+   "input": "note_filter",
+   "cleanup": false
+  },
+  {
+   "observe": "category",
+   "step": "note_filter",
+   "states": {
+    "eleph_filter": "empty",
+    "note_filter": "selected",
+    "bd_filter": "empty",
+    "ooparts_filter": "empty",
+    "reports_filter": "empty",
+    "presents_filter": "empty",
+    "coin_filter": "empty",
+    "consumable_filter": "empty",
+    "collectible_filter": "empty",
+    "crafting_filter": "empty",
+    "other_filter": "empty"
+   },
+   "attempt": 1
+  },
+  {
+   "input": "sort_tab",
+   "cleanup": false
+  },
+  {
+   "observe": "sort_tab",
+   "active": true,
+   "attempt": 1
+  },
+  {
+   "observe": "sort_rule_check",
+   "score": 0.9200774546916859,
+   "attempt": 1
+  },
+  {
+   "input": "filter_confirm_button",
+   "cleanup": false
+  },
+  {
+   "input": "drag_path",
+   "distance": 0.393473,
+   "hold": 0.8
+  },
+  {
+   "shift_px": 283,
+   "requested_px": 283.3,
+   "residual": 5.13876606894293,
+   "attempt": 1
+  },
+  {
+   "input": "drag_path",
+   "distance": 0.422611,
+   "hold": 0.8
+  },
+  {
+   "shift_px": 181,
+   "requested_px": 304.3,
+   "residual": 4.6110007272349485,
+   "attempt": 1
+  },
+  {
+   "input": "drag_path",
+   "distance": 0.452861,
+   "hold": 0.8
+  },
+  {
+   "shift_px": 0,
+   "requested_px": 326.1,
+   "residual": 0.331895872715816,
+   "attempt": 1
+  },
+  {
+   "input": "drag_path",
+   "distance": 0.452861,
+   "hold": 0.8
+  },
+  {
+   "shift_px": 0,
+   "requested_px": 326.1,
+   "residual": 6.821034183994959,
+   "attempt": 2
+  }
+ ],
+ "inputs_and_captures": [
+  {
+   "capture": "frame-00.png"
+  },
+  {
+   "input": "click",
+   "x": 0.841015,
+   "y": 0.159027,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-01.png"
+  },
+  {
+   "input": "click",
+   "x": 0.113281,
+   "y": 0.21493,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-02.png"
+  },
+  {
+   "input": "click",
+   "x": 0.867773,
+   "y": 0.226042,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-03.png"
+  },
+  {
+   "input": "click",
+   "x": 0.227149,
+   "y": 0.488889,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-04.png"
+  },
+  {
+   "input": "click",
+   "x": 0.117383,
+   "y": 0.289583,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-05.png"
+  },
+  {
+   "capture": "frame-06.png"
+  },
+  {
+   "input": "click",
+   "x": 0.595898,
+   "y": 0.827778,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-07.png"
+  },
+  {
+   "capture": "frame-08.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-09.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-10.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-11.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-12.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.4285,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-13.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.4285,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-14.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.4285,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-15.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.4285,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-16.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.4285,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-17.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-18.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-19.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-20.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-21.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-22.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.709,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-23.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.709,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-24.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.709,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-25.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.709,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-26.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.709,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-27.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.607731
+    ],
+    [
+     0.975,
+     0.476574
+    ],
+    [
+     0.975,
+     0.345416
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-28.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.457639,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-29.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.457639,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-30.png"
+  },
+  {
+   "capture": "frame-31.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.457639,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-32.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.457639,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-33.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.457639,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-34.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.597839,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-35.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.597839,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-36.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.597839,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-37.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.597839,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-38.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.597839,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-39.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.738139,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-40.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.738139,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-41.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.738139,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-42.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.738139,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-43.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.738139,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-44.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.598018
+    ],
+    [
+     0.975,
+     0.457148
+    ],
+    [
+     0.975,
+     0.316278
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-45.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.628089,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-46.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.628089,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-47.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.628089,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-48.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.628089,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-49.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.628089,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-50.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5844,
+   "y": 0.768389,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-51.png"
+  },
+  {
+   "input": "click",
+   "x": 0.6695,
+   "y": 0.768389,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-52.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7547,
+   "y": 0.768389,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-53.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8398,
+   "y": 0.768389,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-54.png"
+  },
+  {
+   "input": "click",
+   "x": 0.925,
+   "y": 0.768389,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-55.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.587935
+    ],
+    [
+     0.975,
+     0.436981
+    ],
+    [
+     0.975,
+     0.286027
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-56.png"
+  },
+  {
+   "input": "drag_path",
+   "path": [
+    [
+     0.975,
+     0.75
+    ],
+    [
+     0.975,
+     0.738889
+    ],
+    [
+     0.975,
+     0.587935
+    ],
+    [
+     0.975,
+     0.436981
+    ],
+    [
+     0.975,
+     0.286027
+    ]
+   ],
+   "hold": 0.8
+  },
+  {
+   "capture": "frame-57.png"
+  }
+ ],
+ "frames": {
+  "frame-00.png": "e279b84acaa4ca81471803aff5f72af29e68fd88c236e12f5977d3fb4563493b",
+  "frame-01.png": "509f6f00196d9b328eb9b35f9dc92a6152644c6d23e8741f873f4b8423e700f9",
+  "frame-02.png": "ac0a72b3313e85651caaa3527b8c3dfab129bf25ac7bdc2e3fab5322279947ce",
+  "frame-03.png": "79c92c993cac0c0483d4cf2ff9cfb15b2fce995c15c66b7160f776bf6f3ade8a",
+  "frame-04.png": "203a13db1436aa63015664d6c21f2bfa49f072f5259794ab8da48728cbd6adf6",
+  "frame-05.png": "eb724bf02a6cb001e66de7bbe135fe1fb43332e5812e9e644c7ac98dfaeda883",
+  "frame-06.png": "e860da03a6613917e504c7615d67c89e3d980a6b2fb422603c98e486ce0cb7b3",
+  "frame-07.png": "b5dfd16724197d694b411566c2d44f56a4a9dc4e6e7019b9d392f9ebb9ebc8d4",
+  "frame-08.png": "f43faa87747c6c0493eb0e14735f9ee8a5d15d23c07504f387a3ed405adf2e5a",
+  "frame-09.png": "6f3912ecc9360978d4b0b4b302d309f5c25866195a24fdf2d8739fd6f2c3f307",
+  "frame-10.png": "21d8d86b6b92254f00c5fa44d315e5e67e0f72ff46a78588d236fb647f27aa60",
+  "frame-11.png": "41aefff4c193c7507c933778ba085db13224353a247fe4d5bdc29a9817ec8fcd",
+  "frame-12.png": "e1f39a905ed306d38ab44be29f81caa7dd874b867918b7eef2b9194e688b89fd",
+  "frame-13.png": "bd3a2f91a046b93833247a87282e22b48ecd4bef26632c2cd292c2822987ad93",
+  "frame-14.png": "23fd71ae664dc54109eeeef838440d2dfd6d34846efa2c0f65805d26811dd088",
+  "frame-15.png": "5b88dc7d3de73f50099f3eaaf644d5745f3bb6ea9967b67c7b20e72ae8b401c0",
+  "frame-16.png": "5940e8673ba3ea04cf55e1af69cf751a3614530d3abb50ede49570b800c86ab2",
+  "frame-17.png": "e4459b14ab517cd2e3eaea6ca9dc6fe83faad09d61aadadead3b244256ae3cdf",
+  "frame-18.png": "f95ce85be7592fd25b827024d8e333ff0fc455c3d21434b1724cb1186b86150e",
+  "frame-19.png": "d84e8ec67db9ea32801da661c6e3ce129c4d7883b90a0f38da7dbb42ef01dbd0",
+  "frame-20.png": "718b765bf20962667db8cf27e9cad90c552fcfe9c8813e432e254864f929e600",
+  "frame-21.png": "3d6034d109a7e2767b42c0e8779eeada65fd7f14b2bf684600e21ed59a09f8f0",
+  "frame-22.png": "b2345722b0f21c2c8e9ae44d13d18f8302f56db8dc89291c43ae57bb37004fda",
+  "frame-23.png": "943f2b9a9f8bce4a9c4a148db208bbc25521d978444abdc80dbc04c837c8d2e4",
+  "frame-24.png": "813b1d973283793a5eab64abcb24ea7779e4a29dcab350654b1c041ba04c2340",
+  "frame-25.png": "53bf29da1c1fec97b6f9976a14847b91b39e457c4e5332ee6c8eb8e62a099048",
+  "frame-26.png": "12ffe77fe727ea310d3e4785670b1ebb997becd0ff0519571d009dc9b2e222bb",
+  "frame-27.png": "4c331dccfe528027055fd1a888c827652bbe252e8d1d9bf5d54f81b948929fec",
+  "frame-28.png": "84475d2c4d059da873cdfe637f6f54a989c746f89fd7a2c94de6e8402c7eb241",
+  "frame-29.png": "82e61fea2716139761a68d316a6617edbb22aaf5a977d76a93ccab5985bb725e",
+  "frame-30.png": "50f840d96d55af30527fbd4c9ba5c01656f7dfe99831429b86fc09d40e831c2d",
+  "frame-31.png": "6b2893156bc618df3c171f2d47c469b27b1bf8220d3142ba56c8ecd77dee16b7",
+  "frame-32.png": "46a335202a8b4bd444966ba32ac10bda8edec69c7658dfa251f534aa5d5b252f",
+  "frame-33.png": "820182717b87c88a5ab817efdbd5802292e8bc352e956605f9219311b58bb448",
+  "frame-34.png": "d177120e08eb53d4aca83db2a86c8c9ae116baca963088e904f29a4a4132b619",
+  "frame-35.png": "324e5cf3b5593a952a2682b25d2d14b3faa5731d8223e9217e4be0bc9c6a363e",
+  "frame-36.png": "99dbfede9a2189d9bcc9fb459dee09c152f9133e0093a1e55aa7a54d0296367c",
+  "frame-37.png": "68a404c1a36242f877a0ba1adf4501bcc405bdc748dc91d16f429c4127135304",
+  "frame-38.png": "a1b27797cceff3fd731cb555bbc7a0bca089760e71657f92e13b0b2631580427",
+  "frame-39.png": "03487d01ae3b3c4a07ed87bac5095b25eacbe3a5bb0d218226f03888cbfbe89f",
+  "frame-40.png": "a1873bc7aa62b6614c5dd173dec2d980eda8ae11f4ddc1961658967f58017844",
+  "frame-41.png": "1e7ee6345517f75495c7d228efb9e2be29cb9346127262dd6141ec435ac6eab0",
+  "frame-42.png": "cc3068c77670c08a096330834221250be8b31c362739a2190588810dce9b5c73",
+  "frame-43.png": "455effedbd629663f23cd218576561002ad311dd76a9f6764f950e733abc87eb",
+  "frame-44.png": "1e4e12397bc2bcff33f40bed52129eca5a157a611ae53342075d1fa02c3e85fc",
+  "frame-45.png": "cf5056e1dbf9a1921d9d4885788e024704eb7e053742700dc67f0780d180b068",
+  "frame-46.png": "f7d188ed1781c2adcec48a987b0ba1665a279f23c5430f30b06ea3df32abeb9c",
+  "frame-47.png": "27cbc379e5025de01a5b5c4926d149aa8d212de118e7afb2e228346c8058f4c6",
+  "frame-48.png": "51c689527032d13c08fe536f94ee113c7324ae74d25b393b419c9bed150afcfc",
+  "frame-49.png": "d0694b4e23bb16002fc8e6b0bf64b42977b708ba855944532e53dc962d37e56a",
+  "frame-50.png": "e982bf80d61df0e5e3e71ab5fb62c6e58b40e30cfe1a356231e3f228ca25fc27",
+  "frame-51.png": "77dd467d46c66ff6c8a09c8f974ff7cc42741bf2ed99c23b2ba873bc4112cf36",
+  "frame-52.png": "b424c8e007df8fea084b56db09c2fe4e9ec68617dd764f79c742259578967196",
+  "frame-53.png": "959aaefa23e2ec58e7d3e5f9804c5c7f3e1f33a12ca7340b45230d785805cbeb",
+  "frame-54.png": "9bd2280aad81ad17731d82331d5640e95b583ee3b808eefc575b8891fa930a67",
+  "frame-55.png": "5acbdd5bd06b3c816b1cb29ccd965a1b5cb1124ad14987152a08f8b539c51e6b",
+  "frame-56.png": "26dc9a2ba1b672b1ee7050f0345e1953699c5296c276b0bd0a0a3419c458c2e4",
+  "frame-57.png": "cbb09215fafc444048a95d95fb455c6fd1effc67e8e6a03c7a2cc77f4ee6557d"
+ }
+}

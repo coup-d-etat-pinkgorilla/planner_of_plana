@@ -1,0 +1,11 @@
+W4 focused verification: PASS
+- JSON syntax and generated table rows match both canonical JSON and artifact copies.
+- Prior JSON20 match19 frozen lock hashes plus existing CCL evidence hash.
+- Evidence import_extract.check_claims:4 claims, mismatch0 (read only).
+- extract_jp.py and all W4 Python artifacts parse successfully.
+- Reconstructed pre-change extract_jp.py SHA equals existing S2 tool SHA e35f65f1e2f5488ca76b4f7d1db3d63db90f3d8e587fd214a7ba55b03f71143c; difference is only TABLES addition/comment.
+- disassembly1 function/1 round, exact unwind; getter3h; available count unconfirmed.
+- git diff --check with GIT_CONFIG_GLOBAL=NUL and GIT_CONFIG_NOSYSTEM=1 exited0; untracked/ignored extractor change is certified by baseline reconstruction/patch instead.
+MASTER_REQUIRED: root owns the already-started common run: cd backend; py -3.11 -m unittest discover -s tests -v. No repeat run requested.
+MASTER_REQUIRED: execute import-command.txt after artifact verification; append store-status-append.md only after import success; keep ba-data.lock unchanged.
+MASTER_REQUIRED: one scoped W4 commit using commit-files.json after common Python green.

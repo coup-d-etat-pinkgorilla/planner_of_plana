@@ -73,10 +73,13 @@ cd frontend
 ## 검증
 
 ```powershell
-flutter analyze
-flutter test
+# v7 폴더에서. analyze → golden 외 테스트 → golden 비교 → almanac validate → git diff --check를 차례로 실행
+powershell -ExecutionPolicy Bypass -File .\frontend\tool\fe_gate.ps1
 flutter build windows --release
 ```
+
+맨 `flutter test`는 golden 테스트를 프로세스 E2E 테스트와 병렬로 돌려 E2E가 시간 초과될 수 있으므로 쓰지 않는다.
+golden은 화면을 의도적으로 바꾸는 slice에서만 사용자 PC에서 `fe_gate.ps1 -UpdateGoldens`로 다시 만든다.
 
 ## v7 최상위 실행 파일과 자동 동기화
 

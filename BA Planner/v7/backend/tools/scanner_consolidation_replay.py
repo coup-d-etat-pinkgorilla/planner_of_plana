@@ -15,6 +15,8 @@ from typing import Any
 
 from PIL import Image
 
+from tools.scanner_golden_dump import dump_comparison
+
 from core.inventory_detail_recovery import InventoryDetailRecognizer, InventoryDetailRecovery
 from core.inventory_navigation import InventoryNavigation
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -129,10 +131,91 @@ class ReplayCapture:
         self._move({"input": "drag_scroll", "start": [round(v, 6) for v in start],
                     "end": [round(v, 6) for v in end]}, ["drag"])
 
+    def drag_path(self, _target, path, hold):
+        self._move({"input": "drag_path", "path": [[round(v, 6) for v in point] for point in path],
+                    "hold": hold}, ["drag"])
+
     def close(self) -> None:
         for image in self.images.values():
             image.close()
         self.images.clear()
+
+
+class ReplayCancel(Event):
+    """A cancel token that is never set; its settle/retry pauses return at once in replay."""
+
+    def wait(self, timeout=None):
+        return self.is_set()
+
+
+class ReplayDivergence(AssertionError):
+    """The code under replay sent an input the locked recording did not contain."""
+
+
+class LockedReplayCapture:
+    """Serves a live recording's captures in order and requires the exact recorded inputs.
+
+    The recording is ``verify_inventory_c2_live.py`` output: ``inputs_and_captures`` in order and
+    the distinct frames it saved. Any different, extra or missing input fails the replay, so a
+    behavior-preserving change must reproduce the live session exactly (C5 detail-path scenario).
+    """
+
+    def __init__(self, recording: Path) -> None:
+        trace = json.loads((recording / "trace.json").read_text(encoding="utf-8"))
+        self.recording = recording
+        self.events = list(trace["inputs_and_captures"])
+        self.position = 0
+        self.inputs: list[dict[str, Any]] = []
+        self.captures: list[str] = []
+
+    def _next(self, kind: str) -> dict[str, Any]:
+        if self.position >= len(self.events):
+            raise ReplayDivergence(f"recording exhausted at event {self.position} ({kind})")
+        event = self.events[self.position]
+        self.position += 1
+        return event
+
+    def _frame(self) -> Image.Image:
+        event = self._next("capture")
+        if "capture" not in event:
+            raise ReplayDivergence(f"event {self.position - 1}: code captured, recording has {event}")
+        self.captures.append(event["capture"])
+        with Image.open(self.recording / event["capture"]) as source:
+            return source.convert("RGB")
+
+    def _input(self, record: dict[str, Any]) -> None:
+        event = self._next(record["input"])
+        expected = {key: event.get(key) for key in record}
+        if expected != record:
+            raise ReplayDivergence(f"event {self.position - 1}: code sent {record}, recording has {event}")
+        self.inputs.append(record)
+
+    def capture(self, _target, *, cancel=None, timeout=2.0):
+        return self._frame()
+
+    def wait_stable(self, _target, cancel: Event, timeout: float = 2.0):
+        return self._frame()
+
+    def click(self, target, x_ratio, y_ratio):
+        self._input({"input": "click", "x": round(float(x_ratio), 6), "y": round(float(y_ratio), 6),
+                     "cleanup": bool(target.get("_scanner_cleanup", False))})
+
+    def scroll(self, _target, delta):
+        self._input({"input": "scroll", "delta": delta})
+
+    def drag_scroll(self, _target, start, end):
+        self._input({"input": "drag_scroll", "start": list(start), "end": list(end)})
+
+    def drag_path(self, _target, path, hold):
+        self._input({"input": "drag_path", "path": [list(point) for point in path], "hold": hold})
+
+    def press_key(self, _target, key):
+        self._input({"input": "key", "key": key})
+        return True
+
+    def close(self) -> None:
+        if self.position != len(self.events):
+            raise ReplayDivergence(f"code stopped at event {self.position} of {len(self.events)}")
 
 
 def build_student_matcher(capture, catalog, answer_samples):
@@ -209,6 +292,21 @@ def _close_images(value: Any) -> None:
 
 def verify_inputs(scenario: dict[str, Any]) -> list[str]:
     """Return screen names whose recorded frame is missing or differs from its pinned digest."""
+    if scenario.get("replay") == "locked":
+        recording = V7_ROOT / scenario["recording"]
+        trace = recording / "trace.json"
+        if not trace.is_file() or file_sha256(trace) != scenario["trace_sha256"]:
+            return ["trace.json"]
+        problems = []
+        for name, digest in json.loads(trace.read_text(encoding="utf-8"))["frames"].items():
+            path = recording / name
+            if not path.is_file():
+                problems.append(name)
+                continue
+            with Image.open(path) as image:
+                if hashlib.sha256(image.convert("RGB").tobytes()).hexdigest() != digest:
+                    problems.append(name)
+        return problems
     problems = []
     for name, screen in scenario["screens"].items():
         path = V7_ROOT / screen["path"]
@@ -219,7 +317,8 @@ def verify_inputs(scenario: dict[str, Any]) -> list[str]:
 
 def run_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
     catalog = RecognitionAssetCatalog()
-    capture = ReplayCapture(scenario, control_index(catalog, scenario["scan_kind"]))
+    capture = (LockedReplayCapture(V7_ROOT / scenario["recording"]) if scenario.get("replay") == "locked"
+               else ReplayCapture(scenario, control_index(catalog, scenario["scan_kind"])))
     progress_log: list[Any] = []
 
     def progress(current, total, message, feedback=None):
@@ -235,7 +334,7 @@ def run_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
         result: Any = None
         try:
             try:
-                result = matcher(target, Event(), progress)
+                result = matcher(target, ReplayCancel(), progress)
                 output = normalize(result)
             except ScannerError as exc:
                 output = {"raised": normalize(exc)}
@@ -269,6 +368,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Compare or deliberately rewrite C0 scanner golden fixtures.")
     parser.add_argument("--write", action="store_true",
                         help="overwrite golden files; only for a phase whose status records the intended diff")
+    parser.add_argument("--dump-dir", help="save full expected/actual JSON and diffs (or set BA_PLANNER_GOLDEN_DUMP_DIR)")
     parser.add_argument("scenario", nargs="*", help="scenario ids (default: all)")
     args = parser.parse_args()
     scenarios = [s for s in load_scenarios() if not args.scenario or s["id"] in args.scenario]
@@ -279,7 +379,9 @@ def main() -> None:
         text = dumps(run_scenario(scenario))
         path = golden_path(scenario["id"])
         # autocrlf checkouts may turn LF into CRLF; content, not line endings, is the contract.
-        same = path.is_file() and path.read_text(encoding="utf-8").replace("\r\n", "\n") == text
+        expected = path.read_text(encoding="utf-8").replace("\r\n", "\n") if path.is_file() else ""
+        same = path.is_file() and expected == text
+        dump_comparison(scenario["id"], expected, text, args.dump_dir)
         if args.write and not same:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8", newline="\n")

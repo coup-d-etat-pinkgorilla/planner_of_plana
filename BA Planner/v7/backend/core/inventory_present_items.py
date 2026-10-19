@@ -1,4 +1,4 @@
-"""Generated F10 present identity order; do not hand-edit."""
+"""Generated F10 present identity order (ExcelDB Id, D23); do not hand-edit."""
 
 PRESENT_ORDERED_ITEMS: tuple[tuple[str, str], ...] = (
     ('Item_Icon_Favor_0', '웨이브캣 배게'),
@@ -49,13 +49,13 @@ PRESENT_ORDERED_ITEMS: tuple[tuple[str, str], ...] = (
     ('Item_Icon_Favor_Lv2_10', '음악 연주회 입장권'),
     ('Item_Icon_Favor_Lv2_11', '하루 세 번 덤벨 세트'),
     ('Item_Icon_Favor_Lv2_12', '보드 게임 <더 인생>'),
-    ('Item_Icon_Favor_Lv2_Package', '아름다운 꽃다발'),
     ('Item_Icon_Favor_Lv2_Special', '싱그러운 꽃다발'),
-    ('Item_Icon_Favor_Random', 'Item_Icon_Favor_Random'),
-    ('Item_Icon_Favor_Random_Lv2', 'Item_Icon_Favor_Random_Lv2'),
-    ('Item_Icon_Favor_Selection', 'Item_Icon_Favor_Selection'),
-    ('Item_Icon_Favor_SSR_1', '반짝이는 꽃다발'),
+    ('Item_Icon_Favor_Lv2_Package', '아름다운 꽃다발'),
     ('Item_Icon_Favor_SSR_2', '하츠네 미쿠의 포토 카드'),
+    ('Item_Icon_Favor_SSR_1', '반짝이는 꽃다발'),
+    ('Item_Icon_Favor_Random', 'Item_Icon_Favor_Random'),
+    ('Item_Icon_Favor_Selection', 'Item_Icon_Favor_Selection'),
+    ('Item_Icon_Favor_Random_Lv2', 'Item_Icon_Favor_Random_Lv2'),
     ('Item_Icon_Favor_SSR_GL_1', '프랭크 버거 기념카드'),
     ('Item_Icon_Favor_SSR_GL_2', '달콤 커피 기념카드'),
     ('Item_Icon_Favor_SSR_GL_3', '현대백화점 PEER 기념 카드'),
@@ -65,15 +65,15 @@ PRESENT_ORDERED_ITEMS: tuple[tuple[str, str], ...] = (
     ('Item_Icon_Favor_SSR_GL_7', 'GS25 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_8', '파파존스 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_9', '넥슨 30주년 기념 카드'),
-    ('Item_Icon_Favor_SSR_GL_10', '사운드 아카이브 기념 티켓'),
-    ('Item_Icon_Favor_SSR_GL_11', '무신사 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_12', '대한적십자사 기념 카드'),
+    ('Item_Icon_Favor_SSR_GL_11', '무신사 기념 카드'),
+    ('Item_Icon_Favor_SSR_GL_10', '사운드 아카이브 기념 티켓'),
     ('Item_Icon_Favor_SSR_GL_13', 'GS25 기념 도시락'),
     ('Item_Icon_Favor_SSR_GL_14', 'VE WONG 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_15', 'BEARHOUSE 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_16', '맘스터치 기념 세트'),
     ('Item_Icon_Favor_SSR_GL_17', 'CuteBoy 기념 카드'),
     ('Item_Icon_Favor_SSR_GL_18', '롯데시네마 기념 콤보'),
-    ('Item_Icon_Favor_SSR_GL_19', '피크닉 기념 스위트 드링크'),
     ('Item_Icon_Favor_SSR_GL_20', 'Anime Expo 기념 카드'),
+    ('Item_Icon_Favor_SSR_GL_19', '피크닉 기념 스위트 드링크'),
 )

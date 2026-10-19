@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import '../../services/app_service.dart';
+import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 
 class RepositoryProfilePanel extends StatefulWidget {
@@ -87,7 +88,7 @@ class _RepositoryProfilePanelState extends State<RepositoryProfilePanel> {
   }
 
   String _key(String action) =>
-      '$action-${DateTime.now().microsecondsSinceEpoch}';
+      newIdempotencyKey(action);
 
   Future<void> _create() async {
     final name = await _ask('프로필 만들기');

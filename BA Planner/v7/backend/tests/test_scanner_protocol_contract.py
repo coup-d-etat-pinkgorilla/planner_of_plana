@@ -21,8 +21,19 @@ class ScannerProtocolContractTests(unittest.TestCase):
 
     def test_fixture_version_and_case_counts(self) -> None:
         self.assertEqual(1, self.fixture["version"])
-        self.assertEqual(17, len(self.fixture["cases"]))
-        self.assertEqual(10, sum(case["valid"] for case in self.fixture["cases"]))
+        self.assertEqual(21, len(self.fixture["cases"]))
+        self.assertEqual(14, sum(case["valid"] for case in self.fixture["cases"]))
+
+    def test_review_confirmation_is_additive_and_rejects_invalid_lists(self):
+        definition = next(item for item in self.schema["$defs"]["request"]["allOf"][1]["oneOf"]
+                          if item["properties"]["method"].get("const") == "scanner.candidate.review")
+        confirmation = definition["properties"]["payload"]["properties"]["confirmed_fields"]
+        validator = Draft202012Validator(confirmation)
+        for fields in ([], ["bond_rank"], ["bond_rank", "level"]):
+            self.assertEqual([],list(validator.iter_errors(fields)))
+        for fields in (None,"level",[False],["level","level"],[""]):
+            self.assertTrue(list(validator.iter_errors(fields)))
+        self.assertNotIn("confirmed_fields",definition["properties"]["payload"]["required"])
 
     def test_every_fixture_has_expected_schema_result(self) -> None:
         for case in self.fixture["cases"]:

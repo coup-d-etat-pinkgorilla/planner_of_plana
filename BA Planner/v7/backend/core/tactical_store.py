@@ -12,6 +12,8 @@ import uuid
 from core import student_meta
 from core.repository_dto import canonical_json
 from core.repository_store import JsonRepository, RepositoryError
+from core.repository_transaction import locked
+from core.repository_participant_lock import ParticipantLease, acquire_participant, release_participant
 
 
 _PROFILE_ID = re.compile(r"^[0-9a-f]{24}$")
@@ -159,8 +161,12 @@ class TacticalStore:
     def _owned(self, profile_id: str) -> set[str]:
         return {item["student_id"] for item in self.repository.get_state(profile_id)["students"]}
 
-    def _read(self, profile_id: str) -> dict[str, Any]:
-        self.repository.get_state(profile_id)  # profile existence is authoritative
+    @locked(RepositoryError)
+    def _read(self, profile_id: str, *, migrate_profile: bool = True) -> dict[str, Any]:
+        if migrate_profile:
+            self.repository.get_state(profile_id)  # profile existence is authoritative
+        else:
+            self.repository._profile(profile_id)  # validation only; never migrate plan data
         path = self._path(profile_id)
         if not path.exists():
             return self._empty(profile_id)
@@ -219,12 +225,8 @@ class TacticalStore:
         value = self._read(profile_id)
         return {key: value[key] for key in ("version", "profile_id", "revision", "matches", "jokbo")}
 
-    def _lock(self) -> int:
-        self.root.mkdir(parents=True, exist_ok=True)
-        try:
-            return os.open(self.root / ".tactical.lock", os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError as error:
-            raise RepositoryError("repository_busy", "another tactical writer holds the lock", retryable=True) from error
+    def _lock(self) -> ParticipantLease:
+        return acquire_participant(self.root, ".tactical.lock", RepositoryError)
 
     def _write(self, path: Path, value: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -256,6 +258,9 @@ class TacticalStore:
                 if not isinstance(cached, dict) or cached.get("fingerprint") != fingerprint:
                     raise RepositoryError("idempotency_conflict", "idempotency key was used for another tactical mutation")
                 return cached["response"]
+            from core.tactical_fb6_store import v1_read_only
+            if v1_read_only(self.root, profile_id):
+                raise RepositoryError("tactical_v1_read_only", "legacy tactical writes are disabled after v2 migration")
             if value["revision"] != expected_revision:
                 raise RepositoryError("revision_conflict", "expected tactical revision is stale",
                                       details={"current_revision": value["revision"]})
@@ -266,8 +271,7 @@ class TacticalStore:
             self._write(self._path(profile_id), value)
             return response
         finally:
-            os.close(descriptor)
-            (self.root / ".tactical.lock").unlink(missing_ok=True)
+            release_participant(descriptor)
 
     def upsert_match(self, profile_id: str, match: object, revision: int, key: str) -> dict[str, Any]:
         def change(state: dict[str, Any], owned: set[str]) -> None:

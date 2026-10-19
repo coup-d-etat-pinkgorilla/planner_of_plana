@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "method": "repository.profile.delete",
+  "request": {
+    "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+    "expected_revision": 3,
+    "idempotency_key": "delete-fixture"
+  },
+  "response": {
+    "revision": 4
+  },
+  "wire_shape_changed": false,
+  "targets": [
+    "catalog.json",
+    "profiles/aaaaaaaaaaaaaaaaaaaaaaaa.json",
+    "tactical/aaaaaaaaaaaaaaaaaaaaaaaa.json",
+    "tactical/aaaaaaaaaaaaaaaaaaaaaaaa.v2.json",
+    "scenarios/aaaaaaaaaaaaaaaaaaaaaaaa.json",
+    "presets/aaaaaaaaaaaaaaaaaaaaaaaa.json",
+    "tactical-share/aaaaaaaaaaaaaaaaaaaaaaaa.v1.json"
+  ],
+  "absent_optional": "skip",
+  "consent": "same_confirmed_delete",
+  "recovery": {
+    "prepared": "before",
+    "committed": "after"
+  },
+  "same_retry": "original_response",
+  "changed_revision_retry": "idempotency_conflict",
+  "other_key_after_delete": "profile_not_found",
+  "create_same_deleted_id": "idempotency_conflict"
+}

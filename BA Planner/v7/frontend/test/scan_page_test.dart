@@ -100,7 +100,7 @@ void main() {
     },
   );
 
-  testWidgets('full student scan docks before start and restores on terminal', (
+  testWidgets('full student scan keeps the planner window (no dock, FE8-g2)', (
     tester,
   ) async {
     final service = MockAppService();
@@ -121,13 +121,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('scan-start')));
     await tester.pump();
 
-    expect(dock.dockedTargets, ['mock-window']);
+    expect(dock.dockedTargets, isEmpty);
     expect(dock.restoreCalls, 0);
-    expect(companions.whereType<ScanCompanionState>(), isNotEmpty);
+    expect(companions, isEmpty);
 
     await tester.pump(const Duration(milliseconds: 35));
-    expect(dock.restoreCalls, 1);
-    expect(companions.last, isNull);
+    expect(find.text('Outcome: completed'), findsOneWidget);
+    expect(dock.dockedTargets, isEmpty);
+    expect(dock.restoreCalls, 0);
+    expect(companions, isEmpty);
   });
 
   testWidgets('loading, empty, error, disconnected and refresh are distinct', (
@@ -198,6 +200,38 @@ void main() {
     },
   );
 
+  testWidgets('inventory unknown slot is labeled inside the scan workspace', (
+    tester,
+  ) async {
+    final service = MockAppService(
+      scannerScenario: MockScannerScenario.inventoryUnknown,
+    );
+    addTearDown(service.dispose);
+    await tester.pumpWidget(_subject(service));
+    await tester.pumpAndSettle();
+    await _selectTarget(tester, 'mock-window');
+    await tester.tap(find.text('재고'));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('scan-inventory-profile')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('scan-start')));
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump();
+
+    final card = find.byKey(const ValueKey('inventory-unresolved-1'));
+    await _reveal(tester, card);
+    expect(find.textContaining('Item_Icon_ExpItem_1 81%'), findsOneWidget);
+    await tester.tap(find.byType(ChoiceChip));
+    await tester.pump();
+    await tester.tap(find.text('이번 세션만'));
+    await tester.pumpAndSettle();
+
+    expect(card, findsNothing);
+    expect(find.textContaining('이번 실행의 세션 은행'), findsOneWidget);
+  });
+
   testWidgets(
     'student problem result stays in scan workspace and revalidates green',
     (tester) async {
@@ -250,6 +284,16 @@ void main() {
         find.byKey(const ValueKey('scan-student-apply-mock-candidate-1')),
         findsNothing,
       );
+      await tester.tap(
+        find.byKey(const ValueKey('scan-student-edit-mock-candidate-1')),
+      );
+      await tester.pump();
+      final levelConfirmation = find.byKey(
+        const ValueKey('scan-student-confirm-level'),
+      );
+      await _reveal(tester, levelConfirmation);
+      await tester.tap(levelConfirmation);
+      await _reveal(tester, revalidate);
       await tester.tap(revalidate);
       await tester.pump(const Duration(milliseconds: 100));
       expect(
@@ -686,7 +730,8 @@ class _SnapshotMockService extends MockAppService {
 
   @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) async {
-    final candidateKind = mismatch ? ScannerKind.inventory : session.kind;
+    // 다른 탭으로 넘기는 후보는 전술 로비뿐이다(FE8-g5b): 학생 세션의 전술 로비 후보로 종류 불일치를 만든다.
+    final candidateKind = mismatch ? ScannerKind.tacticalLobby : session.kind;
     final candidate = ScannerCandidate(
       id: 'snapshot-candidate',
       sessionId: session.id,

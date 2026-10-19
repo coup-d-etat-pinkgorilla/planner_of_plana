@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/scanner-student-progress-fe8g2-v1.schema.json",
+  "title": "FE8-g2 student progress existing wire subset",
+  "$comment": "No new transport fields. Identifying feedback is observational, not an approvable candidate. Live growth values and early candidate delivery are not guaranteed.",
+  "allOf": [
+    {
+      "$ref": "https://ba-planner.local/contracts/scanner-protocol-v1.schema.json#/$defs/event"
+    },
+    {
+      "properties": {
+        "payload": {
+          "properties": {
+            "scan_kind": {
+              "const": "student"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -12,6 +12,38 @@ from typing import Any
 from PIL import Image, ImageStat
 from core.scanner_matchers import image_similarity
 from core.scanner_session import ScannerError
+from core.user_input_guard import UserInputGuard
+from core.scanner_pause_control import controlled_call
+from core.scanner_target_metadata import target_metadata, window_identity
+
+
+def _guarded(method):
+    """D21: one scanner input is one guarded step (wait for user idleness; user input during it is input_busy)."""
+    def wrapper(self, target, *args):
+        def perform():
+            control = None if target.get('_scanner_cleanup', False) else target.get('_scanner_control')
+            options = {'pause_on_input': True, 'input_detected': control.input_detected} if control is not None else {}
+            completed = False
+            try:
+                with self._guard.step(target.get("_scanner_cancel"), **options):
+                    result = method(self, target, *args)
+                    completed = True
+                return result
+            except ScannerError as exc:
+                if control is not None and completed and exc.code == 'input_busy' and exc.details.get('performed'):
+                    control.pause('input_detected')
+                    return result
+                raise
+        return controlled_call(target, perform)
+    wrapper.__name__, wrapper.__doc__ = method.__name__, method.__doc__
+    return wrapper
+
+
+def _controlled(method):
+    def wrapper(self, target, *args, **kwargs):
+        return controlled_call(target, lambda: method(self, target, *args, **kwargs))
+    wrapper.__name__, wrapper.__doc__ = method.__name__, method.__doc__
+    return wrapper
 
 
 class _BITMAPINFOHEADER(ctypes.Structure):
@@ -64,6 +96,7 @@ class WindowsCaptureInputAdapter:
         self._isolate_capture = isolate_capture
         self.last_capture_trace: list[dict[str, Any]] = []
         self.last_input_trace: dict[str, Any] = {}
+        self._guard = UserInputGuard()
 
     @staticmethod
     @lru_cache(maxsize=1)
@@ -141,12 +174,14 @@ class WindowsCaptureInputAdapter:
         callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
         def visit(hwnd, _lparam):
+            identity = self._identities.get(int(hwnd)) or window_identity(u, hwnd)
             title = ctypes.create_unicode_buffer(max(1, u.GetWindowTextLengthW(hwnd) + 1))
             u.GetWindowTextW(hwnd, title, len(title))
             if not title.value or self.title_contains not in title.value.casefold():
                 return True
             item = {"target_id": f"hwnd:{int(hwnd):x}", "title": title.value}
             item.update(self.diagnose(item))
+            item.update(target_metadata(int(hwnd), expected_identity=identity))
             targets.append(item)
             return True
 
@@ -275,6 +310,7 @@ class WindowsCaptureInputAdapter:
                 raise ScannerError("cancelled", "capture cancelled")
         raise ScannerError("capture_failed", "capture methods exhausted")
 
+    @_controlled
     def capture(self, target, *, cancel=None, timeout=2.0):
         cancel = cancel if cancel is not None else target.get("_scanner_cancel", Event())
         self._cancel(target, cancel)
@@ -303,6 +339,7 @@ class WindowsCaptureInputAdapter:
             self.last_capture_trace = exc.details.get("trace", [])
             raise
 
+    @_controlled
     def wait_stable(self, target, cancel: Event, timeout: float = 2.0):
         if not math.isfinite(timeout) or timeout <= 0:
             raise ScannerError("capture_timeout", "invalid stable capture deadline")
@@ -364,6 +401,7 @@ class WindowsCaptureInputAdapter:
     def _modifiers_clear(u):
         return not any(u.GetAsyncKeyState(k) & 0x8000 for k in (0x10, 0x11, 0x12, 0x5B, 0x5C, 0x01, 0x02))
 
+    @_guarded
     def click(self, target, x_ratio, y_ratio):
         if any(not isinstance(v, (int, float)) or not math.isfinite(v) or not 0 <= v <= 1 for v in (x_ratio, y_ratio)):
             raise ScannerError("input_failed", "invalid click ratios")
@@ -409,6 +447,7 @@ class WindowsCaptureInputAdapter:
             raise ScannerError("input_partial", "mouse up rejected")
         self.last_input_trace["method"] = "post_message"
 
+    @_guarded
     def press_key(self, target, key):
         if key not in {"left", "right", "escape"}:
             raise ScannerError("input_failed", f"unsupported scanner key: {key}")
@@ -443,6 +482,7 @@ class WindowsCaptureInputAdapter:
         self.last_input_trace["method"] = "post_message"
         return True
 
+    @_guarded
     def scroll(self, target, delta):
         if not isinstance(delta, int) or not -1200 <= delta <= 1200 or delta == 0:
             raise ScannerError("input_failed", "invalid scanner scroll delta")
@@ -477,6 +517,7 @@ class WindowsCaptureInputAdapter:
             raise ScannerError("input_failed", "mouse wheel rejected")
         self.last_input_trace['method']='post_message'
 
+    @_guarded
     def drag_scroll(self,target,start,end):
         values=(*start,*end)
         if any(not isinstance(v,(int,float)) or not math.isfinite(v) or not 0<=v<=1 for v in values):
@@ -510,7 +551,53 @@ class WindowsCaptureInputAdapter:
             self._send(u,[up])
         self.last_input_trace.update(method='send_input',screen_start=[first.x,first.y],screen_end=[last.x,last.y])
 
+    @_guarded
+    def drag_path(self,target,path,hold_seconds):
+        """Press at path[0], move through the other points, hold still, release (C5e-1, E6).
+
+        Absolute cursor positions keep the distance exact regardless of pointer acceleration; holding
+        still before the release leaves the list without momentum, so it stops where the drag ended.
+        """
+        if len(path)<2 or any(len(point)!=2 for point in path):raise ScannerError('input_failed','invalid drag path')
+        values=[v for point in path for v in point]
+        if any(not isinstance(v,(int,float)) or not math.isfinite(v) or not 0<=v<=1 for v in values):
+            raise ScannerError('input_failed','invalid drag ratios')
+        if not isinstance(hold_seconds,(int,float)) or not 0<=hold_seconds<=1:raise ScannerError('input_failed','invalid drag hold')
+        self._cancel(target);u,_=self._libraries();hwnd=self._checked_hwnd(target)
+        if not self._foreground(u,target,hwnd):raise ScannerError('input_focus_changed','drag target is not foreground')
+        if not self._modifiers_clear(u):raise ScannerError('input_busy','user input is held')
+        width,height=self._client(u,hwnd);points=[]
+        for rx,ry in path:
+            point=wintypes.POINT(min(width-1,round(width*rx)),min(height-1,round(height*ry)))
+            if not u.ClientToScreen(hwnd,ctypes.byref(point)):raise ScannerError('input_failed','drag ClientToScreen failed')
+            points.append(point)
+        self.last_input_trace={'kind':'drag_path','client_path':[list(p) for p in path],'hold':hold_seconds,'method':None}
+        wait=target.get('_scanner_cancel',Event()).wait
+        if not u.SetCursorPos(points[0].x,points[0].y):raise ScannerError('input_failed','drag cursor placement failed')
+        hit=u.WindowFromPoint(points[0])
+        if int(u.GetForegroundWindow() or 0)!=hwnd or int(u.GetAncestor(hit,2) or hit or 0)!=hwnd:
+            raise ScannerError('input_focus_changed','drag target lost foreground or is occluded')
+        down=_INPUT(type=0,mi=_MOUSEINPUT(dwFlags=0x0002));up=_INPUT(type=0,mi=_MOUSEINPUT(dwFlags=0x0004))
+        if not self._send(u,[down]):raise ScannerError('input_failed','drag press insertion failed')
+        try:
+            # Real mouse-move events (the client reads raw input, not the cursor position), absolute on the
+            # virtual desktop so pointer acceleration cannot change the distance; one game frame per step.
+            left,top=u.GetSystemMetrics(76),u.GetSystemMetrics(77)
+            span_x,span_y=max(1,u.GetSystemMetrics(78)-1),max(1,u.GetSystemMetrics(79)-1)
+            wait(.03)
+            for point in points[1:]:
+                move=_INPUT(type=0,mi=_MOUSEINPUT(dx=round((point.x-left)*65535/span_x),dy=round((point.y-top)*65535/span_y),
+                                                  dwFlags=0x0001|0x8000|0x4000))
+                if not self._send(u,[move]):raise ScannerError('input_failed','drag move insertion failed')
+                wait(.03)
+            wait(hold_seconds)
+            self._cancel(target);self._checked_hwnd(target)
+        finally:
+            self._send(u,[up])
+        self.last_input_trace.update(method='send_input',screen_path=[[p.x,p.y] for p in points])
+
     def close(self):
+        self._guard.stop()
         if self._worker is not None:
             self._worker.close()
             self._worker = None

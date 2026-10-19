@@ -1,0 +1,26 @@
+{
+  "rowCounts": {
+    "FavorLevelExcel": 100,
+    "CafeInteractionExcel": 276
+  },
+  "priorFileCount": 20,
+  "priorBytesPreserved": true,
+  "execution": {
+    "allPageHmacVerified": true,
+    "verifiedPageCount": 53380,
+    "decryptionPassCount": 1,
+    "newTablesDecodedBeforePublicationOnly": true,
+    "existingTablesReextracted": false,
+    "temporaryPlaintextRemoved": true,
+    "initialAttempt": "Completed HMAC/decode into temporary output, then ConstCommon absent from SQL catalog. No canonical outputs published. Resumed that completed plaintext, read ConstCommon via pinned JP Excel.zip, published new JSONs, removed plaintext and task temp directory.",
+    "finalization": "Temporary-directory nonempty cleanup failed after successful publication; leftover new-table temporary JSON hash matched published bytes, then exact task-owned file/directory removed. Existing outputs were verified against frozen lock/CCL hashes.",
+    "networkCalls": 0,
+    "gameRuntimeExecutions": 0,
+    "keyDisclosures": 0,
+    "keyCopies": 0,
+    "originalClientFileCopies": 0,
+    "sharedStoreWrites": 0
+  },
+  "toolSha256": "12507e8c054878be8c7a051a86b5ba0edaf145af557352b3a67a35e6d40b796e",
+  "evidenceSha256": "a5e6c82ae949a26c0f3cd2d11721845a57f35370bae3543db1b04c454bc8e830"
+}

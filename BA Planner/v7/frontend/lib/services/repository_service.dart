@@ -1,3 +1,12 @@
+import 'repository_plan_service.dart';
+import 'repository_presets_service.dart';
+import 'repository_history_service.dart';
+import 'repository_inventory_review.dart';
+export 'repository_plan_service.dart';
+export 'repository_presets_service.dart';
+export 'repository_history_service.dart';
+export 'repository_inventory_review.dart';
+
 class RepositoryProfile {
   const RepositoryProfile({
     required this.id,
@@ -91,11 +100,16 @@ Map<String, dynamic> _wireMap(Object? value, String label) {
 }
 
 class ConfirmedStudentState {
-  ConfirmedStudentState._(this.studentId, Map<String, dynamic> values)
-    : values = Map.unmodifiable(values);
+  ConfirmedStudentState._(
+    this.studentId,
+    Map<String, dynamic> values,
+    Map<String, String>? provenance,
+  ) : values = Map.unmodifiable(values),
+      provenance = provenance == null ? null : Map.unmodifiable(provenance);
 
   final String studentId;
   final Map<String, dynamic> values;
+  final Map<String, String>? provenance;
 
   factory ConfirmedStudentState.fromValues(
     String studentId,
@@ -110,6 +124,7 @@ class ConfirmedStudentState {
     'version': 1,
     'student_id': studentId,
     'values': Map<String, dynamic>.from(values),
+    if (provenance != null) 'provenance': Map<String, String>.from(provenance!),
   };
 
   factory ConfirmedStudentState.fromWire(Map<String, dynamic> value) {
@@ -187,7 +202,11 @@ class ConfirmedStudentState {
             ))) {
       throw const FormatException('Invalid confirmed provenance');
     }
-    return ConfirmedStudentState._(value['student_id'] as String, values);
+    return ConfirmedStudentState._(
+      value['student_id'] as String,
+      values,
+      provenance == null ? null : Map<String, String>.from(provenance as Map),
+    );
   }
 }
 
@@ -386,16 +405,21 @@ class RepositoryState {
         goals['goals'] is! List) {
       throw const FormatException('Invalid goal plan');
     }
-    return RepositoryState._(
-      profileId: value['profile_id'] as String,
-      revision: value['revision'] as int,
-      students: List.unmodifiable(
-        (value['students'] as List).map(
+    final students = (value['students'] as List)
+        .map(
           (item) => ConfirmedStudentState.fromWire(
             _wireMap(item, 'confirmed student'),
           ),
-        ),
-      ),
+        )
+        .toList();
+    if (students.map((item) => item.studentId).toSet().length !=
+        students.length) {
+      throw const FormatException('Duplicate confirmed student identity');
+    }
+    return RepositoryState._(
+      profileId: value['profile_id'] as String,
+      revision: value['revision'] as int,
+      students: List.unmodifiable(students),
       inventory: RepositoryInventoryState.fromWire(
         _wireMap(value['inventory'], 'inventory snapshot'),
       ),
@@ -446,9 +470,35 @@ bool isValidRepositorySuccessPayload(
       case 'repository.students.update':
       case 'repository.inventory.update':
       case 'repository.goals.save':
+      case 'repository.plan.save':
+      case 'repository.presets.save':
         return _exact(payload, {'revision'}) && _revision(payload['revision']);
       case 'repository.state.get':
         RepositoryState.fromWire(payload);
+        return true;
+      case 'repository.history.summary':
+        RepositoryHistorySummaryResult.fromWire(payload);
+        return true;
+      case 'repository.history.events':
+        RepositoryHistoryEventsResult.fromWire(payload);
+        return true;
+      case 'repository.history.diff':
+        RepositoryHistoryDiffResult.fromWire(payload);
+        return true;
+      case 'repository.history.scan_latest':
+        RepositoryHistoryScanLatestResult.fromWire(payload);
+        return true;
+      case 'repository.inventory.review.get':
+        RepositoryInventoryReview.fromWire(payload);
+        return true;
+      case 'repository.plan.get':
+        RepositoryPlanState.fromWire(payload);
+        return true;
+      case 'repository.presets.get':
+        RepositoryPresetsState.fromWire(payload);
+        return true;
+      case 'repository.plan.replace':
+        RepositoryPlanReplaceResult.fromWire(payload);
         return true;
       case 'repository.migration.preview':
         if (!_exact(payload, {'accounts'}) || payload['accounts'] is! List) {
@@ -501,6 +551,8 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         'migration_not_supported',
         'migration_source_invalid',
         'persistence_failed',
+        'legacy_goals_conflict',
+        'plan_lossy_write',
         'unknown_method',
       };
       return error.keys.toSet().containsAll(required) &&
@@ -566,6 +618,8 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
       case 'repository.profile.delete':
         return mutation({});
       case 'repository.state.get':
+      case 'repository.plan.get':
+      case 'repository.presets.get':
         return _exact(payload, {'profile_id'}) &&
             payload['profile_id'] is String &&
             RegExp(r'^[0-9a-f]{24}$').hasMatch(payload['profile_id'] as String);
@@ -576,12 +630,26 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         for (final item in payload['students'] as List) {
           ConfirmedStudentState.fromWire(_wireMap(item, 'confirmed student'));
         }
+        final ids = (payload['students'] as List)
+            .map((item) => item['student_id'])
+            .toList();
+        if (ids.toSet().length != ids.length) return false;
         return true;
       case 'repository.inventory.update':
-        if (!mutation({'inventory'})) return false;
+        // FB-10b: optional `applied_resource_keys`(배열, null 금지, 빈 배열 허용, 별칭 중복 거부).
+        final scoped = payload.containsKey('applied_resource_keys');
+        if (!mutation({'inventory', if (scoped) 'applied_resource_keys'})) {
+          return false;
+        }
         RepositoryInventoryState.fromWire(
           _wireMap(payload['inventory'], 'inventory snapshot'),
         );
+        if (scoped) {
+          repositoryInventoryAppliedKeys(payload['applied_resource_keys']);
+        }
+        return true;
+      case 'repository.inventory.review.get':
+        RepositoryInventoryReviewRequest.fromWire(payload);
         return true;
       case 'repository.goals.save':
         if (!mutation({'goals'})) return false;
@@ -595,8 +663,29 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
           RepositoryGoalState.fromWire(_wireMap(item, 'goal'));
         }
         return true;
+      case 'repository.plan.save':
+        RepositoryPlanSaveRequest.fromWire(payload);
+        return true;
+      case 'repository.plan.replace':
+        RepositoryPlanReplaceRequest.fromWire(payload);
+        return true;
+      case 'repository.presets.save':
+        RepositoryPresetsSaveRequest.fromWire(payload);
+        return true;
       case 'repository.migration.preview':
         return payload.isEmpty;
+      case 'repository.history.summary':
+        RepositoryHistorySummaryRequest.fromWire(payload);
+        return true;
+      case 'repository.history.events':
+        RepositoryHistoryEventsRequest.fromWire(payload);
+        return true;
+      case 'repository.history.diff':
+        RepositoryHistoryDiffRequest.fromWire(payload);
+        return true;
+      case 'repository.history.scan_latest':
+        RepositoryHistoryScanLatestRequest.fromWire(payload);
+        return true;
       case 'repository.migration.import':
         return _exact(payload, {'source_profile_key'}) &&
             payload['source_profile_key'] is String &&
@@ -640,18 +729,38 @@ abstract interface class RepositoryService {
     String idempotencyKey,
   );
   Future<RepositoryState> loadRepositoryState(String profileId);
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  );
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  );
+  Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
+    RepositoryHistoryDiffRequest request,
+  );
+
+  /// FB-2b `repository.history.scan_latest`: read-only latest scan metadata.
+  /// A stale anchor fails with invalid_payload / details.reason=stale_scan_latest
+  /// (not retryable): discard the accumulated by-kind pages and restart.
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  );
   Future<int> saveRepositoryStudents(
     String profileId,
     List<ConfirmedStudentState> students,
     int expectedRevision,
     String idempotencyKey,
   );
+  /// [appliedResourceKeys](FB-10b)가 있으면 그 key의 확인 필요 표시만 해제한다(같은 값 확인 포함). 수량이 바뀐
+  /// key가 scope 밖이면 `invalid_payload`(reason `scan_scope_mismatch`). 없으면(기존 호출) 실제로 수량이 바뀐
+  /// key만 해제한다. 재시도는 원 expected_revision·key·scope로 하고, 같은 key에 다른 scope는 `idempotency_conflict`.
   Future<int> saveRepositoryInventory(
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  );
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  });
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,

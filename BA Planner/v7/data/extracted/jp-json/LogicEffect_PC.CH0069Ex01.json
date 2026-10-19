@@ -1,0 +1,805 @@
+{
+  "schema": "ba-planner.mika-logiceffect-slice.v1",
+  "rows": [
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 1,
+        "rowSha256": "748f9b361024fccaeb8a6bf214c804baba0f819a34a3169cb4b65997c8597d6a"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "fdaf1f662c81b7a787d046b7b151c8f3691245d1e2279917b84d032fb7bad33e",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 1,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 81071,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 2,
+        "rowSha256": "6ac148508b52f103bd25d98bcd46b5f4f7d175e87b73dc3d4579546ec52bc13a"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "fe6c20f1d6211fd24fa7a7a2e3ad9a865e8ea615f5bee19a54e1abb0c6e5f3b2",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 2,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 93234,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 3,
+        "rowSha256": "566e78cb2a0ff9a61f369149d203883b3345d75b1139a66fc1c64924458fba4e"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "dae1477bccb82bcfd519168c271290e5ee387bfafe6455cd5f0165ccc547b6c6",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 3,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 117553,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 4,
+        "rowSha256": "391e7e8a0701b74552e5bcdc9b48857cedced87f8bf8d44c9156937f25ca36c8"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "8e4f578255a4b7e40898691c079e4169e0838dbbc86ad859b6c85d55972f3c8e",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 4,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 129717,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 5,
+        "rowSha256": "052d155a847f28baaad9917410a2da93646ce86e31d29e87d1dd11220a98b1d7"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "7c6c26777b9994f91b40b4dc36eaa5da80800920d58e9d4bb389cdeddef39eaa",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 5,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 154036,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 6,
+        "rowSha256": "fe9970f4171f055cdd8d7eb890f0983b771a9539d78b0ec3fb43b0e7004ddf51"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "6424edb52a69221575cd3ac8645c92d43e99abe9eb5201732f8583dde0ed4fe5",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 6,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 166200,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 7,
+        "rowSha256": "7da419856ae3b7b082b19a432051994b0bbd271b0a7613664e754d6e1e32992e"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "37ef0d88b5250f8b5cbfde3a3eb4652484970f0aa1201f921de8c59191c2e69e",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 7,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 190519,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 8,
+        "rowSha256": "6516d7df8ba7e987601a8431056d74dfe7068f2fa154f7fd57c17bb4161c99a6"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "a2a138efddb28c8e8c51cd9bf404b2884afd24cfb81793d5c3d6c894e95ec12e",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 8,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 202676,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 9,
+        "rowSha256": "6ea7adb73ce1c5d34bc5b261e0443f25bb36f8422df1a0fd89149c8b0cc7a325"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "d36b2534e0a537465b6f2ef0b725d79afc6265b5049952c7aa66f42b19124e7b",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 9,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 227002,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    },
+    {
+      "source": {
+        "database": "LogicEffectDataDBSchema.db",
+        "databaseSha256": "ff352000f7d7e3cfebea1bbe30a93d24fa842387161f157e2a8a3e5dfdfbd099",
+        "table": "LogicEffect_PC",
+        "groupId": "CH0069_Ex01_Effect01",
+        "level": 10,
+        "rowSha256": "649f7a6d810b9b85e26b891a99d0944ba224763efabc3c722cbb9f86ec6164b3"
+      },
+      "status": "full",
+      "consumedBytes": 178,
+      "totalBytes": 178,
+      "decodeError": null,
+      "decodedSha256": "a324a743f7d73ee6d1f9aa2f5050b76f391a7ffa260283c4e93cae200cac5af1",
+      "dao": {
+        "$type": "MX.GameData.DAO.Battle.DamageEffectDAO",
+        "Level": 10,
+        "GroupId": "CH0069_Ex01_Effect01",
+        "Category": {
+          "value": 1,
+          "name": "Attack"
+        },
+        "TemplateId": "Attack_Damage_Multiple",
+        "Channel": 5002,
+        "ApplyRate": 10000,
+        "CommonVisualId": "",
+        "CommonVisualHash": 0,
+        "PriorityWhenSameFrame": 1,
+        "CanApplyTSAInteractingCharacter": false,
+        "CanApplyNotAliveTarget": true,
+        "CriticalCheck": {
+          "value": 3,
+          "name": "Always"
+        },
+        "CanEvade": true,
+        "Amount": 0,
+        "BonusSourceFirst": {
+          "value": 2,
+          "name": "AttackPower"
+        },
+        "BonusRateFirst": 239159,
+        "LifeRecover": 0,
+        "ApplyBulletType": true,
+        "ApplyDefense": true,
+        "ApplyDamageRatio": {
+          "value": 1,
+          "name": "Both"
+        },
+        "ApplyDamageRatio2": {
+          "value": 1,
+          "name": "Both"
+        },
+        "DefensePenetrationRate": 10000,
+        "ChangeRateByCost": "0",
+        "IgnoreShield": false,
+        "DoNotKillTarget": false,
+        "ApplyStability": true,
+        "ApplyTerrainAdaptationDamage": true,
+        "ApplyExDamagedRatio": true,
+        "ForceFloaterHide": false,
+        "ApplyEnhanceExDamageRate": true,
+        "ApplyEnhanceBasicsDamageRate": true,
+        "OverrideSkillType": {
+          "value": 0,
+          "name": "None"
+        },
+        "OverrideSkillDamageType": {
+          "value": 0,
+          "name": "None"
+        },
+        "ApplyEnhanceWeakDamageRate": true,
+        "ApplyWeakDamagedRatio": true,
+        "ApplyEffectiveDamagedRatio": true,
+        "ApplyNormalDamagedRatio": true,
+        "ApplyResistDamagedRatio": true,
+        "ApplyLevelFactor": true,
+        "ApplyDamageRatioSynergyBulletType": true,
+        "ApplyObstacleDamageRatio": true
+      }
+    }
+  ]
+}

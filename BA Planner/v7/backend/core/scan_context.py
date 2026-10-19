@@ -19,6 +19,7 @@ LEGACY_KEYS = {
     "_scanner_scroll_point": "scroll_point",
     "_scanner_session_id": "session_id",
     "_scanner_generation": "generation",
+    "_scanner_control": "control",
     "_inventory_profile_verified": "inventory_profile_verified",
     "_first_student": "first_student",
     "_seen_students": "seen_students",
@@ -36,6 +37,7 @@ class ScanContext(Mapping[str, Any]):
     scroll_point: tuple[float, float] | None = None
     session_id: str | None = None
     generation: int | None = None
+    control: Any = None
     inventory_profile_verified: bool | None = None
     first_student: bool | None = None
     seen_students: tuple[str, ...] | None = None

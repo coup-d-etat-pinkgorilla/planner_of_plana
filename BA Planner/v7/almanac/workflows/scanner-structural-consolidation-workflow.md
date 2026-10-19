@@ -33,6 +33,9 @@ sources:
   - id: status
     type: file
     path: almanac/workflows/scanner-structural-consolidation-status.md
+  - id: orchestrator-log
+    type: file
+    path: almanac/workflows/scanner-structural-consolidation-orchestrator-log.md
 ---
 
 # Scanner Structural Consolidation Workflow
@@ -71,7 +74,7 @@ sources:
 | X17 | 임계값 전부 코드 리터럴, 이름·중앙 테이블 없음 | 학생 0.55/0.58/0.65/0.38/0.49/0.57…, 재고 .85/.68/.88/.94/.975/.995/.985/.97… |
 | X18 | 재고 상세 복구가 `StudentPanelRecovery` 계약의 별도 복사본 | `inventory_detail_recovery.py` vs `student_panel_recovery.py` |
 | X19 | 숫자 판독 파이프라인 3개 독립(그리드/상세/학생) → 재고 수량은 사용자 정답·세션 보정 미적용 | `scanner_matchers.py:434-478`, `inventory_detail_recovery.py:88-118`, `studio_numeric_bank.py` |
-| X20 | 행 overlap이 identity 없이 24차원 RGB 히스토그램만 사용 | `inventory_navigation.py:36-46, 142-150` |
+| X20 | 행 overlap이 identity 없이 24차원 RGB 히스토그램만 사용 → C5b에서 `measure_shift`(픽셀 이동 측정)로 대체됨. 남은 문제는 누적 offset 드리프트를 anchor 클릭+21회 탐색으로 보정하는 비용(C5e-1) | `inventory_navigation.py:36-46, 142-150` (구), `:272-305` (신) |
 | X21 | source 이름 오해: `detail_template_fallback`은 same-crop 재매칭, 무이동 종료도 `verified_row_overlap` | `scanner_matchers.py:1298-1303, 1399-1400` |
 | X22 | 인연 whole-bank 0.38/0.005 → 사실상 무조건 확정 | `student_scan_recognizer.py:820` |
 | X23 | D2처럼 봉인되지 않은 특수 사례 축적: `4→0` 보정, 무기 0.57, 무기 whole-bank 0.49, 로비 3px, `EQUIPMENT_SLOT_*` 2560 절대좌표 | `student_potential_recognizer.py:256-260`, `student_scan_recognizer.py:897-933`, `student_equipment_recognizer.py:25-27` |
@@ -91,6 +94,7 @@ sources:
 - 스키마 변경은 additive(enum 추가, optional 필드 추가)만 v1에서 허용한다. 기존 필드 의미 변경·이름 변경은
   v2 또는 병행 필드로 하고 구 진단 JSON 호환 테스트를 유지한다.
 - Flutter 쪽은 protocol/decoder/mock/localization 동기화 외에는 손대지 않는다. UI 작업은 별도 워크플로다.
+  **예외(2026-09-27 사용자 승인)**: C5e-6e 리뷰 화면의 미식별 슬롯 identity 지정 UI는 이 워크플로 안에서 한다.
 - `../v6` import 금지, Qt/Tk 반입 금지, 자동 커밋 금지, 미확정 0 채움 금지는 그대로다.
 
 ## 실행 순서와 gate
@@ -153,17 +157,64 @@ sources:
 
 ### C5 — 인식 공통화 (X15, X18~X20, 동작 변경 가능)
 
-- 이미지 유틸을 `recognition_image_ops.py`로 모은다. `_normalized_correlation` 두 변형은 `ncc_signed_lanczos`,
-  `ncc_unit_bilinear`처럼 의미가 드러나는 이름으로 분리하고 private import를 제거한다.
-- `InventoryDetailRecovery`를 `StudentPanelRecovery`와 같은 `open → verify → read → close → verify_return` 계약(공통 base 또는 Protocol)에 올린다.
-  재고 고유 원시(선택 테두리 검출)는 전략으로 주입한다.
-- 재고 수량 판독을 `StudioNumericBank` 경로에 합류시켜 사용자 정답 샘플·세션 보정을 받게 한다. 기존 그리드 잉크마스크 경로는
-  parity 비교 후 fallback으로 강등하거나 제거한다. **사용자 승인 슬롯만 영구 저장** 규칙은 그대로다.
-- 행 overlap에 슬롯 identity(직전 페이지 매칭 결과)를 히스토그램과 병합한다. 티어 연속 프로필(노트/BD/오파츠)에서
-  ambiguous 중단 빈도가 줄어드는지 native fixture로 전후 비교한다.
-- (C2에서 이관, 2026-09-26) 목록 끝에서 마지막 이동이 1행 미만일 때의 tail 판정(C2-2)을 overlap 재설계에 포함하고,
-  X07 no-motion 재확인이 실게임에서 실제로 실행되는 것을 확인한다.
-- 완료: 항목별 parity fixture 통과, 실게임 1280 재고 세 프로필(**tail 도달 포함**)과 학생 단일 스캔 회귀 통과, golden 재고정.
+C5a·C5b는 2026-09-26 완료(status 참조). C5b가 남긴 방식 — 프로필 스캔에서 **모든 슬롯을 상세 패널로 읽고**, 슬롯마다
+원선택으로 복귀(1→N→1)하며, 스크롤 후 anchor 클릭+21회 탐색으로 위상을 맞추는 것 — 은 정확하지만 첫 스캔이 장비 105칸에
+약 10분으로, 이 프로젝트의 그리드 스캔 방법론(한 페이지를 한 번에 읽는 batch, 상세는 예외 경로)에서 벗어난다.
+2026-09-27 사용자 지시로 기록 프레임 실험(E1/E2, `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`)을
+근거로 C5c 이후를 아래와 같이 재정의한다. **C5b의 정확도(45/45, 56+19, 95종)와 안전 규칙은 유지한 채 속도 경로를 복원**하는 것이 목표다.
+
+| Slice | 항목 | 성격 |
+|---|---|---|
+| C5c | X15 이미지 유틸 공통화 — `recognition_image_ops.py`, `_normalized_correlation` 두 변형을 `ncc_signed_lanczos`/`ncc_unit_bilinear`로 분리, private import 제거. **E2의 채널별 NCC(아이콘 영역)도 여기 둔다** | 동작 보존 |
+| C5d | X18 `InventoryDetailRecovery`를 `StudentPanelRecovery` 계약에 정렬 + **배치 선택**: 슬롯별 원선택 복귀를 제거하고 1→2→…→N 순차 선택, baseline은 마지막 선택 프레임으로 갱신(`same_grid`의 ignore에 이전/현재 선택 포함), 페이지 끝 또는 실패 시점에 **한 번** 검증 복귀. F9 (a) 클릭 전 보이는 선택, (b) 클릭 전후 같은 격자는 그대로. 슬롯당 재시도 ≤ 2, 선택 미확인이면 그 슬롯 partial·입력 중단 | 동작 변경 |
+| C5e-1 | **결정론적 스크롤 + gutter 위상 검증**(E1·E6). 스크롤은 `press → priming 8px → k·itemSize·s 이동(2~3 스텝) → 0.2s 정지 → release`, **k = 완전히 보이는 행 수 − 1(한 행 겹침; 720p 아이템·장비 모두 4행)** — 겹친 행은 앞 페이지 판독과 identity 대조로 이동량을 교차 확인(관성 0, 이동량 = 요청량, 위상 보존 ≤2px). 릴리스 후 즉시 캡처(고정 0.5s 대기 제거). gutter 위상(viewport 행별 gutter-회색 198~215 비율 ≥ .8 band, 길이 ≥ 3px, 경계 band 제외, band 끝+3 = 타일 상단)은 **검증**으로: 예상 위상과 3px 초과 차이면 재측정 후 실제 값 사용. `measure_shift`는 실제 이동량·끝 판정용 유지(요청 < 관측이면 끝). `_align_to_anchor`·anchor 클릭 제거. 첫 페이지 복귀는 휠 up N tick(≤10) 후 위상 확인. viewport 사각형은 spec clip 범위(684/872 units)·softness 12 units에서 파생, 페이드 구간에 걸친 행은 다음 페이지로. 레지스트리 신규: `inventory.scroll.priming_px`(8), `inventory.scroll.hold_s`(.2), `inventory.scroll.phase_tolerance_px`(3). 위상 검출 실패(band < 2개)면 `inventory_scroll_unverified`. **포그라운드 유지(사용자 결정 2026-09-27)**: 그리드 스캔은 스캔 동안 게임 창을 계속 앞에 둔다(입력 버스트로 띄웠다 숨기지 않음). 백그라운드·최소화 입력은 불가(확정). 사용자 입력 충돌은 D21 | 동작 변경 |
+| C5e-2 | **타일 은행 fast path 복원**: `detail_required`를 "은행 출처가 타일 crop이고 M4 score ≥ `inventory.tile_bank.score`(.90) & margin ≥ `.margin`(.015)이면 상세 생략"으로 완화(`scanner_matchers.py:1419, 1460`). 상세 확정 (identity, 타일 crop, 해상도)를 **session bank**에 넣되 영구 저장은 사용자 승인 슬롯만(D1). 원화 아이콘 템플릿은 후순위로 강등(제거는 C7 결정). 페이지 진입 시 visible 슬롯 전부를 먼저 매칭하고 모호 슬롯만 C5d 배치 선택으로 넘긴다. **정렬 사전(order prior, 2026-09-27 추가)**: 스캔은 X09로 '기본' 정렬이 켜진 상태에서만 돌고 카탈로그 `order_index`가 그 화면 순서를 인코딩하므로(C5b 45/45·56·95 모두 단조), 페이지 안에서 확정된 이웃 슬롯 사이의 슬롯은 후보를 **`order_index` 구간 안의 항목으로 제한**해 M4를 돌린다(색놀이 계열의 margin 부족 해소). 구간 밖 후보가 1위면 확정하지 않고 상세로. **사전은 좁히기일 뿐 제약이 아니다(D23)**: 구간 안 최고점이 임계 미달이면 전체 은행으로 재매칭 → 전체 은행 1위가 구간 밖이거나 어디에도 없으면 그 슬롯은 `unknown_new`로 표시하고 상세 경로(합성 상세 아이콘은 카탈로그가 아니라 **asset 팩 1268종 전체**를 후보로) → 그래도 없으면 라벨링(6e). 단조성 검사는 전체 스캔을 review로 떨어뜨리지 않고 **최장 증가 부분열(LIS) 밖 슬롯만** 표시한다. 기존 `verify_profile_order`·zero-fill gate는 LIS 버전으로 교체 | 동작 변경 |
+| C5e-3 | X19 수량을 `StudioNumericBank` 경로로(사용자 정답·세션 보정), `K` 축약 표기(C5-2) 처리. 기존 잉크마스크 경로는 parity 후 fallback. **synth seed 계층 추가**(D20/E5): 런타임 생성기가 KR 폰트로 만든 `x0-9K` 자릿수 템플릿을 최하위 우선순위로 공급, 프로필 gate(자릿수 top-1 ≥ .95) 통과 전에는 evidence만 기록 | 동작 변경 |
+| C5e-4 | equipment identity: **상세 패널의 카테고리 라벨(11장) × `T#` 배지(10장)를 1차 키**로, 상세 아이콘은 보조. 그리드에서는 icon M4 + 타일 좌하단 `T#` 배지. 라벨·배지 템플릿은 아이템과 무관해 현재 보유분으로 전부 캡처되며 미보유 (카테고리,티어)도 확정된다. 조각·범용 설계도·강화석은 카탈로그 항목 추가 + 상세 이름 템플릿(보유분 캡처) — C5-1 결정 | 동작 변경 |
+| C5e-5 | (선택, D12) 사용자 1280 프레임에서 추출한 타일 은행을 배포 asset으로 export하는 도구. 다른 PC 유효성은 X25 표본 확보 후 판단 | 도구 |
+| C5f | **학생 스캔 백그라운드 탐색 (게이트 통과 2026-09-27)**: `probe_background_key.py` 2회 — 다른 창 포그라운드 유지(`0x1b0bb2` 불변), 프레임 41~47 % 변화 = 키 소비. 즉 Unity는 `WM_KEYDOWN/UP`을 백그라운드에서 처리하며 스스로 활성화하지 않는다(08-26 기록의 포그라운드 전환은 어댑터의 `_foreground()` 선행 호출이 원인). 구현: `press_key` 순서를 **PostMessage 키 → PrintWindow 프레임 변화(identity 또는 diff ≥ 2 %)로 소비 확인 → 미변화 시에만 포그라운드 SendInput**으로. 학생 전체 스캔의 좌우 이동·캡처·판독은 전부 백그라운드. **클릭이 필요한 폴백**(패널 열기/닫기, 상세 복구)만 `이전 포그라운드 HWND 기록 → 게임 포그라운드 → 클릭·판정 → 이전 창 복원(SetForegroundWindow, 실패 시 evidence)` 순서로 잠깐 띄웠다 되돌린다(사용자 결정). 재고 그리드 스캔에는 적용하지 않음(포그라운드 유지) | 동작 변경 |
+| C5e-6 | **템플릿 합성 계층(synth tier)** — 런타임 생성기·로더·수량 seed·라벨링 폴백·E4 gate. 입력(명세·asset 팩·등급표)은 오케스트레이터가 확보 완료. 상세는 아래 "C5e-6 상세" 절의 6a~6f | 동작 변경·UI |
+
+- 실측 근거(E1): gutter 위상은 세 프로필·28 페이지 프레임에서 pitch 101px, anchor 클릭 대비 ≤ 1.5px, 13~23 ms, 누적 없음.
+  세로 gutter는 타일 사선 모서리 때문에 쓰지 않는다(x는 region 자산 고정).
+- 실측 근거(E6, 실게임): 정지 후 릴리스 드래그는 관성 0·이동량 = 요청량 − 임계 초과 첫 move(→ priming으로 흡수), 4행 요청 시 위상 오차 ≤ 2px.
+  스크롤바는 숨김·비활성(thumb 없음, 트랙 클릭 무반응)이라 쓰지 않는다. 휠 1 tick은 536~709px로 가변(관성)이라 페이지 이동에 쓰지 않고 맨 위 복귀에만 쓴다.
+- 실측 근거(E2): 타일 crop 템플릿이면 현재 지표(M1)도 top-1 97~100%이나 margin .002~.006으로 `.03` gate를 못 넘긴다.
+  채널별 NCC(아이콘 영역 x 12~88 %, y 6~76 %)는 tech notes 100 % / margin min .016, presents 100 % / .282, equipment 99.4 % / .003.
+  M1 오답은 다른 학교(배경 지배), 그레이 NCC 오답은 같은 학교 다른 티어(색 손실) — 채널별 NCC만 둘 다 가른다.
+- (C2에서 이관) 1행 미만 tail(C2-2)은 C5b `measure_shift`로 해결됐고 X07 무이동 재확인은 `tech-notes-full-c`에서 실게임 실행을 확인했다.
+- 임계 신규 항목은 C4 레지스트리에 phase `C5e`, doc 링크로 등록한다. 기존 값은 바꾸지 않는다.
+- 완료: 슬라이스별 parity fixture, 실게임 1280 재고 세 프로필 tail 도달, **첫 스캔 소요 시간**(장비 전체·기술 노트 전체)과
+  **두 번째 스캔 소요 시간**(session/승인 은행 채워진 상태)을 status에 기록, 학생 단일 스캔 회귀, golden 재고정.
+  C5e-2 완료 조건에 "상세 패널 클릭 0회인 슬롯 비율"을 포함한다.
+
+#### C5e-6 상세 — 템플릿 합성 계층 (2026-09-27 확정)
+
+**확보된 입력(수정 금지, 읽기 전용)**
+
+| 입력 | 경로 | 내용 |
+|---|---|---|
+| 기하 명세 | `backend/assets/recognition/spec/ba-ui-template-spec-v1.json` | NGUI 2960×1440, `s = H / round(2960·H/W)`, 타일·상세·학생 위젯 기하, 아이콘 정합(`ICON_SCALE 1.06`, 오프셋 (+3.5, +1.2) units), `fonts` 블록(렌더 파라미터), `generator_outputs`, `validation` |
+| 등급표 | `backend/assets/recognition/spec/item-rarity-v1.json` | `items[icon] → {id, rarity, category, name_kr…}`, `equipment[icon] → {id, rarity, category, tier, …}` (Steam ExcelDB) |
+| asset 팩(개발용, D24) | `backend/assets/recognition/asset_pack/`(바이너리는 git-ignore, 런타임은 6a-0 캐시를 읽음) | `icons-01..03.zip`(멤버 `icons/{items,equipment}/<icon>.png`, 1268장), `sprites/*.png`(카드 배경 N/R/SR/SSR, `Card_Bg`, 설계도 배경 `Card_Item_Bg_C`, 선택선 등), `fonts/GyeonggiTitle-{Bold,Medium}.ttf`, `manifest.json`(sha256) |
+| 사람용 명세 | `docs/migration/scanner-consolidation/template-generation-spec-2026-09-27.md` §3~§4(합성 알고리즘), §8(폰트), §9(팩) |
+| 참조 구현 | `backend/tools/asset_spec/ba_tile_synth.py`(E4에서 검증된 타일 합성), `debug/scanner_c5e_experiments/e5_final.py`(글리프 렌더) | 런타임 코드가 아니다. 로직을 옮기되 import 하지 않는다 |
+
+**원칙**: 합성 템플릿은 **은행의 최하위 계층**이다(`synth < session < user_confirmed`). 합성이 실물 캡처를 덮어쓰지 않고, 합성만으로 확정된 슬롯은 evidence에 `source=synth_bank`로 남긴다. 합성 실패(팩 손상·spec 불일치·폰트 없음)는 스캔 실패가 아니라 **합성 계층 비활성 + evidence 기록**이다.
+
+| Sub-slice | 산출 | 계약 | 완료 조건 |
+|---|---|---|---|
+| **6a-0 추출기** `backend/core/recognition_asset_extract.py` (D24) | `%APPDATA%/…/recognition-assets/<catalog_sha>/{icons,sprites,fonts,item-rarity.json,manifest.json}` | `extract(game_dir, out_dir) -> AssetCache`; 로직은 `backend/tools/asset_spec/`의 ccdb 카탈로그·번들 Texture2D/Font·아틀라스 rect만 코어로 이동(**sqlcipher/fb_excel은 클라이언트에 넣지 않음**, 배포자 도구로 남김). 의존: UnityPy + texture2ddecoder(휠 확인). 폴더 탐지: `libraryfolders.vdf` → 실패 시 UI 폴더 선택(이 워크플로의 UI 예외). 캐시 키 = `catalog_Windows.bytes` sha + 추출기 버전이지만 **번들 단위 증분**: 이전 캐시의 `manifest.json`과 새 카탈로그를 대조해 번들 sha·path_id가 같은 항목은 건너뛰고, 신규·변경 번들만 열어 그 안의 항목만 갱신, 사라진 항목은 제거. 최초 실행만 전체(예상 10~30 s, 진행 표시), 이후 패치는 보통 수 초 | 정답지 테스트: 사용자 PC에서 추출한 결과가 저장소 `asset_pack/manifest.json`의 sha 1268+13+2와 일치. 폴더 없음·형식 불일치 시 `asset_extract_failed`로 강등되고 스캔은 계속(테스트: 가짜 폴더) |
+| **6a 생성기** `backend/core/recognition_synth.py` | `SynthTemplateSet` (grid tiles·detail icons — D25 정규화 한 벌; digit glyphs — 창 크기별 즉석; 학생 화면 — D26) | `synthesize(spec, pack, rarity, *, client="kr", window=(W,H), profile) -> SynthTemplateSet`; 순수 함수(입력 sha·창 크기·spec_version·profile이 같으면 바이트 동일). 그리드 타일: 카드 배경(등급) + 아이콘(1.06/오프셋) → 데이터셋 crop 규칙(`crop_like_dataset`)과 같은 창; 장비는 `Card_Item_Bg_C` + 아이콘; 상세 아이콘: 하늘색 배경 위 원화(551×435 / 649×512 units). 글리프: `x0-9K`를 Gyeonggi Bold, em `round(44·s)+1` ±1 후보 3벌, shear .10, 팽창 `.5·s/.4324`px. 렌더 시간은 status에 기록(목표: 1280 전 아이템 < 10 s, 캐시 적중 < 200 ms) | 단위 테스트: (1) 결정성(두 번 생성 sha 동일), (2) 1280×720에서 `debug/scanner_c5e_experiments` 실물 타일 100장 대비 M4 top-1 ≥ 99 %, 정답 점수 med ≥ .95(E4 재현), (3) 글리프 자릿수 top-1 ≥ .90(E5 재현, 실험용 분할 기준), (4) 팩 sha 불일치·아이콘 누락 시 `SynthUnavailable(reason)` |
+| **6b 캐시·드리프트** | `%APPDATA%/…/recognition-synth-cache/<client>/<WxH>/<spec_version>/` + `index.json` | **증분 갱신(사용자 결정 2026-09-27)**: 캐시는 팩 전체 sha가 아니라 **항목 단위**로 관리한다 — `index.json`에 identity별 `(icon_sha, sprite_set_sha, font_sha, rarity, generator_version) → 산출 파일`을 기록하고, 추출기(6a-0)나 등급 스냅샷이 바뀌면 그 튜플이 달라진 항목만 다시 합성·삭제한다(게임 패치 시 신규·변경 아이콘 수십 장, 스냅샷 갱신 시 등급이 바뀐 항목만). 캐시 키에 profile 포함. 스캔마다 **합성 vs 실물 점수 요약**(상세로 확정된 슬롯의 합성 M4 점수 분포 p10/med)을 `evidence.synth_drift`로 기록. p10이 레지스트리 `inventory.synth.drift_floor`(초기 .85) 아래로 2회 연속이면 그 프로필의 synth 계층을 세션 동안 끄고 `synth_drift_detected` 진단 발행(UI 패치 감지, D19) | 캐시 적중/미스 테스트, 손상 캐시 재생성 테스트, 드리프트 강등 테스트(합성 점수를 인위적으로 낮춘 fixture) |
+| **6c 로더 계층** | `TemplateMatcher`/상세 recognizer/`StudioNumericBank`에 `synth` 계층 | `TemplateMatcher.match` 후보 순서: `user_confirmed` → `session` → `synth` → (기존 원화 `bundled`, 후순위). 같은 identity가 상위 계층에 있으면 synth 후보는 제외. `detail_required` 완화(C5e-2)의 "은행 출처가 타일 crop"에 `synth`를 포함하되 **D16 gate를 통과한 프로필만**(`inventory.synth.enabled_profiles`, 초기값: `tech_notes`·`presents`; `equipment`·학생 화면은 6f 통과 후). `StudioNumericBank`에 `add_synth_template` + 우선순위 최하위, 프로필 gate(`numeric.synth.enabled_profiles`, 초기 빈 집합) 통과 전에는 판정에 쓰지 않고 `evidence.numeric_synth_agree`만 기록 | golden: 기존 replay는 synth 계층이 꺼진 상태로 diff 0; 새 replay 시나리오 "은행 비어 있음 + synth 켜짐"에서 tech notes 45종 top-1과 상세 클릭 0회 슬롯 비율 기록 |
+| **6d 상세 패널 폴백 순서 확정** | `inventory_detail_recovery` 판정 순서 문서화+구현 | 장비: 카테고리 라벨 × `T#` 배지(C5e-4) → 합성 상세 아이콘 → 이름 템플릿. 아이템: 캡처 상세 템플릿(user/session) → **합성 상세 아이콘(E3)** → 이름 템플릿 → 미식별(`partial`, 6e). 미보유 이벤트 선물·`_Piece`·강화석은 이 순서로 합성 단계에서 확정된다 | replay: 미보유 선물 프레임(있으면) 또는 합성 프레임 parity, 실게임 1280 presents tail |
+| **6e 사용자 라벨링 폴백(UI 예외 허용, D15)** | protocol additive: `scanner.review.unresolved_slots`(슬롯 crop PNG base64, 후보 top-3 identity+score, 프로필) / `scanner.review.assign_identity`(slot, identity, `persist: bool`) | 리뷰 화면에 미식별 슬롯 카드: 후보 3개 + 카탈로그 검색. `persist=true`면 D1 규칙대로 사용자 승인 샘플로 저장(`scanner-samples/{account}/{WxH}`), 아니면 세션 은행. 자동 추정 금지, 지정 전까지 `partial` 유지 | Dart↔Python E2E, decoder/mock/localization 동기화, 스키마 additive 테스트, 구 진단 JSON 호환 |
+| **6f E4 gate 확장(D16)** | `debug/scanner_c5e_gate/<profile>/` 프레임 + status 표 | 프로필별로 상세 확정 슬롯의 (실물 타일 vs 합성) M4 분포를 (실물 vs 실물) 분포와 비교. 합성 정답 점수 p10 ≥ 실물-실물 p10 − .03 이고 top-1 ≥ 99 %면 `inventory.synth.enabled_profiles`에 추가. equipment(`T#` 배지 결합), student 화면(장비 3칸·무기) 순. 미달 프로필은 상세 아이콘 합성만 | 실게임 1280 세 프로필 + 학생 단일 스캔, 수치 status 기록 |
+
+**D18 후속(6c와 같은 세션 또는 C5e-4에서)**: `tech-notes-full-c` 슬롯 44의 정답을 `Item_Icon_SkillBook_Ultimate`로 고치고, 아이템 카탈로그의 `_Piece`/본체 identity를 `item-rarity-v1.json`의 id·icon 기준으로 재검한다(상세 템플릿 `inventory_detail_f9_manifest`의 `identity_value`가 어느 icon을 가리키는지 합성 상세 아이콘으로 교차 확인, 불일치는 표로 status에). golden 기대값은 사유와 함께 갱신한다.
+
+**순서 권장**: 6a-0 → 6a → 6b → 6c(+D18) → 6f(아이템 두 프로필) → 6d → 6e → 6f(장비·학생). 6a~6c는 한 세션에 가능하면 묶고, 6e는 Flutter 포함이라 별도 세션.
 
 ### C6 — 계층·위생 (X16, X24, 파일 분할, 동작 보존)
 
@@ -191,6 +242,21 @@ sources:
 | D5~D9 | X23 특수 사례 각각 봉인/제거 | C7 표 제출 후 개별 결정 | C7 |
 | D10 | 인연 whole-bank 임계 | 다른 계정 표본 전까지 `uncertain` 강등 | C7 |
 | D11 | `profile_id` 엔트리 필드 제거 시점 | C1에서 병행, C6에서 제거 | C1/C6 |
+| D12 | 타일 은행을 배포 asset으로 export할지 | X25 다른 PC 표본으로 전이 확인 전까지 session/승인 은행만 | C5e-5/C7 |
+| D13 | 기존 원화 아이콘 템플릿(497종, `bundled`) 처리 | synth 계층 도입 후 `bundled`는 최후순위로 강등하고 C7에서 제거 결정(합성 상세 아이콘이 E3 통과로 대체) | C5e-6/C7 |
+| D14 | 원화 템플릿 공급원 | **확정(2026-09-27)**: KR/Steam 클라이언트에서 추출한 `backend/assets/recognition/asset_pack/`(D17). JP·SchaleDB는 쓰지 않음 | C5e-6 |
+| D19 | 템플릿 생성 시점 | **런타임 생성**(유지) + 입력 자산은 **D24대로 로컬 추출**. 스캔 시 창 크기별로 합성해 디스크 캐시(키: client, WxH, spec_version, asset_cache_sha). 사전 생성 세트·게임 아트는 배포하지 않음. 합성 vs 실물 점수를 상시 기록해 UI 패치 감지 → 상세 경로 강등 + 갱신 알림 | C5e-6(b) |
+| D20 | 텍스트 템플릿 생성 | **E5 완료(2026-09-27)**: KR 폰트(GyeonggiTitle Bold, Steam Preload 번들) 렌더링은 실물 글리프를 재현하지만 720p 문자열 margin이 얇아(min .001) **단독 키 금지**. 폰트 글리프는 `StudioNumericBank`의 **synth seed 계층**(synth < session < user)과 `x`/`K` 글리프 seed로만 쓴다. 프로필별 gate: 상세 확정 수량 대비 자릿수 top-1 ≥ .95. 상세 이름 라벨은 미실험 → 렌더링 안 함. 명세 `spec/template-generation-spec §8`, `ba-ui-template-spec-v1.json.fonts` | C5e-3/C5e-6a·6c |
+| D18 | 카탈로그 identity 명명(`_Piece`) | 인벤토리 설계도 = `*_Piece`(EquipmentExcel). 카탈로그·상세 템플릿·evidence를 `_Piece` 기준으로 재명명, 구 이름은 호환 매핑. **실제 오답 확인(2026-09-27)**: `tech-notes-full-c` 슬롯 44는 상세 경로가 `SkillBook_Ultimate_Piece`(비의서 조각)로 확정했으나 실물 타일은 `SkillBook_Ultimate`(비의서, 합성 M4 .909 vs .484). 아이템 쪽도 `_Piece`/본체 템플릿 매핑을 ExcelDB id 기준으로 재검하고 golden 기대값을 수정. **원인 위치 확인**: `inventory_catalog.py`의 tech_notes 행이 `Item_Icon_SkillBook_Ultimate_Piece`를 표시명 "비의서"로 등록 — ExcelDB에서 9998 `_Piece`=비의서 조각, 9999 `Ultimate`=비의서. 카탈로그 행을 둘로 나누고(조각은 보유 시에만 등장) 상세 템플릿 identity를 교정 | C5e-4/C6 |
+| D17 | 스캔 대상 클라이언트(KR/Steam)와 asset 출처(JP)의 아트 차이 처리 | 생성기에 클라이언트 인자, 기본은 스캔 대상과 같은 클라이언트의 asset; 불일치 항목은 E4 gate에서 partial. **폰트는 예외 없이 지역별**(E5: JP LINE Seed ≠ KR GyeonggiTitle) — asset 팩의 폰트는 스캔 대상 클라이언트에서 추출 | C5e-6 |
+| D16 | 합성 그리드 타일을 은행에 넣는 조건 | E4에서 프로필별로 합성-실물 M4 점수가 실물-실물 분포 안에 들 때만. 미달 프로필은 상세 패널 템플릿만 합성 | C5e-6 |
+| D15 | 미보유·미식별 아이템의 최종 폴백 | 사용자 라벨링(C5e-6e). 자동 추정 금지, partial 유지 | C5e-6 |
+| D22 | 4:3 화면 비율 지원 | 게임 옵션은 4:3/16:9 둘뿐. 같은 창 폭이면 `s`·타일 크기·열 x·행 pitch가 16:9와 **동일**(실측 1280폭: pitch 101.5px, 6행+α 표시), 세로 앵커 요소만 이동. region 자산의 높이 비율 상수를 버리고 프리팹 앵커 트리에서 ROI를 계산하는 **레이아웃 리졸버**(`recognition_layout.py`, 입력: `spec/debug/*prefab*.json` 앵커)로 파생 — 16:9·4:3 모두 같은 데이터. 실게임 4:3 검증(E7)은 리졸버 구현 후 | **보류(사용자 결정 2026-09-27): 이 워크플로 완료 후 재검토** |
+| D23 | 신규 아이템·패치 내성 | (1) 카탈로그의 identity·등급·이름은 손으로 적지 않고 `spec/item-rarity-v1.json`(ExcelDB)에서 파생. **순서는 프로필별 관측 규칙으로 계산**하고(아래), 규칙이 맞지 않는 항목만 관측 계층으로 보정(session → 승인 시 영구, `catalog_revision` 갱신). **규칙(2026-09-27 디스어셈블로 확정 + C5b 세 스캔 전수 일치)**: 아이템 '기본' 정렬의 비교 함수(`ItemSortingService.<>c__DisplayClass3_0.<Sort>b__0`)는 규칙 UniqueId 분기 = `(ItemCategory==Consumable) → ItemExcel Id 오름차순`이고(Name/Count/ExpirationTime 분기는 다른 정렬 옵션), 그 뒤 `UINonEquipmentInventory.OnSort`가 태그(학교)로 그룹화한다. 따라서 **기술 노트 = 학교 태그 그룹(그룹 순서 = 그룹 내 최소 Id: 4000 Hyakkiyako … 4090 Highlander, 4100 WildHunt) × 그룹 안 Quality 오름차순, 비의서 마지막** — 신형 T1(6001x, Consumable)이 학교 그룹 안에 들어가는 이유. **선물 = Id 오름차순**(태그 그룹 없음; 등급 오름차순처럼 보이는 것은 id 범위 5000대 SR < 5100대 SSR < 91000xxx의 우연, 새 선물은 등급과 무관하게 Id 자리). **장비** = `EquipmentSortingService.CompareCategory`의 **정적 카테고리 순위 표**(관측: 강화석 → 만능 설계도 → Necklace, Watch, Charm, Hairpin, Badge, Bag, Shoes, Gloves, Hat → 전 카테고리 T1 → 무기 성장 Z, C, B, A) × 티어 내림차순 × UniqueId. 필터 탭은 `UIFilterSortItemInventoryOptionList.LoadAndSetTabs`가 `FilterTabs` 데이터(태그 → `ItemFilters.TagToLocalization`)로 만들므로 새 범주는 코드가 아니라 데이터로 추가된다(D23(4) 탐지 대상 = `ItemFilter` 플래그 + 태그 목록). 새 스캔마다 재검증한다. (2) 카탈로그에 없는 항목: 사전 → 전체 은행 → 합성 상세 아이콘 → 라벨링. **후보 우주는 팩 전체가 아니라 현재 프로필의 필터 범주**(선물 = `Favor`, 장비 = 카테고리, 기술 노트 = `Material`+학교 태그 — ExcelDB `ItemCategory`/Tags, 단 기술 노트 T1은 `ItemCategory` 4로 예외라 태그 우선) → 그래도 없으면 팩 전체 → 라벨링. 확정된 신규 항목은 (1)의 규칙으로 ordinal을 계산해 편입. (3) 게임 패치 시 ExcelDB·asset 팩 재추출은 오케스트레이터 유지보수(`ba_extract_pack.py`, `fb_excel.py`), 런타임은 팩 sha로 캐시 무효화(D19). 팩보다 새 아이템은 라벨링 + `asset_pack_outdated` 진단. **(4) 대규모 업데이트 대응 절차(코드 위치 고정)**: 정렬·필터 로직은 Il2Cpp 타입 덤프(`BA Viewer 0.1/reports/compile/common-types/types.json`)에 이름·주소가 있다 — `ItemSortingService.Sort/GetDefaultSortingOrder` + 비교 람다 `ItemSortingService.<>c__DisplayClass3_0.<Sort>b__0`, `UIItemSort.Sort`/`<>c.<Sort>b__27_0`, `UINonEquipmentInventory.OnSort`, `UIFilterSortItemInventoryOptionList.LoadAndSetTabs`, `EquipmentSortingService.Sort/CompareCategory/GetDefaultSortingOrder`/`<>c__DisplayClass3_0.<Sort>b__0`; 필터 탭은 enum `ItemFilter`(SecretStone·Coin·Material·Consumable·Favor·Collectible 플래그), 범주는 `FlatData.ItemCategory`(13종)·`FlatData.EquipmentCategory`(15종)·`FlatData.School`. 패치 후 절차: ① 덤프 재생성 → enum·클래스 diff로 **새 ItemFilter 플래그/ItemCategory/EquipmentCategory 감지** ② ExcelDB 재추출(`fb_excel.py`)·팩 재추출(`ba_extract_pack.py`) ③ 비교 람다 본문을 `BA Viewer 0.1/tools/dump_remaining_native.py`로 디스어셈블해 호출되는 getter 목록(어떤 필드로 비교하는지)을 확인, 규칙 변경 시 (1) 갱신 ④ 새 필터 탭은 region 자산에 컨트롤이 없으면 클릭하지 않고 해당 프로필을 `profile_unsupported`로 표시(zero-fill 금지). 이 절차는 오케스트레이터 세션이 수행 | C5e-2/C5e-6 |
+| D25 | 합성 템플릿 저장 단위(사용자 질문 2026-09-27, E8) | **해상도별 저장 없음.** 그리드 타일·상세 아이콘은 1080p 등가 스케일로 합성해 정규화 크기(타일 96², 상세 128²) 한 벌만 디스크 캐시(≈10 MB, identity별 증분). 매칭은 실물 crop을 같은 크기로 맞춰 M4(E8: 720p에서 top-1 100 %, p10 .949 ≥ 네이티브). 창 크기 의존 요소는 ROI(앵커 계산)와 글리프(즉석 렌더, ms)뿐. 즉석 전체 합성(6.7 s/1268종)은 첫 스캔 속도 때문에 채택하지 않음. 1080p·1440p 실물 재검증은 6f | C5e-6a/6b |
+| D26 | 학생 화면 템플릿 합성 범위 | 6a 생성기에 학생 화면 포함: **장비 3칸**(`UIEquipmentCard` 257×203 아이콘 + 티어 배지·Lv 글리프 — 현재 `student_equipment_recognizer`가 이미 아이콘+카드 배경 합성을 하므로 그 경로를 6a로 통합), **무기 카드**(무기 아이콘 텍스처 + 별 스프라이트), **별 등급**(아틀라스 `Common_Icon_Formation_Star`), **레벨·인연·스킬 레벨 숫자**(글리프 seed), **스킬 아이콘**(텍스처). 학생 identity는 현재 캡처 템플릿(260종, 화면 crop) 유지 — 스파인 일러스트는 합성 불가. 대신 **이름 라벨 폰트 렌더**를 identity 3차 키·seed 후보로 E9에서 검증(한글 이름은 숫자보다 형태 차이가 커 문자열 NCC margin이 클 것으로 기대). 필요한 추출 규칙(무기·스킬 아이콘·학생 이름 localize의 카탈로그 키)은 오케스트레이터가 6a 착수 전 spec에 추가 | C5e-6a/6f |
+| D24 | asset 공급 방식(사용자 결정 2026-09-27) | **두 계층으로 분리.** ① **플래너 클라이언트가 로컬 추출하는 것 = 키가 필요 없는 안전한 파일만**: 카탈로그(CCDB, 평문)·UnityFS 번들의 아이콘 PNG·아틀라스 스프라이트·폰트 TTF. 최초 실행 시 Steam 설치 폴더(`libraryfolders.vdf` → `steamapps/common/BlueArchive`, 실패 시 폴더 선택 UI)에서 `%APPDATA%/…/recognition-assets/<catalog_sha>/`로 생성(6a-0). 게임 패치 즉시 자동 갱신. ② **키가 필요한 것(ExcelDB → 등급·카테고리·이름)은 배포자가 게임 업데이트에 맞춰 갱신하는 스냅샷** `item-rarity-vN.json`으로만 배포한다(오케스트레이터 세션이 `fb_excel.py`로 생성, 클라이언트는 ExcelDB를 열지 않음). 게임 자산 자체는 배포하지 않는다. 스냅샷이 뒤처진 아이콘(①에는 있고 ②에 없음)은 생성기가 **N/R/SR/SSR 4벌**을 합성하고 스캔 때 배경색·M4로 등급을 고른다(등급 = 출력); 필터 스코핑은 카탈로그 경로(`03_NonEquipment`/`02_Equipment`)와 텍스처 이름 접두로, 이름은 스냅샷 갱신 전까지 "이름 미확인" 표시 + `rarity_snapshot_outdated` 진단. 추출 실패는 synth 계층 비활성 + `asset_extract_failed`(스캔은 상세·라벨링으로 계속). 1차 지원은 Steam/KR만; JP·다국어는 D22와 함께 워크플로 완료 후. 저장소 `asset_pack/` 바이너리는 개발용 git-ignore, `manifest.json`·`README.md`는 추출기 정답지 | C5e-6a-0 |
+| D21 | 스캔 중 사용자 입력 충돌 처리 | 기본: 현재의 사후 검출(`input_focus_changed`·`_modifiers_clear`) 유지 + 저수준 훅으로 비주입 입력 감지 시 해당 스텝 `input_busy` 후 재시도(≤2회, 초과 시 `partial`). 입력 삼킴·입력 버스트·DLL 주입은 채택하지 않음 | C5e-1 |
 
 기본안은 사용자가 달리 말하지 않으면 채택한다. D1~D3은 재질문하지 않는다.
 
@@ -202,7 +268,8 @@ sources:
 4. 요구가 모호하면 AGENTS.md 규칙대로 파일을 수정하기 전에 질문한다. 단 이 문서의 기본안이 있는 항목은 질문 없이 기본안으로 진행한다.
 5. 동작 보존 phase에서 golden diff가 생기면 멈추고 사유를 status에 적은 뒤 사용자에게 보고한다. 임의로 golden을 덮지 않는다.
 6. 실게임 확인이 필요한 단계는 프레임을 `debug/scanner_c<n>_live/`에 저장하고 SHA를 status에 적는다.
-7. 검증 명령은 restoration 워크플로와 같다: `cd backend; py -3.11 -m unittest discover -s tests -v`,
+7. **status 문서는 Opus 작업자만 쓴다.** 오케스트레이터 세션의 결정·실험 기록은 `scanner-structural-consolidation-orchestrator-log.md`에 append 하고, status에는 Opus가 필요한 줄만 옮겨 적는다(2026-09-27 덮어쓰기 사고 재발 방지).
+8. 검증 명령은 restoration 워크플로와 같다: `cd backend; py -3.11 -m unittest discover -s tests -v`,
    `cd frontend; flutter analyze; flutter test`, `codealmanac validate`, `git diff --check`. protocol 변경 시 Dart↔Python E2E 포함.
 
 ## 세션 시작 프롬프트 템플릿
@@ -223,5 +290,15 @@ AGENTS.md → README.md → almanac/workflows/scanner-structural-consolidation-w
 
 ## 재개 지점
 
-- 현재 **C0 미착수**. 리뷰 근거는 위 X01~X25 표와 2026-09-23 분석 대화에 있다.
-- 다음 행동: C0 골든 고정. 프레임 결손 조합이 있으면 status에 적고 C1로 진행한다.
+- 2026-09-27: C0~C4 완료, C5a·C5b 완료. C5c~C5e는 위 표대로 재정의됐다(E1/E2 실험 근거). E5(폰트)·asset 팩·KR/JP parity·등급표까지
+  오케스트레이터 쪽 입력 확보는 **전부 끝났다**. 이후 오케스트레이터 개입 없이 Opus가 C5c → C7을 진행한다.
+- 다음 행동 순서: **C5c**(이미지 유틸 + 채널별 NCC) → C5d(배치 선택) → C5e-1(gutter 위상) → C5e-2(타일 은행 fast path) →
+  **C5e-6a~6c**(생성기·캐시·로더, +D18 교정) → C5e-3(수량 은행 + synth seed) → C5e-4(장비 라벨×배지) → C5e-6d → C5e-6f(아이템 gate) →
+  C5e-6e(라벨링 UI) → C5e-6f(장비·학생 gate) → C5e-5(선택) → C6 → C7.
+  C5d와 C5e-1은 함께 실게임 1280 세 프로필 tail 검증을 한 번에 받아도 된다.
+- 재고 golden 두 시나리오는 첫 상세 읽기에서 멈추므로 C5c 이전에 `scanner_c5_live` 프레임(선택 프레임 포함)으로
+  **상세 경로가 끝까지 도는 재고 replay 시나리오 1개**를 추가한다(C6 리팩토링 보호). 이때 슬롯 44 기대값은 D18대로 `SkillBook_Ultimate`.
+- 실험 산출물: `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`(E1/E2/E5/E6/E8), `debug/scanner_c5e_experiments/`.
+- 합성 입력: `docs/migration/scanner-consolidation/template-generation-spec-2026-09-27.md`, `backend/assets/recognition/spec/`,
+  `backend/assets/recognition/asset_pack/`, 도구 `backend/tools/asset_spec/`. 팩 재추출이 필요하면(게임 패치) `ba_extract_pack.py` — 오케스트레이터 몫.
+- 사용자 확인 대기: 경기천년제목 폰트 재배포 조건(팩 `README.md`). C5f 게이트는 통과(2026-09-27).

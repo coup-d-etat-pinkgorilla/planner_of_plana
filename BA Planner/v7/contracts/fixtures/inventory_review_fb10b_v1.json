@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "policy": {
+    "manual_import": "clear only actual applied keys",
+    "scan_applied": "clear",
+    "identified_excluded": "preserve quantity and flag",
+    "unresolved": "no canonical identity",
+    "fake_scan_timestamp": false,
+    "empty_applied": "no commit"
+  },
+  "messages": [
+    {
+      "id": "read",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "review",
+        "type": "request",
+        "method": "repository.inventory.review.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "id": "flags",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "review",
+        "type": "response",
+        "method": "repository.inventory.review.get",
+        "payload": {
+          "version": 1,
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 2,
+          "needs_review_keys": [
+            "Item_Icon_SkillBook_Abydos_1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "wrong-version",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "review",
+        "type": "response",
+        "method": "repository.inventory.review.get",
+        "payload": {
+          "version": true,
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 2,
+          "needs_review_keys": [
+            "Item_Icon_SkillBook_Abydos_1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "wrong-revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "review",
+        "type": "response",
+        "method": "repository.inventory.review.get",
+        "payload": {
+          "version": 1,
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": true,
+          "needs_review_keys": [
+            "Item_Icon_SkillBook_Abydos_1"
+          ]
+        }
+      }
+    },
+    {
+      "id": "duplicate",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "review",
+        "type": "response",
+        "method": "repository.inventory.review.get",
+        "payload": {
+          "version": 1,
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 2,
+          "needs_review_keys": [
+            "x",
+            "x"
+          ]
+        }
+      }
+    }
+  ]
+}

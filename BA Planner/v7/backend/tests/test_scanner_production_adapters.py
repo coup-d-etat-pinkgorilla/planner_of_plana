@@ -12,6 +12,17 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_matchers import InventoryMatcherAdapter, SlotCountMatcher, StudentMatcherAdapter
 from core.scanner_session import ScannerError
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
+from input_guard_stub import patch_input_guard
+
+_GUARD = patch_input_guard()
+
+
+def setUpModule():
+    _GUARD.start()
+
+
+def tearDownModule():
+    _GUARD.stop()
 
 
 ASSETS = Path(__file__).parents[1] / "assets" / "recognition" / "v1"
@@ -390,7 +401,16 @@ class ScannerProductionAdapterTests(unittest.TestCase):
             def page_slots(self, _source, _offset, readable=True):
                 return dict(enumerate(grid_slots))
 
-            def advance(self, _target, _cancel, current, _source):
+            def phase_residuals(self, _frame, _source, _offset, _calibration=0.0):
+                return []
+
+            def row_centering(self, _source):
+                return 0.0
+
+            def page_distance(self, _source, _offset, _rows, _centering):
+                return 0.0
+
+            def advance(self, _target, _cancel, current, _source, _rows=None):
                 return type("Moved", (), {
                     "frame": current.copy(), "shift": 0.0, "terminal": True,
                     "reason": "verified_no_motion",

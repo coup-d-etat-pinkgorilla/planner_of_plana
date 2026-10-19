@@ -1,0 +1,1195 @@
+{
+  "version": 2,
+  "cases": [
+    {
+      "name": "match.upsert",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "instant",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "match.delete",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.delete",
+        "method": "tactical.v2.match.delete",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match_id": "m1"
+        }
+      }
+    },
+    {
+      "name": "jokbo.upsert",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-jokbo.upsert",
+        "method": "tactical.v2.jokbo.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "jokbo": {
+            "version": 2,
+            "jokbo_id": "manual-j1",
+            "name": "Synthetic template",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "jokbo.delete",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-jokbo.delete",
+        "method": "tactical.v2.jokbo.delete",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "jokbo_id": "manual-j1"
+        }
+      }
+    },
+    {
+      "name": "legacy.preview",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-legacy.preview",
+        "method": "tactical.v2.legacy.preview",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567"
+        }
+      }
+    },
+    {
+      "name": "legacy.commit",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-legacy.commit",
+        "method": "tactical.v2.legacy.commit",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "expected_source_revision": 1,
+          "expected_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      }
+    },
+    {
+      "name": "bool_attempt",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "instant",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": true
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown_manual_attempt",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "instant",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": null
+          }
+        }
+      }
+    },
+    {
+      "name": "zero_attempt",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "instant",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown_precision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "guess",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "extra_request_field",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "fb6-match.upsert",
+        "method": "tactical.v2.match.upsert",
+        "payload": {
+          "profile_id": "0123456789abcdef01234567",
+          "expected_revision": 0,
+          "idempotency_key": "synthetic-key",
+          "match": {
+            "version": 2,
+            "match_id": "m1",
+            "kind": "attack",
+            "occurred_at": "2026-10-13T21:10:00+09:00",
+            "occurred_precision": "instant",
+            "season": "34",
+            "opponent_identity_id": "opponent-one",
+            "opponent_display_name": "Synthetic Rival",
+            "result": "win",
+            "attack_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "defense_deck": {
+              "version": 2,
+              "strikers": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "shiroko",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "akane",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 2,
+                  "student_id": "yuuka",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 3,
+                  "student_id": "mika",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ],
+              "specials": [
+                {
+                  "version": 2,
+                  "position": 0,
+                  "student_id": "serina",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                },
+                {
+                  "version": 2,
+                  "position": 1,
+                  "student_id": "hibiki",
+                  "state": "manual",
+                  "source": "manual",
+                  "confidence": null,
+                  "review_status": "confirmed",
+                  "wildcard": false
+                }
+              ]
+            },
+            "notes": "synthetic",
+            "attempt_count": 3
+          },
+          "invented": true
+        }
+      }
+    }
+  ]
+}

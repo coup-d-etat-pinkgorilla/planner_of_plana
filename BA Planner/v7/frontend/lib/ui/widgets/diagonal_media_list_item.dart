@@ -3,13 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 import 'bond_rank_portrait.dart';
 import 'section_template_surface.dart';
 import 'student_portrait_status_overlay.dart';
 
 const diagonalMediaIncreaseColor = AppColors.success;
 const diagonalMediaDecreaseColor = AppColors.danger;
-const diagonalMediaHighlightColor = Color(0xfff2b3ef);
+const diagonalMediaHighlightColor = AppColors.accent;
 const diagonalMediaHighlightStrokeWidth = 1.8;
 
 @immutable
@@ -154,7 +155,7 @@ abstract final class DiagonalMediaListItemLayout {
 Path diagonalMediaListItemPath(Size size) {
   final depth = math.min(
     size.width * 0.08,
-    size.height / math.tan(80 * math.pi / 180),
+    diagonalCutDepth(size.height),
   );
   return buildRoundedSectionPolygon([
     Offset(depth, 0),
@@ -509,7 +510,7 @@ class _CatalogStatusBadgePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final depth = math.min(
       size.width * 0.18,
-      size.height / math.tan(80 * math.pi / 180),
+      diagonalCutDepth(size.height),
     );
     final path = buildRoundedSectionPolygon([
       Offset(depth, 0),
@@ -596,6 +597,7 @@ class _DeltaLabel extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textMuted,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: fontSize,
               fontWeight: FontWeight.w700,
               height: 1,
@@ -713,6 +715,7 @@ class _FittedValueText extends StatelessWidget {
       style: TextStyle(
         color: color ?? AppColors.textMuted,
         fontFamily: 'GyeonggiTitle',
+        fontFamilyFallback: AppFonts.fallback,
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
         height: 1,
@@ -736,6 +739,7 @@ class _ComponentDeltaLine extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.textMuted,
           fontFamily: 'GyeonggiTitle',
+          fontFamilyFallback: AppFonts.fallback,
           fontSize: 8.5,
           fontWeight: FontWeight.w700,
           height: 1,
@@ -924,7 +928,7 @@ class _StarIndicatorPainter extends CustomPainter {
       );
       final depth = math.min(
         rect.width * 0.45,
-        rect.height / math.tan(80 * math.pi / 180),
+        diagonalCutDepth(rect.height),
       );
       final path = buildRoundedSectionPolygon([
         Offset(rect.left + depth, rect.top),
@@ -934,7 +938,7 @@ class _StarIndicatorPainter extends CustomPainter {
       ], radius: math.min(3, rect.height * 0.3));
       final active = index < 5 ? index < studentStars : index - 5 < weaponStars;
       final activeColor = index < 5
-          ? const Color(0xfff3c96b)
+          ? AppColors.starDisplay
           : AppColors.primary;
       canvas.drawPath(
         path,

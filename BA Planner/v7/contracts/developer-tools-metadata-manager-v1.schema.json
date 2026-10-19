@@ -1,0 +1,964 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/developer-tools-metadata-manager-v1.schema.json",
+  "title": "M1 basic read-only developer tools; legacy envelope retained",
+  "$comment": "Basic M1 infrastructure. Missing report is not disconnected/zero diff. M4 physical validation and M3 provenance/comparison are excluded.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/error"
+    },
+    {
+      "$ref": "#/$defs/store_status_request"
+    },
+    {
+      "$ref": "#/$defs/store_status_response"
+    },
+    {
+      "$ref": "#/$defs/store_versions_request"
+    },
+    {
+      "$ref": "#/$defs/store_versions_response"
+    },
+    {
+      "$ref": "#/$defs/store_diff_request"
+    },
+    {
+      "$ref": "#/$defs/store_diff_response"
+    },
+    {
+      "$ref": "#/$defs/metadata_source_view_request"
+    },
+    {
+      "$ref": "#/$defs/metadata_source_view_response"
+    },
+    {
+      "$ref": "#/$defs/asset_map_list_request"
+    },
+    {
+      "$ref": "#/$defs/asset_map_list_response"
+    },
+    {
+      "$ref": "#/$defs/asset_map_check_request"
+    },
+    {
+      "$ref": "#/$defs/asset_map_check_response"
+    }
+  ],
+  "$defs": {
+    "error": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "store_status_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "store.status"
+        },
+        "params": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "store_status_result": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "connected",
+            "disconnected"
+          ]
+        },
+        "store_root": {
+          "type": "string"
+        },
+        "pins": {
+          "type": "object",
+          "properties": {
+            "jp": {
+              "type": "object",
+              "properties": {
+                "version_id": {
+                  "type": "string"
+                },
+                "client_version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bundle_revision": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "files": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "required": [
+                "version_id",
+                "client_version",
+                "bundle_revision",
+                "files"
+              ],
+              "additionalProperties": false
+            },
+            "steam": {
+              "type": "object",
+              "properties": {
+                "version_id": {
+                  "type": "string"
+                },
+                "client_version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bundle_revision": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "files": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "required": [
+                "version_id",
+                "client_version",
+                "bundle_revision",
+                "files"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
+        },
+        "extracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "server": {
+                "enum": [
+                  "jp",
+                  "steam"
+                ]
+              },
+              "version_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "provenance_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "files": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            "required": [
+              "server",
+              "version_id",
+              "kind",
+              "path",
+              "provenance_sha256",
+              "files"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "verification": {
+          "const": "not_verified"
+        },
+        "missing_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "state",
+        "store_root",
+        "pins",
+        "extracts",
+        "verification",
+        "missing_kinds"
+      ],
+      "additionalProperties": false
+    },
+    "store_status_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/store_status_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "store_versions_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "store.versions"
+        },
+        "params": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "store_versions_result": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "connected",
+            "disconnected"
+          ]
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "server": {
+                "enum": [
+                  "jp",
+                  "steam"
+                ]
+              },
+              "version_id": {
+                "type": "string"
+              },
+              "pinned": {
+                "type": "boolean"
+              },
+              "client_version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bundle_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "manifest_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "verification": {
+                "const": "manifest_only"
+              }
+            },
+            "required": [
+              "server",
+              "version_id",
+              "pinned",
+              "client_version",
+              "bundle_revision",
+              "manifest_sha256",
+              "verification"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "state",
+        "versions"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "disconnected"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "versions": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "store_versions_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/store_versions_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "store_diff_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "store.diff"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "object",
+              "properties": {
+                "server": {
+                  "enum": [
+                    "jp",
+                    "steam"
+                  ]
+                },
+                "version_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]*$"
+                }
+              },
+              "required": [
+                "server",
+                "version_id"
+              ],
+              "additionalProperties": false
+            },
+            "to": {
+              "type": "object",
+              "properties": {
+                "server": {
+                  "enum": [
+                    "jp",
+                    "steam"
+                  ]
+                },
+                "version_id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9._-]*$"
+                }
+              },
+              "required": [
+                "server",
+                "version_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "store_diff_result": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "disconnected",
+            "missing",
+            "available"
+          ]
+        },
+        "from": {
+          "type": "object",
+          "properties": {
+            "server": {
+              "enum": [
+                "jp",
+                "steam"
+              ]
+            },
+            "version_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]*$"
+            }
+          },
+          "required": [
+            "server",
+            "version_id"
+          ],
+          "additionalProperties": false
+        },
+        "to": {
+          "type": "object",
+          "properties": {
+            "server": {
+              "enum": [
+                "jp",
+                "steam"
+              ]
+            },
+            "version_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]*$"
+            }
+          },
+          "required": [
+            "server",
+            "version_id"
+          ],
+          "additionalProperties": false
+        },
+        "report": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/existing_store_report"
+            }
+          ]
+        },
+        "coverage": {
+          "type": "string"
+        },
+        "verification": {
+          "enum": [
+            "not_verified",
+            "report_identity_only"
+          ]
+        }
+      },
+      "required": [
+        "state",
+        "from",
+        "to",
+        "report",
+        "coverage",
+        "verification"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "report": {
+                "type": "object"
+              },
+              "verification": {
+                "const": "report_identity_only"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "report": {
+                "type": "null"
+              },
+              "verification": {
+                "const": "not_verified"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "store_diff_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/store_diff_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "metadata_source_view_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "metadata.source.view"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            }
+          },
+          "required": [
+            "student_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "metadata_source_view_result": {
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "value": {},
+              "value_state": {
+                "enum": [
+                  "present",
+                  "unknown"
+                ]
+              },
+              "source_state": {
+                "const": "unknown"
+              },
+              "provenance": {
+                "type": "null"
+              },
+              "comparisons": {
+                "type": "array",
+                "maxItems": 0
+              }
+            },
+            "required": [
+              "field",
+              "value",
+              "value_state",
+              "source_state",
+              "provenance",
+              "comparisons"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "comparison_state": {
+          "const": "not_verified"
+        },
+        "unavailable_groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "student_id",
+        "fields",
+        "comparison_state",
+        "unavailable_groups",
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "metadata_source_view_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/metadata_source_view_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_list_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "asset_map.list"
+        },
+        "params": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_list_result": {
+      "type": "object",
+      "properties": {
+        "map_version": {
+          "const": 1
+        },
+        "inventory_status": {
+          "const": "M0-draft"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "https://ba-planner.local/contracts/asset-map-v1.schema.json#/$defs/asset"
+          }
+        },
+        "verification": {
+          "const": "M0_mapping_draft; physical_not_verified"
+        }
+      },
+      "required": [
+        "map_version",
+        "inventory_status",
+        "assets",
+        "verification"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_list_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/asset_map_list_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_check_request": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "method": {
+          "const": "asset_map.check"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "enum": [
+                "all",
+                "ui",
+                "recognition"
+              ]
+            }
+          },
+          "required": [
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "method",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_check_result": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "enum": [
+            "all",
+            "ui",
+            "recognition"
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "plannerPath": {
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "ui",
+                  "recognition"
+                ]
+              },
+              "structure_state": {
+                "const": "valid"
+              },
+              "local_file_state": {
+                "enum": [
+                  "present",
+                  "missing"
+                ]
+              },
+              "mapping_state": {
+                "enum": [
+                  "catalog",
+                  "manual"
+                ]
+              },
+              "physical_state": {
+                "const": "not_verified"
+              }
+            },
+            "required": [
+              "plannerPath",
+              "role",
+              "structure_state",
+              "local_file_state",
+              "mapping_state",
+              "physical_state"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "physical_validation": {
+          "const": "M4_required"
+        },
+        "source_verification": {
+          "const": "local_structure_only"
+        }
+      },
+      "required": [
+        "scope",
+        "rows",
+        "physical_validation",
+        "source_verification"
+      ],
+      "additionalProperties": false
+    },
+    "asset_map_check_response": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "ok": {
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/asset_map_check_result"
+        }
+      },
+      "required": [
+        "version",
+        "ok",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "existing_store_report": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ba-client-data.changelog.v1"
+        },
+        "server": {
+          "enum": [
+            "jp",
+            "steam"
+          ]
+        },
+        "a": {
+          "type": "string"
+        },
+        "b": {
+          "type": "string"
+        },
+        "generated_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "level1_files": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "same",
+              "changed",
+              "only_in_a",
+              "only_in_b"
+            ]
+          }
+        },
+        "level2_extracts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        },
+        "level3_behavior": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "server",
+        "a",
+        "b",
+        "generated_utc",
+        "level1_files",
+        "level2_extracts",
+        "level3_behavior"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

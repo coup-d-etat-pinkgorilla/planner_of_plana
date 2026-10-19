@@ -5,9 +5,11 @@ reason in almanac/workflows/scanner-structural-consolidation-status.md before an
 with `py -3.11 -m tools.scanner_consolidation_replay --write`.
 """
 import difflib
+from pathlib import Path
 import unittest
 
 from tools.scanner_consolidation_replay import dumps, golden_path, load_scenarios, run_scenario, verify_inputs
+from tools.scanner_golden_dump import dump_comparison
 
 
 REQUIRED_COVERAGE = {
@@ -26,9 +28,16 @@ class ScannerConsolidationGoldenTests(unittest.TestCase):
     def test_replay_matches_golden_including_evidence_order(self):
         for scenario in load_scenarios():
             with self.subTest(scenario=scenario["id"]):
-                self.assertEqual([], verify_inputs(scenario), "recorded input frames changed")
+                problems = verify_inputs(scenario)
+                if problems and scenario.get("replay") == "locked" and scenario.get("frames_local_only"):
+                    # Locked live recordings keep their frames out of git (C5, ~100 MB); machines
+                    # without them skip, and a present-but-changed recording still fails below.
+                    if not any((Path(__file__).resolve().parents[2] / scenario["recording"]).glob("frame-*.png")):
+                        self.skipTest(f"local-only frames for {scenario['id']} are not present")
+                self.assertEqual([], problems, "recorded input frames changed")
                 expected = golden_path(scenario["id"]).read_text(encoding="utf-8").replace("\r\n", "\n")
                 actual = dumps(run_scenario(scenario))
+                dump_comparison(scenario["id"], expected, actual)
                 if actual != expected:
                     diff = "".join(difflib.unified_diff(
                         expected.splitlines(True), actual.splitlines(True), "golden", "replay", n=2))

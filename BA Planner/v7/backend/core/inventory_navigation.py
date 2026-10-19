@@ -8,7 +8,7 @@ from core import recognition_thresholds as rt
 from core.scanner_session import ScannerError
 from core.scan_context import ScanContext
 from core.student_scan_recognizer import ratio_crop
-from core.student_weapon_recognizer import _normalized_correlation as correlation, _color_similarity as color_similarity
+from core.recognition_image_ops import ncc_signed_lanczos as correlation, color_similarity
 
 
 # Region assets locate controls, but only these names may be clicked (C2): a new asset
@@ -38,6 +38,11 @@ class PageMove:
     shift: float
     terminal: bool=False
     reason: str='verified_pixel_shift'
+    requested: float|None=None
+
+
+# Registry pixel values are client pixels of the native 1280x720 window (C5e-1).
+NATIVE_HEIGHT=720
 
 
 def _center(region):return ((region['x1']+region['x2'])/2,(region['y1']+region['y2'])/2)
@@ -243,9 +248,48 @@ class InventoryNavigation:
             self.capture.scroll(ScanContext.of(target).replace(cancel=cancel,scroll_point=(x,start_y)),delta)
             self.trace.append(dict(input='scroll',delta=delta,attempt=attempt,point=[x,start_y]))
 
-    def restore_first_page(self,target,cancel,frame):
-        """Re-apply the verified display settings; the client then shows the first page (X10)."""
-        return self.prepare(target,cancel,frame)
+    def restore_first_page(self,target,cancel,frame,first=None,rows=None):
+        """Return the list to its first page (X10).
+
+        With the first page's frame, wheel up (E6: a tick moves 500-700px, the top clamps) and verify
+        the list shows that page again (C5e-1); otherwise re-apply the verified display settings.
+        """
+        if first is None or not callable(getattr(self.capture,'scroll',None)):
+            return self.prepare(target,cancel,frame)
+        source=self.detail_recognizer.classify(first)
+        # The wheel point is over the grid (middle column, viewport centre); a wheel never selects a tile.
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
+        context=ScanContext.of(target).replace(cancel=cancel,scroll_point=(base[2]['cx'],(viewport['y1']+viewport['y2'])/2))
+        ticks=min(10,math.ceil(max(1,rows or 1)/5)+1)
+        for _round in (1,2):
+            for _tick in range(ticks):
+                if cancel.is_set():raise ScannerError('cancelled','inventory restore cancelled')
+                try:
+                    self.capture.scroll(context,120)
+                    self.trace.append(dict(input='wheel_up'))
+                except ScannerError as exc:
+                    # D21: the result is verified against the first page below, so a disturbed tick is only noted.
+                    if exc.code!='input_busy':raise
+                    self.trace.append(dict(input_busy='wheel_up',performed=exc.details.get('performed')))
+                if cancel.wait(.1):raise ScannerError('cancelled','inventory restore cancelled')
+            # The wheel overshoots past the top and springs back (live: an empty list for a moment), so
+            # poll until the rows are back and either match the first page or have settled elsewhere.
+            previous=None
+            for _poll in range(10):
+                if cancel.wait(.3):raise ScannerError('cancelled','inventory restore cancelled')
+                with self.capture.wait_stable(target,cancel,timeout=4) as now:
+                    if self.detail_recognizer.classify(now)!=source:
+                        raise ScannerError('inventory_prepare_unconfirmed','first page restore left the list screen')
+                    if len(self.gutter_tops(now,source))<2:
+                        self.trace.append(dict(restore='rows_not_settled'));continue
+                    shift,residual=self.measure_shift(first,now,source)
+                self.trace.append(dict(restore_shift_px=round(shift*first.height),residual=residual))
+                if shift<=rt.value('inventory.shift.no_motion') and residual<=rt.value('inventory.shift.max_residual'):
+                    return None
+                if previous is not None and abs(previous-shift)<=rt.value('inventory.shift.no_motion'):break
+                previous=shift
+            ticks=10
+        raise ScannerError('inventory_prepare_unconfirmed','list did not return to its first page')
 
     def page_slots(self,source,offset,readable=True):
         """{content index: slot region} for tiles fully inside the list viewport at a content offset.
@@ -269,7 +313,36 @@ class InventoryNavigation:
                 if region['y1']>=viewport['y1']+margin and region['y2']<=viewport['y2']-margin:result[(row+whole)*5+col]=region
         return result
 
-    def measure_shift(self,before,after,source):
+    def gutter_tops(self,frame,source):
+        """Tile top edges (px) read from the horizontal grey gutters inside the list viewport (C5e-1, E1).
+
+        A gutter row is almost entirely gutter grey across the grid columns; bands touching the viewport
+        edge are cut off and one- or two-pixel bands are selection shadows, so both are dropped.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
+        w,h=frame.size;top=round(viewport['y1']*h)
+        box=(round(base[0]['x1']*w),top,round(base[4]['x2']*w),round(viewport['y2']*h))
+        low,high=rt.value('inventory.gutter.grey_low'),rt.value('inventory.gutter.grey_high')
+        with frame.convert('L') as grey,grey.crop(box) as view,view.point(lambda v:1 if low<=v<=high else 0) as mask:
+            data,width=mask.tobytes(),mask.width
+            rows=[data[y*width:(y+1)*width].count(1)>=rt.value('inventory.gutter.row_ratio')*width for y in range(mask.height)]
+        bands=[];start=None
+        for y,gutter in enumerate([*rows,False]):
+            if gutter and start is None:start=y
+            elif not gutter and start is not None:bands.append((start,y-1));start=None
+        return [top+end+3 for start,end in bands if start>0 and end<len(rows)-1 and end-start+1>=3]
+
+    def phase_residuals(self,frame,source,offset,calibration=0.0):
+        """Observed minus predicted tile-row phase (px, within half a row) for every detected gutter.
+
+        calibration is the first page's residual (offset 0 is exact there): the fixed distance between
+        a gutter's end and the slot region's top edge, removed before wrapping.
+        """
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];h=frame.height
+        pitch=(base[5]['cy']-base[0]['cy'])*h;origin=(base[0]['y1']-offset)*h+calibration
+        return [(top-origin+pitch/2)%pitch-pitch/2 for top in self.gutter_tops(frame,source)]
+
+    def measure_shift(self,before,after,source,expected=None):
         """(upward shift as a fraction of height, mean grey residual) of the list between two frames."""
         base=self.detail_recognizer.regions['sources'][source]['grid_slots'];viewport=self.regions['list_viewport'][source]
         w,h=before.size
@@ -282,15 +355,78 @@ class InventoryNavigation:
                 with x.crop((0,shift,x.width,span)) as top,y.crop((0,0,y.width,span-shift)) as bottom:
                     with ImageChops.difference(top,bottom) as diff:return ImageStat.Stat(diff).mean[0]
             with a.resize((a.width//2,height//2)) as a2,b.resize((b.width//2,height//2)) as b2:
-                coarse=min(range(0,limit//2),key=lambda shift:cost(a2,b2,shift,a2.height))
-            candidates=range(max(0,coarse*2-4),min(limit,coarse*2+4)+1)
-            best=min(candidates,key=lambda shift:cost(a,b,shift,height))
+                coarse=[cost(a2,b2,shift,a2.height) for shift in range(0,limit//2)]
+            # The grid repeats every row, so the half-size search can prefer a basin one pitch away
+            # (C5e-1 live: 10px chosen for a 111px move); refine the three best coarse minima at full size.
+            minima=[shift for shift in range(len(coarse)) if (shift==0 or coarse[shift]<=coarse[shift-1])
+                    and (shift==len(coarse)-1 or coarse[shift]<=coarse[shift+1])]
+            candidates={fine for shift in sorted(minima,key=coarse.__getitem__)[:3]
+                        for fine in range(max(0,shift*2-4),min(limit,shift*2+4)+1)}
+            if expected is not None:
+                # A deterministic drag names its distance; its neighbourhood always competes (C5e-1).
+                centre=round(expected*h);candidates.update(range(max(0,centre-4),min(limit,centre+4)+1))
+            best=min(sorted(candidates),key=lambda shift:cost(a,b,shift,height))
             return best/h,cost(a,b,best,height)
         finally:
             a.close();b.close()
 
-    def advance(self,target,cancel,before,source):
-        """Scroll once and measure the real shift; two no-motion drags verify the end of the list."""
+    def drag_distance(self,target,cancel,distance):
+        """Deterministic drag (C5e-1, E6): press, prime past the drag threshold, move the distance (a
+        fraction of the frame height) in three steps, hold still so no momentum remains, release."""
+        if cancel.is_set():raise ScannerError('cancelled','inventory scroll cancelled')
+        track=self.regions['scroll_track'];x,start=track['x'],track['start_y']
+        priming=rt.value('inventory.scroll.priming_px')/NATIVE_HEIGHT
+        path=[(x,start),(x,start-priming)]+[(x,max(0.0,start-priming-distance*step/3)) for step in (1,2,3)]
+        hold=rt.value('inventory.scroll.hold_s')
+        self.capture.drag_path(ScanContext.of(target).replace(cancel=cancel),[(round(a,6),round(b,6)) for a,b in path],hold)
+        self.trace.append(dict(input='drag_path',distance=round(distance,6),hold=hold))
+        return distance
+
+    def row_centering(self,source):
+        """Downward row displacement (fraction of height) that centres the readable rows (C5e-1).
+
+        The first page sits with its top row about a pixel from the readable top edge; page moves land
+        rows lower by this much so the overlap row and the kept selection are never at the edge.
+        """
+        rows=self.page_slots(source,0.0);viewport=self.regions['list_viewport'][source]
+        margin=self.regions['list_viewport']['edge_margin']
+        top=min(slot['y1'] for slot in rows.values())-(viewport['y1']+margin)
+        bottom=(viewport['y2']-margin)-max(slot['y2'] for slot in rows.values())
+        return max(0.0,(bottom-top)/2)
+
+    def page_distance(self,source,offset,rows,centering):
+        """Drag distance that lands rows further at the centred phase, from the current offset (C5e-1)."""
+        base=self.detail_recognizer.regions['sources'][source]['grid_slots'];pitch=base[5]['cy']-base[0]['cy']
+        return (round((offset+centering)/pitch)+rows)*pitch-centering-offset
+
+    def advance(self,target,cancel,before,source,distance=None):
+        """Scroll once and measure the real shift; two no-motion drags verify the end of the list.
+
+        With a distance and a capture that can hold a drag, the move is deterministic (C5e-1): the list
+        moves by the requested distance and is read right after the release; a shorter move is the end.
+        """
+        if distance and callable(getattr(self.capture,'drag_path',None)):
+            busy=0;attempt=0
+            while attempt<2:
+                attempt+=1
+                try:requested=self.drag_distance(target,cancel,distance)
+                except ScannerError as exc:
+                    # D21: a drag the user's input overlapped is measured like any other move (the overlap
+                    # check verifies it); one that did not move is retried, at most twice.
+                    if exc.code!='input_busy' or busy>=2:raise
+                    busy+=1;attempt-=1;requested=distance
+                    self.trace.append(dict(input_busy='drag',performed=exc.details.get('performed')))
+                    if not exc.details.get('performed'):continue
+                after=self.capture.wait_stable(target,cancel,timeout=4)
+                shift,residual=self.measure_shift(before,after,source,expected=requested)
+                self.trace.append(dict(shift_px=round(shift*after.height),requested_px=round(requested*after.height,1),residual=residual,attempt=attempt))
+                if residual>rt.value('inventory.shift.max_residual'):
+                    after.close();raise ScannerError('inventory_scroll_unverified',f'list shift unmatched residual={residual:.2f}')
+                if shift<=rt.value('inventory.shift.no_motion'):
+                    if attempt==2:return PageMove(after,0.0,True,'verified_no_motion',requested)
+                    after.close();continue
+                return PageMove(after,shift,requested=requested)
+            raise ScannerError('inventory_scroll_unverified','scroll recovery exhausted')
         for attempt in (1,2):
             self.scroll_once(target,cancel,attempt)
             after,_signatures=self.settled_after(target,cancel,source)

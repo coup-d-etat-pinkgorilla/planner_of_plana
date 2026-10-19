@@ -25,7 +25,7 @@ class RecognitionAnswerSampleTests(unittest.TestCase):
     def test_numeric_samples_are_profile_and_resolution_scoped(self) -> None:
         with TemporaryDirectory() as temporary:
             store = RecognitionAnswerSampleStore(Path(temporary))
-            source = mask({(3, y) for y in range(2, 10)})
+            source = mask({(x, y) for x in (3, 4) for y in range(2, 10)})
             try:
                 sample_id = store.save_numeric(
                     PROFILE_A, (1280, 720), field="student_level",
@@ -62,7 +62,7 @@ class RecognitionAnswerSampleTests(unittest.TestCase):
             self.assertTrue(all(sample.item_id == "item_1" for sample in loaded))
             store.close(loaded)
 
-    def test_user_numeric_sample_has_tie_breaking_precedence(self) -> None:
+    def test_conflicting_user_numeric_sample_is_uncertain(self) -> None:
         vertical = {(3, y) for y in range(2, 10)}
         templates = {
             "roi": {
@@ -80,9 +80,10 @@ class RecognitionAnswerSampleTests(unittest.TestCase):
             result = bank.match(
                 (cell,), field="student_level", roi_names=("roi",),
             )
-            self.assertEqual(8, result.value)
+            self.assertIsNone(result.value)
+            self.assertFalse(result.complete)
+            self.assertTrue(result.bundled_conflict)
             self.assertTrue(result.used_user_sample)
-            self.assertGreaterEqual(result.margin, 0.079)
         finally:
             user.close()
             cell.close()

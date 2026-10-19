@@ -1,0 +1,440 @@
+{
+ "profile": "equipment",
+ "cancel_after": 30,
+ "size": [
+  1280,
+  720
+ ],
+ "result": {
+  "outcome": "cancelled",
+  "coverage_complete": false,
+  "error": {
+   "code": "cancelled",
+   "message": "inventory detail read cancelled",
+   "details": {}
+  },
+  "candidates": [
+   {
+    "payload": {
+     "version": 1,
+     "catalog_revision": "757aea00267228d2e7b4485c3010d0f44b850f2eb48e301ae039e86d4a7b66d9",
+     "entries": [
+      {
+       "key": "Equipment_Icon_Exp_3",
+       "quantity": "34",
+       "item_id": "Equipment_Icon_Exp_3",
+       "name": null,
+       "observed_slot": 0,
+       "profile_id": "equipment",
+       "inventory_scan_profile": "equipment"
+      },
+      {
+       "key": "Equipment_Icon_Exp_2",
+       "quantity": null,
+       "item_id": "Equipment_Icon_Exp_2",
+       "name": null,
+       "observed_slot": 1,
+       "profile_id": "equipment",
+       "inventory_scan_profile": "equipment"
+      },
+      {
+       "key": "Equipment_Icon_Exp_1",
+       "quantity": null,
+       "item_id": "Equipment_Icon_Exp_1",
+       "name": null,
+       "observed_slot": 2,
+       "profile_id": "equipment",
+       "inventory_scan_profile": "equipment"
+      },
+      {
+       "key": "Equipment_Icon_Exp_0",
+       "quantity": null,
+       "item_id": "Equipment_Icon_Exp_0",
+       "name": null,
+       "observed_slot": 3,
+       "profile_id": "equipment",
+       "inventory_scan_profile": "equipment"
+      }
+     ]
+    },
+    "evidence": [
+     {
+      "field": "entries[0].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9759988139188196,
+      "note": "margin=0.180409"
+     },
+     {
+      "field": "entries[0].quantity",
+      "status": "ok",
+      "source": "inventory_detail_count",
+      "confidence": 0.8713790620280488,
+      "note": ""
+     },
+     {
+      "field": "entries[1].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9718371174270709,
+      "note": "margin=0.119248"
+     },
+     {
+      "field": "entries[1].quantity",
+      "status": "uncertain",
+      "source": "inventory_detail_count",
+      "confidence": 0.8575242288608245,
+      "note": "weak_digit_match"
+     },
+     {
+      "field": "entries[2].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9782904975380271,
+      "note": "margin=0.044663"
+     },
+     {
+      "field": "entries[2].quantity",
+      "status": "uncertain",
+      "source": "inventory_detail_count",
+      "confidence": 0.8575242288608245,
+      "note": "weak_digit_match"
+     },
+     {
+      "field": "entries[3].item_id",
+      "status": "ok",
+      "source": "inventory_detail_template",
+      "confidence": 0.9825153751945117,
+      "note": "margin=0.050507"
+     },
+     {
+      "field": "entries[3].quantity",
+      "status": "uncertain",
+      "source": "inventory_detail_count",
+      "confidence": 0.8575242288608245,
+      "note": "weak_digit_match"
+     },
+     {
+      "field": "slots[4]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[5]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[6]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[7]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[8]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[9]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[10]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[11]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "slots[12]",
+      "status": "partial",
+      "source": "inventory_detail_panel",
+      "confidence": 0.0,
+      "note": "identity unresolved by detail panel;"
+     },
+     {
+      "field": "scan_coverage",
+      "status": "partial",
+      "source": "scan_interrupted",
+      "confidence": 0.0,
+      "note": "cancelled"
+     }
+    ],
+    "review_required": true
+   }
+  ]
+ },
+ "elapsed_seconds": 25.7,
+ "navigation_trace": [
+  {
+   "input": "eq_filtermenu_button",
+   "cleanup": false
+  },
+  {
+   "observe": "eq_sort_rule_check",
+   "score": 0.8762262599268958,
+   "attempt": 1
+  },
+  {
+   "input": "eq_filter_confirm_button",
+   "cleanup": false
+  }
+ ],
+ "inputs_and_captures": [
+  {
+   "capture": "frame-00.png"
+  },
+  {
+   "input": "click",
+   "x": 0.840429,
+   "y": 0.158334,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-01.png"
+  },
+  {
+   "capture": "frame-02.png"
+  },
+  {
+   "input": "click",
+   "x": 0.593945,
+   "y": 0.834028,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-03.png"
+  },
+  {
+   "capture": "frame-04.png"
+  },
+  {
+   "capture": "frame-05.png"
+  },
+  {
+   "input": "click",
+   "x": 0.668,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-06.png"
+  },
+  {
+   "capture": "frame-07.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7531,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-08.png"
+  },
+  {
+   "capture": "frame-09.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8383,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-10.png"
+  },
+  {
+   "capture": "frame-11.png"
+  },
+  {
+   "input": "click",
+   "x": 0.9234,
+   "y": 0.2875,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-12.png"
+  },
+  {
+   "capture": "frame-13.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5828,
+   "y": 0.4278,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-14.png"
+  },
+  {
+   "capture": "frame-15.png"
+  },
+  {
+   "input": "click",
+   "x": 0.668,
+   "y": 0.4278,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-16.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7531,
+   "y": 0.4278,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-17.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8383,
+   "y": 0.4278,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-18.png"
+  },
+  {
+   "capture": "frame-19.png"
+  },
+  {
+   "input": "click",
+   "x": 0.9234,
+   "y": 0.4278,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-20.png"
+  },
+  {
+   "capture": "frame-21.png"
+  },
+  {
+   "capture": "frame-22.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5828,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-23.png"
+  },
+  {
+   "capture": "frame-24.png"
+  },
+  {
+   "input": "click",
+   "x": 0.668,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-25.png"
+  },
+  {
+   "input": "click",
+   "x": 0.7531,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-26.png"
+  },
+  {
+   "capture": "frame-27.png"
+  },
+  {
+   "input": "click",
+   "x": 0.8383,
+   "y": 0.5687,
+   "cleanup": false
+  },
+  {
+   "capture": "frame-28.png"
+  },
+  {
+   "capture": "frame-29.png"
+  },
+  {
+   "capture": "frame-30.png"
+  },
+  {
+   "capture": "frame-31.png"
+  },
+  {
+   "input": "click",
+   "x": 0.5828,
+   "y": 0.2875,
+   "cleanup": true
+  },
+  {
+   "capture": "frame-32.png"
+  }
+ ],
+ "frames": {
+  "frame-00.png": "3b8027054e3c7470550d4c17ad69bed4bed1f6ad1f6ca111f3044a02aeca3221",
+  "frame-01.png": "33d54305505f5a681c6a3693fef18340af25e843cf88abacc1211d935725aa56",
+  "frame-02.png": "5a39d187746beec993e9884313391f2eec5ab6e298468125c82eddb5ec3830c6",
+  "frame-03.png": "e7a355137946857fb984389f1a6dfff89420ec4146ef91ecc98699af58b3f8bf",
+  "frame-04.png": "6734afcfd24ee6b19715525157a9eb17ceaa34e2b3c50693373d4240508fc03f",
+  "frame-05.png": "cb5ce2c0d83ff8ae831ff6aff590a582ead6bb4b7a2f8dbcfac23a096c2014bf",
+  "frame-06.png": "603b21e1fc8a92f49602ca3296069d7a675b1c86bf3f36cba0d1cc66135fddbf",
+  "frame-07.png": "8b5fc3ff90f0400c7b3ad952be66f1c4378b1eac391638d99417864e4cadcce4",
+  "frame-08.png": "5b69ad65480277b917a624e14e3b5a21f2f09b43ea991713667ba5848c0c20b6",
+  "frame-09.png": "bad6c0422bd8d29699dcad363080fd0dd75830b6af205c27049607fd3b4da8c1",
+  "frame-10.png": "d9898136c538ad645b506f6cceb9a9e5a49e190d672c98a4e5bdaa75f27a9b7d",
+  "frame-11.png": "fab145d594b874db4679ffa5490672b45be4784f33847568879aa85a632eb9fd",
+  "frame-12.png": "3c015f6534eb19f7adfa14f9b26e5769eac1ae76502a917a2aa0729cea921f30",
+  "frame-13.png": "9d3b798a0f6b2defa9aad52a6f48f4276bb0777cf3184d498e6747fd905bbb06",
+  "frame-14.png": "b524d474f48c28ba0e03d716568324499e480112ffcc318217a5f250f8393646",
+  "frame-15.png": "7e9157d4957087779e1298e196a7edac0815c4592c93306dca455274484d548f",
+  "frame-16.png": "8d273a7fca973b016719882f9f1f10ae6ac6a15e8efae31c1ccf4a6b39e92e6c",
+  "frame-17.png": "dd41bcfb9be9ddacf3409e73a986d68e509b248d245adf3cc7943497e1252b18",
+  "frame-18.png": "fef4f131a86a68554eb8d184c02b84a574d79f6f0dfe6984aa67b84288d947de",
+  "frame-19.png": "8f668cb30e9f2230f127d26ab437f51fa21ac96a6085dd1e11599c0cafcacc4c",
+  "frame-20.png": "0a588034ac6ac556b108cb054ef796c4c5fb02666dd51adc86bdb7bb82e61fac",
+  "frame-21.png": "c47b5455a4df727d9be4d514287144116f19230a7535856e1c512a64ac9ad290",
+  "frame-22.png": "fdc6153511ccbb896c706e152c35d2c7199aa923fbe32ba42d07a2a7b31aabd3",
+  "frame-23.png": "7a657bc03ac25e853ac2b3a0fc96b2d10860a9d98b8dc221a29dc242a23e5dc2",
+  "frame-24.png": "3f738925218b56ed83b59481aa4234e8ad8f22f8be4bdf78d017cd7650e3621c",
+  "frame-25.png": "9368c1f449379bbfa1738887e1cc985ed6f95cbddc772b88e756af982f87b34b",
+  "frame-26.png": "fec79d84f09fa7b37b888248ef79244db9ac466794daf71f0217c6c5899f0c7d",
+  "frame-27.png": "dd85c61000120fd43e95ff0ff7a823da8e3f0cc5bcb0a4b84db1bd3ce4448daf",
+  "frame-28.png": "f95732954ad8d2ba22bca7d453d027074184781467b00c8f4430be653929ae01",
+  "frame-29.png": "e93c8e0104653095b1c8afa44273ef699749b32ca54153bfc67755b26be40a48",
+  "frame-30.png": "31c15112b43decf562404cce88c8e68ce15ca334724c0a8fa00d8dbfa73789d0",
+  "frame-31.png": "23e5fd9a7490e6adb1e8e6fc63a4ef94991151c5dc5bb44cf4f35b98be1dcdff",
+  "frame-32.png": "6e2bccf9bfc1107a38deb4400bd4fabd5222c4f425f46ed1337482434cdd3484"
+ }
+}

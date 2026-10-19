@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Flutter golden 비교 실패 시 생성되는 차이 이미지(FE1-g). 기준 PNG는 test/goldens/baseline/에 커밋한다.
+/test/goldens/failures/
+
 # Symbolication related
 app.*.symbols
 

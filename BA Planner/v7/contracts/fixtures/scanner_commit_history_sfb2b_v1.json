@@ -1,0 +1,473 @@
+{
+  "version": 1,
+  "status": "SYNTHETIC_APPLIED_SOURCE_TEST_FIXTURE",
+  "planned_path": "contracts/fixtures/scanner_commit_history_sfb2b_v1.json",
+  "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+  "public_commit_request_keys": [
+    "session_id",
+    "generation",
+    "candidate_id",
+    "candidate_revision",
+    "profile_id",
+    "expected_repository_revision",
+    "idempotency_key"
+  ],
+  "public_success_keys": [
+    "candidate_id",
+    "candidate_revision",
+    "profile_id",
+    "revision"
+  ],
+  "cases": [
+    {
+      "id": "students_first",
+      "kind": "student",
+      "raw_profile": null,
+      "initial": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 1
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 9
+          }
+        }
+      ],
+      "candidate": {
+        "version": 1,
+        "student_id": "aru",
+        "values": {
+          "level": 2
+        }
+      },
+      "reviewed": null,
+      "applied_keys": [
+        "aru"
+      ],
+      "excluded_keys": [],
+      "nochange": false
+    },
+    {
+      "id": "inventory_partial_first",
+      "kind": "inventory",
+      "raw_profile": "tech_notes",
+      "initial": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "3"
+          },
+          {
+            "key": "Item_Icon_SkillBook_Abydos_1",
+            "item_id": "Item_Icon_SkillBook_Abydos_1",
+            "quantity": "9"
+          }
+        ]
+      },
+      "candidate": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "7"
+          },
+          {
+            "key": "Item_Icon_SkillBook_Abydos_1",
+            "item_id": "Item_Icon_SkillBook_Abydos_1",
+            "quantity": "99"
+          }
+        ]
+      },
+      "reviewed": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "7"
+          }
+        ]
+      },
+      "applied_keys": [
+        "Item_Icon_SkillBook_Abydos_0"
+      ],
+      "excluded_keys": [
+        "Item_Icon_SkillBook_Abydos_1"
+      ],
+      "nochange": false
+    },
+    {
+      "id": "students_nochange",
+      "kind": "student",
+      "raw_profile": null,
+      "initial": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 1
+          }
+        },
+        {
+          "version": 1,
+          "student_id": "shiroko",
+          "values": {
+            "level": 9
+          }
+        }
+      ],
+      "candidate": {
+        "version": 1,
+        "student_id": "aru",
+        "values": {
+          "level": 1
+        }
+      },
+      "reviewed": null,
+      "applied_keys": [
+        "aru"
+      ],
+      "excluded_keys": [],
+      "nochange": true
+    },
+    {
+      "id": "inventory_partial_nochange",
+      "kind": "inventory",
+      "raw_profile": "tech_notes",
+      "initial": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "3"
+          },
+          {
+            "key": "Item_Icon_SkillBook_Abydos_1",
+            "item_id": "Item_Icon_SkillBook_Abydos_1",
+            "quantity": "9"
+          }
+        ]
+      },
+      "candidate": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "3"
+          },
+          {
+            "key": "Item_Icon_SkillBook_Abydos_1",
+            "item_id": "Item_Icon_SkillBook_Abydos_1",
+            "quantity": "99"
+          }
+        ]
+      },
+      "reviewed": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Abydos_0",
+            "item_id": "Item_Icon_SkillBook_Abydos_0",
+            "quantity": "3"
+          }
+        ]
+      },
+      "applied_keys": [
+        "Item_Icon_SkillBook_Abydos_0"
+      ],
+      "excluded_keys": [
+        "Item_Icon_SkillBook_Abydos_1"
+      ],
+      "nochange": true
+    },
+    {
+      "id": "inventory_alias",
+      "kind": "inventory",
+      "raw_profile": null,
+      "initial": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "item_id": "Item_Icon_SkillBook_Ultimate",
+            "quantity": "70"
+          }
+        ]
+      },
+      "candidate": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate_Piece",
+            "item_id": "Item_Icon_SkillBook_Ultimate_Piece",
+            "quantity": "71"
+          }
+        ]
+      },
+      "reviewed": null,
+      "applied_keys": [
+        "Item_Icon_SkillBook_Ultimate"
+      ],
+      "excluded_keys": [],
+      "nochange": false
+    },
+    {
+      "id": "inventory_raw_unknown_target",
+      "kind": "inventory",
+      "raw_profile": " 未知 profile ",
+      "initial": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "unknown-item",
+            "item_id": "unknown-item",
+            "quantity": "3"
+          }
+        ]
+      },
+      "candidate": {
+        "version": 1,
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99",
+        "entries": [
+          {
+            "key": "unknown-item",
+            "item_id": "unknown-item",
+            "quantity": "4"
+          }
+        ]
+      },
+      "reviewed": null,
+      "applied_keys": [
+        "unknown-item"
+      ],
+      "excluded_keys": [],
+      "nochange": false
+    }
+  ],
+  "notes": [
+    "Pure synthetic data; no game/sample/holdout/user profile data.",
+    "No public flat/source/retry_of keys. Empty commit errors before get_state; skip/terminal-only do not commit.",
+    "Receipt persistence is session-memory only. Repository restart with original frozen request works; new backend process cannot recover a vanished scanner session."
+  ],
+  "refinement_scope": "Applied-source integration and memory regressions; original6 cases/refinement7/helper6 are synthetic, without OS capture or player data",
+  "refinement_cases": [
+    {
+      "id": "same_key_changed_generation",
+      "expect": "idempotency_conflict before stale_generation; writer0"
+    },
+    {
+      "id": "successful_receipt_releases_snapshot",
+      "expect": "request=None; public_request_json/response_json retained; replay no read/write/learning/cleanup"
+    },
+    {
+      "id": "pending_loss_retains_original",
+      "expect": "full bucket/context retained; identical second call without read/remerge after external write/review"
+    },
+    {
+      "id": "cleanup_failure_after_success",
+      "expect": "request=None and receipt ready; replay originalresponse; extra write/clock/learning/cleanup0"
+    },
+    {
+      "id": "pure_helper_parity",
+      "expect": "exact extracted AST; canonical alias/catalog ordinal/revision/observed slot/unknown metadata unchanged"
+    },
+    {
+      "id": "signature_unavailable",
+      "expect": "persistence_deferred before writer0; pending snapshot kept"
+    },
+    {
+      "id": "writer_internal_type_error",
+      "expect": "exact single writer call, fallback0"
+    }
+  ],
+  "helper_parity_cases": [
+    {
+      "id": "alias_visible_grid_ordinal_to_observed",
+      "input": {
+        "version": 1,
+        "catalog_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate_Piece",
+            "item_id": "Item_Icon_SkillBook_Ultimate_Piece",
+            "quantity": "0",
+            "index": 42,
+            "profile_id": "visible-grid",
+            "name": "old 비의서"
+          }
+        ]
+      },
+      "expected": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "quantity": "0",
+            "item_id": "Item_Icon_SkillBook_Ultimate",
+            "name": "old 비의서",
+            "index": 44,
+            "profile_id": "tech_notes",
+            "observed_slot": 42
+          }
+        ],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    },
+    {
+      "id": "explicit_observed_slot_preserved",
+      "input": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "quantity": null,
+            "index": 9,
+            "observed_slot": 77,
+            "profile_id": "visible-grid"
+          }
+        ]
+      },
+      "expected": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "quantity": null,
+            "item_id": null,
+            "name": null,
+            "index": 44,
+            "profile_id": "tech_notes",
+            "observed_slot": 77
+          }
+        ],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    },
+    {
+      "id": "unknown_metadata_preserved",
+      "input": {
+        "version": 1,
+        "entries": [
+          {
+            "key": " future raw ",
+            "item_id": " 未知 ",
+            "quantity": "999999999999999999999999999",
+            "name": " 未知 name ",
+            "index": 46,
+            "profile_id": " unknown profile ",
+            "observed_slot": 11
+          }
+        ]
+      },
+      "expected": {
+        "version": 1,
+        "entries": [
+          {
+            "key": " future raw ",
+            "quantity": "999999999999999999999999999",
+            "item_id": " 未知 ",
+            "name": " 未知 name ",
+            "index": 46,
+            "profile_id": " unknown profile ",
+            "observed_slot": 11
+          }
+        ],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    },
+    {
+      "id": "unknown_visible_grid_has_no_catalog_ordinal",
+      "input": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "future",
+            "quantity": null,
+            "index": 19,
+            "profile_id": "visible-grid"
+          }
+        ]
+      },
+      "expected": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "future",
+            "quantity": null,
+            "item_id": null,
+            "name": null,
+            "index": 19,
+            "profile_id": "visible-grid"
+          }
+        ],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    },
+    {
+      "id": "known_catalog_profile_not_screen_index",
+      "input": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "quantity": "7",
+            "index": 9,
+            "profile_id": "item"
+          }
+        ]
+      },
+      "expected": {
+        "version": 1,
+        "entries": [
+          {
+            "key": "Item_Icon_SkillBook_Ultimate",
+            "quantity": "7",
+            "item_id": null,
+            "name": null,
+            "index": 44,
+            "profile_id": "tech_notes"
+          }
+        ],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    },
+    {
+      "id": "empty_snapshot_current_catalog",
+      "input": {
+        "version": 1,
+        "entries": []
+      },
+      "expected": {
+        "version": 1,
+        "entries": [],
+        "catalog_revision": "178609f3e5e9315518340e3de6f8633772954af510b2b7cd35b2e78fef9cae99"
+      },
+      "oracle": "original rebase function only executed from AST; no repository import/store"
+    }
+  ]
+}

@@ -1,0 +1,525 @@
+{
+  "schema": "public-f8-approved-attribute-truth-v1",
+  "schema_version": 1,
+  "partition": "development_regression_not_holdout_or_runtime_learning",
+  "label_origin": "human_visual_review",
+  "approved_truth_observations": 15,
+  "frozen_at_utc": "2026-10-07T18:34:11.546789Z",
+  "review_csv": {
+    "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/human-review-2026-10-08.csv",
+    "bytes": 4449,
+    "sha256": "a4c158abe7a23e7e0111d7969dbcaf25c70ce30921a1159f6442d889c9e9e5cc"
+  },
+  "reviewer_ids": [
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x",
+    "user-l01x"
+  ],
+  "student_DB_attributes_used_for_labels": false,
+  "classifier_predictions_used_for_labels": false,
+  "label_policy": {
+    "version": "public-F8-human-review-protocol-v1",
+    "source": {
+      "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/human-review-protocol.md",
+      "bytes": 3359,
+      "sha256": "f9e20a7bc17fa78dd52f47d732666b343f8f9a9494521dff08e1c5c40de34e7c"
+    },
+    "unknown_policy": "unknown/unobserved values remain null; no identity/DB/prediction backfill"
+  },
+  "vocabulary_source": {
+    "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/source-contracts/attribute-vocabulary.json",
+    "bytes": 382,
+    "sha256": "eb2cce0bfb20cc64714c635ce32658708049731d72b9c6c03363c01efd071f29"
+  },
+  "roi_source": {
+    "path": "backend/assets/recognition/v1/regions/student_identity_regions.json",
+    "bytes": 1339,
+    "sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268"
+  },
+  "roi_crop_source_snapshot": {
+    "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/source-contracts/ratio-crop.txt",
+    "bytes": 601,
+    "sha256": "0b328d83c1c940cff50a559c010e28ce116954740ba0e8c457167b6fc3237ecc"
+  },
+  "current_ratio_crop_ast_source": {
+    "path": "backend/core/student_scan_recognizer.py",
+    "symbol": "ratio_crop",
+    "sha256": "27f7def6a1c09d067852d7062a99bc73b6018e4eb6094076b49475c3270de2ae"
+  },
+  "identity_manifest_source": {
+    "path": "backend/tests/fixtures/student_identity_f8_live/manifest.json",
+    "bytes": 2297,
+    "sha256": "bb0486834d004e9607fc91746ce837bbb5d529c213836e081a999109a0af4818"
+  },
+  "model_draft_source": {
+    "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/attribute-observations-model-draft.json",
+    "bytes": 30784,
+    "sha256": "8654eb9b1f17307a11ed3dd18a3b26a6908c410fd49b39f08192fb1967440da3"
+  },
+  "change_history": [
+    {
+      "action": "copy signed review fields unchanged into a separate approved version",
+      "prior_package_modified": false,
+      "csv_value_changes": 0,
+      "metadata_normalization": "previously performed by orchestrator; original input strings retained verbatim in review notes"
+    }
+  ],
+  "model_draft_vs_human_review": {
+    "compared_observations": 15,
+    "differences": []
+  },
+  "samples": [
+    {
+      "observation_id": "F8A001",
+      "source_fixture_file": "mika.png",
+      "source_png": {
+        "path": "backend/tests/fixtures/student_identity_f8_live/mika.png",
+        "bytes": 684829,
+        "sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8"
+      },
+      "review_png": {
+        "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/pixels/F8A001.png",
+        "bytes": 684829,
+        "sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8"
+      },
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "student_ref_for_metrics_only": "mika",
+      "capture_provenance": "existing public F8; historic DPI/capture time/tool not verified"
+    },
+    {
+      "observation_id": "F8A002",
+      "source_fixture_file": "hoshino-form1.png",
+      "source_png": {
+        "path": "backend/tests/fixtures/student_identity_f8_live/hoshino-form1.png",
+        "bytes": 710382,
+        "sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6"
+      },
+      "review_png": {
+        "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/pixels/F8A002.png",
+        "bytes": 710382,
+        "sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6"
+      },
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "student_ref_for_metrics_only": "hoshino_battle",
+      "capture_provenance": "existing public F8; historic DPI/capture time/tool not verified"
+    },
+    {
+      "observation_id": "F8A003",
+      "source_fixture_file": "hoshino-form2.png",
+      "source_png": {
+        "path": "backend/tests/fixtures/student_identity_f8_live/hoshino-form2.png",
+        "bytes": 649951,
+        "sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63"
+      },
+      "review_png": {
+        "path": "debug/scanner_o3_attribute_truth_prep_f8_20261003_sol/artifacts/pixels/F8A003.png",
+        "bytes": 649951,
+        "sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63"
+      },
+      "source_size": [
+        1280,
+        720
+      ],
+      "source_state": "basic",
+      "student_ref_for_metrics_only": "hoshino_battle#2",
+      "capture_provenance": "existing public F8; historic DPI/capture time/tool not verified"
+    }
+  ],
+  "observations": [
+    {
+      "review": {
+        "observation_id": "F8A001",
+        "axis": "attack_type",
+        "evidence_png": "pixels/F8A001.png",
+        "roi_xyxy_exclusive": "214,628,269,658",
+        "screen_text_human": "관통",
+        "normalized_value_human": "piercing",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x3' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "piercing",
+      "roi_xyxy_exclusive": [
+        214,
+        628,
+        269,
+        658
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A001",
+        "axis": "defense_type",
+        "evidence_png": "pixels/F8A001.png",
+        "roi_xyxy_exclusive": "196,664,259,695",
+        "screen_text_human": "경장갑",
+        "normalized_value_human": "light",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x4' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "light",
+      "roi_xyxy_exclusive": [
+        196,
+        664,
+        259,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A001",
+        "axis": "role",
+        "evidence_png": "pixels/F8A001.png",
+        "roi_xyxy_exclusive": "67,629,153,657",
+        "screen_text_human": "딜러",
+        "normalized_value_human": "dealer",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x5' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "dealer",
+      "roi_xyxy_exclusive": [
+        67,
+        629,
+        153,
+        657
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A001",
+        "axis": "position",
+        "evidence_png": "pixels/F8A001.png",
+        "roi_xyxy_exclusive": "47,664,145,695",
+        "screen_text_human": "FRONT",
+        "normalized_value_human": "front",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x6' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "front",
+      "roi_xyxy_exclusive": [
+        47,
+        664,
+        145,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A001",
+        "axis": "combat_class",
+        "evidence_png": "pixels/F8A001.png",
+        "roi_xyxy_exclusive": "346,567,409,589",
+        "screen_text_human": "STRIKER",
+        "normalized_value_human": "striker",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x7' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "striker",
+      "roi_xyxy_exclusive": [
+        346,
+        567,
+        409,
+        589
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "661e64a533a0993a9c51204381da9dc4b7a839f4ec9c57c4c34d19e59ac04cf8",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A002",
+        "axis": "attack_type",
+        "evidence_png": "pixels/F8A002.png",
+        "roi_xyxy_exclusive": "214,628,269,658",
+        "screen_text_human": "신비",
+        "normalized_value_human": "mystic",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x8' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "mystic",
+      "roi_xyxy_exclusive": [
+        214,
+        628,
+        269,
+        658
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A002",
+        "axis": "defense_type",
+        "evidence_png": "pixels/F8A002.png",
+        "roi_xyxy_exclusive": "196,664,259,695",
+        "screen_text_human": "중장갑",
+        "normalized_value_human": "heavy",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x9' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "heavy",
+      "roi_xyxy_exclusive": [
+        196,
+        664,
+        259,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A002",
+        "axis": "role",
+        "evidence_png": "pixels/F8A002.png",
+        "roi_xyxy_exclusive": "67,629,153,657",
+        "screen_text_human": "탱커",
+        "normalized_value_human": "tanker",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x10' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "tanker",
+      "roi_xyxy_exclusive": [
+        67,
+        629,
+        153,
+        657
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A002",
+        "axis": "position",
+        "evidence_png": "pixels/F8A002.png",
+        "roi_xyxy_exclusive": "47,664,145,695",
+        "screen_text_human": "FRONT",
+        "normalized_value_human": "front",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x11' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "front",
+      "roi_xyxy_exclusive": [
+        47,
+        664,
+        145,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A002",
+        "axis": "combat_class",
+        "evidence_png": "pixels/F8A002.png",
+        "roi_xyxy_exclusive": "346,567,409,589",
+        "screen_text_human": "STRIKER",
+        "normalized_value_human": "striker",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x12' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "striker",
+      "roi_xyxy_exclusive": [
+        346,
+        567,
+        409,
+        589
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "8ea3effd149a5b766b0e3d757cdaf23815e947f9c6243ec88bc98138c90a4ca6",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A003",
+        "axis": "attack_type",
+        "evidence_png": "pixels/F8A003.png",
+        "roi_xyxy_exclusive": "214,628,269,658",
+        "screen_text_human": "신비",
+        "normalized_value_human": "mystic",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x13' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "mystic",
+      "roi_xyxy_exclusive": [
+        214,
+        628,
+        269,
+        658
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A003",
+        "axis": "defense_type",
+        "evidence_png": "pixels/F8A003.png",
+        "roi_xyxy_exclusive": "196,664,259,695",
+        "screen_text_human": "중장갑",
+        "normalized_value_human": "heavy",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x14' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "heavy",
+      "roi_xyxy_exclusive": [
+        196,
+        664,
+        259,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A003",
+        "axis": "role",
+        "evidence_png": "pixels/F8A003.png",
+        "roi_xyxy_exclusive": "67,629,153,657",
+        "screen_text_human": "딜러",
+        "normalized_value_human": "dealer",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x15' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "dealer",
+      "roi_xyxy_exclusive": [
+        67,
+        629,
+        153,
+        657
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A003",
+        "axis": "position",
+        "evidence_png": "pixels/F8A003.png",
+        "roi_xyxy_exclusive": "47,664,145,695",
+        "screen_text_human": "FRONT",
+        "normalized_value_human": "front",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x16' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "front",
+      "roi_xyxy_exclusive": [
+        47,
+        664,
+        145,
+        695
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    },
+    {
+      "review": {
+        "observation_id": "F8A003",
+        "axis": "combat_class",
+        "evidence_png": "pixels/F8A003.png",
+        "roi_xyxy_exclusive": "346,567,409,589",
+        "screen_text_human": "STRIKER",
+        "normalized_value_human": "striker",
+        "visibility_human": "observed_readable",
+        "reviewer_id": "user-l01x",
+        "reviewed_at_utc": "2026-10-07T15:12:00Z",
+        "review_status": "reviewed",
+        "notes": "reviewer_id as typed 'l01x17' (spreadsheet autofill suffix), reviewed_at as typed '2610081212'; normalized by orchestrator 2026-10-07T15:20Z, values untouched"
+      },
+      "approved_truth_value": "striker",
+      "roi_xyxy_exclusive": [
+        346,
+        567,
+        409,
+        589
+      ],
+      "roi_source_sha256": "d0c839d42047c474a8541825c461008f4dda9c5b3c4e358f0dcd4191055ed268",
+      "source_png_sha256": "48ae0272bad1dfedeebfb8346c88fa3c0aecab28a57ff1199b4b2129b91b6b63",
+      "approval_provenance": "actual human review from signed CSV; metadata normalization by orchestrator only"
+    }
+  ]
+}

@@ -1,0 +1,1041 @@
+{
+ "characterId": 10059,
+ "kind": "student",
+ "devName": "CH0069",
+ "names": {
+  "ko": "미카",
+  "ja": "ミカ"
+ },
+ "clientVersionId": "jp-1.73.0-e2baf70e",
+ "sourceHashes": {
+  "excelDb": "a5cfbbb9c7f00ccdd82a59e100febb7ed5eb107bc8ac93c6ed0dede14418416a",
+  "excelZip": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+  "bundles": [
+   {
+    "path": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+    "sha256": "2575d3f43366f7b0cb7f6f7fe1ff3bae30fc2465b8408b96811b68c2176e0bd2"
+   }
+  ]
+ },
+ "clips": [
+  {
+   "name": "CH0069_Cafe_Idle",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.0,
+   "lengthLogicFrames": 120,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Idle;PathID=-5905037783361450905]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Cafe_Reaction",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 8.0,
+   "lengthLogicFrames": 240,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 6,
+     "timeSeconds": 0.20000001788139343,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 9,
+     "timeSeconds": 0.30000001192092896,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 30,
+     "timeSeconds": 1.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 44,
+     "timeSeconds": 1.4666666984558105,
+     "layer": "anim_event",
+     "name": "AniEvt_InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 49,
+     "timeSeconds": 1.633333444595337,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 99,
+     "timeSeconds": 3.3000001907348633,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 132,
+     "timeSeconds": 4.400000095367432,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 163,
+     "timeSeconds": 5.433333396911621,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 164,
+     "timeSeconds": 5.466667175292969,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 230,
+     "timeSeconds": 7.6666669845581055,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Cafe_Reaction;PathID=6817957784461517603]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Cafe_Walk",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.3333333730697632,
+   "lengthLogicFrames": 40,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Exs",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 5.900000095367432,
+   "lengthLogicFrames": 177,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Exs;PathID=3749176414220937176]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 13,
+     "timeSeconds": 0.4333333671092987,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Exs;PathID=3749176414220937176]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 103,
+     "timeSeconds": 3.4333336353302,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Exs;PathID=3749176414220937176]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 176,
+     "timeSeconds": 5.866666793823242,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Exs;PathID=3749176414220937176]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Formation_Idle",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.0,
+   "lengthLogicFrames": 120,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Idle;PathID=2914933829305006132]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Formation_Pickup",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 11.233333587646484,
+   "lengthLogicFrames": 337,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 3,
+     "timeSeconds": 0.10000000894069672,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 46,
+     "timeSeconds": 1.533333420753479,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 53,
+     "timeSeconds": 1.7666667699813843,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 58,
+     "timeSeconds": 1.933333396911621,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 217,
+     "timeSeconds": 7.233333587646484,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 337,
+     "timeSeconds": 11.233333587646484,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Formation_Pickup;PathID=-1220610383732063167]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Kneel_Attack_Delay",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.3333333730697632,
+   "lengthLogicFrames": 40,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Kneel_Attack_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.5333335399627686,
+   "lengthLogicFrames": 16,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Kneel_Attack_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.066666841506958,
+   "lengthLogicFrames": 32,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Kneel_Attack_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.6666666865348816,
+   "lengthLogicFrames": 20,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Kneel_Idle",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.0,
+   "lengthLogicFrames": 60,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Kneel_Reload",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.200000047683716,
+   "lengthLogicFrames": 66,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Move_End_Kneel",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.5000001192092896,
+   "lengthLogicFrames": 45,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Move_End_Kneel;PathID=-2343722559240259104]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Move_End_Normal",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.5000001192092896,
+   "lengthLogicFrames": 45,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Move_End_Normal;PathID=1932695507065103059]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Move_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.6000000238418579,
+   "lengthLogicFrames": 18,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Move_Ing;PathID=-5077698676733759374]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Move_Jump",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.0,
+   "lengthLogicFrames": 30,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Attack_Delay",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.3333333730697632,
+   "lengthLogicFrames": 40,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Attack_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.5333335399627686,
+   "lengthLogicFrames": 16,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Attack_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.066666841506958,
+   "lengthLogicFrames": 32,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Attack_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.6666666865348816,
+   "lengthLogicFrames": 20,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Callsign",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.6666667461395264,
+   "lengthLogicFrames": 50,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Callsign;PathID=4490210746348055429]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 18,
+     "timeSeconds": 0.6000000238418579,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Callsign;PathID=4490210746348055429]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 38,
+     "timeSeconds": 1.2666667699813843,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Callsign;PathID=4490210746348055429]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Normal_Idle",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.0,
+   "lengthLogicFrames": 60,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Idle;PathID=-372280974592797258]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Normal_Reload",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.200000047683716,
+   "lengthLogicFrames": 66,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "CH0069_Normal_Reload_Random",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.200000047683716,
+   "lengthLogicFrames": 66,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Reload_Random;PathID=-6816250249818670456]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 4,
+     "timeSeconds": 0.13333334028720856,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Reload_Random;PathID=-6816250249818670456]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 20,
+     "timeSeconds": 0.6666666865348816,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Reload_Random;PathID=-6816250249818670456]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 35,
+     "timeSeconds": 1.1666667461395264,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Reload_Random;PathID=-6816250249818670456]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 57,
+     "timeSeconds": 1.899999976158142,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Normal_Reload_Random;PathID=-6816250249818670456]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Public01",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 3.000000238418579,
+   "lengthLogicFrames": 90,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Public01;PathID=-5409967962891617371]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 29,
+     "timeSeconds": 0.9666666984558105,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Public01;PathID=-5409967962891617371]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 87,
+     "timeSeconds": 2.9000000953674316,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Public01;PathID=-5409967962891617371]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Victory_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.0,
+   "lengthLogicFrames": 120,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_End;PathID=3000197657500114028]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Victory_End_Random",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.0,
+   "lengthLogicFrames": 120,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_End_Random;PathID=4207739389762837786]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Victory_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 3.000000238418579,
+   "lengthLogicFrames": 90,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start;PathID=-4872748171819230158]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 20,
+     "timeSeconds": 0.6666666865348816,
+     "layer": "anim_event",
+     "name": "AniEvt_InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start;PathID=-4872748171819230158]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 22,
+     "timeSeconds": 0.7333333492279053,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start;PathID=-4872748171819230158]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 70,
+     "timeSeconds": 2.3333334922790527,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start;PathID=-4872748171819230158]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Victory_Start_Random",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 3.000000238418579,
+   "lengthLogicFrames": 90,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start_Random;PathID=8174039942305770547]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 23,
+     "timeSeconds": 0.7666667103767395,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start_Random;PathID=8174039942305770547]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 25,
+     "timeSeconds": 0.8333333134651184,
+     "layer": "anim_event",
+     "name": "AniEvt_InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start_Random;PathID=8174039942305770547]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 26,
+     "timeSeconds": 0.8666667342185974,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start_Random;PathID=8174039942305770547]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    },
+    {
+     "frame": 67,
+     "timeSeconds": 2.2333333492279053,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Victory_Start_Random;PathID=8174039942305770547]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Vital_Death",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.266666889190674,
+   "lengthLogicFrames": 68,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Vital_Death;PathID=-8295177477863186441]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Vital_Dying_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.3333333730697632,
+   "lengthLogicFrames": 40,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Vital_Dying_Ing;PathID=8655070645011461887]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Vital_Panic",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.6000001430511475,
+   "lengthLogicFrames": 48,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Vital_Panic;PathID=-5521463088827391229]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  },
+  {
+   "name": "CH0069_Vital_Retreat",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.6666667461395264,
+   "lengthLogicFrames": 50,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "SetMouthTile",
+     "kind": "other",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-characters-ch0069-_mxdependency-animationclips-2025-07-02_assets_all_1874348671.bundle#AnimationClip[name=CH0069_Vital_Retreat;PathID=-7075814032722187444]"
+     },
+     "estimated": false,
+     "note": "callback metadata; no damage/hit meaning assigned"
+    }
+   ]
+  }
+ ]
+}

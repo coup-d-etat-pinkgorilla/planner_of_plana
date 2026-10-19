@@ -22,7 +22,7 @@ sources:
 | C2 재고 끝 판정·입력 보강 | **완료** (2026-09-26, tail 실측 미충족을 C5로 이관) | `35768a2` | — |
 | C3 오케스트레이터 분해 | **완료** (2026-09-26, C3a~C3d) | `3b20374` | — |
 | C4 임계값 레지스트리 | **완료** (2026-09-26, C4a~C4c) | `d4f030e` | — |
-| C5 인식 공통화 | **진행 중: C5a·C5b 완료(실게임 tail 3종 확인)** (2026-09-26) | `43c17b5` | C5c(X15)·C5d(X18)·C5e(X19) |
+| C5 인식 공통화 | **진행 중: C5a~C5d(+C5d-1)·C5e-1·2·3·C5e-6a-0·6a·6b·6c 완료, C5e-4·6d 일부(만능 설계도), 6f 수치(기준 결정 대기)**(실게임 확인 대기: D21 실입력, 두 번째 스캔 상세 생략; 6a 학생 화면 spec 대기) (2026-09-27) | `43c17b5` | C5e-6e 라벨링 UI / D16 기준 결정 |
 | C6~C7 | 미착수 | — | 순서대로 |
 
 ## C0 — 기준선·golden 고정
@@ -541,3 +541,551 @@ C5에서 gate **로직**을 고치고 값 변경은 C7. F9 "선택이 안 보이
 발견(다른 slice/phase): **C5-1** 장비 페이지 범용 설계도(조각)는 상세 패널 identity가 없어 장비 스캔이 항상 partial — 조각 식별 또는
 카탈로그 결정 필요. **C5-2** 강화석 `25K` 같은 축약 수량은 상세 패널 판독 불가 → C5e(수량 은행) 대상. **C5-3** 상세 패널 판독이라
 느리다(장비 105칸 약 10분) — 빠른 grid 식별기는 C5e에서 현재 UI 기준 은행으로.
+
+### 사용자 방향 결정 및 사전 실험 (2026-09-27, 오케스트레이터 세션)
+
+- 사용자 판정: C5b의 "모든 슬롯 상세 패널 + 1→N→1 복귀"는 정확하지만 방법론적으로 퇴보(batch가 기본이어야 함). C5c~C5e를 워크플로
+  문서의 새 표대로 재정의했다. C5b의 정확도·안전 규칙은 유지한다.
+- 기록 프레임만으로 실험(게임 입력 없음): `docs/migration/scanner-consolidation/c5e-experiments-2026-09-27.md`,
+  스크립트 `debug/scanner_c5e_experiments/`.
+  - E1 gutter 위상: `tech-notes-full-c`/`presents-full`/`equipment-full` 28 페이지 프레임에서 pitch 101px, anchor 클릭 대비 ≤1.5px, 13~23ms.
+  - E2 지표: 타일 crop 템플릿 + 채널별 NCC(아이콘 영역) → tech notes 100%/margin min .016, presents 100%/.282, equipment 99.4%/.003.
+    C0-1의 근본 원인은 원화 템플릿 도메인이며, 그리드 식별 자체는 가능하다.
+- 코드 확인: `_read_slot`의 `detail_required`(`scanner_matchers.py:1419`)가 참이면 `user_templates`로 fast_confident가 나와도 무시된다 —
+  학습된 은행이 identity 결정에 기여하지 못하는 구조. C5e-2에서 완화한다.
+- 1→N→1 복귀는 `inventory_detail_recovery.resolve:231-247`의 구현 선택이며 F9 불변식이 요구하지 않는다(C5d에서 배치화).
+- 다음 세션 시작점: 워크플로 재개 지점 참조. C5c 착수 전에 상세 경로가 끝까지 도는 재고 replay 시나리오 1개를 추가한다.
+- 추가 결정(2026-09-27): C5-1(조각·범용 설계도)과 미보유 이벤트 선물의 상세 템플릿 부재는 **C5e-6**으로 다룬다 — E3(asset 원화→상세 템플릿) 실험,
+  카탈로그·템플릿의 asset/DB 파생, 사용자 라벨링 폴백. 장비 identity는 상세 패널 카테고리 라벨×T 배지를 1차 키로(C5e-4). D13~D15 추가.
+- 추가 결정(2026-09-27): C5e-6은 **asset 원화 + 레이아웃 지식 기반 템플릿 생성기**(해상도별 그리드 타일·상세 아이콘·학생 화면)로 확정.
+  글자는 합성하지 않음. 합성 타일의 그리드 은행 편입은 E4(보유 아이템 합성-실물 M4 비교) 통과 프로필로 제한(D16).
+  C5e-6c 리뷰 UI 변경은 이 워크플로 안에서 허용(사용자 승인).
+- 2026-09-27 (오케스트레이터): JP 클라이언트에서 템플릿 생성 명세 추출 완료 — NGUI 2960×1440, 스케일 법칙 `s=H/round(2960·H/W)`(1280×720 → .43243),
+  아이템/장비 타일·상세 패널·학생 화면 위젯 기하, 아틀라스 스프라이트(Card_Item_Bg_N/R/SR/SSR 등), 아이콘 텍스처(304×240 BC7).
+  E3(상세 9/9)·E4(그리드 top-1 99 %, 정답 점수 med .975) 통과. 산출물은 워크플로 C5e-6 항목 참조.
+  **Opus 전제 변경**: C5e-6 생성기 구현은 Opus 범위에서 제외. Opus는 생성된 템플릿이 인식 자산에 있다는 전제로 (c)(d)(e)(f)만 한다.
+  남은 외부 입력: ItemExcelTable.Rarity(등급 표). 실패 사례 `SkillBook_Ultimate_Piece`(KR/JP 아트 차이 의심)는 D17로 등록.
+- 2026-09-27 (오케스트레이터, 후속): Steam ExcelDB.db를 공개 키로 복호화·FlatBuffers 디코드해 `backend/assets/recognition/spec/item-rarity-v1.json`
+  (items 1068, equipment 200, Rarity/Category/NameKr·Jp) 확보. E4 등급 적용 재실행 top-1 100 %. 생성기 외부 입력 없음.
+  D18: 인벤토리 설계도 아이템은 `*_Piece` identity — 카탈로그 명명 정리 필요.
+- 사용자 결정(2026-09-27): 템플릿은 **런타임 생성**(asset 팩 배포 + 스캔 시 합성·캐시, D19). 텍스트는 현재 캡처 은행만 사용 중이며 생성은 seed/3차 키로 제한(D20, E5 대기).
+- 2026-09-27 (오케스트레이터, E5): 폰트 렌더링 실험 완료. **KR 클라이언트 UI 폰트는 GyeonggiTitle(MainFont/MainFont_Bold)** — Steam 카탈로그 `ui/font/bundlefontkr`,
+  Preload 번들 `prologdepengroup-assets-_mx-uis-_mxcommon-_mxprolog-2024-11-18_*`. JP의 LINE Seed KR은 글리프가 달라 사용 불가(D17 폰트 예외).
+  Gyeonggi Bold, em 20px @720p, shear .10, 팽창 .5px로 문자열 top-1 100/100이나 margin min .001 → 단독 키 금지, `StudioNumericBank` synth seed 계층으로만(D20 확정).
+  명세 §8·JSON `fonts` 블록 추가. Opus 영향: C5e-3에 synth 계층 로더(우선순위 최하위 + 프로필 gate) 1항목 추가, 나머지 전제 불변.
+- 2026-09-27 (오케스트레이터, asset 팩): KR/Steam 클라이언트에서 배포 asset 팩 추출 완료 — `backend/assets/recognition/asset_pack/`
+  (아이콘 1068+200 `icons-01..03.zip`, KR 아틀라스 스프라이트 12 + 설계도 배경 `Card_Item_Bg_C`, GyeonggiTitle 폰트 2, `manifest.json` sha/출처).
+  KR/JP 프리팹 기하 동일 확인(아틀라스 rect·폰트만 다름). E4 재실행 KR 팩 top-1 100 %.
+  **C5b 오라벨 발견**: `tech-notes-full-c` 슬롯 44 `SkillBook_Ultimate_Piece` → 실물은 `SkillBook_Ultimate`(D18 갱신). Opus는 C5e-4에서 아이템 `_Piece` 매핑과
+  golden 기대값을 ExcelDB id 기준으로 재검한다. 추출 도구 `backend/tools/asset_spec/ba_extract_pack.py`.
+- 2026-09-27 (오케스트레이터, 워크플로 확정): C5e-6을 6a(생성기)·6b(캐시·드리프트)·6c(로더 계층+D18 교정)·6d(상세 폴백 순서)·6e(라벨링 UI)·6f(E4 gate 확장)로
+  분해해 워크플로에 계약·완료 조건을 적었다. 오케스트레이터 입력(명세·팩·등급표·폰트·E1~E5)은 모두 확보됐고, 이후는 Opus가 C5c부터 재개 지점 순서대로 진행한다.
+  다음 세션: **C5c** (착수 전 상세 경로 replay 시나리오 1개 추가, 슬롯 44 기대값 `SkillBook_Ultimate`).
+- 2026-09-27 (오케스트레이터, E6 실게임): 스크롤 입력 실험. 결정론적 드래그(priming 8px + 목표 거리 + 정지 .2s) 확정 — 이동량 = 요청량, 위상 보존 ≤2px,
+  릴리스 즉시 정착. 스크롤바는 숨김·비활성(폐기), 휠 tick은 가변(맨 위 복귀에만). C5e-1 항목을 이에 맞게 갱신(레지스트리 신규 3항목). 실험 기록 E6 절.
+- 2026-09-27 (오케스트레이터, E6 추가): 백그라운드/최소화 입력은 불가로 확정(08-26 실측 + 타입 덤프: UICamera→Unity raw-input 마우스). 대안으로 입력 버스트 + 입력 가드(D21)를 C5e-1에 추가.
+  타입 덤프 확인: `UICamera.mouseDragThreshold`(4px), `UILabel.UseKiloFormat`(K는 ≥10,000 정수), `Card_Amount` overflow = ResizeFreely(글자 크기 불변). 스크롤바 폐기 유지.
+- 2026-09-27 (오케스트레이터): 사용자 결정 — 그리드 스캔은 포그라운드 유지, 입력 버스트 폐기(D21 축소). 학생 스캔 백그라운드 키 탐색은 `press_key` 순서 변경으로 C5f 신설(게이트: `backend/tools/probe_background_key.py` 사용자 실행 결과).
+  4:3 예비 관찰: 같은 폭이면 s·타일·pitch 동일, 세로 앵커만 이동 → D22 레이아웃 리졸버(프리팹 앵커 기반 ROI). 게임 옵션은 4:3/16:9만.
+- 2026-09-27 (오케스트레이터): C5f 게이트 통과 — PostMessage 방향키가 백그라운드에서 소비되고 포그라운드 불변(probe 2회). C5f 구현 항목 확정(키 우선·프레임 확인·클릭 폴백만 잠깐 포그라운드 후 복원). D22(4:3)는 보류.
+- 2026-09-27 (오케스트레이터, 정렬): 정렬 규칙 반영 현황 점검 — X09(기본 정렬 강제)·카탈로그 `order_index`·`verify_profile_order`(사후 단조 검사, zero-fill gate)는 있음. 식별 단계의 사전(prior)으로는 미사용 → C5e-2에 "order prior" 추가.
+  게임 기본 정렬 로직은 `ItemSortingService.GetDefaultSortingOrder`(타입 덤프에 이름만)라 ExcelDB 컬럼만으로 재현 안 됨(기술 노트 T1 6001x가 학교 그룹 안에 정렬됨). 현재의 실측 기반 `order_index` 유지.
+  D18 원인: `inventory_catalog.py`가 `SkillBook_Ultimate_Piece`를 "비의서"로 등록(실제 9998=비의서 조각, 9999=비의서).
+- 2026-09-27 (오케스트레이터): 사용자 우려(신규 아이템 시 정렬 사전 고장) → D23 추가: 사전은 좁히기만, 실패 시 전체 은행→합성 상세(팩 전체)→라벨링으로 강등, LIS 기반 단조 검사, 카탈로그 identity는 ExcelDB 파생·순서만 관측 계층.
+- 2026-09-27 (오케스트레이터): 정렬 규칙을 세 스캔(tech notes 45, presents 56, equipment 95)에서 귀납 — 기술 노트: 학교 enum × 티어↑(신형 T1도 학교 자리), 선물: 등급↑ × id↑, 장비: 강화석 등급↓ → 카테고리 × 티어↓(T2+) → 전 카테고리 T1 → 무기 성장. D23에 기록.
+  신규 아이템 후보 우주는 프로필 필터 범주(ExcelDB ItemCategory/Tags)로 제한(사용자 제안) 후 팩 전체로 확대.
+- 2026-09-27 (오케스트레이터, 배포): 사용자 결정 — 게임 자산 비배포, 최초 실행 시 Steam 설치 폴더에서 로컬 추출(D24, 6a-0 추출기 신설). asset_pack 바이너리는 개발용 git-ignore 경로 유지, manifest는 정답지. 1차 Steam/KR만, JP·다국어는 D22와 함께 후순위.
+- 2026-09-27 (오케스트레이터, D24 확정): 클라이언트 로컬 추출은 키 불필요 파일(카탈로그·아이콘·스프라이트·폰트)만, ExcelDB 파생 등급표는 배포자 갱신 스냅샷. 스냅샷 미포함 아이콘은 4등급 합성 + 스캔 시 등급 판정. 배포자 유지보수 항목: 게임 업데이트마다 `fb_excel.py`로 `item-rarity-vN.json` 재생성(D23(4) 절차와 함께).
+- 2026-09-27 (오케스트레이터): 6a-0/6b를 증분 갱신으로 명시 — 추출은 번들 sha 단위, 합성 캐시는 identity별 입력 sha 튜플 단위로 변경분만 재생성(사용자 결정).
+- 2026-09-27 (오케스트레이터, E8): 합성 템플릿은 해상도별 저장 없이 정규화 한 벌(D25, 720p 검증 top-1 100 %/p10 .949). 학생 화면 합성 범위 D26(장비·무기·별·숫자·스킬 아이콘; identity는 캡처 유지 + 이름 렌더 E9 예정). 오케스트레이터 남은 입력: 무기·스킬 아이콘·이름 localize 카탈로그 키 규칙.
+
+
+### C5c 착수 전 작업 (2026-09-27, Opus)
+
+사용자 결정: 상세 경로 replay는 **현재 코드로 새로 녹화한 기술 노트 실행**, 프레임은 **로컬 전용**(sha 고정, 없으면 테스트 skip),
+슬롯 44는 **D18 매핑을 지금 교정**.
+
+- **D18 교정**: 비의서는 ExcelDB 9999 `Item_Icon_SkillBook_Ultimate`, v6가 비의서 조각(9998) 아이콘 이름 `*_Ultimate_Piece`로 잘못 부르고 있었다.
+  상세 아이콘 템플릿(비의서 노트 그림)과 이름 템플릿("비의서")이 실물과 같음을 asset 팩 아이콘과 대조해 확인했다. 카탈로그 항목,
+  상세 아이콘·이름 템플릿 파일명과 `identity_value`, `item_regions.json`·`inventory_detail_f9_regions.json`의 tech_notes 배경 규칙을
+  `Item_Icon_SkillBook_Ultimate`로 바꾸고 매니페스트 sha를 갱신했다. 저장 인벤토리·v6 가져오기의 구 키는
+  `inventory_catalog.LEGACY_RESOURCE_KEYS` → repository rebase·스캔 commit upsert·계획 alias에서 새 키로 옮긴다(중복 생성 없음, 테스트 추가).
+  `CATALOG_REVISION` 변경 → `contracts/fixtures/inventory_catalog_v6_parity.json` revision 갱신, 재고 golden 2개는 `catalog_revision` 줄만 diff로 재고정.
+  실제 비의서 조각은 기술 노트 목록 소속이 검증되지 않아 카탈로그에 넣지 않았다.
+- **D18 재검(ExcelDB 기준)**: 엘레프를 제외한 카탈로그 키 전부가 `item-rarity-v1.json`에 있고 한국어 이름이 일치한다. 엘레프 258종은 학생 slug
+  기반 키라 ExcelDB 아이콘 이름과 체계가 다르다 — 오라벨이 아니라 C5e-6 합성 시 매핑이 필요한 명명 차이로 기록한다.
+- **잠긴(locked) replay**: `scanner_consolidation_replay.LockedReplayCapture` — 실게임 녹화(`verify_inventory_c2_live.py` trace)의 캡처를 순서대로
+  주고, 코드가 보내는 입력이 녹화와 하나라도 다르거나 남거나 모자라면 `ReplayDivergence`로 실패. 시나리오 `replay: "locked"`,
+  `frames_local_only: true`면 프레임이 없는 PC에서 skip, 있으면 pixel sha로 검증. `debug/scanner_c5_replay/**/frame-*.png`는 `.gitignore`.
+- 남은 일: 게임을 1280 아이템 화면으로 띄워 기술 노트를 녹화 → 시나리오·golden 추가 → C5c.
+
+### 상세 경로 locked replay (2026-09-27)
+
+- 게임 1280 아이템 화면에서 `3533b11` 코드로 기술 노트를 새로 녹화(`debug/scanner_c5_replay/tech-notes-detail/`, 캡처 220·이벤트 327).
+  결과 45/45, **슬롯 44 = `Item_Icon_SkillBook_Ultimate` ×71**(D18 교정 확인), 말단 검증·순서 확인 `scan_coverage ok`.
+- 시나리오 `inventory_item_tech_notes_detail_locked_1280`(`replay: locked`, `frames_local_only`, trace sha 고정): 재생이 녹화 이벤트
+  327개를 입력 하나 틀리지 않고 전부 소비함을 확인하고 golden을 고정했다(`72feb3f`). trace.json만 추적, 프레임 PNG는 `.gitignore`.
+- replay cancel 토큰(`ReplayCancel`)은 대기를 즉시 반환해 시간만 줄인다(기존 8개 golden same). 남은 재생 시간 ~110s는 순수 파이썬 NCC 비용 —
+  바이트 보존이 필요한 동안 numpy 전환은 하지 않는다(런타임 의존성은 Pillow뿐, `pyproject.toml`).
+
+## C5c — 이미지 유틸 공통화 (X15, 동작 보존) — 완료 (2026-09-27)
+
+- `core/recognition_image_ops.py`: 모듈 간 private import 대상이던 이미지 연산을 **AST로 원문 그대로 추출해** 옮겼다 — `pixels`,
+  `ncc_signed_lanczos`(구 weapon `_normalized_correlation`: 회색, 템플릿 크기로 LANCZOS, 부호 있음 [-1,1]), `color_similarity`,
+  `ncc_unit_bilinear`(구 equipment `_normalized_correlation`: crop 크기로 BILINEAR, [0,1]), `mean_difference`, `mask_from_predicate`,
+  `normalize_mask`, `binary_iou`, `otsu_binary`, `ncc_difference_score`. 산술·평가 순서 동일.
+- E2 **M4** `ncc_per_channel_icon`(타일 아이콘 영역 x 12–88 %·y 6–76 %, 48×48 BILINEAR, 채널별 NCC 평균)을 추가. 아직 인식에 쓰지 않는다(C5e-2).
+  런타임이 Pillow 전용이라 순수 파이썬 구현이다(쌍당 수 ms). C5e-2 fast path 속도가 부족하면 numpy 의존성 추가를 그때 사용자 결정으로 올린다.
+- 인식기 전용 도우미는 `student_scan_recognizer`의 공개 이름으로(`rank_glyph`, `skill_ui_feature`, `skill_text_feature`).
+- core 모듈의 **다른 모듈 private import 0건**(AST 확인). 옛 private 이름은 원 모듈에 alias로 남겨 tools/tests 호환(C6에서 제거) —
+  `test_recognition_image_ops_c5c`가 alias가 이동한 함수와 동일 객체임을 고정.
+- C4 검사기: `recognition_image_ops.py`를 대상에 추가, 0-분모 guard 허용 항목을 equipment에서 옮김.
+- 검증: Python 567+3 OK(golden 9/9 same — **locked 상세 경로 replay 포함, 입력 327개 동일**). Flutter 377 pass / 5 fail → 5파일 단독 25/25(C4-1 부하 timeout).
+- 다음: **C5d** 배치 선택(동작 변경).
+
+## C5d — 배치 선택 + X18 계약 정렬 (동작 변경) — 완료 (2026-09-27, 시작 `8e35f72`)
+
+- 계약(`StudentPanelRecovery`의 open/restore 대응): `begin_page(target, cancel, frame, slots)` → `read(...)` × N → `end_page(target)`.
+  `begin_page`는 페이지의 보이는 선택을 기록(안 보이면 관측, 없으면 입력 없이 실패), 열린 세션이 있으면 `inventory_page_active`.
+  `read`는 필요할 때만 클릭(이미 선택된 슬롯은 마지막 검증 프레임으로 읽음), 성공 프레임이 새 baseline.
+  `end_page`는 새 cleanup 토큰으로 **선택을 먼저 관측(F9 a·b)**하고 원선택과 다를 때만 복귀 클릭 — 페이지당 한 번.
+- 재시도: 클릭 후 3캡처 관측이 원선택(직전 선택)을 그대로 보이면(클릭 유실) 최대 2회 재클릭. 다른 슬롯이 선택되면 재시도하지 않는다.
+  선택 미확인 → 그 자리에서 검증 복귀 → 결과 `stop=True` → 어댑터가 슬롯을 partial로 남기고 입력 중단(`failed`, 기존 entry 보존, zero-fill 없음).
+  선택이 확인된 뒤 패널 읽기만 실패하면 슬롯 partial, 배치 계속(C5c까지와 같은 슬롯 결과).
+- 어댑터: `_read_page`가 첫 상세 읽기에서 세션을 열고 `finally`에서 닫는다(취소·예외도 같은 경로). scroll anchor는 세션 밖에서 그대로(C5e-1에서 제거).
+- `resolve()`(슬롯마다 선택→읽기→복귀)는 제거. 호출자는 어댑터와 F9 테스트뿐이었다.
+- **빈 타일 판정(실게임에서 발견, 같은 slice에서 수정)**: 선물 첫 실행이 마지막 행(56번 1칸 + 빈칸 4)에서 빈 타일을 채워진 칸으로 보고
+  클릭 → 선택 불변 3회 → `inventory_detail_unconfirmed`로 중단했다. `image_has_visible_content`는 캡처 여백(검정)만 거르고 빈 타일(단색 회색)은
+  통과시켰다 — C5b까지는 모든 tail이 꽉 찬 행으로 끝나 드러나지 않았고, 걸렸다면 partial·review·zero-fill 없음이 됐을 잠재 결함.
+  타일 안쪽(18~82 %) 회색 표준편차 ≤ `inventory.empty_tile.stddev`(**신규 8.0**, intensity, C5; 실측 빈칸 0.0·평균 204, 채움 최소 34.8)이면 빈칸.
+  같은 함수를 쓰는 anchor 선택·`_require_tail_read`도 함께 바로잡힌다. 기존 임계값 변경 없음.
+
+### C5d 실게임 1280 결과 (2026-09-27)
+
+| 실행 | 결과 | 클릭(cleanup) | 캡처 | 소요 | C5b 대비 |
+|---|---|---|---|---|---|
+| 기술 노트 (`debug/scanner_c5_replay/tech-notes-detail-c5d`) | **45/45**, 슬롯 44 = `SkillBook_Ultimate`, `scan_coverage ok`, zero-fill 0 | 62 (6) | 99 | 130 s | 녹화 `3533b11`과 entry 45개 identity·수량 동일. 클릭 100→62, 캡처 220→99 |
+| 선물 (`debug/scanner_c5d_live/presents-full`) | **56 관측 + 19 zero-fill**, `scan_coverage ok` | 77 (8) | 123 | 162 s | C5b와 entry 75개 동일. 클릭 128→77, 캡처 301→123 |
+| 장비 (`debug/scanner_c5d_live/equipment-full`) | 95 관측, 말단 도달, `partial`(C5-1 범용 설계도 9칸·K 표기 수량 — C5b와 같은 사유) | 137 (16) | 272 | **205 s** | C5b 약 10분. 클릭 225→137, 캡처 916→272 |
+| 장비 취소 (`equipment-cancel`, 30캡처 후) | `cancelled`, 보존 후보 partial, zero-fill 없음 | cleanup 1회로 원선택 검증 복귀 | 33 | 26 s | — |
+
+- 장비 수량 차이 5건 중 4건(Exp_3 34, C_2 227, C_3 5, Z_1 1251)은 상세 패널·타일 표기와 일치 — C5b 이후 실제 보유량 변화.
+  1건(`WeaponExpGrowthC_1` 상세 ×11223)은 `weak_digit_match`로 미확정(C5b는 ×11193 판독) → **발견 C5d-1**.
+- 선물 첫 실행(빈 타일 결함)은 `debug/scanner_c5d_live/presents-full-failed`에 보존.
+- 페이지 끝 복귀가 anchor 클릭 직전에 원선택으로 돌아가므로 페이지당 cleanup 1회 + anchor 1회가 남는다 — anchor는 C5e-1에서 제거.
+
+### C5d golden
+
+- 의도된 diff 3건(재고 golden 전부), 학생 golden 6/6 same.
+  - `inventory_item_tech_notes_1280`, `inventory_equipment_1280`(화면 상태 replay): 정지 프레임이라 선택이 바뀌지 않는다. C5c까지는 슬롯마다
+    클릭→미확인→복귀를 반복해 모든 칸을 partial로 남겼고, C5d는 원선택 슬롯 0을 클릭 없이 읽은 뒤 슬롯 1을 3회(1+재시도 2) 클릭하고
+    `inventory_detail_unconfirmed`로 **입력 중단**(`failed`, entry 1개 보존, zero-fill 없음). 계약대로의 변화.
+  - `inventory_item_tech_notes_detail_locked_1280`: 녹화를 C5d 코드의 실게임 기록(`tech-notes-detail-c5d`, trace sha `62f68e0f…`)으로 교체하고
+    재생이 녹화 입력을 전부 그대로 소비함을 확인한 뒤 고정(45/45, 슬롯 44 Ultimate, coverage ok). 옛 녹화 trace는 비교 기록으로 남긴다.
+- 검증: Python **576 OK**(C5d 테스트 +7: 순차 선택·한 번 복귀, 재시도 2회 뒤 중단, 다른 슬롯 선택 시 재시도 없음, 두 번째 세션 거부,
+  읽기 실패 시 배치 유지, 어댑터 세션 1회 열고 닫기, 미확인 시 partial·입력 중단 + 빈 타일). Flutter는 변경 없음(프로토콜·코드 매핑 영향 없음) — 미실행.
+- 미검증: 학생 단일 스캔 회귀(학생 코드 미변경) — C5e-1 실게임 검증 때 함께.
+
+### C5d 발견 사항 (다른 slice)
+
+- **C5d-1** (C5e-3): 장비 상세 5자리 수량 `x11223`이 `weak_digit_match` — 수량 은행 경로에서 다룬다.
+
+### 다음 행동
+
+- **C5e-1** gutter 위상 검출(`_align_to_anchor`·스크롤 전 anchor 클릭 대체). 실게임 1280 세 프로필 tail + 학생 단일 스캔 회귀.
+
+## C5e-1 — gutter 위상 검출 (동작 변경) — 완료 (2026-09-27, 시작 `a775b05`)
+
+- `InventoryNavigation.gutter_tops`: viewport의 그리드 x 범위에서 회색(198~210) 비율 ≥ .8 행의 band, viewport 경계에 닿는 band·길이 < 3px band 제외,
+  band 끝 + 3px = 타일 상단(E1 그대로, Pillow만). `phase_residuals(frame, source, offset, calibration)`은 예측 행 위상과의 차이(px, ±반 행).
+- 어댑터: 첫 페이지(offset 0)의 위상 차이 중앙값을 **보정값**으로 저장(gutter 끝과 slot region 상단 사이의 고정 거리). 이동 후에는
+  보정값을 뺀 차이 중 중앙값 ±3px 안에 드는 gutter가 2개 이상이면 그 중앙값만큼 offset을 고친다. 2개 미만·보정값 없음·25px 초과는
+  `inventory_scroll_unverified`. `measure_shift`는 행 수·끝 판정용으로 유지.
+- 제거: 스크롤 전 anchor 클릭(`_anchor_selection`, `InventoryDetailRecovery.anchor`)과 21회 탐색(`_align_to_anchor`).
+- **결정(C5e-1, C5d 계약 조정)**: anchor가 없으면 C5d의 "페이지 끝 원선택 복귀"가 선택을 첫 행으로 되돌려 다음 페이지에서 보이지 않게 만든다
+  (F9 a 위반 → `inventory_selection_unknown`). 그래서 **정상 완료 페이지는 마지막 검증 선택을 유지**(`end_page(keep_selection=True)`, 입력 없음) —
+  그 칸은 마지막 읽기 행에 있어 ~1행 drag 뒤에도 보인다. 원선택 검증 복귀는 실패·취소·예외 경로에 그대로 남는다.
+- 신규 임계(C5): `inventory.gutter.grey_low` 198, `.grey_high` 210, `.row_ratio` .80, `.agreement` .0042(≈3px), `.max_correction` .035(≈25px).
+- 녹화 대조(C5d 실게임 프레임, 입력 없음): 세 프로필 모든 페이지에서 band 간격 101px, 한 프레임 안 gutter 간 차이 ≤ 1.1px,
+  첫 페이지 보정값 item −1.0 / equipment +1.5px.
+
+### C5e-1 실게임에서 드러난 한 행 alias (같은 slice에서 수정)
+
+- 첫 장비 실행이 **90/95**로 끝났다(Bag T8~T4 5종, evidence 없음). 원인: 여섯 번째 drag가 실제 111px 움직였는데 `measure_shift`가 **10px**를 돌려줬다
+  (잔차 11.5 ≤ 20 통과). 격자가 행마다 반복돼 반 크기 탐색이 한 pitch(101px) 떨어진 골을 고르고, 전체 크기 정밀화는 그 주변 ±4px만 봤다
+  (전체 크기 비용 111px 6.3 vs 10px 11.8). gutter 위상은 행 단위 오차를 볼 수 없고(±반 행), 다음 페이지는 행 55~59를 index 50~54로 읽은 뒤
+  다시 읽은 55~59를 `_record_entry`가 **조용히 중복 제거**했다. 이 alias는 C5b부터의 잠재 결함이다(C5b anchor 검사는 `uncertain`만 남기고 계속했다).
+- 수정 1 `measure_shift`: 반 크기 비용의 **국소 최소 3개**를 전체 크기에서 정밀화해 가장 낮은 것을 고른다. 같은 프레임 쌍 → 111px(잔차 6.6).
+  native 테스트에 이 쌍(`debug/scanner_c5e1_live/equipment-full-alias/frame-96·108`, 커밋)을 추가.
+- 수정 2(방어): 탐색 스캔에서 **같은 identity가 다른 content index에 다시 나오면** `inventory_scroll_unverified`(행 매핑 오류의 직접 증거) —
+  중복 제거로 조용히 넘기지 않는다. zero-fill 스캔(선물 등)에서 누락이 0으로 기록될 수 있었던 경로를 막는다.
+- alias 실행은 `debug/scanner_c5e1_live/equipment-full-alias`에 보존.
+
+### C5e-1 실게임 1280 결과 (2026-09-27)
+
+| 실행 | 결과 | 클릭(cleanup) | 캡처 | 소요 | C5d 대비 |
+|---|---|---|---|---|---|
+| 기술 노트 (`debug/scanner_c5_replay/tech-notes-detail-c5e1`) | **45/45**, 슬롯 44 Ultimate, `scan_coverage ok` | 50 (0) | 74 | 120 s | entry 동일. 클릭 62→50, 캡처 99→74 |
+| 선물 (`debug/scanner_c5e1_live/presents-full`) | **56 관측 + 19 zero-fill**, `ok` | 61 (0) | 94 | 150 s | entry 동일. 클릭 77→61, 캡처 123→94 |
+| 장비 (`debug/scanner_c5e1_live/equipment-full`) | 95 관측, 말단 도달, `partial`(C5-1·K 표기·C5d-1 — 같은 사유) | 105 (0) | 253 | 199 s | entry 동일. 클릭 137→105 |
+| 학생 단일(미카, `debug/scanner_c5e1_live/student-single`) | 전 필드 확정, review 없음, 입력 1회 | — | — | 3.1 s | C5b와 값 동일(**학생 회귀 통과**) |
+
+- gutter 보정 |correction| ≤ 1.0px(장비 15회·기술 노트 5회·선물 8회), 실패 0. 페이지 선택 유지로 cleanup 클릭 0, anchor 클릭 0.
+- 누적 개선(C5b → C5e-1): 기술 노트 클릭 100→50·캡처 220→74, 선물 128→61·301→94, 장비 225→105·916→253(약 10분 → 199 s).
+
+### C5e-1 golden
+
+- 화면 상태 재고 golden 2건 **same**(슬롯 1 미확인에서 멈추므로 스크롤 경로에 닿지 않음). 학생 6건 same.
+- locked 상세 경로: 녹화를 `tech-notes-detail-c5e1`(trace sha `964dbeb1…`)로 교체, 재생이 입력을 전부 그대로 소비함을 확인하고 고정.
+- 검증: Python **582 OK**(+ gutter native 2, 어댑터 gutter 보정·위상 미확인·중복 identity, 선택 유지). Flutter 변경 없음 — 미실행.
+
+### 다음 행동
+
+- **C5e-2** 타일 은행 fast path(M4 ≥ .90·margin ≥ .015면 상세 생략, session bank). numpy 의존성 여부는 속도 측정 후 사용자 결정.
+
+## C5e-1b — 결정론적 스크롤·겹침 검증·휠 복귀 (재정의된 C5e-1, 동작 변경) — 완료 (2026-09-27, 시작 `5efabba`)
+
+오케스트레이터가 E6 결과로 C5e-1을 재정의했다(결정론적 드래그 + gutter 위상 **검증**, D21). `5efabba`까지의 gutter 위상·anchor 제거는 그대로 두고
+나머지를 C5e-1b(스크롤 경로)·C5e-1d(D21 입력 가드)로 나눴다. (같은 시각 오케스트레이터 사본이 status의 C5c~C5e-1 절을 지운 채 저장돼,
+HEAD 내용에 오케스트레이터의 새 기록 4줄을 합쳐 복원했다.)
+
+- **드래그** `WindowsCaptureInputAdapter.drag_path`: 누름 → priming 8px → 목표 거리 3스텝 → 정지 → 뗌. 커서 이동은 **SendInput 절대 좌표 이동**
+  (`MOVE|ABSOLUTE|VIRTUALDESK`) — `SetCursorPos`만으로는 클라이언트가 드래그로 보지 않았고(0px), 시작점이 목록 하단 경계(.836)면 무반응이라
+  기존 `scroll_track.start_y`(.75)에서 시작한다.
+- **정지 시간 실측(1280, 3행 305px 요청)**: .2s → +38~43px(관성), .35s → +10, .5s → +2.4, **.8s → 정확(±1px, 위상 드리프트 ≤1px)**.
+  E6의 .2s와 다르다 — 레지스트리 `inventory.scroll.hold_s` = **.8**로 등록(사유 note). priming 8px, `phase_tolerance_px` 3도 등록(kind `pixels`/`seconds`
+  신설, C4 검사기에 범위 추가).
+- **k = 완전히 읽히는 행 수 − 1**(워크플로 공식): 아이템 4행 → **k=3**, 장비 5행 → k=4. (워크플로 괄호의 "아이템·장비 모두 4행"은 아이템에서 겹침 0이 되어
+  공식을 따랐다.)
+- **위상 중앙 정렬**: 첫 페이지는 윗행이 판독 경계에서 1px뿐이라, 첫 k행 이동이 겹침 행을 경계에 올려 선택 테두리가 잘렸다(실게임 `inventory_selection_unknown`).
+  첫 이동을 (아래 여유 − 위 여유)/2만큼 짧게(아이템 21.3px, 장비 10.8px) 해 행을 판독 영역 중앙에 두고, 이후 이동은 그 위상으로 k행씩(`page_distance`).
+- **끝 판정**: 요청보다 짧은 이동은 끝 근처 페이지로 읽고, 무이동 드래그 2회가 끝(X07 유지). 짧은 이동 자체를 끝으로 보지 않는다 — 측정 alias가 짧은 이동으로
+  보이면 거짓 끝이 되므로.
+- **겹침 행 identity 검증**(`overlap_identity`): 다시 보인 타일을 첫 판독 crop과 채널별 NCC(M4)로 비교, 유지 선택 칸 제외·2개 이상, 중앙값 ≥ `inventory.scroll.overlap_icon`(.86).
+  녹화 대조: 같은 행 페이지 중앙값 ≥ .905, 한 행 어긋남 ≤ .814. 미달이면 `inventory_scroll_unverified`. `measure_shift`는 요청 거리 주변을 후보에 항상 넣는다.
+- **gutter 위상**: 허용 3px 안이면 검증 통과(재캡처 없음), 밖이면 재캡처 후 재측정. 두 경우 모두 관측 위상으로 offset을 다듬는다 — 끝 페이지의 마지막 행이 판독 경계에서
+  0.9px 안쪽이라, 다듬지 않으면 "tile 55 filled but never readable"로 실패했다(실게임, 안전 쪽 실패).
+- **첫 페이지 복귀**: 휠 up N tick(N = ceil(행/5)+1 ≤ 10) → 스프링이 가라앉을 때까지(≤3s) 폴링해 첫 페이지 프레임과 `measure_shift` 0·잔차 ≤ 20이면 완료, 다른 곳에
+  정착하면 10 tick 한 번 더, 그래도 아니면 `inventory_prepare_unconfirmed`. (첫 시도는 스프링 중 빈 목록 프레임을 안정 프레임으로 읽어 실패 → 폴링 추가.)
+- **viewport**: spec(`ba-ui-template-spec-v1.json`)은 prefab clip이 런타임에 재앵커된다며 실측 viewport(.2083~.8472/.9583)를 싣고 있고 region 자산과 같다.
+  soft clip 12 units(5.2px) < edge margin 8px. spec이 있을 때만 도는 일치 테스트 추가(spec은 미추적 파일).
+
+### C5e-1b 실게임 1280
+
+| 실행 | 결과 | 이동(요청→관측 px) | 캡처 | 소요 | C5e-1 대비 |
+|---|---|---|---|---|---|
+| 기술 노트 (`debug/scanner_c5_replay/tech-notes-detail-c5e1b`) | 45/45, `ok` | 3행 이동 2회 + 끝 확인 | 58 | 116 s | entry 동일, 캡처 74→58 |
+| 선물 (`debug/scanner_c5e1b_live/presents-full-2`) | 56 + zero-fill 19, `ok` | 283.3→283, 304.1→304, 304.1→180(끝), 무이동 | 69 | 144 s | entry 동일, 캡처 94→69 |
+| 장비 (`debug/scanner_c5e1b_live/equipment-full`) | 95, `partial`(같은 사유) | 393.3→393, 405.3→405, 405.3→406, 404.8→395, 무이동 | 129 | **142 s** | entry 동일, 캡처 253→129, 199→142 s |
+| 복귀 probe (`restore-probe-2`) | 3행×2 이동 후 휠 복귀, 첫 페이지 유사도 .9999998 | — | 14 | — | — |
+
+- 겹침 검증 중앙값: 기술 노트 .95/.99, 선물 .996/.999/.988, 장비 .944~.969. gutter 보정 |≤1.5px|.
+- 실패 기록 보존: `presents-full-tail`(보정 생략 시 끝 행 판독 불가), `presents-full`(겹침 행 경계 → 선택 미확인), `restore-probe`(스프링 중 캡처).
+- golden: 화면 상태 2건 same, 학생 same, locked 상세 경로는 `tech-notes-detail-c5e1b`(sha `ba2a7184…`)로 교체·재고정. Python **588 OK**. Flutter 변경 없음.
+- 미검증: 학생 단일 스캔(학생 경로 무변경, C5e-1 때 통과) — C5e-1d 실게임 때 함께.
+
+### 다음 행동
+
+- **C5e-1d** D21 입력 가드: 저수준 훅(`WH_MOUSE_LL`/`WH_KEYBOARD_LL`)으로 주입되지 않은 사용자 입력을 감지해 해당 스텝 `input_busy` → 재시도 ≤ 2, 초과 시 partial.
+  입력 삼킴 없음. 그다음 C5e-2.
+
+## C5e-1d — D21 사용자 입력 가드 (동작 변경) — 구현 완료, 실게임 확인 대기 (2026-09-27, 시작 `c0b0e68`)
+
+- `core/user_input_guard.py` `UserInputGuard`: 전용 스레드가 `WH_MOUSE_LL`/`WH_KEYBOARD_LL` 훅을 걸고 **주입 표시가 없는** 이벤트만 센다
+  (`LLMHF_INJECTED`/`LLKHF_INJECTED`). 입력은 항상 다음 훅으로 넘긴다(삼킴 없음). 스캐너 입력이 30 s 없으면 훅을 풀고 스레드를 끝내며 다음 입력에서 다시 건다
+  (스캔하지 않을 때 시스템 전역 훅을 남기지 않음).
+- `WindowsCaptureInputAdapter`의 click·press_key·scroll·drag_scroll·drag_path는 한 입력이 한 **guarded step**: 사용자 입력이 `input.guard.idle_s`(.25 s)보다
+  최근이면 기다리고, `input.guard.wait_s`(2 s) 뒤에도 바쁘면 보내지 않고 `input_busy`(`performed: false`); 보내는 동안 사용자 입력이 들어오면 보낸 뒤
+  `input_busy`(`performed: true`).
+- 재시도(≤ 2): 상세 선택 클릭은 방해된 클릭을 재시도 1회로 세고 선택 관측으로 결과를 판정(C5d 계약 그대로), 드래그는 보내지 않았으면 재시도·보냈으면
+  측정 이동량을 그대로 쓰고(겹침 검증이 확인) **방해된 무이동 드래그는 끝 증거로 쓰지 않는다**, 휠 복귀 tick은 기록만(첫 페이지 대조가 판정).
+  초과는 `input_busy`로 스캔 중단 → partial(기존 항목 보존, zero-fill 없음). 메뉴 준비 클릭은 기존대로 실패 시 메뉴 취소(안전 실패).
+- 실측(훅 동작): 주입한 1px 이동 10건은 전부 `injected`, 같은 0.6 s 동안 사용자 마우스 이동 225건은 `user`로 분리. 세션 중 사용자가 PC를 쓰고 있어
+  (1 s에 150~450 이벤트) 실게임 스캔은 돌리지 않았다 — 스캔이 커서를 움직여 사용자 조작을 방해하고, 가드가 매 스텝을 대기시킨다.
+- 검증: Python **597 OK**(+9 가드·재시도 테스트, Windows에서 훅 설치·해제 포함). Flutter 변경 없음.
+- **미검증(사용자 참여 필요)**: ① PC를 건드리지 않는 상태에서 세 프로필 스캔이 오탐 없이 C5e-1b와 같은 결과인지, ② 스캔 중 마우스를 움직이면 해당 스텝이
+  `input_busy` → 재시도/partial로 끝나는지. 둘 다 끝나면 C5e-1 완료 판정 후 C5e-2.
+
+### C5e-1d 실게임 확인 (2026-09-27, 사용자 PC 유휴)
+
+- ① **오탐 없음**: 가드를 켠 채 세 프로필·학생 단일 스캔. 기술 노트 45/45 `ok`(114 s), 선물 56 + zero-fill 19 `ok`(143 s), 장비 95 `partial`(같은 사유, 139 s),
+  미카 단일 전 필드 동일(3.0 s) — 모두 C5e-1b와 entry 동일, 가드 카운터 `user_events 0 / idle_waits 0 / busy_steps 0`(`debug/scanner_c5e1d_live/`).
+  첫 두 시도는 첫 클릭에서 `input_focus_changed`·`input_busy(performed)`로 멈췄다 — **사용자 확인: 그 순간 모니터를 끄며 마우스를 움직였다**(정탐). 스캐너 자신의
+  `SetCursorPos`는 훅에 잡히지 않음도 확인: 원시 호출 4회 → 0건.
+- ② **실입력 감지는 사용자 참여 필요**: 다른 프로세스의 `SetCursorPos`로 "사용자 이동"을 흉내 냈지만 저수준 훅에 **보이지 않았다**(34회 → 0건).
+  사용자 모드에서 비주입 입력을 만들 방법은 없다(SendInput은 항상 injected). 이 흉내는 가드가 모르는 커서 이동이 스캔을 방해하는 경우와 같고,
+  결과는 클릭이 빗나가 `inventory_restore_failed` → **안전 중단**(기존 20건 보존, zero-fill 없음, 게임 화면 이상 없음)이었다.
+  실제 마우스·키보드 조작 시험은 사용자가 있을 때 한 번 받는다.
+- 가드 카운터(`waits`/`busy`)와 실게임 도구 리포트의 `input_guard`를 추가(진단용).
+- (기록) `6b9e022` 커밋 때 status가 다시 오케스트레이터의 오래된 사본으로 덮여 있어 그대로 커밋됐다. `0484243` 내용에 오케스트레이터의 새 3줄(정렬·D18 원인)을 합쳐 복원했다.
+
+## C5e-1 완료 판정 (2026-09-27)
+
+- 재정의된 C5e-1 항목: 결정론적 드래그(정지 .8 s, 사유 기록)·k행 이동(아이템 3/장비 4)·릴리스 후 즉시 캡처·gutter 위상 검증·겹침 identity 검증·
+  무이동 2회 끝 판정·휠 첫 페이지 복귀·viewport spec 일치·anchor 제거·D21 가드 — 구현·실게임 확인. 남은 것은 ②(사용자 실입력) 하나.
+- 첫 스캔 소요(C5b → C5e-1): 기술 노트 ≈ 2분(상세 클릭 50회가 지배), 선물 ≈ 143 s, **장비 약 10분 → 139 s**. 두 번째 스캔 속도는 은행이 생기는 C5e-2부터.
+- 다음: **C5e-2** 타일 은행 fast path(+ 워크플로의 order prior).
+
+## C5e-2 — 타일 은행 + 정렬 사전(D23) (동작 변경) — 완료, 실게임 두 번째 스캔 대기 (2026-09-27, 시작 `62fbbbd`)
+
+오케스트레이터가 착수 중에 C5e-2 정렬 사전을 D23으로 갱신했다(17:06, 사용자 지시 "order prior 갱신 확인"). 갱신본 기준으로 구현했다(`b3f46b0`).
+
+- **`core/inventory_tile_bank.py` `TileBank`**: 상세 확정 타일 crop의 채널별 아이콘 벡터(M4를 미리 정규화해 내적 3번으로; `ncc_per_channel_icon`과 1e-9 일치)를
+  identity당 ≤ 3개 보관. 계층 `session`(상세 확정, 비영속) < `user_confirmed`(승인 샘플, `RecognitionAnswerSampleStore`에서 로드, D1). 은행은 어댑터 수명 동안
+  클라이언트 크기별로 유지 → 같은 백엔드 세션의 다음 스캔이 은행을 이어 받는다. 레지스트리 `inventory.tile_bank.score` .90, `.margin` .015.
+- **1차(페이지 진입)**: 새 타일 전부 은행 매칭. 후보 = 프로필 카탈로그 − **이번 스캔에서 이미 기록된 identity**(목록에 항목은 한 번씩만 나오므로). 확신이고
+  카탈로그 순서를 잇는 타일만 anchor.
+- **2차(순서대로)**: anchor가 아니면 정렬 사전 — 직전 확정 항목과 다음 anchor의 `order_index` 사이로 좁혀 재매칭, 전체 1위도 구간 안이어야 확정.
+  **D23 "좁히기일 뿐"**: 실패하면 전체 은행(모든 프로필, 기록된 identity 제외)으로 다시 보고, 구간 밖 항목과 확신 일치면 `order_conflict`로 세기만 하고 상세가 판정.
+  상세가 읽었는데 이름을 못 댄 타일은 `unknown_new`(슬롯 evidence note, 라벨링 6e 대상 — 장비 범용 설계도 9칸이 여기에 해당). 읽기 실패는 `unknown_new`가 아니다.
+  (합성 상세 아이콘의 후보 우주 = 프로필 필터 범주 → 팩 전체는 6d에서.)
+- **상세 생략 조건**: 은행 identity 확신 **그리고 그리드 수량 확신**. 상세로 확정된 타일은 은행이 배우고, 은행 추정과 상세의 일치/불일치를 `tile_bank` evidence로 남긴다
+  (불일치가 있으면 `uncertain`, 상세 우선).
+- **D23 단조성 = LIS**: 페이지마다 review로 떨어뜨리던 `profile_order` partial을 없애고, 스캔 끝에서 관측 항목의 catalog order 최장 증가 부분열 밖 항목만
+  `entries[i].order` `uncertain`으로 표시. zero-fill은 표시 항목의 LIS 이웃 사이 **구간 안 항목만 보류**(그 타일의 실제 정체일 수 있으므로), 나머지는 그대로.
+  관측된 카탈로그 항목이 하나도 없으면 zero-fill하지 않는다(기존 "빈 목록 = 비단조" 규칙 유지 — 전부 외부 항목으로 skip되는 F12 테스트가 회귀를 잡았다:
+  LIS 첫 판은 관측 0건에서 45종을 전부 0으로 채웠다).
+  페이지 단조 검사는 grid-count fallback 허가 플래그(`inventory_profile_verified`)에만 남았다.
+- **D23 정렬 규칙** `core/inventory_order_rules.py`(ExcelDB `item-rarity-v1.json`): 기술 노트 학교 enum × 티어·비의서 마지막, 선물 등급↑ × id↑, 장비 강화석 등급↓ →
+  카테고리 × 티어↓(T2+) → 전 카테고리 T1 → 무기 성장 Z,C,B,A × 등급↓. 현재 카탈로그 `order_index`와 비교: **기술 노트 45·장비 110 완전 일치**,
+  선물은 23개 위치가 다르다 — 모두 실게임에서 본 적 없는 항목이 끼어 있다(`Favor_Random`·`Random_Lv2`·`Selection`, `Lv2_3`·`Lv2_12`·`Lv2_Special`·`SSR_2`·`SSR_GL_10`·`SSR_GL_20`과 이웃).
+  관측된 56종은 규칙에서도 단조다. 관측으로 가를 수 없어 **런타임 order는 카탈로그 값을 유지**하고 규칙은 모듈·테스트로 두었다(spec 없는 PC는 skip).
+  해당 선물을 보유한 스캔이 생기면 판정 → 규칙으로 카탈로그 order 파생 전환(D23 (1)).
+- **수량 재사용 시도(기각)**: 은행 타일과 수량 띠가 같으면 은행 수량을 재사용하는 안 — 두 스캔 196쌍에서 같은 수량의 잉크 차이 최대 93px(±3px 정렬 후),
+  다른 숫자 최소 25px로 **분리 불가**(수량 라벨이 아이콘 아트와 겹침). 기각.
+- **검증(오프라인, 실게임 녹화 replay; 모니터가 꺼져 실게임 불가)**: 한 어댑터로 녹화 A(C5e-1b)→B(C5e-1d)를 locked replay(입력 완전 일치).
+  두 번째 스캔 은행 anchor **196/196**(기술 노트 45·선물 56·장비 95), 상세와 **불일치 0**, `order_conflict` 0, `unknown_new` 9(장비 범용 설계도).
+  기록된 identity를 후보에서 빼기 전에는 첫 스캔의 은행 미등록 타일 14개(기술 노트 11·장비 3)가 **다른 항목에 확신 오답**이었고 모두 정렬 규칙이 막았다 —
+  제외 규칙 뒤 0.
+- **상세 클릭 0회 슬롯 비율 = 0 %**(완료 조건 항목): 현재 그리드 수량 판독기(v6 글리프)는 현재 UI에서 196/196 `None`이라 생략 조건이 성립하지 않는다.
+  C5e-3(수량 은행)이 들어오면 두 번째 스캔은 은행 확신 196/196 기준으로 상세 없이 끝날 수 있다. 두 번째 스캔 소요도 그때 측정(지금은 첫 스캔과 같음).
+- golden: 화면 상태 2건 same, locked 상세 경로는 `tile_bank` evidence 1줄 추가만(재고정). Python **614 OK**.
+- 미검증: 실게임 두 번째 스캔(모니터 꺼짐) — replay로 대신.
+- (기록) status가 18:04에 다시 오래된 사본으로 덮여 `b3f46b0`에 들어갔다. `df2255d` 내용 + 오케스트레이터 새 항목 + 이 절로 복원.
+- 다음: 워크플로 순서 **C5e-6a-0(D24 로컬 추출기) → 6a → 6b → 6c** → C5e-3.
+
+## C5e-6a-0 — 로컬 asset 추출기 (D24) — 완료, UI 폴더 선택은 이월 (2026-09-27, 시작 `21fc9a9`)
+
+- `core/recognition_asset_extract.py`: `find_game_dir()`(레지스트리 SteamPath → `libraryfolders.vdf` → `appmanifest_3557620.acf` installdir, 카탈로그 존재 확인),
+  `extract(game_dir, out_root, rarity_path) -> AssetCache`. 카탈로그 파서는 **자체 구현**한 최소 CCDB v1 리더(`AddressablesCatalog`, 주소 → 첫 의존 번들) —
+  `tools/asset_spec/ccdb_catalog_reference.py`는 "BA Viewer 0.1에서 가져옴"이라 라이선스가 기록돼 있지 않아 코어로 복사하지 않았다(**사용자 확인 필요: 그 파일의 출처·라이선스**).
+  읽는 것은 키가 필요 없는 파일뿐(카탈로그, 아이콘 Texture2D, `NGUIAtlas Common` 스프라이트 rect, `Card_Item_Bg_C` 텍스처, Font `m_FontData`). 등급표는 배포 스냅샷을 캐시에 복사.
+- 대상: 스냅샷 아이콘 1268 + **카탈로그에만 있는 아이콘 61**(`03_NonEquipment`/`02_Equipment` 폴더 × `Item_Icon_`/`Equipment_Icon_` 접두 — 스냅샷이 뒤처진 신규 항목, D24;
+  `@` 없이 텍스처 이름으로 저장, manifest `snapshot:false`) + 아틀라스 스프라이트 12 + `Card_Item_Bg_C` + 폰트 2. 아틀라스·폰트 번들은 날짜 접미가 바뀌어도 되게 glob + 이름으로 찾는다
+  (현재 atlas 번들 2개 중 `Common`이 든 쪽).
+- 캐시: `runtime_paths.resolve_extracted_asset_root()` = `%LOCALAPPDATA%/BA Planner/recognition-assets/<catalog sha[:16]>/`(`BA_PLANNER_USER_DIR`·`BA_PLANNER_EXTRACTED_ASSET_DIR` 재정의).
+  staging에 만든 뒤 교체(실패 시 이전 캐시 유지), 성공하면 이전 카탈로그 캐시 삭제.
+- **증분(번들 단위)**: 이전 manifest의 번들 (이름, 크기, mtime)이 같으면 열지 않고 그 번들 항목을 이전 캐시에서 **하드링크**(실패 시 복사). 복사로 했을 때 1345 파일에 9 s
+  (거의 전부 파일 open — 백신 검사로 추정) → 하드링크로 1.3~2.0 s.
+- **정답지(실측, 이 PC의 Steam 클라이언트 2026-09-15 카탈로그)**: 첫 추출 **9.0 s**, 아이콘 1329(스냅샷 1268 전부)·스프라이트 13·폰트 2, missing 0.
+  **아이콘 1268/1268·스프라이트 13/13 픽셀 동일, 폰트 2/2 바이트 동일**. PNG 파일 sha는 인코더(Pillow 12 vs 오케스트레이터 환경)마다 달라 정답지 비교는
+  디코드 픽셀 sha(`pixel_sha`)로 한다 — manifest에 `pixel_sha256`과 파일 `sha256`을 함께 기록. 캐시 적중 0.08 s, 카탈로그만 바뀐 증분 1.3~2.0 s(32/33 번들 재사용).
+- 실패: 폴더·카탈로그·스냅샷 없음, 손상·잘린 카탈로그(엔트리 블록이 파일 끝을 넘는 경우 포함), UnityPy 없음, 추출 중 예외 → 모두 `asset_extract_failed`, 캐시는 건드리지 않음.
+- 의존성: `pyproject.toml`에 `UnityPy>=1.24,<2` 추가(워크플로 명시; texture2ddecoder 등은 UnityPy 의존으로 설치됨, 이 PC 1.24.2 휠 확인).
+  `.gitignore`: `asset_pack`의 zip·icons·fonts·sprites(개발용, D24). `manifest.json`·`README.md`는 정답지로 추적.
+- 테스트 +5: 합성 CCDB 카탈로그 해석, 손상 카탈로그, vdf/acf 폴더 탐지, 폴더 없음 → 실패·캐시 무변경, **실 클라이언트 정답지 + 증분**(클라이언트·팩이 있는 PC에서만, ~11 s).
+  Python **619 OK**.
+- 이월: ① 탐지 실패 시 **UI 폴더 선택**(워크플로의 UI 예외, protocol + Flutter) — 6e 라벨링 UI 세션에 합친다. ② 추출 실행 시점(백엔드 시작 시 백그라운드/첫 스캔 전)과 진행 표시는
+  6c 로더가 소비할 때 연결. ③ `spec/`(등급 스냅샷·기하 명세)는 아직 미추적 — 배포 스냅샷이므로 추적 여부는 오케스트레이터 결정.
+- 다음: **C5e-6a 생성기**(`recognition_synth.py`).
+
+## C5e-6a — 합성 템플릿 생성기 (D19/D25) — 완료, 학생 화면(D26)은 spec 대기 (2026-09-27, 시작 `ff9d0d6`)
+
+- `core/recognition_synth.py`: `synthesize(cache, rarity, *, profile, identities=None, window, glyph_sizes) -> SynthTemplateSet`
+  (tiles 96², details 128², glyphs {em: {char: ink map}}, `fingerprint` = 입력 sha·등급·생성기/spec 버전). 입력은 6a-0 `AssetCache`. Pillow만 사용
+  (참조 구현의 numpy/scipy는 옮기지 않음). 누락 입력은 `SynthUnavailable(reason)`.
+- **D25 정규화 한 벌**: 그리드 타일·상세 아이콘을 1080p 등가 스케일(`s = 1080/1665`)로 합성해 96²/128²로 저장, 실물 crop도 같은 크기로 맞춰 M4.
+- 아이템 타일: `Card_Item_Bg_<등급>` 265×217 + 아이콘 253×200 × 1.06 @ (+3.5, +1.2) units(E4), 슬롯 창 = 카드 좌+2·상+2·98×91 @720p 비례.
+- **장비 타일 E4(신규 실측, 1280 실게임 79장)**: 설계도 타일은 `*_Piece` 아이콘(D18) + `Card_Item_Bg_C`(2 units 아래), 격자 탐색으로 scale **1.06**, offset **(+2, 0)** units,
+  alpha **1.0**(프리팹 .8~.867보다 실물과 잘 맞음) → **79/79 top-1**, 정답 M4 med .935 / min .829, margin min .032. 강화석·무기 성장은 아이템 카드(등급 배경) 기하로 **16/16**.
+- **상세 아이콘 E3(신규, 101장)**: 프리팹 551×435 @(−717, 261) 그대로, 패널 색 (181, 227, 244) 단색 위, 플래너 ROI(137×146 @720p) crop → **101/101 top-1**(tech notes + presents),
+  정답 M4 med .995 / min .973. 스케일 ±2 %는 더 나쁨. 장비 상세 아이콘은 C5e-4(라벨×배지 1차 키) 때 ROI와 함께.
+- **그리드 E4 재현(D25 정규화)**: tech-notes-full-c 95타일(D18 교정 라벨) **95/95**, 정답 med .975 / min .895, margin min .018 — 오케스트레이터 E4(100 %, .977, .018)와 같다.
+- **글리프(E5)**: `x0-9K` Gyeonggi Bold, em 후보 round(44·s)+1 ±1(720p 19/20/21), shear .10, 팽창 .5·s/.4324 px. 실물과 같은 잉크맵으로 비교하려고 **글자색을 밝은 배경에 합성한 뒤
+  같은 `ink_map`으로 읽는다**(원 마스크 비교는 ~15 %). 실물 라벨 326자리(95타일)에서, 라벨 = 하단 잉크 band의 오른쪽 연속 열·자릿수 높이, 알려진 문자열 폭 비율로 위치를 잡고
+  ±3px 창에서 NCC → **em 19: 91.4 %**(20: 85.9 %, 21: 70.9 %). E5 보고의 최적 em 20과 1px 다르지만 ±1 후보 규칙이 흡수한다(세션 첫 상세 확정 수량으로 선택, C5e-3).
+- 프로필 후보 우주(D23 (2)): `profile_universe` = 스냅샷의 필터 범주(선물 `Favor`, 기술 노트 `SkillBook`, 장비 전체, `_Piece`는 장비 identity로 접힘) ∪ 프로필 카탈로그 —
+  tech notes 54(카탈로그 45 포함), presents 76(75), equipment 110(110).
+- 소요(1280, 이 PC): 프로필별 0.4~0.6 s(타일·상세·글리프 3벌), 아이템 1058종 타일만 7.1 s(목표 < 10 s 충족), 상세 포함 13.9 s — 전체 합성은 6b 캐시가 막는다(D25).
+- 테스트 +6: 스케일 공식(16:9·4:3), 결정성(같은 입력 → 같은 바이트·fingerprint), 입력 누락 → `SynthUnavailable`, **E4 그리드 ≥ 99 %·med ≥ .95, E3 상세 top-1, E5 글리프 ≥ .90**
+  (클라이언트·로컬 프레임이 있는 PC에서만). Python **625 OK**.
+- 대기: **학생 화면(D26)** — 무기·스킬 아이콘·이름 localize의 카탈로그 키를 오케스트레이터가 spec에 추가하기로 했으나 아직 없다(`prefabs.student_detail`에는 위젯 기하만).
+- 다음: **C5e-6b** 캐시·드리프트(항목 단위 증분 index).
+
+## C5e-6b — 합성 캐시·드리프트 (D19/D25) — 완료 (2026-09-27, 시작 `858cf18`)
+
+- `core/recognition_synth_cache.py` `SynthCache(root, client="kr")`: `<root>/kr/<spec_version>/{pack.bin, index.json}`,
+  `runtime_paths.resolve_synth_cache_root()` = `%LOCALAPPDATA%/BA Planner/recognition-synth-cache`.
+  **창 크기 단계는 두지 않았다** — 워크플로 6b 경로의 `<WxH>`는 D25(정규화 한 벌, 글리프만 창별 즉석) 이전 표기라 D25를 따랐다. 프로필도 경로에 넣지 않았다:
+  이미지가 프로필과 무관하고 identity 네임스페이스가 겹치지 않으므로 프로필은 후보 우주(`profile_universe`)만 고른다.
+- **항목 단위 증분**: identity마다 입력 튜플(아이콘 이름·아이콘 pixel sha·카드 스프라이트 pixel sha·등급·생성기 버전)을 index에 기록, 튜플이 바뀐 항목·손상 blob만 재합성.
+  index 손상·생성기 버전 변경이면 전부 재생성.
+- **저장 형식**: 처음엔 identity별 PNG였는데 캐시 적중이 미스보다 느렸다(presents 152파일 open ≈ 1 s — 6a-0과 같은 파일당 비용). zlib 원시 RGB blob을 **한 pack 파일**에 이어 붙이고
+  index에 (offset, length) → 적중 **69~83 ms**(글리프 3벌 30 ms 포함, 목표 < 200 ms 충족), 미스 0.47~0.63 s(tech notes 54·presents 76·equipment 110), pack 7.8 MB.
+  재합성분은 append, 죽은 blob이 절반을 넘으면 압축 재작성. 쓰기는 임시 파일 후 교체.
+- **드리프트**: `drift_scores(synth, confirmed)` = 상세로 확정된 타일의 자기 합성 타일 M4, `SynthDriftGuard.record(profile, scores)` → evidence `synth_drift`(p10·median),
+  p10 < `inventory.synth.drift_floor`(**신규 .85**; 실측 E4 p10 .939, 장비 정답 min .829)가 **연속 2회**면 그 프로필 synth 계층을 세션 동안 끄고 note에 `synth_drift_detected`(한 번만).
+  정상 스캔이 끼면 연속 횟수 초기화. 연결(스캔마다 기록·계층 차단)은 6c에서 어댑터에 붙인다.
+- 테스트 +5: 드리프트 2회 연속·초기화·1회 보고, 확정 0건, drift 점수, **실 자산으로 적중/미스·변경 1건만 재합성·blob 손상 복구·index 손상 전체 재생성·창 크기별 글리프(720p 19~21, 1440p 38~40)**.
+  Python **630 OK**.
+- 다음: **C5e-6c** 로더 계층(은행 계층 `user_confirmed → session → synth → bundled`, D16 gate 프로필, drift 연결).
+
+## C5e-6c — 합성 로더 계층 (동작 변경) — 완료 (2026-09-27, 시작 `6d35acc`)
+
+- **은행 계층** `TileBank`: `synth < session < user_confirmed`. `add_synth(identity, tile)`는 그 identity에 실물 계층이 없을 때만 항목이 되고, 실물 타일이 들어오면
+  synth 항목을 대체한다(워크플로 "상위 계층에 있으면 synth 제외"). 합성 벡터는 드리프트 채점용으로 따로 보존(`bank.synth`, `synth_score`).
+  합성 타일은 데이터셋 창(카드 좌+2/상+2, 98×91)이라 런타임 슬롯 crop(117×95)을 그 창으로 잘라 비교한다 — 실측 창 민감도(1px 안쪽: 아이템 med .957/.946,
+  2px: 장비 .935)가 있어 **inset 1·2 중 높은 값**. 두 스캔 녹화 196타일 모두 top-1 100 %.
+  (`TemplateMatcher`가 아니라 C5e-2 타일 은행에 계층을 둔 것은, 이제 그리드 identity의 출처가 은행이기 때문이다. `bundled` 원화는 기존대로 은행 뒤.)
+- **D16 gate**: `recognition_synth.SYNTH_ENABLED_PROFILES = {tech_notes, presents}`(초기값), equipment·학생은 6f 통과 후. gate 밖 프로필은 합성을 읽지도 않는다.
+- **어댑터**: `synth_provider`(프로필, 창 → `SynthTemplateSet`)로 스캔 준비 때 합성 계층을 싣고 evidence `synth_tier`(ok/uncertain + 사유). 합성만으로 확정된 슬롯은
+  source `synth_bank`. 상세로 확정된 타일은 그 identity의 합성 점수로 드리프트 기록(`synth_drift`), `SynthDriftGuard`가 2회 연속 저점이면 세션 동안 그 프로필 차단.
+- **런타임** `core/recognition_synth_provider.py` `SynthProvider`: 세션당 한 번 `find_game_dir` → 6a-0 추출 → 6b 캐시, 실패는 세션 동안 기억(`asset_extract_failed`/폴더 없음 → 계층 없이 스캔).
+  `scanner_runtime`이 운영 어댑터에 연결(등급 스냅샷은 `assets/recognition/spec/item-rarity-v1.json` — 아직 미추적이라 없는 PC에선 계층이 꺼진다).
+  첫 사용 때 추출(~9 s)이 스캔 준비 안에서 한 번 돈다 — 진행 표시·백그라운드 선추출은 폴더 선택 UI와 함께 이월.
+- **"은행 비어 있음 + synth 켜짐" replay**(새 어댑터, 실게임 녹화 locked replay, 입력 완전 일치): **tech notes 45/45 확신, 상세와 45/45 일치, 불일치 0**, drift p10 .914 / med .958.
+  presents 49/56 확신·49 일치·불일치 0, drift p10 .886(나머지 7개는 임계 미달 → 상세). equipment는 gate로 꺼짐.
+  **상세 클릭 0회 슬롯 비율은 여전히 0 %** — 생략 조건의 그리드 수량이 C5e-3 전에는 없다(C5e-2 기록과 같음). synth만으로 identity는 첫 스캔부터 확정된다.
+- 기존 golden: locked replay는 합성 공급자 없이 돌아 **diff 0**(워크플로 조건). 화면 상태·학생 same.
+- 이월: 상세 recognizer의 합성 계층 → **6d**(폴백 순서와 함께), `StudioNumericBank` 합성 계층·`numeric_synth_agree` → **C5e-3**(인벤토리 수량을 그 은행으로 옮길 때).
+- 테스트 +6: 계층 대체·gate·차단·`synth_bank` source·불가 사유 evidence, **실 자산 "은행 비어 있음 + synth" tech notes replay**(클라이언트·녹화 프레임 있는 PC). Python **636 OK**.
+
+### D18 후속 — 상세 템플릿 identity 교차 확인 (합성 상세 아이콘 기준)
+
+- 캡처 상세 아이콘 템플릿(`inventory_detail_f9_manifest`, v6 출처) 중 아이템 251장을 합성 상세 아이콘 1058종과 M4로 대조: **250/251 일치**.
+  불일치 1: `presents:Item_Icon_Favor_SSR_GL_4` 템플릿이 `SSR_GL_10`에 .732(자기 라벨 .697) — 템플릿이 ROI보다 큰 창(275×292/298×327)이라 점수가 전반적으로 낮아(일치 min .341)
+  확정하지 않는다. **실물 확인 후보**로 남긴다(해당 선물을 보유한 스캔의 상세 프레임으로).
+- 엘레프 258종은 기존 기록대로 학생 slug 키 ↔ ExcelDB `SecretStone_*` 이름 체계 차이라 이 비교에서 제외(오라벨 아님, C5e-6 합성 매핑 과제).
+- `tech-notes-full-c` 슬롯 44의 D18 교정은 C5c 때 끝났고(golden·카탈로그), 이 녹화를 쓰는 C5e-6a 테스트는 라벨을 `SkillBook_Ultimate`로 바꿔 읽는다.
+- 다음: 워크플로 순서 **C5e-3**(수량 은행 + synth seed) → C5e-4 → C5e-6d → C5e-6f(아이템 gate) → C5e-6e → …
+
+## C5e-3 — 그리드 수량 은행 (X19, 동작 변경) — 완료, 실게임 두 번째 스캔 대기 (2026-09-27, 시작 `03a68c1`)
+
+- **왜 `StudioNumericBank`를 그대로 쓰지 않았나**: 학생 화면용(고정 자릿수 칸 ROI, 흰 글자 마스크)이라 인벤토리 수량(가변 길이·이탤릭·`x` 접두·`K` 축약·#2D4664 잉크)에 맞지 않는다.
+  같은 **계층 개념**(user/session + 합성 seed)을 `core/inventory_count_bank.py` `CountBank`로 옮겼다. 기존 v6 잉크마스크 판독기(`SlotCountMatcher`)는 fallback으로 남겼다
+  (현재 UI에선 196/196 `None` — parity상 은행이 먼저, 기존 값이 있으면 그것이 우선).
+- **라벨 추출**: 슬롯 crop의 수량 띠(x 28/117~, y 62/95~)를 잉크맵으로, 강한 잉크 행의 맨 아래 band → 그 band 안에서 **부드러운 잉크 열**의 오른쪽 연속 구간(간격 ≤ 6px) → 자릿수 높이로 자르기.
+  실측 실패로 고친 두 가지: 7의 가는 대각선이 강한 임계에서 끊겨 "x17"이 떨어져 나감(열은 소프트 임계 80), 이탤릭 "1"·"7" 사이가 5px(간격 4 → 6).
+- **학습(세션)**: 상세 패널이 확정한 수량(< 10,000)의 라벨을 **알려진 문자열**로 나눠 글자별 표본(글자당 ≤ 6). 나눌 때 위치 정렬은 합성 글리프(6a) seed로 — seed는 em 후보 3벌을 모두 쓰고
+  가장 잘 맞는 변형을 고른다(첫 라벨 하나로 em을 고르면 tech notes에서 em 20이 골라져 "8"이 영영 안 붙었다). 자릿수 높이는 가장 작은 em 기준(큰 em은 라벨 위 아트를 끌어들임).
+  10,000 이상은 `x25K`처럼 축약(반올림 미확인, C5-2)이라 **마지막 K만** 학습.
+- **판독**: 자릿수 1~5 각각(그리고 K 붙은 가설)마다 학습 폭 비율로 나눠 자리마다 ±2px 창 NCC, 평균 점수가 가장 높은 가설. K로 끝나면 **정확 값이 아니므로 value 없음**(상세로).
+  K 가설이 없던 첫 판은 `x25K`·`x21K`를 **153·417로 확신 판독**했다 — 발견 즉시 수정, 이제 6개 K 라벨이 전부 `x25K` 등으로 읽히고 값은 비운다.
+  확신 = 최소 자리 점수 ≥ `inventory.count_bank.score`(.85) & margin ≥ `.margin`(.08), 잉크 임계 `inventory.count_label.ink_strong` 160 / `.ink_soft` 80 (모두 신규, C5).
+- **합성 seed 계층(D20)**: seed만으로 읽은 값의 상세 일치를 `numeric_synth_checked/agree`로만 기록(`NUMERIC_SYNTH_ENABLED_PROFILES` 빈 집합). 실측 일치 60~81 % → gate(.95) 미달, 판정에 안 씀.
+- **어댑터**: 그리드 수량 = 기존 판독기 → 없으면 은행 판독(확신일 때만, source `count_bank_session`). 상세 생략(C5e-2) 조건이 이제 성립할 수 있다: 은행 identity 확신 + 은행 수량 확신.
+  상세로 읽은 타일마다 학습 **전에** 은행 판독과 대조해 `count_checked/agree/disagree`를 남기고(불일치가 하나라도 있으면 `tile_bank` evidence `uncertain`), 그 뒤 학습.
+  합성 공급자가 있으면 gate 밖 프로필(장비)도 **글리프 seed만** 받는다(타일은 은행에 안 넣음).
+- **검증(실게임 녹화 replay, 스캔 A → B 한 어댑터, 상세 클릭은 유지하고 생략 후보만 계수)**: 상세 전에 은행이 확신한 수량 vs 상세 수량 —
+  기술 노트 A 9/9·B **19/19**, 선물 A 22/22·B **34/34**, 장비 A 30/30·B **45/45** 일치(장비 B의 2건은 상세가 못 읽은 K 라벨이었고 K 수정 전 값 — 수정 후 K는 값 없음).
+  두 번째 스캔에서 identity·수량 둘 다 확신 = **상세 클릭 생략 후보**: 기술 노트 19/45, 선물 34/56, 장비 45/95 → 약 **100/196(51 %)**. 첫 스캔에서도 합성 identity가 있는 프로필은
+  학습된 자릿수가 차는 대로 생략이 생긴다(기술 노트 9, 선물 22 — locked replay가 입력 불일치로 끝난 것이 그 증거).
+- **parity fixture**: `tests/fixtures/inventory_count_bank_c5e3/` — 두 장비 스캔의 실물 슬롯 crop 190장(라벨 위 행은 평탄화, 1.4 MB) + 상세 수량. 테스트: A로 학습 → B 판독에서 확신 오답 0
+  (합성 seed 있을 때·없을 때 모두), K 라벨은 값 없음·`K`로 읽힘, seed 있을 때 확신 ≥ 30. 어댑터 테스트 +3(생략 경로, 비확신 시 상세, 대조·학습·불일치 evidence).
+- golden: 화면 상태 2건 same, locked 상세 경로는 `tile_bank` note에 수량 계수만 추가(entry 동일 — 첫 스캔은 identity 확신이 없어 상세가 수량을 정함). 학생 same.
+- **미검증(실게임)**: 실제 두 번째 스캔에서 상세 클릭이 생략되는 경로(locked replay로는 불가) — 게임 화면이 필요하다(모니터 꺼짐). 첫 실행 때 스캔 시간·생략 비율을 status에 기록.
+- 다음: 워크플로 순서 **C5e-4**(장비 라벨×배지) → C5e-6d → C5e-6f(아이템 gate) → C5e-6e → …
+
+## C5e-4 (일부) + C5e-6d (일부) — 만능 설계도 식별·카탈로그 편입 (동작 변경) — 완료 (2026-09-27, 시작 `d05bff3`)
+
+- **정체 확인**: 장비 스캔마다 남던 `unknown_new` 9칸(C5-1)은 ExcelDB `Equipment_Icon_<카테고리>_Useall_Piece`("<카테고리> 만능 설계도", id 501000~509000) —
+  강화석 다음, 목걸이·손목시계·부적·헤어핀·배지·가방·신발·장갑·모자 순으로 나온다(실게임 녹화 상세 프레임 08~18이 그 순서).
+- **카탈로그(C5-1 결정 이행)**: `equipment_items.EQUIPMENT_USEALL_ITEMS` 9행을 강화석 뒤에 추가(이름은 스냅샷 `name_kr`). 장비 행 110 → **119**,
+  `CATALOG_REVISION` `757aea00…` → **`d2645621…`**(계약 fixture·재고 golden 3건은 이 줄만 바뀜, 대표 행 `Exp_0` order 3은 그대로). 계획(planning) 쪽 사용처 없음(카탈로그만 소비).
+  D23 정렬 규칙에 만능 설계도 단계 추가(강화석 → 만능 설계도(카테고리 순) → 카테고리×티어↓ → T1 → 무기 성장) — 카탈로그 119행과 규칙 순서 일치(테스트).
+- **식별 경로(6d 폴백 순서의 앞부분)**: 상세 판독 = 캡처 상세 템플릿 → (못 대면) **합성 상세 아이콘** → 미식별.
+  장비 상세 아이콘 합성 = 649×512 @(−717, 141) units, 아이템과 같은 ROI·패널 색. 실측(E3 장비판, 95 상세 프레임): 프리팹 배율 **95/95 top-1**, 정답 med .968 / min .931(±2 %는 94/95).
+  캡처 템플릿이 못 댄 상세 프레임은 전부 해당 만능 설계도에 .95~.97, margin ≥ .12. 레지스트리 `inventory.synth_detail.score` .90 / `.margin` .05(신규).
+  합성 상세 아이콘은 그리드 gate(D16)와 무관하게 모든 프로필에서 폴백으로 쓴다(워크플로 6f "미달 프로필은 상세 아이콘 합성만"). 합성 identity는 source `synth_detail_icon`,
+  상세 확정으로 취급해 타일 은행·수량 은행이 학습.
+  생성기 v2: 장비 상세 아이콘 추가, 장비 후보 우주에 만능 설계도(대응하는 비-`_Piece` identity가 없는 `_Piece`) 포함. 캐시는 생성기 버전으로 전체 재생성.
+- **replay(장비 녹화, 합성 공급자, 수량 판독은 끔)**: 관측 **104/104 identity**, `unknown_new` **0**(이전 9), 만능 설계도 9종이 슬롯 4~12에 순서대로, 수량 153·3153·5552·417·5517·5596·5566·5129·5511(그리드 표기와 일치),
+  정렬 검사 통과. `scan_coverage`는 여전히 partial — K 축약 수량(강화석·무기 성장 5칸)의 상세 판독 실패(C5d-1) 때문.
+- **이월(C5e-4 나머지)**: 상세 패널 **카테고리 라벨 × T 배지**를 1차 키로 쓰는 경로(배지 위치가 이름 길이에 따라 움직여 검색 필요)와 그리드 T 배지 — 현재는 캡처 템플릿 110종 +
+  합성 상세 아이콘으로 소유분·만능 설계도가 모두 식별돼 우선순위를 낮췄다. 신규 장비(스냅샷 이후)는 합성 상세 아이콘이 먼저 받는다.
+- 테스트 +2(Python **645 OK**): 6d 폴백(템플릿이 못 댄 프레임을 합성 아이콘이 명명, margin 없으면 미식별), **만능 설계도 replay**(9종·순서·`unknown_new=0`, 클라이언트·녹화 있는 PC).
+- 다음: C5d-1(상세 5자리/K 수량) 또는 워크플로 순서대로 **C5e-6f** 아이템 gate(합성 vs 실물 분포, 오프라인 가능) → C5e-6e(라벨링 UI, Flutter).
+
+## D23 갱신 반영 — 디스어셈블 정렬 규칙 (동작 변경: 선물 카탈로그 순서) — 완료 (2026-09-27, 시작 `1f8bde9`)
+
+- 오케스트레이터 로그(2026-09-27 밤, 비교 람다 디스어셈블)와 워크플로 D23(1) 갱신을 `core/inventory_order_rules.py`에 반영.
+  **기술 노트** = 학교 그룹(아이콘 이름의 학교, 스펙에 태그 없음) × **그룹 순서 = 그룹 안 최소 ExcelDB Id**(하드코딩 enum 제거 — 새 학교는 Id 자리로 자동 편입) × Quality × Id,
+  비의서(9998/9999)는 마지막 그룹. **선물 = Id 오름차순만**(등급 키 제거). 장비는 정적 카테고리 순위 그대로(만능 설계도 포함 이미 일치).
+  `order_key(profile, item_id, metadata)` — 그룹 최소 Id 때문에 전체 메타데이터를 받는다(사용처는 테스트뿐).
+- **선물 카탈로그 순서를 규칙으로 생성**: `tools/sync_inventory_f10_present_catalog.py`가 이름 자연 정렬 대신 스펙 Id로 정렬(스펙에 없는 identity는 실패).
+  재생성 결과 스캔에 나온 적 없는 7종만 자리 이동(`Favor_Lv2_Package` 5997, `SSR_2` 5998, `SSR_1` 5999, `Random_Lv2` 100009, `SSR_GL_11/10/19`).
+  `CATALOG_REVISION` `d2645621…` → **`178609f3…`**(계약 fixture·재고 golden 3건은 이 줄만, 대표 행 `Favor_0` order 0 그대로).
+- 테스트: 세 프로필 모두 **카탈로그 전 행 = 규칙 순서**(이전엔 선물이 예외), 선물 실게임 녹화 56칸 슬롯 순서 단조 유지.
+
+## C5e-6f (아이템 + 장비 수치) — D16 gate 측정 — 수치 기록, 판정 기준 확인 필요 (2026-09-27)
+
+- 입력: C5e-2 두 스캔 세트(프로필마다 실게임 1280 녹화 2회의 상세 확정 슬롯 crop), 런타임 `TileBank`(합성 query inset 1·2)와 레지스트리 `tile_bank` 임계로 양방향 대조.
+  기록: `debug/scanner_c5e_gate/items-1280-2026-09-27.json`(+ 스크립트·README).
+
+| 프로필 | n | 실물-실물 top-1 / p10 / min | 합성 top-1 / p10 / med / min | 합성 margin p10 | 합성 확신(.90/.015) / 확신 오답 | 오답 identity 최고점 |
+|---|---|---|---|---|---|---|
+| tech_notes | 90 | 100 % / 1.000 / .990 | **100 %** / .914 / .958 / .906 | .025 | 90 / **0** | .960 |
+| presents | 112 | 100 % / .981 / .960 | **100 %** / .879 / .945 / .844 | .294 | 92 / **0** | .828 |
+| equipment | 190 | 100 % / .958 / .933 | **100 %** / .910 / .941 / .839 | .056 | 179 / **0** | .929 |
+
+- **워크플로 문구대로의 판정은 세 프로필 모두 미달**: "합성 정답 p10 ≥ 실물-실물 p10 − .03"에서 실물-실물(같은 identity, 두 스캔)은 같은 렌더링이라 p10이 .96~1.00이고,
+  합성은 원리상 .88~.91이 한계다. 이 기준을 그대로 적용하면 이미 켜진 tech_notes·presents(6c replay 0 오답, 여기서도 202타일 확신 오답 0)를 끄게 된다.
+  **그래서 `inventory.synth.enabled_profiles`는 바꾸지 않았다**(tech_notes·presents 유지, equipment 미편입).
+- 대안 기준 제안(오케스트레이터 결정 대기): "합성 top-1 ≥ 99 % + 확신 오답 0 + 합성 정답 p10 > 오답 identity 점수 p90" — 이 기준이면 세 프로필 모두 통과.
+  tech notes는 티어 형제가 가까워(margin p10 .025, 오답 최고 .960) 가장 여유가 작다 — 확신 판정은 margin .015 임계가 막고 있다.
+- equipment는 워크플로상 `T#` 배지 결합(C5e-4 나머지) 후 판정이 원래 계획. 합성만으로도 190/190 top-1이므로 기준이 정해지면 배지 없이 편입 가능.
+- 미실시(게임 화면 필요): 1080p·1440p 실물 재검증(D25), 학생 화면(D26 spec 대기).
+- 다음: C5d-1(상세 5자리/K 수량, 오프라인 녹화로 가능) → C5e-6e(라벨링 UI, Flutter).
+
+## C5d-1 — 상세 패널 5자리 수량 (동작 변경) — 완료 (2026-09-28, 시작 `d2832ac`)
+
+- **원인**: 상세 수량 라벨은 탭형(고정 폭) 이탤릭이고 5자리부터 클라이언트가 글자를 줄인다(높이 19 → 15 px @720p). v6 길이별 칸(n=5, 18×31)이 실제 위치와 어긋나
+  `weak_digit_match`(.858~.863)로 떨어졌다 — 강화석 3종·무기 성장 A·C의 5자리(C5b부터 `partial` 사유).
+- **판독(폴백)** `InventoryDetailRecognizer.pitch_count`: v6 칸 판독이 값을 못 낼 때만. 수량 띠를 폰트 기울기(레지스트리 `inventory.detail.pitch.shear` .29)로 펴고,
+  청록 글자의 G 채널 잉크(`.ink` 197)로 열 구간을 나눈 뒤 **x 표시**(숫자보다 아래에서 시작)를 기준으로 숫자 구간을 잡는다. 글자가 붙어도 되도록 구간을 **n등분**하고,
+  n은 피치/글자 높이 비(실측 .75, 허용 `.ratio_low` .62~`.ratio_high` .88)로 거른다. 각 칸은 v6 4자리 칸의 숫자 템플릿 80장(두 출처)과 ±1px 탐색으로 비교,
+  확신 = 칸 최소 점수 ≥ `.digit.score` .72 & margin ≥ `.digit.margin` .03. source `inventory_detail_pitch`.
+  속도: `glyph_score`와 같은 값을 정수 비트마스크 popcount로 계산(`binary_bits`/`bits_score`, 템플릿은 한 번만 이진화) — 468프레임 25 s.
+- **검증(실게임 1280 녹화 6개, 상세 468프레임)**: v6가 읽는 468/468에서 동일 값, v6가 못 읽던 5자리 **13프레임 전부 판독**(25946·27078·29514·11223·21569 — 화면 확인).
+  기울기 스윕 .28/.30 무오답, .26/.32는 거절만 늘어남(오답 0). 칸 점수 min .776, margin min .044.
+- **장비 replay**(합성 공급자, C5e-4 시나리오): 관측 104/104 수량 모두 채움, 5자리 6종(강화석 3 + 무기 성장 A·B·C), **`scan_coverage` = terminal·ordered, partial 해소**.
+- parity fixture `tests/fixtures/inventory_detail_count_c5d1/`(수량 띠 crop 12장 78 KB: 5자리 5 + v6 판독 가능 1~4자리 7, 두 출처) + 테스트 4.
+- F9 fixture `equipment-weak-count.png`(강화석 상급, 기대값 없음이던 5자리)는 이제 **24890**(화면 확인)으로 읽혀 manifest 기대값을 갱신.
+  bank 대체 테스트는 `pitch_count`를 막고 v6 경로만 본다. 재고 golden은 변화 없음(5자리 상세 프레임 미포함).
+- 앞 커밋(`d2832ac`) 부수: 어댑터 단위 테스트(F1·F2·운영 어댑터)는 no-op 입력 가드(`tests/input_guard_stub.py`) — 사람이 PC를 쓰면 `input_busy`로 실패하던 문제(2026-09-28 새벽 재현).
+- Python **649 OK**.
+- 다음: C5e-6e(라벨링 UI, Flutter) — 또는 오케스트레이터의 D16 기준 결정 후 equipment 합성 편입.
+
+## 실게임 확인 3건 (2026-09-28, 사용자 실행) + 발견 2건 수정 (동작 변경) — 시작 `629f5f0`
+
+기록: `debug/scanner_c5e_live/<run>/trace.json` + 프레임(`verify_inventory_c2_live.py`, 합성 공급자 연결, `--repeat`).
+`1440-presents`·`1440-equipment`는 실행 때 `1080-*` 이름으로 저장된 2560×1440 run이라 폴더 이름을 고쳤다(trace `size`로 확인).
+
+| 확인 | run | 결과 |
+|---|---|---|
+| ② D21 입력 가드 실입력 | `guard-tech-notes` (1280) | 사용자 입력 2034건, idle 대기 1회, `input_busy` 0 — 스캔 두 번 다 완료, **entry가 방해 없는 run·두 번째 run과 동일**, 오답 없음 |
+| ① 두 번째 스캔 생략 | `second-scan-tech-notes` (1280) | 120.9 s → **92.9 s**, 상세 생략 7 → **18/45**(40 %), entry 동일 |
+| ① 〃 장비 | `second-scan-equipment` (1280) | 첫 스캔 196 s 완료. **두 번째 스캔 실패** `inventory_scroll_unverified`("Gloves 만능 설계도가 슬롯 6·11") — 첫 페이지 복원됨, 오답 entry 없음 → 아래 수정 A |
+| ③ 1080p | `1080-tech-notes` (1920×1080 전체 화면) | **`inventory_page_unknown` 0.4 s** → 아래 수정 B |
+| ③ 1440p | `1440-*` (2560×1440) | 세 프로필 완료, entry가 1280 run과 동일(tech notes·equipment 수량 포함). gate 수치는 아래 |
+
+- **수정 A — 세션 은행 픽셀 오프셋 내성**: 두 번째 스캔의 슬롯 crop이 첫 스캔보다 1 px 아래(117×96 vs 95)였고, 만능 설계도 9종은 카테고리 표식만 달라
+  비이동 M4에서 Charm이 Gloves로(.933 vs .897, 확신) 읽혔다(오프라인 locked replay로 재현: 12칸 중 확신 오답 2, 비확신 오답 2).
+  `TileBank.match`는 비이동 점수 상위 `inventory.tile_bank.rescore_window`(.15) 안의 실물 계층 후보를 ±`inventory.tile_bank.shift`(2 px 행·1 px 열 @720p, crop 높이 비례)
+  이동 query로 다시 채점해 최고값을 쓴다(합성 계층은 기존 inset 방식 그대로). 결과: 같은 12칸 **12/12 정답 .993~.999**, 실측 교차 스캔(tech notes 45·presents 56·equipment 104)
+  확신 오답 0, 인위 이동(±2 px) 확신 오답 0(.10 창에서는 (−1,−2) 이동 1건 → .15). 타일당 ~40 → ~70 ms.
+  시도했다 버린 안: 후보별 최적 오프셋(오답도 부풀려 (0,−1)에서 확신 오답 2), 테두리 링 정합(비용면이 평탄해 같은 crop끼리 .90까지 떨어짐).
+  parity fixture `tests/fixtures/inventory_tile_bank_shift_c5e/`(첫 스캔 20칸 + 두 번째 스캔 12칸, 514 KB) + 테스트 4.
+- **수정 B — 1920×1080 페이지 판정**: 아이템 목록 제목의 색 유사도가 1.5배 리샘플에서 .948(< .95; 2560 .963, 1280 1.0). 아이템/장비 구분은 제목 상관(.92 vs .47)이
+  하고 비인벤토리 화면(학생 녹화 228장)은 색 ≤ .86 · 상관 ≤ .36이라 `inventory.detail.source_title.color` .95 → **.93**. 해당 프레임 `item` 판정 확인. 1080 스캔 자체는 재실행 필요.
+- **③ 1440 D16 gate(개정 기준)** — 한 스캔의 상세 확정 타일 vs 합성 계층:
+
+| 프로필 | n | top-1 | 확신 / 확신 오답 | 정답 p10 | 정답 min / 오답 max | (a) | (b) | (c) p10≥.90 | (d) 전역 | (d) 타일별 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tech_notes | 45 | 100 % | 45 / 0 | .942 | .924 / .937 | ✓ | ✓ | ✓ | ✗ | 45/45 |
+| presents | 56 | 100 % | 50 / 0 | .894 | .863 / .827 | ✓ | ✓ | ✗ | ✓ | 56/56 |
+| equipment | 104 | 100 % | 37 / 0 | .832 | .781 / .912 | ✓ | ✓ | ✗ | ✗ | 104/104 |
+
+  1280의 6f 수치도 개정 기준으로는 presents (c) .879 ✗, tech_notes·equipment (d) 전역 ✗ — 오케스트레이터가 적은 "세 프로필 모두 통과"와 다르다.
+  **(d)의 해석(전역 / 타일별)과 presents (c) 처리 결정 전까지 `SYNTH_ENABLED_PROFILES`는 그대로(tech_notes·presents)**. equipment 합성은 1440에서 확신 37/104로 약하다.
+- 남은 실게임: 1920×1080 세 프로필 첫 스캔(수정 B 후), 장비 두 번째 스캔 재실행(수정 A 후).

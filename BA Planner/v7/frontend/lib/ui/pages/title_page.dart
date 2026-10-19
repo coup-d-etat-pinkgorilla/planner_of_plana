@@ -12,6 +12,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../app_section.dart';
 import '../app_shell.dart';
+import '../kit/skew_bar.dart';
 import '../studio/section_studio_document.dart';
 import '../studio/section_template.dart';
 import '../studio/title_studio_layout.dart';
@@ -19,8 +20,54 @@ import '../widgets/asset_image_grid.dart';
 import '../widgets/account_section_cluster.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/lifted_path_shadow.dart';
+import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
 import '../widgets/student_grid_warmup.dart';
+import '../widgets/student_section_layout.dart' show studentGridCardPath;
+
+// FE8-a(2026-10-10): 시안 `Title.dc.html` 값. T 번호는 A 보고서 §2.4의 차이 표다.
+
+/// 로고 띠·계정 카드 path의 모서리 반경(시안 path `Q 16`, T3).
+const _titleSurfaceRadius = 16.0;
+
+/// 설정·나가기·시작 버튼 path의 모서리 반경(시안 path `Q 8`, FE8-b: FE8-a 발견 사항 3). Studio 기본은 10이다.
+const titleButtonRadius = 8.0;
+
+/// 설정·나가기 외곽선 rgba(56,81,107,.72) 1.8px(FE8-b).
+const _titleCornerOutline = Color.fromRGBO(56, 81, 107, 0.72);
+const _titleCornerOutlineWidth = 1.8;
+
+/// 계정 카드 채움 rgba(29,42,58,.9) + 외곽선 rgba(56,81,107,.6) 1.2px(FE8-b). 공용 섹션 표면(.76)의 예외다(FD-001).
+const titleAccountCardFill = Color.fromRGBO(29, 42, 58, 0.9);
+const _titleAccountCardOutline = Color.fromRGBO(56, 81, 107, 0.6);
+const _titleAccountCardOutlineWidth = 1.2;
+
+/// 로고 띠 채움 rgba(29,42,58,.93)(T10). 공용 섹션 표면(.76)보다 불투명하다(FD-001 시안 우선).
+const _titleBrandFill = Color.fromRGBO(29, 42, 58, 0.93);
+
+/// 로고 띠 glow `radial-gradient(60% 90% at 50% 45%, rgba(242,179,239,.09), transparent 70%)`(T10).
+const _titleBrandGlow = Color.fromRGBO(242, 179, 239, 0.09);
+const _titleBrandGlowClear = Color.fromRGBO(242, 179, 239, 0);
+
+/// 시작 버튼 분홍 외곽선 rgba(242,179,239,.9) 1.8px(T8).
+const _titlePrimaryOutline = Color.fromRGBO(242, 179, 239, 0.9);
+const _titlePrimaryOutlineWidth = 1.8;
+
+/// Space 키캡: 버튼 아래 14px, 높이 26, 좌우 12, r5, #0d151f + 안쪽 1px rgba(56,81,107,.9)(T9).
+const _titleKeyCapGap = 14.0;
+const _titleKeyCapHeight = 26.0;
+const _titleKeyCapBorder = Color.fromRGBO(56, 81, 107, 0.9);
+const _titleKeyCapText = Color(0xffdfe7ee);
+
+/// 보유율 진행 막대: 높이 5, r3, 트랙 rgba(255,255,255,.14), 채움 #f4f8fb, skewX(−10°)(T4).
+const _titleProgressHeight = 5.0;
+const _titleProgressStyle = SkewBarStyle(
+  trackColor: Color.fromRGBO(255, 255, 255, 0.14),
+  radius: 3,
+);
+
+/// 초상 stucard 흰 외곽선 1.66px(카드 높이 153.81 기준, T11).
+const _titleStucardOutlineFraction = 1.66 / 153.81;
 
 const _titleTexture = BATriangleTextureConfig(
   baseColor: Color(0xb81c2b3b),
@@ -78,6 +125,9 @@ class _TitlePageState extends State<TitlePage>
   var _actionRunning = false;
   var _transitioning = false;
   String? _error;
+
+  /// 계정 목록·state를 읽다가 실패했다(이관 실패 포함). 주 버튼은 첫 실행 흐름 대신 다시 읽는다.
+  bool _accountLoadFailed = false;
   AccountClusterEntry? _accountClusterEntry;
   StudentCatalogEntry? _studentGridWarmupPreview;
   bool _studentGridWarmupActive = false;
@@ -94,7 +144,7 @@ class _TitlePageState extends State<TitlePage>
     super.initState();
     _exitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: AppMotion.shell,
     );
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
@@ -173,11 +223,17 @@ class _TitlePageState extends State<TitlePage>
       final profiles = await repository.listProfiles();
       var selected = profiles.where((item) => item.selected).firstOrNull;
       if (selected == null && profiles.isNotEmpty) {
+        // 선택 대상 state를 먼저 읽는다. legacy 프로필은 이 첫 로드에서 활성 문서로 옮겨지며 revision이 오르므로
+        // (FB-1b), 목록 revision이 아니라 state가 돌려준 revision으로 고른다.
         final fallback = profiles.first;
+        final fallbackState = await loadRepositoryStateRetrying(
+          repository,
+          fallback.id,
+        );
         final revision = await repository.selectProfile(
           fallback.id,
-          fallback.revision,
-          'title-login-${fallback.id}-${fallback.revision}',
+          fallbackState.revision,
+          'title-login-${fallback.id}-${fallbackState.revision}',
         );
         selected = RepositoryProfile(
           id: fallback.id,
@@ -189,20 +245,28 @@ class _TitlePageState extends State<TitlePage>
       }
       final state = selected == null
           ? null
-          : await repository.loadRepositoryState(selected.id);
+          : await loadRepositoryStateRetrying(repository, selected.id);
+      // state를 읽은 뒤의 revision이 권위값이다(첫 로드 이관으로 목록 값보다 클 수 있다).
+      final profile = selected == null || state == null
+          ? selected
+          : repositoryProfileWithRevision(selected, state.revision);
       if (!mounted || generation != _accountLoadGeneration) return;
       setState(() {
-        _profile = selected;
+        _profile = profile;
         _repositoryState = state;
         _loading = false;
         _error = null;
+        _accountLoadFailed = false;
       });
       unawaited(_loadStudentCatalog(generation));
     } catch (error) {
       if (!mounted || generation != _accountLoadGeneration) return;
+      // 이관 실패(legacy_goals_conflict·corrupt_data)는 빈 목표로 열지 않고 문구로 알린다. 계정을 읽지 못한 채로
+      // 첫 실행(새 계정·v6 가져오기)으로 넘어가지 않게, 주 버튼은 다시 읽기만 한다.
       setState(() {
         _loading = false;
-        _error = '$error';
+        _error = repositoryLoadErrorText(error);
+        _accountLoadFailed = true;
       });
     }
   }
@@ -324,6 +388,10 @@ class _TitlePageState extends State<TitlePage>
         widget.service.state.value.connection != BackendConnection.connected) {
       return;
     }
+    if (_accountLoadFailed) {
+      await _loadAccount();
+      return;
+    }
     var initialAction = _InitialAccountAction.create;
     if (_profile == null) {
       initialAction = await _chooseInitialAccountAction();
@@ -357,6 +425,17 @@ class _TitlePageState extends State<TitlePage>
     });
   }
 
+  /// FB-2d: 계정 관리에서 지운 계정이 지금 타이틀에 보이는 계정이면 그 계정 값(프로필·state)만 비운다. 진행 중인
+  /// 계정 읽기는 지운 계정을 되살리지 않게 버리고, 타이틀로 돌아올 때 다시 읽는다.
+  void _forgetDeletedProfile(String profileId) {
+    if (_profile?.id != profileId) return;
+    _accountLoadGeneration += 1;
+    setState(() {
+      _profile = null;
+      _repositoryState = null;
+    });
+  }
+
   Future<void> _returnFromAccountCluster() async {
     setState(() {
       _accountClusterEntry = null;
@@ -366,65 +445,6 @@ class _TitlePageState extends State<TitlePage>
     if (!mounted) return;
     await _exitController.reverse();
     if (mounted) setState(() => _transitioning = false);
-  }
-
-  Future<void> _createAccount() async {
-    final repository = _repository;
-    if (repository == null) return;
-    var accountName = '';
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        key: const ValueKey('title-account-dialog'),
-        title: const Text('계정 생성'),
-        content: TextFormField(
-          key: const ValueKey('title-account-name'),
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '계정 이름',
-            hintText: '예: 메인 계정',
-          ),
-          onChanged: (value) => accountName = value.trim(),
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (value) =>
-              Navigator.pop(dialogContext, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, accountName),
-            child: const Text('생성'),
-          ),
-        ],
-      ),
-    );
-    if (name == null || name.isEmpty || !mounted) return;
-
-    setState(() {
-      _actionRunning = true;
-      _error = null;
-    });
-    try {
-      final created = await repository.createProfile(
-        name,
-        'title-create-${DateTime.now().microsecondsSinceEpoch}',
-      );
-      if (!created.selected) {
-        await repository.selectProfile(
-          created.id,
-          created.revision,
-          'title-select-${created.id}-${created.revision}',
-        );
-      }
-      if (mounted) _openShell(AppSection.home);
-    } catch (error) {
-      if (mounted) setState(() => _error = '$error');
-    } finally {
-      if (mounted) setState(() => _actionRunning = false);
-    }
   }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
@@ -490,6 +510,7 @@ class _TitlePageState extends State<TitlePage>
                   entry: _accountClusterEntry!,
                   onBackToTitle: _returnFromAccountCluster,
                   onEnterHome: () => _openShell(AppSection.home),
+                  onProfileDeleted: _forgetDeletedProfile,
                 ),
               ),
             if (_error != null)
@@ -669,26 +690,33 @@ class _KeyCap extends StatelessWidget {
 
   final String label;
 
+  // T9: 시안 키캡(높이 26, 좌우 12, r5, #0d151f, 안쪽 1px 테두리, Pretendard 13 w700 #dfe7ee). 그림자 없음.
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => SizedBox(
     key: const ValueKey('title-space-key'),
-    padding: const EdgeInsets.fromLTRB(8, 3, 8, 2),
-    decoration: BoxDecoration(
-      color: const Color(0xff263a52),
-      border: Border.all(color: Colors.white70),
-      borderRadius: BorderRadius.circular(3),
-      boxShadow: const [
-        BoxShadow(color: Colors.black45, offset: Offset(1, 2), blurRadius: 2),
-      ],
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        fontFamily: 'GyeonggiTitle',
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: Colors.white,
-        height: 1,
+    height: _titleKeyCapHeight,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.popover,
+        border: Border.all(color: _titleKeyCapBorder),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Align(
+          widthFactor: 1,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: AppFonts.body,
+              fontFamilyFallback: AppFonts.fallback,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: _titleKeyCapText,
+              height: 1,
+            ),
+          ),
+        ),
       ),
     ),
   );
@@ -930,6 +958,14 @@ class _StudioTitleCanvas extends StatelessWidget {
   StudioFeatureElement _feature(String id) =>
       document.features.singleWhere((item) => item.id == id);
 
+  /// FE8-a: 로고 띠(container-1)와 계정 카드(container-6)는 Studio 컨테이너 polygon을 시안 반경(16)으로
+  /// 둥글린다(T3). FE8-b: 버튼(container-2·4·5)은 반경 8이다.
+  Path _surfacePath(
+    Size size,
+    StudioContainerElement container, {
+    double radius = _titleSurfaceRadius,
+  }) => titleStudioContainerPath(document, size, container.id, radius: radius);
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -940,28 +976,23 @@ class _StudioTitleCanvas extends StatelessWidget {
       final brandRect = sectionCanvasElementRect(size, brand);
       final primaryRect = sectionCanvasElementRect(size, primary);
       final accountRect = sectionCanvasElementRect(size, account);
-      final brandPath = buildSectionCanvasElementPath(size, brand);
-      final accountPath = buildSectionCanvasElementPath(size, account);
+      // FE8-a: 섹션은 96 grid 정수 칸으로 그림 영역을 덮고, 보이는 표면은 시안 path bounds와 같은 컨테이너다.
+      final bandPath = _surfacePath(size, _container('container-1'));
+      final accountCardPath = _surfacePath(size, _container('container-6'));
       final settings = _container('container-4');
       final exit = _container('container-5');
       final primaryContainer = _container('container-2');
-      final accountContainer = _container('container-6');
-      final settingsPath = buildStudioContainerPath(
+      final settingsPath = _surfacePath(
         size,
-        document.elements,
         settings,
-      )!;
-      final exitPath = buildStudioContainerPath(size, document.elements, exit)!;
-      final primaryContainerPath = buildStudioContainerPath(
+        radius: titleButtonRadius,
+      );
+      final exitPath = _surfacePath(size, exit, radius: titleButtonRadius);
+      final primaryContainerPath = _surfacePath(
         size,
-        document.elements,
         primaryContainer,
-      )!;
-      final accountContainerPath = buildStudioContainerPath(
-        size,
-        document.elements,
-        accountContainer,
-      )!;
+        radius: titleButtonRadius,
+      );
 
       final titleFeature = _feature('feature-1');
       final titleRect = studioFeatureRect(
@@ -984,17 +1015,43 @@ class _StudioTitleCanvas extends StatelessWidget {
                 children: [
                   LiftedPathShadow(
                     key: const ValueKey('title-brand-section-shadow'),
-                    path: brandPath,
+                    path: bandPath,
                   ),
                   _StudioPathSurface(
                     key: const ValueKey('title-brand-glass'),
-                    path: brandPath,
+                    path: bandPath,
+                    color: _titleBrandFill,
+                  ),
+                  Positioned.fill(
+                    key: const ValueKey('title-brand-glow'),
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _TitleBandGlowPainter(bandPath),
+                      ),
+                    ),
                   ),
                   _StudioPathSurface(
                     path: settingsPath,
                     texture: _actionTexture,
                   ),
                   _StudioPathSurface(path: exitPath, texture: _actionTexture),
+                  // FE8-b: 설정·나가기 외곽선(시안 rgba(56,81,107,.72) 1.8px).
+                  for (final (key, path) in [
+                    ('title-settings-outline', settingsPath),
+                    ('title-exit-outline', exitPath),
+                  ])
+                    Positioned.fill(
+                      key: ValueKey(key),
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _TitlePathOutlinePainter(
+                            path: path,
+                            color: _titleCornerOutline,
+                            strokeWidth: _titleCornerOutlineWidth,
+                          ),
+                        ),
+                      ),
+                    ),
                   _positionedMarker('title-brand-section', brandRect),
                   _positionedContent(
                     titleRect,
@@ -1004,24 +1061,47 @@ class _StudioTitleCanvas extends StatelessWidget {
                       filterQuality: FilterQuality.high,
                     ),
                   ),
+                  // T7: 시안 톱니 아이콘(24, stroke 2.1)과 의미 라벨 `계정 관리`.
                   _positionedPathAction(
                     'title-settings',
                     settingsPath,
                     onSettings,
                     const Padding(
                       padding: EdgeInsets.all(2),
-                      child: FittedBox(child: Icon(Icons.settings)),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox.square(
+                            key: ValueKey('title-settings-gear'),
+                            dimension: 24,
+                            child: CustomPaint(painter: _TitleGearPainter()),
+                          ),
+                        ),
+                      ),
                     ),
+                    semanticLabel: '계정 관리',
                   ),
                   _positionedPathAction(
                     'title-exit',
                     exitPath,
                     onExit,
+                    // FE8-b: `나가기` 15px w700 흰색(시안).
                     const Padding(
                       padding: EdgeInsets.all(2),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text('나가기', maxLines: 1),
+                        child: Text(
+                          '나가기',
+                          key: ValueKey('title-exit-label'),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontFamily: AppFonts.body,
+                            fontFamilyFallback: AppFonts.fallback,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1047,6 +1127,19 @@ class _StudioTitleCanvas extends StatelessWidget {
                     path: primaryContainerPath,
                     texture: titlePrimaryActionTexture,
                   ),
+                  // T8: 분홍 외곽선.
+                  Positioned.fill(
+                    key: const ValueKey('title-primary-outline'),
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _TitlePathOutlinePainter(
+                          path: primaryContainerPath,
+                          color: _titlePrimaryOutline,
+                          strokeWidth: _titlePrimaryOutlineWidth,
+                        ),
+                      ),
+                    ),
+                  ),
                   _positionedMarker('title-primary-position', primaryRect),
                   _positionedPathAction(
                     'title-primary-action',
@@ -1064,21 +1157,25 @@ class _StudioTitleCanvas extends StatelessWidget {
                             padding: const EdgeInsets.all(3),
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
+                              // T8: 라벨 34px, 경기천년제목 700(시안 `.dsp` + font-weight 700).
                               child: Text(
                                 profile == null ? '계정 생성' : '시작',
                                 style: const TextStyle(
-                                  fontFamily: 'GyeonggiTitle',
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w500,
+                                  fontFamily: AppFonts.display,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.34,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
                           ),
                   ),
+                  // T9: 키캡은 버튼 path 아래 14px에 띄운다.
                   Positioned(
                     left: primaryBounds.left,
                     width: primaryBounds.width,
-                    top: primaryRect.bottom - 5,
+                    top: primaryBounds.bottom + _titleKeyCapGap,
                     child: const Center(child: _KeyCap('Space')),
                   ),
                 ],
@@ -1094,17 +1191,36 @@ class _StudioTitleCanvas extends StatelessWidget {
                   children: [
                     LiftedPathShadow(
                       key: const ValueKey('title-account-section-shadow'),
-                      path: accountPath,
+                      path: accountCardPath,
                     ),
+                    // T11: 시안에 삼각 무늬 컨테이너가 없다. 카드 표면은 한 겹이다.
+                    // FE8-b: 채움 .9 + 외곽선 rgba(56,81,107,.6) 1.2px(시안).
                     _StudioPathSurface(
                       key: const ValueKey('title-account-glass'),
-                      path: accountPath,
+                      path: accountCardPath,
+                      color: titleAccountCardFill,
                     ),
-                    _StudioPathSurface(
-                      path: accountContainerPath,
-                      texture: _titleTexture,
+                    Positioned.fill(
+                      key: const ValueKey('title-account-outline'),
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _TitlePathOutlinePainter(
+                            path: accountCardPath,
+                            color: _titleAccountCardOutline,
+                            strokeWidth: _titleAccountCardOutlineWidth,
+                          ),
+                        ),
+                      ),
                     ),
                     _positionedMarker('title-account-section', accountRect),
+                    // T6: 카드 전체가 `계정 관리 열기` 버튼이다. 내용은 IgnorePointer라 탭이 이 path로 온다.
+                    _positionedPathAction(
+                      'title-account-card',
+                      accountCardPath,
+                      onSettings,
+                      const SizedBox.shrink(),
+                      semanticLabel: '계정 관리 열기',
+                    ),
                     ..._accountFeatures(size),
                   ],
                 ),
@@ -1119,51 +1235,46 @@ class _StudioTitleCanvas extends StatelessWidget {
     final portrait = _feature('feature-3');
     final name = _feature('feature-4');
     final owned = _feature('feature-5');
-    final divider = _feature('feature-6');
-    Rect currentRect(StudioFeatureElement feature) => studioFeatureRect(
+    final progress = _feature('feature-6');
+    Rect featureRect(StudioFeatureElement feature) => studioFeatureRect(
       size,
       document.elements,
       document.containers,
       feature,
     )!;
-    final accountSectionRect = sectionCanvasElementRect(
-      size,
-      _section('element-3'),
-    );
-    final originalTextContainerRect = studioPlacementRectWithin(
-      accountSectionRect,
-      const StudioPlacementRect(
-        0.024340827418844465,
-        0.04688686894940833,
-        0.9528637057705781,
-        0.9153365525292749,
-      ),
-    );
-    Rect originalRect(StudioFeatureElement feature) =>
-        studioPlacementRectWithin(originalTextContainerRect, feature.rect);
-    final dividerRect = originalRect(divider);
-    final originalNameRect = originalRect(name);
-    final originalOwnedRect = originalRect(owned);
-    final nameRect = Rect.fromLTRB(
-      dividerRect.left,
-      originalNameRect.top,
-      originalNameRect.right,
-      originalNameRect.bottom,
-    );
-    final ownedRect = Rect.fromLTRB(
-      dividerRect.left,
-      originalOwnedRect.top,
-      originalOwnedRect.right,
-      originalOwnedRect.bottom,
+    // 이름·막대·보유 줄은 같은 왼쪽 비율을 저장 문서에 둔다(진행 막대 왼쪽 끝이 공통 기준).
+    final progressRect = featureRect(progress);
+    final nameRect = featureRect(name);
+    final ownedRect = featureRect(owned);
+    final totalKnown = totalCount > 0;
+    // 전체 학생 수를 모르면(카탈로그 읽기 전·실패) 비율을 0으로 만들지 않고 빗금·'—'로 둔다.
+    final ownedFraction = totalKnown
+        ? (ownedCount / totalCount).clamp(0.0, 1.0).toDouble()
+        : null;
+    const mutedStyle = TextStyle(
+      fontFamily: AppFonts.body,
+      fontFamilyFallback: AppFonts.fallback,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: AppColors.textMuted,
     );
 
     return [
+      // T11: 학생 카드와 같은 평행사변형 stucard(square.png 테두리 잘라 채움 + 초상 98%, 흰 1.66px 외곽선).
       _positionedContent(
-        currentRect(portrait),
+        featureRect(portrait),
         AssetImageGrid(
           key: const ValueKey('title-account-image-grid'),
           items: [
-            AssetImageGridItem(asset: portrait.imageAsset!, column: 0, row: 0),
+            AssetImageGridItem(
+              asset: portrait.imageAsset!,
+              column: 0,
+              row: 0,
+              edgeCropFraction: 0.11,
+              clipPathBuilder: studentGridCardPath,
+              outlineColor: Colors.white,
+              outlineWidthFraction: _titleStucardOutlineFraction,
+            ),
             if (portraitStudentId != null)
               AssetImageGridItem(
                 asset: 'assets/student_portraits/$portraitStudentId.png',
@@ -1171,6 +1282,7 @@ class _StudioTitleCanvas extends StatelessWidget {
                 row: 0,
                 scale: 0.98,
                 clipRadiusFraction: 0.12,
+                alphaThreshold: 0.04,
               ),
           ],
         ),
@@ -1184,44 +1296,96 @@ class _StudioTitleCanvas extends StatelessWidget {
             profile!.displayName,
             key: const ValueKey('title-account-name-label'),
             style: const TextStyle(
-              fontFamily: 'GyeonggiTitle',
+              fontFamily: AppFonts.display,
               fontSize: 22,
               fontWeight: FontWeight.w500,
+              letterSpacing: -0.22,
+              color: AppColors.text,
             ),
           ),
         ),
       ),
+      // T4: 구분선 대신 보유율 진행 막대(300×5, −10°). 높이 5는 창 크기와 상관없이 feature 중심에 둔다.
+      _positionedContent(
+        Rect.fromCenter(
+          center: progressRect.center,
+          width: progressRect.width,
+          height: _titleProgressHeight,
+        ),
+        SkewBar(
+          key: const ValueKey('title-account-progress'),
+          fraction: ownedFraction,
+          color: AppColors.text,
+          height: _titleProgressHeight,
+          style: _titleProgressStyle,
+        ),
+      ),
+      // T5: `보유` 13 muted · 보유 수 경기천년제목 20 w800 · `/ 전체` 13 muted, 기준선 정렬, 간격 8.
       _positionedContent(
         ownedRect,
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(
-            '보유 : $ownedCount/$totalCount',
+          child: Row(
             key: const ValueKey('title-owned-count'),
-            style: const TextStyle(
-              fontFamily: 'GyeonggiTitle',
-              color: AppColors.textMuted,
-            ),
-          ),
-        ),
-      ),
-      _positionedContent(
-        dividerRect,
-        Center(
-          child: Container(
-            key: const ValueKey('title-account-divider'),
-            width: double.infinity,
-            height: 3,
-            decoration: BoxDecoration(
-              color: AppColors.text,
-              borderRadius: BorderRadius.circular(2),
-            ),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              const Text('보유', style: mutedStyle),
+              const SizedBox(width: 8),
+              Text(
+                '$ownedCount',
+                key: const ValueKey('title-owned-value'),
+                style: const TextStyle(
+                  fontFamily: AppFonts.display,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '/ ${totalKnown ? totalCount : '—'}',
+                key: const ValueKey('title-owned-total'),
+                style: mutedStyle,
+              ),
+            ],
           ),
         ),
       ),
     ];
   }
+}
+
+/// 타이틀 Studio 컨테이너 [containerId]의 표면 path: 컨테이너 polygon을 [radius]로 둥글리고 부모 섹션과
+/// 교차한다([buildStudioContainerPath]와 같은 다각형, 반경만 다르다). FE8-a 로고 띠·계정 카드(16), FE8-b 버튼(8).
+Path titleStudioContainerPath(
+  SectionStudioDocument document,
+  Size size,
+  String containerId, {
+  required double radius,
+}) {
+  final container = document.containers.singleWhere(
+    (item) => item.id == containerId,
+  );
+  final rect = studioContainerRect(size, document.elements, container)!;
+  final points = buildAttachedSectionPolygon(
+    rect.size,
+    container.spec,
+    gridSize: sectionTemplateDetailGridSize,
+  ).map((point) => point + rect.topLeft).toList(growable: false);
+  return Path.combine(
+    PathOperation.intersect,
+    buildRoundedSectionPolygon(points, radius: radius),
+    buildSectionCanvasElementPath(
+      size,
+      document.elements.singleWhere(
+        (item) => item.id == container.parentSectionId,
+      ),
+    ),
+  );
 }
 
 Widget _positionedMarker(String key, Rect rect) => Positioned.fromRect(
@@ -1239,10 +1403,12 @@ Widget _positionedPathAction(
   String key,
   Path path,
   VoidCallback? onTap,
-  Widget child,
-) {
+  Widget child, {
+  String? semanticLabel,
+}) {
   final bounds = path.getBounds();
   final localPath = path.shift(-bounds.topLeft);
+  final action = InkWell(onTap: onTap, child: child);
   return Positioned.fromRect(
     key: ValueKey(key),
     rect: bounds,
@@ -1251,7 +1417,9 @@ Widget _positionedPathAction(
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(onTap: onTap, child: child),
+        child: semanticLabel == null
+            ? action
+            : Semantics(button: true, label: semanticLabel, child: action),
       ),
     ),
   );
@@ -1274,7 +1442,7 @@ class _DirectionalTitleExit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final eased = Curves.easeInOutCubic.transform(progress);
+    final eased = AppMotion.sectionCurve.transform(progress);
     final radians = degrees * math.pi / 180;
     final distance = math.max(size.width, size.height) * 1.12;
     return Transform.translate(
@@ -1289,27 +1457,37 @@ class _DirectionalTitleExit extends StatelessWidget {
 }
 
 class _StudioPathSurface extends StatelessWidget {
-  const _StudioPathSurface({super.key, required this.path, this.texture});
+  const _StudioPathSurface({
+    super.key,
+    required this.path,
+    this.texture,
+    this.color,
+  });
 
   final Path path;
   final BATriangleTextureConfig? texture;
 
+  /// 텍스처가 없을 때의 채움. 없으면 공용 섹션 표면색이다(로고 띠만 시안 .93, T10).
+  final Color? color;
+
+  // FE1-c: 텍스처가 없는 섹션 바탕은 공용 섹션 표면(surface@.76, 블러 없음)이다.
+  // 그림자는 화면이 따로 그리는 LiftedPathShadow가 맡는다. 텍스처 표면(FD-015)은 그대로 둔다.
   @override
   Widget build(BuildContext context) => ClipPath(
     clipper: _FixedStudioPathClipper(path),
     clipBehavior: Clip.antiAlias,
-    child: BackdropFilter(
-      filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: texture == null
-            ? ColoredBox(
-                color: AppColors.surface.withValues(alpha: 0.78),
-                child: const SizedBox.expand(),
-              )
-            : BATriangleBackground(config: texture!),
-      ),
-    ),
+    child: texture == null
+        ? ColoredBox(
+            color: color ?? sectionSurfaceColor,
+            child: const SizedBox.expand(),
+          )
+        : BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Material(
+              color: Colors.transparent,
+              child: BATriangleBackground(config: texture!),
+            ),
+          ),
   );
 }
 
@@ -1324,4 +1502,115 @@ class _FixedStudioPathClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_FixedStudioPathClipper oldClipper) =>
       oldClipper.path != path;
+}
+
+/// T10: 로고 띠 분홍 radial glow. CSS `radial-gradient(60% 90% at 50% 45%, …, transparent 70%)`처럼
+/// 띠 bounds 기준 가로 반지름 60%·세로 반지름 90%의 타원을 띠 path 안에만 칠한다.
+class _TitleBandGlowPainter extends CustomPainter {
+  const _TitleBandGlowPainter(this.path);
+
+  final Path path;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = path.getBounds();
+    if (bounds.isEmpty) return;
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.translate(
+      bounds.left + bounds.width * 0.5,
+      bounds.top + bounds.height * 0.45,
+    );
+    canvas.scale(bounds.width * 0.6, bounds.height * 0.9);
+    canvas.drawRect(
+      const Rect.fromLTRB(-2, -2, 2, 2),
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset.zero,
+          1,
+          const [_titleBrandGlow, _titleBrandGlowClear],
+          const [0, 0.7],
+        ),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_TitleBandGlowPainter oldDelegate) =>
+      oldDelegate.path != path;
+}
+
+/// 버튼 path 외곽선(T8 시작 버튼 분홍 1.8px).
+class _TitlePathOutlinePainter extends CustomPainter {
+  const _TitlePathOutlinePainter({
+    required this.path,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  final Path path;
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      path,
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = strokeWidth
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TitlePathOutlinePainter oldDelegate) =>
+      oldDelegate.path != path ||
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
+
+/// T7: 시안 설정 버튼 톱니(viewBox 24, 원 r3 + 바퀴살 8개, stroke 2.1, round).
+class _TitleGearPainter extends CustomPainter {
+  const _TitleGearPainter();
+
+  static final Path _spokes = Path()
+    ..moveTo(12, 2)
+    ..lineTo(12, 5)
+    ..moveTo(12, 19)
+    ..lineTo(12, 22)
+    ..moveTo(4.2, 4.2)
+    ..lineTo(6.3, 6.3)
+    ..moveTo(17.7, 17.7)
+    ..lineTo(19.8, 19.8)
+    ..moveTo(2, 12)
+    ..lineTo(5, 12)
+    ..moveTo(19, 12)
+    ..lineTo(22, 12)
+    ..moveTo(4.2, 19.8)
+    ..lineTo(6.3, 17.7)
+    ..moveTo(17.7, 6.3)
+    ..lineTo(19.8, 4.2);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.shortestSide / 24;
+    final paint = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = Colors.white;
+    canvas.save();
+    canvas.scale(scale);
+    canvas.drawCircle(const Offset(12, 12), 3, paint);
+    canvas.drawPath(_spokes, paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_TitleGearPainter oldDelegate) => false;
 }

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/animation-spectrum-v1.schema.json",
+  "title": "BA Planner animation spectrum v1",
+  "description": "One character per file. Animation callbacks and logic effects remain separate layers on a 30 fps logic axis. Shape validation does not prove source mappings or arithmetic relationships.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["characterId", "kind", "devName", "names", "clientVersionId", "sourceHashes", "clips"],
+  "properties": {
+    "characterId": {
+      "type": "integer",
+      "description": "The existing CharacterExcel integer ID; use its decimal representation as the character filename."
+    },
+    "kind": {"enum": ["student", "boss"]},
+    "devName": {"$ref": "#/$defs/nonEmptyString"},
+    "names": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ko", "ja"],
+      "properties": {
+        "ko": {"type": "string", "description": "Verified Korean name, or an empty string when unavailable."},
+        "ja": {"type": "string", "description": "Verified Japanese name, or an empty string when unavailable."}
+      }
+    },
+    "clientVersionId": {"$ref": "#/$defs/nonEmptyString"},
+    "sourceHashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excelDb", "excelZip", "bundles"],
+      "properties": {
+        "excelDb": {"$ref": "#/$defs/sha256"},
+        "excelZip": {"$ref": "#/$defs/sha256"},
+        "bundles": {"type": "array", "items": {"$ref": "#/$defs/bundleHash"}}
+      }
+    },
+    "clips": {"type": "array", "items": {"$ref": "#/$defs/clip"}}
+  },
+  "$defs": {
+    "nonEmptyString": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-f]{64}$"},
+    "bundleHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/nonEmptyString", "description": "Client-relative containing bundle path, matching clip.bundlePath."},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "bundlePath", "sourceFps", "lengthSeconds", "lengthLogicFrames", "logicDurationFrames", "events"],
+      "properties": {
+        "name": {"$ref": "#/$defs/nonEmptyString"},
+        "bundlePath": {"$ref": "#/$defs/nonEmptyString"},
+        "sourceFps": {"type": "number", "exclusiveMinimum": 0, "description": "Original clip sampling rate; this does not replace the 30 fps logic conversion rate."},
+        "lengthSeconds": {"type": "number", "minimum": 0, "description": "Observed motion clip length in seconds, independent of logic Duration."},
+        "lengthLogicFrames": {"type": "integer", "minimum": 0, "description": "round(lengthSeconds * 30), using Python ties-to-even rounding."},
+        "logicDurationFrames": {
+          "type": ["integer", "null"],
+          "description": "Separately verified raw logic Duration, or null when the correspondence is unknown. Preserve signed sentinels such as -1 and 2147483647 and explain them in event notes; never use them to replace the clip length."
+        },
+        "events": {"type": "array", "items": {"$ref": "#/$defs/event"}, "description": "Logic effects may continue beyond the motion clip length; do not clamp them to it."}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frame", "timeSeconds", "layer", "name", "kind", "evidence", "estimated", "note"],
+      "properties": {
+        "frame": {"type": "integer", "minimum": 0, "description": "round(timeSeconds * 30), using Python ties-to-even rounding, independently of sourceFps."},
+        "timeSeconds": {"type": "number", "minimum": 0},
+        "layer": {"enum": ["anim_event", "logic_effect"]},
+        "name": {"$ref": "#/$defs/nonEmptyString"},
+        "kind": {"enum": ["fire", "hit", "vfx", "sfx", "damage", "buff", "debuff", "groggy", "summon", "other"]},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "estimated": {"type": "boolean", "description": "True when abs(timeSeconds * 30 - frame) >= 0.5 frames or the basis, including the callback's category/meaning, is inferred. Small source float errors alone do not require true."},
+        "note": {"type": "string", "description": "Explain inference, unknown source mappings, unavailable rowSha/rva, and any preserved logic Duration sentinel. An observed callback is not proof of damage or a Torment skill mapping."}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "anyOf": [{"required": ["table"]}, {"required": ["symbol"]}, {"required": ["clipPath"]}],
+      "properties": {
+        "kind": {"enum": ["table", "code", "observation", "knowledge", "unknown"], "description": "Matches the diagram tags [표], [코드], [관측], [지식], [?], respectively. This labels the source; estimated separately records inference."},
+        "table": {"$ref": "#/$defs/nonEmptyString", "description": "Verified table/row location. Multiple verified location types may coexist."},
+        "symbol": {"$ref": "#/$defs/nonEmptyString", "description": "Verified code symbol."},
+        "clipPath": {"$ref": "#/$defs/nonEmptyString", "description": "Verified catalog clip path, or a containing bundle plus observed AnimationClip object name and PathID locator. Do not invent a catalog address."},
+        "rowSha": {"$ref": "#/$defs/sha256", "description": "Original row SHA-256, present only when actually known."},
+        "rva": {"type": "string", "pattern": "^0x[0-9a-fA-F]+$", "not": {"pattern": "\\s"}, "description": "Verified code RVA as a hexadecimal string, present only when actually known."}
+      }
+    }
+  }
+}

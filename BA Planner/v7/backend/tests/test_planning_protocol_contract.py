@@ -21,9 +21,11 @@ FIXTURE = CONTRACTS / "fixtures" / "planning_protocol_v1.json"
 METHOD_SCHEMAS = {
     "planning.student.get": "planning-student-get-v1.schema.json",
     "planning.student.catalog": "planning-student-catalog-v1.schema.json",
+    "planning.student.calculate": "planning-student-calculate-v1.schema.json",
     "planning.plan.validate": "planning-plan-validate-v1.schema.json",
     "planning.plan.calculate": "planning-plan-calculate-v1.schema.json",
     "planning.inventory.catalog": "planning-inventory-catalog-v1.schema.json",
+    "planning.inventory.acquisition.get": "planning-inventory-acquisition-get-v1.schema.json",
     "planning.plan.shortages": "planning-plan-shortages-v1.schema.json",
     "planning.document.calculate": "planning-document-calculate-v1.schema.json",
     "planning.scenario.compare": "planning-scenario-compare-v1.schema.json",
@@ -67,12 +69,22 @@ class PlanningProtocolContractTests(unittest.TestCase):
 
         expected = {
             "protocol-envelope-v1.schema.json", "planning-types-v1.schema.json",
+            "current-history-v1.schema.json", "repository-history-query-v1.schema.json",
+            "repository-history-scan-latest-v1.schema.json", "repository-inventory-review-v1.schema.json",
+            "scan-commit-history-context-v1.schema.json",
             "planning-protocol-v1.schema.json", "protocol-error-v1.schema.json",
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",
             "scenario-protocol-v1.schema.json",
             "student-scan-diagnostic-v1.schema.json",
+            "scanner-student-progress-fe8g2-v1.schema.json",
             "tactical-protocol-v1.schema.json", "tactical-protocol-v2.schema.json",
             "tactical-share-v1.schema.json",
+            "animation-spectrum-v1.schema.json",
+            "asset-map-v1.schema.json",
+            "metadata-provenance-v1.schema.json",
+            "developer-tools-metadata-manager-v1.schema.json",
+            "planning-student-bond-v1.schema.json",
+            "planning-authoring-v1.schema.json",
             *METHOD_SCHEMAS.values(),
         }
         self.assertEqual(set(self.schemas), expected)

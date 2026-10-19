@@ -12,6 +12,15 @@ from core.recognition_assets import RecognitionAssetCatalog
 from core.scanner_session import ScannerError
 from core.studio_numeric_bank import StudioNumericBank, StudioNumericMatch
 from core import recognition_thresholds as rt
+from core.recognition_image_ops import pixels, mask_from_predicate, normalize_mask, binary_iou, otsu_binary, ncc_difference_score
+
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_pixels = pixels
+_mask_from_predicate = mask_from_predicate
+_normalize_mask = normalize_mask
+_binary_iou = binary_iou
+_otsu_binary = otsu_binary
+_ncc_difference_score = ncc_difference_score
 
 
 S2_VALUE_FIELDS = (
@@ -19,11 +28,6 @@ S2_VALUE_FIELDS = (
     "weapon_state", "weapon_star", "weapon_level", "combat_hp", "combat_atk",
     "combat_def", "combat_heal",
 )
-
-
-def _pixels(image: Image.Image):
-    flattened = getattr(image, "get_flattened_data", None)
-    return flattened() if flattened is not None else image.getdata()
 
 
 def ratio_crop(image: Image.Image, region: dict[str, Any]) -> Image.Image:
@@ -191,103 +195,14 @@ class _SkillTemplateSample:
     text: Image.Image
 
 
-def _mask_from_predicate(image: Image.Image, predicate) -> Image.Image:
-    rgb = image.convert("RGB")
-    result = Image.new("L", rgb.size)
-    result.putdata([255 if predicate(pixel) else 0 for pixel in _pixels(rgb)])
-    return result
-
-
-def _normalize_mask(mask: Image.Image, *, size: tuple[int, int] = (20, 28), padding: int = 2) -> Image.Image | None:
-    source = mask.convert("L").point(lambda value: 255 if value >= 127 else 0)
-    box = source.getbbox()
-    if box is None:
-        return None
-    glyph = source.crop(box)
-    target_width = max(1, size[0] - padding * 2)
-    target_height = max(1, size[1] - padding * 2)
-    scale = min(target_width / glyph.width, target_height / glyph.height)
-    resized = glyph.resize(
-        (max(1, round(glyph.width * scale)), max(1, round(glyph.height * scale))),
-        Image.Resampling.NEAREST,
-    )
-    result = Image.new("L", size)
-    result.paste(resized, ((size[0] - resized.width) // 2, (size[1] - resized.height) // 2))
-    return result
-
-
-def _binary_iou(left: Image.Image, right: Image.Image) -> float:
-    a = left.convert("L")
-    b = right.convert("L").resize(a.size, Image.Resampling.NEAREST)
-    left_bits = [value >= 127 for value in _pixels(a)]
-    right_bits = [value >= 127 for value in _pixels(b)]
-    intersection = sum(x and y for x, y in zip(left_bits, right_bits))
-    union = sum(x or y for x, y in zip(left_bits, right_bits))
-    return intersection / union if union else 0.0
-
-
-def _otsu_binary(image: Image.Image, *, inverse: bool = False) -> Image.Image:
-    gray = image.convert("L")
-    histogram = gray.histogram()
-    pixel_count = sum(histogram)
-    weighted_total = sum(index * count for index, count in enumerate(histogram))
-    background_weight = 0
-    background_total = 0
-    best_variance = -1.0
-    threshold = 0
-    for index, count in enumerate(histogram):
-        background_weight += count
-        if background_weight == 0:
-            continue
-        foreground_weight = pixel_count - background_weight
-        if foreground_weight == 0:
-            break
-        background_total += index * count
-        background_mean = background_total / background_weight
-        foreground_mean = (weighted_total - background_total) / foreground_weight
-        variance = (
-            background_weight
-            * foreground_weight
-            * (background_mean - foreground_mean) ** 2
-        )
-        if variance > best_variance:
-            best_variance = variance
-            threshold = index
-    return gray.point(
-        lambda value: 255
-        if (value <= threshold if inverse else value > threshold)
-        else 0
-    )
-
-
-def _ncc_difference_score(left: Image.Image, right: Image.Image) -> float:
-    right = right.resize(left.size, Image.Resampling.BILINEAR).convert("L")
-    left = left.convert("L")
-    left_values = list(_pixels(left))
-    right_values = list(_pixels(right))
-    if not left_values:
-        return 0.0
-    left_mean = sum(left_values) / len(left_values)
-    right_mean = sum(right_values) / len(right_values)
-    numerator = sum(
-        (left_value - left_mean) * (right_value - right_mean)
-        for left_value, right_value in zip(left_values, right_values)
-    )
-    left_norm = sum((value - left_mean) ** 2 for value in left_values) ** 0.5
-    right_norm = sum((value - right_mean) ** 2 for value in right_values) ** 0.5
-    correlation = numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
-    difference = ImageStat.Stat(ImageChops.difference(left, right)).mean[0] / 255.0
-    return 0.70 * correlation + 0.30 * (1.0 - difference)
-
-
-def _skill_ui_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+def skill_ui_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
     gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
     equalized = ImageOps.equalize(gray)
     blurred = equalized.filter(ImageFilter.GaussianBlur(radius=0.8))
     return _otsu_binary(blurred)
 
 
-def _skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+def skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Image:
     gray = image.convert("L").resize(size, Image.Resampling.BILINEAR)
     mask = _otsu_binary(
         gray.filter(ImageFilter.GaussianBlur(radius=0.8)),
@@ -305,7 +220,7 @@ def _skill_text_feature(image: Image.Image, size: tuple[int, int]) -> Image.Imag
     return mask.crop(padded).resize((96, 30), Image.Resampling.BILINEAR)
 
 
-def _rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Image, ...]]) -> tuple[str | None, float, float]:
+def rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Image, ...]]) -> tuple[str | None, float, float]:
     if glyph is None:
         return None, 0.0, 0.0
     ranked = sorted(
@@ -319,6 +234,12 @@ def _rank_glyph(glyph: Image.Image | None, templates: dict[str, tuple[Image.Imag
     if not ranked:
         return None, 0.0, 0.0
     return ranked[0][0], ranked[0][1], ranked[0][1] - (ranked[1][1] if len(ranked) > 1 else 0.0)
+
+
+# Private aliases kept until C6 for tools/tests that import the old names (C5c).
+_rank_glyph = rank_glyph
+_skill_ui_feature = skill_ui_feature
+_skill_text_feature = skill_text_feature
 
 
 def relationship_rank_glyphs(crop: Image.Image) -> tuple[Image.Image, ...]:
@@ -496,8 +417,8 @@ class StudentBasicRecognizer:
             grouped[group].setdefault(label, []).append(
                 _SkillTemplateSample(
                     size=rgb.size,
-                    ui=_skill_ui_feature(rgb, rgb.size),
-                    text=_skill_text_feature(rgb, rgb.size),
+                    ui=skill_ui_feature(rgb, rgb.size),
+                    text=skill_text_feature(rgb, rgb.size),
                 )
             )
         if not grouped["ex"] or not grouped["normal"]:
@@ -610,8 +531,8 @@ class StudentBasicRecognizer:
                 crop_features.setdefault(
                     sample.size,
                     (
-                        _skill_ui_feature(crop, sample.size),
-                        _skill_text_feature(crop, sample.size),
+                        skill_ui_feature(crop, sample.size),
+                        skill_text_feature(crop, sample.size),
                     ),
                 )
         ranked = sorted(
@@ -655,6 +576,9 @@ class StudentBasicRecognizer:
         margin_gate: float,
         source: str,
     ) -> Observation | None:
+        if match.bundled_conflict:
+            return Observation(None, match.score, "uncertain", source,
+                               f"bundled_label_conflict;labels={list(match.labels)}")
         if not match.complete or match.value is None:
             return None
         confident = (
@@ -697,83 +621,77 @@ class StudentBasicRecognizer:
             margin_gate=rt.value("student.level.basic_bank.margin"),
             source="student_level_studio_position_bank",
         )
-        if studio is not None and studio.confirmed:
+        if studio is not None and studio.confirmed and not self._calibrated_numeric(studio):
             return studio
         if crop is None:
-            return studio or Observation(None, 0.0, "region_missing", "basic_level_glyph", "crop missing")
+            return studio or Observation(
+                None, 0.0, "region_missing", "basic_level_glyph", "crop missing"
+            )
         rgb = crop.convert("RGB")
         mask = _mask_from_predicate(
             rgb,
             lambda pixel: _luminance(pixel) >= 150 and max(pixel) - min(pixel) <= 95,
         )
         midpoint = mask.width // 2
-        cells = (mask.crop((0, 0, max(1, midpoint - 3), mask.height)), mask.crop((midpoint + 3, 0, mask.width, mask.height)))
-        results = [_rank_glyph(_normalize_mask(cell), self.level_templates) for cell in cells]
-        second_occupancy = sum(value >= 127 for value in _pixels(cells[1])) / max(1, cells[1].width * cells[1].height)
-        selected = results if second_occupancy >= rt.value("student.level.basic.second_digit_occupancy") else results[:1]
+        cells = (
+            mask.crop((0, 0, max(1, midpoint - 3), mask.height)),
+            mask.crop((midpoint + 3, 0, mask.width, mask.height)),
+        )
+        results = [
+            rank_glyph(_normalize_mask(cell), self.level_templates) for cell in cells
+        ]
+        second_occupancy = sum(value >= 127 for value in _pixels(cells[1])) / max(
+            1, cells[1].width * cells[1].height
+        )
+        selected = (
+            results
+            if second_occupancy
+            >= rt.value("student.level.basic.second_digit_occupancy")
+            else results[:1]
+        )
         if any(label is None for label, _score, _margin in selected):
-            return Observation(None, 0.0, "uncertain", "basic_level_glyph", "glyph missing")
+            return Observation(
+                None, 0.0, "uncertain", "basic_level_glyph", "glyph missing"
+            )
         value = int("".join(str(label) for label, _score, _margin in selected))
         score = min(item[1] for item in selected)
         margin = min(item[2] for item in selected)
-        confident = 1 <= value <= 100 and score >= rt.value("student.level.basic.score") and margin >= rt.value("student.level.basic.margin")
-        return Observation(
-            value if confident else None, score, "ok" if confident else "uncertain",
-            "basic_level_glyph", f"value={value};margin={margin:.6f};second_occupancy={second_occupancy:.6f}",
+        confident = (
+            1 <= value <= 100
+            and score >= rt.value("student.level.basic.score")
+            and margin >= rt.value("student.level.basic.margin")
         )
+        return self._resolve_numeric_readers(studio, Observation(
+            value if confident else None,
+            score,
+            "ok" if confident else "uncertain",
+            "basic_level_glyph",
+            f"value={value};margin={margin:.6f};second_occupancy={second_occupancy:.6f}",
+        ))
 
-    def read_relationship_rank(
-        self,
-        crop: Image.Image | None,
-        studio_layout_cells: dict[int, tuple[Image.Image, ...]] | None = None,
-    ) -> Observation:
-        layout_rois = {
-            1: ("affectionlevel_1digit_digit1",),
-            2: ("affectionlevel_digit1", "affectionlevel_digit2"),
-            3: (
-                "affectionlevel_3digit_digit1",
-                "affectionlevel_3digit_digit2",
-                "affectionlevel_3digit_digit3",
-            ),
-        }
+    def read_relationship_rank(self, crop: Image.Image | None, studio_layout_cells: dict[int, tuple[Image.Image, ...]] | None=None) -> Observation:
+        layout_rois = {1: ('affectionlevel_1digit_digit1',), 2: ('affectionlevel_digit1', 'affectionlevel_digit2'), 3: ('affectionlevel_3digit_digit1', 'affectionlevel_3digit_digit2', 'affectionlevel_3digit_digit3')}
         studio_candidates: list[StudioNumericMatch] = []
+        studio = None
         for digit_count, roi_names in layout_rois.items():
-            match = self.studio_numeric_bank.match(
-                (studio_layout_cells or {}).get(digit_count),
-                field="relationship_rank",
-                roi_names=roi_names,
-            )
+            match = self.studio_numeric_bank.match((studio_layout_cells or {}).get(digit_count), field='relationship_rank', roi_names=roi_names)
             if not match.complete or match.value is None:
                 continue
-            if (
-                (digit_count == 1 and 1 <= match.value <= 9)
-                or (digit_count == 2 and 10 <= match.value <= 99)
-                or (digit_count == 3 and match.value == 100)
-            ):
+            if digit_count == 1 and 1 <= match.value <= 9 or (digit_count == 2 and 10 <= match.value <= 99) or (digit_count == 3 and match.value == 100):
                 studio_candidates.append(match)
         if studio_candidates:
             best = max(studio_candidates, key=lambda item: (item.score, item.margin))
-            studio = self._studio_numeric_observation(
-                best,
-                minimum=1,
-                maximum=100,
-                score_gate=rt.value("student.relationship.bank.score"),
-                margin_gate=rt.value("student.relationship.bank.margin"),
-                source="relationship_rank_studio_position_bank",
-            )
-            if studio is not None and studio.confirmed:
+            studio = self._studio_numeric_observation(best, minimum=1, maximum=100, score_gate=rt.value('student.relationship.bank.score'), margin_gate=rt.value('student.relationship.bank.margin'), source='relationship_rank_studio_position_bank')
+            if (studio is not None and studio.confirmed) and (not self._calibrated_numeric(studio)):
                 return studio
         if crop is None:
-            return Observation(None, 0.0, "region_missing", "relationship_rank_glyph", "crop missing")
-        pink_ratio = sum(
-            red >= 185 and blue >= 115 and red - green >= 25
-            for red, green, blue in _pixels(crop.convert("RGB"))
-        ) / max(1, crop.width * crop.height)
-        if pink_ratio < rt.value("student.relationship.pink_ratio_min"):
-            return Observation(None, 0.0, "uncertain", "relationship_rank_glyph", "rank heart missing")
-        label, score, margin = _rank_glyph(relationship_rank_mask(crop), self.relationship_rank_templates)
+            return self._resolve_numeric_readers(studio, Observation(None, 0.0, 'region_missing', 'relationship_rank_glyph', 'crop missing'))
+        pink_ratio = sum((red >= 185 and blue >= 115 and (red - green >= 25) for red, green, blue in _pixels(crop.convert('RGB')))) / max(1, crop.width * crop.height)
+        if pink_ratio < rt.value('student.relationship.pink_ratio_min'):
+            return self._resolve_numeric_readers(studio, Observation(None, 0.0, 'uncertain', 'relationship_rank_glyph', 'rank heart missing'))
+        label, score, margin = rank_glyph(relationship_rank_mask(crop), self.relationship_rank_templates)
         if label is None:
-            return Observation(None, 0.0, "uncertain", "relationship_rank_glyph", "glyph missing")
+            return self._resolve_numeric_readers(studio, Observation(None, 0.0, 'uncertain', 'relationship_rank_glyph', 'glyph missing'))
         whole_value = int(label)
         digit_candidates: list[tuple[int, float, float]] = []
         number_mask = relationship_rank_number_mask(crop)
@@ -781,52 +699,23 @@ class StudentBasicRecognizer:
             glyphs = split_relationship_rank_digits(number_mask, digit_count)
             if len(glyphs) != digit_count:
                 continue
-            ranked_digits = [
-                _rank_glyph(glyph, self.relationship_rank_digit_templates)
-                for glyph in glyphs
-            ]
-            if any(item[0] is None for item in ranked_digits):
+            ranked_digits = [rank_glyph(glyph, self.relationship_rank_digit_templates) for glyph in glyphs]
+            if any((item[0] is None for item in ranked_digits)):
                 continue
-            text = "".join(str(item[0]) for item in ranked_digits)
-            if text.startswith("0"):
+            text = ''.join((str(item[0]) for item in ranked_digits))
+            if text.startswith('0'):
                 continue
             digit_value = int(text)
             if not 1 <= digit_value <= 100 or (digit_count == 3 and digit_value != 100):
                 continue
-            digit_candidates.append(
-                (
-                    digit_value,
-                    min(item[1] for item in ranked_digits),
-                    min(item[2] for item in ranked_digits),
-                )
-            )
-        digit_value, digit_score, digit_margin = max(
-            digit_candidates,
-            key=lambda item: (item[1], item[2]),
-            default=(0, 0.0, 0.0),
-        )
-        digit_confident = digit_score >= rt.value("student.relationship.digit.score") and digit_margin >= rt.value("student.relationship.digit.margin")
+            digit_candidates.append((digit_value, min((item[1] for item in ranked_digits)), min((item[2] for item in ranked_digits))))
+        digit_value, digit_score, digit_margin = max(digit_candidates, key=lambda item: (item[1], item[2]), default=(0, 0.0, 0.0))
+        digit_confident = digit_score >= rt.value('student.relationship.digit.score') and digit_margin >= rt.value('student.relationship.digit.margin')
         if digit_confident:
-            return Observation(
-                digit_value,
-                digit_score,
-                "ok",
-                "relationship_rank_digit_glyph",
-                (
-                    f"value={digit_value};margin={digit_margin:.6f};"
-                    f"whole_value={whole_value};whole_score={score:.6f}"
-                ),
-            )
+            return self._resolve_numeric_readers(studio, Observation(digit_value, digit_score, 'ok', 'relationship_rank_digit_glyph', f'value={digit_value};margin={digit_margin:.6f};whole_value={whole_value};whole_score={score:.6f}'))
         value = whole_value
-        confident = 1 <= value <= 100 and score >= rt.value("student.relationship.whole_bank.score") and margin >= rt.value("student.relationship.whole_bank.margin")
-        return Observation(
-            value if confident else None, score, "ok" if confident else "uncertain",
-            "relationship_rank_glyph",
-            (
-                f"value={value};margin={margin:.6f};digit_value={digit_value or 'none'};"
-                f"digit_score={digit_score:.6f};digit_margin={digit_margin:.6f}"
-            ),
-        )
+        confident = 1 <= value <= 100 and score >= rt.value('student.relationship.whole_bank.score') and (margin >= rt.value('student.relationship.whole_bank.margin'))
+        return self._resolve_numeric_readers(studio, Observation(value if confident else None, score, 'ok' if confident else 'uncertain', 'relationship_rank_glyph', f"value={value};margin={margin:.6f};digit_value={digit_value or 'none'};digit_score={digit_score:.6f};digit_margin={digit_margin:.6f}"))
 
     @staticmethod
     def _color_bbox(crop: Image.Image, hue_min: float, hue_max: float, saturation_min: float, value_min: float) -> tuple[int, int, int, int] | None:
@@ -857,95 +746,42 @@ class StudentBasicRecognizer:
         confident = height >= 8 and residual <= rt.value("student.star.basic.max_residual")
         return Observation(value if confident else None, score, "ok" if confident else "uncertain", "basic_star_color", f"raw={raw:.6f}")
 
-    def read_weapon_level(
-        self,
-        crop: Image.Image | None,
-        studio_cells: tuple[Image.Image, ...] | None = None,
-    ) -> Observation:
-        studio_match = self.studio_numeric_bank.match(
-            studio_cells,
-            field="weapon_level",
-            roi_names=("weaponlevel_digit1", "weaponlevel_digit2"),
-            allow_trailing_blank=True,
-        )
-        studio = self._studio_numeric_observation(
-            studio_match,
-            minimum=1,
-            maximum=60,
-            score_gate=rt.value("student.weapon.basic_bank.score"),
-            margin_gate=rt.value("student.weapon.basic_bank.margin"),
-            source="weapon_level_studio_position_bank",
-        )
-        if studio is not None and studio.confirmed:
+    def read_weapon_level(self, crop: Image.Image | None, studio_cells: tuple[Image.Image, ...] | None=None, source_size: tuple[int, int] | None=None) -> Observation:
+        studio_match = self.studio_numeric_bank.match(studio_cells, field='weapon_level', roi_names=('weaponlevel_digit1', 'weaponlevel_digit2'), allow_trailing_blank=True)
+        studio = self._studio_numeric_observation(studio_match, minimum=1, maximum=60, score_gate=rt.value('student.weapon.basic_bank.score'), margin_gate=rt.value('student.weapon.basic_bank.margin'), source='weapon_level_studio_position_bank')
+        if (studio is not None and studio.confirmed) and (not self._calibrated_numeric(studio)):
             return studio
         if crop is None:
-            return studio or Observation(None, 0.0, "region_missing", "basic_weapon_level_glyph", "crop missing")
+            return studio or Observation(None, 0.0, 'region_missing', 'basic_weapon_level_glyph', 'crop missing')
         mask = _mask_from_predicate(crop, lambda pixel: min(pixel) >= 238 and max(pixel) - min(pixel) <= 28)
         midpoint = mask.width // 2
         cells = (mask.crop((0, 0, max(1, midpoint - 1), mask.height)), mask.crop((midpoint + 1, 0, mask.width, mask.height)))
         selected = []
         for index, cell in enumerate(cells):
-            occupancy = sum(value >= 127 for value in _pixels(cell)) / max(1, cell.width * cell.height)
-            if index == 1 and occupancy < rt.value("student.weapon.basic.second_digit_occupancy"):
+            occupancy = sum((value >= 127 for value in _pixels(cell))) / max(1, cell.width * cell.height)
+            if index == 1 and occupancy < rt.value('student.weapon.basic.second_digit_occupancy'):
                 break
-            selected.append(_rank_glyph(_normalize_mask(cell), self.weapon_level_templates))
-        if not selected or any(label is None for label, _score, _margin in selected):
-            legacy_value, score, margin = None, 0.0, 0.0
+            selected.append(rank_glyph(_normalize_mask(cell), self.weapon_level_templates))
+        if not selected or any((label is None for label, _score, _margin in selected)):
+            legacy_value, score, margin = (None, 0.0, 0.0)
         else:
-            legacy_value = int("".join(str(item[0]) for item in selected))
-            score = min(item[1] for item in selected)
-            margin = min(item[2] for item in selected)
-        # Live UE60 glyphs in the 1280x720 basic screen score just below the
-        # original generic cutoff while retaining a wide runner-up margin.
-        confident = (
-            legacy_value is not None
-            and 1 <= legacy_value <= 60
-            and score >= rt.value("student.weapon.basic.digit.score")
-            and margin >= rt.value("student.weapon.basic.digit.margin")
-        )
+            legacy_value = int(''.join((str(item[0]) for item in selected)))
+            score = min((item[1] for item in selected))
+            margin = min((item[2] for item in selected))
+        confident = legacy_value is not None and 1 <= legacy_value <= 60 and (score >= rt.value('student.weapon.basic.digit.score')) and (margin >= rt.value('student.weapon.basic.digit.margin'))
         if confident:
-            return Observation(
-                legacy_value, score, "ok", "basic_weapon_level_glyph",
-                f"value={legacy_value};margin={margin:.6f}",
-            )
-
-        whole_mask = _mask_from_predicate(
-            crop,
-            lambda pixel: min(pixel) >= 238 and max(pixel) - min(pixel) <= 28,
-        )
+            return self._resolve_numeric_readers(studio, Observation(legacy_value, score, 'ok', 'basic_weapon_level_glyph', f'value={legacy_value};margin={margin:.6f}'))
+        whole_mask = _mask_from_predicate(crop, lambda pixel: min(pixel) >= 238 and max(pixel) - min(pixel) <= 28)
         normalized = _normalize_mask(whole_mask, size=(64, 32), padding=2)
         whole_mask.close()
-        ranked = sorted(
-            (
-                (value, _binary_iou(normalized, template))
-                for value, template in self.weapon_level_whole_templates.items()
-            ),
-            key=lambda item: item[1],
-            reverse=True,
-        ) if normalized is not None else []
+        ranked = sorted(((value, _binary_iou(normalized, template)) for value, template in self.weapon_level_whole_templates.items()), key=lambda item: item[1], reverse=True) if normalized is not None else []
         if normalized is not None:
             normalized.close()
         whole_value, whole_score = ranked[0] if ranked else (None, 0.0)
         whole_margin = whole_score - ranked[1][1] if len(ranked) > 1 else 0.0
-        whole_confident = (
-            whole_value is not None
-            and whole_score >= rt.value("student.weapon.basic.whole_bank.score")
-            and whole_margin >= rt.value("student.weapon.basic.whole_bank.margin")
-        )
-        note = (
-            f"value={whole_value};margin={whole_margin:.6f};"
-            f"studio_complete={studio_match.complete};studio_value={studio_match.value};"
-            f"studio_labels={list(studio_match.labels)};studio_score={studio_match.score:.6f};"
-            f"studio_margin={studio_match.margin:.6f};legacy_value={legacy_value};"
-            f"legacy_score={score:.6f};legacy_margin={margin:.6f}"
-        )
-        return Observation(
-            whole_value if whole_confident else None,
-            whole_score,
-            "ok" if whole_confident else "uncertain",
-            "basic_weapon_level_whole_value",
-            note,
-        )
+        whole_confident = whole_value is not None and whole_score >= rt.value('student.weapon.basic.whole_bank.score') and (whole_margin >= rt.value('student.weapon.basic.whole_bank.margin'))
+        note = f'value={whole_value};margin={whole_margin:.6f};studio_complete={studio_match.complete};studio_value={studio_match.value};studio_labels={list(studio_match.labels)};studio_score={studio_match.score:.6f};studio_margin={studio_match.margin:.6f};legacy_value={legacy_value};legacy_score={score:.6f};legacy_margin={margin:.6f}'
+        return self._resolve_numeric_readers(studio, Observation(whole_value if whole_confident else None, whole_score, 'ok' if whole_confident else 'uncertain', 'basic_weapon_level_whole_value', note))
 
     def read_weapon_star(self, crop: Image.Image | None) -> Observation:
         if crop is None:
@@ -1038,7 +874,7 @@ class StudentBasicRecognizer:
                 label: local.get(label, samples)
                 for label, samples in self.combat_templates.items()
             }
-            label, score, margin = _rank_glyph(_normalize_mask(mask), templates)
+            label, score, margin = rank_glyph(_normalize_mask(mask), templates)
             if label is None or score < rt.value("student.combat.digit.score") or margin < rt.value("student.combat.digit.margin"):
                 return Observation(None, score, "uncertain", "basic_combat_digit", f"group={group};position={position + 1};label={label};margin={margin:.6f}")
             digits.append(label)
@@ -1085,3 +921,19 @@ class StudentBasicRecognizer:
         else:
             result["weapon_state"] = Observation(None, min(item.confidence for item in weapon_evidence), "uncertain", "basic_weapon_values", "weapon values not both confirmed")
         return result
+
+    @staticmethod
+    def _calibrated_numeric(observation: Observation | None) -> bool:
+        return bool(observation is not None and observation.confirmed and
+                    observation.source.endswith(("_user_confirmed", "_session_calibrated")))
+
+    @staticmethod
+    def _resolve_numeric_readers(studio: Observation | None, independent: Observation) -> Observation:
+        if StudentBasicRecognizer._calibrated_numeric(studio):
+            if independent.confirmed and studio.value != independent.value:
+                return Observation(None, min(studio.confidence, independent.confidence), "uncertain",
+                                   "independent_numeric_conflict",
+                                   f"studio={studio.value};source={studio.source};"
+                                   f"independent={independent.value};source={independent.source}")
+            return studio
+        return independent

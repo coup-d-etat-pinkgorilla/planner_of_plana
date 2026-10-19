@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../geometry/diagonal_geometry.dart';
+import '../kit/diagonal_scrollbar.dart';
+import '../kit/game_assets.dart';
+import '../kit/stepper.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
 import '../studio/plan_starter_studio_layout.dart';
@@ -15,16 +19,14 @@ import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
 import 'diagonal_flow_indicator.dart';
-import 'lifted_path_shadow.dart';
-import 'plan_phase_editor.dart' show phaseEditorPathSurfaceTexture;
-import 'scroll_viewport_fog.dart';
+import 'section_surface.dart';
 import 'section_template_surface.dart';
 import 'student_section_layout.dart';
 
 export '../models/planning_growth_rules.dart'
     show planElementTargetMaximums, planElementTargetMinimums;
 
-const planElementBuilderSectionOpacity = 0.76;
+const planElementBuilderSectionOpacity = sectionSurfaceOpacity;
 const planElementBuilderGap = 12.0;
 const planElementBuilderCardGap = 14.0;
 const planStarterStageControlHeight = 62.0;
@@ -199,8 +201,8 @@ List<Offset> planPresetLoaderContainerVertices(Size canvasSize) {
     canvasSize,
     'element-5',
   ).getBounds();
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final top = sectionBounds.top + headerHeight;
   final bottom = sectionBounds.bottom - normalGap;
   final leftRail = sectionBounds.left + railInset + bottom / tangent;
@@ -220,8 +222,8 @@ List<Offset> planPresetListContainerVertices(Size canvasSize) {
     canvasSize,
     'element-6',
   ).getBounds();
-  final tangent = math.tan(80 * math.pi / 180);
-  final railDelta = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railDelta = diagonalNormalInset(normalGap);
   final top = sectionBounds.top + normalGap;
   final bottom =
       sectionBounds.bottom -
@@ -243,8 +245,8 @@ List<Offset> planPresetListContainerVertices(Size canvasSize) {
 double planPresetListCardWidth(Size viewportSize) {
   const normalGap = planElementBuilderGap;
   const scrollbarReserve = 14.0;
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final unwrappedAspect =
       presetElementUnwrappedReferenceBounds.height /
       presetElementUnwrappedReferenceBounds.width;
@@ -351,10 +353,9 @@ double planStageDiagonalCardLeft({
   required double cardWidth,
   double normalGap = planElementBuilderGap,
 }) =>
-    normalGap / math.sin(80 * math.pi / 180) +
+    diagonalNormalInset(normalGap) +
     (cardWidth / planPresetElementWidthScale - cardWidth) / 2 +
-    (viewportHeight - (itemTop + itemHeight - scrollOffset)) /
-        math.tan(80 * math.pi / 180);
+    diagonalCutDepth(viewportHeight - (itemTop + itemHeight - scrollOffset));
 
 double planStageEffectiveScrollOffset({
   required double rawOffset,
@@ -425,9 +426,9 @@ PlanStarterRightSectionGeometry planStarterRightSectionGeometry(
   final shortEdge = horizontalEdges.isEmpty
       ? sectionBounds.width
       : horizontalEdges.reduce(math.min);
-  final tangent = math.tan(80 * math.pi / 180);
+  final tangent = diagonalTan80;
   final horizontalGap =
-      planStarterRightSectionInset / math.sin(80 * math.pi / 180);
+      diagonalNormalInset(planStarterRightSectionInset);
   final listTop = sectionBounds.top + planStarterRightSectionInset;
   final listBottom = sectionBounds.bottom - planStarterRightSectionInset;
   final listHeight = math.max(1.0, listBottom - listTop);
@@ -573,8 +574,8 @@ Rect planPresetElementRect(
   PlanPresetElementLayout layout = PlanPresetElementLayout.standard,
 }) {
   if (id == 'element-5') return Offset.zero & size;
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   const rowGap = planPresetElementPanelGap;
   const edgeGap = planPresetElementEdgeGap;
   final railInset = edgeGap / sine;
@@ -675,8 +676,8 @@ List<Offset> planPresetElementEnvelopeVertices(
   Size size, {
   double padding = 0,
 }) {
-  final tangent = math.tan(80 * math.pi / 180);
-  final sine = math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final sine = diagonalSin80;
   final railInset = padding / sine;
   final top = padding;
   final bottom = size.height - padding;
@@ -745,7 +746,7 @@ class PlanElementUnassignedItem {
 
 class _PlanElementBuilderState extends State<PlanElementBuilder>
     with SingleTickerProviderStateMixin {
-  static const _sectionMotionDuration = Duration(milliseconds: 360);
+  static const _sectionMotionDuration = AppMotion.section;
   late List<PlanElementStageDraft> _stages;
   String? _selectedStageId;
   String? _selectedPresetId;
@@ -1549,7 +1550,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final railInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final railInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(railInset + 8, 2, railInset + 8, 2),
         child: Row(
@@ -1559,6 +1560,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
               style: TextStyle(
                 color: AppColors.primary,
                 fontFamily: 'GyeonggiTitle',
+                fontFamilyFallback: AppFonts.fallback,
                 fontSize: 8,
                 fontWeight: FontWeight.w800,
               ),
@@ -1572,6 +1574,7 @@ class _PlanWeaponLevelStatus extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.text,
                   fontFamily: 'GyeonggiTitle',
+                  fontFamilyFallback: AppFonts.fallback,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1692,7 +1695,7 @@ class _PlanStudentStatusFoundationPainter extends CustomPainter {
       final path = planStarterFeaturePath(canvasSize, feature.id);
       canvas.drawPath(
         path,
-        Paint()..color = const Color(0xff203243).withValues(alpha: 0.98),
+        Paint()..color = AppColors.indicatorSurface.withValues(alpha: 0.98),
       );
     }
     _paintStarIndicator(canvas);
@@ -1757,7 +1760,7 @@ class _PlanElementSectionMotion extends StatelessWidget {
       animation: animation,
       child: child,
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(
+        final progress = AppMotion.sectionCurve.transform(
           animation.value.clamp(0.0, 1.0).toDouble(),
         );
         final exiting = animation.status == AnimationStatus.reverse;
@@ -1804,15 +1807,7 @@ class _PlanStarterFoundationPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    paintLiftedPathShadow(canvas, path, defaultLiftedSectionShadow);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..isAntiAlias = true
-        ..color = AppColors.surface.withValues(
-          alpha: planElementBuilderSectionOpacity,
-        ),
-    );
+    paintSectionSurface(canvas, path);
   }
 
   @override
@@ -1820,7 +1815,22 @@ class _PlanStarterFoundationPainter extends CustomPainter {
       oldDelegate.path != path;
 }
 
-const planPresetListTexture = phaseEditorPathSurfaceTexture;
+/// 프리셋 목록 · 프리셋 관리 면의 삼각 텍스처. FE5-f2에서 옛 페이즈 편집기(`plan_phase_editor.dart`, 삭제)의
+/// `phaseEditorPathSurfaceTexture` 값을 그대로 옮겼다.
+const planPresetListTexture = BATriangleTextureConfig(
+  baseColor: Color(0x8a29435b),
+  panelColor: Color(0x8a355a75),
+  softColor: Color(0x8a47738d),
+  accentColor: Color(0x916291ad),
+  triangleSize: 104,
+  tessellationContrast: 0.026,
+  randomSeed: 8404,
+  macroTriangleChance: 0.06,
+  macroTriangleContrast: 0.018,
+  lightStrength: 0.12,
+  edgeVignetteStrength: 0.12,
+  fogStrength: 0.08,
+);
 
 BATriangleTextureConfig planStarterPhaseActionTexture(double height) =>
     BATriangleTextureConfig(
@@ -1911,9 +1921,9 @@ class _PlanStarterPhaseActionPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(
-          0xffe5a0ea,
-        ).withValues(alpha: enabled ? 0.82 : 0.42)
+        ..color = AppColors.scrollThumb.withValues(
+          alpha: enabled ? 0.82 : 0.42,
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -1988,6 +1998,7 @@ class _PlanStarterSideActionButton extends StatelessWidget {
                                   ? AppColors.text
                                   : AppColors.textMuted.withValues(alpha: 0.62),
                               fontFamily: 'GyeonggiTitle',
+                              fontFamilyFallback: AppFonts.fallback,
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                             ),
@@ -2107,17 +2118,8 @@ class _PlanPresetLoaderDiagonalListState
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
-          final tangent = math.tan(80 * math.pi / 180);
-          final horizontalGap = _normalGap / math.sin(80 * math.pi / 180);
+          final tangent = diagonalTan80;
+          final horizontalGap = diagonalNormalInset(_normalGap);
           final rowWidth = math.max(
             1.0,
             constraints.maxWidth -
@@ -2147,72 +2149,20 @@ class _PlanPresetLoaderDiagonalListState
             );
             top += _rowHeight + _rowGap;
           }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: const ValueKey('plan-starter-preset-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: rows),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: 'plan-starter-preset',
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            child: SingleChildScrollView(
+              key: const ValueKey('plan-starter-preset-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: rows),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: const ValueKey('plan-starter-preset-fog'),
-                  keyPrefix: 'plan-starter-preset-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: const ValueKey('plan-starter-preset-diagonal-scrollbar'),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(
-                    0,
-                    constraints.maxWidth - constraints.maxHeight / tangent - 24,
-                  ),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: const ValueKey('plan-starter-preset-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      const trackInset = 10.0;
-                      final trackHeight = math.max(
-                        1.0,
-                        constraints.maxHeight - trackInset * 2,
-                      );
-                      final handleHeight = math.max(
-                        28.0,
-                        trackHeight * constraints.maxHeight / contentHeight,
-                      );
-                      final travel = math.max(1.0, trackHeight - handleHeight);
-                      _controller.jumpTo(
-                        (_controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
+            ),
           );
         },
       );
@@ -2405,10 +2355,6 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
         animation: _controller,
         builder: (context, _) {
           final rawScroll = _controller.hasClients ? _controller.offset : 0.0;
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
           final scroll = planStageEffectiveScrollOffset(
             rawOffset: rawScroll,
             contentHeight: contentHeight,
@@ -2417,11 +2363,6 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0.0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
           var top = _verticalInset;
           final cards = <Widget>[];
           for (var index = 0; index < widget.itemCount; index++) {
@@ -2460,74 +2401,20 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
             }
             top += itemHeight + planElementBuilderCardGap;
           }
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: ValueKey('${widget.keyPrefix}-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: cards),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: widget.keyPrefix,
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            child: SingleChildScrollView(
+              key: ValueKey('${widget.keyPrefix}-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: cards),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: ValueKey('${widget.keyPrefix}-fog'),
-                  keyPrefix: '${widget.keyPrefix}-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: ValueKey('${widget.keyPrefix}-diagonal-scrollbar'),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-              if (maxScroll > 0)
-                Positioned(
-                  left: math.max(
-                    0,
-                    constraints.maxWidth -
-                        constraints.maxHeight / math.tan(80 * math.pi / 180) -
-                        24,
-                  ),
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: GestureDetector(
-                    key: ValueKey('${widget.keyPrefix}-scrollbar-drag'),
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragUpdate: (details) {
-                      const trackInset = 10.0;
-                      final trackHeight = math.max(
-                        1.0,
-                        constraints.maxHeight - trackInset * 2,
-                      );
-                      final handleHeight = math.max(
-                        28.0,
-                        trackHeight * constraints.maxHeight / contentHeight,
-                      );
-                      final travel = math.max(1.0, trackHeight - handleHeight);
-                      _controller.jumpTo(
-                        (_controller.offset +
-                                details.delta.dy * maxScroll / travel)
-                            .clamp(0.0, maxScroll),
-                      );
-                    },
-                  ),
-                ),
-            ],
+            ),
           );
         },
       );
@@ -2535,50 +2422,45 @@ class _PlanPresetDiagonalListState extends State<PlanPresetDiagonalList> {
   );
 }
 
-class _PlanPresetDiagonalScrollbarPainter extends CustomPainter {
-  const _PlanPresetDiagonalScrollbarPainter({
-    required this.offset,
+/// 요소 빌더 사선 목록 3곳(프리셋 불러오기·프리셋 단계·미배정)의 스크롤바.
+///
+/// 공용 [DiagonalScrollbar](FE2-a)에 이 목록들의 기존 렌더 값을 넘긴다. 범위와 썸 길이는 콘텐츠
+/// 높이로 계산하고, 선은 `drawLine`으로 그리며, 레일 점은 위쪽 기준이다. 스크롤 값은
+/// [planStageEffectiveScrollOffset]으로 보정한 값이다.
+class _PlanPresetDiagonalScrollbar extends StatelessWidget {
+  const _PlanPresetDiagonalScrollbar({
+    required this.keyPrefix,
+    required this.controller,
     required this.contentExtent,
+    required this.scrollOffset,
+    required this.child,
+    this.draggable = true,
   });
 
-  final double offset;
+  static final _style = DiagonalScrollbarStyle.standard.copyWith(
+    stroke: DiagonalScrollbarStroke.line,
+  );
+
+  final String keyPrefix;
+  final ScrollController controller;
   final double contentExtent;
+  final double scrollOffset;
+  final Widget child;
+  final bool draggable;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    const inset = 10.0;
-    final trackHeight = math.max(1.0, size.height - inset * 2);
-    final maxScroll = math.max(0.0, contentExtent - size.height);
-    final handleHeight = maxScroll <= 0
-        ? trackHeight
-        : math.max(28.0, trackHeight * size.height / contentExtent);
-    final travel = math.max(0.0, trackHeight - handleHeight);
-    final handleTop =
-        inset +
-        (maxScroll <= 0 ? 0 : travel * (offset / maxScroll).clamp(0.0, 1.0));
-    Offset point(double y) =>
-        Offset(size.width - inset - y / math.tan(80 * math.pi / 180), y);
-    final trackPaint = Paint()
-      ..color = AppColors.outline.withValues(alpha: 0.48)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    final handlePaint = Paint()
-      ..color = const Color(0xffe5a0ea)
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(point(inset), point(size.height - inset), trackPaint);
-    if (maxScroll <= 0) return;
-    canvas.drawLine(
-      point(handleTop),
-      point(handleTop + handleHeight),
-      handlePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PlanPresetDiagonalScrollbarPainter oldDelegate) =>
-      oldDelegate.offset != offset ||
-      oldDelegate.contentExtent != contentExtent;
+  Widget build(BuildContext context) => DiagonalScrollbar(
+    keyPrefix: keyPrefix,
+    controller: controller,
+    contentExtent: contentExtent,
+    scrollOffset: scrollOffset,
+    extentSource: DiagonalScrollbarExtentSource.contentExtent,
+    thumbSizing: DiagonalScrollbarThumbSizing.contentRatio,
+    style: _style,
+    trackPoint: diagonalScrollbarRailTrackPoint,
+    drag: draggable ? DiagonalScrollbarDrag.rect : DiagonalScrollbarDrag.none,
+    child: child,
+  );
 }
 
 /// An editable plan-stage item used by the diagonal preset/stage list.
@@ -2883,7 +2765,7 @@ class PlanPresetElementCard extends StatelessWidget {
   }
 
   Widget _stepper(String label, String key, {bool unsupported = false}) =>
-      _CompactTargetStepper(
+      BaStepper(
         key: ValueKey('plan-stage-$stageNumber-$key'),
         label: label,
         value: stage.targets[key] ?? planElementTargetMinimums[key] ?? 0,
@@ -2914,7 +2796,7 @@ class _PresetRegionContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(
           cutInset + 1.5,
@@ -2996,7 +2878,7 @@ class _PresetEquipmentEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.fromLTRB(cutInset + 2, 2, cutInset + 2, 1),
         child: Column(
@@ -3106,8 +2988,7 @@ class _PresetEquipmentSlot extends StatelessWidget {
 
   String? get _assetPath {
     if (equipmentType == null || tier < 1 || tier > 10) return null;
-    return 'assets/item_icons/equipment/'
-        'Equipment_Icon_${equipmentType}_Tier$tier.png';
+    return GameAssets.equipmentIcon(equipmentType!, tier);
   }
 
   @override
@@ -3159,7 +3040,7 @@ class _PresetEquipmentSlot extends StatelessWidget {
           onDecrease: () => onChanged(_levelKey, level - 1),
           onIncrease: () => onChanged(_levelKey, level + 1),
         ),
-        _MaxBadge(
+        MaxBadge(
           controlKey: 'plan-stage-$stageNumber-equipment-$slot',
           enabled:
               tier < (planElementTargetMaximums[_tierKey] ?? tier) ||
@@ -3206,6 +3087,7 @@ class _PresetFavoriteItemSlot extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textMuted,
               fontFamily: 'GyeonggiTitle',
+              fontFamilyFallback: AppFonts.fallback,
               fontSize: 8,
               height: 1,
             ),
@@ -3227,7 +3109,7 @@ class _PresetFavoriteItemSlot extends StatelessWidget {
             onIncrease: () => onChanged(value + 1),
           ),
         const SizedBox(height: 1),
-        _MaxBadge(
+        MaxBadge(
           controlKey: 'plan-stage-$stageNumber-equip4_tier',
           enabled:
               enabled &&
@@ -3265,7 +3147,7 @@ class _EquipmentValueControl extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _StepTextButton(
+        StepButton(
           key: ValueKey('$controlKey-decrease'),
           text: '−',
           enabled: canDecrease,
@@ -3277,12 +3159,13 @@ class _EquipmentValueControl extends StatelessWidget {
           style: TextStyle(
             color: AppColors.text,
             fontFamily: 'GyeonggiTitle',
+            fontFamilyFallback: AppFonts.fallback,
             fontSize: valueFontSize,
             fontWeight: FontWeight.w800,
             height: 1,
           ),
         ),
-        _StepTextButton(
+        StepButton(
           key: ValueKey('$controlKey-increase'),
           text: '+',
           enabled: canIncrease,
@@ -3385,7 +3268,7 @@ class _LockedTargetRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final cutInset = constraints.maxHeight / math.tan(80 * math.pi / 180);
+      final cutInset = diagonalCutDepth(constraints.maxHeight);
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: cutInset + 6),
         child: const Row(
@@ -3401,184 +3284,6 @@ class _LockedTargetRegion extends StatelessWidget {
         ),
       );
     },
-  );
-}
-
-class _CompactTargetStepper extends StatelessWidget {
-  const _CompactTargetStepper({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.minimum,
-    required this.maximum,
-    required this.propagated,
-    required this.unsupported,
-    required this.valueFontSize,
-    required this.onChanged,
-  });
-
-  final String label;
-  final int value;
-  final int minimum;
-  final int maximum;
-  final bool propagated;
-  final bool unsupported;
-  final double valueFontSize;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final controlKey = key is ValueKey<String>
-        ? (key! as ValueKey<String>).value
-        : label;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      decoration: BoxDecoration(
-        color: propagated
-            ? AppColors.primary.withValues(alpha: 0.22)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _StepTextButton(
-                  key: ValueKey('$controlKey-decrease'),
-                  text: '−',
-                  enabled: value > minimum,
-                  onTap: () => onChanged(value - 1),
-                ),
-                if (label.isNotEmpty) ...[
-                  Text(
-                    label,
-                    key: ValueKey('$controlKey-label'),
-                    style: TextStyle(
-                      fontFamily: 'GyeonggiTitle',
-                      fontSize: valueFontSize,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                ],
-                Text(
-                  '$value${unsupported ? '*' : ''}',
-                  key: ValueKey('$controlKey-value'),
-                  style: TextStyle(
-                    fontFamily: 'GyeonggiTitle',
-                    fontSize: valueFontSize,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                  ),
-                ),
-                _StepTextButton(
-                  key: ValueKey('$controlKey-increase'),
-                  text: '+',
-                  enabled: value < maximum,
-                  onTap: () => onChanged(value + 1),
-                ),
-              ],
-            ),
-            _MaxBadge(
-              controlKey: controlKey,
-              enabled: value < maximum,
-              onTap: () => onChanged(maximum),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StepTextButton extends StatelessWidget {
-  const _StepTextButton({
-    super.key,
-    required this.text,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String text;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkResponse(
-    onTap: enabled ? onTap : null,
-    radius: 14,
-    child: SizedBox(
-      width: 22,
-      height: 24,
-      child: Center(
-        child: Text(
-          text,
-          style: TextStyle(
-            color: enabled ? AppColors.text : AppColors.textMuted,
-            fontFamily: 'GyeonggiTitle',
-            fontSize: 16.5,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _MaxBadge extends StatelessWidget {
-  const _MaxBadge({
-    required this.controlKey,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String controlKey;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    enabled: enabled,
-    label: '최대값',
-    child: InkWell(
-      key: ValueKey('$controlKey-max'),
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 28, minHeight: 11),
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.surfaceRaised.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: enabled
-                ? AppColors.primary.withValues(alpha: 0.72)
-                : AppColors.textMuted.withValues(alpha: 0.24),
-            width: 0.8,
-          ),
-        ),
-        child: Text(
-          'MAX',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: enabled ? AppColors.text : AppColors.textMuted,
-            fontFamily: 'GyeonggiTitle',
-            fontSize: 7.5,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -3821,10 +3526,6 @@ class _UnassignedDiagonalListState extends State<_UnassignedDiagonalList> {
           if ((rawScroll - scroll).abs() > 0.01) {
             _scheduleScrollCorrection();
           }
-          final maxScroll = math.max(
-            0.0,
-            contentHeight - constraints.maxHeight,
-          );
           final rowWidth = planUnassignedRowWidth(
             viewportSize: constraints.biggest,
             rowHeight: _rowHeight,
@@ -3855,48 +3556,21 @@ class _UnassignedDiagonalListState extends State<_UnassignedDiagonalList> {
             );
             top += _rowHeight + _rowGap;
           }
-          final fogVisibility = scrollViewportFogVisibility(
-            minScrollExtent: 0,
-            maxScrollExtent: maxScroll,
-            pixels: scroll,
-          );
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ScrollConfiguration(
-                behavior: ScrollConfiguration.of(
-                  context,
-                ).copyWith(scrollbars: false),
-                child: SingleChildScrollView(
-                  key: const ValueKey('plan-starter-unassigned-scroll'),
-                  controller: _controller,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: contentHeight,
-                    child: Stack(clipBehavior: Clip.none, children: rows),
-                  ),
-                ),
+          return _PlanPresetDiagonalScrollbar(
+            keyPrefix: 'plan-starter-unassigned',
+            controller: _controller,
+            contentExtent: contentHeight,
+            scrollOffset: scroll,
+            draggable: false,
+            child: SingleChildScrollView(
+              key: const ValueKey('plan-starter-unassigned-scroll'),
+              controller: _controller,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                height: contentHeight,
+                child: Stack(clipBehavior: Clip.none, children: rows),
               ),
-              Positioned.fill(
-                child: ScrollViewportFog(
-                  key: const ValueKey('plan-starter-unassigned-fog'),
-                  keyPrefix: 'plan-starter-unassigned-viewport-fog',
-                  showTop: fogVisibility.showTop,
-                  showBottom: fogVisibility.showBottom,
-                ),
-              ),
-              IgnorePointer(
-                child: CustomPaint(
-                  key: const ValueKey(
-                    'plan-starter-unassigned-diagonal-scrollbar',
-                  ),
-                  painter: _PlanPresetDiagonalScrollbarPainter(
-                    offset: scroll,
-                    contentExtent: contentHeight,
-                  ),
-                ),
-              ),
-            ],
+            ),
           );
         },
       );
@@ -3910,8 +3584,8 @@ double planUnassignedRowWidth({
 }) {
   const normalGap = planElementBuilderGap;
   const scrollbarReserve = 14.0;
-  final tangent = math.tan(80 * math.pi / 180);
-  final railInset = normalGap / math.sin(80 * math.pi / 180);
+  final tangent = diagonalTan80;
+  final railInset = diagonalNormalInset(normalGap);
   final railSpan =
       viewportSize.width -
       viewportSize.height / tangent -
@@ -3926,9 +3600,8 @@ double planUnassignedRowLeft({
   required double rowHeight,
   required double scrollOffset,
 }) =>
-    planElementBuilderGap / math.sin(80 * math.pi / 180) +
-    (viewportHeight - (rowTop + rowHeight - scrollOffset)) /
-        math.tan(80 * math.pi / 180);
+    diagonalNormalInset(planElementBuilderGap) +
+    diagonalCutDepth(viewportHeight - (rowTop + rowHeight - scrollOffset));
 
 class _UnassignedPlanElementRow extends StatefulWidget {
   const _UnassignedPlanElementRow({
@@ -4022,7 +3695,7 @@ class _UnassignedPlanElementRowState extends State<_UnassignedPlanElementRow> {
                             children: [
                               Positioned.fill(
                                 child: Image.asset(
-                                  'assets/item_backgrounds/square.png',
+                                  GameAssets.itemBackgroundBasic,
                                   fit: BoxFit.contain,
                                 ),
                               ),
@@ -4108,7 +3781,7 @@ class _PlanUnassignedItemPainter extends CustomPainter {
       path,
       Paint()
         ..color = selected
-            ? const Color(0xffe5a0ea).withValues(alpha: 0.92)
+            ? AppColors.scrollThumb.withValues(alpha: 0.92)
             : AppColors.outline.withValues(alpha: 0.58)
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? 1.4 : 0.9,
@@ -4121,7 +3794,7 @@ class _PlanUnassignedItemPainter extends CustomPainter {
 }
 
 Path _bilateralPath(Size size, {double radius = 9}) {
-  final depth = size.height / math.tan(80 * math.pi / 180);
+  final depth = diagonalCutDepth(size.height);
   return buildRoundedSectionPolygon([
     Offset(depth, 0),
     Offset(size.width, 0),

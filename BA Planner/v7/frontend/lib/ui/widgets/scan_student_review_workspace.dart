@@ -6,8 +6,13 @@ import '../../app/theme.dart';
 import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../scan/scan_student_review_logic.dart';
+import 'diagonal_media_list_item.dart';
 import 'diagonal_section.dart';
 import 'scroll_viewport_fog.dart';
+
+export '../scan/scan_student_review_logic.dart'
+    show orderScanResultCandidatesByGroup;
 
 typedef ScanCandidateAction = Future<void> Function(ScannerCandidate candidate);
 typedef ScanCandidateEditAction =
@@ -15,32 +20,8 @@ typedef ScanCandidateEditAction =
       ScannerCandidate candidate,
       Map<String, dynamic> candidatePayload,
       Map<int, int> relationshipRanks,
+      Set<String> confirmedFields,
     );
-
-List<ScannerCandidate> orderScanResultCandidatesByGroup(
-  List<ScannerCandidate> candidates,
-  Map<String, StudentCatalogEntry> catalog,
-) {
-  final groupOrder = <String, int>{};
-  final indexed = candidates.indexed.toList(growable: false);
-  for (final entry in indexed) {
-    final studentId = entry.$2.payload['student_id'] as String? ?? 'unknown';
-    final group = catalog[studentId]?.group ?? studentId;
-    groupOrder.putIfAbsent(group, () => groupOrder.length);
-  }
-  indexed.sort((left, right) {
-    String group((int, ScannerCandidate) entry) {
-      final studentId = entry.$2.payload['student_id'] as String? ?? 'unknown';
-      return catalog[studentId]?.group ?? studentId;
-    }
-
-    final groupComparison = groupOrder[group(left)]!.compareTo(
-      groupOrder[group(right)]!,
-    );
-    return groupComparison != 0 ? groupComparison : left.$1.compareTo(right.$1);
-  });
-  return indexed.map((entry) => entry.$2).toList(growable: false);
-}
 
 class ScanStudentReviewWorkspace extends StatefulWidget {
   const ScanStudentReviewWorkspace({
@@ -80,6 +61,8 @@ class _ScanStudentReviewWorkspaceState
   final Map<String, Map<String, dynamic>> _drafts = {};
   final Map<String, String> _localErrors = {};
   final Map<String, Map<int, String>> _relationshipRankInputs = {};
+  final Map<String, Set<String>> _confirmedFields = {};
+  final Map<String, Set<String>> _invalidFields = {};
 
   @override
   void didUpdateWidget(ScanStudentReviewWorkspace oldWidget) {
@@ -89,6 +72,20 @@ class _ScanStudentReviewWorkspaceState
     _drafts.removeWhere((id, _) => !ids.contains(id));
     _localErrors.removeWhere((id, _) => !ids.contains(id));
     _relationshipRankInputs.removeWhere((id, _) => !ids.contains(id));
+    _confirmedFields.removeWhere((id, _) => !ids.contains(id));
+    _invalidFields.removeWhere((id, _) => !ids.contains(id));
+    for (final candidate in widget.candidates) {
+      final previous = oldWidget.candidates
+          .where((item) => item.id == candidate.id)
+          .firstOrNull;
+      if (previous != null && previous.revision != candidate.revision) {
+        _drafts.remove(candidate.id);
+        _confirmedFields.remove(candidate.id);
+        _invalidFields.remove(candidate.id);
+        _localErrors.remove(candidate.id);
+        _relationshipRankInputs.remove(candidate.id);
+      }
+    }
     if (_selectedId == null || !ids.contains(_selectedId)) {
       _selectedId = widget.candidates.isEmpty
           ? null
@@ -104,48 +101,20 @@ class _ScanStudentReviewWorkspaceState
     return widget.candidates.firstOrNull;
   }
 
-  static const _safeStatuses = {
-    'ok',
-    'inferred',
-    'skipped',
-    'verified',
-    'deferred',
-    'shadow',
-  };
-
-  static const _potentialFields = {'stat_hp', 'stat_atk', 'stat_heal'};
-
   bool _hasProblem(ScannerCandidate candidate) =>
-      candidate.reviewRequired ||
-      widget.candidateErrors.containsKey(candidate.id) ||
-      _localErrors.containsKey(candidate.id) ||
-      candidate.evidence.any(
-        (evidence) => !_safeStatuses.contains(evidence.status),
+      scanStudentCandidateHasProblem(
+        candidate,
+        applyFailed: widget.candidateErrors.containsKey(candidate.id),
+        invalidEdit: _localErrors.containsKey(candidate.id),
       );
 
-  String _status(ScannerCandidate candidate) {
-    if (widget.candidateErrors.containsKey(candidate.id)) return 'apply failed';
-    if (_localErrors.containsKey(candidate.id)) return 'invalid edit';
-    if (candidate.evidence.any((item) => item.status == 'deferred')) {
-      return '다른 의상 랭크 적용 대기';
-    }
-    for (final priority in const [
-      'suspicious',
-      'dependency_missing',
-      'partial',
-      'failed',
-      'uncertain',
-      'region_missing',
-    ]) {
-      if (candidate.evidence.any((item) => item.status == priority)) {
-        return priority.replaceAll('_', ' ');
-      }
-    }
-    return candidate.reviewRequired ? 'review required' : 'verified';
-  }
+  String _status(ScannerCandidate candidate) => scanStudentCandidateStatus(
+    candidate,
+    applyFailed: widget.candidateErrors.containsKey(candidate.id),
+    invalidEdit: _localErrors.containsKey(candidate.id),
+  );
 
-  String _studentId(ScannerCandidate candidate) =>
-      candidate.payload['student_id'] as String? ?? 'unknown';
+  String _studentId(ScannerCandidate candidate) => scanStudentId(candidate);
 
   String _displayName(ScannerCandidate candidate) {
     final id = _studentId(candidate);
@@ -153,46 +122,20 @@ class _ScanStudentReviewWorkspaceState
   }
 
   Map<String, dynamic> _values(ScannerCandidate candidate) =>
-      Map<String, dynamic>.from(
-        candidate.payload['values'] as Map? ?? const {},
-      );
+      scanStudentValues(candidate);
 
   Map<String, dynamic> _draft(ScannerCandidate candidate) =>
       _drafts.putIfAbsent(candidate.id, () => _values(candidate));
 
-  Map<String, dynamic> _expected(ScannerCandidate candidate) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final expected = evidence.details?['expected'];
-      if (expected is Map) return Map<String, dynamic>.from(expected);
-    }
-    return const {};
-  }
+  Map<String, dynamic> _expected(ScannerCandidate candidate) =>
+      scanStudentExpectedStats(candidate);
 
-  Map<String, dynamic> _delta(ScannerCandidate candidate) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final delta = evidence.details?['delta'];
-      if (delta is Map) return Map<String, dynamic>.from(delta);
-    }
-    return const {};
-  }
+  Map<String, dynamic> _delta(ScannerCandidate candidate) =>
+      scanStudentStatDelta(candidate);
 
   List<Map<String, dynamic>> _relationshipContributions(
     ScannerCandidate candidate,
-  ) {
-    for (final evidence in candidate.evidence) {
-      if (evidence.field != 'student_stat_validation') continue;
-      final rows = evidence.details?['relationship_contributions'];
-      if (rows is List) {
-        return rows
-            .whereType<Map>()
-            .map((row) => Map<String, dynamic>.from(row))
-            .toList(growable: false);
-      }
-    }
-    return const [];
-  }
+  ) => scanStudentRelationshipContributions(candidate);
 
   List<_ResultListEntry> _resultEntries() {
     if (!widget.singleScan) {
@@ -227,26 +170,27 @@ class _ScanStudentReviewWorkspaceState
           firstInGroup: true,
         ),
         for (final row in _relationshipContributions(candidate))
-          if (row['kind'] == 'alternate' && row['owned'] == true)
+          if (scanStudentIsOwnedAlternate(row))
             _ResultListEntry.relationship(candidate, row),
       ],
     ];
   }
 
   Future<void> _revalidate(ScannerCandidate candidate) async {
+    if (_invalidFields[candidate.id]?.isNotEmpty ?? false) return;
     final payload = Map<String, dynamic>.from(candidate.payload);
     payload['values'] = Map<String, dynamic>.from(_draft(candidate));
     final relationshipRanks = <int, int>{};
     for (final row in _relationshipContributions(candidate)) {
-      if (row['kind'] != 'alternate' || row['owned'] != true) continue;
+      if (!scanStudentIsOwnedAlternate(row)) continue;
       final id = row['schaledb_id'];
       if (id is! int) continue;
       final raw =
           _relationshipRankInputs[candidate.id]?[id] ??
           row['rank']?.toString() ??
           '';
-      final rank = int.tryParse(raw);
-      if (rank == null || rank < 1 || rank > 100) {
+      final rank = scanStudentRelationshipRank(raw);
+      if (rank == null) {
         setState(
           () => _localErrors[candidate.id] = '다른 보유 의상의 인연 랭크를 1~100으로 입력하세요.',
         );
@@ -255,7 +199,14 @@ class _ScanStudentReviewWorkspaceState
       relationshipRanks[id] = rank;
     }
     setState(() => _localErrors.remove(candidate.id));
-    await widget.onRevalidate(candidate, payload, relationshipRanks);
+    final original = _values(candidate);
+    final draft = _draft(candidate);
+    final confirmed = scanStudentConfirmedFields(
+      original: original,
+      draft: draft,
+      checked: _confirmedFields[candidate.id],
+    );
+    await widget.onRevalidate(candidate, payload, relationshipRanks, confirmed);
     if (mounted) setState(() => _editing.remove(candidate.id));
   }
 
@@ -323,11 +274,14 @@ class _ScanStudentReviewWorkspaceState
           );
           if (wide) {
             return SizedBox(
-              height: 590,
+              height: 640,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(width: 340, child: list),
+                  SizedBox(
+                    width: scanResultReportWidth(constraints.maxWidth),
+                    child: list,
+                  ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(child: detail),
                 ],
@@ -359,19 +313,11 @@ class _ScanStudentReviewWorkspaceState
     final expected = _expected(candidate);
     final delta = _delta(candidate);
     final relationshipContributions = _relationshipContributions(candidate);
-    final fields = <String>{...current.keys, ...scanned.keys};
-    if ((scanned['level'] as int? ?? 0) >= 90 &&
-        (scanned['student_star'] as int? ?? 0) >= 5) {
-      fields.addAll(_potentialFields);
-    }
-    const statToField = {
-      'MaxHP': 'combat_hp',
-      'AttackPower': 'combat_atk',
-      'DefensePower': 'combat_def',
-      'HealPower': 'combat_heal',
-    };
-    fields.addAll(statToField.values.where((field) => expected.isNotEmpty));
-    final ordered = fields.toList()..sort();
+    final ordered = scanStudentComparisonFields(
+      current: current,
+      scanned: scanned,
+      expected: expected,
+    );
     final busy = widget.busyCandidateIds.contains(candidate.id);
     return DiagonalSection(
       child: Padding(
@@ -484,27 +430,41 @@ class _ScanStudentReviewWorkspaceState
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.xs),
+            if (_editing.contains(candidate.id))
+              const Text(
+                '수정한 항목은 자동으로 확인됩니다. 바꾸지 않은 항목은 게임 화면과 대조한 뒤 화면 확인을 선택하세요.',
+              ),
             if (wide)
               _ComparisonTable(
+                // 같은 후보의 새 revision이면 편집 칸을 새 값으로 다시 만든다(scanwip-func 발견 1).
+                key: ValueKey('scan-student-comparison-${candidate.revision}'),
                 fields: ordered,
                 current: current,
                 scanned: scanned,
                 expected: expected,
                 delta: delta,
-                statToField: statToField,
                 editing: _editing.contains(candidate.id),
                 onChanged: (field, value) => _edit(candidate, field, value),
+                confirmedFields: _confirmedFields[candidate.id] ?? const {},
+                onConfirmed: (field, checked) =>
+                    _confirm(candidate, field, checked),
               )
             else
               for (final field in ordered)
                 _ComparisonCard(
+                  key: ValueKey(
+                    'scan-student-comparison-${candidate.revision}-$field',
+                  ),
                   field: field,
                   current: current[field],
                   scanned: scanned[field],
-                  calculated: _calculated(field, expected, statToField),
-                  delta: _calculatedDelta(field, delta, statToField),
+                  calculated: scanStudentCalculatedValue(field, expected),
+                  delta: scanStudentCalculatedDelta(field, delta),
                   editing: _editing.contains(candidate.id),
                   onChanged: (value) => _edit(candidate, field, value),
+                  confirmed:
+                      _confirmedFields[candidate.id]?.contains(field) ?? false,
+                  onConfirmed: (checked) => _confirm(candidate, field, checked),
                 ),
             if (_localErrors[candidate.id] case final error?)
               Padding(
@@ -554,39 +514,40 @@ class _ScanStudentReviewWorkspaceState
   void _edit(ScannerCandidate candidate, String field, String text) {
     final original = _values(candidate)[field];
     dynamic value = text;
-    if (original is int || _potentialFields.contains(field)) {
+    if (scanStudentFieldNeedsInteger(field, original)) {
       value = int.tryParse(text);
       if (value == null) {
-        setState(() => _localErrors[candidate.id] = '$field 값은 정수여야 합니다.');
+        setState(() {
+          _invalidFields.putIfAbsent(candidate.id, () => <String>{}).add(field);
+          _localErrors[candidate.id] = '$field 값은 정수여야 합니다.';
+        });
         return;
       }
     }
     setState(() {
       _draft(candidate)[field] = value;
-      _localErrors.remove(candidate.id);
+      _invalidFields[candidate.id]?.remove(field);
+      if (_invalidFields[candidate.id]?.isNotEmpty ?? false) {
+        _localErrors[candidate.id] = '입력 오류를 수정한 뒤 재검증하세요.';
+      } else {
+        _localErrors.remove(candidate.id);
+      }
     });
   }
 
-  static Object? _calculated(
-    String field,
-    Map<String, dynamic> expected,
-    Map<String, String> statToField,
-  ) {
-    for (final entry in statToField.entries) {
-      if (entry.value == field) return expected[entry.key];
-    }
-    return null;
-  }
-
-  static Object? _calculatedDelta(
-    String field,
-    Map<String, dynamic> delta,
-    Map<String, String> statToField,
-  ) {
-    for (final entry in statToField.entries) {
-      if (entry.value == field) return delta[entry.key];
-    }
-    return null;
+  void _confirm(ScannerCandidate candidate, String field, bool checked) {
+    if (!_draft(candidate).containsKey(field)) return;
+    setState(() {
+      final fields = _confirmedFields.putIfAbsent(
+        candidate.id,
+        () => <String>{},
+      );
+      if (checked) {
+        fields.add(field);
+      } else {
+        fields.remove(field);
+      }
+    });
   }
 }
 
@@ -785,6 +746,16 @@ double scanResultRowLeft({
     (viewportHeight - (rowTop + rowHeight - scrollOffset)) /
         math.tan(80 * math.pi / 180);
 
+double scanResultReportWidth(double workspaceWidth) {
+  const detailMinimum = 420.0;
+  const gap = AppSpacing.md;
+  final preferred = workspaceWidth * 0.62;
+  return math.max(
+    420,
+    math.min(780, math.min(preferred, workspaceWidth - detailMinimum - gap)),
+  );
+}
+
 class _ResultList extends StatefulWidget {
   const _ResultList({
     required this.entries,
@@ -815,7 +786,7 @@ class _ResultList extends StatefulWidget {
 
 class _ResultListState extends State<_ResultList> {
   static const _verticalInset = 8.0;
-  static const _candidateHeight = 74.0;
+  static const _candidateHeight = 96.0;
   static const _relationshipHeight = 82.0;
   static const _rowGap = 8.0;
   final ScrollController _controller = ScrollController();
@@ -828,6 +799,7 @@ class _ResultListState extends State<_ResultList> {
 
   @override
   Widget build(BuildContext context) => DiagonalSection(
+    key: const ValueKey('scan-student-result-report-section'),
     child: Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 24, 14),
       child: Column(
@@ -911,6 +883,11 @@ class _ResultListState extends State<_ResultList> {
                       )
                     : _CandidateResultRow(
                         entry: entry,
+                        order: index + 1,
+                        catalog:
+                            widget.catalog[entry.candidate.payload['student_id']
+                                    as String? ??
+                                'unknown'],
                         selected: entry.candidate.id == widget.selectedId,
                         problem: widget.hasProblem(entry.candidate),
                         displayName: widget.displayName(entry.candidate),
@@ -961,6 +938,8 @@ class _ResultListState extends State<_ResultList> {
 class _CandidateResultRow extends StatelessWidget {
   const _CandidateResultRow({
     required this.entry,
+    required this.order,
+    required this.catalog,
     required this.selected,
     required this.problem,
     required this.displayName,
@@ -969,11 +948,84 @@ class _CandidateResultRow extends StatelessWidget {
   });
 
   final _ResultListEntry entry;
+  final int order;
+  final StudentCatalogEntry? catalog;
   final bool selected;
   final bool problem;
   final String displayName;
   final String status;
   final VoidCallback onSelected;
+
+  Map<String, dynamic> get _values => Map<String, dynamic>.from(
+    entry.candidate.payload['values'] as Map? ?? const {},
+  );
+
+  int? _integer(String key) => _values[key] as int?;
+
+  String _number(String key) => _integer(key)?.toString() ?? '-';
+
+  String _level(String key) {
+    final value = _integer(key);
+    return value == null ? '-' : 'Lv.$value';
+  }
+
+  String _tier(int slot) {
+    final raw = _values['equip$slot'] ?? _values['equip${slot}_tier'];
+    if (raw is int) return raw > 0 ? 'T$raw' : '-';
+    final text = raw?.toString() ?? '';
+    return RegExp(r'^T\d+$').hasMatch(text) ? text : '-';
+  }
+
+  String _equipmentAsset(int slot) {
+    final type = switch (slot) {
+      1 => catalog?.equipmentSlot1,
+      2 => catalog?.equipmentSlot2,
+      _ => catalog?.equipmentSlot3,
+    };
+    final tier = int.tryParse(_tier(slot).replaceFirst('T', ''));
+    if (type != null && tier != null && tier >= 1 && tier <= 10) {
+      return 'assets/item_icons/equipment/'
+          'Equipment_Icon_${type}_Tier$tier.png';
+    }
+    return switch (slot) {
+      1 => 'assets/equipment_icons/hat_t10.png',
+      2 => 'assets/equipment_icons/hairpin_t10.png',
+      _ => 'assets/equipment_icons/watch_t10.png',
+    };
+  }
+
+  String _favoriteItem() {
+    final value = _values['equip4']?.toString() ?? '';
+    return const {'T1', 'T2'}.contains(value) ? value : '-';
+  }
+
+  DiagonalMediaListItemData _data(String id) => DiagonalMediaListItemData(
+    order: order,
+    mediaAssetPath: 'assets/student_portraits/$id.png',
+    title: '$displayName · $status',
+    studentStars: _integer('student_star') ?? 0,
+    weaponStars: _integer('weapon_star') ?? 0,
+    studentLevel: DiagonalMediaValue(_level('level')),
+    weaponLevel: DiagonalMediaValue(_level('weapon_level')),
+    skills: DiagonalMediaValue(
+      '${_number('ex_skill')}/${_number('skill1')}/'
+      '${_number('skill2')}/${_number('skill3')}',
+    ),
+    equipment: [
+      for (var slot = 1; slot <= 3; slot++)
+        DiagonalMediaEquipment(
+          assetPath: _equipmentAsset(slot),
+          tier: DiagonalMediaValue(_tier(slot)),
+          level: DiagonalMediaValue(_level('equip${slot}_level')),
+        ),
+    ],
+    favoriteItem: DiagonalMediaValue(_favoriteItem()),
+    bondRank: DiagonalMediaValue(_number('bond_rank')),
+    stats: DiagonalMediaValue(
+      '${_number('stat_hp')}/${_number('stat_atk')}/'
+      '${_number('stat_heal')}',
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -981,58 +1033,16 @@ class _CandidateResultRow extends StatelessWidget {
     return _ResultStateFrame(
       problem: problem,
       selected: selected,
-      child: DiagonalSection(
-        child: InkWell(
+      mediaRow: true,
+      child: Semantics(
+        label: '$displayName, $status',
+        button: true,
+        selected: selected,
+        child: DiagonalMediaListItem(
           key: ValueKey('scan-student-result-${entry.candidate.id}'),
+          data: _data(id),
+          highlighted: selected,
           onTap: onSelected,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 7, 24, 7),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/student_portraits/$id.png',
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox(
-                      width: 52,
-                      height: 52,
-                      child: Icon(Icons.person_outline),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        status,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: problem ? AppColors.danger : AppColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  problem ? Icons.error_outline : Icons.check_circle,
-                  color: problem ? AppColors.danger : AppColors.success,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -1118,11 +1128,13 @@ class _ResultStateFrame extends StatelessWidget {
     required this.problem,
     required this.child,
     this.selected = false,
+    this.mediaRow = false,
   });
 
   final bool problem;
   final Widget child;
   final bool selected;
+  final bool mediaRow;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -1131,6 +1143,7 @@ class _ResultStateFrame extends StatelessWidget {
       foregroundPainter: _DiagonalStatusBorderPainter(
         problem ? AppColors.danger : AppColors.success,
         selected ? 3.2 : 2.0,
+        mediaRow: mediaRow,
       ),
       child: child,
     ),
@@ -1138,13 +1151,20 @@ class _ResultStateFrame extends StatelessWidget {
 }
 
 class _DiagonalStatusBorderPainter extends CustomPainter {
-  const _DiagonalStatusBorderPainter(this.color, this.width);
+  const _DiagonalStatusBorderPainter(
+    this.color,
+    this.width, {
+    this.mediaRow = false,
+  });
   final Color color;
   final double width;
+  final bool mediaRow;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = const DiagonalSectionClipper().getClip(size);
+    final path = mediaRow
+        ? diagonalMediaListItemPath(size)
+        : const DiagonalSectionClipper().getClip(size);
     canvas.drawPath(
       path,
       Paint()
@@ -1156,47 +1176,54 @@ class _DiagonalStatusBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DiagonalStatusBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.width != width;
+      oldDelegate.color != color ||
+      oldDelegate.width != width ||
+      oldDelegate.mediaRow != mediaRow;
 }
 
 class _ComparisonTable extends StatelessWidget {
   const _ComparisonTable({
+    super.key,
     required this.fields,
     required this.current,
     required this.scanned,
     required this.expected,
     required this.delta,
-    required this.statToField,
     required this.editing,
     required this.onChanged,
+    required this.confirmedFields,
+    required this.onConfirmed,
   });
   final List<String> fields;
   final Map<String, dynamic> current;
   final Map<String, dynamic> scanned;
   final Map<String, dynamic> expected;
   final Map<String, dynamic> delta;
-  final Map<String, String> statToField;
   final bool editing;
   final void Function(String field, String value) onChanged;
+  final Set<String> confirmedFields;
+  final void Function(String field, bool checked) onConfirmed;
 
   @override
   Widget build(BuildContext context) => Table(
     border: TableBorder.all(color: AppColors.outline),
-    columnWidths: const {
-      0: FlexColumnWidth(1.25),
-      1: FlexColumnWidth(),
-      2: FlexColumnWidth(),
-      3: FlexColumnWidth(),
-      4: FlexColumnWidth(),
+    columnWidths: {
+      0: const FlexColumnWidth(1.25),
+      1: const FlexColumnWidth(),
+      2: const FlexColumnWidth(),
+      3: const FlexColumnWidth(),
+      4: const FlexColumnWidth(),
+      if (editing) 5: const FixedColumnWidth(84),
     },
     children: [
-      const TableRow(
+      TableRow(
         children: [
           _TableCellText('필드', header: true),
           _TableCellText('현재 확정값', header: true),
           _TableCellText('스캔값', header: true),
           _TableCellText('계산값', header: true),
           _TableCellText('차이', header: true),
+          if (editing) const _TableCellText('화면 확인', header: true),
         ],
       ),
       for (final field in fields)
@@ -1216,11 +1243,17 @@ class _ComparisonTable extends StatelessWidget {
                   )
                 : _TableCellText('${scanned[field] ?? '—'}'),
             _TableCellText(
-              '${_ScanStudentReviewWorkspaceState._calculated(field, expected, statToField) ?? '—'}',
+              '${scanStudentCalculatedValue(field, expected) ?? '—'}',
             ),
             _TableCellText(
-              '${_ScanStudentReviewWorkspaceState._calculatedDelta(field, delta, statToField) ?? '—'}',
+              '${scanStudentCalculatedDelta(field, delta) ?? '—'}',
             ),
+            if (editing)
+              Checkbox(
+                key: ValueKey('scan-student-confirm-$field'),
+                value: confirmedFields.contains(field),
+                onChanged: (value) => onConfirmed(field, value ?? false),
+              ),
           ],
         ),
     ],
@@ -1243,6 +1276,7 @@ class _TableCellText extends StatelessWidget {
 
 class _ComparisonCard extends StatelessWidget {
   const _ComparisonCard({
+    super.key,
     required this.field,
     required this.current,
     required this.scanned,
@@ -1250,6 +1284,8 @@ class _ComparisonCard extends StatelessWidget {
     required this.delta,
     required this.editing,
     required this.onChanged,
+    required this.confirmed,
+    required this.onConfirmed,
   });
   final String field;
   final Object? current;
@@ -1258,6 +1294,8 @@ class _ComparisonCard extends StatelessWidget {
   final Object? delta;
   final bool editing;
   final ValueChanged<String> onChanged;
+  final bool confirmed;
+  final ValueChanged<bool> onConfirmed;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -1297,6 +1335,18 @@ class _ComparisonCard extends StatelessWidget {
                   Text('스캔 ${scanned ?? '—'}'),
                 Text('계산 ${calculated ?? '—'}'),
                 Text('차이 ${delta ?? '—'}'),
+                if (editing)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        key: ValueKey('scan-student-confirm-$field'),
+                        value: confirmed,
+                        onChanged: (value) => onConfirmed(value ?? false),
+                      ),
+                      const Text('화면 확인'),
+                    ],
+                  ),
               ],
             ),
           ],

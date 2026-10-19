@@ -1,0 +1,1510 @@
+// FE1-g golden 기준선 공용 도구.
+//
+// 규칙
+// - 기준 viewport 2560×1392, devicePixelRatio 1(워크플로 불변식).
+// - 실제 글꼴: Pretendard 4굵기와 GyeonggiTitle을 `FontLoader`로 asset에서 적재한다.
+//   Material 아이콘 글꼴은 FontManifest.json에서 함께 적재한다.
+// - 대상 플랫폼은 실제 앱과 같은 Windows(`TargetPlatformVariant.only`).
+// - 이미지는 `runAsync` 안에서 미리 디코드하고, 애니메이션이 모두 끝난 뒤 찍는다.
+// - 현재 시각에 따라 바뀌는 값(시나리오 수정 시각)은 고정한다.
+//
+// golden PNG는 Windows 글꼴 렌더 결과에 묶이므로 사용자 PC에서만 만든다:
+//   .\frontend\tool\fe_gate.ps1 -UpdateGoldens
+import 'dart:convert';
+
+import 'package:ba_planner_v7/app/theme.dart';
+import 'package:ba_planner_v7/services/app_service.dart';
+import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/services/mock_student_fixture.dart';
+import 'package:ba_planner_v7/services/repository_service.dart';
+import 'package:ba_planner_v7/services/scenario_service.dart';
+import 'package:ba_planner_v7/ui/models/planning_growth_rules.dart';
+import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
+import 'package:ba_planner_v7/ui/widgets/student_grid_warmup.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+const goldenViewportSize = Size(2560, 1392);
+const goldenBoundaryKey = ValueKey('fe1g-golden-boundary');
+final goldenPlatform = TargetPlatformVariant.only(TargetPlatform.windows);
+
+const _appFontAssets = <String, List<String>>{
+  'Pretendard': [
+    'assets/fonts/Pretendard-Regular.otf',
+    'assets/fonts/Pretendard-Medium.otf',
+    'assets/fonts/Pretendard-SemiBold.otf',
+    'assets/fonts/Pretendard-Bold.otf',
+  ],
+  'GyeonggiTitle': ['assets/fonts/GyeonggiTitle-Medium.ttf'],
+};
+
+var _fontsLoaded = false;
+
+/// 앱 글꼴과 아이콘 글꼴을 한 번만 적재한다. `setUpAll`에서 부른다.
+Future<void> loadGoldenFonts() async {
+  if (_fontsLoaded) return;
+  for (final entry in _appFontAssets.entries) {
+    final loader = FontLoader(entry.key);
+    for (final asset in entry.value) {
+      loader.addFont(rootBundle.load(asset));
+    }
+    await loader.load();
+  }
+  // 아이콘(MaterialIcons 등)은 FontManifest.json에 등록된 그대로 적재한다.
+  // 목록을 못 읽어도 결과는 결정적이므로(아이콘이 테스트 글꼴로 그려짐) 멈추지 않는다.
+  final List<dynamic> manifest;
+  try {
+    manifest =
+        jsonDecode(await rootBundle.loadString('FontManifest.json'))
+            as List<dynamic>;
+  } on Object {
+    _fontsLoaded = true;
+    return;
+  }
+  for (final family in manifest.cast<Map<String, dynamic>>()) {
+    final name = family['family'] as String;
+    if (_appFontAssets.containsKey(name)) continue;
+    final loader = FontLoader(name);
+    for (final font in (family['fonts'] as List<dynamic>)
+        .cast<Map<String, dynamic>>()) {
+      loader.addFont(rootBundle.load(font['asset'] as String));
+    }
+    await loader.load();
+  }
+  _fontsLoaded = true;
+}
+
+/// 기준 viewport를 건다. 테스트가 끝나면 원래대로 돌린다.
+void setGoldenViewport(WidgetTester tester) {
+  tester.view.physicalSize = goldenViewportSize;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
+/// golden으로 찍을 범위. 화면 전체(오버레이 포함)를 담는다.
+Widget goldenBoundary(Widget child) =>
+    RepaintBoundary(key: goldenBoundaryKey, child: child);
+
+/// 앱 셸 없이 한 화면을 앱과 같은 테마로 띄운다.
+Widget goldenMaterialHost(Widget body) => goldenBoundary(
+  MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: BAPlannerTheme.dark(),
+    home: Scaffold(body: body),
+  ),
+);
+
+/// 실제 비동기(asset 로드)가 필요한 화면을 기다린다.
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxRounds = 200,
+}) async {
+  for (var round = 0; round < maxRounds; round++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 2)),
+    );
+  }
+  fail('golden scene did not show $finder');
+}
+
+/// 화면에 있는 `Image`와 `AssetImageGrid`의 asset을 실제로 디코드해 둔다.
+Future<void> precacheVisibleImages(WidgetTester tester) async {
+  final requests = <(ImageProvider<Object>, BuildContext)>[];
+  final seen = <Object>{};
+  for (final element in find.byType(Image, skipOffstage: false).evaluate()) {
+    final provider = (element.widget as Image).image;
+    if (seen.add(provider)) requests.add((provider, element));
+  }
+  for (final element in find
+      .byType(AssetImageGrid, skipOffstage: false)
+      .evaluate()) {
+    for (final item in (element.widget as AssetImageGrid).items) {
+      final provider = AssetImage(item.asset);
+      if (seen.add(provider)) requests.add((provider, element));
+    }
+  }
+  if (requests.isEmpty) return;
+  await tester.runAsync(() async {
+    await Future.wait([
+      for (final (provider, context) in requests)
+        precacheImage(provider, context, onError: (_, _) {}),
+    ]);
+  });
+}
+
+/// 애니메이션과 이미지 디코드가 모두 끝난 상태로 만든다.
+Future<void> settleGoldenScene(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  for (var round = 0; round < 3; round++) {
+    await precacheVisibleImages(tester);
+    await tester.pump();
+    await tester.pumpAndSettle();
+  }
+}
+
+/// 장면을 정착시킨 뒤 `test/goldens/baseline/<name>.png`와 비교한다.
+Future<void> expectGoldenScene(WidgetTester tester, String name) async {
+  await settleGoldenScene(tester);
+  expect(tester.takeException(), isNull);
+  await expectLater(
+    find.byKey(goldenBoundaryKey),
+    matchesGoldenFile('baseline/$name.png'),
+  );
+}
+
+/// 타이틀의 학생 그리드 warmup(보이지 않는 미리 그리기)이 끝날 때까지 기다린다.
+/// 끝나기 전에 찍으면 warmup 위젯이 남아 있을 수 있어 결과가 흔들린다.
+Future<void> finishStudentGridWarmup(
+  WidgetTester tester,
+  AppService service,
+) async {
+  final warmup = find.byKey(const ValueKey('student-grid-paint-warmup'));
+  final catalog = await service.listStudents();
+  // warmup과 같은 이미지 설정(DPR·asset bundle)을 쓰도록 타이틀 화면 안의 context를 쓴다.
+  final context = tester.element(find.byKey(const ValueKey('title-page')));
+  await tester.runAsync(() async {
+    await Future.wait([
+      for (final asset in studentGridWarmupAssetPaths(catalog))
+        precacheImage(AssetImage(asset), context, onError: (_, _) {}),
+    ]);
+  });
+  for (var round = 0; round < 400; round++) {
+    if (warmup.evaluate().isEmpty) break;
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 2)),
+    );
+  }
+  expect(
+    warmup,
+    findsNothing,
+    reason: 'title student grid warmup must finish before the golden capture',
+  );
+}
+
+/// 시나리오 수정 시각을 고정한 mock. 그 밖의 동작은 `MockAppService`와 같다.
+class GoldenMockAppService extends MockAppService {
+  GoldenMockAppService() : super();
+
+  /// 오프셋 없는 문자열이라 어느 시간대에서도 같은 "수정 2026.10.05 12:00"이 된다.
+  static const fixedTimestamp = '2026-10-05T12:00:00';
+
+  @override
+  Future<PlanningScenarioListResult> listScenarios(String profileId) async {
+    final result = await super.listScenarios(profileId);
+    return PlanningScenarioListResult(
+      profileId: result.profileId,
+      revision: result.revision,
+      currentProfileRevision: result.currentProfileRevision,
+      scenarios: [
+        for (final summary in result.scenarios)
+          PlanningScenarioSummary(
+            id: summary.id,
+            revision: summary.revision,
+            name: summary.name,
+            description: summary.description,
+            baseProfileRevision: summary.baseProfileRevision,
+            phaseCount: summary.phaseCount,
+            stageCount: summary.stageCount,
+            studentCount: summary.studentCount,
+            studentIds: summary.studentIds,
+            calculation: summary.calculation,
+            createdAt: fixedTimestamp,
+            updatedAt: fixedTimestamp,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<PlanningScenarioGetResult> getScenario(
+    String profileId,
+    String scenarioId,
+  ) async {
+    final result = await super.getScenario(profileId, scenarioId);
+    final scenario = result.scenario;
+    return PlanningScenarioGetResult(
+      profileId: result.profileId,
+      revision: result.revision,
+      currentProfileRevision: result.currentProfileRevision,
+      scenario: PlanningScenarioRecord(
+        id: scenario.id,
+        revision: scenario.revision,
+        profileId: scenario.profileId,
+        name: scenario.name,
+        description: scenario.description,
+        baseProfileRevision: scenario.baseProfileRevision,
+        document: scenario.document,
+        createdAt: fixedTimestamp,
+        updatedAt: fixedTimestamp,
+      ),
+    );
+  }
+}
+
+/// 학생 장면 전용 mock(FE3-b). 계획 장면은 [GoldenMockAppService]를 그대로 쓴다.
+///
+/// 학생 10명(bundled catalog의 실제 학생·초상)으로 golden이 카드·배지·이름·인연 게이지 상태를
+/// 모두 보게 한다. 8열 그리드가 두 줄이 되어 이름 줄 접힘(FD-046)의 행 피치 차이도 보인다(FE3-c).
+/// `MockAppService` 기본값은 바꾸지 않는다.
+/// - 아루: 보유, 계획 없음, 인연 목표 없음(첫 학생 = 기본 선택, `students-grid` S3)
+/// - 아야네: 보유 + PLAN, 인연 목표 두 단계 30 → 45(마지막 45 사용, 현재 24, `students-detail` S3)
+/// - 호시노: 보유, 긴 이름(말줄임), 계획 없음(인연 목표 없음)
+/// - 슌(수영복): 미보유 + PLAN + JP(배지 3개 쌓기), 인연 목표 20
+/// - 히나: 보유 + PLAN(배지 1개, 첫 칸), 인연 목표 null(목표 없음)
+/// - 세리카: 미보유(UNOWNED, 흐린 이름)
+/// - 케이: 보유, 복합장갑 칩
+/// - 하스미·노아: 보유(둘째 줄), 나구사: 미보유(둘째 줄)
+class GoldenStudentMockAppService extends GoldenMockAppService {
+  GoldenStudentMockAppService() : super();
+
+  static const studentIds = <String>[
+    'aru',
+    'ayane',
+    'hoshino',
+    'shun_swimsuit',
+    'hina',
+    'serika',
+    'kei',
+    'hasumi',
+    'nagusa',
+    'noa',
+  ];
+  static const ownedStudentIds = <String>[
+    'aru',
+    'ayane',
+    'hoshino',
+    'hina',
+    'kei',
+    'hasumi',
+    'noa',
+  ];
+  static const plannedStudentIds = <String>['ayane', 'shun_swimsuit', 'hina'];
+  static const longNameStudentId = 'hoshino';
+  static const longDisplayName = '호시노(카드 하단 변보다 긴 이름은 말줄임으로 줄어듭니다)';
+
+  /// `students-detail`에서 고르는 학생과 그 화면의 →N 문구.
+  static const bondTargetStudentId = 'ayane';
+  static const bondTargetLabel = '→45';
+
+  List<StudentCatalogEntry>? _goldenCatalog;
+
+  @override
+  Future<List<StudentCatalogEntry>> listStudents() async {
+    final cached = _goldenCatalog;
+    if (cached != null) return cached;
+    final full = MockAppService(fullStudentCatalog: true);
+    try {
+      final byId = {
+        for (final student in await full.listStudents())
+          student.studentId: student,
+      };
+      return _goldenCatalog = List.unmodifiable([
+        for (final id in studentIds)
+          id == longNameStudentId
+              ? _withDisplayName(byId[id]!, longDisplayName)
+              : byId[id]!,
+      ]);
+    } finally {
+      await full.dispose();
+    }
+  }
+
+  static StudentCatalogEntry _withDisplayName(
+    StudentCatalogEntry source,
+    String displayName,
+  ) => StudentCatalogEntry(
+    studentId: source.studentId,
+    displayName: displayName,
+    templateName: source.templateName,
+    group: source.group,
+    variant: source.variant,
+    school: source.school,
+    rarity: source.rarity,
+    attackType: source.attackType,
+    defenseType: source.defenseType,
+    combatClass: source.combatClass,
+    role: source.role,
+    position: source.position,
+    equipmentSlot1: source.equipmentSlot1,
+    equipmentSlot2: source.equipmentSlot2,
+    equipmentSlot3: source.equipmentSlot3,
+    jpOnly: source.jpOnly,
+    hasFavoriteItem: source.hasFavoriteItem,
+    searchTags: source.searchTags,
+    krSearchTags: source.krSearchTags,
+    forms: source.forms,
+  );
+
+  /// 보유 학생(mock 고정 값)과 활성 계획 문서를 선택 계정에 저장한다. 화면을 열기 전에 부른다.
+  Future<void> seedStudentScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final valuesById = {
+      for (final wire in buildMockOwnedStudents())
+        wire['student_id'] as String: Map<String, dynamic>.from(
+          wire['values'] as Map,
+        ),
+    };
+    var revision = (await loadRepositoryState(profile.id)).revision;
+    revision = await saveRepositoryStudents(
+      profile.id,
+      [
+        for (final id in ownedStudentIds)
+          ConfirmedStudentState.fromValues(
+            id,
+            valuesById[id] ?? valuesById['aru']!,
+          ),
+      ],
+      revision,
+      'golden-student-scene-students',
+    );
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: activePlanDocument(),
+      expectedRevision: revision,
+      idempotencyKey: 'golden-student-scene-plan',
+    );
+  }
+
+  /// 저장할 활성 계획 문서(v2). 인연 목표만 정하고 나머지 목표는 null(목표 없음)이다. goals 호환 보기는 계획
+  /// 학생([plannedStudentIds])만 남는다(통계·인벤토리 장면은 그대로).
+  static PlanningDocument activePlanDocument() {
+    PlanningDocumentStage stage(String id, String studentId, int? bondRank) =>
+        PlanningDocumentStage(
+          id: id,
+          studentId: studentId,
+          name: '목표',
+          targets: {
+            for (final key in planningDocumentTargetKeys) key: null,
+            'bond_rank': bondRank,
+          },
+        );
+    return PlanningDocument(
+      id: 'active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final id in plannedStudentIds)
+          id: const PlanningGoalMetadata(favorite: true, notes: ''),
+      },
+      phases: [
+        PlanningDocumentPhase(
+          id: 'golden-phase-1',
+          name: '페이즈 1',
+          stages: [
+            stage('golden-ayane-1', 'ayane', 30),
+            stage('golden-shun-1', 'shun_swimsuit', 20),
+            stage('golden-hina-1', 'hina', null),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-phase-2',
+          name: '페이즈 2',
+          stages: [stage('golden-ayane-2', 'ayane', 45)],
+        ),
+      ],
+    );
+  }
+}
+
+/// 시나리오 목록 장면 전용 mock(FE5-a, 시안 Scenario-List). 학생 장면 fixture(보유 학생 · 활성 계획) 위에 시나리오
+/// 다섯 개를 저장하고 목록 요약의 수정 시각을 고정한다.
+///
+/// FE5-b: 목록 요약 · 활성 계획 요약(`plan.get` calculation) · 미리보기 비교를 모두 같은 계산 대역
+/// ([goldenCalculationBand] · [goldenComparisonBand] · [goldenBandSummary])에서 만든다. 백엔드가 세 값을 같은 계산
+/// 경로로 만들므로, 행 · 고정 행 · 미리보기 KPI가 서로 맞는다(FE5-a의 시안 예시 고정값은 대역 값으로 바뀌었다).
+///
+/// "04 공격대 핵심"은 학생 장면 저장 전에 만들어 저장 기준 revision이 지금보다 오래된(저장 시점과 다름) 시나리오다.
+/// "03 방어선 강화"는 미보유 학생만이라 비용 · 부족이 없다(부족 0종 · 병목 없음 초록 표시 장면).
+class GoldenScenarioListMockAppService extends GoldenStudentMockAppService {
+  GoldenScenarioListMockAppService() : super();
+
+  /// 이름 → (설명, 페이즈별 학생, 수정 시각).
+  static const scenarios =
+      <
+        String,
+        ({String description, List<List<String>> phases, String updatedAt})
+      >{
+        '07 3단계 우선순위': (
+          description: '3개 페이즈로 나눈 우선순위 배치',
+          phases: [
+            ['aru', 'ayane'],
+            ['aru', 'hoshino'],
+            ['ayane'],
+          ],
+          updatedAt: '2026-09-22T23:10:00',
+        ),
+        '01 단기 집중 - 아루': (
+          description: '한 학생 카드와 단일 페이즈 계산을 확인하는 최소 시나리오',
+          phases: [
+            ['aru'],
+          ],
+          updatedAt: '2026-09-21T18:40:00',
+        ),
+        '02 지원진 집중': (
+          description: '복수 학생 조합과 지원진 자원 한계를 확인',
+          phases: [
+            ['ayane', 'noa', 'hina'],
+            ['ayane', 'noa'],
+          ],
+          updatedAt: '2026-09-21T17:02:00',
+        ),
+        '03 방어선 강화': (
+          description: '아직 모집하지 않은 두 명의 장비 우선',
+          phases: [
+            ['serika', 'nagusa'],
+          ],
+          updatedAt: '2026-09-20T22:15:00',
+        ),
+        '04 공격대 핵심': (
+          description: '공격대 학생 두 명의 고배율 성장',
+          phases: [
+            ['hina', 'aru'],
+            ['hina', 'aru'],
+          ],
+          updatedAt: '2026-09-14T11:30:00',
+        ),
+      };
+
+  /// 선택 계정의 확정 학생(계산 대역 입력).
+  Future<List<Map<String, dynamic>>> _currentStudents(String profileId) async =>
+      [
+        for (final student in (await loadRepositoryState(profileId)).students)
+          confirmedStudentPlanningCurrent(student),
+      ];
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async => goldenCalculationBand(
+    currentStudents: currentStudents,
+    document: document,
+  );
+
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async => goldenComparisonBand(
+    currentStudents: currentStudents,
+    documentA: documentA,
+    documentB: documentB,
+  );
+
+  /// 시나리오 문서(v1). 모두 ★3이고 페이즈가 뒤일수록 목표가 높다: P1 Lv.80 · EX 3 · 스킬 7, P2 Lv.90 · EX 5 · 스킬 10 ·
+  /// 장비 T9, P3 이후 장비 T10. 단계 이름은 그 학생 몇 번째 단계인지(n단계)다.
+  static Map<String, int> _targets(int phaseIndex) => {
+    for (final entry in planningDocumentTargetMaximums.entries)
+      entry.key: planElementTargetMinimums[entry.key] ?? 0,
+    // 스킬 2 · 3을 올리려면 ★3이 필요하다(성장 규칙).
+    'student_star': 3,
+    if (phaseIndex == 0) ...{
+      'level': 80,
+      'ex_skill': 3,
+      'skill1': 7,
+      'skill2': 7,
+      'skill3': 7,
+    } else ...{
+      'level': 90,
+      'ex_skill': 5,
+      'skill1': 10,
+      'skill2': 10,
+      'skill3': 10,
+      'equip1_tier': phaseIndex == 1 ? 9 : 10,
+      'equip2_tier': phaseIndex == 1 ? 9 : 10,
+      'equip3_tier': phaseIndex == 1 ? 9 : 10,
+    },
+  };
+
+  static PlanningDocument _document(String id, List<List<String>> phases) {
+    final steps = <String, int>{};
+    return PlanningDocument(
+      id: id,
+      name: id,
+      kind: PlanningDocumentKind.scenario,
+      phases: [
+        for (final (index, students) in phases.indexed)
+          PlanningDocumentPhase(
+            id: '$id-phase-${index + 1}',
+            name: '페이즈 ${index + 1}',
+            stages: [
+              for (final studentId in students)
+                PlanningDocumentStage(
+                  id: '$id-${index + 1}-$studentId',
+                  studentId: studentId,
+                  name:
+                      '${steps.update(studentId, (step) => step + 1, ifAbsent: () => 1)}단계',
+                  targets: _targets(index),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Future<String> _create(String profileId, String name, int base) async {
+    final fixture = scenarios[name]!;
+    final list = await listScenarios(profileId);
+    final created = await createScenario(
+      profileId: profileId,
+      expectedRevision: list.revision,
+      idempotencyKey: 'golden-scenario-list-$name',
+      name: name,
+      description: fixture.description,
+      baseProfileRevision: base,
+      document: _document('golden-scenario-${list.revision}', fixture.phases),
+    );
+    return created.scenarioId;
+  }
+
+  /// 이 장면의 활성 계획(v2, FE5-b). 학생 장면 활성 계획보다 무거워 "07 3단계 우선순위"가 크레딧 · 부족량에서
+  /// 나아지고, 학생 차이 칩 세 가지(이 시나리오에만 · 활성보다 낮은 목표 · 활성 계획과 같음)가 모두 보인다.
+  /// - P1 아야네 · 히나 · 케이 · 노아(Lv.80 · EX 3 · 스킬 7) · 호시노(07의 호시노 단계와 같은 목표)
+  /// - P2 아야네 · 히나(Lv.90 · EX 5 · 스킬 10 · T9), P3 아야네(07의 아야네 마지막 단계 + 인연 20)
+  static PlanningDocument listActivePlanDocument() {
+    final ayaneLast = {..._targets(2), 'bond_rank': 20};
+    PlanningDocumentStage stage(
+      String studentId,
+      int step,
+      Map<String, int> targets,
+    ) => PlanningDocumentStage(
+      id: 'golden-list-active-$studentId-$step',
+      studentId: studentId,
+      name: '$step단계',
+      targets: targets,
+    );
+    return PlanningDocument(
+      id: 'active-plan',
+      name: '활성 계획',
+      kind: PlanningDocumentKind.plan,
+      version: 2,
+      goalMetadata: {
+        for (final id in const ['ayane', 'hina', 'kei', 'noa', 'hoshino'])
+          id: const PlanningGoalMetadata(favorite: false, notes: ''),
+      },
+      phases: [
+        PlanningDocumentPhase(
+          id: 'golden-list-active-1',
+          name: '페이즈 1',
+          stages: [
+            stage('ayane', 1, _targets(0)),
+            stage('hina', 1, _targets(0)),
+            stage('kei', 1, _targets(0)),
+            stage('noa', 1, _targets(0)),
+            stage('hoshino', 1, _targets(1)),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-list-active-2',
+          name: '페이즈 2',
+          stages: [
+            stage('ayane', 2, _targets(1)),
+            stage('hina', 2, _targets(1)),
+          ],
+        ),
+        PlanningDocumentPhase(
+          id: 'golden-list-active-3',
+          name: '페이즈 3',
+          stages: [stage('ayane', 3, ayaneLast)],
+        ),
+      ],
+    );
+  }
+
+  /// 시나리오 다섯 개와 학생 장면을 저장하고 이 장면의 활성 계획([listActivePlanDocument])으로 바꾼다. 이름 → 시나리오 id.
+  Future<Map<String, String>> seedScenarioListScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final ids = <String, String>{};
+    final staleBase = (await loadRepositoryState(profile.id)).revision;
+    ids['04 공격대 핵심'] = await _create(profile.id, '04 공격대 핵심', staleBase);
+    await seedStudentScene();
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: listActivePlanDocument(),
+      expectedRevision: (await loadRepositoryState(profile.id)).revision,
+      idempotencyKey: 'golden-scenario-list-active-plan',
+    );
+    final base = (await loadRepositoryState(profile.id)).revision;
+    for (final name in scenarios.keys) {
+      if (ids.containsKey(name)) continue;
+      ids[name] = await _create(profile.id, name, base);
+    }
+    return ids;
+  }
+
+  @override
+  Future<PlanningScenarioListResult> listScenarios(String profileId) async {
+    final result = await super.listScenarios(profileId);
+    final students = await _currentStudents(profileId);
+    final summaries = <PlanningScenarioSummary>[];
+    for (final summary in result.scenarios) {
+      final record = (await super.getScenario(profileId, summary.id)).scenario;
+      final calculation = PlanningScenarioCalculationSummary.fromWire(
+        goldenBandSummary(
+          goldenCalculationBand(
+            currentStudents: students,
+            document: record.document.toWire(),
+          ),
+        ),
+      );
+      summaries.add(
+        PlanningScenarioSummary(
+          id: summary.id,
+          revision: summary.revision,
+          name: summary.name,
+          description: summary.description,
+          baseProfileRevision: summary.baseProfileRevision,
+          phaseCount: summary.phaseCount,
+          stageCount: summary.stageCount,
+          studentCount: summary.studentCount,
+          studentIds: summary.studentIds,
+          calculation: calculation,
+          createdAt: summary.createdAt,
+          updatedAt: scenarios[summary.name]?.updatedAt ?? summary.updatedAt,
+        ),
+      );
+    }
+    return PlanningScenarioListResult(
+      profileId: result.profileId,
+      revision: result.revision,
+      currentProfileRevision: result.currentProfileRevision,
+      scenarios: summaries,
+    );
+  }
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async {
+    final plan = await super.loadRepositoryPlan(profileId);
+    final students = await _currentStudents(profileId);
+    return RepositoryPlanState.fromWire({
+      'profile_id': plan.profileId,
+      'revision': plan.revision,
+      'document': plan.document.toWire(),
+      'calculation': goldenBandSummary(
+        goldenCalculationBand(
+          currentStudents: students,
+          document: plan.document.toWire(),
+        ),
+      ),
+      if (plan.hasAuthoring) 'authoring': plan.authoring.toWire(),
+    });
+  }
+}
+
+/// 계획 홈 장면 mock(FE5-c2): 학생 장면 + 시나리오 목록 장면의 활성 계획
+/// ([GoldenScenarioListMockAppService.listActivePlanDocument])을 저장한다. 문서 계산 대역(시나리오 목록 장면과 같다)에
+/// 홈 페이즈별 탭이 쓰는 `phase_results`를 더한다(비교 대역과 같은 [_goldenPhaseResults]에, 백엔드처럼 그 페이즈 안에서
+/// 재화를 쓰는 단계 `affected_stage_ids`를 채운다). 계획 만들기 장면이 쓰는 [goldenCalculationBand] 자체는 바꾸지 않는다.
+class GoldenActivePlanHomeMockAppService
+    extends GoldenScenarioListMockAppService {
+  GoldenActivePlanHomeMockAppService() : super();
+
+  /// 학생 장면을 저장하고 활성 계획을 이 장면의 문서로 바꾼다.
+  Future<void> seedActivePlanHomeScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    await seedStudentScene();
+    await saveRepositoryPlan(
+      profileId: profile.id,
+      document: GoldenScenarioListMockAppService.listActivePlanDocument(),
+      expectedRevision: (await loadRepositoryState(profile.id)).revision,
+      idempotencyKey: 'golden-plan-home-active-plan',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async {
+    final base = goldenCalculationBand(
+      currentStudents: currentStudents,
+      document: document,
+    );
+    final usedBy = <String, Map<String, List<String>>>{};
+    for (final raw in base['stage_results'] as List<dynamic>) {
+      final result = raw as Map;
+      final phaseId = result['phase_id'] as String;
+      for (final resource in result['resources'] as List<dynamic>) {
+        usedBy
+            .putIfAbsent(phaseId, () => {})
+            .putIfAbsent((resource as Map)['resource_key'] as String, () => [])
+            .add(result['stage_id'] as String);
+      }
+    }
+    return {
+      ...base,
+      'phase_results': [
+        for (final phase in _goldenPhaseResults(
+          base,
+          PlanningDocument.fromWire(document),
+        ))
+          {
+            ...phase,
+            'resources': [
+              for (final raw in phase['resources'] as List<dynamic>)
+                {
+                  ...(raw as Map<String, dynamic>),
+                  'affected_stage_ids':
+                      usedBy[phase['phase_id']]?[raw['resource_key']] ??
+                      const <String>[],
+                },
+            ],
+          },
+      ],
+    };
+  }
+}
+
+/// 성장 계산기 장면 전용 mock(FE3-f2a·f2b). 학생 장면 fixture에 계산 결과(크레딧·9범주 내역·성장 재화 행)를
+/// 더한다.
+///
+/// FE3-f2b부터 계산기는 단일 학생 계산(`planning.student.calculate`)을 부른다. golden 대역은 그 응답 모양
+/// (`StudentCalculationResult.fromWire` 검증 통과)의 고정 결과를 돌려준다. 숫자는 Calc-Student 예시를 따른다.
+/// 행 15개(접힘 6 + "9종 더"), 보유를 아는 행(부족·충분)과 모르는 행(스캔 없음)이 함께 있다.
+///
+/// FE3-g: 계산기는 인연(`bond`)을 함께 보낸다(`calculateStudentWithBond`). 인연은 [MockAppService]의 공유
+/// fixture 응답 그대로이고(장면은 "아루 1→3, present 스캔 없음" 입력), 성장 부분은 이 대역의
+/// [calculateStudent]가 준다(기본 mock이 그것을 부른다).
+class GoldenCalculatorMockAppService extends GoldenStudentMockAppService {
+  GoldenCalculatorMockAppService() : super();
+
+  static const credits = 18420000;
+
+  static Map<String, dynamic> resource(
+    String key,
+    String name,
+    String category,
+    int required, {
+    int? owned,
+  }) => {
+    'resource_key': key,
+    'item_id': key,
+    'display_name': name,
+    'category': category,
+    'required': required,
+    'owned': owned,
+    'shortage': owned == null ? null : (required - owned).clamp(0, required),
+    'affected_stage_ids': const ['growth-calculator-stage'],
+  };
+
+  static final resources = <Map<String, dynamic>>[
+    resource('Item_Icon_Material_Antikythera_3', '오파츠 · 안티키테라', 'oopart', 48, owned: 31),
+    resource('Equipment_Icon_Watch_Tier10_Piece', '설계도 · 시계 T10', 'equipment', 90, owned: 76),
+    resource('Item_Icon_Material_ExSkill_Gehenna_3', '전술 교육 BD · 게헨나 (최상급)', 'tactical_bd', 22, owned: 18),
+    resource('Item_Icon_ExpItem_3', '활동 보고서 (최상급)', 'activity_report', 64, owned: 120),
+    resource('Item_Icon_SkillBook_Gehenna_3', '기술 노트 · 게헨나 (최상급)', 'tech_notes', 96, owned: 96),
+    resource('Item_Icon_SecretStone_aru', '아루의 엘레프', 'student_eleph', 170),
+    // 아래 9행: "… 등 n종 더"를 보이려고 넣는 오파츠(모두 assets/item_icons/ooparts에 있는 id). 부족이 없고
+    // 필요량이 작아 기본 정렬(부족 큰 순)에서 위 행들 뒤로 간다.
+    resource('Item_Icon_Material_Nebra_0', '오파츠 · 네브라 디스크 (하급)', 'oopart', 5, owned: 8),
+    resource('Item_Icon_Material_Nebra_1', '오파츠 · 네브라 디스크 (일반)', 'oopart', 10, owned: 13),
+    resource('Item_Icon_Material_Nebra_2', '오파츠 · 네브라 디스크 (상급)', 'oopart', 15, owned: 18),
+    resource('Item_Icon_Material_Nebra_3', '오파츠 · 네브라 디스크 (최상급)', 'oopart', 20, owned: 23),
+    resource('Item_Icon_Material_Phaistos_0', '오파츠 · 파이스토스 원반 (하급)', 'oopart', 25, owned: 28),
+    resource('Item_Icon_Material_Phaistos_1', '오파츠 · 파이스토스 원반 (일반)', 'oopart', 30, owned: 33),
+    resource('Item_Icon_Material_Phaistos_2', '오파츠 · 파이스토스 원반 (상급)', 'oopart', 35, owned: 38),
+    resource('Item_Icon_Material_Phaistos_3', '오파츠 · 파이스토스 원반 (최상급)', 'oopart', 40, owned: 43),
+    resource('Item_Icon_Material_Wolfsegg_0', '오파츠 · 볼프세크 철광석 (하급)', 'oopart', 45, owned: 48),
+  ];
+
+  /// 크레딧 9범주 내역(FB-11a `credit_breakdown`). 합이 [credits]다. 화면은 레벨 3.1M · 스킬 7.9M ·
+  /// 장비 4.6M · 성급 · 전무 2.8M · 애장품 · 능력 개방 20K 다섯 줄로 묶는다.
+  static const creditBreakdown = <String, int>{
+    'level': 3100000,
+    'student_star': 1500000,
+    'weapon_star': 800000,
+    'favorite_item': 0,
+    'equipment': 4600000,
+    'ex_skill': 2400000,
+    'weapon_level': 500000,
+    'skill': 5500000,
+    'potential': 20000,
+  };
+
+  /// FE3-f2b: 계산기는 단일 학생 계산(`planning.student.calculate`)을 부른다. 목표와 상관없이 같은 결과다.
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire({
+    'totals': {'credits': credits},
+    'credit_breakdown': creditBreakdown,
+    'resources': [
+      resource('credits', '크레딧', 'credits', credits),
+      ...resources,
+    ],
+    'warnings': const <String>[],
+  });
+}
+
+/// 계획 만들기 흐름 장면 전용 mock(FE4-a1). 초안 계산(`planning.document.calculate`)과 비교는 공용 golden 대역
+/// [goldenCalculationBand] · [goldenComparisonBand]다. FE5-b부터 문서 의존이다(FE4까지는 문서와 상관없이 "48.2M · 5종"
+/// 고정이라 4단계 비교 a · b가 같았다). 재화 id는 모두 실제 asset 파일이 있는 id(계산기 golden 대역과 같은 id)다.
+///
+/// FE4-b1: 1단계 새 학생 고르기 장면이 실제 카드·배지를 보이도록 학생 장면 fixture(학생 10명, 보유 7명,
+/// PLAN 3명)를 그대로 쓴다. 장면을 열기 전에 [seedStudentScene]을 부른다.
+///
+/// FE4-c: 2단계 카드 COST가 보이도록 단계마다 `stage_results`(크레딧 + 오파츠 2종, 들어설 때 보유량)를 돌려준다.
+/// 그 학생의 단계 번호(문서 안에서 그 학생의 몇 번째 단계인지) 1 = 부족 1종, 2 = 부족 2종, 3 이후 = 지금 가능. 현재
+/// 상태가 없는(미보유) 학생 단계는 백엔드처럼 비용 0 + 경고다.
+/// FE4-d1: 3단계 상태 배지(FD-035)가 보이도록 `bottlenecks`(재화마다 문서 순서상 처음 모자라는 단계)와 전체 재화 행의
+/// `affected_stage_ids`(그 재화를 쓰는 단계, 문서 순서)를 돌려준다. 학생 한 명만 고른 2단계 장면은 단계 번호 = 문서
+/// 순번이라 FE4-c 값과 같다.
+class GoldenPlanFlowMockAppService extends GoldenStudentMockAppService {
+  GoldenPlanFlowMockAppService() : super();
+
+  /// 저장된 단계 프리셋 하나(단계 이름 3개, 19키 nullable 목표)와 학생 그룹 하나(목록에 없는 학생 ID 포함)를
+  /// 선택 계정에 저장한다(FE4-i `plan-flow-step2-saved` 장면).
+  Future<void> seedPresetScene() async {
+    final profile = (await listProfiles()).firstWhere((item) => item.selected);
+    final current = await loadRepositoryPresets(profile.id);
+    RepositoryPresetStage stage(String name, Map<String, int> targets) =>
+        RepositoryPresetStage(
+          name: name,
+          targets: {
+            for (final key in planningDocumentTargetKeys) key: targets[key],
+          },
+        );
+    await saveRepositoryPresets(
+      RepositoryPresetsSaveRequest(
+        profileId: profile.id,
+        expectedRevision: current.revision,
+        idempotencyKey: 'golden-preset-scene',
+        stagePresets: [
+          RepositoryStagePreset(
+            presetId: 'golden-raid',
+            name: '총력전 3단계 · 내 프리셋',
+            stages: [
+              stage('성장 기반', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+              }),
+              stage('스킬·인연', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+                'ex_skill': 5,
+                'skill1': 10,
+                'skill2': 10,
+                'bond_rank': 20,
+              }),
+              stage('성급·전용무기', {
+                'level': 90,
+                'equip1_tier': 9,
+                'equip2_tier': 9,
+                'equip3_tier': 9,
+                'ex_skill': 5,
+                'skill1': 10,
+                'skill2': 10,
+                'bond_rank': 20,
+                'student_star': 5,
+                'weapon_level': 30,
+              }),
+            ],
+          ),
+        ],
+        studentGroups: [
+          RepositoryStudentGroup(
+            groupId: 'golden-group',
+            name: '총력전 · 신비 딜러',
+            studentIds: const ['hoshino', 'aru', 'future_student_kr'],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 문서 계산(`planning.document.calculate` 대역). [goldenCalculationBand]를 쓴다.
+  @override
+  Future<Map<String, dynamic>> calculatePlanningDocument({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required Map<String, dynamic> document,
+  }) async => goldenCalculationBand(
+    currentStudents: currentStudents,
+    document: document,
+  );
+
+  /// 4단계 저장 비교(FE4-e, `planning.scenario.compare` 대역). [goldenComparisonBand]를 쓴다.
+  @override
+  Future<PlanningScenarioComparisonResult> compareScenarios({
+    required List<Map<String, dynamic>> currentStudents,
+    required Map<String, dynamic> inventory,
+    required PlanningDocument documentA,
+    required PlanningDocument documentB,
+  }) async => goldenComparisonBand(
+    currentStudents: currentStudents,
+    documentA: documentA,
+    documentB: documentB,
+  );
+}
+
+/// golden 계산 대역의 재고(문서와 상관없이 고정, FE5-b).
+///
+/// 단계 결과(`stage_results`)의 진입 보유량은 FE4 장면 그대로 단계 순번마다 고정이다. 문서 전체(`overall`)만
+/// 필요량을 단계마다 더해 이 재고와 견준다. 그래서 같은 문서면 같은 값, 단계가 늘면 필요 크레딧 · 부족 재화가 는다.
+const goldenBandInventory = <String, int>{
+  'credits': 500000000,
+  'Item_Icon_Material_Nebra_3': 76,
+  'Item_Icon_Material_Phaistos_3': 66,
+  'Item_Icon_Material_Nebra_2': 52,
+  'Item_Icon_Material_Wolfsegg_0': 30,
+  'Item_Icon_SkillBook_Gehenna_3': 60,
+  'Equipment_Icon_Watch_Tier10_Piece': 20,
+  'Item_Icon_Material_ExSkill_Gehenna_3': 12,
+  'Item_Icon_SecretStone_aru': 50,
+};
+
+/// golden 문서 계산 대역(`planning.document.calculate` 응답 모양, FE5-b부터 문서 의존).
+///
+/// - 보유 학생의 단계마다 그 학생 몇 번째 단계인지(n)로 비용을 정한다(FE4 장면과 같다): 크레딧 18.2M · 9.6M · 1.8M,
+///   오파츠 n=1 네브라(최상급) 90 · n=2 파이스토스(최상급) 96 · n≥3 네브라(상급) 40, 볼프세크(하급) 18. 진입 보유량과
+///   단계 부족은 FE4 그대로(n=1 네브라 −14, n=2 파이스토스 −30 · 볼프세크 −8)라 단계 배지 · 병목은 바뀌지 않는다.
+/// - FE5-b에서 분야를 늘렸다(단계에서는 모자라지 않음): 기술 노트(게헨나 최상급) 24 · 40 · 16, 시계 T10 설계도
+///   n=2 12 · n≥3 8, 전술 교육 BD(게헨나 최상급) n≥2 10, 아루 엘레프(아루 단계마다 120).
+/// - 미보유 학생 단계는 비용 0 + 경고(FE4 그대로).
+/// - `overall`은 단계 필요량의 합과 [goldenBandInventory]로 정한다(문서 의존). 크레딧 = 단계 크레딧 합.
+Map<String, dynamic> goldenCalculationBand({
+  required List<Map<String, dynamic>> currentStudents,
+  required Map<String, dynamic> document,
+}) {
+  final phases = [
+    for (final phase in document['phases'] as List<dynamic>)
+      Map<String, dynamic>.from(phase as Map),
+  ];
+  final owned = {
+    for (final student in currentStudents) student['student_id'] as String,
+  };
+  final stages = [
+    for (final phase in phases)
+      for (final stage in phase['stages'] as List<dynamic>)
+        (
+          phaseId: phase['phase_id'] as String,
+          stage: Map<String, dynamic>.from(stage as Map),
+        ),
+  ];
+  Map<String, dynamic> stageResource(
+    String key,
+    String name,
+    String category,
+    int required, {
+    int? ownedAtEntry,
+  }) {
+    final atEntry = ownedAtEntry ?? required;
+    return {
+      'resource_key': key,
+      'item_id': key,
+      'display_name': name,
+      'category': category,
+      'required': required,
+      'owned_at_entry': atEntry,
+      'shortage_at_entry': (required - atEntry).clamp(0, required),
+    };
+  }
+
+  const stageCredits = [18200000, 9600000, 1800000];
+  // 학생마다 문서 안에서 몇 번째 단계인지(1부터).
+  final seen = <String, int>{};
+  final steps = [
+    for (final entry in stages)
+      seen.update(
+        entry.stage['student_id'] as String,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      ),
+  ];
+  final stageResults = <Map<String, dynamic>>[];
+  for (final (index, entry) in stages.indexed) {
+    final studentId = entry.stage['student_id'] as String;
+    final step = steps[index];
+    final credits = stageCredits[(step - 1) % stageCredits.length];
+    stageResults.add({
+      'stage_id': entry.stage['stage_id'],
+      'phase_id': entry.phaseId,
+      'student_id': studentId,
+      'name': entry.stage['name'],
+      if (!owned.contains(studentId)) ...{
+        'cost': {
+          'credits': 0,
+          'warnings': ['Current student state is missing.'],
+        },
+        'resources': const <dynamic>[],
+      } else ...{
+        'cost': {'credits': credits},
+        'resources': [
+          {
+            'resource_key': 'credits',
+            'item_id': null,
+            'display_name': '크레딧',
+            'category': 'credits',
+            'required': credits,
+            'owned_at_entry': 99000000,
+            'shortage_at_entry': 0,
+          },
+          switch (step) {
+            1 => stageResource(
+              'Item_Icon_Material_Nebra_3',
+              '오파츠 · 네브라 디스크 (최상급)',
+              'oopart',
+              90,
+              ownedAtEntry: 76,
+            ),
+            2 => stageResource(
+              'Item_Icon_Material_Phaistos_3',
+              '오파츠 · 파이스토스 원반 (최상급)',
+              'oopart',
+              96,
+              ownedAtEntry: 66,
+            ),
+            _ => stageResource(
+              'Item_Icon_Material_Nebra_2',
+              '오파츠 · 네브라 디스크 (상급)',
+              'oopart',
+              40,
+              ownedAtEntry: 52,
+            ),
+          },
+          stageResource(
+            'Item_Icon_Material_Wolfsegg_0',
+            '오파츠 · 볼프세크 철광석 (하급)',
+            'oopart',
+            18,
+            ownedAtEntry: step == 2 ? 10 : 30,
+          ),
+          stageResource(
+            'Item_Icon_SkillBook_Gehenna_3',
+            '기술 노트 · 게헨나 (최상급)',
+            'tech_notes',
+            switch (step) {
+              1 => 24,
+              2 => 40,
+              _ => 16,
+            },
+          ),
+          if (step >= 2)
+            stageResource(
+              'Equipment_Icon_Watch_Tier10_Piece',
+              '설계도 · 시계 T10',
+              'equipment',
+              step == 2 ? 12 : 8,
+            ),
+          if (step >= 2)
+            stageResource(
+              'Item_Icon_Material_ExSkill_Gehenna_3',
+              '전술 교육 BD · 게헨나 (최상급)',
+              'tactical_bd',
+              10,
+            ),
+          if (studentId == 'aru')
+            stageResource(
+              'Item_Icon_SecretStone_aru',
+              '아루의 엘레프',
+              'student_eleph',
+              120,
+            ),
+        ],
+      },
+    });
+  }
+  // 재화 키 → 그 재화를 쓰는 단계(문서 순서), 필요량 합, 대표 줄.
+  final usedBy = <String, List<String>>{};
+  final requiredSum = <String, int>{};
+  final representative = <String, Map<String, dynamic>>{};
+  final bottlenecks = <Map<String, dynamic>>[];
+  final phaseIds = [for (final phase in phases) phase['phase_id']];
+  for (final (index, result) in stageResults.indexed) {
+    final stageId = result['stage_id'] as String;
+    for (final raw in result['resources'] as List<dynamic>) {
+      final row = Map<String, dynamic>.from(raw as Map);
+      final key = row['resource_key'] as String;
+      usedBy.putIfAbsent(key, () => []).add(stageId);
+      requiredSum.update(
+        key,
+        (sum) => sum + (row['required'] as int),
+        ifAbsent: () => row['required'] as int,
+      );
+      representative.putIfAbsent(key, () => row);
+      final shortage = row['shortage_at_entry'] as int;
+      if (shortage <= 0 ||
+          bottlenecks.any((item) => item['resource_key'] == key)) {
+        continue;
+      }
+      bottlenecks.add({
+        'resource_key': key,
+        'item_id': row['item_id'],
+        'display_name': row['display_name'],
+        'category': row['category'],
+        'remaining_at_entry': row['owned_at_entry'],
+        'required_at_entry': row['required'],
+        'shortage': shortage,
+        'phase_id': result['phase_id'],
+        'phase_number': phaseIds.indexOf(result['phase_id']) + 1,
+        'stage_id': stageId,
+        'student_id': result['student_id'],
+        'student_step': steps[index],
+        'stage_name': result['name'],
+      });
+    }
+  }
+  // 백엔드(`planning_document.py`)처럼 병목마다 그 재화를 쓰는 모든 단계(문서 순서)를 붙인다(FE5-c1 지연 단계 · 단계
+  // 상태 FD-035).
+  for (final bottleneck in bottlenecks) {
+    bottleneck['affected_stage_ids'] = List<String>.unmodifiable(
+      usedBy[bottleneck['resource_key']] ?? const <String>[],
+    );
+  }
+  final totalCredits = requiredSum['credits'] ?? 0;
+  Map<String, dynamic> overallRow(String key) {
+    final row = representative[key];
+    final required = requiredSum[key] ?? 0;
+    final ownedAmount = goldenBandInventory[key];
+    return {
+      'resource_key': key,
+      'item_id': row?['item_id'],
+      'display_name': row?['display_name'] ?? '크레딧',
+      'category': row?['category'] ?? 'credits',
+      'required': required,
+      'owned': ownedAmount,
+      'shortage': ownedAmount == null
+          ? null
+          : (required > ownedAmount ? required - ownedAmount : 0),
+      'affected_stage_ids': usedBy[key] ?? const <String>[],
+    };
+  }
+
+  return {
+    'document_id': document['document_id'],
+    'kind': document['kind'],
+    'stage_results': stageResults,
+    'phase_results': const <dynamic>[],
+    'overall': {
+      'cost': {'credits': totalCredits},
+      'resources': [
+        overallRow('credits'),
+        for (final key in requiredSum.keys)
+          if (key != 'credits') overallRow(key),
+      ],
+    },
+    'bottlenecks': bottlenecks,
+    'warnings': const <dynamic>[],
+  };
+}
+
+/// golden 비교 대역(`planning.scenario.compare` 응답 모양).
+///
+/// 백엔드 `compare_document_projections`처럼 두 문서를 [goldenCalculationBand]로 계산하고 그 `overall`로 비교 줄을
+/// 만든다(FE4-i: 계산 대역과 같은 기준). 그래서 같은 초안이면 레일의 필요 크레딧 · 부족 재화 종 수와 비교 b쪽 값이
+/// 같다. 페이즈 팝오버용 `phase_results`만 단계 결과를 페이즈마다 모아 더한다(계산 대역은 빈 목록을 준다). 학생
+/// 목표 차이는 `MockAppService`와 같이 학생마다 마지막 단계 목표를 견준다(FE5-b).
+PlanningScenarioComparisonResult goldenComparisonBand({
+  required List<Map<String, dynamic>> currentStudents,
+  required PlanningDocument documentA,
+  required PlanningDocument documentB,
+}) {
+  if (documentA.id == documentB.id) throw StateError('invalid_payload');
+  Map<String, dynamic> project(PlanningDocument document) {
+    final base = goldenCalculationBand(
+      currentStudents: currentStudents,
+      document: document.toWire(),
+    );
+    return {...base, 'phase_results': _goldenPhaseResults(base, document)};
+  }
+
+  final projectionA = project(documentA);
+  final projectionB = project(documentB);
+  Map<String, Map<String, dynamic>> overall(Map<String, dynamic> projection) => {
+    for (final raw in (projection['overall'] as Map)['resources'] as List)
+      (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
+  };
+  int overallCredits(Map<String, dynamic> projection) =>
+      ((projection['overall'] as Map)['cost'] as Map)['credits'] as int? ?? 0;
+  final resourcesA = overall(projectionA);
+  final resourcesB = overall(projectionB);
+  final resources = <Map<String, dynamic>>[];
+  for (final key
+      in ({...resourcesA.keys, ...resourcesB.keys}.toList()..sort())) {
+    final left = resourcesA[key];
+    final right = resourcesB[key];
+    final representative = (left ?? right)!;
+    final requiredA = left?['required'] as int? ?? 0;
+    final requiredB = right?['required'] as int? ?? 0;
+    // 백엔드와 같이 a쪽 줄이 있으면 그 보유량(null 포함)을 쓴다.
+    final owned = (left != null ? left['owned'] : right!['owned']) as int?;
+    int? shortage(int required) =>
+        owned == null ? null : (required > owned ? required - owned : 0);
+    final shortageA = shortage(requiredA);
+    final shortageB = shortage(requiredB);
+    resources.add({
+      'resource_key': key,
+      'item_id': representative['item_id'],
+      'display_name': representative['display_name'],
+      'category': representative['category'],
+      'owned': owned,
+      'required_a': requiredA,
+      'required_b': requiredB,
+      'required_delta_b_minus_a': requiredB - requiredA,
+      'shortage_a': shortageA,
+      'shortage_b': shortageB,
+      'shortage_delta_b_minus_a': shortageA == null || shortageB == null
+          ? null
+          : shortageB - shortageA,
+    });
+  }
+  Map<String, Map<String, int?>> finalTargets(PlanningDocument document) => {
+    for (final stage in document.stages) stage.studentId: stage.nullableTargets,
+  };
+  final targetsA = finalTargets(documentA);
+  final targetsB = finalTargets(documentB);
+  // 백엔드 `compare_document_projections`처럼 재화마다 처음 모자라는 페이즈 · 단계 · 부족량을 나란히 둔다(FE5-c1 병목 카드
+  // 활성 대비 칩).
+  Map<String, Map<String, dynamic>> firstBottlenecks(
+    Map<String, dynamic> projection,
+  ) => {
+    for (final raw in projection['bottlenecks'] as List)
+      (raw as Map)['resource_key'] as String: Map<String, dynamic>.from(raw),
+  };
+  final bottlenecksA = firstBottlenecks(projectionA);
+  final bottlenecksB = firstBottlenecks(projectionB);
+  final bottleneckRows = [
+    for (final key
+        in ({...bottlenecksA.keys, ...bottlenecksB.keys}.toList()..sort()))
+      {
+        'resource_key': key,
+        'first_phase_a': bottlenecksA[key]?['phase_number'],
+        'first_phase_b': bottlenecksB[key]?['phase_number'],
+        'first_stage_a': bottlenecksA[key]?['stage_id'],
+        'first_stage_b': bottlenecksB[key]?['stage_id'],
+        'shortage_a': bottlenecksA[key]?['shortage'] ?? 0,
+        'shortage_b': bottlenecksB[key]?['shortage'] ?? 0,
+      },
+  ];
+  final creditsA = overallCredits(projectionA);
+  final creditsB = overallCredits(projectionB);
+  return PlanningScenarioComparisonResult(
+    projectionA: projectionA,
+    projectionB: projectionB,
+    comparison: {
+      'credits_a': creditsA,
+      'credits_b': creditsB,
+      'credits_delta_b_minus_a': creditsB - creditsA,
+      'resource_type_count_a': resourcesA.length,
+      'resource_type_count_b': resourcesB.length,
+      'known_shortage_type_count_a': resources
+          .where((row) => (row['shortage_a'] as int? ?? 0) > 0)
+          .length,
+      'known_shortage_type_count_b': resources
+          .where((row) => (row['shortage_b'] as int? ?? 0) > 0)
+          .length,
+      'students': [
+        for (final id
+            in ({...targetsA.keys, ...targetsB.keys}.toList()..sort()))
+          {
+            'student_id': id,
+            'presence': targetsA.containsKey(id) && targetsB.containsKey(id)
+                ? 'both'
+                : targetsA.containsKey(id)
+                ? 'a_only'
+                : 'b_only',
+            'target_differences': {
+              if (targetsA.containsKey(id) && targetsB.containsKey(id))
+                for (final key in planningDocumentTargetKeys)
+                  if (targetsA[id]![key] != targetsB[id]![key])
+                    key: {'a': targetsA[id]![key], 'b': targetsB[id]![key]},
+            },
+          },
+      ],
+      'resources': resources,
+      'bottlenecks': bottleneckRows,
+    },
+  );
+}
+
+/// [goldenCalculationBand] 응답의 계산 요약(`repository.scenario.list` · `plan.get`의 `calculation` 모양, FE5-b).
+/// 백엔드가 목록 요약 · 활성 계획 요약 · 비교를 같은 계산 경로로 만들므로 golden도 같은 대역에서 만든다.
+Map<String, dynamic> goldenBandSummary(Map<String, dynamic> projection) {
+  final rows = [
+    for (final raw in (projection['overall'] as Map)['resources'] as List)
+      Map<String, dynamic>.from(raw as Map),
+  ];
+  final shortages = [
+    for (final row in rows)
+      if (row['shortage'] case final int shortage when shortage > 0) row,
+  ]..sort((a, b) => (b['shortage'] as int).compareTo(a['shortage'] as int));
+  final phases = [
+    for (final raw in projection['bottlenecks'] as List)
+      (raw as Map)['phase_number'] as int,
+  ];
+  final top = shortages.firstOrNull;
+  return {
+    'credits': ((projection['overall'] as Map)['cost'] as Map)['credits'] as int,
+    'required_resource_type_count': rows
+        .where((row) => (row['required'] as int) > 0)
+        .length,
+    'known_shortage_type_count': shortages.length,
+    'inventory_complete': true,
+    'first_bottleneck_phase_number': phases.isEmpty
+        ? null
+        : phases.reduce((a, b) => a < b ? a : b),
+    'representative_shortage': top == null
+        ? null
+        : {
+            'resource_key': top['resource_key'],
+            'item_id': top['item_id'],
+            'display_name': top['display_name'],
+            'category': top['category'],
+            'shortage': top['shortage'],
+          },
+  };
+}
+
+/// 문서 페이즈마다 단계 재화를 모은 `phase_results`(필요량 합, 보유 = 그 페이즈 첫 단계에 들어설 때 남은 양).
+List<Map<String, dynamic>> _goldenPhaseResults(
+  Map<String, dynamic> projection,
+  PlanningDocument document,
+) {
+  final byStage = {
+    for (final raw in projection['stage_results'] as List<dynamic>)
+      (raw as Map)['stage_id'] as String: raw,
+  };
+  final results = <Map<String, dynamic>>[];
+  for (final phase in document.phases) {
+    final rows = <String, Map<String, dynamic>>{};
+    for (final stage in phase.stages) {
+      final result = byStage[stage.id];
+      if (result == null) continue;
+      for (final raw in result['resources'] as List<dynamic>) {
+        final row = raw as Map;
+        final key = row['resource_key'] as String;
+        final existing = rows[key];
+        if (existing == null) {
+          rows[key] = {
+            'resource_key': key,
+            'item_id': row['item_id'],
+            'display_name': row['display_name'],
+            'category': row['category'],
+            'required': row['required'] as int,
+            'owned': row['owned_at_entry'] as int?,
+          };
+        } else {
+          existing['required'] =
+              (existing['required'] as int) + (row['required'] as int);
+        }
+      }
+    }
+    results.add({
+      'phase_id': phase.id,
+      'name': phase.name,
+      'stage_ids': [for (final stage in phase.stages) stage.id],
+      'cost': const <String, dynamic>{},
+      'resources': [
+        for (final row in rows.values)
+          {
+            ...row,
+            'shortage': switch ((row['required'] as int, row['owned'] as int?)) {
+              (final required, final owned?) =>
+                required > owned ? required - owned : 0,
+              (_, null) => null,
+            },
+            'affected_stage_ids': const <String>[],
+          },
+      ],
+    });
+  }
+  return results;
+}
+
+/// 요소 빌더·프리셋 관리 장면이 쓰는 프리셋(`planning_page_test`와 같은 값).
+PlanElementPreset goldenTestPreset() => PlanElementPreset(
+  id: 'balanced-growth',
+  name: '테스트 프리셋',
+  isDefault: false,
+  stages: const [
+    {'level': 30},
+  ],
+);
+
+/// 2단계 장면이 쓰는 3단계 프리셋(FE4-c, 시안 "총력전 3단계"와 같은 구성).
+PlanElementPreset goldenFlowStagePreset() => PlanElementPreset(
+  id: 'raid-three-stage',
+  name: '총력전 3단계',
+  isDefault: false,
+  stages: const [
+    {'level': 90, 'equip1_tier': 9, 'equip2_tier': 9, 'equip3_tier': 9},
+    {'ex_skill': 5, 'skill1': 10, 'skill2': 10, 'bond_rank': 20},
+    {'student_star': 5, 'weapon_level': 30},
+  ],
+);
+
+/// 3단계 장면이 쓰는 2단계 프리셋(FE4-d1, 시안 Flow-3-Order의 `모집 · Lv.80` · `EX5 · 기본/강화 M`).
+PlanElementPreset goldenFlowTwoStagePreset() => PlanElementPreset(
+  id: 'two-stage',
+  name: '육성 2단계',
+  isDefault: false,
+  stages: const [
+    {'level': 80},
+    {'ex_skill': 5, 'skill1': 10, 'skill2': 10, 'skill3': 7},
+  ],
+);
+
+/// 3단계 작게 보기 장면이 쓰는 3단계 프리셋(FE4-d2). 장면의 열 명(보유 · 미보유 모두)이 세 단계 모두 무언가를
+/// 올리도록 레벨 → EX·스킬 → 장비 T10으로 나눴다(올린 것이 없는 단계는 버려지므로).
+PlanElementPreset goldenFlowManyPreset() => PlanElementPreset(
+  id: 'many-three',
+  name: '셋으로 나누기',
+  isDefault: false,
+  stages: const [
+    {'level': 90},
+    {'ex_skill': 5, 'skill1': 10, 'skill2': 10, 'skill3': 10},
+    {'equip1_tier': 10, 'equip2_tier': 10, 'equip3_tier': 10},
+  ],
+);
+
+/// 시나리오 장면에 쓰는 문서(`planning_page_test`의 비교 문서와 같은 구조).
+PlanningDocument goldenScenarioDocument(
+  String id,
+  PlanningDocumentKind kind, {
+  int level = 1,
+}) {
+  final targets = {
+    for (final entry in planningDocumentTargetMaximums.entries)
+      entry.key: entry.key == 'bond_rank' ? 1 : 0,
+    'level': level,
+    'student_star': 1,
+    'ex_skill': 1,
+    'skill1': 1,
+  };
+  return PlanningDocument(
+    id: id,
+    name: id,
+    kind: kind,
+    phases: [
+      PlanningDocumentPhase(
+        id: '$id-phase',
+        name: '페이즈 1',
+        stages: [
+          PlanningDocumentStage(
+            id: '$id-stage',
+            studentId: 'ayane',
+            name: '목표',
+            targets: targets,
+          ),
+        ],
+      ),
+    ],
+  );
+}

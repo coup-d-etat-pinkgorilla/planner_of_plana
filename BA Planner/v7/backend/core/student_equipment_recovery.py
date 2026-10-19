@@ -2,7 +2,7 @@
 from PIL import Image, ImageStat
 
 from core.student_scan_recognizer import Observation, ratio_crop
-from core.student_weapon_recognizer import _normalized_correlation, _color_similarity
+from core.recognition_image_ops import color_similarity, ncc_signed_lanczos
 from core.student_panel_recovery import read_panel_fields
 from core import recognition_thresholds as rt
 
@@ -22,8 +22,8 @@ class EquipmentControlRecognizer:
                     self.templates[asset.identity] = image.convert('RGB')
         with crop.convert('L') as gray:
             signal = ImageStat.Stat(gray).stddev[0] >= 8
-        scores = sorted(((value, shape_weight*_normalized_correlation(crop, self.templates[label])
-            + (1-shape_weight)*_color_similarity(crop, self.templates[label]))
+        scores = sorted(((value, shape_weight*ncc_signed_lanczos(crop, self.templates[label])
+            + (1-shape_weight)*color_similarity(crop, self.templates[label]))
             for label, value in labels.items() if label in self.templates), key=lambda pair: pair[1], reverse=True)
         if len(scores) != 2:
             return Observation(None, 0, 'uncertain', source, 'templates missing')

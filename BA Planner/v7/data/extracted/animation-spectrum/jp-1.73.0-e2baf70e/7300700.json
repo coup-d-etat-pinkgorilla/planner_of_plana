@@ -1,0 +1,429 @@
+{
+ "characterId": 7300700,
+ "kind": "boss",
+ "devName": "Binah_default_Torment",
+ "names": {
+  "ko": "비나",
+  "ja": "ビナー"
+ },
+ "clientVersionId": "jp-1.73.0-e2baf70e",
+ "sourceHashes": {
+  "excelDb": "a5cfbbb9c7f00ccdd82a59e100febb7ed5eb107bc8ac93c6ed0dede14418416a",
+  "excelZip": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+  "bundles": [
+   {
+    "path": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+    "sha256": "b1ab8d7bce6221bd056c07893b7b97d376ceb4fb335baa764e1d4dccb3062593"
+   }
+  ]
+ },
+ "clips": [
+  {
+   "name": "Binah_Original_Exs_01",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 13.333333969116211,
+   "lengthLogicFrames": 400,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Exs_02",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 6.6666669845581055,
+   "lengthLogicFrames": 200,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Exs_03_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.6666669845581055,
+   "lengthLogicFrames": 140,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Exs_03_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.16666698455810547,
+   "lengthLogicFrames": 5,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Exs_03_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 5.333334445953369,
+   "lengthLogicFrames": 160,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Idle",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.0,
+   "lengthLogicFrames": 120,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Intro02",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.433333396911621,
+   "lengthLogicFrames": 133,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Intro_V2",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 9.166666984558105,
+   "lengthLogicFrames": 275,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Move_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.6666669845581055,
+   "lengthLogicFrames": 140,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 5,
+     "timeSeconds": 0.1666666716337204,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_End;PathID=656143755185217195]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 17,
+     "timeSeconds": 0.5666666626930237,
+     "layer": "anim_event",
+     "name": "InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_End;PathID=656143755185217195]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 25,
+     "timeSeconds": 0.8333333134651184,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_End;PathID=656143755185217195]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "Binah_Original_Move_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.16666793823242188,
+   "lengthLogicFrames": 5,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Move_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 5.333334445953369,
+   "lengthLogicFrames": 160,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 9,
+     "timeSeconds": 0.30000001192092896,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_Start;PathID=-7573455383870058653]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 50,
+     "timeSeconds": 1.6666666269302368,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_Start;PathID=-7573455383870058653]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 73,
+     "timeSeconds": 2.433333396911621,
+     "layer": "anim_event",
+     "name": "InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Move_Start;PathID=-7573455383870058653]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "Binah_Original_Normal_Attack",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 4.6666669845581055,
+   "lengthLogicFrames": 140,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 5,
+     "timeSeconds": 0.1666666716337204,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Normal_Attack;PathID=6613088364977800608]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 50,
+     "timeSeconds": 1.6666666269302368,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Normal_Attack;PathID=6613088364977800608]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "Binah_Original_Normal_Attack_End",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.8666670322418213,
+   "lengthLogicFrames": 56,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Normal_Attack_Ing",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.2666666507720947,
+   "lengthLogicFrames": 38,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Normal_Attack_Start",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 1.533333420753479,
+   "lengthLogicFrames": 46,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Ring_Loop",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 15.0,
+   "lengthLogicFrames": 450,
+   "logicDurationFrames": null,
+   "events": []
+  },
+  {
+   "name": "Binah_Original_Vital_Death",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 5.333334445953369,
+   "lengthLogicFrames": 160,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 5,
+     "timeSeconds": 0.1666666716337204,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Death;PathID=-7916207820709525750]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 15,
+     "timeSeconds": 0.5,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Death;PathID=-7916207820709525750]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 75,
+     "timeSeconds": 2.5,
+     "layer": "anim_event",
+     "name": "InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Death;PathID=-7916207820709525750]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "Binah_Original_Vital_Groggy",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 11.333333969116211,
+   "lengthLogicFrames": 340,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 0,
+     "timeSeconds": 0.0,
+     "layer": "anim_event",
+     "name": "InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 13,
+     "timeSeconds": 0.4333333373069763,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 265,
+     "timeSeconds": 8.833333015441895,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy;PathID=-5953471448818496541]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "Binah_Original_Vital_Groggy_Death",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 2.6666674613952637,
+   "lengthLogicFrames": 80,
+   "logicDurationFrames": null,
+   "events": [
+    {
+     "frame": 5,
+     "timeSeconds": 0.1666666716337204,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy_Death;PathID=-8757351396063252196]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 15,
+     "timeSeconds": 0.5,
+     "layer": "anim_event",
+     "name": "PlayAudio",
+     "kind": "sfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy_Death;PathID=-8757351396063252196]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    },
+    {
+     "frame": 46,
+     "timeSeconds": 1.5333333015441895,
+     "layer": "anim_event",
+     "name": "InstantiateFx",
+     "kind": "vfx",
+     "evidence": {
+      "kind": "observation",
+      "clipPath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle#AnimationClip[name=Binah_Original_Vital_Groggy_Death;PathID=-8757351396063252196]"
+     },
+     "estimated": true,
+     "note": "callback metadata; category inferred from callback name; effect/hit application unknown"
+    }
+   ]
+  },
+  {
+   "name": "FX_Binah_Original_Ex1_Skillrange",
+   "bundlePath": "BlueArchive_Data/StreamingAssets/AssetBundles/assets-_mx-npcs-binah_original-_mxdependency-animationclips-2025-07-02_assets_all_57421249.bundle",
+   "sourceFps": 30.0,
+   "lengthSeconds": 0.6666666865348816,
+   "lengthLogicFrames": 20,
+   "logicDurationFrames": null,
+   "events": []
+  }
+ ]
+}

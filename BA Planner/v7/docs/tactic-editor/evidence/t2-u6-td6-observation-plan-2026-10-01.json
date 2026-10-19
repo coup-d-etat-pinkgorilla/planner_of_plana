@@ -1,0 +1,426 @@
+{
+  "schema": "ba-planner-tactic-observation-plan/1",
+  "id": "t2-u6-td6",
+  "created": "2026-10-01",
+  "decision": "TD6",
+  "status": "two_cast_interruption_observations_registered_observed_scope_only",
+  "phase": "T3",
+  "boss": "Binah",
+  "minimumQualifyingCases": 2,
+  "observedCases": [
+    {
+      "caseId": "C-P1",
+      "context": {
+        "client": "KR",
+        "build": "kr-2026-07-01-season83 (video; exact revision unknown)",
+        "difficulty": "Lunatic",
+        "phase": 1,
+        "skillId": "BinahLunaticExSkill01 (slot0, by laser/area appearance; JP 1.73.0 table)",
+        "skillSlot": 0,
+        "autoCheckType": "BossExternalBT UseNormalSkill (counting reading undetermined)"
+      },
+      "recording": {
+        "reference": "YouTube aqMPW5EmXrE",
+        "sha256": null,
+        "captureFps": 30,
+        "timingUncertaintySeconds": 0.033
+      },
+      "timingSeconds": {
+        "castStart": null,
+        "groggyEnter": 10.033,
+        "castAnimationStop": null,
+        "lastObservedCastHit": 9.9,
+        "expectedNormalCastEnd": null,
+        "groggyExit": 20.1,
+        "nextSameAutomaticSkillStart": null
+      },
+      "baselineSameSkillStartSeconds": [],
+      "observedOutcomes": {
+        "castInterruption": "area_damage_stopped (not engine cast-interruption proof)",
+        "returnPolicy": null
+      },
+      "qualifying": false,
+      "confounders": [
+        "Lunatic-specific data effect: BinahLunaticPassive02 (LocalizeSkill 708138417 '감춰진 자의 시야'; trigger GetCurrentBehavior()==Groggy -> RemoveAreaEntityEffectDAO BinahLunaticExSkill01Entity01, JP 1.73.0). Area damage stop is explained by data; excluded from general cast-interruption qualifying.",
+        "KR video2026-07 differs from JP1.73.0 saved extraction and Steam code hash.",
+        "Area appearance and last damage are not exact cast-start/animation-stop.",
+        "Uploader stats unavailable for T1; recording hash unknown."
+      ],
+      "notes": "Registered 2026-10-07 (S1) with qualifying=false. Laser2 action (400 f) would have ended at area+5.8 s, before groggy at area+10.033 s; the stopped ticks belong to the 3600 f area entity. P2 'normal2+groggy+normal1+laser' kept as display order only; no counter preservation inferred.",
+      "relativeTimeOrigin": "laser2 area first displayed at remaining02:15.366, not battle or cast start",
+      "scope": {
+        "kind": "observed",
+        "boss": "Binah",
+        "difficulty": "Lunatic",
+        "build": "kr-2026-07-01-season83"
+      },
+      "observedEvents": [
+        {
+          "event": "missile_first_damage",
+          "remaining_timer": "02:44.766",
+          "relative_seconds_from_laser2_display": -29.4,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "laser1_area_visible",
+          "remaining_timer": "02:35.833",
+          "relative_seconds_from_laser2_display": -20.467,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "laser2_area_visible",
+          "remaining_timer": "02:15.366",
+          "relative_seconds_from_laser2_display": 0.0,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "laser2_damage_tick1",
+          "remaining_timer": "02:07.933",
+          "relative_seconds_from_laser2_display": 7.433,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "laser2_damage_tick2_approx",
+          "remaining_timer": "02:07.366",
+          "relative_seconds_from_laser2_display": 8.0,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": true
+        },
+        {
+          "event": "laser2_last_observed_damage",
+          "remaining_timer": "02:05.466",
+          "relative_seconds_from_laser2_display": 9.9,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "HP_before_damage",
+          "remaining_timer": "02:05.433",
+          "relative_seconds_from_laser2_display": 9.933,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "HP_after_damage",
+          "remaining_timer": "02:05.400",
+          "relative_seconds_from_laser2_display": 9.966,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "filling_damage_number",
+          "remaining_timer": "02:05.366",
+          "relative_seconds_from_laser2_display": 10.0,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "groggy_visible_enter",
+          "remaining_timer": "02:05.333",
+          "relative_seconds_from_laser2_display": 10.033,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "groggy_visible_exit",
+          "remaining_timer": "01:55.266",
+          "relative_seconds_from_laser2_display": 20.1,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        },
+        {
+          "event": "laser3_area_visible",
+          "remaining_timer": "01:47.400",
+          "relative_seconds_from_laser2_display": 27.966,
+          "logic_frame": null,
+          "cast_start_inferred": false,
+          "approximate": false
+        }
+      ],
+      "postGroggySequence": "normal_attack1 -> laser_area",
+      "qualifyingFor": {
+        "cast_interruption_observation": false,
+        "automatic_skill_return_observation": false
+      },
+      "secondsCheck": {
+        "laser1ToLaser2Area": {
+          "observed": 20.467,
+          "predicted": 22.667,
+          "explained": false
+        },
+        "groggyDuration": {
+          "observed": 10.067,
+          "predicted": 10.0,
+          "explained": true
+        },
+        "groggyExitToLaser3Area": {
+          "observed": 7.866,
+          "predicted": 12.2,
+          "explained": false
+        },
+        "source": "docs/tactic-editor/t3-binah-bt-rows-vs-observations-2026-10-07.md §3"
+      }
+    },
+    {
+      "caseId": "D-P1",
+      "context": {
+        "client": "JP",
+        "build": "jp-video-2024-07-05 (exact revision unknown; not jp-1.73.0)",
+        "difficulty": "Torment",
+        "phase": 1,
+        "skillId": "BinahInsaneExSkill02 (slot1) or BinahInsaneExSkill03 (slot2, ATG) — unresolved",
+        "skillSlot": null,
+        "autoCheckType": "BossExternalBT UseNormalSkill k=9 (slot1) or CheckActiveGaugeOver 100 (slot2) — unresolved"
+      },
+      "recording": {
+        "reference": "YouTube urnRui1oQsk",
+        "sha256": null,
+        "captureFps": 30,
+        "timingUncertaintySeconds": 0.033
+      },
+      "timingSeconds": {
+        "castStart": null,
+        "groggyEnter": 3.566,
+        "castAnimationStop": null,
+        "lastObservedCastHit": null,
+        "expectedNormalCastEnd": null,
+        "groggyExit": null,
+        "nextSameAutomaticSkillStart": null
+      },
+      "baselineSameSkillStartSeconds": [],
+      "observedOutcomes": {
+        "castInterruption": "interrupted_before_damage (107 f < slot1 first projectile spawn 123 f and slot2 first damage entity 151 f)",
+        "returnPolicy": null
+      },
+      "qualifying": true,
+      "confounders": [
+        "Motion change01:59.766 is not a precisely identified cast-start.",
+        "Skill/slot unresolved between BinahInsaneExSkill02 and BinahInsaneExSkill03.",
+        "VideoJP2024-07 versus savedJP1.73.0/2026; exact revision equivalence unproven.",
+        "Recording hash and exact animation-stop latency unavailable."
+      ],
+      "notes": "qualifying=true for TD6 Q1 (cast interruption) only, per orchestrator agreement 2026-10-04. Does not satisfy Q2 or prove engine scope (TD8: observed(Binah, Torment, jp-video-2024-07-05)). No <=0.1 s latency invented.",
+      "relativeTimeOrigin": "uncertain missile motion change at remaining01:59.766; actual castStart remains null",
+      "scope": {
+        "kind": "observed",
+        "boss": "Binah",
+        "difficulty": "Torment",
+        "build": "jp-video-2024-07-05"
+      },
+      "observedEvents": [
+        {
+          "event": "missile_motion_change_uncertain_cast_start",
+          "remaining_timer": "01:59.766",
+          "relative_seconds_from_motion_change": 0.0,
+          "logic_frame": null,
+          "cast_start_inferred": false
+        },
+        {
+          "event": "groggy_filling_damage",
+          "remaining_timer": "01:56.300",
+          "relative_seconds_from_motion_change": 3.466,
+          "logic_frame": null,
+          "cast_start_inferred": false
+        },
+        {
+          "event": "groggy_visible_enter",
+          "remaining_timer": "01:56.200",
+          "relative_seconds_from_motion_change": 3.566,
+          "logic_frame": null,
+          "cast_start_inferred": false
+        }
+      ],
+      "postGroggySequence": "normal_attack1 -> laser",
+      "interruptionLatencySeconds": null,
+      "qualifyingFor": {
+        "cast_interruption_observation": true,
+        "automatic_skill_return_observation": false
+      }
+    },
+    {
+      "caseId": "D-P2",
+      "context": {
+        "client": "JP",
+        "build": "jp-video-2024-07-05 (exact revision unknown; not jp-1.73.0)",
+        "difficulty": "Torment",
+        "phase": 2,
+        "skillId": null,
+        "skillSlot": null,
+        "autoCheckType": null
+      },
+      "recording": {
+        "reference": "YouTube urnRui1oQsk",
+        "sha256": null,
+        "captureFps": 30,
+        "timingUncertaintySeconds": 0.033
+      },
+      "timingSeconds": {
+        "castStart": null,
+        "groggyEnter": null,
+        "castAnimationStop": null,
+        "lastObservedCastHit": null,
+        "expectedNormalCastEnd": null,
+        "groggyExit": null,
+        "nextSameAutomaticSkillStart": null
+      },
+      "baselineSameSkillStartSeconds": [],
+      "observedOutcomes": {
+        "castInterruption": "interrupted_before_damage_observed; actual_cast_start_and_stop_unknown",
+        "returnPolicy": null
+      },
+      "qualifying": true,
+      "confounders": [
+        "Motion change00:50.033 is not a precisely identified cast-start.",
+        "Skill/slot unresolved between BinahExSkill02 and BinahExSkill03.",
+        "VideoJP2024-07 versus savedJP1.73.0/2026; exact revision equivalence unproven.",
+        "Recording hash and exact animation-stop latency unavailable."
+      ],
+      "notes": "W3 D5 (2026-10-08): user-supplied remaining-timer pair qualifies observed Torment P2 only; no hypothesis/engine promotion.",
+      "scope": {
+        "kind": "observed",
+        "boss": "Binah",
+        "difficulty": "Torment",
+        "build": "jp-video-2024-07-05"
+      },
+      "postGroggySequence": "normal_attack1 -> laser",
+      "qualifyingFor": {
+        "cast_interruption_observation": true,
+        "automatic_skill_return_observation": false
+      },
+      "relativeTimeOrigin": "uncertain missile motion change at remaining00:50.033; actual castStart remains null",
+      "observedEvents": [
+        {
+          "event": "missile_motion_change_uncertain_cast_start",
+          "remaining_timer": "00:50.033",
+          "relative_seconds_from_motion_change": 0.0,
+          "logic_frame": null,
+          "cast_start_inferred": false
+        },
+        {
+          "event": "groggy_gauge_filled_and_enter_reported",
+          "remaining_timer": "00:46.766",
+          "relative_seconds_from_motion_change": 3.267,
+          "logic_frame": null,
+          "cast_start_inferred": false
+        }
+      ],
+      "observedMotionToGroggy": {
+        "remainingTimerStart": "00:50.033",
+        "remainingTimerEnd": "00:46.766",
+        "seconds": 3.267,
+        "videoFrames": 98,
+        "captureFps": 30,
+        "timingUncertaintySeconds": 0.033,
+        "observedDamage": 0,
+        "logicFramesInferred": false
+      },
+      "referenceCastEvents": [
+        {
+          "skill": "BinahExSkill02",
+          "event": "projectile_spawn",
+          "relativeFrame": 123,
+          "relativeSeconds": 4.1
+        },
+        {
+          "skill": "BinahExSkill03",
+          "event": "projectile_spawn",
+          "relativeFrame": 102,
+          "relativeSeconds": 3.4
+        },
+        {
+          "skill": "BinahExSkill03",
+          "event": "damage_entity_hit",
+          "relativeFrame": 151,
+          "relativeSeconds": 5.03
+        }
+      ],
+      "interpretation": "98 video frames precede both reference projectile-spawn frames; consistent with interrupted cast, observed-only and not a precisely identified cast-start or universal engine rule.",
+      "interruptionLatencySeconds": null
+    }
+  ],
+  "requiredContext": [
+    "client/server and build/version",
+    "boss difficulty/phase",
+    "automatic skill id/slot/check type",
+    "recording path or reference plus SHA256",
+    "capture FPS and timestamp/frame uncertainty",
+    "comparable same-skill cadence without groggy",
+    "other CC, phase changes, movement or conditional skill gates"
+  ],
+  "caseTemplate": {
+    "caseId": null,
+    "context": {
+      "client": null,
+      "build": null,
+      "difficulty": null,
+      "phase": null,
+      "skillId": null,
+      "skillSlot": null,
+      "autoCheckType": null
+    },
+    "recording": {
+      "reference": null,
+      "sha256": null,
+      "captureFps": null,
+      "timingUncertaintySeconds": null
+    },
+    "timingSeconds": {
+      "castStart": null,
+      "groggyEnter": null,
+      "castAnimationStop": null,
+      "lastObservedCastHit": null,
+      "expectedNormalCastEnd": null,
+      "groggyExit": null,
+      "nextSameAutomaticSkillStart": null
+    },
+    "baselineSameSkillStartSeconds": [],
+    "observedOutcomes": {
+      "castInterruption": null,
+      "returnPolicy": null
+    },
+    "qualifying": false,
+    "confounders": [],
+    "notes": null
+  },
+  "analysis": [
+    "Identify an actual ongoing cast at groggy entry; record animation/hit evidence and uncertainty for immediate interruption versus completion/defer.",
+    "Measure groggy-exit-to-next-start and compare same-skill cadence/known conditions for preservation versus reset. Do not infer counter internals from animation alone.",
+    "Keep video frames and game logic frames distinct; retain seconds and capture FPS. Do not invent timings for unobservable events.",
+    "Do not count empty templates or unknown/confounded cases as observations; retain disagreements and restrict claims to the observed boss/skill/build."
+  ],
+  "gateLinks": {
+    "u6": "At least 2 qualifying cases for each open TD6 question before assumed=false.",
+    "t2GroggyFrame": "Separate existing T2 gate: predicted groggy frame versus observed entry, error <=1 second.",
+    "t3Timeline": "Separate existing T3 gate: first 60 seconds skill/phase comparison."
+  },
+  "gameExecutedByThisTask": false,
+  "updated": "2026-10-08",
+  "qualifyingSummary": {
+    "cast_interruption_observation": 2,
+    "automatic_skill_return_observation": 0,
+    "minimum": 2,
+    "promotionPerformed": false,
+    "note": "D-P1 107 f and D-P2 98 f qualify by orchestrator decisions. Recording hashes remain null; no general engine promotion, automatic-skill return remains unverified."
+  },
+  "registration": {
+    "session": "S1 T3 integration 2026-10-07",
+    "source": "docs/tactic-editor/t3-document-worker-2026-10-04/t2-u6-td6-observation-plan-2026-10-01.draft.json (reviewed and updated)",
+    "decision": "docs/tactic-editor/orchestrator-response-2026-10-04.md §A-⑦ item 5",
+    "latestDecision": "docs/tactic-editor/followup-session-prompts-2026-10-08.md W3/D5"
+  }
+}

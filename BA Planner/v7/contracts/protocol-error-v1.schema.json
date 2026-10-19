@@ -3,38 +3,86 @@
   "$id": "https://baplanner.local/contracts/protocol-error-v1.schema.json",
   "title": "BA Planner protocol v1 structured error response",
   "oneOf": [
-    { "$ref": "#/$defs/unknownMethod" },
-    { "$ref": "#/$defs/studentGet" },
-    { "$ref": "#/$defs/studentCatalog" },
-    { "$ref": "#/$defs/planValidate" },
-    { "$ref": "#/$defs/planCalculate" },
-    { "$ref": "#/$defs/documentCalculate" },
-    { "$ref": "#/$defs/scenarioCompare" },
-    { "$ref": "#/$defs/inventoryCatalog" },
-    { "$ref": "#/$defs/planShortages" }
+    {
+      "$ref": "#/$defs/unknownMethod"
+    },
+    {
+      "$ref": "#/$defs/studentGet"
+    },
+    {
+      "$ref": "#/$defs/studentCatalog"
+    },
+    {
+      "$ref": "#/$defs/studentCalculate"
+    },
+    {
+      "$ref": "#/$defs/planValidate"
+    },
+    {
+      "$ref": "#/$defs/planCalculate"
+    },
+    {
+      "$ref": "#/$defs/documentCalculate"
+    },
+    {
+      "$ref": "#/$defs/scenarioCompare"
+    },
+    {
+      "$ref": "#/$defs/inventoryCatalog"
+    },
+    {
+      "$ref": "#/$defs/planShortages"
+    },
+    {
+      "$ref": "#/$defs/inventoryAcquisition"
+    }
   ],
   "$defs": {
     "errorEnvelope": {
       "allOf": [
-        { "$ref": "protocol-envelope-v1.schema.json" },
+        {
+          "$ref": "protocol-envelope-v1.schema.json"
+        },
         {
           "type": "object",
           "properties": {
-            "protocol": { "const": 1 },
-            "id": { "type": "string", "minLength": 1 },
-            "type": { "const": "response" },
-            "method": { "type": "string", "minLength": 1 },
+            "protocol": {
+              "const": 1
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "const": "response"
+            },
+            "method": {
+              "type": "string",
+              "minLength": 1
+            },
             "payload": {
               "type": "object",
-              "required": ["error"],
+              "required": [
+                "error"
+              ],
               "properties": {
                 "error": {
                   "type": "object",
-                  "required": ["code", "message"],
+                  "required": [
+                    "code",
+                    "message"
+                  ],
                   "properties": {
-                    "code": { "type": "string" },
-                    "message": { "type": "string", "minLength": 1 },
-                    "details": { "type": "object" }
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "details": {
+                      "type": "object"
+                    }
                   },
                   "additionalProperties": false
                 }
@@ -47,7 +95,9 @@
     },
     "unknownMethod": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
             "method": {
@@ -55,18 +105,26 @@
                 "enum": [
                   "planning.student.get",
                   "planning.student.catalog",
+                  "planning.student.calculate",
                   "planning.plan.validate",
                   "planning.plan.calculate",
                   "planning.document.calculate",
                   "planning.scenario.compare",
                   "planning.inventory.catalog",
-                  "planning.plan.shortages"
+                  "planning.plan.shortages",
+                  "planning.inventory.acquisition.get"
                 ]
               }
             },
             "payload": {
               "properties": {
-                "error": { "properties": { "code": { "const": "unknown_method" } } }
+                "error": {
+                  "properties": {
+                    "code": {
+                      "const": "unknown_method"
+                    }
+                  }
+                }
               }
             }
           }
@@ -75,15 +133,24 @@
     },
     "studentGet": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.student.get" },
+            "method": {
+              "const": "planning.student.get"
+            },
             "payload": {
               "properties": {
                 "error": {
                   "properties": {
-                    "code": { "enum": ["invalid_payload", "metadata_lookup_failed"] }
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "metadata_lookup_failed"
+                      ]
+                    }
                   }
                 }
               }
@@ -94,15 +161,52 @@
     },
     "studentCatalog": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.student.catalog" },
+            "method": {
+              "const": "planning.student.catalog"
+            },
             "payload": {
               "properties": {
                 "error": {
                   "properties": {
-                    "code": { "enum": ["invalid_payload", "metadata_lookup_failed"] }
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "metadata_lookup_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "studentCalculate": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "planning.student.calculate"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "calculation_failed"
+                      ]
+                    }
                   }
                 }
               }
@@ -113,13 +217,23 @@
     },
     "planValidate": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.plan.validate" },
+            "method": {
+              "const": "planning.plan.validate"
+            },
             "payload": {
               "properties": {
-                "error": { "properties": { "code": { "const": "invalid_payload" } } }
+                "error": {
+                  "properties": {
+                    "code": {
+                      "const": "invalid_payload"
+                    }
+                  }
+                }
               }
             }
           }
@@ -128,15 +242,24 @@
     },
     "planCalculate": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.plan.calculate" },
+            "method": {
+              "const": "planning.plan.calculate"
+            },
             "payload": {
               "properties": {
                 "error": {
                   "properties": {
-                    "code": { "enum": ["invalid_payload", "calculation_failed"] }
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "calculation_failed"
+                      ]
+                    }
                   }
                 }
               }
@@ -147,48 +270,141 @@
     },
     "inventoryCatalog": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
-        { "properties": {
-          "method": { "const": "planning.inventory.catalog" },
-          "payload": { "properties": { "error": { "properties": {
-            "code": { "enum": ["invalid_payload", "inventory_catalog_failed"] }
-          } } } }
-        } }
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "planning.inventory.catalog"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "inventory_catalog_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       ]
     },
     "documentCalculate": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.document.calculate" },
-            "payload": { "properties": { "error": { "properties": {
-              "code": { "enum": ["invalid_payload", "calculation_failed"] }
-            } } } }
+            "method": {
+              "const": "planning.document.calculate"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "calculation_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       ]
     },
     "planShortages": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
-        { "properties": {
-          "method": { "const": "planning.plan.shortages" },
-          "payload": { "properties": { "error": { "properties": {
-            "code": { "enum": ["invalid_payload", "shortage_calculation_failed"] }
-          } } } }
-        } }
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "planning.plan.shortages"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "shortage_calculation_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       ]
     },
     "scenarioCompare": {
       "allOf": [
-        { "$ref": "#/$defs/errorEnvelope" },
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
         {
           "properties": {
-            "method": { "const": "planning.scenario.compare" },
-            "payload": { "properties": { "error": { "properties": {
-              "code": { "enum": ["invalid_payload", "calculation_failed"] }
-            } } } }
+            "method": {
+              "const": "planning.scenario.compare"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "calculation_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "inventoryAcquisition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/errorEnvelope"
+        },
+        {
+          "properties": {
+            "method": {
+              "const": "planning.inventory.acquisition.get"
+            },
+            "payload": {
+              "properties": {
+                "error": {
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "resource_not_found",
+                        "resource_acquisition_failed"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       ]

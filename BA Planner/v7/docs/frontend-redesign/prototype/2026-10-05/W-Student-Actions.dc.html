@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>학생 액션 (S1)</title><script src="./support.js"></script></head>
+<body><x-dc><helmet><style>
+@font-face{font-family:'Pretendard';font-weight:500;src:url(/_blob/8754115ebc37b4970347d0c1548ea900) format('opentype')}
+@font-face{font-family:'Pretendard';font-weight:600;src:url(/_blob/e1a6c33a561eb724debd1bade7768005) format('opentype')}
+@font-face{font-family:'Pretendard';font-weight:700;src:url(/_blob/0a937b50bd7d43017d37e2834eefea85) format('opentype')}
+@font-face{font-family:'GyeonggiTitle';font-weight:500;src:url(/_blob/aea545ec50b49ecba5897469fda764dc) format('truetype')}
+body{margin:0;background:#0b111a;font-family:'Pretendard','Malgun Gothic',sans-serif;font-weight:500;color:#f4f8fb}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+input{font:inherit}
+.dsp{font-family:'GyeonggiTitle','Pretendard',sans-serif;font-weight:500;letter-spacing:-.01em}
+.mut{color:#9eb0c2} .cap{font-size:12px;font-weight:600;color:#9eb0c2}
+.sr{position:absolute;left:-9999px}
+.glass{background:rgba(29,42,58,.80);backdrop-filter:blur(8px)}
+.sw{filter:drop-shadow(1px 1px 0 rgba(5,9,17,.18)) drop-shadow(2px 2px 1px rgba(5,9,17,.22))}
+.nav{position:absolute;display:flex;gap:2px;z-index:7}
+.nt{display:flex;align-items:center;gap:7px;min-width:76px;justify-content:center;height:44px;padding:0 12px;font-size:13px;font-weight:500;color:#9eb0c2;border-radius:8px 8px 0 0;border-bottom:2px solid transparent;box-sizing:border-box}
+.nt.on{background:rgba(37,88,123,.34);color:#f4f8fb;font-weight:700;border-bottom-color:#71c7f4}
+.conn{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:rgba(88,214,167,.12);box-shadow:inset 0 0 0 1px rgba(88,214,167,.55);color:#58d6a7;font-size:12px;font-weight:600}
+.conn i{width:8px;height:8px;border-radius:4px;background:#58d6a7}
+.devbtn{width:40px;height:40px;border-radius:20px;background:rgba(37,88,123,.7);color:#cfe9f8;display:flex;align-items:center;justify-content:center}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:700;background:rgba(113,199,244,.16);color:#a8e0ff;white-space:nowrap;flex-shrink:0}
+.chip.pk{background:rgba(242,179,239,.2);color:#f7c9f4} .chip.wn{background:rgba(255,198,109,.16);color:#ffd08a}
+.chip.ok{background:rgba(88,214,167,.16);color:#7fe3bd} .chip.dg{background:rgba(255,126,138,.16);color:#ffa0a8} .chip.gy{background:rgba(158,176,194,.14);color:#c3cfdb} .chip.solid{background:rgba(10,16,24,.82);color:#c3cfdb}
+.btn{background:#2a3d54;color:#f4f8fb;display:flex;align-items:center} .btn:hover{background:#33496a}
+.btn.pri{background:#f2b3ef;color:#2a1330} .btn.pri:hover{background:#f7c9f4}
+.btn.ghost{background:rgba(14,21,31,.45)} .btn.ghost:hover{background:rgba(36,52,72,.8)}
+.btn.dng{background:rgba(255,126,138,.12);color:#ffa0a8}
+.btn.sel-blue{background:linear-gradient(90deg,#25587b,#2a4a66);box-shadow:inset 3px 0 0 #71c7f4}
+.btn.sel-pink{background:linear-gradient(90deg,#6b3e6c,#4a3552);box-shadow:inset 3px 0 0 #f2b3ef}
+.btn.done{background:rgba(113,199,244,.12);color:#a8e0ff}
+.btn.tri{background:#c79ac9;color:#2a1330} .btn.tri:hover{background:#d9b0db}
+.btn.icon{display:flex;align-items:center;justify-content:center;border-radius:10px;background:#c79ac9;color:#2a1330}
+.link{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#a8e0ff}
+.bd path{fill:none;stroke:none;stroke-linejoin:round} .srow>.bd path,.row>.bd path{stroke:rgba(113,199,244,.16);stroke-width:2px}
+.srow{background:rgba(16,24,35,.72)}
+button.srow:hover{background:rgba(30,45,62,.9)}
+.srow.sel{background:rgba(52,36,58,.85)} .srow.sel>.bd path{stroke:#f2b3ef;stroke-width:4px}
+.srow.blue>.bd path{stroke:rgba(113,199,244,.65);stroke-width:4px}
+.row{background:rgba(16,24,35,.72)}
+.plain{background:transparent}
+.tile{background:rgba(16,24,35,.6)} .tile>.bd path,.tab>.bd path,.plain>.bd path{stroke:none}
+.dash{background:rgba(16,24,35,.35)} .dash>.bd path{stroke:rgba(158,176,194,.45);stroke-width:3px;stroke-dasharray:7 5}
+.ord{width:16px;font-size:13px;font-weight:700;color:#9eb0c2;text-align:center;flex-shrink:0}
+.pt{display:inline-block;background-size:100% 100%;flex-shrink:0;position:relative}
+.val{font-size:12px;font-weight:600;color:#dce6ef;background:rgba(113,199,244,.10);padding:2px 8px;border-radius:6px}
+.stars{display:inline-flex;gap:2px;margin-left:4px} .stars i{display:inline-block;width:11px;height:6px;transform:skewX(-10deg);border-radius:2px}
+.stars .y{background:#f3c96b} .stars .b{background:#71c7f4} .stars .e{background:rgba(158,176,194,.18)}
+.tab{background:rgba(16,24,35,.55);color:#9eb0c2} .tab.on{background:#25587b;color:#fff;box-shadow:inset 0 -3px 0 #71c7f4}
+.mini{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;min-width:30px;padding:0 8px;border-radius:8px;background:#2a3d54;font-size:13px;font-weight:700;flex-shrink:0}
+.mini.pri{background:#f2b3ef;color:#2a1330;padding:0 12px}
+.seg{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;margin-right:6px;border-radius:5px;transform:skewX(-10deg);background:linear-gradient(rgba(16,24,35,.9),rgba(16,24,35,.9)) padding-box,rgba(158,176,194,.35) border-box;border:1px solid transparent;font-size:13px;font-weight:600;color:#c3cfdb}
+.su{display:inline-flex;align-items:center;gap:6px;transform:skewX(10deg)}
+.seg.on{background:linear-gradient(#3a2a44,#3a2a44) padding-box,#f2b3ef border-box;border-width:1.5px;color:#f7c9f4}
+.card{overflow:hidden}
+.chk{display:inline-flex;width:26px;height:26px;border-radius:13px;background:#f2b3ef;align-items:center;justify-content:center}
+.tog{width:40px;height:22px;border-radius:11px;background:rgba(158,176,194,.25);position:relative;flex-shrink:0} .tog i{position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:8px;background:#c3cfdb}
+.tog.on{background:#f2b3ef} .tog.on i{left:21px;background:#2a1330}
+.devbar{position:absolute;left:800px;top:10px;display:flex;align-items:center;gap:4px;padding:4px;border-radius:6px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(242,179,239,.35);z-index:9}
+.devcap{font-size:11px;font-weight:700;color:#f7c9f4;padding:0 8px}
+.dv{display:flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:600;color:#c3cfdb} .dv:hover{background:rgba(255,255,255,.08)}
+.devsep{width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 4px}
+
+.mrow{overflow:visible} .mrow:hover>svg path{fill:rgba(20,32,48,.7)}
+.tonal{display:flex;align-items:center;gap:8px;padding:0 16px;border-radius:10px;background:#3a4b58;color:#d6e4f0;font-size:13px;font-weight:600;box-sizing:border-box}
+.tonal:hover{background:#455866} .tonal.pri{background:#f2b3ef;color:#2a1330} .tonal.pri:hover{background:#f7c9f4}
+.tonal.ghost{background:rgba(14,21,31,.45)} .tonal.done{background:rgba(113,199,244,.14);color:#a8e0ff} .tonal.dng{background:rgba(255,126,138,.12);color:#ffa0a8} .tonal.cur{box-shadow:inset 0 0 0 1.5px #f2b3ef}
+.viewsel{display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:10px;background:linear-gradient(90deg,#25587b,#2a4a66);box-shadow:inset 3px 0 0 #71c7f4;box-sizing:border-box}
+.viewsel.pink{background:linear-gradient(90deg,#6b3e6c,#4a3552);box-shadow:inset 3px 0 0 #f2b3ef}
+.stp{width:22px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:800;color:#9eb0c2;border-radius:14px} .stp:hover{background:rgba(255,255,255,.08);color:#f4f8fb}
+.tile:hover>svg path{fill:rgba(45,80,105,.8)} .scard:hover>svg path{fill:rgba(48,74,96,.9)} .scard2:hover{filter:brightness(1.08)}
+
+.kv{display:flex;flex-direction:column;gap:3px} .kv .cap{font-size:11px}
+.bar2{height:8px;border-radius:4px;background:rgba(255,255,255,.09);overflow:hidden} .bar2 i{display:block;height:8px;border-radius:4px;background:#71c7f4}
+.tog{width:40px;height:22px;border-radius:11px;background:rgba(158,176,194,.25);position:relative;flex-shrink:0} .tog i{position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:8px;background:#c3cfdb}
+.tog.on{background:#f2b3ef} .tog.on i{left:21px;background:#2a1330}
+.hm{display:grid;gap:3px} .hm span{height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.ind{background:#203243;box-shadow:inset 0 0 0 .9px rgba(56,81,107,0.75)}
+.ilab{font-family:GyeonggiTitle;font-size:9px;font-weight:800;color:#e9b0ee}
+.ihdr{display:flex;align-items:center;gap:4px;font-family:GyeonggiTitle;font-size:8px;font-weight:800;color:#f4f8fb} .ihdr:before{content:'';width:5px;height:5px;border-radius:1px;background:#71c7f4}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.deck{display:flex;flex-direction:column;align-items:center;gap:4px;width:92px}
+.deck .pos{font-size:10px;font-weight:800;color:#9eb0c2}
+
+.stucard{position:absolute;padding:0;border:0;background:none;cursor:pointer}
+.stutog{padding:0;border:0;background:none;cursor:pointer}
+button{font:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#stu-q::placeholder{color:#9eb0c2;opacity:1}
+.wlab{font-family:GyeonggiTitle;font-size:18px;color:#f4f8fb}
+.wsub{font-size:13px;line-height:1.5;color:#9eb0c2}
+@keyframes stuform2{0%{opacity:1}50.0000%{opacity:0}100%{opacity:0}}.stuform2{animation:stuform2 6s step-end infinite}@keyframes stuform3{0%{opacity:1}33.3333%{opacity:0}100%{opacity:0}}.stuform3{animation:stuform3 9s step-end infinite}@keyframes stuform4{0%{opacity:1}25.0000%{opacity:0}100%{opacity:0}}.stuform4{animation:stuform4 12s step-end infinite}</style></helmet>
+<div style="position:relative;width:242px;height:785px;overflow:hidden;background:#101722 url(/_blob/5bb2acb1fa3ef95b6a438e34de267b8c) center/cover">
+<div style="position:absolute;left:28.0px;top:2.8px;width:1px;height:1px"><div class="stusec" style="position:absolute;left:0.00px;top:25.17px;width:186.67px;height:729.83px"><svg width="186.7" height="729.8" style="position:absolute;left:0;top:0;overflow:visible"><path d="M 14.0 0.0 L 172.7 0.0 Q 186.7 0.0 184.2 13.8 L 60.4 716.0 Q 58.0 729.8 44.0 729.8 L 14.0 729.8 Q 0.0 729.8 0.0 715.8 L 0.0 14.0 Q 0.0 0.0 14.0 0.0 Z" transform="translate(2 2)" fill="rgba(5,9,17,0.077)"/><path d="M 14.0 0.0 L 172.7 0.0 Q 186.7 0.0 184.2 13.8 L 60.4 716.0 Q 58.0 729.8 44.0 729.8 L 14.0 729.8 Q 0.0 729.8 0.0 715.8 L 0.0 14.0 Q 0.0 0.0 14.0 0.0 Z" transform="translate(1.5 1.5)" fill="rgba(5,9,17,0.113)"/><path d="M 14.0 0.0 L 172.7 0.0 Q 186.7 0.0 184.2 13.8 L 60.4 716.0 Q 58.0 729.8 44.0 729.8 L 14.0 729.8 Q 0.0 729.8 0.0 715.8 L 0.0 14.0 Q 0.0 0.0 14.0 0.0 Z" transform="translate(1 1)" fill="rgba(5,9,17,0.149)"/><path d="M 14.0 0.0 L 172.7 0.0 Q 186.7 0.0 184.2 13.8 L 60.4 716.0 Q 58.0 729.8 44.0 729.8 L 14.0 729.8 Q 0.0 729.8 0.0 715.8 L 0.0 14.0 Q 0.0 0.0 14.0 0.0 Z" transform="translate(0.5 0.5)" fill="rgba(5,9,17,0.184)"/><path d="M 14.0 0.0 L 172.7 0.0 Q 186.7 0.0 184.2 13.8 L 60.4 716.0 Q 58.0 729.8 44.0 729.8 L 14.0 729.8 Q 0.0 729.8 0.0 715.8 L 0.0 14.0 Q 0.0 0.0 14.0 0.0 Z M 32.4 215.4 L 115.9 215.4 Q 125.9 215.4 124.2 225.3 L 104.3 338.1 Q 102.6 348.0 92.6 348.0 L 32.4 348.0 Q 22.4 348.0 22.4 338.0 L 22.4 225.4 Q 22.4 215.4 32.4 215.4 Z M 32.4 384.5 L 86.1 384.5 Q 96.1 384.5 94.4 394.3 L 74.5 507.2 Q 72.8 517.0 62.8 517.0 L 32.4 517.0 Q 22.4 517.0 22.4 507.0 L 22.4 394.5 Q 22.4 384.5 32.4 384.5 Z M 32.4 553.5 L 56.3 553.5 Q 66.3 553.5 64.6 563.3 L 44.6 676.8 Q 43.0 686.0 33.6 686.0 L 31.7 686.0 Q 22.4 686.0 22.4 676.7 L 22.4 563.5 Q 22.4 553.5 32.4 553.5 Z" fill-rule="evenodd" fill="rgba(29,42,58,0.76)"/></svg></div><button aria-label="리스트 보기" style="position:absolute;left:22.40px;top:68.96px;width:63.90px;height:49.33px;clip-path:path('M 5.0 0.0 L 58.9 0.0 Q 63.9 0.0 63.0 4.9 L 56.1 44.4 Q 55.2 49.3 50.2 49.3 L 5.0 49.3 Q 0.0 49.3 0.0 44.3 L 0.0 5.0 Q 0.0 0.0 5.0 0.0 Z');"><img src="/_blob/3d03711080688220a47aa44fc65308dd" alt="" style="position:absolute;left:-22.4px;top:-69.0px;width:2560px;height:1208px;max-width:none"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="18.0" height="18.0" viewBox="0 0 24 24" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M19 13H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4zm0-16H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4z" fill="#f4f8fb"/></svg></span></button><svg width="67.9" height="53.3" style="position:absolute;left:20.40px;top:66.96px;overflow:visible;pointer-events:none"><path d="M 7.0 2.0 L 60.9 2.0 Q 65.9 2.0 65.0 6.9 L 58.1 46.4 Q 57.2 51.3 52.2 51.3 L 7.0 51.3 Q 2.0 51.3 2.0 46.3 L 2.0 7.0 Q 2.0 2.0 7.0 2.0 Z" fill="none" stroke="rgba(56,81,107,0.72)" stroke-width="0.8"/></svg><button aria-label="그리드 보기" style="position:absolute;left:83.60px;top:68.96px;width:72.60px;height:49.33px;clip-path:path('M 13.7 0.0 L 67.6 0.0 Q 72.6 0.0 71.7 4.9 L 64.8 44.4 Q 63.9 49.3 58.9 49.3 L 5.0 49.3 Q 0.0 49.3 0.9 44.4 L 7.8 4.9 Q 8.7 0.0 13.7 0.0 Z');"><img src="/_blob/3d03711080688220a47aa44fc65308dd" alt="" style="position:absolute;left:-83.6px;top:-69.0px;width:2560px;height:1208px;max-width:none"><span style="position:absolute;inset:0;background:rgba(233,176,238,0.13)"></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="18.0" height="18.0" viewBox="0 0 24 24" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" fill="#e9b0ee"/></svg></span></button><svg width="76.6" height="53.3" style="position:absolute;left:81.60px;top:66.96px;overflow:visible;pointer-events:none"><path d="M 15.7 2.0 L 69.6 2.0 Q 74.6 2.0 73.7 6.9 L 66.8 46.4 Q 65.9 51.3 60.9 51.3 L 7.0 51.3 Q 2.0 51.3 2.9 46.4 L 9.8 6.9 Q 10.7 2.0 15.7 2.0 Z" fill="none" stroke="#e9b0ee" stroke-width="1.4"/></svg><button aria-label="학생 정렬" style="position:absolute;left:22.40px;top:154.77px;width:118.67px;height:49.33px;clip-path:path('M 5.0 0.0 L 113.7 0.0 Q 118.7 0.0 117.8 4.9 L 110.8 44.4 Q 110.0 49.3 105.0 49.3 L 5.0 49.3 Q 0.0 49.3 0.0 44.3 L 0.0 5.0 Q 0.0 0.0 5.0 0.0 Z');"><span style="position:absolute;left:11.0px;top:0;bottom:0;right:20.0px;display:flex;align-items:center;font-family:Pretendard;font-size:15px;font-weight:700;line-height:1;color:#e9b0ee;white-space:nowrap;overflow:hidden">LV ↓</span></button><svg width="122.7" height="53.3" style="position:absolute;left:20.40px;top:152.77px;overflow:visible;pointer-events:none"><path d="M 7.0 2.0 L 115.7 2.0 Q 120.7 2.0 119.8 6.9 L 112.8 46.4 Q 112.0 51.3 107.0 51.3 L 7.0 51.3 Q 2.0 51.3 2.0 46.3 L 2.0 7.0 Q 2.0 2.0 7.0 2.0 Z" fill="none" stroke="#e9b0ee" stroke-width="1"/></svg><svg width="9.0" height="6.0" style="position:absolute;left:125.1px;top:176.4px"><path d="M0 0L9.0 0L4.5 6.0Z" fill="#e9b0ee"/></svg><button aria-label="포커스 학생으로 계획 열기" style="position:absolute;left:22.40px;top:240.59px;width:103.54px;height:132.54px;clip-path:path('M 10.0 0.0 L 93.5 0.0 Q 103.5 0.0 101.8 9.8 L 81.9 122.7 Q 80.2 132.5 70.2 132.5 L 10.0 132.5 Q 0.0 132.5 0.0 122.5 L 0.0 10.0 Q 0.0 0.0 10.0 0.0 Z');"><img src="/_blob/3d03711080688220a47aa44fc65308dd" alt="" style="position:absolute;left:-22.4px;top:-240.6px;width:2560px;height:1208px;max-width:none"><span style="position:absolute;left:34.9px;top:55.3px"><svg width="22.0" height="22.0" viewBox="0 0 24 24" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z" fill="#f4f8fb"/></svg></span></button><svg width="107.5" height="136.5" style="position:absolute;left:20.40px;top:238.59px;overflow:visible;pointer-events:none"><path d="M 12.0 2.0 L 95.5 2.0 Q 105.5 2.0 103.8 11.8 L 83.9 124.7 Q 82.2 134.5 72.2 134.5 L 12.0 134.5 Q 2.0 134.5 2.0 124.5 L 2.0 12.0 Q 2.0 2.0 12.0 2.0 Z" fill="none" stroke="rgba(56,81,107,0.75)" stroke-width="0.9"/></svg><button aria-label="학생 스캔 열기" style="position:absolute;left:22.40px;top:409.63px;width:73.73px;height:132.54px;clip-path:path('M 10.0 0.0 L 63.7 0.0 Q 73.7 0.0 72.0 9.8 L 52.1 122.7 Q 50.4 132.5 40.4 132.5 L 10.0 132.5 Q 0.0 132.5 0.0 122.5 L 0.0 10.0 Q 0.0 0.0 10.0 0.0 Z');"><img src="/_blob/3d03711080688220a47aa44fc65308dd" alt="" style="position:absolute;left:-22.4px;top:-409.6px;width:2560px;height:1208px;max-width:none"><span style="position:absolute;left:20.0px;top:55.3px"><svg width="22.0" height="22.0" viewBox="0 0 24 24" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M7 3H4v3H2V1h5v2zm15 3V1h-5v2h3v3h2zM7 21H4v-3H2v5h5v-2zm13-3v3h-3v2h5v-5h-2zM17 6H7v12h10V6zm2 12c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v12zM15 8H9v2h6V8zm0 3H9v2h6v-2zm0 3H9v2h6v-2z" fill="#f4f8fb"/></svg></span></button><svg width="77.7" height="136.5" style="position:absolute;left:20.40px;top:407.63px;overflow:visible;pointer-events:none"><path d="M 12.0 2.0 L 65.7 2.0 Q 75.7 2.0 74.0 11.8 L 54.1 124.7 Q 52.4 134.5 42.4 134.5 L 12.0 134.5 Q 2.0 134.5 2.0 124.5 L 2.0 12.0 Q 2.0 2.0 12.0 2.0 Z" fill="none" stroke="rgba(56,81,107,0.75)" stroke-width="0.9"/></svg><button aria-label="필터 열기" style="position:absolute;left:22.40px;top:578.67px;width:43.92px;height:132.54px;clip-path:path('M 10.0 0.0 L 33.9 0.0 Q 43.9 0.0 42.2 9.8 L 22.2 123.3 Q 20.6 132.5 11.2 132.5 L 9.3 132.5 Q 0.0 132.5 0.0 123.2 L 0.0 10.0 Q 0.0 0.0 10.0 0.0 Z');"><img src="/_blob/3d03711080688220a47aa44fc65308dd" alt="" style="position:absolute;left:-22.4px;top:-578.7px;width:2560px;height:1208px;max-width:none"><span style="position:absolute;left:5.1px;top:55.3px"><svg width="22.0" height="22.0" viewBox="0 0 24 24" aria-hidden="true" style="display:block;flex-shrink:0"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" fill="#f4f8fb"/></svg></span></button><svg width="47.9" height="136.5" style="position:absolute;left:20.40px;top:576.67px;overflow:visible;pointer-events:none"><path d="M 12.0 2.0 L 35.9 2.0 Q 45.9 2.0 44.2 11.8 L 24.2 125.3 Q 22.6 134.5 13.2 134.5 L 11.3 134.5 Q 2.0 134.5 2.0 125.2 L 2.0 12.0 Q 2.0 2.0 12.0 2.0 Z" fill="none" stroke="rgba(56,81,107,0.75)" stroke-width="0.9"/></svg></div>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":242,"height":785}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script></body></html>

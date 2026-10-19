@@ -1,0 +1,583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/repository-history-query-v1.schema.json",
+  "title": "Confirmed current history queries v1",
+  "$comment": "Runtime also validates calendar dates, query bounds, cursor binding, identity uniqueness, event semantics and delta/count relationships.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/eventsRequest"
+    },
+    {
+      "$ref": "#/$defs/diffRequest"
+    }
+  ],
+  "$defs": {
+    "endpoint": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "at"
+          ],
+          "properties": {
+            "at": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|\\+00:00)$",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "sequence"
+          ],
+          "properties": {
+            "sequence": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "current"
+          ],
+          "properties": {
+            "current": {
+              "const": true,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "scan"
+          ],
+          "properties": {
+            "scan": {
+              "enum": [
+                "latest",
+                "previous"
+              ]
+            },
+            "scan_kind": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+            },
+            "inventory_scan_profile": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024,
+                  "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "student_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+            },
+            "resource_key": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+            }
+          },
+          "additionalProperties": false,
+          "not": {
+            "required": [
+              "student_id",
+              "resource_key"
+            ]
+          }
+        }
+      ]
+    },
+    "eventsRequest": {
+      "type": "object",
+      "required": [
+        "profile_id"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "from_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|\\+00:00)$",
+          "format": "date-time"
+        },
+        "to_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|\\+00:00)$",
+          "format": "date-time"
+        },
+        "source": {
+          "enum": [
+            "scan",
+            "manual",
+            "import",
+            "unattributed"
+          ]
+        },
+        "scan_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+        },
+        "inventory_scan_profile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "student_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "resource_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8388608
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "diffRequest": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "from",
+        "to"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "from": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "to": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "student_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "resource_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+          },
+          "maxItems": 256,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "origin",
+        "baseline_sequence",
+        "baseline_at",
+        "first_retained_at",
+        "complete",
+        "timestamps_monotonic",
+        "reasons"
+      ],
+      "properties": {
+        "origin": {
+          "enum": [
+            "empty",
+            "legacy",
+            "compacted",
+            "unrecorded"
+          ]
+        },
+        "baseline_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseline_at": {
+          "$ref": "current-history-v1.schema.json#/$defs/nullableTimestamp"
+        },
+        "first_retained_at": {
+          "$ref": "current-history-v1.schema.json#/$defs/nullableTimestamp"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "timestamps_monotonic": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "unrecorded",
+              "before_retention",
+              "legacy_time_unknown",
+              "clock_rollback",
+              "scan_not_found",
+              "unknown_quantity",
+              "unknown_student"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "scanPoint": {
+      "type": "object",
+      "required": [
+        "session_id",
+        "sequence",
+        "recorded_at",
+        "scan_kind",
+        "inventory_scan_profile"
+      ],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "recorded_at": {
+          "$ref": "current-history-v1.schema.json#/$defs/timestamp"
+        },
+        "scan_kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+        },
+        "inventory_scan_profile": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "$comment": "Runtime limits UTF-8 bytes to 1024; raw exact match, no enum or trim."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "point": {
+      "type": "object",
+      "required": [
+        "selector",
+        "sequence",
+        "recorded_at",
+        "available",
+        "students",
+        "inventory"
+      ],
+      "properties": {
+        "selector": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "sequence": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded_at": {
+          "$ref": "current-history-v1.schema.json#/$defs/nullableTimestamp"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "students": {
+          "type": "array",
+          "items": {
+            "$ref": "repository-protocol-v1.schema.json#/$defs/confirmedStudent"
+          }
+        },
+        "inventory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "resource_key",
+              "quantity"
+            ],
+            "properties": {
+              "resource_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "quantity": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "inventoryComparison": {
+      "type": "object",
+      "required": [
+        "resource_key",
+        "before",
+        "after",
+        "delta"
+      ],
+      "properties": {
+        "resource_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before": {
+          "$ref": "current-history-v1.schema.json#/$defs/quantityPresence"
+        },
+        "after": {
+          "$ref": "current-history-v1.schema.json#/$defs/quantityPresence"
+        },
+        "delta": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "eventsResult": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "revision",
+        "history_sequence",
+        "coverage",
+        "scan_commit_count",
+        "scan_session_count",
+        "scan_points",
+        "trend_eligible",
+        "events",
+        "matching_event_count",
+        "next_cursor"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "history_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/coverage"
+        },
+        "scan_commit_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scan_session_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scan_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scanPoint"
+          },
+          "maxItems": 10000
+        },
+        "trend_eligible": {
+          "type": "boolean"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "current-history-v1.schema.json#/$defs/event"
+          },
+          "maxItems": 200
+        },
+        "matching_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8388608
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "diffResult": {
+      "type": "object",
+      "required": [
+        "profile_id",
+        "revision",
+        "history_sequence",
+        "coverage",
+        "scan_commit_count",
+        "scan_session_count",
+        "scan_points",
+        "trend_eligible",
+        "from_point",
+        "to_point",
+        "student_changes",
+        "inventory_changes"
+      ],
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{24}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "history_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/coverage"
+        },
+        "scan_commit_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scan_session_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scan_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scanPoint"
+          },
+          "maxItems": 10000
+        },
+        "trend_eligible": {
+          "type": "boolean"
+        },
+        "from_point": {
+          "$ref": "#/$defs/point"
+        },
+        "to_point": {
+          "$ref": "#/$defs/point"
+        },
+        "student_changes": {
+          "type": "array",
+          "items": {
+            "$ref": "current-history-v1.schema.json#/$defs/studentChange"
+          }
+        },
+        "inventory_changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/inventoryComparison"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,1553 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "save-authoring",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "save-authoring",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "authoring": {
+            "version": 1,
+            "prerequisites": [
+              {
+                "stage_id": "b1",
+                "requires_stage_id": "a1"
+              },
+              {
+                "stage_id": "b2",
+                "requires_stage_id": "a3"
+              }
+            ],
+            "deferred_stages": [
+              {
+                "stage_id": "a3",
+                "student_id": "aru",
+                "name": "a3",
+                "targets": {
+                  "level": 30,
+                  "bond_rank": 50,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "b2",
+                "student_id": "ayane",
+                "name": "b2",
+                "targets": {
+                  "level": 10,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ],
+            "student_order": [
+              "ayane",
+              "aru",
+              "unknown-selected"
+            ],
+            "stage_order_by_student": {
+              "ayane": [
+                "b1",
+                "b2"
+              ],
+              "aru": [
+                "a1",
+                "a2",
+                "a3"
+              ],
+              "unknown-selected": []
+            },
+            "goal_metadata": {
+              "unknown-selected": {
+                "favorite": true,
+                "notes": " no targets \n"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "save-legacy-omission",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "save-legacy-omission",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "save-null-rejected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "save-null-rejected",
+        "type": "request",
+        "method": "repository.plan.save",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "authoring": null
+        }
+      }
+    },
+    {
+      "id": "get-authoring",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "get-authoring",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 1,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "calculation": null,
+          "authoring": {
+            "version": 1,
+            "prerequisites": [
+              {
+                "stage_id": "b1",
+                "requires_stage_id": "a1"
+              },
+              {
+                "stage_id": "b2",
+                "requires_stage_id": "a3"
+              }
+            ],
+            "deferred_stages": [
+              {
+                "stage_id": "a3",
+                "student_id": "aru",
+                "name": "a3",
+                "targets": {
+                  "level": 30,
+                  "bond_rank": 50,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "b2",
+                "student_id": "ayane",
+                "name": "b2",
+                "targets": {
+                  "level": 10,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ],
+            "student_order": [
+              "ayane",
+              "aru",
+              "unknown-selected"
+            ],
+            "stage_order_by_student": {
+              "ayane": [
+                "b1",
+                "b2"
+              ],
+              "aru": [
+                "a1",
+                "a2",
+                "a3"
+              ],
+              "unknown-selected": []
+            },
+            "goal_metadata": {
+              "unknown-selected": {
+                "favorite": true,
+                "notes": " no targets \n"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "get-legacy-no-authoring",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "get-legacy-no-authoring",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          },
+          "calculation": null
+        }
+      }
+    },
+    {
+      "id": "get-null-rejected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "get-null-rejected",
+        "type": "response",
+        "method": "repository.plan.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0,
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [],
+            "goal_metadata": {}
+          },
+          "calculation": null,
+          "authoring": null
+        }
+      }
+    },
+    {
+      "id": "replace-authoring",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace-authoring",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "expected_scenario_revision": 0,
+          "archive_name": "Old bundle",
+          "archive_description": "",
+          "authoring": {
+            "version": 1,
+            "prerequisites": [
+              {
+                "stage_id": "b1",
+                "requires_stage_id": "a1"
+              },
+              {
+                "stage_id": "b2",
+                "requires_stage_id": "a3"
+              }
+            ],
+            "deferred_stages": [
+              {
+                "stage_id": "a3",
+                "student_id": "aru",
+                "name": "a3",
+                "targets": {
+                  "level": 30,
+                  "bond_rank": 50,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "b2",
+                "student_id": "ayane",
+                "name": "b2",
+                "targets": {
+                  "level": 10,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ],
+            "student_order": [
+              "ayane",
+              "aru",
+              "unknown-selected"
+            ],
+            "stage_order_by_student": {
+              "ayane": [
+                "b1",
+                "b2"
+              ],
+              "aru": [
+                "a1",
+                "a2",
+                "a3"
+              ],
+              "unknown-selected": []
+            },
+            "goal_metadata": {
+              "unknown-selected": {
+                "favorite": true,
+                "notes": " no targets \n"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "replace-default-omission",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "replace-default-omission",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "expected_scenario_revision": 0,
+          "archive_name": "Old bundle",
+          "archive_description": ""
+        }
+      }
+    },
+    {
+      "id": "replace-null-rejected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "replace-null-rejected",
+        "type": "request",
+        "method": "repository.plan.replace",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_revision": 0,
+          "idempotency_key": "authoring-save",
+          "document": {
+            "version": 2,
+            "document_id": "active-plan",
+            "name": "Authoring policy",
+            "kind": "plan",
+            "phases": [
+              {
+                "phase_id": "p1",
+                "name": "First",
+                "stages": [
+                  {
+                    "stage_id": "a1",
+                    "student_id": "aru",
+                    "name": "a1",
+                    "targets": {
+                      "level": 10,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  },
+                  {
+                    "stage_id": "b1",
+                    "student_id": "ayane",
+                    "name": "b1",
+                    "targets": {
+                      "level": 0,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              },
+              {
+                "phase_id": "p2",
+                "name": "Second",
+                "stages": [
+                  {
+                    "stage_id": "a2",
+                    "student_id": "aru",
+                    "name": "a2",
+                    "targets": {
+                      "level": 20,
+                      "bond_rank": null,
+                      "student_star": null,
+                      "weapon_level": null,
+                      "weapon_star": null,
+                      "ex_skill": null,
+                      "skill1": null,
+                      "skill2": null,
+                      "skill3": null,
+                      "equip1_tier": null,
+                      "equip2_tier": null,
+                      "equip3_tier": null,
+                      "equip1_level": null,
+                      "equip2_level": null,
+                      "equip3_level": null,
+                      "equip4_tier": null,
+                      "stat_hp": null,
+                      "stat_atk": null,
+                      "stat_heal": null
+                    }
+                  }
+                ]
+              }
+            ],
+            "goal_metadata": {
+              "aru": {
+                "favorite": true,
+                "notes": " placed notes "
+              },
+              "ayane": {
+                "favorite": false,
+                "notes": ""
+              }
+            }
+          },
+          "expected_scenario_revision": 0,
+          "archive_name": "Old bundle",
+          "archive_description": "",
+          "authoring": null
+        }
+      }
+    },
+    {
+      "id": "archived-bundle-get",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "archived-bundle-get",
+        "type": "response",
+        "method": "repository.scenario.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 1,
+          "current_profile_revision": 2,
+          "scenario": {
+            "version": 1,
+            "scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+            "revision": 0,
+            "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": "Old bundle",
+            "description": "",
+            "base_profile_revision": 1,
+            "document": {
+              "version": 2,
+              "document_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "name": "Authoring policy",
+              "kind": "scenario",
+              "phases": [
+                {
+                  "phase_id": "p1",
+                  "name": "First",
+                  "stages": [
+                    {
+                      "stage_id": "a1",
+                      "student_id": "aru",
+                      "name": "a1",
+                      "targets": {
+                        "level": 10,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    },
+                    {
+                      "stage_id": "b1",
+                      "student_id": "ayane",
+                      "name": "b1",
+                      "targets": {
+                        "level": 0,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    }
+                  ]
+                },
+                {
+                  "phase_id": "p2",
+                  "name": "Second",
+                  "stages": [
+                    {
+                      "stage_id": "a2",
+                      "student_id": "aru",
+                      "name": "a2",
+                      "targets": {
+                        "level": 20,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    }
+                  ]
+                }
+              ],
+              "goal_metadata": {
+                "aru": {
+                  "favorite": true,
+                  "notes": " placed notes "
+                },
+                "ayane": {
+                  "favorite": false,
+                  "notes": ""
+                }
+              }
+            },
+            "created_at": "2026-10-09T09:00:00Z",
+            "updated_at": "2026-10-09T09:00:00Z",
+            "authoring": {
+              "version": 1,
+              "prerequisites": [
+                {
+                  "stage_id": "b1",
+                  "requires_stage_id": "a1"
+                },
+                {
+                  "stage_id": "b2",
+                  "requires_stage_id": "a3"
+                }
+              ],
+              "deferred_stages": [
+                {
+                  "stage_id": "a3",
+                  "student_id": "aru",
+                  "name": "a3",
+                  "targets": {
+                    "level": 30,
+                    "bond_rank": 50,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                },
+                {
+                  "stage_id": "b2",
+                  "student_id": "ayane",
+                  "name": "b2",
+                  "targets": {
+                    "level": 10,
+                    "bond_rank": null,
+                    "student_star": null,
+                    "weapon_level": null,
+                    "weapon_star": null,
+                    "ex_skill": null,
+                    "skill1": null,
+                    "skill2": null,
+                    "skill3": null,
+                    "equip1_tier": null,
+                    "equip2_tier": null,
+                    "equip3_tier": null,
+                    "equip1_level": null,
+                    "equip2_level": null,
+                    "equip3_level": null,
+                    "equip4_tier": null,
+                    "stat_hp": null,
+                    "stat_atk": null,
+                    "stat_heal": null
+                  }
+                }
+              ],
+              "student_order": [
+                "ayane",
+                "aru",
+                "unknown-selected"
+              ],
+              "stage_order_by_student": {
+                "ayane": [
+                  "b1",
+                  "b2"
+                ],
+                "aru": [
+                  "a1",
+                  "a2",
+                  "a3"
+                ],
+                "unknown-selected": []
+              },
+              "goal_metadata": {
+                "unknown-selected": {
+                  "favorite": true,
+                  "notes": " no targets \n"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "archived-bundle-null-rejected",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "archived-bundle-null-rejected",
+        "type": "response",
+        "method": "repository.scenario.get",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 1,
+          "current_profile_revision": 2,
+          "scenario": {
+            "version": 1,
+            "scenario_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+            "revision": 0,
+            "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": "Old bundle",
+            "description": "",
+            "base_profile_revision": 1,
+            "document": {
+              "version": 2,
+              "document_id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "name": "Authoring policy",
+              "kind": "scenario",
+              "phases": [
+                {
+                  "phase_id": "p1",
+                  "name": "First",
+                  "stages": [
+                    {
+                      "stage_id": "a1",
+                      "student_id": "aru",
+                      "name": "a1",
+                      "targets": {
+                        "level": 10,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    },
+                    {
+                      "stage_id": "b1",
+                      "student_id": "ayane",
+                      "name": "b1",
+                      "targets": {
+                        "level": 0,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    }
+                  ]
+                },
+                {
+                  "phase_id": "p2",
+                  "name": "Second",
+                  "stages": [
+                    {
+                      "stage_id": "a2",
+                      "student_id": "aru",
+                      "name": "a2",
+                      "targets": {
+                        "level": 20,
+                        "bond_rank": null,
+                        "student_star": null,
+                        "weapon_level": null,
+                        "weapon_star": null,
+                        "ex_skill": null,
+                        "skill1": null,
+                        "skill2": null,
+                        "skill3": null,
+                        "equip1_tier": null,
+                        "equip2_tier": null,
+                        "equip3_tier": null,
+                        "equip1_level": null,
+                        "equip2_level": null,
+                        "equip3_level": null,
+                        "equip4_tier": null,
+                        "stat_hp": null,
+                        "stat_atk": null,
+                        "stat_heal": null
+                      }
+                    }
+                  ]
+                }
+              ],
+              "goal_metadata": {
+                "aru": {
+                  "favorite": true,
+                  "notes": " placed notes "
+                },
+                "ayane": {
+                  "favorite": false,
+                  "notes": ""
+                }
+              }
+            },
+            "created_at": "2026-10-09T09:00:00Z",
+            "updated_at": "2026-10-09T09:00:00Z",
+            "authoring": null
+          }
+        }
+      }
+    }
+  ]
+}

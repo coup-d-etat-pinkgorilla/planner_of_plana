@@ -1,0 +1,1 @@
+py -3.11 C:\Users\brigh\ba-client-data\tools\import_extract.py --server jp --version-id jp-1.73.0-e2baf70e --kind favor-cafe-tables --src "C:\Users\brigh\planner_of_plana\BA Planner\v7\docs\tactic-editor\evidence\favor-cafe-tables-jp-1.73.0.json" --tool "v7 extract_jp.py@12507e8c" --consumer v7

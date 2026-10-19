@@ -9,9 +9,9 @@ import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
 import 'package:ba_planner_v7/ui/app_section.dart';
 import 'package:ba_planner_v7/ui/app_shell.dart';
+import 'package:ba_planner_v7/ui/kit/kit_pressable.dart';
 import 'package:ba_planner_v7/ui/widgets/ba_triangle_background.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
-import 'package:ba_planner_v7/ui/widgets/asset_image_grid.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_header.dart';
 import 'package:ba_planner_v7/ui/widgets/diagonal_menu.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
@@ -487,14 +487,27 @@ void main() {
     final portraitFinder = find.byKey(
       const ValueKey('home-header-profile-portrait'),
     );
-    final portrait = tester.widget<AssetImageGrid>(portraitFinder);
-    expect(portrait.items.first.asset, 'assets/studio_features/square.png');
-    expect(portrait.items.last.asset, 'assets/student_portraits/hasumi.png');
-    expect(portrait.items.last.scale, 0.98);
+    // 시안 초상: 둥근 사각 62×52 r9, 흰 2px 테두리(FD-115).
+    expect(tester.getSize(portraitFinder), const Size(62, 52));
+    final decoration =
+        tester.widget<Container>(portraitFinder).decoration! as BoxDecoration;
+    expect(decoration.borderRadius, BorderRadius.circular(9));
+    expect(decoration.boxShadow!.single.color, AppColors.text);
+    expect(decoration.boxShadow!.single.spreadRadius, 2);
+    final image = tester.widget<Image>(
+      find.descendant(of: portraitFinder, matching: find.byType(Image)),
+    );
+    expect(
+      (image.image as AssetImage).assetName,
+      'assets/student_portraits/hasumi.png',
+    );
+    expect(image.fit, BoxFit.cover);
+    // 지표는 숫자만이다(FD-115).
     expect(
       tester.getRect(portraitFinder).right,
-      lessThan(tester.getRect(find.text('42명')).left),
+      lessThan(tester.getRect(find.text('42')).left),
     );
+    expect(find.text('42명'), findsNothing);
   });
 
   testWidgets('home menu captions preserve the v6 wash and typography', (
@@ -551,15 +564,17 @@ void main() {
     final service = MockAppService();
 
     await tester.pumpWidget(BAPlannerApp(service: service));
-    expect(find.text('연결됨'), findsOneWidget);
-    expect(find.text('42명'), findsOneWidget);
+    // 머리글 칩은 게임 창 연결이다(FE8-d). 고른 창이 없으면 회색 "연결 안 됨"이다.
+    expect(find.text('연결 안 됨'), findsOneWidget);
+    expect(find.text('42'), findsOneWidget);
 
     service.setConnection(BackendConnection.disconnected);
     service.setLargeDataset(true);
     await tester.pump();
 
-    expect(find.text('연결 안 됨'), findsOneWidget);
-    expect(find.text('9999명'), findsOneWidget);
+    // 백엔드 끊김이 게임 창 연결보다 앞선다(FD-117 (a)).
+    expect(find.text('백엔드 끊김'), findsOneWidget);
+    expect(find.text('9,999'), findsOneWidget);
   });
 
   testWidgets('scan tab is service-backed and requires an explicit target', (
@@ -575,11 +590,14 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('top-tab-scan')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('scan-page')), findsOneWidget);
-    final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Start scan'),
+    // 스캔 탭(FE8-g1): 고르기 화면. 게임 창을 고르기 전에는 시작이 막히고 창 선택 패널이 붙는다(FD-155).
+    expect(find.byKey(const ValueKey('scan-tab-page')), findsOneWidget);
+    expect(find.byKey(const ValueKey('scan-pick')), findsOneWidget);
+    final button = tester.widget<KitPressable>(
+      find.byKey(const ValueKey('scan-pick-start')),
     );
     expect(button.onPressed, isNull);
+    expect(find.byKey(const ValueKey('home-connect-panel')), findsOneWidget);
   });
 
   testWidgets('development panel opens as an overlay in a narrow window', (

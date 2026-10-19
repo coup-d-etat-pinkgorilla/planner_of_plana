@@ -28,6 +28,7 @@ MIGRATED = (
     "core/studio_numeric_bank.py",
     "core/student_scan_recognizer.py",
     "core/student_equipment_recognizer.py",
+    "core/recognition_image_ops.py",
 )
 NAMES = ("threshold", "margin", "floor", "minimum", "min_score", "min_margin", "score", "tolerance")
 # (file, value, detector) -> reason. Not thresholds: neutral defaults, blend weights, geometry.
@@ -47,7 +48,7 @@ ALLOWLIST = {
     ("core/student_scan_recognizer.py", 1.0, "assign"): "confidence clamp / 1 - similarity complement",
     ("core/student_scan_recognizer.py", 0.35, "assign"): "star residual -> confidence scaling, not an acceptance gate",
     ("core/student_equipment_recognizer.py", 0.0, "assign"): "margin fallback when fewer than two labels ranked",
-    ("core/student_equipment_recognizer.py", 0.0, "compare"): "zero-denominator guard in normalized correlation",
+    ("core/recognition_image_ops.py", 0.0, "compare"): "zero-denominator guard in ncc_unit_bilinear (moved from equipment in C5c)",
     ("core/inventory_navigation.py", 0.0, "assign"): "clipped (unreadable) page view uses no edge margin; geometry, not a gate",
     ("core/student_equipment_recognizer.py", 0.85, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
     ("core/student_equipment_recognizer.py", 0.15, "assign"): "correlation/mean-difference blend weight of the synthesized tier score",
@@ -99,8 +100,10 @@ class RecognitionThresholdRegistryTests(unittest.TestCase):
     def test_every_entry_is_named_typed_and_traceable(self):
         for entry in rt.THRESHOLDS.values():
             with self.subTest(name=entry.name):
-                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio", "intensity", "hue"})
-                self.assertTrue(0 <= entry.value <= {"intensity": 255, "hue": 360}.get(entry.kind, 1))
+                self.assertIn(entry.kind, {"score", "margin", "similarity", "ratio", "intensity", "hue", "pixels", "seconds"})
+                self.assertTrue(0 <= entry.value <= {"intensity": 255, "hue": 360, "pixels": 4096, "seconds": 10}.get(entry.kind, 1))
+                if entry.kind == "pixels":
+                    self.assertNotEqual("*", entry.resolution)
                 self.assertRegex(entry.phase, r"^(P\d+|F\d+|S\d+[a-z]?|D\d+|C\d+)$")
                 self.assertTrue((V7 / entry.doc).exists(), entry.doc)
                 self.assertIn(entry.resolution, {"*", "native1280", "native2560"})

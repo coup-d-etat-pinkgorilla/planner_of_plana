@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, fields
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 import traceback
 
 from core import student_meta
@@ -20,8 +20,12 @@ from core.planning import (
     MAX_TARGET_WEAPON_STAR,
     StudentGoal,
 )
-from core.planning_calc import calculate_plan_totals
-from core.inventory_catalog import CATALOG_REVISION, catalog_payload
+from core.planning_calc import CREDIT_CATEGORIES, calculate_plan_totals
+from core.inventory_catalog import CATALOG_REVISION, catalog_payload, canonical_resource_key
+from core.resource_acquisition import (
+    AcquisitionQueryError, validate_acquisition_query, resolve_acquisition_resource_key,
+    load_packaged_resource_acquisition, resource_acquisition_payload,
+)
 from core.plan_shortages import derive_plan_shortages
 from core.planning_document import (
     PlanningDocumentError,
@@ -30,22 +34,25 @@ from core.planning_document import (
     planning_document_from_wire,
 )
 from core.repository_dto import InventorySnapshot, RepositoryDTOError
+from core.student_bond import calculate_bond
 
 
 PROTOCOL_VERSION = 1
 METHOD_STUDENT_GET = "planning.student.get"
 METHOD_STUDENT_CATALOG = "planning.student.catalog"
+METHOD_STUDENT_CALCULATE = "planning.student.calculate"
 METHOD_PLAN_VALIDATE = "planning.plan.validate"
 METHOD_PLAN_CALCULATE = "planning.plan.calculate"
 METHOD_INVENTORY_CATALOG = "planning.inventory.catalog"
+METHOD_INVENTORY_ACQUISITION = "planning.inventory.acquisition.get"
 METHOD_PLAN_SHORTAGES = "planning.plan.shortages"
 METHOD_DOCUMENT_CALCULATE = "planning.document.calculate"
 METHOD_SCENARIO_COMPARE = "planning.scenario.compare"
 KNOWN_METHODS = frozenset(
     {
         METHOD_STUDENT_GET, METHOD_STUDENT_CATALOG, METHOD_PLAN_VALIDATE,
-        METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_PLAN_SHORTAGES,
-        METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE,
+        METHOD_PLAN_CALCULATE, METHOD_INVENTORY_CATALOG, METHOD_INVENTORY_ACQUISITION, METHOD_PLAN_SHORTAGES,
+        METHOD_DOCUMENT_CALCULATE, METHOD_SCENARIO_COMPARE, METHOD_STUDENT_CALCULATE,
     }
 )
 _ENVELOPE_KEYS = {"protocol", "id", "type", "method", "payload"}
@@ -140,13 +147,13 @@ def _plan_from_wire(value: object) -> GrowthPlan:
     return GrowthPlan(version=1, goals=canonical_goals)
 
 
-def _current_students_from_wire(value: object) -> dict[str, SimpleNamespace]:
+def _current_students_from_wire(value: object, *, document_bond: bool = False) -> dict[str, SimpleNamespace]:
     if not isinstance(value, list):
         raise InvalidPayload("current_students must be an array")
     result: dict[str, SimpleNamespace] = {}
     for index, raw_student in enumerate(value):
         student = _require_object(raw_student, f"current_students[{index}]")
-        if set(student) - _CURRENT_FIELDS:
+        if set(student) - (_CURRENT_FIELDS | ({"bond_rank"} if document_bond else set())):
             raise InvalidPayload(f"current_students[{index}] contains unknown fields")
         student_id = student.get("student_id")
         if not isinstance(student_id, str) or not student_id:
@@ -168,6 +175,10 @@ def _current_students_from_wire(value: object) -> dict[str, SimpleNamespace]:
                 raise InvalidPayload(
                     f"current_students[{index}].{key} must be a non-negative integer"
                 )
+        if document_bond and "bond_rank" in student:
+            bond = student["bond_rank"]
+            if bond is not None and (not _is_integer(bond) or not 1 <= bond <= 100):
+                raise InvalidPayload(f"current_students[{index}].bond_rank must be null or 1..100")
         result[student_id] = SimpleNamespace(**student)
     return result
 
@@ -191,6 +202,30 @@ def error_response(
     return _success(request, {"error": error})
 
 
+def _catalog_forms(
+    student_id: str, forms: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """FB-5: catalog entry form list. Only students with two or more forms get one.
+
+    ``form_id`` is the canonical form reference (``student_id`` for the first form,
+    ``student_id#n`` after it), ``label`` is the form label, and ``template_name`` is
+    the portrait file name (``None`` when the form declares none; the UI then shows
+    the regular placeholder).
+    """
+    if len(forms) < 2:
+        return []
+    items: list[dict[str, Any]] = []
+    for index, form in enumerate(forms, start=1):
+        label = form.get("label")
+        template = form.get("template_name")
+        items.append({
+            "form_id": student_id if index == 1 else f"{student_id}#{index}",
+            "label": str(label) if isinstance(label, (str, int)) and str(label).strip() else str(index),
+            "template_name": template if isinstance(template, str) and template.strip() else None,
+        })
+    return items
+
+
 class PlanningProtocolV1:
     def __init__(
         self,
@@ -198,8 +233,12 @@ class PlanningProtocolV1:
         student_lookup: Callable[[str], dict[str, Any] | None] = student_meta.get,
         student_ids: Callable[[], list[str]] = student_meta.all_ids,
         student_jp_only: Callable[[str], bool] = student_meta.is_jp_only,
+        student_forms: Callable[[str], Sequence[Mapping[str, Any]]] = (
+            lambda student_id: student_meta.MULTI_FORM_STUDENTS.get(student_id, ())
+        ),
         calculator: Callable[[dict[str, object], GrowthPlan], object] = calculate_plan_totals,
         inventory_catalog: Callable[[], list[dict[str, object]]] = catalog_payload,
+        resource_acquisition: Callable[[frozenset[str]], dict] = load_packaged_resource_acquisition,
         shortage_deriver: Callable[
             [dict[str, object], GrowthPlan, list[dict[str, Any]]], dict[str, object]
         ] = derive_plan_shortages,
@@ -208,8 +247,10 @@ class PlanningProtocolV1:
         self._student_lookup = student_lookup
         self._student_ids = student_ids
         self._student_jp_only = student_jp_only
+        self._student_forms = student_forms
         self._calculator = calculator
         self._inventory_catalog = inventory_catalog
+        self._resource_acquisition = resource_acquisition
         self._shortage_deriver = shortage_deriver
         self._diagnostic = diagnostic or (lambda _message: None)
 
@@ -228,12 +269,16 @@ class PlanningProtocolV1:
                 return self._student_get(request)
             if request["method"] == METHOD_STUDENT_CATALOG:
                 return self._student_catalog(request)
+            if request["method"] == METHOD_STUDENT_CALCULATE:
+                return self._student_calculate(request)
             if request["method"] == METHOD_PLAN_VALIDATE:
                 return self._plan_validate(request)
             if request["method"] == METHOD_PLAN_CALCULATE:
                 return self._plan_calculate(request)
             if request["method"] == METHOD_INVENTORY_CATALOG:
                 return self._inventory_catalog_get(request)
+            if request["method"] == METHOD_INVENTORY_ACQUISITION:
+                return self._inventory_acquisition_get(request)
             if request["method"] == METHOD_DOCUMENT_CALCULATE:
                 return self._document_calculate(request)
             if request["method"] == METHOD_SCENARIO_COMPARE:
@@ -299,9 +344,13 @@ class PlanningProtocolV1:
                     "equipment_slot_2": metadata.get("equipment_slot_2") if isinstance(metadata.get("equipment_slot_2"), str) else None,
                     "equipment_slot_3": metadata.get("equipment_slot_3") if isinstance(metadata.get("equipment_slot_3"), str) else None,
                     "jp_only": bool(self._student_jp_only(student_id)),
+                    "has_favorite_item": student_meta.favorite_item_enabled(student_id, server="kr"),
                     "search_tags": [str(item) for item in metadata.get("search_tags", []) if str(item).strip()] if isinstance(metadata.get("search_tags", []), list) else [],
                     "kr_search_tags": [str(item) for item in metadata.get("kr_search_tags", []) if str(item).strip()] if isinstance(metadata.get("kr_search_tags", []), list) else [],
                 })
+                forms = _catalog_forms(student_id, self._student_forms(student_id))
+                if forms:
+                    students[-1]["forms"] = forms
         except Exception:
             self._diagnostic(traceback.format_exc())
             return error_response(request, "metadata_lookup_failed", "Student catalog lookup failed")
@@ -351,6 +400,23 @@ class PlanningProtocolV1:
             },
         )
 
+    def _inventory_acquisition_get(self, request: dict[str, Any]) -> dict[str, Any]:
+        try:
+            raw_key = validate_acquisition_query(request["payload"])
+        except AcquisitionQueryError as error:
+            return error_response(request, error.code, str(error))
+        try:
+            known = frozenset(row["resource_key"] for row in self._inventory_catalog())
+            key = resolve_acquisition_resource_key(raw_key, known, canonical_resource_key)
+            table = self._resource_acquisition(known)
+            payload = resource_acquisition_payload(key, table)
+        except AcquisitionQueryError as error:
+            return error_response(request, error.code, str(error))
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "resource_acquisition_failed", "Resource acquisition metadata lookup failed")
+        return _success(request, payload)
+
     def _plan_shortages(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]
         if set(payload) != {"current_students", "plan", "inventory"}:
@@ -376,11 +442,54 @@ class PlanningProtocolV1:
             )
         return _success(request, result)
 
+    def _student_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
+        payload = request["payload"]
+        if not {"current_student", "targets"} <= set(payload) or set(payload) - {"current_student", "targets", "inventory", "bond"}:
+            raise InvalidPayload("payload must contain current_student, targets, and optional inventory/bond")
+        bond = payload.get("bond")
+        if "bond" in payload:
+            if not isinstance(bond, dict) or set(bond) != {"current_rank"}:
+                raise InvalidPayload("bond must contain only current_rank")
+            rank = bond["current_rank"]
+            if rank is not None and (not _is_integer(rank) or not 1 <= rank <= 100):
+                raise InvalidPayload("bond.current_rank must be null or 1..100")
+        records = _current_students_from_wire([payload["current_student"]])
+        # Use exactly the existing single-stage validation, goal conversion and
+        # resource projection. These IDs are transient provenance, never saved.
+        document = planning_document_from_wire({
+            "version": 1, "document_id": "growth-calculator", "name": "성장 계산기",
+            "kind": "scenario", "phases": [{
+                "phase_id": "growth-calculator-phase", "name": "성장 계산기",
+                "stages": [{
+                    "stage_id": "growth-calculator-stage", "student_id": next(iter(records)),
+                    "name": "계산기 목표", "targets": payload["targets"],
+                }],
+            }],
+        })
+        try:
+            inventory = InventorySnapshot.from_dict(payload.get("inventory", {"version": 1, "entries": []}))
+        except RepositoryDTOError as error:
+            raise InvalidPayload(str(error)) from error
+        breakdown = dict.fromkeys(CREDIT_CATEGORIES, 0)
+        try:
+            projection = calculate_document_projection(records, document, inventory, credit_breakdown=breakdown)
+            bond_result = calculate_bond(next(iter(records)), bond["current_rank"], payload["targets"]["bond_rank"], inventory) if bond is not None else None
+        except Exception:
+            self._diagnostic(traceback.format_exc())
+            return error_response(request, "calculation_failed", "Student growth calculation failed")
+        return _success(request, {
+            "totals": {"credits": projection["overall"]["cost"]["credits"]},
+            "credit_breakdown": breakdown,
+            "resources": projection["overall"]["resources"],
+            "warnings": projection["warnings"],
+            **({"bond": bond_result} if bond_result is not None else {}),
+        })
+
     def _document_calculate(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]
         if set(payload) != {"current_students", "inventory", "document"}:
             raise InvalidPayload("payload must contain current_students, inventory, and document")
-        records = _current_students_from_wire(payload["current_students"])
+        records = _current_students_from_wire(payload["current_students"], document_bond=True)
         document = planning_document_from_wire(payload["document"])
         try:
             inventory = InventorySnapshot.from_dict(payload["inventory"])
@@ -397,7 +506,7 @@ class PlanningProtocolV1:
         payload = request["payload"]
         if set(payload) != {"current_students", "inventory", "document_a", "document_b"}:
             raise InvalidPayload("payload must contain current_students, inventory, document_a, and document_b")
-        records = _current_students_from_wire(payload["current_students"])
+        records = _current_students_from_wire(payload["current_students"], document_bond=True)
         document_a = planning_document_from_wire(payload["document_a"])
         document_b = planning_document_from_wire(payload["document_b"])
         if document_a.document_id == document_b.document_id:

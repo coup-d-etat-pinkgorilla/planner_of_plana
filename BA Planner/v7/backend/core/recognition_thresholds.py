@@ -67,7 +67,9 @@ _ENTRIES = (
               note="consecutive captures this similar count toward a settled page"),
     # Inventory detail panel (F9).
     Threshold("inventory.detail.source_title.correlation", 0.8, "score", "F9", F9, "source", "inventory_detail_title"),
-    Threshold("inventory.detail.source_title.color", 0.95, "similarity", "F9", F9, "source", "inventory_detail_title"),
+    # C5 live 1920x1080: the item list title resamples to .948 (2560x1440 .963, 1280 1.0); non-inventory
+    # screens stay <= .86, and the item/equipment decision rests on the title correlation (.92 vs .47).
+    Threshold("inventory.detail.source_title.color", 0.93, "similarity", "F9", F9, "source", "inventory_detail_title"),
     Threshold("inventory.detail.selection.edge_fraction", 0.15, "ratio", "F9", F9, "selection", "selection_border"),
     Threshold("inventory.detail.x_mark.score", 0.72, "score", "F9", F9, "quantity", "inventory_detail_count"),
     Threshold("inventory.detail.x_mark.margin", 0.025, "margin", "F9", F9, "quantity", "inventory_detail_count"),
@@ -213,6 +215,67 @@ _ENTRIES = (
     # Inventory scrolling by measured pixel shift (C5, replaces F10 histogram row overlap).
     Threshold("inventory.shift.max_residual", 20.0, "intensity", "C5", C5, "scroll", "verified_pixel_shift",
               note="mean grey difference of the best shift; live good shifts 1.4-9.1"),
+    Threshold("inventory.empty_tile.stddev", 8.0, "intensity", "C5", C5, "slot", "inventory_grid",
+              note="grey stddev of a tile interior at or below this is an empty tile (live empty 0.0 at mean 204; filled min 34.8)"),
+    # Row phase from the grey gutters between tile rows (C5e-1, E1: gutter rows 1.00, tile rows <= .21).
+    Threshold("inventory.gutter.grey_low", 198.0, "intensity", "C5", C5, "scroll", "gutter_phase"),
+    Threshold("inventory.gutter.grey_high", 210.0, "intensity", "C5", C5, "scroll", "gutter_phase"),
+    Threshold("inventory.gutter.row_ratio", 0.80, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="share of gutter-grey pixels that makes a viewport row part of a gutter band"),
+    Threshold("inventory.gutter.agreement", 0.0042, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="gutters within ~3px of 720 of the median phase agree; at least two must"),
+    Threshold("inventory.gutter.max_correction", 0.035, "ratio", "C5", C5, "scroll", "gutter_phase",
+              note="a gutter phase more than ~25px of 720 from the measured shift is not trusted"),
+    # Deterministic page drag (C5e-1, E6; live 1280 re-measured 2026-09-27: hold .2s overshot ~40px,
+    # .35s ~10px, .5s ~2px, .8s exact to 1px over two moves each).
+    Threshold("inventory.scroll.priming_px", 8.0, "pixels", "C5", C5, "scroll", "deterministic_drag", resolution="native1280",
+              note="first move past the client's 4px drag threshold; it is consumed as the drag anchor"),
+    Threshold("inventory.scroll.hold_s", 0.8, "seconds", "C5", C5, "scroll", "deterministic_drag",
+              note="stillness before release so the list keeps no momentum (E6 said .2; this client needs .8)"),
+    Threshold("inventory.scroll.phase_tolerance_px", 3.0, "pixels", "C5", C5, "scroll", "gutter_phase", resolution="native1280",
+              note="gutter phase within this of the prediction verifies the move; beyond it the frame is re-measured"),
+    Threshold("inventory.scroll.overlap_icon", 0.86, "similarity", "C5", C5, "scroll", "overlap_identity",
+              note="median per-channel icon NCC of re-seen tiles vs their first reading; live same row >= .905, one row off <= .814"),
+    # D21 user-input guard (C5e-1d): a scanner step waits for this much user idleness, at most wait_s.
+    Threshold("input.guard.idle_s", 0.25, "seconds", "C5", C5, "input", "user_input_guard",
+              note="user input more recent than this defers the next scanner input"),
+    Threshold("input.guard.wait_s", 2.0, "seconds", "C5", C5, "input", "user_input_guard",
+              note="a user still busy after this makes the step input_busy without sending it"),
+    # C5e-2 tile bank (M4 on detail-confirmed tile crops; E2 + live two-scan check: 196/196, margin >= .023).
+    Threshold("inventory.tile_bank.score", 0.90, "similarity", "C5", C5, "item_id", "tile_bank",
+              note="per-channel icon NCC to a banked tile of the same identity"),
+    Threshold("inventory.tile_bank.shift", 2.0, "pixels", "C5", C5, "item_id", "tile_bank", resolution="native1280",
+              note="rows (half in columns) a banked tile may sit off in a later scan, scaled by crop height; live: 1 px"),
+    Threshold("inventory.tile_bank.rescore_window", 0.15, "margin", "C5", C5, "item_id", "tile_bank",
+              note="real-tier candidates within this of the unshifted best are re-scored at the shifts"),
+    Threshold("inventory.tile_bank.margin", 0.015, "margin", "C5", C5, "item_id", "tile_bank",
+              note="lead over the next banked identity (E2 min correct margin .016)"),
+    # C5e-6b synth drift guard (D19): p10 of detail-confirmed tiles' synthetic score; two low scans disable the tier.
+    Threshold("inventory.synth.drift_floor", 0.85, "similarity", "C5", C5, "item_id", "synth_bank",
+              note="live E4: tech notes p10 .939, equipment true min .829 - UI patches fall far below"),
+    # C5e-3 grid count bank (session glyphs from detail-confirmed quantities; live 1280 two-scan check).
+    Threshold("inventory.count_bank.score", 0.85, "score", "C5", C5, "quantity", "count_bank_session",
+              note="minimum digit NCC of a grid count read; live 77 confident reads, 0 wrong"),
+    Threshold("inventory.count_bank.margin", 0.08, "margin", "C5", C5, "quantity", "count_bank_session"),
+    Threshold("inventory.count_label.ink_strong", 160.0, "intensity", "C5", C5, "quantity", "count_bank_session",
+              note="ink map level of label rows and final trim"),
+    Threshold("inventory.count_label.ink_soft", 80.0, "intensity", "C5", C5, "quantity", "count_bank_session",
+              note="ink map level of label columns (keeps thin diagonal strokes connected)"),
+    # C5e-6d synthetic detail-icon fallback (E3: items 101/101 true min .973, equipment 95/95 true min .931,
+    # universal blueprints .95-.97 with margin >= .12).
+    Threshold("inventory.synth_detail.score", 0.90, "similarity", "C5", C5, "item_id", "synth_detail_icon"),
+    Threshold("inventory.synth_detail.margin", 0.05, "margin", "C5", C5, "item_id", "synth_detail_icon"),
+    # C5d-1 detail count on the label's digit pitch (fallback when the v6 per-length cells fail; live 1280:
+    # 350 frames agree with v6, 5-digit counts 5/5 - digit min .774 / margin min .044, pitch/height .75).
+    Threshold("inventory.detail.pitch.shear", 0.29, "ratio", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="italic slant (px/px) removed before splitting; live .28-.30 best, v6 cells .27-.31"),
+    Threshold("inventory.detail.pitch.ink", 197.0, "intensity", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="green level of the cyan count glyphs that separates touching digits"),
+    Threshold("inventory.detail.pitch.ratio_low", 0.62, "ratio", "C5", C5, "quantity", "inventory_detail_pitch",
+              note="digit pitch / glyph height lower bound of a length hypothesis (live .75)"),
+    Threshold("inventory.detail.pitch.ratio_high", 0.88, "ratio", "C5", C5, "quantity", "inventory_detail_pitch"),
+    Threshold("inventory.detail.pitch.digit.score", 0.72, "score", "C5", C5, "quantity", "inventory_detail_pitch"),
+    Threshold("inventory.detail.pitch.digit.margin", 0.03, "margin", "C5", C5, "quantity", "inventory_detail_pitch"),
     Threshold("inventory.shift.no_motion", 0.004, "ratio", "C5", C5, "scroll_terminal", "verified_no_motion",
               note="shift at or below ~3px of 720 means the drag did not move the list"),
 )

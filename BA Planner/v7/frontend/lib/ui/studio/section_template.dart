@@ -2,7 +2,6 @@ const sectionTemplateMajorDivisions = 12;
 const sectionTemplateSubdivisionsPerMajor = 8;
 const sectionTemplateGridSize =
     sectionTemplateMajorDivisions * sectionTemplateSubdivisionsPerMajor;
-const sectionTemplateSectionGap = 1;
 const sectionTemplateDetailGridSize = sectionTemplateGridSize;
 const studioDefaultPlacementGap = 0.02;
 const studioPlacementSnapTolerance = 0.012;
@@ -121,17 +120,6 @@ const defaultDetailedShapeSpec = AttachedSectionSpec(
   faceSpan: sectionTemplateDetailGridSize,
   height: sectionTemplateDetailGridSize ~/ 2,
 );
-
-enum SectionShape {
-  rightCut('우측 / 사선'),
-  leftCut('좌측 / 사선'),
-  bilateral('양측 / 사선'),
-  triangleLeft('좌상단 잔여 삼각형'),
-  triangleRight('우하단 잔여 삼각형');
-
-  const SectionShape(this.label);
-  final String label;
-}
 
 class SectionGridRect {
   const SectionGridRect(this.x, this.y, this.width, this.height);
@@ -364,24 +352,6 @@ StudioPlacementRect snapStudioPlacementSpacing(
   );
 }
 
-SectionGridRect copyGridRectWithin(
-  SectionGridRect rect, {
-  int? x,
-  int? y,
-  int? width,
-  int? height,
-  int gridSize = sectionTemplateGridSize,
-}) {
-  final nextX = (x ?? rect.x).clamp(0, gridSize - 1);
-  final nextY = (y ?? rect.y).clamp(0, gridSize - 1);
-  return SectionGridRect(
-    nextX,
-    nextY,
-    (width ?? rect.width).clamp(1, gridSize - nextX),
-    (height ?? rect.height).clamp(1, gridSize - nextY),
-  );
-}
-
 SectionGridRect moveSectionGridRect(
   SectionGridRect rect, {
   required int deltaX,
@@ -432,44 +402,6 @@ SectionGridRect resizeSectionGridRect(
     nextRight - nextLeft,
     nextBottom - nextTop,
   );
-}
-
-SectionGridRect resizeAspectLockedGridRect(
-  SectionGridRect rect, {
-  required SectionResizeHandle handle,
-  required int deltaX,
-  required int deltaY,
-  required double aspectRatio,
-  int gridSize = sectionTemplateDetailGridSize,
-}) {
-  final candidate = resizeSectionGridRect(
-    rect,
-    handle: handle,
-    deltaX: deltaX,
-    deltaY: deltaY,
-    gridSize: gridSize,
-  );
-  var width = candidate.width;
-  var height = (width / aspectRatio).round().clamp(1, gridSize);
-  if ((height - candidate.height).abs() >
-      (width - (candidate.height * aspectRatio).round()).abs()) {
-    height = candidate.height;
-    width = (height * aspectRatio).round().clamp(1, gridSize);
-  }
-  width = width.clamp(1, gridSize);
-  height = height.clamp(1, gridSize);
-  final anchorRight =
-      handle == SectionResizeHandle.topLeft ||
-      handle == SectionResizeHandle.bottomLeft;
-  final anchorBottom =
-      handle == SectionResizeHandle.topLeft ||
-      handle == SectionResizeHandle.topRight;
-  final x = anchorRight ? rect.right - width : rect.x;
-  final y = anchorBottom ? rect.bottom - height : rect.y;
-  if (x < 0 || y < 0 || x + width > gridSize || y + height > gridSize) {
-    return rect;
-  }
-  return SectionGridRect(x, y, width, height);
 }
 
 class SectionCanvasElement {

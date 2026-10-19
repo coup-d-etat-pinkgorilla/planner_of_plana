@@ -83,11 +83,11 @@
    "from": "page0",
    "input": "click",
    "names": [
-    "grid_slots[2]"
+    "grid_slots[1]"
    ],
    "to": "page0",
    "unmapped": true,
-   "x": 0.7547,
+   "x": 0.6695,
    "y": 0.2875
   },
   {
@@ -95,184 +95,12 @@
    "from": "page0",
    "input": "click",
    "names": [
-    "grid_slots[3]"
+    "grid_slots[1]"
    ],
    "to": "page0",
    "unmapped": true,
-   "x": 0.8398,
+   "x": 0.6695,
    "y": 0.2875
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [
-    "grid_slots[4]"
-   ],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.925,
-   "y": 0.2875
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.5844,
-   "y": 0.4285
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.6695,
-   "y": 0.4285
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.7547,
-   "y": 0.4285
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.8398,
-   "y": 0.4285
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.925,
-   "y": 0.4285
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.5844,
-   "y": 0.5687
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.6695,
-   "y": 0.5687
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.7547,
-   "y": 0.5687
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.8398,
-   "y": 0.5687
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.925,
-   "y": 0.5687
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.5844,
-   "y": 0.709
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.6695,
-   "y": 0.709
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.7547,
-   "y": 0.709
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.8398,
-   "y": 0.709
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.925,
-   "y": 0.709
-  },
-  {
-   "cleanup": false,
-   "from": "page0",
-   "input": "click",
-   "names": [],
-   "to": "page0",
-   "unmapped": true,
-   "x": 0.925,
-   "y": 0.5687
   }
  ],
  "progress": [
@@ -322,133 +150,7 @@
      {
       "confidence": 0.0,
       "field": "slots[1]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[2]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[3]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[4]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[5]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[6]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[7]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[8]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[9]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[10]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[11]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[12]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[13]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[14]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[15]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[16]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[17]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[18]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
-      "source": "inventory_detail_panel",
-      "status": "partial"
-     },
-     {
-      "confidence": 0.0,
-      "field": "slots[19]",
-      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored",
+      "note": "identity unresolved by detail panel;inventory_detail_unconfirmed;original selection restored;input stopped",
       "source": "inventory_detail_panel",
       "status": "partial"
      },
@@ -461,7 +163,7 @@
      }
     ],
     "payload": {
-     "catalog_revision": "171caccc05d444f1ef0b1116263adce5d55f1433bef65d3358238d0fe1cf6441",
+     "catalog_revision": "ace36d60b34093ee29af143e0b60fc22166002e85de13b095600378e62e690d8",
      "entries": [
       {
        "inventory_scan_profile": "tech_notes",
@@ -481,7 +183,9 @@
   "coverage_complete": false,
   "error": {
    "code": "inventory_detail_unconfirmed",
-   "details": {},
+   "details": {
+    "observed": 0
+   },
    "message": "selection unresolved after three captures"
   },
   "outcome": "failed",

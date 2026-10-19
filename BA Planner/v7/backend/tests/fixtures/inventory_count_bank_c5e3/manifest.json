@@ -1,0 +1,1525 @@
+{
+ "source": "live 1280 equipment scans C5e-1b (a) and C5e-1d (b): runtime slot crops (117x95) with rows above y 55 flattened, detail-confirmed quantities (null = the detail panel could not read it; these are the K labels)",
+ "tiles": [
+  {
+   "file": "a-000.png",
+   "scan": "a",
+   "index": 0,
+   "identity": "Equipment_Icon_Exp_3",
+   "quantity": "34",
+   "sha256": "7d271620d78b2a7704450e00bb0aa68bc450c2b03f8c61a31fa963f28d099a09"
+  },
+  {
+   "file": "a-001.png",
+   "scan": "a",
+   "index": 1,
+   "identity": "Equipment_Icon_Exp_2",
+   "quantity": null,
+   "sha256": "2b55bb5c9da3bc61a0458dd5f486638201861c881687806800e1c55a128d6e25"
+  },
+  {
+   "file": "a-002.png",
+   "scan": "a",
+   "index": 2,
+   "identity": "Equipment_Icon_Exp_1",
+   "quantity": null,
+   "sha256": "f2e58467ee10fe19b4fa9c4475a761e0245e486417493962434abd72f136d6d5"
+  },
+  {
+   "file": "a-003.png",
+   "scan": "a",
+   "index": 3,
+   "identity": "Equipment_Icon_Exp_0",
+   "quantity": null,
+   "sha256": "24c3adcbc777fec5df4702056f416c486cf6f98312d0e9b432b28a6fcf6161d4"
+  },
+  {
+   "file": "a-013.png",
+   "scan": "a",
+   "index": 13,
+   "identity": "Equipment_Icon_Necklace_Tier10",
+   "quantity": "126",
+   "sha256": "68658f2c98c7efed1229fec894e3394dc42b5ccf68c8555937f55fba35f7cffe"
+  },
+  {
+   "file": "a-014.png",
+   "scan": "a",
+   "index": 14,
+   "identity": "Equipment_Icon_Necklace_Tier8",
+   "quantity": "211",
+   "sha256": "5f0f19ce664e8b3a31ae6e8076210cec6f22dae8bb104addd3d00a936279e0a6"
+  },
+  {
+   "file": "a-015.png",
+   "scan": "a",
+   "index": 15,
+   "identity": "Equipment_Icon_Necklace_Tier7",
+   "quantity": "35",
+   "sha256": "3a6b0fcbf4c9f7e6294010f2e68b9172461c2f35c8c816e3ecef06e20d74770d"
+  },
+  {
+   "file": "a-016.png",
+   "scan": "a",
+   "index": 16,
+   "identity": "Equipment_Icon_Necklace_Tier6",
+   "quantity": "482",
+   "sha256": "a35af9bc4a3ab3e99b5b5136b99098715a50d10cade5d376f10103df271d22c7"
+  },
+  {
+   "file": "a-017.png",
+   "scan": "a",
+   "index": 17,
+   "identity": "Equipment_Icon_Necklace_Tier5",
+   "quantity": "256",
+   "sha256": "49638c17e0a5b9c3f15b50c1abddffed5396eb20eee91086e84c264ec8bcc44a"
+  },
+  {
+   "file": "a-018.png",
+   "scan": "a",
+   "index": 18,
+   "identity": "Equipment_Icon_Necklace_Tier4",
+   "quantity": "1736",
+   "sha256": "446b5b8b7cf11d239d8bde13d31affaa62e5fd482ba21429d7a08c725dc35c14"
+  },
+  {
+   "file": "a-019.png",
+   "scan": "a",
+   "index": 19,
+   "identity": "Equipment_Icon_Necklace_Tier3",
+   "quantity": "1719",
+   "sha256": "123641875cb9becfed6c7fdb8f58fb46a095b8036f0d8c4312e343c13f55acd3"
+  },
+  {
+   "file": "a-020.png",
+   "scan": "a",
+   "index": 20,
+   "identity": "Equipment_Icon_Necklace_Tier2",
+   "quantity": "2119",
+   "sha256": "23a4f1cc7e6764bdf98f139185a9620401a3598d3caee1a50cc0420a59c545c6"
+  },
+  {
+   "file": "a-021.png",
+   "scan": "a",
+   "index": 21,
+   "identity": "Equipment_Icon_Watch_Tier10",
+   "quantity": "273",
+   "sha256": "94f883297da447952a39b5a5152b237723e3462b14713f73303b3f36d26186f1"
+  },
+  {
+   "file": "a-022.png",
+   "scan": "a",
+   "index": 22,
+   "identity": "Equipment_Icon_Watch_Tier9",
+   "quantity": "314",
+   "sha256": "a69a5ab7d55cdfbc96cfddd950533283bb64cc3d057a75c0d309e1de50099102"
+  },
+  {
+   "file": "a-023.png",
+   "scan": "a",
+   "index": 23,
+   "identity": "Equipment_Icon_Watch_Tier8",
+   "quantity": "385",
+   "sha256": "2638a613e9fd0641fc918c2380cd426f7a247d03c8fd4a749c0ba40de0e88771"
+  },
+  {
+   "file": "a-024.png",
+   "scan": "a",
+   "index": 24,
+   "identity": "Equipment_Icon_Watch_Tier7",
+   "quantity": "699",
+   "sha256": "f46a1d4571a1d81500c9ca13070cc71f1e7791e958c57110499d191b920c80fa"
+  },
+  {
+   "file": "a-025.png",
+   "scan": "a",
+   "index": 25,
+   "identity": "Equipment_Icon_Charm_Tier10",
+   "quantity": "441",
+   "sha256": "4cbe1ea063d3e2616fbd65e70b02d6dbb73f9cb8b1946b9c2c19257e653b4d2c"
+  },
+  {
+   "file": "a-026.png",
+   "scan": "a",
+   "index": 26,
+   "identity": "Equipment_Icon_Charm_Tier9",
+   "quantity": "88",
+   "sha256": "87d3e395f8874809eba24a7a63d28f47cb0d5d2e3a76511c81bd0d8550dfeff9"
+  },
+  {
+   "file": "a-027.png",
+   "scan": "a",
+   "index": 27,
+   "identity": "Equipment_Icon_Charm_Tier8",
+   "quantity": "550",
+   "sha256": "884e4b50920e50df0a76a7e8eed8194919b813f43dd49ef98304f43c615df2ff"
+  },
+  {
+   "file": "a-028.png",
+   "scan": "a",
+   "index": 28,
+   "identity": "Equipment_Icon_Charm_Tier7",
+   "quantity": "1017",
+   "sha256": "fc1557d916efe01208825053e2eeca8e8e62958e285fa4a15229c39df90d3f66"
+  },
+  {
+   "file": "a-029.png",
+   "scan": "a",
+   "index": 29,
+   "identity": "Equipment_Icon_Charm_Tier6",
+   "quantity": "180",
+   "sha256": "0a463a8a81d18dd38d4a92addb0ed15d123932fa20c7e7c8782baa5b59c00406"
+  },
+  {
+   "file": "a-030.png",
+   "scan": "a",
+   "index": 30,
+   "identity": "Equipment_Icon_Charm_Tier5",
+   "quantity": "736",
+   "sha256": "505e8805319e7b65ca8e900a936fe755dc7d811a2c86d847e196e9e7ffa71aaf"
+  },
+  {
+   "file": "a-031.png",
+   "scan": "a",
+   "index": 31,
+   "identity": "Equipment_Icon_Charm_Tier4",
+   "quantity": "663",
+   "sha256": "8ae05d80e78051236c4dd1e0016b1fb24116b8bfdbadfd9c4139cde5c5e550b2"
+  },
+  {
+   "file": "a-032.png",
+   "scan": "a",
+   "index": 32,
+   "identity": "Equipment_Icon_Charm_Tier3",
+   "quantity": "592",
+   "sha256": "798702ce8ae19e0b700c51851be1bfb1b2343a05ab4bb5323fd13b3349bccab2"
+  },
+  {
+   "file": "a-033.png",
+   "scan": "a",
+   "index": 33,
+   "identity": "Equipment_Icon_Charm_Tier2",
+   "quantity": "652",
+   "sha256": "6a38046bbf17395200f5715db3c4d01268db11a9d22fd911c231ff4546e9d963"
+  },
+  {
+   "file": "a-034.png",
+   "scan": "a",
+   "index": 34,
+   "identity": "Equipment_Icon_Hairpin_Tier9",
+   "quantity": "54",
+   "sha256": "199b99741006f6c0cf3fcb25aae6b1f4a8e788fec9e5d6687cc05bcbb2a04e33"
+  },
+  {
+   "file": "a-035.png",
+   "scan": "a",
+   "index": 35,
+   "identity": "Equipment_Icon_Hairpin_Tier7",
+   "quantity": "229",
+   "sha256": "6d5621fad7ed8027aae4d5e7c15fb313574fc8c9457f22c747724ffe78d128a1"
+  },
+  {
+   "file": "a-036.png",
+   "scan": "a",
+   "index": 36,
+   "identity": "Equipment_Icon_Hairpin_Tier4",
+   "quantity": "396",
+   "sha256": "7cb72c5dd83e7bb46aa16d40443bd025e65905464a0a91fe7736d2f05bbf62e5"
+  },
+  {
+   "file": "a-037.png",
+   "scan": "a",
+   "index": 37,
+   "identity": "Equipment_Icon_Hairpin_Tier3",
+   "quantity": "209",
+   "sha256": "edaf764d7e4050510408249948dd725afc3033bfa9f557d753140310053787ac"
+  },
+  {
+   "file": "a-038.png",
+   "scan": "a",
+   "index": 38,
+   "identity": "Equipment_Icon_Hairpin_Tier2",
+   "quantity": "1062",
+   "sha256": "0ac16808651aa026636ca3066eff852be13c7b44ff227ffc842f2a63db907daa"
+  },
+  {
+   "file": "a-039.png",
+   "scan": "a",
+   "index": 39,
+   "identity": "Equipment_Icon_Badge_Tier10",
+   "quantity": "629",
+   "sha256": "1b1c8deb6e9c05994fca372db2de9f43d836a3dcc6c98f40a87dba4e907caa24"
+  },
+  {
+   "file": "a-040.png",
+   "scan": "a",
+   "index": 40,
+   "identity": "Equipment_Icon_Badge_Tier9",
+   "quantity": "1332",
+   "sha256": "0abe9781edd5b54b6cacc0bf3b90b28f3b6300f935229eb99ae50de10e8fa537"
+  },
+  {
+   "file": "a-041.png",
+   "scan": "a",
+   "index": 41,
+   "identity": "Equipment_Icon_Badge_Tier8",
+   "quantity": "1085",
+   "sha256": "17fa02ee0dfcf3049d7655408eb90406b9ed9f3ba2a77c4274f45262e135c2cc"
+  },
+  {
+   "file": "a-042.png",
+   "scan": "a",
+   "index": 42,
+   "identity": "Equipment_Icon_Badge_Tier7",
+   "quantity": "1747",
+   "sha256": "9d0484e1065994285056477e4e77baf4c6c81c54b7f58990443c576d048f824d"
+  },
+  {
+   "file": "a-043.png",
+   "scan": "a",
+   "index": 43,
+   "identity": "Equipment_Icon_Badge_Tier6",
+   "quantity": "605",
+   "sha256": "ad2fddea6f2c1a21313fe98000234b83b59b86671c7ed863cd996b8340ed8d93"
+  },
+  {
+   "file": "a-044.png",
+   "scan": "a",
+   "index": 44,
+   "identity": "Equipment_Icon_Badge_Tier5",
+   "quantity": "1149",
+   "sha256": "dac20646ecf385ccb98210f0793cec90e42877b80db1b0c01ad1512ed0528b3d"
+  },
+  {
+   "file": "a-045.png",
+   "scan": "a",
+   "index": 45,
+   "identity": "Equipment_Icon_Badge_Tier4",
+   "quantity": "1012",
+   "sha256": "91a2bdf82a1b2b1c74b70b6ffb381248386486accec0fceeb3a53782e2f520f8"
+  },
+  {
+   "file": "a-046.png",
+   "scan": "a",
+   "index": 46,
+   "identity": "Equipment_Icon_Badge_Tier3",
+   "quantity": "1050",
+   "sha256": "4e5bde053a7a5553009a7d872c2c0838acfea4e2c5d11c7f662680e176b8726e"
+  },
+  {
+   "file": "a-047.png",
+   "scan": "a",
+   "index": 47,
+   "identity": "Equipment_Icon_Badge_Tier2",
+   "quantity": "1105",
+   "sha256": "d8b5548150b0f2d91f61718b4b1420c1e688279ba48c9d41c31f3f44ea8a4f5c"
+  },
+  {
+   "file": "a-048.png",
+   "scan": "a",
+   "index": 48,
+   "identity": "Equipment_Icon_Bag_Tier10",
+   "quantity": "694",
+   "sha256": "09bfe8e295c03b8005bcd801a60ed687b9b95c7ad4e1d2d5f06f8899a438668d"
+  },
+  {
+   "file": "a-049.png",
+   "scan": "a",
+   "index": 49,
+   "identity": "Equipment_Icon_Bag_Tier9",
+   "quantity": "436",
+   "sha256": "6f627c5b5b40b53cea073f9b501c626cad57ed6db5f5f7a60ab0978f6de60ca7"
+  },
+  {
+   "file": "a-050.png",
+   "scan": "a",
+   "index": 50,
+   "identity": "Equipment_Icon_Bag_Tier8",
+   "quantity": "2194",
+   "sha256": "2269ba068e9516f1dd42d0e7a7e41cae6406f07eae2d765668d10c5530732264"
+  },
+  {
+   "file": "a-051.png",
+   "scan": "a",
+   "index": 51,
+   "identity": "Equipment_Icon_Bag_Tier7",
+   "quantity": "1876",
+   "sha256": "fddaff15c8ad0e728b4d97b4679850b73d077de1ca6f9655dadb707dc61b270b"
+  },
+  {
+   "file": "a-052.png",
+   "scan": "a",
+   "index": 52,
+   "identity": "Equipment_Icon_Bag_Tier6",
+   "quantity": "2522",
+   "sha256": "c37b8469b1d2d45a6d1e6f12b73d3fd5c91d22dc6472a37d164cf8ce00fb7c2a"
+  },
+  {
+   "file": "a-053.png",
+   "scan": "a",
+   "index": 53,
+   "identity": "Equipment_Icon_Bag_Tier5",
+   "quantity": "2067",
+   "sha256": "28f1677fd21c645e549250fd4d22ffc90f85f439605c2e9d2523b1fea7d13840"
+  },
+  {
+   "file": "a-054.png",
+   "scan": "a",
+   "index": 54,
+   "identity": "Equipment_Icon_Bag_Tier4",
+   "quantity": "2127",
+   "sha256": "8141f4bb84d2e0c24ea20637c7d44a9cfac68b9bf4742bf79d67c95b8fe5eaec"
+  },
+  {
+   "file": "a-055.png",
+   "scan": "a",
+   "index": 55,
+   "identity": "Equipment_Icon_Bag_Tier3",
+   "quantity": "1370",
+   "sha256": "5205b44c8aeaef7651b1edf5e5ba93b0ff1f1b08f2ad38b3f210dd822760537c"
+  },
+  {
+   "file": "a-056.png",
+   "scan": "a",
+   "index": 56,
+   "identity": "Equipment_Icon_Bag_Tier2",
+   "quantity": "880",
+   "sha256": "490029cb393c2b6c9f4d6391e9cc7807e6b82c87c15af91b3898060258c7bf95"
+  },
+  {
+   "file": "a-057.png",
+   "scan": "a",
+   "index": 57,
+   "identity": "Equipment_Icon_Shoes_Tier10",
+   "quantity": "548",
+   "sha256": "7d6183faf7cbf4d82d18efbce38246317f967ea152c012a7f449c8b93af7de3c"
+  },
+  {
+   "file": "a-058.png",
+   "scan": "a",
+   "index": 58,
+   "identity": "Equipment_Icon_Shoes_Tier9",
+   "quantity": "122",
+   "sha256": "dccf0ac19397ad754759ea0d9f48749293c259b6f6f6afd54b3a7e55f38b2c75"
+  },
+  {
+   "file": "a-059.png",
+   "scan": "a",
+   "index": 59,
+   "identity": "Equipment_Icon_Shoes_Tier8",
+   "quantity": "1010",
+   "sha256": "290555465065b46b8ad0aba83b576fae812cdcedc560ef302f99672ef1110cb6"
+  },
+  {
+   "file": "a-060.png",
+   "scan": "a",
+   "index": 60,
+   "identity": "Equipment_Icon_Shoes_Tier7",
+   "quantity": "1214",
+   "sha256": "6ac65d49776dc9c0b63330aa5cc05a9ec5e89e647a6ab83ab24e42b5ca3f2024"
+  },
+  {
+   "file": "a-061.png",
+   "scan": "a",
+   "index": 61,
+   "identity": "Equipment_Icon_Shoes_Tier6",
+   "quantity": "402",
+   "sha256": "9ea40bfb0796177b9b6c204dabaf5f17cb6744aa53bb90bdf555cba1c1c5b2df"
+  },
+  {
+   "file": "a-062.png",
+   "scan": "a",
+   "index": 62,
+   "identity": "Equipment_Icon_Shoes_Tier5",
+   "quantity": "793",
+   "sha256": "9039adfce52bbd5b1296ef7a5106b574342e3ee9801e367dfef087b45ce8d87f"
+  },
+  {
+   "file": "a-063.png",
+   "scan": "a",
+   "index": 63,
+   "identity": "Equipment_Icon_Shoes_Tier4",
+   "quantity": "1707",
+   "sha256": "8d4e37615dd5d795dff402128d13e5cbcf4cbfea4c9260b90ab3c5f6f377a806"
+  },
+  {
+   "file": "a-064.png",
+   "scan": "a",
+   "index": 64,
+   "identity": "Equipment_Icon_Shoes_Tier3",
+   "quantity": "1160",
+   "sha256": "14b5d9c081a10783eaecb83d78eb7362f10f8b3ac027e5b5d4d37211b1f4d6a5"
+  },
+  {
+   "file": "a-065.png",
+   "scan": "a",
+   "index": 65,
+   "identity": "Equipment_Icon_Shoes_Tier2",
+   "quantity": "1496",
+   "sha256": "76f6986c40ee6bb39425a0e1d497d583ae0b4ae88aba9f481b39dcfe46c00f93"
+  },
+  {
+   "file": "a-066.png",
+   "scan": "a",
+   "index": 66,
+   "identity": "Equipment_Icon_Gloves_Tier10",
+   "quantity": "413",
+   "sha256": "1bb38c6a20eb3b4eb0532de5ce4d726fa9329fd1c3c07190f6d069014ff7d884"
+  },
+  {
+   "file": "a-067.png",
+   "scan": "a",
+   "index": 67,
+   "identity": "Equipment_Icon_Gloves_Tier9",
+   "quantity": "388",
+   "sha256": "b2557835a8afd4297980905636a0bf5848ad6f396de3cdb837c86b1c390563d8"
+  },
+  {
+   "file": "a-068.png",
+   "scan": "a",
+   "index": 68,
+   "identity": "Equipment_Icon_Gloves_Tier8",
+   "quantity": "418",
+   "sha256": "19501cf9eaac7030d6b2eb4dc680d4d4d168f05aaa464ec610087b4569df7e66"
+  },
+  {
+   "file": "a-069.png",
+   "scan": "a",
+   "index": 69,
+   "identity": "Equipment_Icon_Gloves_Tier7",
+   "quantity": "1010",
+   "sha256": "bd0580aaf5fbece3abc24a6f2d5802789c49d857378fc6850024263baf94ceec"
+  },
+  {
+   "file": "a-070.png",
+   "scan": "a",
+   "index": 70,
+   "identity": "Equipment_Icon_Gloves_Tier5",
+   "quantity": "345",
+   "sha256": "7b2e91034fc884508f074d6d1f4ffbaaea923da9349a761c41ac9cc15f010957"
+  },
+  {
+   "file": "a-071.png",
+   "scan": "a",
+   "index": 71,
+   "identity": "Equipment_Icon_Gloves_Tier4",
+   "quantity": "357",
+   "sha256": "0b5ad1b0f81917afd94fe0fd1ccb709639e48d889de80fce834d26bafe36e43f"
+  },
+  {
+   "file": "a-072.png",
+   "scan": "a",
+   "index": 72,
+   "identity": "Equipment_Icon_Gloves_Tier3",
+   "quantity": "264",
+   "sha256": "7bd5cd8b1335187f0cc12a8d1e4d82bfa5b15e903ad2c70296fc9a87c5c14957"
+  },
+  {
+   "file": "a-073.png",
+   "scan": "a",
+   "index": 73,
+   "identity": "Equipment_Icon_Gloves_Tier2",
+   "quantity": "387",
+   "sha256": "b639ecd1932cad728b5c98414dfe847e687bdf9a63495c60247acac92d775246"
+  },
+  {
+   "file": "a-074.png",
+   "scan": "a",
+   "index": 74,
+   "identity": "Equipment_Icon_Hat_Tier10",
+   "quantity": "138",
+   "sha256": "1f995e93d061f7950c6a72dc9d57dc2a56436b4d78d2a0858b79fea032564290"
+  },
+  {
+   "file": "a-075.png",
+   "scan": "a",
+   "index": 75,
+   "identity": "Equipment_Icon_Hat_Tier9",
+   "quantity": "309",
+   "sha256": "1b31843a87d3a5f829b18dbeee657b0308d2b68fedce43f2fe9b814a72db0752"
+  },
+  {
+   "file": "a-076.png",
+   "scan": "a",
+   "index": 76,
+   "identity": "Equipment_Icon_Hat_Tier8",
+   "quantity": "605",
+   "sha256": "9fca03d595aa4a7660f3954a2a653827126716d42f5e297c52a3255bebd3947e"
+  },
+  {
+   "file": "a-077.png",
+   "scan": "a",
+   "index": 77,
+   "identity": "Equipment_Icon_Hat_Tier7",
+   "quantity": "1518",
+   "sha256": "9d734fc7143b92dcb418cbcb6617c6b7581b6c14f22d8cc57559261a6d7928a0"
+  },
+  {
+   "file": "a-078.png",
+   "scan": "a",
+   "index": 78,
+   "identity": "Equipment_Icon_Hat_Tier6",
+   "quantity": "212",
+   "sha256": "c79a69969912686a36d063baa69fa9adbdfd351d6187ac2522655d3a3c9255d2"
+  },
+  {
+   "file": "a-079.png",
+   "scan": "a",
+   "index": 79,
+   "identity": "Equipment_Icon_Hat_Tier5",
+   "quantity": "991",
+   "sha256": "4bd6fba774bd09c7576105453e022e06822e5f8765b1091b3e91bc00d1a4537e"
+  },
+  {
+   "file": "a-080.png",
+   "scan": "a",
+   "index": 80,
+   "identity": "Equipment_Icon_Hat_Tier4",
+   "quantity": "649",
+   "sha256": "bb21cd69ab6173d701bb4172ae8d30aed1e4d959a1fb791958ff420a0be49c14"
+  },
+  {
+   "file": "a-081.png",
+   "scan": "a",
+   "index": 81,
+   "identity": "Equipment_Icon_Hat_Tier3",
+   "quantity": "169",
+   "sha256": "550db516b31e46a222bce600bd17e66d13759af9d99751dc41f06f6281ffa092"
+  },
+  {
+   "file": "a-082.png",
+   "scan": "a",
+   "index": 82,
+   "identity": "Equipment_Icon_Hat_Tier2",
+   "quantity": "243",
+   "sha256": "fb6514d2a49360955a75ecc961cc3007da53721a3c94865b293cb3235d993104"
+  },
+  {
+   "file": "a-083.png",
+   "scan": "a",
+   "index": 83,
+   "identity": "Equipment_Icon_Necklace_Tier1",
+   "quantity": "815",
+   "sha256": "57f1a21ed84b3a1e76e9339f77cdb7c731b62af1ea66fa0a8e4e3e05b5bde03b"
+  },
+  {
+   "file": "a-084.png",
+   "scan": "a",
+   "index": 84,
+   "identity": "Equipment_Icon_Watch_Tier1",
+   "quantity": "175",
+   "sha256": "bc90d87ff9a90d49e624003017d466b5b63fb06ebb13a8d49c565b189df9ade3"
+  },
+  {
+   "file": "a-085.png",
+   "scan": "a",
+   "index": 85,
+   "identity": "Equipment_Icon_Charm_Tier1",
+   "quantity": "224",
+   "sha256": "dd68db50e96096257b3986f51c53d7ccaa13503dabce1cb066db33965f4e743c"
+  },
+  {
+   "file": "a-086.png",
+   "scan": "a",
+   "index": 86,
+   "identity": "Equipment_Icon_Hairpin_Tier1",
+   "quantity": "789",
+   "sha256": "10107cd5725ac9447c5b078d5d8c426d9c9982be5090efd80a6fd656c130d225"
+  },
+  {
+   "file": "a-087.png",
+   "scan": "a",
+   "index": 87,
+   "identity": "Equipment_Icon_Badge_Tier1",
+   "quantity": "261",
+   "sha256": "2a4f89ff30124010f31bea8251c1e5c63db00c395e43fe430fd0eccc00abce9c"
+  },
+  {
+   "file": "a-088.png",
+   "scan": "a",
+   "index": 88,
+   "identity": "Equipment_Icon_Bag_Tier1",
+   "quantity": "282",
+   "sha256": "3a4d5e59d6283bbe4ab2b29d1ab418059f5a564101d76501eb811e372e522eb9"
+  },
+  {
+   "file": "a-089.png",
+   "scan": "a",
+   "index": 89,
+   "identity": "Equipment_Icon_Shoes_Tier1",
+   "quantity": "870",
+   "sha256": "8ee6d9e44739499196b0c5f50d7e285f1a035c36190d981a1992ff9055b86db5"
+  },
+  {
+   "file": "a-090.png",
+   "scan": "a",
+   "index": 90,
+   "identity": "Equipment_Icon_Gloves_Tier1",
+   "quantity": "218",
+   "sha256": "05e124f585a5e362918aca47cb9af15434cf6d6ddbf1d4f22e3f1190127471e8"
+  },
+  {
+   "file": "a-091.png",
+   "scan": "a",
+   "index": 91,
+   "identity": "Equipment_Icon_Hat_Tier1",
+   "quantity": "188",
+   "sha256": "642250776e741701ad187a01ec90d6ec637ee44eeb3f90ba5df007b55bbad2f9"
+  },
+  {
+   "file": "a-092.png",
+   "scan": "a",
+   "index": 92,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_3",
+   "quantity": "48",
+   "sha256": "5f58ea9d3e2931cdb50e1b2f3b5d9c5f77bf50d4cedf0df0a6358c5f9f22c6f2"
+  },
+  {
+   "file": "a-093.png",
+   "scan": "a",
+   "index": 93,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_2",
+   "quantity": "261",
+   "sha256": "b43f98aebf8b7f65ac7a9ee4948fb92afc7632b047acddc94b1cd2ea91ec7c8c"
+  },
+  {
+   "file": "a-094.png",
+   "scan": "a",
+   "index": 94,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_1",
+   "quantity": "1251",
+   "sha256": "004a1f4168de247b38abf3175ecdd73b8650518c3dcb0c13bb092da25a88e8e5"
+  },
+  {
+   "file": "a-095.png",
+   "scan": "a",
+   "index": 95,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_3",
+   "quantity": "5",
+   "sha256": "62d47d8fee68b5566971d127586625d7f03f7dffb5086d43d8c86282803fd746"
+  },
+  {
+   "file": "a-096.png",
+   "scan": "a",
+   "index": 96,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_2",
+   "quantity": "227",
+   "sha256": "bf997cdd6f37ce97a3a7aa267ad3f06fb476e43ca630e9ea38244525fe690b07"
+  },
+  {
+   "file": "a-097.png",
+   "scan": "a",
+   "index": 97,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_1",
+   "quantity": null,
+   "sha256": "79cb8dcf20e64a2c7ea97f8cb642f106b00b90ad7d50c5a72ab84a5916a4612a"
+  },
+  {
+   "file": "a-098.png",
+   "scan": "a",
+   "index": 98,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_3",
+   "quantity": "21",
+   "sha256": "8c50c66691fb5e1ddac2f414550bca35073260713fa5622bd84d012a619ef6a7"
+  },
+  {
+   "file": "a-099.png",
+   "scan": "a",
+   "index": 99,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_2",
+   "quantity": "334",
+   "sha256": "6624e5e3080ed54c17292bccbad67e0a3aa0fe446a4656e8744fe5efc31bdd0a"
+  },
+  {
+   "file": "a-100.png",
+   "scan": "a",
+   "index": 100,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_1",
+   "quantity": "13559",
+   "sha256": "cc5ce6b4478548291aaa9d9b3c9a66894d1503751bc1ba77e03f61a0b3a4e3ae"
+  },
+  {
+   "file": "a-101.png",
+   "scan": "a",
+   "index": 101,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_3",
+   "quantity": "26",
+   "sha256": "3691a54a7e608cf386f28dafc4d023de12ee438703c97e5f02df4975e3834c2e"
+  },
+  {
+   "file": "a-102.png",
+   "scan": "a",
+   "index": 102,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_2",
+   "quantity": "356",
+   "sha256": "c58de26f42bb1457a33a9f4488d4a821fcc8c8fdd3a7777bb4f3ae6c2842ffe0"
+  },
+  {
+   "file": "a-103.png",
+   "scan": "a",
+   "index": 103,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_1",
+   "quantity": null,
+   "sha256": "ec562a7500ae91208bcbfea03c669c3e3d944a0d35b65b25d746c7c8b09a807b"
+  },
+  {
+   "file": "b-000.png",
+   "scan": "b",
+   "index": 0,
+   "identity": "Equipment_Icon_Exp_3",
+   "quantity": "34",
+   "sha256": "843f1c70f7bc8af5b40b284a5019fbaca7eff74cd32e4cea16a23d02086773e7"
+  },
+  {
+   "file": "b-001.png",
+   "scan": "b",
+   "index": 1,
+   "identity": "Equipment_Icon_Exp_2",
+   "quantity": null,
+   "sha256": "9ef934e657929360bd71a7335d0633f212aa0d3011ef6735bfe6f932d79eb2d3"
+  },
+  {
+   "file": "b-002.png",
+   "scan": "b",
+   "index": 2,
+   "identity": "Equipment_Icon_Exp_1",
+   "quantity": null,
+   "sha256": "f2e58467ee10fe19b4fa9c4475a761e0245e486417493962434abd72f136d6d5"
+  },
+  {
+   "file": "b-003.png",
+   "scan": "b",
+   "index": 3,
+   "identity": "Equipment_Icon_Exp_0",
+   "quantity": null,
+   "sha256": "24c3adcbc777fec5df4702056f416c486cf6f98312d0e9b432b28a6fcf6161d4"
+  },
+  {
+   "file": "b-013.png",
+   "scan": "b",
+   "index": 13,
+   "identity": "Equipment_Icon_Necklace_Tier10",
+   "quantity": "126",
+   "sha256": "68658f2c98c7efed1229fec894e3394dc42b5ccf68c8555937f55fba35f7cffe"
+  },
+  {
+   "file": "b-014.png",
+   "scan": "b",
+   "index": 14,
+   "identity": "Equipment_Icon_Necklace_Tier8",
+   "quantity": "211",
+   "sha256": "5f0f19ce664e8b3a31ae6e8076210cec6f22dae8bb104addd3d00a936279e0a6"
+  },
+  {
+   "file": "b-015.png",
+   "scan": "b",
+   "index": 15,
+   "identity": "Equipment_Icon_Necklace_Tier7",
+   "quantity": "35",
+   "sha256": "3a6b0fcbf4c9f7e6294010f2e68b9172461c2f35c8c816e3ecef06e20d74770d"
+  },
+  {
+   "file": "b-016.png",
+   "scan": "b",
+   "index": 16,
+   "identity": "Equipment_Icon_Necklace_Tier6",
+   "quantity": "482",
+   "sha256": "a35af9bc4a3ab3e99b5b5136b99098715a50d10cade5d376f10103df271d22c7"
+  },
+  {
+   "file": "b-017.png",
+   "scan": "b",
+   "index": 17,
+   "identity": "Equipment_Icon_Necklace_Tier5",
+   "quantity": "256",
+   "sha256": "49638c17e0a5b9c3f15b50c1abddffed5396eb20eee91086e84c264ec8bcc44a"
+  },
+  {
+   "file": "b-018.png",
+   "scan": "b",
+   "index": 18,
+   "identity": "Equipment_Icon_Necklace_Tier4",
+   "quantity": "1736",
+   "sha256": "446b5b8b7cf11d239d8bde13d31affaa62e5fd482ba21429d7a08c725dc35c14"
+  },
+  {
+   "file": "b-019.png",
+   "scan": "b",
+   "index": 19,
+   "identity": "Equipment_Icon_Necklace_Tier3",
+   "quantity": "1719",
+   "sha256": "123641875cb9becfed6c7fdb8f58fb46a095b8036f0d8c4312e343c13f55acd3"
+  },
+  {
+   "file": "b-020.png",
+   "scan": "b",
+   "index": 20,
+   "identity": "Equipment_Icon_Necklace_Tier2",
+   "quantity": "2119",
+   "sha256": "23a4f1cc7e6764bdf98f139185a9620401a3598d3caee1a50cc0420a59c545c6"
+  },
+  {
+   "file": "b-021.png",
+   "scan": "b",
+   "index": 21,
+   "identity": "Equipment_Icon_Watch_Tier10",
+   "quantity": "273",
+   "sha256": "94f883297da447952a39b5a5152b237723e3462b14713f73303b3f36d26186f1"
+  },
+  {
+   "file": "b-022.png",
+   "scan": "b",
+   "index": 22,
+   "identity": "Equipment_Icon_Watch_Tier9",
+   "quantity": "314",
+   "sha256": "a69a5ab7d55cdfbc96cfddd950533283bb64cc3d057a75c0d309e1de50099102"
+  },
+  {
+   "file": "b-023.png",
+   "scan": "b",
+   "index": 23,
+   "identity": "Equipment_Icon_Watch_Tier8",
+   "quantity": "385",
+   "sha256": "2638a613e9fd0641fc918c2380cd426f7a247d03c8fd4a749c0ba40de0e88771"
+  },
+  {
+   "file": "b-024.png",
+   "scan": "b",
+   "index": 24,
+   "identity": "Equipment_Icon_Watch_Tier7",
+   "quantity": "699",
+   "sha256": "f46a1d4571a1d81500c9ca13070cc71f1e7791e958c57110499d191b920c80fa"
+  },
+  {
+   "file": "b-025.png",
+   "scan": "b",
+   "index": 25,
+   "identity": "Equipment_Icon_Charm_Tier10",
+   "quantity": "441",
+   "sha256": "b9c7fde976513287a8a5c2ca8182d4ddc9906cc18bafddc77dfc8142304905a4"
+  },
+  {
+   "file": "b-026.png",
+   "scan": "b",
+   "index": 26,
+   "identity": "Equipment_Icon_Charm_Tier9",
+   "quantity": "88",
+   "sha256": "bf2bed1c2adcc56c01db2dd75fb7e5f0dbd662aadd210d77f923d2e8f465b42c"
+  },
+  {
+   "file": "b-027.png",
+   "scan": "b",
+   "index": 27,
+   "identity": "Equipment_Icon_Charm_Tier8",
+   "quantity": "550",
+   "sha256": "5afaf54bf34bb1091eacf046607bf66bb45850b2929ceec15238141d3e71d42a"
+  },
+  {
+   "file": "b-028.png",
+   "scan": "b",
+   "index": 28,
+   "identity": "Equipment_Icon_Charm_Tier7",
+   "quantity": "1017",
+   "sha256": "9566c80bd4e6a17b7e5f71fb957fcd5d14a53c5a0c54d130b98af8e42b6b47f2"
+  },
+  {
+   "file": "b-029.png",
+   "scan": "b",
+   "index": 29,
+   "identity": "Equipment_Icon_Charm_Tier6",
+   "quantity": "180",
+   "sha256": "c60c39ab9f9b4b2a44c11bd9a158699375d45404e5dcd9c22c2b02c94c4c5ed0"
+  },
+  {
+   "file": "b-030.png",
+   "scan": "b",
+   "index": 30,
+   "identity": "Equipment_Icon_Charm_Tier5",
+   "quantity": "736",
+   "sha256": "a8d0898590660e4141248e5d63c453e977c17ef4231e22aed7f5fd01165524d9"
+  },
+  {
+   "file": "b-031.png",
+   "scan": "b",
+   "index": 31,
+   "identity": "Equipment_Icon_Charm_Tier4",
+   "quantity": "663",
+   "sha256": "8bba81266893a1404c4ce26335a0c559378e37f44b69b56687e1b5c4aa960e9f"
+  },
+  {
+   "file": "b-032.png",
+   "scan": "b",
+   "index": 32,
+   "identity": "Equipment_Icon_Charm_Tier3",
+   "quantity": "592",
+   "sha256": "8ab04fa81cc13129fe7b4926f4c92e3314ded8049d77c94855d7f754c789e9ce"
+  },
+  {
+   "file": "b-033.png",
+   "scan": "b",
+   "index": 33,
+   "identity": "Equipment_Icon_Charm_Tier2",
+   "quantity": "652",
+   "sha256": "eb1a3b8957f691fbc9037d147985573f7958e329ca68681767e7d6171fd3a863"
+  },
+  {
+   "file": "b-034.png",
+   "scan": "b",
+   "index": 34,
+   "identity": "Equipment_Icon_Hairpin_Tier9",
+   "quantity": "54",
+   "sha256": "294eadd9e9fafed2d5b78e48ab46f8a39ff9d0b7e66e5f0b55fc542439f34225"
+  },
+  {
+   "file": "b-035.png",
+   "scan": "b",
+   "index": 35,
+   "identity": "Equipment_Icon_Hairpin_Tier7",
+   "quantity": "229",
+   "sha256": "473d7c73c274774a7da7cae3e2a0b312c6726c6e49301cc1af431ffe931c8463"
+  },
+  {
+   "file": "b-036.png",
+   "scan": "b",
+   "index": 36,
+   "identity": "Equipment_Icon_Hairpin_Tier4",
+   "quantity": "396",
+   "sha256": "9fb0318bbb4e4246a0716b939b93f64e2596fc51d5dc777dacc8bf8ccfd00613"
+  },
+  {
+   "file": "b-037.png",
+   "scan": "b",
+   "index": 37,
+   "identity": "Equipment_Icon_Hairpin_Tier3",
+   "quantity": "209",
+   "sha256": "66dd1282f40b464040e95126aa63041f8a1363d272b0e81475b5c513148839cf"
+  },
+  {
+   "file": "b-038.png",
+   "scan": "b",
+   "index": 38,
+   "identity": "Equipment_Icon_Hairpin_Tier2",
+   "quantity": "1062",
+   "sha256": "307f6778c40356a91da8eabd6d7378197ef699233a90b8794594444a7555acf0"
+  },
+  {
+   "file": "b-039.png",
+   "scan": "b",
+   "index": 39,
+   "identity": "Equipment_Icon_Badge_Tier10",
+   "quantity": "629",
+   "sha256": "1c709aab811b39428050c7dc97abd56f8c9372233792449b199ddc24de6f5f37"
+  },
+  {
+   "file": "b-040.png",
+   "scan": "b",
+   "index": 40,
+   "identity": "Equipment_Icon_Badge_Tier9",
+   "quantity": "1332",
+   "sha256": "cc2a026904f414326b5eaa81eaff5d49412934fe63fd8d8173ffa0eba93bf796"
+  },
+  {
+   "file": "b-041.png",
+   "scan": "b",
+   "index": 41,
+   "identity": "Equipment_Icon_Badge_Tier8",
+   "quantity": "1085",
+   "sha256": "d017e70f5773385b8265af2ebc3e32004b34d56d49c5b68c49f99f3e32ff13b4"
+  },
+  {
+   "file": "b-042.png",
+   "scan": "b",
+   "index": 42,
+   "identity": "Equipment_Icon_Badge_Tier7",
+   "quantity": "1747",
+   "sha256": "2befda515e038d1acc13b5742818e07a9edbec1767827dabfa0446d8bf35a1d1"
+  },
+  {
+   "file": "b-043.png",
+   "scan": "b",
+   "index": 43,
+   "identity": "Equipment_Icon_Badge_Tier6",
+   "quantity": "605",
+   "sha256": "21a45fa578734ecd044b9cbf8c1508335ea316b8f89580e882c0beb56e1789a9"
+  },
+  {
+   "file": "b-044.png",
+   "scan": "b",
+   "index": 44,
+   "identity": "Equipment_Icon_Badge_Tier5",
+   "quantity": "1149",
+   "sha256": "f7cac7e263d15089432bf38e41d3078333399cefd85e5de41beeab4b4a38e744"
+  },
+  {
+   "file": "b-045.png",
+   "scan": "b",
+   "index": 45,
+   "identity": "Equipment_Icon_Badge_Tier4",
+   "quantity": "1012",
+   "sha256": "e4a9f3b01b1c1600e1b34449ae1bdf443bb5a7c9b8f71a5e8049e5e81df40e4d"
+  },
+  {
+   "file": "b-046.png",
+   "scan": "b",
+   "index": 46,
+   "identity": "Equipment_Icon_Badge_Tier3",
+   "quantity": "1050",
+   "sha256": "03c7e5df9979092e4cf436316b0e73cb054de84f21bd5259bd3e8536fc47c223"
+  },
+  {
+   "file": "b-047.png",
+   "scan": "b",
+   "index": 47,
+   "identity": "Equipment_Icon_Badge_Tier2",
+   "quantity": "1105",
+   "sha256": "fd23459b312878cf8e848b2fd6e4784bb89c8a322fe1b9087963fd9cecd5b542"
+  },
+  {
+   "file": "b-048.png",
+   "scan": "b",
+   "index": 48,
+   "identity": "Equipment_Icon_Bag_Tier10",
+   "quantity": "694",
+   "sha256": "96ecada2d4dd25e32d58a9bb01e5d97f5f9972b42f63180f5b917d57d7e740ff"
+  },
+  {
+   "file": "b-049.png",
+   "scan": "b",
+   "index": 49,
+   "identity": "Equipment_Icon_Bag_Tier9",
+   "quantity": "436",
+   "sha256": "1f60462218959f30c0ea0a469023ddd3f7d3dd78e6a3642f775bcc57c9867227"
+  },
+  {
+   "file": "b-050.png",
+   "scan": "b",
+   "index": 50,
+   "identity": "Equipment_Icon_Bag_Tier8",
+   "quantity": "2194",
+   "sha256": "dd45ab79f571d2cd9560238e832d2ec7797222af75a71b045ff67532f596b047"
+  },
+  {
+   "file": "b-051.png",
+   "scan": "b",
+   "index": 51,
+   "identity": "Equipment_Icon_Bag_Tier7",
+   "quantity": "1876",
+   "sha256": "803f9674c004dee14fd61a59e4ff4612b050f3b1ee8d4414e2a2e35e1f6a32c0"
+  },
+  {
+   "file": "b-052.png",
+   "scan": "b",
+   "index": 52,
+   "identity": "Equipment_Icon_Bag_Tier6",
+   "quantity": "2522",
+   "sha256": "3fe1a142ecaa0f51e96aed90846082c4a1ea4f70667f566ed7e7d1e98f797630"
+  },
+  {
+   "file": "b-053.png",
+   "scan": "b",
+   "index": 53,
+   "identity": "Equipment_Icon_Bag_Tier5",
+   "quantity": "2067",
+   "sha256": "9245ede68f67e0d70391e793b10da34cfe8cf53d1b4f492ed727e41bb3a55b9f"
+  },
+  {
+   "file": "b-054.png",
+   "scan": "b",
+   "index": 54,
+   "identity": "Equipment_Icon_Bag_Tier4",
+   "quantity": "2127",
+   "sha256": "53af44dc55178b713b710136ec937bc081820d4f0dd08bd1cc96b0e9620aa2d5"
+  },
+  {
+   "file": "b-055.png",
+   "scan": "b",
+   "index": 55,
+   "identity": "Equipment_Icon_Bag_Tier3",
+   "quantity": "1370",
+   "sha256": "f493d2e659dcaf31c03230fde593f9aec479994415d32f24405be16e067ad17c"
+  },
+  {
+   "file": "b-056.png",
+   "scan": "b",
+   "index": 56,
+   "identity": "Equipment_Icon_Bag_Tier2",
+   "quantity": "880",
+   "sha256": "4e2567cdefca8c7fdb0c2dc603a87a3e1065fb8a26d6defa771dbd258bd28d2f"
+  },
+  {
+   "file": "b-057.png",
+   "scan": "b",
+   "index": 57,
+   "identity": "Equipment_Icon_Shoes_Tier10",
+   "quantity": "548",
+   "sha256": "ed3b1313532681d9171b335fa1400cb9bd43102271754d3e3b1f76831d8ec257"
+  },
+  {
+   "file": "b-058.png",
+   "scan": "b",
+   "index": 58,
+   "identity": "Equipment_Icon_Shoes_Tier9",
+   "quantity": "122",
+   "sha256": "719ecc4c314fcb14baa00e480b72d76aa7c541fbc15b33817997d55a180cced0"
+  },
+  {
+   "file": "b-059.png",
+   "scan": "b",
+   "index": 59,
+   "identity": "Equipment_Icon_Shoes_Tier8",
+   "quantity": "1010",
+   "sha256": "cc8e45825910530e20642b058f1ed71aa8ec61892633841255c3cc887c056433"
+  },
+  {
+   "file": "b-060.png",
+   "scan": "b",
+   "index": 60,
+   "identity": "Equipment_Icon_Shoes_Tier7",
+   "quantity": "1214",
+   "sha256": "b6b62552164c0c691f2dbb166dc42c6ef9b63c0b5f9ea57315a9ab3760b73415"
+  },
+  {
+   "file": "b-061.png",
+   "scan": "b",
+   "index": 61,
+   "identity": "Equipment_Icon_Shoes_Tier6",
+   "quantity": "402",
+   "sha256": "df22817f50f84974ebfeaa14457517bf6324e67fd0febdc19cb65ad0dff4d534"
+  },
+  {
+   "file": "b-062.png",
+   "scan": "b",
+   "index": 62,
+   "identity": "Equipment_Icon_Shoes_Tier5",
+   "quantity": "793",
+   "sha256": "79d7dfbe84d997fd4ff5bb4b476e83f6e536cfc0bf1b681472c727453b97dd06"
+  },
+  {
+   "file": "b-063.png",
+   "scan": "b",
+   "index": 63,
+   "identity": "Equipment_Icon_Shoes_Tier4",
+   "quantity": "1707",
+   "sha256": "8d2e9c5b4e6177a38b92a9d0f68a98837579a47d73264a3c90e54ac012082b20"
+  },
+  {
+   "file": "b-064.png",
+   "scan": "b",
+   "index": 64,
+   "identity": "Equipment_Icon_Shoes_Tier3",
+   "quantity": "1160",
+   "sha256": "f21dde02afc3e3047bc8d312b3e885b250bb581d2c9c01b1a238455f555a1d58"
+  },
+  {
+   "file": "b-065.png",
+   "scan": "b",
+   "index": 65,
+   "identity": "Equipment_Icon_Shoes_Tier2",
+   "quantity": "1496",
+   "sha256": "5b53033ab68711459275523e94c418cb3e35d88c1bb512d50330d809b5a08b88"
+  },
+  {
+   "file": "b-066.png",
+   "scan": "b",
+   "index": 66,
+   "identity": "Equipment_Icon_Gloves_Tier10",
+   "quantity": "413",
+   "sha256": "aea8d56e83dec3721a35d06bd9ce45505b41d11dee2968f11877ef5d8d91f771"
+  },
+  {
+   "file": "b-067.png",
+   "scan": "b",
+   "index": 67,
+   "identity": "Equipment_Icon_Gloves_Tier9",
+   "quantity": "388",
+   "sha256": "665a5e7e633f6932746992e985df2246f45a0b4ba7db1a6a42df92bd00b6aa81"
+  },
+  {
+   "file": "b-068.png",
+   "scan": "b",
+   "index": 68,
+   "identity": "Equipment_Icon_Gloves_Tier8",
+   "quantity": "418",
+   "sha256": "d22744d3a9a5aa85ae11be3e620abb83448a5e515f9b0d343d9df1b72a2b272f"
+  },
+  {
+   "file": "b-069.png",
+   "scan": "b",
+   "index": 69,
+   "identity": "Equipment_Icon_Gloves_Tier7",
+   "quantity": "1010",
+   "sha256": "65148821fc39d6181d95eafe59de67bb3d841dc41f05c7399f072923cab67949"
+  },
+  {
+   "file": "b-070.png",
+   "scan": "b",
+   "index": 70,
+   "identity": "Equipment_Icon_Gloves_Tier5",
+   "quantity": "345",
+   "sha256": "f599482096a471d103405860b42ffb62797dd97c3943139a04ab5b9d15a144d1"
+  },
+  {
+   "file": "b-071.png",
+   "scan": "b",
+   "index": 71,
+   "identity": "Equipment_Icon_Gloves_Tier4",
+   "quantity": "357",
+   "sha256": "69c2572296bda1e38860d4610b6f407caed8dc768e70dda710cd71f581b5c9aa"
+  },
+  {
+   "file": "b-072.png",
+   "scan": "b",
+   "index": 72,
+   "identity": "Equipment_Icon_Gloves_Tier3",
+   "quantity": "264",
+   "sha256": "d871879f8c56d13d610f4a9bfbbee723fbc1a5b32c7f0d0586c9fe51c3f3787b"
+  },
+  {
+   "file": "b-073.png",
+   "scan": "b",
+   "index": 73,
+   "identity": "Equipment_Icon_Gloves_Tier2",
+   "quantity": "387",
+   "sha256": "84e213af990b7ff84be94772e35be19a5048e87cdda9b41549c73dc04e6c70d3"
+  },
+  {
+   "file": "b-074.png",
+   "scan": "b",
+   "index": 74,
+   "identity": "Equipment_Icon_Hat_Tier10",
+   "quantity": "138",
+   "sha256": "14640c959d699017b2a407cae0a4a506350c1f336224e09c0bd245a76e13ec6e"
+  },
+  {
+   "file": "b-075.png",
+   "scan": "b",
+   "index": 75,
+   "identity": "Equipment_Icon_Hat_Tier9",
+   "quantity": "309",
+   "sha256": "9c2af341aa8b9cd3209395abc1f65cf9aed3b8f8d0df54bfcd113b23b09eb85c"
+  },
+  {
+   "file": "b-076.png",
+   "scan": "b",
+   "index": 76,
+   "identity": "Equipment_Icon_Hat_Tier8",
+   "quantity": "605",
+   "sha256": "098da2248df1adf91534a136770738ecb1bdfef434625c5164cd6a9e057c452f"
+  },
+  {
+   "file": "b-077.png",
+   "scan": "b",
+   "index": 77,
+   "identity": "Equipment_Icon_Hat_Tier7",
+   "quantity": "1518",
+   "sha256": "39b06cfedc7942424d67652e31eef64003816da898efe75059fed0c232ab0f94"
+  },
+  {
+   "file": "b-078.png",
+   "scan": "b",
+   "index": 78,
+   "identity": "Equipment_Icon_Hat_Tier6",
+   "quantity": "212",
+   "sha256": "12d09b1960aab6c1408d36745c7bb38243ca13243fcbf6f89936a241fb348790"
+  },
+  {
+   "file": "b-079.png",
+   "scan": "b",
+   "index": 79,
+   "identity": "Equipment_Icon_Hat_Tier5",
+   "quantity": "991",
+   "sha256": "121564897981bfdd4537e5e563827ddbfb2813da4f00ad1b10c695bad6acd0e4"
+  },
+  {
+   "file": "b-080.png",
+   "scan": "b",
+   "index": 80,
+   "identity": "Equipment_Icon_Hat_Tier4",
+   "quantity": "649",
+   "sha256": "37dfe022541c0722b9e73f85e6738f5ed58a2f935555f1d7caccdb79af2022dd"
+  },
+  {
+   "file": "b-081.png",
+   "scan": "b",
+   "index": 81,
+   "identity": "Equipment_Icon_Hat_Tier3",
+   "quantity": "169",
+   "sha256": "028ae14b787e0a280f3d52a0094ed0cd1448098f757467dfcd923d6a67a7ccfd"
+  },
+  {
+   "file": "b-082.png",
+   "scan": "b",
+   "index": 82,
+   "identity": "Equipment_Icon_Hat_Tier2",
+   "quantity": "243",
+   "sha256": "c235394b0993646d6c9f9a9c1706d3b59586fa64d8c2306877835e8a44035ac0"
+  },
+  {
+   "file": "b-083.png",
+   "scan": "b",
+   "index": 83,
+   "identity": "Equipment_Icon_Necklace_Tier1",
+   "quantity": "815",
+   "sha256": "a562d6749291660e0c341d04c27607a3e258410327004ac3468a85ed23a8f2fb"
+  },
+  {
+   "file": "b-084.png",
+   "scan": "b",
+   "index": 84,
+   "identity": "Equipment_Icon_Watch_Tier1",
+   "quantity": "175",
+   "sha256": "77d97f9dbc98b58f5fb8ebc1b33e6ae43c151a60127417b583459d07c9a9c64f"
+  },
+  {
+   "file": "b-085.png",
+   "scan": "b",
+   "index": 85,
+   "identity": "Equipment_Icon_Charm_Tier1",
+   "quantity": "224",
+   "sha256": "dd68db50e96096257b3986f51c53d7ccaa13503dabce1cb066db33965f4e743c"
+  },
+  {
+   "file": "b-086.png",
+   "scan": "b",
+   "index": 86,
+   "identity": "Equipment_Icon_Hairpin_Tier1",
+   "quantity": "789",
+   "sha256": "10107cd5725ac9447c5b078d5d8c426d9c9982be5090efd80a6fd656c130d225"
+  },
+  {
+   "file": "b-087.png",
+   "scan": "b",
+   "index": 87,
+   "identity": "Equipment_Icon_Badge_Tier1",
+   "quantity": "261",
+   "sha256": "2a4f89ff30124010f31bea8251c1e5c63db00c395e43fe430fd0eccc00abce9c"
+  },
+  {
+   "file": "b-088.png",
+   "scan": "b",
+   "index": 88,
+   "identity": "Equipment_Icon_Bag_Tier1",
+   "quantity": "282",
+   "sha256": "3a4d5e59d6283bbe4ab2b29d1ab418059f5a564101d76501eb811e372e522eb9"
+  },
+  {
+   "file": "b-089.png",
+   "scan": "b",
+   "index": 89,
+   "identity": "Equipment_Icon_Shoes_Tier1",
+   "quantity": "870",
+   "sha256": "8ee6d9e44739499196b0c5f50d7e285f1a035c36190d981a1992ff9055b86db5"
+  },
+  {
+   "file": "b-090.png",
+   "scan": "b",
+   "index": 90,
+   "identity": "Equipment_Icon_Gloves_Tier1",
+   "quantity": "218",
+   "sha256": "05e124f585a5e362918aca47cb9af15434cf6d6ddbf1d4f22e3f1190127471e8"
+  },
+  {
+   "file": "b-091.png",
+   "scan": "b",
+   "index": 91,
+   "identity": "Equipment_Icon_Hat_Tier1",
+   "quantity": "188",
+   "sha256": "642250776e741701ad187a01ec90d6ec637ee44eeb3f90ba5df007b55bbad2f9"
+  },
+  {
+   "file": "b-092.png",
+   "scan": "b",
+   "index": 92,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_3",
+   "quantity": "48",
+   "sha256": "5f58ea9d3e2931cdb50e1b2f3b5d9c5f77bf50d4cedf0df0a6358c5f9f22c6f2"
+  },
+  {
+   "file": "b-093.png",
+   "scan": "b",
+   "index": 93,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_2",
+   "quantity": "261",
+   "sha256": "5bc9f0b767953270c51670040d63d631a6bf6593f58556d7ed22cf2bd4f0d83b"
+  },
+  {
+   "file": "b-094.png",
+   "scan": "b",
+   "index": 94,
+   "identity": "Equipment_Icon_WeaponExpGrowthZ_1",
+   "quantity": "1251",
+   "sha256": "004a1f4168de247b38abf3175ecdd73b8650518c3dcb0c13bb092da25a88e8e5"
+  },
+  {
+   "file": "b-095.png",
+   "scan": "b",
+   "index": 95,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_3",
+   "quantity": "5",
+   "sha256": "62d47d8fee68b5566971d127586625d7f03f7dffb5086d43d8c86282803fd746"
+  },
+  {
+   "file": "b-096.png",
+   "scan": "b",
+   "index": 96,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_2",
+   "quantity": "227",
+   "sha256": "bf997cdd6f37ce97a3a7aa267ad3f06fb476e43ca630e9ea38244525fe690b07"
+  },
+  {
+   "file": "b-097.png",
+   "scan": "b",
+   "index": 97,
+   "identity": "Equipment_Icon_WeaponExpGrowthC_1",
+   "quantity": null,
+   "sha256": "79cb8dcf20e64a2c7ea97f8cb642f106b00b90ad7d50c5a72ab84a5916a4612a"
+  },
+  {
+   "file": "b-098.png",
+   "scan": "b",
+   "index": 98,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_3",
+   "quantity": "21",
+   "sha256": "8c50c66691fb5e1ddac2f414550bca35073260713fa5622bd84d012a619ef6a7"
+  },
+  {
+   "file": "b-099.png",
+   "scan": "b",
+   "index": 99,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_2",
+   "quantity": "334",
+   "sha256": "6624e5e3080ed54c17292bccbad67e0a3aa0fe446a4656e8744fe5efc31bdd0a"
+  },
+  {
+   "file": "b-100.png",
+   "scan": "b",
+   "index": 100,
+   "identity": "Equipment_Icon_WeaponExpGrowthB_1",
+   "quantity": "13559",
+   "sha256": "cc5ce6b4478548291aaa9d9b3c9a66894d1503751bc1ba77e03f61a0b3a4e3ae"
+  },
+  {
+   "file": "b-101.png",
+   "scan": "b",
+   "index": 101,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_3",
+   "quantity": "26",
+   "sha256": "3691a54a7e608cf386f28dafc4d023de12ee438703c97e5f02df4975e3834c2e"
+  },
+  {
+   "file": "b-102.png",
+   "scan": "b",
+   "index": 102,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_2",
+   "quantity": "356",
+   "sha256": "c58de26f42bb1457a33a9f4488d4a821fcc8c8fdd3a7777bb4f3ae6c2842ffe0"
+  },
+  {
+   "file": "b-103.png",
+   "scan": "b",
+   "index": 103,
+   "identity": "Equipment_Icon_WeaponExpGrowthA_1",
+   "quantity": null,
+   "sha256": "ec562a7500ae91208bcbfea03c669c3e3d944a0d35b65b25d746c7c8b09a807b"
+  }
+ ]
+}

@@ -1,0 +1,1054 @@
+{
+  "format": "ba-planner-tactical-excel-v2",
+  "version": 1,
+  "cases": [
+    {
+      "name": "excel-preview",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "request",
+        "method": "tactical.v2.excel.preview",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_path": "synthetic.csv",
+          "sheet_name": null,
+          "delimiter": ",",
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "resolutions": [],
+          "row_decisions": [],
+          "on_conflict": "skip"
+        }
+      }
+    },
+    {
+      "name": "excel-preview-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "response",
+        "method": "tactical.v2.excel.preview",
+        "payload": {
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "format": "csv",
+          "sheet_names": [
+            "CSV"
+          ],
+          "selected_sheet": "CSV",
+          "mapping_candidates": [
+            {
+              "header_row": 1,
+              "columns": {
+                "notes": 7,
+                "own_striker_1": 8,
+                "own_special_2": 13,
+                "own_striker_2": 9,
+                "opponent_special_1": 18,
+                "opponent_striker_4": 17,
+                "opponent_special_2": 19,
+                "result": 5,
+                "attempts": 6,
+                "own_striker_3": 10,
+                "season": 4,
+                "opponent": 3,
+                "kind": 2,
+                "own_special_1": 12,
+                "date": 1,
+                "opponent_striker_1": 14,
+                "opponent_striker_2": 15,
+                "opponent_striker_3": 16,
+                "own_striker_4": 11
+              },
+              "ambiguous_fields": [],
+              "requires_confirmation": true
+            }
+          ],
+          "saved_mapping": null,
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "rows": [
+            {
+              "row_id": "excel-row-3f13321d1f4c5e3c6150d9aa6e70e487",
+              "row_number": 2,
+              "raw_cells": [
+                {
+                  "field": "date",
+                  "column": 1,
+                  "raw": "2026-10-14",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"2026-10-14\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "kind",
+                  "column": 2,
+                  "raw": "attack",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"attack\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent",
+                  "column": 3,
+                  "raw": "opponent-one",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"opponent-one\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "season",
+                  "column": 4,
+                  "raw": "34",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"34\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "result",
+                  "column": 5,
+                  "raw": "win",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"win\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "attempts",
+                  "column": 6,
+                  "raw": "2",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"2\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "notes",
+                  "column": 7,
+                  "raw": "keep original",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"keep original\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_1",
+                  "column": 8,
+                  "raw": "shiroko",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"shiroko\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_2",
+                  "column": 9,
+                  "raw": "akane",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"akane\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_3",
+                  "column": 10,
+                  "raw": "yuuka",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"yuuka\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_4",
+                  "column": 11,
+                  "raw": "mika",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"mika\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_special_1",
+                  "column": 12,
+                  "raw": "serina",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"serina\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_special_2",
+                  "column": 13,
+                  "raw": "hibiki",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"hibiki\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_1",
+                  "column": 14,
+                  "raw": "shiroko",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"shiroko\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_2",
+                  "column": 15,
+                  "raw": "akane",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"akane\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_3",
+                  "column": 16,
+                  "raw": "yuuka",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"yuuka\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_4",
+                  "column": 17,
+                  "raw": "mika",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"mika\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_special_1",
+                  "column": 18,
+                  "raw": "serina",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"serina\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_special_2",
+                  "column": 19,
+                  "raw": "hibiki",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"hibiki\"}",
+                  "formula": null,
+                  "cached_value": null
+                }
+              ],
+              "status": "eligible",
+              "issues": [],
+              "match": {
+                "version": 2,
+                "match_id": "excel-match-1ba767d9bfd98fe150410cb835fc4ba5",
+                "season": "34",
+                "notes": "keep original",
+                "occurred_at": "2026-10-14T00:00:00+09:00",
+                "occurred_precision": "date",
+                "kind": "attack",
+                "opponent_identity_id": "opponent-one",
+                "opponent_display_name": "Rival",
+                "result": "win",
+                "attempt_count": 2,
+                "attack_deck": {
+                  "version": 2,
+                  "strikers": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "shiroko",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "akane",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 2,
+                      "student_id": "yuuka",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 3,
+                      "student_id": "mika",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ],
+                  "specials": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "serina",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "hibiki",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ]
+                },
+                "defense_deck": {
+                  "version": 2,
+                  "strikers": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "shiroko",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "akane",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 2,
+                      "student_id": "yuuka",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 3,
+                      "student_id": "mika",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ],
+                  "specials": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "serina",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "hibiki",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ]
+                }
+              },
+              "target_match_id": null
+            }
+          ],
+          "string_groups": [],
+          "conflicts": [],
+          "summary": {
+            "read_rows": 1,
+            "empty_rows": 0,
+            "skipped_rows": 0,
+            "parsed_rows": 1,
+            "unresolved_rows": 0,
+            "conflict_rows": 0,
+            "eligible_rows": 1
+          },
+          "issues": [],
+          "interpretation_fingerprint": "c1d2ec5f2edd57c4c158963f4f903cc82830486000976589a6df9cb78df84497",
+          "current_revision": 0,
+          "rules_revision": 0,
+          "legacy_migration_required": false
+        }
+      }
+    },
+    {
+      "name": "excel-commit",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "request",
+        "method": "tactical.v2.excel.commit",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_path": "synthetic.csv",
+          "sheet_name": null,
+          "delimiter": ",",
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "resolutions": [],
+          "row_decisions": [],
+          "on_conflict": "skip",
+          "save_rules": true,
+          "expected_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_interpretation_fingerprint": "c1d2ec5f2edd57c4c158963f4f903cc82830486000976589a6df9cb78df84497",
+          "expected_revision": 0,
+          "idempotency_key": "fb7-fixture"
+        }
+      }
+    },
+    {
+      "name": "excel-commit-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "response",
+        "method": "tactical.v2.excel.commit",
+        "payload": {
+          "revision": 1,
+          "imported_count": 1,
+          "overwritten_count": 0,
+          "skipped_count": 0,
+          "skipped_row_ids": [],
+          "rules_saved": true,
+          "match_ids": [
+            "excel-match-1ba767d9bfd98fe150410cb835fc4ba5"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unknown-field",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "request",
+        "method": "tactical.v2.excel.preview",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_path": "synthetic.csv",
+          "sheet_name": null,
+          "delimiter": ",",
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "resolutions": [],
+          "row_decisions": [],
+          "on_conflict": "skip",
+          "auto_approve_fuzzy": true
+        }
+      }
+    },
+    {
+      "name": "wildcard-not-attempts",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "request",
+        "method": "tactical.v2.excel.preview",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_path": "synthetic.csv",
+          "sheet_name": null,
+          "delimiter": ",",
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "resolutions": [
+            {
+              "field": "attempts",
+              "raw": "{\"type\":\"str\",\"value\":\"\"}",
+              "action": "wildcard",
+              "value": null
+            }
+          ],
+          "row_decisions": [],
+          "on_conflict": "skip"
+        }
+      }
+    },
+    {
+      "name": "save-rules-not-int",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "request",
+        "method": "tactical.v2.excel.commit",
+        "payload": {
+          "profile_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+          "source_path": "synthetic.csv",
+          "sheet_name": null,
+          "delimiter": ",",
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "resolutions": [],
+          "row_decisions": [],
+          "on_conflict": "skip",
+          "save_rules": 1,
+          "expected_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "expected_interpretation_fingerprint": "c1d2ec5f2edd57c4c158963f4f903cc82830486000976589a6df9cb78df84497",
+          "expected_revision": 0,
+          "idempotency_key": "fb7-fixture"
+        }
+      }
+    },
+    {
+      "name": "invalid-row-status",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "fb7-fixture",
+        "type": "response",
+        "method": "tactical.v2.excel.preview",
+        "payload": {
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "format": "csv",
+          "sheet_names": [
+            "CSV"
+          ],
+          "selected_sheet": "CSV",
+          "mapping_candidates": [
+            {
+              "header_row": 1,
+              "columns": {
+                "notes": 7,
+                "own_striker_1": 8,
+                "own_special_2": 13,
+                "own_striker_2": 9,
+                "opponent_special_1": 18,
+                "opponent_striker_4": 17,
+                "opponent_special_2": 19,
+                "result": 5,
+                "attempts": 6,
+                "own_striker_3": 10,
+                "season": 4,
+                "opponent": 3,
+                "kind": 2,
+                "own_special_1": 12,
+                "date": 1,
+                "opponent_striker_1": 14,
+                "opponent_striker_2": 15,
+                "opponent_striker_3": 16,
+                "own_striker_4": 11
+              },
+              "ambiguous_fields": [],
+              "requires_confirmation": true
+            }
+          ],
+          "saved_mapping": null,
+          "column_mapping": {
+            "header_row": 1,
+            "columns": {
+              "date": 1,
+              "kind": 2,
+              "opponent": 3,
+              "season": 4,
+              "result": 5,
+              "attempts": 6,
+              "notes": 7,
+              "own_striker_1": 8,
+              "own_striker_2": 9,
+              "own_striker_3": 10,
+              "own_striker_4": 11,
+              "own_special_1": 12,
+              "own_special_2": 13,
+              "opponent_striker_1": 14,
+              "opponent_striker_2": 15,
+              "opponent_striker_3": 16,
+              "opponent_striker_4": 17,
+              "opponent_special_1": 18,
+              "opponent_special_2": 19
+            }
+          },
+          "rows": [
+            {
+              "row_id": "excel-row-3f13321d1f4c5e3c6150d9aa6e70e487",
+              "row_number": 2,
+              "raw_cells": [
+                {
+                  "field": "date",
+                  "column": 1,
+                  "raw": "2026-10-14",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"2026-10-14\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "kind",
+                  "column": 2,
+                  "raw": "attack",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"attack\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent",
+                  "column": 3,
+                  "raw": "opponent-one",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"opponent-one\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "season",
+                  "column": 4,
+                  "raw": "34",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"34\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "result",
+                  "column": 5,
+                  "raw": "win",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"win\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "attempts",
+                  "column": 6,
+                  "raw": "2",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"2\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "notes",
+                  "column": 7,
+                  "raw": "keep original",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"keep original\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_1",
+                  "column": 8,
+                  "raw": "shiroko",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"shiroko\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_2",
+                  "column": 9,
+                  "raw": "akane",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"akane\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_3",
+                  "column": 10,
+                  "raw": "yuuka",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"yuuka\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_striker_4",
+                  "column": 11,
+                  "raw": "mika",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"mika\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_special_1",
+                  "column": 12,
+                  "raw": "serina",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"serina\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "own_special_2",
+                  "column": 13,
+                  "raw": "hibiki",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"hibiki\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_1",
+                  "column": 14,
+                  "raw": "shiroko",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"shiroko\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_2",
+                  "column": 15,
+                  "raw": "akane",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"akane\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_3",
+                  "column": 16,
+                  "raw": "yuuka",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"yuuka\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_striker_4",
+                  "column": 17,
+                  "raw": "mika",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"mika\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_special_1",
+                  "column": 18,
+                  "raw": "serina",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"serina\"}",
+                  "formula": null,
+                  "cached_value": null
+                },
+                {
+                  "field": "opponent_special_2",
+                  "column": 19,
+                  "raw": "hibiki",
+                  "raw_key": "{\"type\":\"str\",\"value\":\"hibiki\"}",
+                  "formula": null,
+                  "cached_value": null
+                }
+              ],
+              "status": "auto_approved",
+              "issues": [],
+              "match": {
+                "version": 2,
+                "match_id": "excel-match-1ba767d9bfd98fe150410cb835fc4ba5",
+                "season": "34",
+                "notes": "keep original",
+                "occurred_at": "2026-10-14T00:00:00+09:00",
+                "occurred_precision": "date",
+                "kind": "attack",
+                "opponent_identity_id": "opponent-one",
+                "opponent_display_name": "Rival",
+                "result": "win",
+                "attempt_count": 2,
+                "attack_deck": {
+                  "version": 2,
+                  "strikers": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "shiroko",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "akane",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 2,
+                      "student_id": "yuuka",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 3,
+                      "student_id": "mika",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ],
+                  "specials": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "serina",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "hibiki",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ]
+                },
+                "defense_deck": {
+                  "version": 2,
+                  "strikers": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "shiroko",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "akane",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 2,
+                      "student_id": "yuuka",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 3,
+                      "student_id": "mika",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ],
+                  "specials": [
+                    {
+                      "version": 2,
+                      "position": 0,
+                      "student_id": "serina",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    },
+                    {
+                      "version": 2,
+                      "position": 1,
+                      "student_id": "hibiki",
+                      "state": "manual",
+                      "source": "manual",
+                      "confidence": null,
+                      "review_status": "confirmed",
+                      "wildcard": false
+                    }
+                  ]
+                }
+              },
+              "target_match_id": null
+            }
+          ],
+          "string_groups": [],
+          "conflicts": [],
+          "summary": {
+            "read_rows": 1,
+            "empty_rows": 0,
+            "skipped_rows": 0,
+            "parsed_rows": 1,
+            "unresolved_rows": 0,
+            "conflict_rows": 0,
+            "eligible_rows": 1
+          },
+          "issues": [],
+          "interpretation_fingerprint": "c1d2ec5f2edd57c4c158963f4f903cc82830486000976589a6df9cb78df84497",
+          "current_revision": 0,
+          "rules_revision": 0,
+          "legacy_migration_required": false
+        }
+      }
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/planning_protocol_client.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
-import 'package:ba_planner_v7/services/scanner_service.dart';
+import 'package:ba_planner_v7/ui/models/growth_calculator_adapter.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
@@ -38,7 +38,9 @@ Future<void> _reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
-  testWidgets('catalog search and plan handoff use services', (tester) async {
+  testWidgets('catalog search and calculator entry use services', (
+    tester,
+  ) async {
     final service = MockAppService();
     PlanningStudentSeed? seed;
     await tester.binding.setSurfaceSize(const Size(1024, 768));
@@ -60,9 +62,29 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('student-ayane')));
     await tester.pump();
 
-    await _reveal(tester, find.byKey(const ValueKey('student-add-to-plan')));
-    await tester.tap(find.byKey(const ValueKey('student-add-to-plan')));
-    expect(seed?.studentId, 'ayane');
+    // FD-160 (a): S1의 예전 "포커스 학생으로 계획 열기" 자리는 성장 계산기 입구다. 계산기를 여는 것만으로는
+    // 계획에 넘기지 않는다("이 목표로 계획에 추가"를 눌러야 넘긴다, FE4-g).
+    await _reveal(
+      tester,
+      find.byKey(const ValueKey('student-open-calculator')),
+    );
+    await tester.tap(find.byKey(const ValueKey('student-open-calculator')));
+    await tester.pumpAndSettle();
+    await tester.pump(growthCalculatorDebounce);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('growth-calculator-section')),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<StudentSectionLayout>(find.byType(StudentSectionLayout))
+          .calculator
+          ?.student
+          ?.studentId,
+      'ayane',
+    );
+    expect(seed, isNull);
     expect(tester.takeException(), isNull);
   });
 
@@ -76,77 +98,9 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
-  testWidgets(
-    'review-required candidate is unchanged on hold and committed after approval',
-    (tester) async {
-      final service = MockAppService();
-      var committed = false;
-      addTearDown(service.dispose);
-      final session = ScannerSession(
-        id: 'session-1',
-        generation: 1,
-        kind: ScannerKind.student,
-      );
-      final candidate = ScannerCandidate(
-        id: 'candidate-1',
-        sessionId: session.id,
-        generation: 1,
-        revision: 1,
-        kind: ScannerKind.student,
-        payload: const {
-          'version': 1,
-          'student_id': 'aru',
-          'values': {'level': 20},
-        },
-        evidence: const [
-          ScannerFieldEvidence(
-            field: 'level',
-            status: 'matched',
-            source: 'ocr',
-            confidence: 0.8,
-          ),
-        ],
-        reviewRequired: true,
-        approved: false,
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: BAPlannerTheme.dark(),
-          home: Scaffold(
-            body: StudentPage(
-              service: service,
-              onAddToPlan: (_) {},
-              candidateContext: StudentCandidateContext(
-                session: session,
-                candidate: candidate,
-              ),
-              onCandidateCommitted: (_) => committed = true,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await _reveal(tester, find.byKey(const ValueKey('candidate-hold')));
-      await tester.tap(find.byKey(const ValueKey('candidate-hold')));
-      await tester.pump();
-      expect(
-        (await service.loadRepositoryState(
-          '000000000000000000000001',
-        )).students,
-        isEmpty,
-      );
-
-      await tester.tap(find.byKey(const ValueKey('candidate-approve')));
-      await tester.pumpAndSettle();
-      final state = await service.loadRepositoryState(
-        '000000000000000000000001',
-      );
-      expect(state.students.single.studentId, 'aru');
-      expect(state.students.single.values['level'], 20);
-      expect(committed, isTrue);
-    },
-  );
-
+  // 예전 'review-required candidate is unchanged on hold and committed after approval'(학생 탭 후보 인계)은 FE8-g5b에서
+  // 학생 탭 후보 경로를 없애며 스캔 탭 학생 결과 검토 보드 경로로 옮겼다(`scan_item_review_fe8g5b_test.dart` "student
+  // candidate hold / apply (예전 학생 탭 후보 대체)").
   testWidgets('long names and missing metadata remain searchable', (
     tester,
   ) async {

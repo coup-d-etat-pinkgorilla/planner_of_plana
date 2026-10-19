@@ -1,11 +1,12 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+
+import '../../app/theme.dart';
+import '../geometry/diagonal_geometry.dart';
 
 double diagonalParallelogramBottomCenterX({
   required double width,
   required double height,
-}) => (width - height / math.tan(80 * math.pi / 180)) / 2;
+}) => (width - diagonalCutDepth(height)) / 2;
 
 class DiagonalFlowIndicator extends StatelessWidget {
   const DiagonalFlowIndicator({
@@ -53,7 +54,7 @@ class _DiagonalFlowIndicatorPainter extends CustomPainter {
         ..lineTo(size.width, 0)
         ..lineTo(size.width / 2, size.height)
         ..close(),
-      Paint()..color = const Color(0xfff2b3ef).withValues(alpha: 0.88),
+      Paint()..color = AppColors.accent.withValues(alpha: 0.88),
     );
   }
 

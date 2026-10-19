@@ -144,6 +144,10 @@ class _AssetImageGridState extends State<AssetImageGrid> {
   Map<String, ui.Image> _images = const {};
   bool _imageFlushScheduled = false;
 
+  /// asset이 바뀌어 다시 고르는 중인가(didUpdateWidget). 이때 캐시에서 바로 온 이미지는 같은
+  /// 프레임에 넣는다. 다음 프레임까지 기다리면 그 한 프레임 동안 그림이 비어 깜박인다(FE3-e 폼 교대).
+  bool _swapping = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -154,7 +158,12 @@ class _AssetImageGridState extends State<AssetImageGrid> {
   void didUpdateWidget(AssetImageGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_sameAssets(oldWidget.items, widget.items)) {
-      _resolveImages();
+      _swapping = true;
+      try {
+        _resolveImages();
+      } finally {
+        _swapping = false;
+      }
     }
   }
 
@@ -187,6 +196,11 @@ class _AssetImageGridState extends State<AssetImageGrid> {
         (info, _) {
           if (!mounted || _streams[asset] != stream) return;
           _pendingImageRemovals.remove(asset);
+          if (_swapping) {
+            // didUpdateWidget 안(빌드 직전)이라 setState 없이 바로 넣는다.
+            _images = Map.unmodifiable({..._images, asset: info.image});
+            return;
+          }
           _pendingImages[asset] = info.image;
           _scheduleImageFlush();
         },

@@ -1,0 +1,198 @@
+{
+ "recording": "debug/scanner_c5e_live/second-scan-equipment",
+ "note": "live 1280 equipment --repeat 2 (2026-09-28): second-scan crops sit 1 px off the first scan",
+ "tiles": [
+  {
+   "file": "bank-00.png",
+   "scan": "first",
+   "slot": 0,
+   "identity": "Equipment_Icon_Exp_3"
+  },
+  {
+   "file": "bank-01.png",
+   "scan": "first",
+   "slot": 1,
+   "identity": "Equipment_Icon_Exp_2"
+  },
+  {
+   "file": "bank-02.png",
+   "scan": "first",
+   "slot": 2,
+   "identity": "Equipment_Icon_Exp_1"
+  },
+  {
+   "file": "bank-03.png",
+   "scan": "first",
+   "slot": 3,
+   "identity": "Equipment_Icon_Exp_0"
+  },
+  {
+   "file": "bank-04.png",
+   "scan": "first",
+   "slot": 4,
+   "identity": "Equipment_Icon_Necklace_Useall_Piece"
+  },
+  {
+   "file": "bank-05.png",
+   "scan": "first",
+   "slot": 5,
+   "identity": "Equipment_Icon_Watch_Useall_Piece"
+  },
+  {
+   "file": "bank-06.png",
+   "scan": "first",
+   "slot": 6,
+   "identity": "Equipment_Icon_Charm_Useall_Piece"
+  },
+  {
+   "file": "bank-07.png",
+   "scan": "first",
+   "slot": 7,
+   "identity": "Equipment_Icon_Hairpin_Useall_Piece"
+  },
+  {
+   "file": "bank-08.png",
+   "scan": "first",
+   "slot": 8,
+   "identity": "Equipment_Icon_Badge_Useall_Piece"
+  },
+  {
+   "file": "bank-09.png",
+   "scan": "first",
+   "slot": 9,
+   "identity": "Equipment_Icon_Bag_Useall_Piece"
+  },
+  {
+   "file": "bank-10.png",
+   "scan": "first",
+   "slot": 10,
+   "identity": "Equipment_Icon_Shoes_Useall_Piece"
+  },
+  {
+   "file": "bank-11.png",
+   "scan": "first",
+   "slot": 11,
+   "identity": "Equipment_Icon_Gloves_Useall_Piece"
+  },
+  {
+   "file": "bank-12.png",
+   "scan": "first",
+   "slot": 12,
+   "identity": "Equipment_Icon_Hat_Useall_Piece"
+  },
+  {
+   "file": "bank-13.png",
+   "scan": "first",
+   "slot": 13,
+   "identity": "Equipment_Icon_Necklace_Tier10"
+  },
+  {
+   "file": "bank-14.png",
+   "scan": "first",
+   "slot": 14,
+   "identity": "Equipment_Icon_Necklace_Tier8"
+  },
+  {
+   "file": "bank-15.png",
+   "scan": "first",
+   "slot": 15,
+   "identity": "Equipment_Icon_Necklace_Tier7"
+  },
+  {
+   "file": "bank-16.png",
+   "scan": "first",
+   "slot": 16,
+   "identity": "Equipment_Icon_Necklace_Tier6"
+  },
+  {
+   "file": "bank-17.png",
+   "scan": "first",
+   "slot": 17,
+   "identity": "Equipment_Icon_Necklace_Tier5"
+  },
+  {
+   "file": "bank-18.png",
+   "scan": "first",
+   "slot": 18,
+   "identity": "Equipment_Icon_Necklace_Tier4"
+  },
+  {
+   "file": "bank-19.png",
+   "scan": "first",
+   "slot": 19,
+   "identity": "Equipment_Icon_Necklace_Tier3"
+  },
+  {
+   "file": "query-00.png",
+   "scan": "second",
+   "slot": 0,
+   "identity": "Equipment_Icon_Exp_3"
+  },
+  {
+   "file": "query-01.png",
+   "scan": "second",
+   "slot": 1,
+   "identity": "Equipment_Icon_Exp_2"
+  },
+  {
+   "file": "query-02.png",
+   "scan": "second",
+   "slot": 2,
+   "identity": "Equipment_Icon_Exp_1"
+  },
+  {
+   "file": "query-03.png",
+   "scan": "second",
+   "slot": 3,
+   "identity": "Equipment_Icon_Exp_0"
+  },
+  {
+   "file": "query-04.png",
+   "scan": "second",
+   "slot": 4,
+   "identity": "Equipment_Icon_Necklace_Useall_Piece"
+  },
+  {
+   "file": "query-05.png",
+   "scan": "second",
+   "slot": 5,
+   "identity": "Equipment_Icon_Watch_Useall_Piece"
+  },
+  {
+   "file": "query-06.png",
+   "scan": "second",
+   "slot": 6,
+   "identity": "Equipment_Icon_Charm_Useall_Piece"
+  },
+  {
+   "file": "query-07.png",
+   "scan": "second",
+   "slot": 7,
+   "identity": "Equipment_Icon_Hairpin_Useall_Piece"
+  },
+  {
+   "file": "query-08.png",
+   "scan": "second",
+   "slot": 8,
+   "identity": "Equipment_Icon_Badge_Useall_Piece"
+  },
+  {
+   "file": "query-09.png",
+   "scan": "second",
+   "slot": 9,
+   "identity": "Equipment_Icon_Bag_Useall_Piece"
+  },
+  {
+   "file": "query-10.png",
+   "scan": "second",
+   "slot": 10,
+   "identity": "Equipment_Icon_Shoes_Useall_Piece"
+  },
+  {
+   "file": "query-11.png",
+   "scan": "second",
+   "slot": 11,
+   "identity": "Equipment_Icon_Gloves_Useall_Piece"
+  }
+ ]
+}

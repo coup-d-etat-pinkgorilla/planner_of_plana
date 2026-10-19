@@ -1,0 +1,1273 @@
+{
+  "document_version": 2,
+  "cases": [
+    {
+      "name": "null_bond_known",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0,
+          "bond_rank": 35
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "null_bond_known",
+        "name": "null_bond_known",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "name": "null_bond_unknown",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "null_bond_unknown",
+        "name": "null_bond_unknown",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "name": "all_null",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "all_null",
+        "name": "all_null",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "name": "explicit_zero",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "explicit_zero",
+        "name": "explicit_zero",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": 0,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": 0,
+                  "stat_hp": 0,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 0
+      }
+    },
+    {
+      "name": "same_as_current",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "same_as_current",
+        "name": "same_as_current",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": 30,
+                  "bond_rank": null,
+                  "student_star": 3,
+                  "weapon_level": 0,
+                  "weapon_star": 0,
+                  "ex_skill": 1,
+                  "skill1": 1,
+                  "skill2": 1,
+                  "skill3": 1,
+                  "equip1_tier": 1,
+                  "equip2_tier": 1,
+                  "equip3_tier": 1,
+                  "equip1_level": 1,
+                  "equip2_level": 1,
+                  "equip3_level": 1,
+                  "equip4_tier": 0,
+                  "stat_hp": 0,
+                  "stat_atk": 0,
+                  "stat_heal": 0
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 0
+      }
+    },
+    {
+      "name": "partial_weapon",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "partial_weapon",
+        "name": "partial_weapon",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": 20,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "s-1",
+                "student_id": "aru",
+                "name": "Step 1",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": 25,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "star_cost_once": true
+      }
+    },
+    {
+      "name": "partial_equipment",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "partial_equipment",
+        "name": "partial_equipment",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": 15,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "s-1",
+                "student_id": "aru",
+                "name": "Step 1",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": 20,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "equipment_parity": true
+      }
+    },
+    {
+      "name": "partial_favorite_known_bond",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0,
+          "bond_rank": 20
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "partial_favorite_known_bond",
+        "name": "partial_favorite_known_bond",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": 2,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 500000,
+        "warnings": 0
+      }
+    },
+    {
+      "name": "partial_favorite_unknown_bond",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "partial_favorite_unknown_bond",
+        "name": "partial_favorite_unknown_bond",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": 2,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "credits": 500000,
+        "warning_contains": "bond_rank"
+      }
+    },
+    {
+      "name": "partial_favorite_requires_bond",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0,
+          "bond_rank": 10
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "partial_favorite_requires_bond",
+        "name": "partial_favorite_requires_bond",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": 2,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "warning_contains": "Bond growth"
+      }
+    },
+    {
+      "name": "unknown_level_baseline",
+      "valid": true,
+      "current_students": [
+        {
+          "student_id": "aru"
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "unknown_level_baseline",
+        "name": "unknown_level_baseline",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": 31,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {
+        "warning_contains": "level"
+      }
+    },
+    {
+      "name": "regresses_integer",
+      "valid": false,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "regresses_integer",
+        "name": "regresses_integer",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": 31,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "s-1",
+                "student_id": "aru",
+                "name": "Step 1",
+                "targets": {
+                  "level": 30,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "name": "regresses_to_null",
+      "valid": false,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "regresses_to_null",
+        "name": "regresses_to_null",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": 31,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "s-1",
+                "student_id": "aru",
+                "name": "Step 1",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "name": "bond_regresses_to_null",
+      "valid": false,
+      "current_students": [
+        {
+          "student_id": "aru",
+          "level": 30,
+          "student_star": 3,
+          "weapon_state": "weapon_locked",
+          "weapon_star": 0,
+          "weapon_level": 0,
+          "ex_skill": 1,
+          "skill1": 1,
+          "skill2": 1,
+          "skill3": 1,
+          "equip1": "T1",
+          "equip2": "T1",
+          "equip3": "T1",
+          "equip4": null,
+          "equip1_level": 1,
+          "equip2_level": 1,
+          "equip3_level": 1,
+          "stat_hp": 0,
+          "stat_atk": 0,
+          "stat_heal": 0
+        }
+      ],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "bond_regresses_to_null",
+        "name": "bond_regresses_to_null",
+        "kind": "scenario",
+        "phases": [
+          {
+            "phase_id": "phase",
+            "name": "Phase",
+            "stages": [
+              {
+                "stage_id": "s-0",
+                "student_id": "aru",
+                "name": "Step 0",
+                "targets": {
+                  "level": null,
+                  "bond_rank": 35,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              },
+              {
+                "stage_id": "s-1",
+                "student_id": "aru",
+                "name": "Step 1",
+                "targets": {
+                  "level": null,
+                  "bond_rank": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "original notes"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "name": "empty_document",
+      "valid": true,
+      "current_students": [],
+      "inventory": {
+        "version": 1,
+        "entries": []
+      },
+      "document": {
+        "version": 2,
+        "document_id": "empty_document",
+        "name": "empty_document",
+        "kind": "scenario",
+        "phases": [],
+        "goal_metadata": {}
+      },
+      "expected": {
+        "credits": 0,
+        "warnings": 0
+      }
+    }
+  ]
+}

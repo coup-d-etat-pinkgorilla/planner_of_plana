@@ -5,7 +5,7 @@ topics: [design, flutter, planning, diagonal-layout, testing]
 sources:
   - id: plan-student-selector
     type: file
-    path: frontend/lib/ui/widgets/plan_student_selector.dart
+    path: frontend/lib/ui/widgets/plan_preset_manager.dart
   - id: plan-section-layout
     type: file
     path: frontend/lib/ui/widgets/plan_section_layout.dart
@@ -22,6 +22,8 @@ sources:
     type: file
     path: frontend/test/plan_element_builder_test.dart
 ---
+
+> **폐기 기록(2026-10-13).** `plan_student_selector.dart`(옛 계획 메인 학생 선택 패널)는 2026-10-13 FE5-f2에서 삭제됐다(학생 고르기는 계획 만들기 1단계가 맡는다). 이 문서는 시행착오 기록으로 남긴다. 남은 필터 간격 상수는 `plan_preset_manager.dart`(`_planPresetFilterControlGap`)로 옮겨졌고, 아래 [@plan-student-selector] 인용은 그 이관 위치를 가리킨다.
 
 # 계획 메인 학생 선택 패널 구현·피드백·시행착오 기록
 

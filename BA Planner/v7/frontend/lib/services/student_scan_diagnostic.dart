@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 
 import 'repository_service.dart';
+import 'scanner_review_images.dart';
 import 'scanner_service.dart';
 
 const studentScanDiagnosticFormat = 'ba_planner_student_scan_diagnostic';
@@ -142,17 +143,22 @@ String defaultStudentScanDiagnosticFileName(
   return 'ba-planner-student-scan-$stamp-${session.studentScanMode.name}.json';
 }
 
+// FB-10c: 진단 파일은 이미지를 담지 않는다(`privacy.images_included=false`). 후보 details·payload·audit와 이벤트
+// payload(안의 후보 evidence 포함)는 원래 Map을 그대로 넣지 않고 이미지 필드를 재귀로 뺀 사본을 넣는다.
+// crop 크기·출처처럼 이미지가 아닌 값은 남는다.
 Map<String, dynamic> _candidateToWire(ScannerCandidate candidate) => {
   'candidate_id': candidate.id,
   'session_id': candidate.sessionId,
   'generation': candidate.generation,
   'revision': candidate.revision,
   'scan_kind': candidate.kind.wireName,
-  'payload': candidate.payload,
+  'payload': scannerMapWithoutReviewImages(candidate.payload),
   'evidence': candidate.evidence.map(_evidenceToWire).toList(growable: false),
   'review_required': candidate.reviewRequired,
   'approved': candidate.approved,
-  'audit': candidate.audit,
+  'audit': candidate.audit
+      .map(scannerMapWithoutReviewImages)
+      .toList(growable: false),
 };
 
 Map<String, dynamic> _evidenceToWire(ScannerFieldEvidence evidence) => {
@@ -161,11 +167,12 @@ Map<String, dynamic> _evidenceToWire(ScannerFieldEvidence evidence) => {
   'source': evidence.source,
   if (evidence.confidence != null) 'confidence': evidence.confidence,
   if (evidence.note.isNotEmpty) 'note': evidence.note,
-  if (evidence.details != null) 'details': evidence.details,
+  if (evidence.details case final details?)
+    'details': scannerMapWithoutReviewImages(details),
 };
 
 Map<String, dynamic> _eventToWire(ScannerEvent event) => {
   'sequence': event.sequence,
   'event_kind': event.eventKind.name,
-  'payload': event.payload,
+  'payload': scannerMapWithoutReviewImages(event.payload),
 };

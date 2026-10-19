@@ -1,0 +1,53 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181346a40; end 0x181346b07; bound unwind; mode body
+181346a40 mov qword ptr [rsp + 8], rbx
+181346a45 mov qword ptr [rsp + 0x10], rsi
+181346a4a push rdi
+181346a4b sub rsp, 0x20
+181346a4f cmp byte ptr [rip + 0x8a07bc8], 0
+181346a56 movzx edi, r8b
+181346a5a mov esi, edx
+181346a5c mov rbx, rcx
+181346a5f jne 0x181346a80
+181346a61 lea rcx, [rip + 0x8609d78]
+181346a68 call 0x180778b40
+181346a6d lea rcx, [rip + 0x863f114]
+181346a74 call 0x180778b40
+181346a79 mov byte ptr [rip + 0x8a07b9e], 1
+181346a80 mov rdx, qword ptr [rip + 0x863f101]
+181346a87 mov rcx, qword ptr [rbx + 0x128]
+181346a8e call 0x182940830
+181346a93 test al, al
+181346a95 je 0x181346aa1
+181346a97 xor edx, edx
+181346a99 mov rcx, rbx
+181346a9c call 0x181347a60 ; CharacterObject.RefreshBattleSetting
+181346aa1 test dil, dil
+181346aa4 je 0x181346aaa
+181346aa6 xor edx, edx
+181346aa8 jmp 0x181346ab9
+181346aaa mov rax, qword ptr [rbx + 0x88]
+181346ab1 test rax, rax
+181346ab4 je 0x181346b01
+181346ab6 mov edx, dword ptr [rax + 0x20]
+181346ab9 mov rcx, qword ptr [rbx + 0x128]
+181346ac0 test rcx, rcx
+181346ac3 je 0x181346b01
+181346ac5 mov r8, qword ptr [rip + 0x8609d14]
+181346acc call 0x183a69810
+181346ad1 test rax, rax
+181346ad4 je 0x181346b01
+181346ad6 xor edx, edx
+181346ad8 mov rcx, rax
+181346adb call 0x1814cda00 ; MX.Logic.BattleEntities.BattleEntity.get_CurrentStat
+181346ae0 test rax, rax
+181346ae3 je 0x181346b01
+181346ae5 xor r8d, r8d
+181346ae8 mov edx, esi
+181346aea mov rcx, rax
+181346aed mov rbx, qword ptr [rsp + 0x30]
+181346af2 mov rsi, qword ptr [rsp + 0x38]
+181346af7 add rsp, 0x20
+181346afb pop rdi
+181346afc jmp 0x1814ca370 ; MX.Logic.BattleEntities.BattleEntityStat.get_Item
+181346b01 call 0x180778cf0
+181346b06 int3

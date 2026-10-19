@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "source": "CF fb10b-dart inline matcher, now a shared test-only fixture",
+  "initial_entries": [
+    {"key": "Item_Icon_SkillBook_Abydos_0", "item_id": "Item_Icon_SkillBook_Abydos_0", "quantity": "3"},
+    {"key": "Item_Icon_SkillBook_Abydos_1", "item_id": "Item_Icon_SkillBook_Abydos_1", "quantity": "9"},
+    {"key": "Item_Icon_SkillBook_Abydos_2", "item_id": "Item_Icon_SkillBook_Abydos_2", "quantity": "7"}
+  ],
+  "candidate_entries": [
+    {"key": "Item_Icon_SkillBook_Abydos_0", "item_id": "Item_Icon_SkillBook_Abydos_0", "quantity": "7"},
+    {"key": "Item_Icon_SkillBook_Abydos_1", "item_id": "Item_Icon_SkillBook_Abydos_1", "quantity": "99"},
+    {"key": "Item_Icon_SkillBook_Abydos_2", "item_id": "Item_Icon_SkillBook_Abydos_2", "quantity": "70"},
+    {"key": "Item_Icon_SkillBook_Abydos_3", "item_id": "Item_Icon_SkillBook_Abydos_3", "quantity": "5"}
+  ]
+}

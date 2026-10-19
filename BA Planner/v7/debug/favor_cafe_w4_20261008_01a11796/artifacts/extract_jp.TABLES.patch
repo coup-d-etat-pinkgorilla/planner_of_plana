@@ -1,0 +1,7 @@
+--- a/data/extracted/pipeline/extract_jp.py
++++ b/data/extracted/pipeline/extract_jp.py
+@@ -37 +37,3 @@
+-          'CharacterCalculationLimitExcel']
++          'CharacterCalculationLimitExcel',
++          # frontend request 2026-10-08 02:45: favor experience and cafe interaction rewards
++          'FavorLevelExcel', 'CafeInteractionExcel']

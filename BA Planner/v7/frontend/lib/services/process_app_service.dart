@@ -20,13 +20,22 @@ class ProcessAppService
     with WidgetsBindingObserver
     implements
         AppService,
+        PlanningStudentCalculationService,
+        PlanningStudentBondCalculationService,
         PlanningDocumentService,
+        ResourceAcquisitionService,
         PlanningScenarioRepositoryService,
         PlanningScenarioComparisonService,
         RepositoryService,
+        RepositoryPlanService,
+        RepositoryPresetsService,
+        RepositoryInventoryReviewService,
         ScannerService,
         TacticalService,
         TacticalEvidenceService,
+        TacticalEvidenceWriteService,
+        TacticalEvidenceReadService,
+        TacticalExcelImportService,
         DiagnosticsService {
   ProcessAppService(this._client)
     : _state = ValueNotifier(
@@ -147,6 +156,24 @@ class ProcessAppService
     return InventoryCatalogResult.fromWire(payload);
   }
 
+  /// FB-3 획득처. legacy 키(`Item_Icon_SkillBook_Ultimate_Piece`) 질의는 정규 키(`..._Ultimate`) 응답을 받는다.
+  /// 응답 키는 질의의 정규 키와 같아야 한다(별칭 원문끼리 비교하지 않는다).
+  @override
+  Future<ResourceAcquisitionResult> getResourceAcquisition(
+    String resourceKey,
+  ) async {
+    final query = ResourceAcquisitionQuery(resourceKey);
+    final result = ResourceAcquisitionResult.fromWire(
+      await _client.send('planning.inventory.acquisition.get', query.toWire()),
+    );
+    if (result.resourceKey != historyCanonicalResourceKey(query.resourceKey)) {
+      throw const FormatException(
+        'Resource acquisition response is for another resource',
+      );
+    }
+    return result;
+  }
+
   @override
   Future<InventoryShortageResult> calculateShortages({
     required List<Map<String, dynamic>> currentStudents,
@@ -179,6 +206,34 @@ class ProcessAppService
     });
     return Map<String, dynamic>.from(payload['totals'] as Map);
   }
+
+  @override
+  Future<StudentCalculationResult> calculateStudent({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire(
+    await _client.send('planning.student.calculate', {
+      'current_student': currentStudent,
+      'targets': targets,
+      'inventory': ?inventory,
+    }),
+  );
+
+  @override
+  Future<StudentCalculationResult> calculateStudentWithBond({
+    required Map<String, dynamic> currentStudent,
+    required Map<String, int> targets,
+    required StudentBondRequest bond,
+    Map<String, dynamic>? inventory,
+  }) async => StudentCalculationResult.fromWire(
+    await _client.send('planning.student.calculate', {
+      'current_student': currentStudent,
+      'targets': targets,
+      'inventory': ?inventory,
+      'bond': bond.toWire(),
+    }),
+  );
 
   @override
   Future<Map<String, dynamic>> calculatePlanningDocument({
@@ -241,16 +296,21 @@ class ProcessAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send('repository.scenario.create', {
-      'profile_id': profileId,
-      'expected_revision': expectedRevision,
-      'idempotency_key': idempotencyKey,
-      'name': name,
-      'description': description,
-      'base_profile_revision': baseProfileRevision,
-      'document': document.toWire(),
-    }),
+    await _client.send(
+      'repository.scenario.create',
+      PlanningScenarioCreateRequest(
+        profileId: profileId,
+        expectedRevision: expectedRevision,
+        idempotencyKey: idempotencyKey,
+        name: name,
+        description: description,
+        baseProfileRevision: baseProfileRevision,
+        document: document,
+        authoring: authoring,
+      ).toWire(),
+    ),
   );
 
   @override
@@ -264,18 +324,23 @@ class ProcessAppService
     required String description,
     required int baseProfileRevision,
     required PlanningDocument document,
+    PlanningAuthoring? authoring,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send('repository.scenario.update', {
-      'profile_id': profileId,
-      'scenario_id': scenarioId,
-      'expected_revision': expectedRevision,
-      'expected_scenario_revision': expectedScenarioRevision,
-      'idempotency_key': idempotencyKey,
-      'name': name,
-      'description': description,
-      'base_profile_revision': baseProfileRevision,
-      'document': document.toWire(),
-    }),
+    await _client.send(
+      'repository.scenario.update',
+      PlanningScenarioUpdateRequest(
+        profileId: profileId,
+        scenarioId: scenarioId,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+        name: name,
+        description: description,
+        baseProfileRevision: baseProfileRevision,
+        document: document,
+        authoring: authoring,
+      ).toWire(),
+    ),
   );
 
   Future<PlanningScenarioMutationResult> _scenarioIdentityMutation(
@@ -286,13 +351,16 @@ class ProcessAppService
     required int expectedScenarioRevision,
     required String idempotencyKey,
   }) async => PlanningScenarioMutationResult.fromWire(
-    await _client.send(method, {
-      'profile_id': profileId,
-      'scenario_id': scenarioId,
-      'expected_revision': expectedRevision,
-      'expected_scenario_revision': expectedScenarioRevision,
-      'idempotency_key': idempotencyKey,
-    }),
+    await _client.send(
+      method,
+      PlanningScenarioIdentityRequest(
+        profileId: profileId,
+        scenarioId: scenarioId,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+      ).toWire(),
+    ),
   );
 
   @override
@@ -426,6 +494,36 @@ class ProcessAppService
       );
 
   @override
+  Future<RepositoryHistorySummaryResult> loadRepositoryHistorySummary(
+    List<String> profileIds,
+  ) async => RepositoryHistorySummaryResult.fromWire(
+    await _client.send('repository.history.summary',
+      RepositoryHistorySummaryRequest(profileIds).toWire()),
+  );
+
+  @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async => RepositoryHistoryEventsResult.fromWire(
+    await _client.send('repository.history.events', request.toWire()),
+  );
+
+  @override
+  Future<RepositoryHistoryDiffResult> loadRepositoryHistoryDiff(
+    RepositoryHistoryDiffRequest request,
+  ) async => RepositoryHistoryDiffResult.fromWire(
+    await _client.send('repository.history.diff', request.toWire()),
+  );
+
+  @override
+  Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
+    RepositoryHistoryScanLatestRequest request,
+  ) async => RepositoryHistoryScanLatestResult.fromWireFor(
+    request,
+    await _client.send('repository.history.scan_latest', request.toWire()),
+  );
+
+  @override
   Future<int> saveRepositoryGoals(
     String profileId,
     Map<String, dynamic> goals,
@@ -437,6 +535,67 @@ class ProcessAppService
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
   });
+
+  @override
+  Future<RepositoryPresetsState> loadRepositoryPresets(
+    String profileId,
+  ) async => RepositoryPresetsState.fromWire(
+    await _client.send('repository.presets.get', {'profile_id': profileId}),
+  );
+
+  @override
+  Future<int> saveRepositoryPresets(RepositoryPresetsSaveRequest request) =>
+      _revisionMutation('repository.presets.save', request.toWire());
+
+  @override
+  Future<RepositoryPlanState> loadRepositoryPlan(String profileId) async =>
+      RepositoryPlanState.fromWire(
+        await _client.send('repository.plan.get', {'profile_id': profileId}),
+      );
+
+  @override
+  Future<int> saveRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    PlanningAuthoring? authoring,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) => _revisionMutation(
+    'repository.plan.save',
+    RepositoryPlanSaveRequest(
+      profileId: profileId,
+      document: document,
+      authoring: authoring,
+      expectedRevision: expectedRevision,
+      idempotencyKey: idempotencyKey,
+    ).toWire(),
+  );
+
+  @override
+  Future<RepositoryPlanReplaceResult> replaceRepositoryPlan({
+    required String profileId,
+    required PlanningDocument document,
+    PlanningAuthoring? authoring,
+    required int expectedRevision,
+    required int expectedScenarioRevision,
+    required String idempotencyKey,
+    required String archiveName,
+    required String archiveDescription,
+  }) async => RepositoryPlanReplaceResult.fromWire(
+    await _client.send(
+      'repository.plan.replace',
+      RepositoryPlanReplaceRequest(
+        profileId: profileId,
+        document: document,
+        authoring: authoring,
+        expectedRevision: expectedRevision,
+        expectedScenarioRevision: expectedScenarioRevision,
+        idempotencyKey: idempotencyKey,
+        archiveName: archiveName,
+        archiveDescription: archiveDescription,
+      ).toWire(),
+    ),
+  );
 
   @override
   Future<int> saveRepositoryStudents(
@@ -458,13 +617,30 @@ class ProcessAppService
     String profileId,
     RepositoryInventoryState inventory,
     int expectedRevision,
-    String idempotencyKey,
-  ) => _revisionMutation('repository.inventory.update', {
+    String idempotencyKey, {
+    List<String>? appliedResourceKeys,
+  }) => _revisionMutation('repository.inventory.update', {
     'profile_id': profileId,
     'inventory': inventory.toWire(),
     'expected_revision': expectedRevision,
     'idempotency_key': idempotencyKey,
+    // FB-10b scope: 별칭을 현재 key로 바꾸고 중복이면 보내기 전에 FormatException.
+    if (appliedResourceKeys != null)
+      'applied_resource_keys': repositoryInventoryAppliedKeys(
+        appliedResourceKeys,
+      ),
   });
+
+  @override
+  Future<RepositoryInventoryReview> loadRepositoryInventoryReview(
+    String profileId,
+  ) async {
+    final request = RepositoryInventoryReviewRequest(profileId);
+    return RepositoryInventoryReview.fromWireFor(
+      profileId,
+      await _client.send('repository.inventory.review.get', request.toWire()),
+    );
+  }
 
   @override
   Future<List<RepositoryV6AccountPreview>> previewV6Accounts() async {
@@ -550,6 +726,130 @@ class ProcessAppService
     String profileId,
   ) async => TacticalEvidenceState.fromWire(
     await _client.send('tactical.v2.state.get', {'profile_id': profileId}),
+  );
+
+  // FB-6: 요청은 보내기 전에 strict 검사한다(checkedTacticalV2Request), 응답은 client가 검사한 뒤 typed DTO.
+  Future<Map<String, dynamic>> _tacticalV2Write(
+    String method,
+    Map<String, dynamic> payload,
+  ) async => _client.send(method, checkedTacticalV2Request(method, payload));
+
+  @override
+  Future<TacticalMatchUpsertResult> upsertTacticalMatchV2({
+    required String profileId,
+    required TacticalMatchInputV2 match,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalMatchUpsertResult.fromWire(
+    await _tacticalV2Write('tactical.v2.match.upsert', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'match': match.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalMatchDeleteResult> deleteTacticalMatchV2({
+    required String profileId,
+    required String matchId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalMatchDeleteResult.fromWire(
+    await _tacticalV2Write('tactical.v2.match.delete', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'match_id': matchId,
+    }),
+  );
+
+  @override
+  Future<TacticalJokboUpsertResult> upsertTacticalJokboV2({
+    required String profileId,
+    required TacticalJokboInputV2 jokbo,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalJokboUpsertResult.fromWire(
+    await _tacticalV2Write('tactical.v2.jokbo.upsert', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'jokbo': jokbo.toWire(),
+    }),
+  );
+
+  @override
+  Future<TacticalJokboDeleteResult> deleteTacticalJokboV2({
+    required String profileId,
+    required String jokboId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalJokboDeleteResult.fromWire(
+    await _tacticalV2Write('tactical.v2.jokbo.delete', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'jokbo_id': jokboId,
+    }),
+  );
+
+  @override
+  Future<TacticalLegacyPreview> previewTacticalLegacyMigration(
+    String profileId,
+  ) async => TacticalLegacyPreview.fromWire(
+    await _tacticalV2Write('tactical.v2.legacy.preview', {
+      'profile_id': profileId,
+    }),
+  );
+
+  /// 미리보기 응답의 `source_revision`·`source_fingerprint`를 요청 `expected_source_revision`·
+  /// `expected_fingerprint`로 보낸다(backend 2026-10-14 08:27).
+  @override
+  Future<TacticalLegacyCommitResult> commitTacticalLegacyMigration({
+    required String profileId,
+    required int expectedSourceRevision,
+    required String expectedFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalLegacyCommitResult.fromWire(
+    await _tacticalV2Write('tactical.v2.legacy.commit', {
+      'profile_id': profileId,
+      'expected_revision': expectedRevision,
+      'idempotency_key': idempotencyKey,
+      'expected_source_revision': expectedSourceRevision,
+      'expected_fingerprint': expectedFingerprint,
+    }),
+  );
+
+  // FB-7: 엑셀·CSV 가져오기. 경로와 명시적 선택만 보내고 해석은 백엔드가 한다(Flutter는 파일을 읽지 않는다).
+  @override
+  Future<TacticalExcelPreview> previewTacticalExcelImport(
+    TacticalExcelImportChoices choices,
+  ) async => TacticalExcelPreview.fromWire(
+    await _tacticalV2Write('tactical.v2.excel.preview', choices.toWire()),
+  );
+
+  @override
+  Future<TacticalExcelCommitResult> commitTacticalExcelImport({
+    required TacticalExcelImportChoices choices,
+    required bool saveRules,
+    required String expectedFingerprint,
+    required String expectedInterpretationFingerprint,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) async => TacticalExcelCommitResult.fromWire(
+    await _tacticalV2Write(
+      'tactical.v2.excel.commit',
+      tacticalExcelCommitPayload(
+        choices: choices,
+        saveRules: saveRules,
+        expectedFingerprint: expectedFingerprint,
+        expectedInterpretationFingerprint: expectedInterpretationFingerprint,
+        expectedRevision: expectedRevision,
+        idempotencyKey: idempotencyKey,
+      ),
+    ),
   );
 
   @override
@@ -938,6 +1238,14 @@ class ProcessAppService
       _scanner.cancelScannerSession(session);
 
   @override
+  Future<ScannerSessionControl> pauseScannerSession(ScannerSession session) =>
+      _scanner.pauseScannerSession(session);
+
+  @override
+  Future<ScannerSessionControl> resumeScannerSession(ScannerSession session) =>
+      _scanner.resumeScannerSession(session);
+
+  @override
   Future<ScannerSessionSnapshot> scannerSnapshot(ScannerSession session) =>
       _scanner.scannerSnapshot(session);
 
@@ -955,6 +1263,7 @@ class ProcessAppService
     required bool approve,
     required String reason,
     Map<int, int>? relationshipRanks,
+    Set<String>? confirmedFields,
   }) => _scanner.reviewScannerCandidate(
     session,
     candidate,
@@ -962,6 +1271,7 @@ class ProcessAppService
     approve: approve,
     reason: reason,
     relationshipRanks: relationshipRanks,
+    confirmedFields: confirmedFields,
   );
 
   @override
@@ -973,6 +1283,27 @@ class ProcessAppService
     session,
     candidate,
     relationshipRanks: relationshipRanks,
+  );
+
+  @override
+  Future<ScannerUnresolvedSlots> scannerUnresolvedSlots(
+    ScannerSession session,
+    ScannerCandidate candidate,
+  ) => _scanner.scannerUnresolvedSlots(session, candidate);
+
+  @override
+  Future<ScannerIdentityAssignmentResult> assignScannerIdentity(
+    ScannerSession session,
+    ScannerCandidate candidate, {
+    required int slot,
+    required String identity,
+    required bool persist,
+  }) => _scanner.assignScannerIdentity(
+    session,
+    candidate,
+    slot: slot,
+    identity: identity,
+    persist: persist,
   );
 
   @override

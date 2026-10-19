@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "contract": "student-attribute-prefilter-v1",
+  "evidence_schema_version": 2,
+  "user_requests": ["Sentinel_b870db552f388191b9ccc8b788e0ca07", "Sentinel_56d83198802081918159b7799ba5c648"],
+  "default_enabled": true,
+  "axes": ["attack_type", "defense_type", "role", "position", "combat_class"],
+  "selected_filter_input": {
+    "protocol_method": "scanner.session.start",
+    "field": "student_identity_filters",
+    "optional": true,
+    "selected_only_axes": ["equipment_slot_1", "equipment_slot_2", "equipment_slot_3", "weapon_type", "school"],
+    "selection_semantics": "one string or null per axis; AND across axes; omitted/null/unknown ignored; lists and numeric enum values rejected",
+    "metadata_values": "canonical v1 per-form strings; case-insensitive exact tokens; no numeric client enum mapping at runtime",
+    "selected_observed_conflict": "ignore both values on that axis and record issue; full-catalog illustration guard remains authoritative",
+    "input_source": "explicit user selection only; target discovery values removed without request input",
+    "frontend_status": "not wired in this backend slice",
+    "deferred_axes": ["rarity/current star", "range_type", "cover_type", "terrain aptitude", "club", "skill/icon identity", "server availability"]
+  },
+  "required_requested_axes": ["attack_type", "defense_type", "role", "position"],
+  "distinct_axes": {"role": ["dealer", "healer", "supporter", "tanker", "t_s"], "position": ["front", "middle", "back"], "combat_class": ["striker", "special"]},
+  "attribute_measurement": {
+    "roi_id": "basic_attribute_{axis}",
+    "similarity": "0.7*ncc_signed_lanczos + 0.3*color_similarity",
+    "score_threshold_name": "student.entry.screen.score",
+    "score_threshold_unchanged": 0.90,
+    "margin_threshold_name": "student.entry.screen.margin",
+    "margin_threshold_unchanged": 0.10,
+    "at_least_two_template_alternatives": true
+  },
+  "order": ["read_all_attributes", "build_form_aware_candidates", "restricted_illustration_search", "full_catalog_illustration_guard", "optional_restricted_name_shadow", "assemble"],
+  "candidate_policy": {
+    "all_confident_known_axes": "intersection",
+    "minimum_axis_count": 1,
+    "top_k_truncation": false,
+    "unknown_or_low_confidence": "ignore for exclusion",
+    "metadata_missing_invalid_or_conflicting_used_field": "retain entire form",
+    "conservative_unknown_exception": "any unknown used DB field retains the entire form even if another known used field mismatches; joint output need not equal the intersection of per-axis diagnostic sets",
+    "metadata_sources": "generated runtime per-form overrides and canonical catalog must agree",
+    "metadata_unavailable": "full catalog fallback",
+    "retained_uncertain_form": "eligible for search, never positive evidence for attribute-based form confirmation",
+    "empty_intersection": "full catalog fallback; record proposed count zero",
+    "no_portrait_candidates": "full catalog fallback",
+    "singleton": "no identity vote; finite conditional margin, full illustration guard required",
+    "names": "base id retained when any form remains; explicit allowed_student_refs passed to match/compare",
+    "illustrations": "canonical form refs mapped to raw template identities; explicit allowed_identities passed to match"
+  },
+  "authority": {
+    "source": "existing full-catalog illustration identity or confirmed full-catalog base plus unique form attributes",
+    "illustration_score_threshold_unchanged": 0.82,
+    "illustration_margin_threshold_unchanged": 0.04,
+    "reduced_candidate_margin": "diagnostic only; never substitutes for full-catalog illustration margin",
+    "excluded_confident_global_winner": "return existing full-catalog illustration identity; revert name search to full catalog; record contradiction",
+    "unconfirmed_global_base_or_form": "no identity; bounded recapture then identity_unconfirmed",
+    "name_default": "off",
+    "name_master_switch_unchanged": "BA_PLANNER_STUDENT_NAME_SHADOW=1",
+    "name_authoritative": false
+  },
+  "evidence": ["per_axis_value_confidence_score_margin_roi_acceptance_and_application_reason", "used_attributes", "metadata_issues_and_fingerprint", "before_after_effective_candidate_counts_refs_and_sha256", "conditional_and_global_illustration_scores_margins", "fallback_and_contradictions", "singleton_handling", "capture_attempts", "name_actual_candidate_set_and_conditional_margin_scope"],
+  "evidence_schema": {
+    "version": 2,
+    "behavior_contract_version": 1,
+    "compatibility": "additive fields; all old keys, margin numerics, fallback_reason latest alias and decision behavior retained",
+    "runner_exists": "boolean for scored production match; null for legacy injected or unscored unavailable results",
+    "runner_margin": "null without a distinct scored runner; otherwise the actual current two-candidate difference; never replaces legacy margin",
+    "axis_candidates": "independent single-axis match-or-unknown sets with refs/count/hash; ignored axes keep the full set",
+    "axis_intersection_refs": "ordinary intersection of diagnostic single-axis sets, not the conservative joint decision",
+    "conservative_override_refs": "forms retained by unknown used metadata despite exclusion by another single-axis set",
+    "proposed_refs": "actual conservative joint result before empty-intersection fallback; empty list and hash are preserved",
+    "initial_fallback_reason": "candidate construction phase reason; never overwritten by identity phase",
+    "final_fallback_reason": "latest fallback reason; legacy fallback_reason retains this meaning",
+    "fallback_history": "ordered candidate/identity phase reasons with details",
+    "application": "initial/final candidate filter flags and per-axis initial/latest reasons; portrait_filter_applied records actual restricted search even after full fallback"
+  },
+  "evaluation": {
+    "cohort": "attribute-prefilter-v1",
+    "full_catalog_C0_C5_C6_C7_results": "historical separate; unchanged frozen trials are not relabeled or adopted",
+    "conditional_metrics": ["candidate_recall", "truth_excluded_by_confident_attribute", "final_correct", "final_wrong", "final_unconfirmed"],
+    "native_holdout_status": "NOT_VERIFIED",
+    "new_engine_gate": "none; no engine claim or threshold change"
+  }
+}

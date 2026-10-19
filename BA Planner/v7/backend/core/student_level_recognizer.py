@@ -2,13 +2,14 @@
 from PIL import Image, ImageStat
 
 from core.planning import MAX_TARGET_LEVEL
-from core.student_scan_recognizer import Observation, ratio_crop, _mask_from_predicate, _normalize_mask, _rank_glyph
+from core.recognition_image_ops import mask_from_predicate, normalize_mask
+from core.student_scan_recognizer import Observation, ratio_crop, rank_glyph
 from core.student_panel_recovery import read_panel_fields
 from core import recognition_thresholds as rt
 
 
 def _ink(image):
-    return _mask_from_predicate(image, lambda p: max(p) < 170 and max(p)-min(p) < 80)
+    return mask_from_predicate(image, lambda p: max(p) < 170 and max(p)-min(p) < 80)
 
 
 class StudentLevelRecognizer:
@@ -31,7 +32,7 @@ class StudentLevelRecognizer:
                 try:
                     for image in (source,half):
                         mask = _ink(image)
-                        try: glyph = _normalize_mask(mask)
+                        try: glyph = normalize_mask(mask)
                         finally: mask.close()
                         if glyph is not None: glyphs.append(glyph)
                 finally:
@@ -52,8 +53,8 @@ class StudentLevelRecognizer:
                 return Observation("blank",1,"ok","level_tab_blank",f"ink={occupancy:.6f}")
             if not rt.value("student.level.glyph_occupancy.min") <= occupancy <= rt.value("student.level.glyph_occupancy.max") or stats.stddev[0] < 12 or stats.mean[0] < 80:
                 return Observation(None,0,"uncertain","level_tab_digit",f"invalid UI signal;ink={occupancy:.6f}")
-            glyph = _normalize_mask(mask)
-            try: label,score,margin = _rank_glyph(glyph,self._bank(position))
+            glyph = normalize_mask(mask)
+            try: label,score,margin = rank_glyph(glyph,self._bank(position))
             finally:
                 if glyph is not None: glyph.close()
             confirmed = label is not None and score >= rt.value("student.level.tab.score") and margin >= rt.value("student.level.tab.margin")

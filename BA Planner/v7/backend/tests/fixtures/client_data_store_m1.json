@@ -1,0 +1,70 @@
+{
+  "fixture_type": "TEST_ONLY_SYNTHETIC_VIRTUAL_STORE",
+  "lock": {
+    "schema": "ba-client-data.lock.v1",
+    "consumer": "v7",
+    "store_root": "TEST_ONLY_OVERRIDDEN_BY_FIXTURE",
+    "written_utc": "2026-01-01T00:00:00+00:00",
+    "pins": {
+      "jp": {
+        "version_id": "jp-test-a",
+        "client_version": "TEST_ONLY",
+        "bundle_revision": null,
+        "files": {
+          "GameAssembly.dll": "e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed"
+        }
+      }
+    },
+    "extracts": [
+      {
+        "server": "jp",
+        "version_id": "jp-test-a",
+        "kind": "exceldb-json",
+        "path": "extracts/jp/jp-test-a/exceldb-json",
+        "provenance_sha256": "1e41b8db0d163fbd2156f5837dad7185cf8b658a57e248af039682da3f683d22",
+        "files": {
+          "CharacterExcel.json": "6f70b2e6d66600f02bef7234488a8eb64d915111b4c4e1bd26a3bb8f46e9dd5e"
+        }
+      }
+    ]
+  },
+  "files": {
+    "extracts/jp/jp-test-a/exceldb-json/CharacterExcel.json": "{\n  \"data_list\": [\n    {\n      \"id\": 11,\n      \"school\": \"TEST_A\"\n    }\n  ]\n}\n",
+    "extracts/jp/jp-test-a/exceldb-json/provenance.json": "{\n  \"schema\": \"ba-client-data.extract-provenance.v1\",\n  \"server\": \"jp\",\n  \"version_id\": \"jp-test-a\",\n  \"kind\": \"exceldb-json\",\n  \"imported_utc\": \"2026-01-01T00:00:00+00:00\",\n  \"source_path\": \"TEST_ONLY\",\n  \"tool\": \"fixture@test-only\",\n  \"consumer\": \"v7\",\n  \"note\": \"TEST_ONLY\",\n  \"client_manifest_files\": {\n    \"GameAssembly.dll\": \"e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed\"\n  },\n  \"hash_claims\": [],\n  \"files\": [\n    {\n      \"path\": \"CharacterExcel.json\",\n      \"sha256\": \"6f70b2e6d66600f02bef7234488a8eb64d915111b4c4e1bd26a3bb8f46e9dd5e\",\n      \"size\": 78\n    }\n  ]\n}\n",
+    "clients/jp/jp-test-a/manifest.json": "{\n  \"schema\": \"ba-client-data.client-manifest.v1\",\n  \"server\": \"jp\",\n  \"version_id\": \"jp-test-a\",\n  \"client_version\": \"TEST_ONLY\",\n  \"bundle_revision\": null,\n  \"registered_utc\": \"2026-01-01T00:00:00+00:00\",\n  \"client_root\": \"TEST_ONLY_NOT_READ\",\n  \"files\": {\n    \"GameAssembly.dll\": {\n      \"sha256\": \"e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed\",\n      \"size\": 0,\n      \"installed_path\": \"TEST_ONLY_DO_NOT_OPEN\"\n    }\n  },\n  \"note\": \"TEST_ONLY\",\n  \"archive\": []\n}\n",
+    "extracts/jp/jp-test-b/exceldb-json/CharacterExcel.json": "{\n  \"data_list\": [\n    {\n      \"id\": 11,\n      \"school\": \"TEST_B\"\n    },\n    {\n      \"id\": 22,\n      \"school\": \"TEST_ONLY\"\n    }\n  ]\n}\n",
+    "extracts/jp/jp-test-b/exceldb-json/provenance.json": "{\n  \"schema\": \"ba-client-data.extract-provenance.v1\",\n  \"server\": \"jp\",\n  \"version_id\": \"jp-test-b\",\n  \"kind\": \"exceldb-json\",\n  \"imported_utc\": \"2026-01-01T00:00:00+00:00\",\n  \"source_path\": \"TEST_ONLY\",\n  \"tool\": \"fixture@test-only\",\n  \"consumer\": \"v7\",\n  \"note\": \"TEST_ONLY\",\n  \"client_manifest_files\": {\n    \"GameAssembly.dll\": \"e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed\"\n  },\n  \"hash_claims\": [],\n  \"files\": [\n    {\n      \"path\": \"CharacterExcel.json\",\n      \"sha256\": \"89c8b13950cad83d5a16793e7383535be64dc3ddd06efa7e174ef45a1e6d0551\",\n      \"size\": 135\n    }\n  ]\n}\n",
+    "clients/jp/jp-test-b/manifest.json": "{\n  \"schema\": \"ba-client-data.client-manifest.v1\",\n  \"server\": \"jp\",\n  \"version_id\": \"jp-test-b\",\n  \"client_version\": \"TEST_ONLY\",\n  \"bundle_revision\": null,\n  \"registered_utc\": \"2026-01-01T00:00:00+00:00\",\n  \"client_root\": \"TEST_ONLY_NOT_READ\",\n  \"files\": {\n    \"GameAssembly.dll\": {\n      \"sha256\": \"e8de10e297e3be2027968e3c39d250c1ab5bd1c3fb8ecc1f22d7b145421901ed\",\n      \"size\": 0,\n      \"installed_path\": \"TEST_ONLY_DO_NOT_OPEN\"\n    }\n  },\n  \"note\": \"TEST_ONLY\",\n  \"archive\": []\n}\n",
+    "changelog/jp/jp-test-a__jp-test-b.json": "{\n  \"schema\": \"ba-client-data.changelog.v1\",\n  \"server\": \"jp\",\n  \"a\": \"jp-test-a\",\n  \"b\": \"jp-test-b\",\n  \"generated_utc\": \"2026-01-01T00:00:00+00:00\",\n  \"level1_files\": {\n    \"GameAssembly.dll\": \"same\"\n  },\n  \"level2_extracts\": {\n    \"exceldb-json\": {\n      \"CharacterExcel.json\": {\n        \"status\": \"changed\",\n        \"rows_a\": 1,\n        \"rows_b\": 2,\n        \"rows_added\": 2,\n        \"rows_removed\": 1\n      }\n    }\n  },\n  \"level3_behavior\": \"NOT_COMPUTED: TEST_ONLY; row-set difference is not stable-ID behavioral evidence\"\n}\n"
+  },
+  "expected_pin": "jp-test-a",
+  "second_version_not_payload_read_authorized": true,
+  "expected_diff": {
+    "schema": "ba-client-data.changelog.v1",
+    "server": "jp",
+    "a": "jp-test-a",
+    "b": "jp-test-b",
+    "generated_utc": "2026-01-01T00:00:00+00:00",
+    "level1_files": {
+      "GameAssembly.dll": "same"
+    },
+    "level2_extracts": {
+      "exceldb-json": {
+        "CharacterExcel.json": {
+          "status": "changed",
+          "rows_a": 1,
+          "rows_b": 2,
+          "rows_added": 2,
+          "rows_removed": 1
+        }
+      }
+    },
+    "level3_behavior": "NOT_COMPUTED: TEST_ONLY; row-set difference is not stable-ID behavioral evidence"
+  },
+  "unsupported_associations": [
+    "actual game IDs",
+    "KR release",
+    "affinity",
+    "field provenance"
+  ]
+}

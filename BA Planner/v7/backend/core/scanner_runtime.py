@@ -19,6 +19,8 @@ from core.inventory_navigation import InventoryNavigation
 from core.tactical_lobby_scanner import TacticalLobbyMatcherAdapter
 from core.tactical_v2 import TacticalV2Store
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
+from core.recognition_synth_provider import SynthProvider
+from core.runtime_paths import BACKEND_DIR, resolve_extracted_asset_root, resolve_synth_cache_root
 
 
 def build_scanner_service(storage_root: Path) -> ScannerSessionService:
@@ -45,14 +47,27 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         windows, catalog, answer_samples=answer_samples,
         detail_recovery=InventoryDetailRecovery(windows,inventory_detail),
         navigation=InventoryNavigation(windows,catalog,inventory_detail),
+        # C5e-6c: synthetic tier from the user's own client (D24); unavailable -> scans continue without it.
+        synth_provider=SynthProvider(resolve_extracted_asset_root(), resolve_synth_cache_root(),
+                                     BACKEND_DIR / "assets" / "recognition" / "spec" / "item-rarity-v1.json"),
     )
 
     def train_answer(
         scan_kind: str, profile_id: str, candidate_id: str,
         specimen: dict, payload: dict, _reason: str, _approve: bool,
+        confirmed_fields: tuple[str, ...],
     ) -> int:
         matcher = student_matcher if scan_kind == "student" else inventory_matcher
+        if scan_kind == "student":
+            return matcher.train_user_answer(profile_id, candidate_id, specimen, payload, confirmed_fields)
         return matcher.train_user_answer(profile_id, candidate_id, specimen, payload)
+
+    def assign_inventory_identity(
+        profile_id, source_size, item_id, crop, candidate_id, observed_slot, persist,
+    ):
+        return inventory_matcher.assign_user_identity(
+            profile_id, source_size, item_id, crop, candidate_id, observed_slot, persist,
+        )
 
     def close_resources():
         student_matcher.potential_recognizer.close()
@@ -79,5 +94,6 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         asset_status=catalog.verify,
         student_validator=StudentCandidateValidator(repository),
         candidate_review_hook=train_answer,
+        inventory_identity_assignment_hook=assign_inventory_identity,
         resource_close_hook=close_resources,
     )

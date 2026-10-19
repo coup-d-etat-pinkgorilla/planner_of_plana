@@ -1,0 +1,11 @@
+{
+  "value": 10000,
+  "provenance": {
+    "kind": "exceldb-json",
+    "versionId": "jp-1.73.0-e2baf70e",
+    "table": "CharacterExcel",
+    "rowSha": "1cfcbf6477221305201f2de26c47b4cbd153fc7602bd68094d129466037b3524",
+    "tool": "M0.schema-fixture@1",
+    "extractedAt": "2026-10-08T00:26:01.588513Z"
+  }
+}

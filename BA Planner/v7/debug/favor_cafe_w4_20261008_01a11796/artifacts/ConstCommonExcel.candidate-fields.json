@@ -1,0 +1,34 @@
+{
+  "table": "ConstCommonExcel",
+  "source": "JP Excel.zip",
+  "sourceSha256": "f9e8e721c14486a1517b627799ea03122aaa39da4f024eda3da1da7c8347c97b",
+  "rowCount": 1,
+  "candidateScalarFieldsOnly": true,
+  "decoder": "existing excel_zip_table.read + same-build JP FlatData.ConstCommonExcel properties",
+  "rows": [
+    {
+      "CafePresetSlotCount": 10,
+      "CafeMonologueIntervalMillisec": 5000,
+      "CafeMonologueDefaultDuration": 4000,
+      "CafeBubbleIdleDurationMilliSec": 5500,
+      "CafeAutoChargePeriodInMsc": 3600000,
+      "CafeProductionDecimalPosition": 2,
+      "CafeSetGroupApplyCount": 3,
+      "JoinOrCreateClanCoolTimeFromHour": 24,
+      "ClanRejoinCoolTimeFromSecond": 1000,
+      "CallNameRenameCoolTimeFromHour": 24,
+      "CafeSummonCoolTimeFromHour": 20,
+      "DDosCheckIntervalInSeconds": 10,
+      "CharProfileRowIntervalKr": 30,
+      "CharProfileRowIntervalJp": 33,
+      "CharProfilePopupRowIntervalKr": 43,
+      "CharProfilePopupRowIntervalJp": 46,
+      "CafeRandomVisitMinComfortBonus": 1000,
+      "CafeRandomVisitMinLastLogin": 10,
+      "CafeTravelSyncIntervalByMillisec": 30000,
+      "CafeCameraDragThreshold": -9000.0,
+      "CafeSummonTicketBuyLimitForValidate": 1,
+      "CafeCopyPresetSlotCount": 10
+    }
+  ]
+}

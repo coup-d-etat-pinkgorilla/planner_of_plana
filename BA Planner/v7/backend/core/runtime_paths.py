@@ -58,6 +58,25 @@ def resolve_recognition_asset_dir() -> Path:
     return PACKAGED_RECOGNITION_ASSET_DIR
 
 
+def resolve_extracted_asset_root() -> Path:
+    """C5e-6a-0 (D24): recognition assets extracted from the user's own game client."""
+    override = os.environ.get("BA_PLANNER_EXTRACTED_ASSET_DIR")
+    if override:
+        return Path(override).expanduser()
+    user_override = os.environ.get("BA_PLANNER_USER_DIR")
+    if user_override:
+        return Path(user_override).expanduser() / "recognition-assets"
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        return Path(local_app_data) / "BA Planner" / "recognition-assets"
+    return Path.home() / ".ba-planner" / "recognition-assets"
+
+
+def resolve_synth_cache_root() -> Path:
+    """C5e-6b: synthetic recognition templates made from the extracted assets."""
+    return resolve_extracted_asset_root().parent / "recognition-synth-cache"
+
+
 def resolve_repository_root() -> Path:
     override = os.environ.get("BA_PLANNER_STORAGE_ROOT")
     if override:

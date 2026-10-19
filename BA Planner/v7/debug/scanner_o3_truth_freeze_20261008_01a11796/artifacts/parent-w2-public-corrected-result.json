@@ -1,0 +1,22 @@
+{
+  "name": "w2-public-corrected",
+  "argv": [
+    "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend\\.venv\\Scripts\\python.exe",
+    "-m",
+    "tools.evaluate_student_attribute_prefilter",
+    "--truth",
+    "../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/approved-attribute-truth-v2.json",
+    "--output",
+    "../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/public-off-on-evaluation.json"
+  ],
+  "cwd": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend",
+  "startedUtc": "2026-10-07T18:38:59.834045+00:00",
+  "environment": {
+    "PYTHONPATH": "C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend\\.venv\\Lib\\site-packages;C:\\Users\\brigh\\planner_of_plana\\BA Planner\\v7\\backend\\tests",
+    "PYTHONUTF8": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exitCode": 0,
+  "durationSeconds": 8.437999999965541,
+  "finishedUtc": "2026-10-07T18:39:08.265139+00:00"
+}

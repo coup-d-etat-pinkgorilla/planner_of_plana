@@ -1,0 +1,29 @@
+{
+  "masks": [
+    {
+      "file": "rank26-digit1.png",
+      "actual_label": "2",
+      "sha256": "dd0d4e3cd17541b33393a5f3b6d0517031ddc517a25866ff7e114f7adacdd6a9"
+    },
+    {
+      "file": "rank26-digit2.png",
+      "actual_label": "6",
+      "sha256": "b538328dce982fed5576cde7cb8988e12819bc21871e4e49b45fe4fa0176ac15"
+    },
+    {
+      "file": "rank10-digit1.png",
+      "actual_label": "1",
+      "sha256": "cff1c5a105ba1e87f84e7a988cf266ea579ad6383d6ede98f269f2953079138a"
+    },
+    {
+      "file": "rank10-digit2.png",
+      "actual_label": "0",
+      "sha256": "18215bf0f9dcc46ba585c967cc5226f9a53c47b58e9a14d66fee1d0fc67473f2"
+    }
+  ],
+  "source": "User review digit masks from 2026-09-22 rank10 and 2026-09-29 actual rank26 (digit2 stored as 0)",
+  "source_size": [
+    1280,
+    720
+  ]
+}

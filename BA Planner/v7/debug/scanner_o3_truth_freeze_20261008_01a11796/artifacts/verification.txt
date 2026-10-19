@@ -1,0 +1,22 @@
+Focused loader (cwd backend):
+PYTHONIOENCODING=utf-8 PYTHONDONTWRITEBYTECODE=1
+py -3.11 -m unittest tests.test_student_attribute_truth_loader -v
+Final result: 1/1 PASS, 0.079s; actual log focused-loader-final.log.
+
+Corrected fixed-public comparison (root, approved execution; cwd backend):
+.venv/Scripts/python.exe -m tools.evaluate_student_attribute_prefilter --truth ../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/approved-attribute-truth-v2.json --output ../debug/scanner_o3_truth_freeze_20261008_01a11796/artifacts/public-off-on-evaluation.json
+Root environment/argv/UTC receipt: parent-w2-public-corrected-result.json.
+Result: exit0,8.438s,PASS; off 0/0/3/2 -> on 0/0/3/0 (candidate drop/wrong/top1/unconfirmed).
+Previous failed off3 preserved in attempt-history-final.json; total off6/on3. Do not rerun.
+
+Source syntax: PASS for the three new Python files.
+git diff --no-index --check NUL <newfile>: empty diagnostics for all three (exit1 means files differ).
+Final candidate SHA equality before/after/current: PASS.
+Original protected source/CSV/template/README hashes: unchanged.
+Source copies: byte identical, 10/10. Artifact sizes/SHA checked before output.md.
+
+MASTER_REQUIRED: cd backend; py -3.11 -m unittest discover -s tests -v
+Root uses its approved existing site-packages environment; run once after all W1-W5 sources freeze.
+MASTER_REQUIRED: inspect commit-files.json, git diff --check, then root serializes explicit W2 commit.
+Suggested commit message: Freeze public O3 attribute truth a4c158abe7a23e7e
+No stage/commit/full suite by W2 child; no Flutter or live game changes.

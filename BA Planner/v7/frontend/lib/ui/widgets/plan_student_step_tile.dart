@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../kit/game_assets.dart';
 import 'diagonal_media_list_item.dart';
 
 enum PlanBottleneckFocusField { title, skills, equipment1 }
@@ -113,7 +114,7 @@ class PlanStudentStepTile extends StatelessWidget {
         ),
         equipment: [
           DiagonalMediaEquipment(
-            assetPath: 'assets/equipment_icons/hat_t10.png',
+            assetPath: GameAssets.equipmentHatT10,
             tier: DiagonalMediaValue(
               'T${target('equip1_tier', stage + 4)}',
               delta: live
@@ -132,7 +133,7 @@ class PlanStudentStepTile extends StatelessWidget {
             ),
           ),
           DiagonalMediaEquipment(
-            assetPath: 'assets/equipment_icons/hairpin_t10.png',
+            assetPath: GameAssets.equipmentHairpinT10,
             tier: DiagonalMediaValue(
               'T${target('equip2_tier', stage + 3)}',
               delta: live
@@ -151,7 +152,7 @@ class PlanStudentStepTile extends StatelessWidget {
             ),
           ),
           DiagonalMediaEquipment(
-            assetPath: 'assets/equipment_icons/watch_t10.png',
+            assetPath: GameAssets.equipmentWatchT10,
             tier: DiagonalMediaValue(
               'T${target('equip3_tier', stage + 2)}',
               delta: live

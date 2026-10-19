@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/scan-commit-history-context-v1.schema.json",
+  "title": "Server-internal scan commit history context v1",
+  "$comment": "Server-internal only; never accepted by public RPC. Writer selects students or inventory bucket. Immutable runtime adapter validates exact integer types, valid UTF-8 byte bounds, canonical identity uniqueness and applied/excluded disjointness. Flat provenance including excluded_keys/retry_of joins the new request fingerprint; existing nested current-history-v1 event stays unchanged. JSON Schema alone cannot enforce these semantic constraints. Filename/id carry v1; no version property.",
+  "type": "object",
+  "required": [
+    "source", "session_id", "generation", "candidate_id", "candidate_revision",
+    "scan_kind", "inventory_scan_profile", "applied_keys", "excluded_keys", "retry_of"
+  ],
+  "properties": {
+    "source": {"type": "string", "const": "scan"},
+    "session_id": {"$ref": "#/$defs/rawText"},
+    "generation": {"type": "integer", "minimum": 1},
+    "candidate_id": {"$ref": "#/$defs/rawText"},
+    "candidate_revision": {
+      "type": "integer", "minimum": 0,
+      "$comment": "Matches existing ScanHistoryContext; current scanner public commit still requires >=1."
+    },
+    "scan_kind": {"$ref": "#/$defs/rawText"},
+    "inventory_scan_profile": {
+      "oneOf": [{"$ref": "#/$defs/rawText"}, {"type": "null"}],
+      "$comment": "Required, nullable, raw session.target value; never catalog entry.profile_id. Preserve null, whitespace, case and unknown text."
+    },
+    "applied_keys": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/identity"},
+      "$comment": "Writer students maps keys to student_id; writer inventory canonicalizes known resource aliases before unique/disjoint checks. No mixed bucket, raw kind inference or fabricated slot identity. Nonempty approved scope only; array order is preserved in the fingerprint."
+    },
+    "excluded_keys": {
+      "type": "array", "uniqueItems": true,
+      "items": {"$ref": "#/$defs/identity"},
+      "$comment": "Identified excluded entries only; unknown slot is not a key. Internal provenance/fingerprint only, not a new persisted event field or applied scope."
+    },
+    "retry_of": {
+      "oneOf": [{"$ref": "#/$defs/identity"}, {"type": "null"}],
+      "$comment": "Nullable opaque provenance ID, not retry permission or a new application request. Replay keeps the original value, including null; changing it under the same idempotency key conflicts. Not stored as an event field."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rawText": {
+      "type": "string", "minLength": 1, "maxLength": 1024,
+      "$comment": "Runtime must enforce 1..1024 UTF-8 bytes without enum/trim/case conversion. maxLength counts Unicode characters, not bytes. Invalid UTF-8 text must be rejected."
+    },
+    "identity": {
+      "type": "string", "minLength": 1, "maxLength": 1024,
+      "$comment": "Runtime enforces valid UTF-8 1..1024 bytes for new flat identities. This does not tighten old nested context, stored current-history event or legacy cache validators."
+    }
+  }
+}

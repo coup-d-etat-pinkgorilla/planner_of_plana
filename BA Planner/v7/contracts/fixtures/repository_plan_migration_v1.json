@@ -1,0 +1,435 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "null_bond_known_current",
+      "legacy_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "target_level": 10
+          }
+        ]
+      },
+      "students": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 1,
+            "bond_rank": 35
+          }
+        }
+      ],
+      "expected_document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [
+          {
+            "phase_id": "v6-imported-plan",
+            "name": "v6 목표",
+            "stages": [
+              {
+                "stage_id": "v6-aru-1",
+                "student_id": "aru",
+                "name": "v6 목표",
+                "targets": {
+                  "level": 10,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null,
+                  "bond_rank": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": true,
+            "notes": ""
+          }
+        }
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "favorite": true,
+            "target_level": 10,
+            "target_star": null,
+            "target_weapon_level": null,
+            "target_weapon_star": null,
+            "target_ex_skill": null,
+            "target_skill1": null,
+            "target_skill2": null,
+            "target_skill3": null,
+            "target_equip1_tier": null,
+            "target_equip2_tier": null,
+            "target_equip3_tier": null,
+            "target_equip1_level": null,
+            "target_equip2_level": null,
+            "target_equip3_level": null,
+            "target_equip4_tier": null,
+            "target_stat_hp": null,
+            "target_stat_atk": null,
+            "target_stat_heal": null,
+            "notes": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "null_bond_unknown_current",
+      "legacy_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "target_level": 10
+          }
+        ]
+      },
+      "students": [
+        {
+          "version": 1,
+          "student_id": "aru",
+          "values": {
+            "level": 1
+          }
+        }
+      ],
+      "expected_document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [
+          {
+            "phase_id": "v6-imported-plan",
+            "name": "v6 목표",
+            "stages": [
+              {
+                "stage_id": "v6-aru-1",
+                "student_id": "aru",
+                "name": "v6 목표",
+                "targets": {
+                  "level": 10,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null,
+                  "bond_rank": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": true,
+            "notes": ""
+          }
+        }
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "favorite": true,
+            "target_level": 10,
+            "target_star": null,
+            "target_weapon_level": null,
+            "target_weapon_star": null,
+            "target_ex_skill": null,
+            "target_skill1": null,
+            "target_skill2": null,
+            "target_skill3": null,
+            "target_equip1_tier": null,
+            "target_equip2_tier": null,
+            "target_equip3_tier": null,
+            "target_equip1_level": null,
+            "target_equip2_level": null,
+            "target_equip3_level": null,
+            "target_equip4_tier": null,
+            "target_stat_hp": null,
+            "target_stat_atk": null,
+            "target_stat_heal": null,
+            "notes": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "all_null_goal",
+      "legacy_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "favorite": false,
+            "notes": "  남겨 둘 메모  "
+          }
+        ]
+      },
+      "students": [],
+      "expected_document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [
+          {
+            "phase_id": "v6-imported-plan",
+            "name": "v6 목표",
+            "stages": [
+              {
+                "stage_id": "v6-aru-1",
+                "student_id": "aru",
+                "name": "남겨 둘 메모",
+                "targets": {
+                  "level": null,
+                  "student_star": null,
+                  "weapon_level": null,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": null,
+                  "stat_hp": null,
+                  "stat_atk": null,
+                  "stat_heal": null,
+                  "bond_rank": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": false,
+            "notes": "  남겨 둘 메모  "
+          }
+        }
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "favorite": false,
+            "target_level": null,
+            "target_star": null,
+            "target_weapon_level": null,
+            "target_weapon_star": null,
+            "target_ex_skill": null,
+            "target_skill1": null,
+            "target_skill2": null,
+            "target_skill3": null,
+            "target_equip1_tier": null,
+            "target_equip2_tier": null,
+            "target_equip3_tier": null,
+            "target_equip1_level": null,
+            "target_equip2_level": null,
+            "target_equip3_level": null,
+            "target_equip4_tier": null,
+            "target_stat_hp": null,
+            "target_stat_atk": null,
+            "target_stat_heal": null,
+            "notes": "  남겨 둘 메모  "
+          }
+        ]
+      }
+    },
+    {
+      "id": "partial_goal_explicit_zero",
+      "legacy_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "target_weapon_level": 25,
+            "target_stat_hp": 0,
+            "target_equip4_tier": 1,
+            "notes": "부분 목표"
+          }
+        ]
+      },
+      "students": [],
+      "expected_document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [
+          {
+            "phase_id": "v6-imported-plan",
+            "name": "v6 목표",
+            "stages": [
+              {
+                "stage_id": "v6-aru-1",
+                "student_id": "aru",
+                "name": "부분 목표",
+                "targets": {
+                  "level": null,
+                  "student_star": null,
+                  "weapon_level": 25,
+                  "weapon_star": null,
+                  "ex_skill": null,
+                  "skill1": null,
+                  "skill2": null,
+                  "skill3": null,
+                  "equip1_tier": null,
+                  "equip2_tier": null,
+                  "equip3_tier": null,
+                  "equip1_level": null,
+                  "equip2_level": null,
+                  "equip3_level": null,
+                  "equip4_tier": 1,
+                  "stat_hp": 0,
+                  "stat_atk": null,
+                  "stat_heal": null,
+                  "bond_rank": null
+                }
+              }
+            ]
+          }
+        ],
+        "goal_metadata": {
+          "aru": {
+            "favorite": true,
+            "notes": "부분 목표"
+          }
+        }
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "favorite": true,
+            "target_level": null,
+            "target_star": null,
+            "target_weapon_level": 25,
+            "target_weapon_star": null,
+            "target_ex_skill": null,
+            "target_skill1": null,
+            "target_skill2": null,
+            "target_skill3": null,
+            "target_equip1_tier": null,
+            "target_equip2_tier": null,
+            "target_equip3_tier": null,
+            "target_equip1_level": null,
+            "target_equip2_level": null,
+            "target_equip3_level": null,
+            "target_equip4_tier": 1,
+            "target_stat_hp": 0,
+            "target_stat_atk": null,
+            "target_stat_heal": null,
+            "notes": "부분 목표"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty_legacy",
+      "legacy_goals": {
+        "version": 1,
+        "goals": []
+      },
+      "students": [],
+      "expected_document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [],
+        "goal_metadata": {}
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": []
+      }
+    },
+    {
+      "id": "duplicate_goals",
+      "legacy_goals": {
+        "version": 1,
+        "goals": [
+          {
+            "student_id": "aru",
+            "target_level": 10
+          },
+          {
+            "student_id": "aru",
+            "target_level": 20
+          }
+        ]
+      },
+      "students": [],
+      "error_code": "legacy_goals_conflict",
+      "policy": "Keep both original additive costs and files; no silent collapse."
+    },
+    {
+      "id": "corrupt_legacy",
+      "file_contents": "{bad legacy",
+      "error_code": "corrupt_data",
+      "policy": "Never overwrite corrupt legacy with an empty document."
+    },
+    {
+      "id": "saved_empty_is_authoritative",
+      "document": {
+        "version": 2,
+        "document_id": "active-plan",
+        "name": "활성 계획",
+        "kind": "plan",
+        "phases": [],
+        "goal_metadata": {}
+      },
+      "expected_goals": {
+        "version": 1,
+        "goals": []
+      },
+      "policy": "Saved empty document survives restart; never revive previous goals."
+    }
+  ]
+}

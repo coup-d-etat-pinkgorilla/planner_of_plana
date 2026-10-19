@@ -1,0 +1,17 @@
+{
+  "schema": "ba-client-data.reviewed-row-keys.v1",
+  "tables": {
+    "CharacterExcel.json": {
+      "id_key": "id",
+      "evidence": "Proposed for XB adoption: extract_jp.py:77 writes original table rows; build_stat_catalog.py:98 directly indexes CharacterExcel rows by id. No actual payload uniqueness validation in this preparation."
+    },
+    "CharacterWeaponExcel.json": {
+      "id_key": "id",
+      "evidence": "Proposed for XB adoption: extract_jp.py:33,77 names/writes table; build_stat_catalog.py:100 directly indexes original CharacterWeaponExcel rows by id. Actual version uniqueness is validated by runtime comparator, not claimed here."
+    },
+    "EquipmentExcel.json": {
+      "id_key": "id",
+      "evidence": "Proposed for XB adoption: extract_jp.py:33,77 names/writes table; build_stat_catalog.py:155-160 reads original EquipmentExcel.id to join equipment stats before canonical dedup. Actual payload not opened."
+    }
+  }
+}

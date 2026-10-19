@@ -42,6 +42,8 @@ void main() {
         'scan_kind': 'student',
         'last_sequence': 2,
         'terminal': 'completed',
+        'control_state': 'terminal',
+        'reason': null,
         'events': [
           {
             'protocol': 1,
@@ -214,6 +216,94 @@ void main() {
         'scan_kind': 'inventory',
       });
       expect((await started).kind, ScannerKind.inventory);
+      await scanner.dispose();
+      await transport.dispose();
+    },
+  );
+
+  test(
+    'unresolved identity APIs decode crops and carry stale-revision guard',
+    () async {
+      final process = _ScannerFakeProcess();
+      final transport = PlanningProtocolClient(() async => process);
+      final scanner = ScannerProtocolClient(transport);
+      await transport.start();
+      const session = ScannerSession(
+        id: 's1',
+        generation: 1,
+        kind: ScannerKind.inventory,
+      );
+      final candidate = ScannerCandidate(
+        id: 'c1',
+        sessionId: 's1',
+        generation: 1,
+        revision: 1,
+        kind: ScannerKind.inventory,
+        payload: const {'version': 1, 'entries': <dynamic>[]},
+        evidence: const [],
+        reviewRequired: true,
+        approved: false,
+      );
+      const png =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL1WQAAAABJRU5ErkJggg==';
+
+      final listedFuture = scanner.scannerUnresolvedSlots(session, candidate);
+      var request = jsonDecode(process.writes.last) as Map<String, dynamic>;
+      expect(request['method'], 'scanner.review.unresolved_slots');
+      process.respond(request, {
+        'candidate_id': 'c1',
+        'candidate_revision': 1,
+        'slots': [
+          {
+            'slot': 7,
+            'profile': 'tech_notes',
+            'resolution': {'width': 1280, 'height': 720},
+            'crop_png_base64': png,
+            'candidates': [
+              {'identity': 'Item_Icon_SkillBook_Abydos_0', 'score': 0.81},
+            ],
+          },
+        ],
+      });
+      final listed = await listedFuture;
+      expect(listed.slots.single.cropPng, isNotEmpty);
+      expect(listed.slots.single.profile, InventoryScanProfile.techNotes);
+
+      final assignedFuture = scanner.assignScannerIdentity(
+        session,
+        candidate,
+        slot: 7,
+        identity: 'Item_Icon_SkillBook_Abydos_0',
+        persist: false,
+      );
+      request = jsonDecode(process.writes.last) as Map<String, dynamic>;
+      expect(request['method'], 'scanner.review.assign_identity');
+      expect(request['payload']['expected_candidate_revision'], 1);
+      expect(request['payload']['persist'], isFalse);
+      process.respond(request, {
+        'candidate': {
+          'candidate_id': 'c1',
+          'session_id': 's1',
+          'generation': 1,
+          'revision': 2,
+          'scan_kind': 'inventory',
+          'payload': {
+            'version': 1,
+            'entries': [
+              {'key': 'Item_Icon_SkillBook_Abydos_0', 'quantity': null},
+            ],
+          },
+          'evidence': <dynamic>[],
+          'review_required': true,
+          'approved': false,
+          'audit': <dynamic>[],
+        },
+        'candidate_revision': 2,
+        'slots': <dynamic>[],
+      });
+      final assigned = await assignedFuture;
+      expect(assigned.candidate.revision, 2);
+      expect(assigned.slots, isEmpty);
       await scanner.dispose();
       await transport.dispose();
     },

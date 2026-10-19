@@ -16,6 +16,17 @@ from core.student_scan_recognizer import Observation
 from core.student_panel_recovery import StudentPanelRecovery, StudentPanelRecognizer, merge_observation, read_panel_fields
 from core.windows_scanner_adapter import WindowsCaptureInputAdapter
 from test_scanner_fallback_f1 import NativeUser, NativeGdi, TARGET
+from input_guard_stub import patch_input_guard
+
+_GUARD = patch_input_guard()
+
+
+def setUpModule():
+    _GUARD.start()
+
+
+def tearDownModule():
+    _GUARD.stop()
 
 
 class FastEvent:

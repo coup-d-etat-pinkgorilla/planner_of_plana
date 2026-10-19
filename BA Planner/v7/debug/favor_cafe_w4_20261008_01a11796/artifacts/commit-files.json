@@ -1,0 +1,33 @@
+{
+  "commit_message": "Extract favor and cafe tables for frontend request 2026-10-08 02:45",
+  "commit_files": [
+    "data/extracted/pipeline/extract_jp.py",
+    "data/extracted/jp-json/FavorLevelExcel.json",
+    "data/extracted/jp-json/CafeInteractionExcel.json",
+    "docs/tactic-editor/evidence/favor-cafe-tables-jp-1.73.0.json",
+    "debug/favor_cafe_w4_20261008_01a11796/input.md",
+    "debug/favor_cafe_w4_20261008_01a11796/output.md",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/ConstCommonExcel.candidate-fields.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/MASTER_PROMPT.md",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/build_evidence.py",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/cooltime-native-resolution.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/dis/MX.GameLogic.Service.CafeService.get_InteractCooltime.txt",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/extract_jp.TABLES.patch",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/extraction-verification.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/favor-structure-analysis.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/final-verification.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/frontend-handoff-3-lines.txt",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/import-command.txt",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/jp-cafe-symbols-for-dis.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/jp-static-field-inventory-v2.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/local-decoder-dependencies.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/prior-json-preservation.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/report.md",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/run_favor_cafe_jp.py",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/scan_jp_metadata.py",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/store-status-append.md",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/verification.txt",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/commit-files.json",
+    "debug/favor_cafe_w4_20261008_01a11796/artifacts/manifest.json"
+  ]
+}

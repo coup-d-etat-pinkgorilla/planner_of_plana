@@ -124,6 +124,8 @@ connection.close()
         PlanningProtocolClient(
           () => startBackendProcess(config),
           defaultTimeout: const Duration(seconds: 10),
+          waitForStartupProbe: true,
+          startupProbeTimeout: const Duration(seconds: 30),
         ),
       );
       try {
@@ -161,6 +163,14 @@ connection.close()
         expect(restored.matches, hasLength(2));
         expect(restored.jokbo, hasLength(1));
         expect(restored.snapshots, hasLength(1));
+        // FE9-b1: 확장 read DTO(족보 승패 · 메모 · 출처, 스냅샷 날짜)가 실제 응답을 받는다.
+        final importedJokbo = restored.jokbo.single;
+        expect((importedJokbo.wins, importedJokbo.losses), (1, 0));
+        expect(importedJokbo.notes, 'wildcard');
+        expect(importedJokbo.source, 'v6_import');
+        expect(importedJokbo.importBatchId, preview.batchId);
+        expect(restored.snapshots.single.occurredAt, startsWith('2026-03-23'));
+        expect(restored.snapshots.single.source, 'v6_import');
         expect(restored.importBatches.single.id, preview.batchId);
         final rival = restored.opponents.firstWhere(
           (item) => item.currentDisplayName == 'Fixture Rival',
@@ -220,6 +230,15 @@ connection.close()
         expect(statistics.publicSignatures.single.linkedMatchCount, 1);
         expect(statistics.publicSignatures.single.observedWinRate, 1.0);
         expect(statistics.populationWarning, contains('not the population'));
+        final signature = statistics.publicSignatures.single;
+        expect(signature.sourceCounts['lobby_scan'], 1);
+        expect(signature.attackDecks.single.result.wins, 1);
+        expect(signature.attackDeckTotal, 1);
+        expect(signature.fullDefenses.single.count, 1);
+        final rivalStats = statistics.opponents.single;
+        expect(rivalStats.opponentIdentityId, rival.id);
+        expect(rivalStats.attackResults.wins, 1);
+        expect(rivalStats.latestPublic?.signature, 'shiroko|serina|?');
         final trends = await service.queryTacticalTrends(
           profile.id,
           TacticalTrendFilters(
@@ -236,6 +255,8 @@ connection.close()
         expect(trends.funnel.battleCount, 1);
         expect(trends.funnel.observedWinRate, 1.0);
         expect(trends.freshness.single.stale, isTrue);
+        expect(trends.freshness.single.lastSuccessAt, isNotNull);
+        expect(trends.freshness.single.verifiedAfterLatestChange, isNull);
         expect(trends.populationWarning, contains('not server-wide'));
         final recommendation = await service.queryTacticalRecommendations(
           profile.id,
@@ -261,6 +282,18 @@ connection.close()
           isTrue,
         );
         expect(recommendation.warning, contains('not generated'));
+        final recommended = recommendation.recommendations.single;
+        expect((recommended.wins, recommended.losses), (1, 0));
+        expect(recommended.deck.strikers.first.studentId, 'hoshino');
+        expect(recommended.lastObservedAt, startsWith('2026-03-2'));
+        expect(recommendation.scenarios.single.deck.strikers, hasLength(4));
+        expect(recommendation.evidenceSummary.includedSnapshotCount, 1);
+        expect(recommendation.ambiguity.grade, isNot('unavailable'));
+        expect(
+          recommendation.ambiguity.publicKnownSlotCount +
+              recommendation.hiddenSlots.length,
+          6,
+        );
         final savedPrediction = await service.saveTacticalRecommendation(
           profileId: profile.id,
           filters: TacticalRecommendationFilters(

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:ba_planner_v7/services/app_service.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
+import 'package:ba_planner_v7/ui/kit/skew_controls.dart';
 import 'package:ba_planner_v7/ui/studio/section_template.dart';
 import 'package:ba_planner_v7/ui/studio/student_studio_layout.dart';
 import 'package:ba_planner_v7/ui/widgets/animated_section_stack.dart';
@@ -73,18 +74,36 @@ void main() {
     );
   });
 
-  test('student grid badges follow both top corners and the left rail', () {
+  test('student grid badges pack down the left 80 degree rail', () {
     const card = Rect.fromLTWH(10, 20, 252, 204);
-    final badges = studentGridStatusBadgeRects(card);
+    final badges = studentGridStatusBadgeStack(
+      card,
+      owned: false,
+      planned: true,
+      jpOnly: true,
+    );
     final expectedGap = card.shortestSide * 0.01;
     final expectedDepth = card.height / math.tan(80 * math.pi / 180);
+    final step = badges.first.rect.height + expectedGap;
 
-    expect(badges.unowned.top, badges.jp.top);
-    expect(badges.unowned.left, closeTo(card.left + expectedDepth, 1e-9));
-    expect(badges.jp.right, lessThan(card.right));
-    expect(badges.jp.right, greaterThan(card.right - 6));
-    expect(badges.plan.top - badges.unowned.bottom, closeTo(expectedGap, 1e-9));
-    expect(badges.plan.left, lessThan(badges.unowned.left));
+    expect(badges.map((item) => item.badge), [
+      StudentGridStatusBadge.unowned,
+      StudentGridStatusBadge.plan,
+      StudentGridStatusBadge.jp,
+    ]);
+    expect(badges.first.rect.left, closeTo(card.left + expectedDepth, 1e-9));
+    for (var slot = 1; slot < badges.length; slot++) {
+      expect(
+        badges[slot].rect.top - badges[slot - 1].rect.bottom,
+        closeTo(expectedGap, 1e-9),
+      );
+      expect(
+        badges[slot - 1].rect.left - badges[slot].rect.left,
+        closeTo(step / math.tan(80 * math.pi / 180), 1e-9),
+      );
+    }
+    // 오른쪽 위는 속성 칩 자리다(JP 고정 슬롯 폐기, FD-044).
+    expect(badges.last.rect.right, lessThan(card.center.dx));
   });
 
   test('student Studio action containers use one size and cadence', () {
@@ -208,10 +227,8 @@ void main() {
     expect(ids(StudentGridSort.bondAscending), ['bravo', 'alpha', 'charlie']);
   });
 
-  test('student card name text is 1.5x larger with an 80 percent target', () {
-    expect(studentCardNameFontSize(10), 8);
-    expect(studentCardNameFontSize(20), 12);
-    expect(studentCardNameFontSize(4), 6);
+  test('student grid name and Section 1 control text sizes', () {
+    expect(studentGridNameFontSize, 13);
     expect(studentSortCompactFontSize, 15);
     expect(studentSortMenuFontSize, 18);
     expect(studentGridDisplayToggleFontSize, 16.5);
@@ -465,79 +482,8 @@ void main() {
     expect(studentSchoolLogoAsset(null), isNull);
   });
 
-  test('Section 5 keeps the left rail and halves its previous width', () {
-    const size = Size(1280, 720);
-    final polygon = studentFilterSectionPolygon(size);
-    final topLength = polygon[1].dx - polygon[0].dx;
-    final bottomLength = polygon[2].dx - polygon[3].dx;
-
-    expect(topLength, closeTo(studentListSectionEdgeLength(size) / 4, 0.001));
-    expect(bottomLength, closeTo(topLength, 0.001));
-    expect(
-      studentFilterSectionPath(size).getBounds().height,
-      closeTo(studentSectionPath(size, 'element-2').getBounds().height, 0.001),
-    );
-    final overflow = Path.combine(
-      PathOperation.difference,
-      studentFilterContainerPath(size),
-      studentFilterSectionPath(size),
-    );
-    expect(overflow.getBounds().isEmpty, isTrue);
-    final resetOverflow = Path.combine(
-      PathOperation.difference,
-      studentFilterResetPath(size),
-      studentFilterSectionPath(size),
-    );
-    expect(resetOverflow.getBounds().isEmpty, isTrue);
-    final resetInsideContainer = Path.combine(
-      PathOperation.intersect,
-      studentFilterResetPath(size),
-      studentFilterContainerPath(size),
-    );
-    expect(resetInsideContainer.getBounds().isEmpty, isTrue);
+  test('student viewport fog extent follows the lifted shadow inset', () {
     expect(studentViewportFogExtent, defaultLiftedSectionShadow.inset * 12);
-  });
-
-  test('Section 5 container derives both diagonal edges from its parent', () {
-    for (final size in const [Size(960, 590), Size(1280, 720)]) {
-      final polygon = studentFilterContainerPolygon(size);
-      final topInterval = studentFilterSectionHorizontalInterval(
-        size,
-        polygon[0].dy,
-      );
-      final bottomInterval = studentFilterSectionHorizontalInterval(
-        size,
-        polygon[3].dy,
-      );
-      expect(polygon[0].dx - topInterval.$1, closeTo(10, 0.001));
-      expect(topInterval.$2 - polygon[1].dx, closeTo(10, 0.001));
-      expect(polygon[3].dx - bottomInterval.$1, closeTo(10, 0.001));
-      expect(bottomInterval.$2 - polygon[2].dx, closeTo(10, 0.001));
-    }
-  });
-
-  test('Section 5 foundation does not repaint Section 2 legacy children', () {
-    expect(
-      studentFoundationUsesLegacySectionChildren(
-        filterSection: true,
-        parentSectionId: 'element-2',
-      ),
-      isFalse,
-    );
-    expect(
-      studentFoundationUsesLegacySectionChildren(
-        filterSection: false,
-        parentSectionId: 'element-2',
-      ),
-      isTrue,
-    );
-    expect(
-      studentFoundationUsesLegacySectionChildren(
-        filterSection: true,
-        parentSectionId: 'element-3',
-      ),
-      isTrue,
-    );
   });
 
   test('filter rows use their bottom edge once for diagonal placement', () {
@@ -646,8 +592,6 @@ void main() {
   });
 
   test('student attack and defense colors preserve the v6 mapping', () {
-    expect(studentCardInfoAreaFraction, 0.16);
-    expect(studentCardAttributeAreaFraction, 0.03);
     expect(studentAttackTypeColor('Explosive'), const Color(0xff920008));
     expect(studentAttackTypeColor('Piercing'), const Color(0xffbd8901));
     expect(studentAttackTypeColor('Mystic'), const Color(0xff226f9b));
@@ -832,13 +776,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('student sections use explicit motion paths and filter swap', (
+  testWidgets('student sections use explicit motion paths and filter modal', (
     tester,
   ) async {
     final search = TextEditingController();
     addTearDown(search.dispose);
     var filterCalls = 0;
-    await tester.binding.setSurfaceSize(const Size(1100, 720));
+    await tester.binding.setSurfaceSize(const Size(2560, 1392));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       MaterialApp(
@@ -872,47 +816,44 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('student-image-grid')), findsOneWidget);
+    // FE3-d2: S1 필터 버튼은 Section 5로 바꾸지 않고 필터 모달을 연다(FD-052). 그리드는 그대로 있다.
     await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-filter-modal')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('student-section-2-motion')),
-      findsNothing,
+      findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey('student-section-5-motion')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.byKey(const ValueKey('student-filter-section-5')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.byKey(const ValueKey('student-filter-fog')), findsOneWidget);
-    expect(find.byKey(const ValueKey('student-image-grid')), findsNothing);
-    expect(motion('student-section-5-motion').introDegrees, 80);
-    expect(motion('student-section-5-motion').outroDegrees, 260);
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('student-open-filter')),
-        matching: find.byIcon(Icons.groups_2_outlined),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('student-image-grid')), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('student-open-filter')),
         matching: find.byIcon(Icons.tune_rounded),
       ),
-      findsNothing,
+      findsOneWidget,
     );
     expect(filterCalls, 1);
+    await tester.tap(find.byKey(const ValueKey('student-filter-close')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-filter-modal')), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('catalog filters persist across the Section 5 toggle and reset', (
+  testWidgets('catalog filters apply through the filter modal and reset', (
     tester,
   ) async {
     final search = TextEditingController();
     addTearDown(search.dispose);
-    await tester.binding.setSurfaceSize(const Size(1100, 720));
+    await tester.binding.setSurfaceSize(const Size(2560, 1392));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final students = [
       StudentCatalogEntry(
@@ -982,52 +923,47 @@ void main() {
       findsNothing,
     );
 
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
-    expect(find.text('학교'), findsOneWidget);
-    expect(find.text('게헨나'), findsOneWidget);
-    expect(find.text('트리니티'), findsOneWidget);
-    await tester.tap(
-      find.byKey(const ValueKey('student-filter-school-Gehenna')),
-    );
-    await tester.pump();
+    Future<void> openModal() async {
+      await tester.tap(find.byKey(const ValueKey('student-open-filter')));
+      await tester.pump();
+      await tester.pump();
+    }
 
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
+    const gehenna = ValueKey('student-filter-chip-school-Gehenna');
+    await openModal();
+    expect(find.text('학교'), findsOneWidget);
+    expect(find.byKey(gehenna), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('student-filter-chip-school-Trinity')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(gehenna));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('student-filter-apply')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('student-filter-modal')), findsNothing);
     expect(find.byKey(const ValueKey('student-aru')), findsOneWidget);
     expect(find.byKey(const ValueKey('student-azusa')), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
-    await tester.pumpAndSettle();
-    final checkbox = tester.widget<Checkbox>(
-      find.descendant(
-        of: find.byKey(const ValueKey('student-filter-school-Gehenna')),
-        matching: find.byType(Checkbox),
-      ),
-    );
-    expect(checkbox.value, isTrue);
-    await tester.tap(
-      find.byKey(const ValueKey('student-filter-school-Gehenna')),
-    );
+    // 다시 열면 적용 값이 초안으로 들어온다. 끄고 닫으면(적용 없이) 그리드는 그대로다.
+    await openModal();
+    expect(tester.widget<SkewToggleChip>(find.byKey(gehenna)).selected, isTrue);
+    await tester.tap(find.byKey(gehenna));
     await tester.pump();
     expect(
-      tester
-          .widget<Checkbox>(
-            find.descendant(
-              of: find.byKey(const ValueKey('student-filter-school-Gehenna')),
-              matching: find.byType(Checkbox),
-            ),
-          )
-          .value,
+      tester.widget<SkewToggleChip>(find.byKey(gehenna)).selected,
       isFalse,
     );
-    await tester.tap(
-      find.byKey(const ValueKey('student-filter-school-Gehenna')),
-    );
+    await tester.tap(find.byKey(const ValueKey('student-filter-close')));
     await tester.pump();
+    expect(find.byKey(const ValueKey('student-azusa')), findsNothing);
+
+    // "초기화" → "적용"이면 조건이 모두 풀린다.
+    await openModal();
     await tester.tap(find.byKey(const ValueKey('student-filter-reset')));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('student-open-filter')));
+    await tester.tap(find.byKey(const ValueKey('student-filter-apply')));
+    await tester.pump();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('student-aru')), findsOneWidget);
     expect(find.byKey(const ValueKey('student-azusa')), findsOneWidget);
@@ -1066,7 +1002,9 @@ void main() {
     expect(grid.columns, 8);
     expect(grid.rows, 3);
     expect(grid.columnGap, 4.8);
-    expect(grid.rowGap, 3.84);
+    // DE 그리드: 이미지 셀 = 카드, 행 간격 = 이름 줄 20 + 3.84(FD-045).
+    expect(grid.rowGap, closeTo(23.84, 1e-9));
+    expect(grid.contentPadding.bottom, closeTo(8 + 20, 1e-9));
     expect(grid.items, hasLength(34));
     expect(grid.items.first.scale, 1);
     expect(grid.items.first.edgeCropFraction, 0.11);
@@ -1301,7 +1239,11 @@ void main() {
     expect(
       tester
           .widgetList<Text>(find.byType(Text))
-          .where((text) => text.style?.fontSize == studentSortMenuFontSize)
+          .where(
+            (text) =>
+                text.style?.fontSize == studentSortMenuFontSize &&
+                text.style?.color == studentSortAccentColor,
+          )
           .length,
       StudentGridSort.values.length,
     );
@@ -1931,6 +1873,7 @@ void main() {
                 'equipment_slot_2': null,
                 'equipment_slot_3': null,
                 'jp_only': true,
+                'has_favorite_item': false,
                 'search_tags': <String>[],
                 'kr_search_tags': <String>[],
               }),

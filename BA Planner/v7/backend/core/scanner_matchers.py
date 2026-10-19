@@ -1,11 +1,20 @@
 from __future__ import annotations
+from core.student_fallback_evidence import weapon_fallback_review_details
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import json
 from threading import Event, RLock
 from typing import Any, Callable, Protocol
 
 from PIL import Image, ImageChops, ImageStat
+from statistics import median
+from core.recognition_image_ops import ncc_per_channel_icon
+from core.inventory_tile_bank import TileBank
+from core.inventory_order_rules import increasing_run
+from core.recognition_synth import SYNTH_ENABLED_PROFILES, SynthUnavailable
+from core.recognition_synth_cache import SynthDriftGuard
+from core.inventory_count_bank import CountBank
 
 from core.recognition_assets import RecognitionAssetCatalog
 from core.recognition_answer_samples import RecognitionAnswerSampleStore
@@ -25,6 +34,7 @@ from core.student_equipment_recovery import EquipmentControlRecognizer, resolve_
 from core.student_identity_recovery import StudentIdentityRecognizer
 from core.student_form_recovery import StudentFormRecovery
 from core.studio_numeric_bank import source_digit_mask
+from core.numeric_sample_safety import numeric_mask_issue
 from core.session_calibration import SessionCalibrationStore
 from core import student_meta
 
@@ -251,7 +261,12 @@ def image_has_visible_content(image: Image.Image) -> bool:
     luminance = image.convert("L")
     histogram = luminance.histogram()
     visible = sum(histogram[13:])
-    return visible / max(1, luminance.width * luminance.height) >= rt.value("inventory.visible_content.ratio")
+    if visible / max(1, luminance.width * luminance.height) < rt.value("inventory.visible_content.ratio"):
+        return False
+    # C5d: an empty grid tile at the list end is one flat grey; filled tiles carry icon and count texture.
+    width, height = luminance.size
+    with luminance.crop((int(width * .18), int(height * .18), int(width * .82), int(height * .82))) as inner:
+        return ImageStat.Stat(inner).stddev[0] > rt.value("inventory.empty_tile.stddev")
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,12 +275,17 @@ class Match:
     score: float
     margin: float
     source: str = "bundled"
+    # Additive diagnostics; legacy positional construction/equality are retained.
+    runner_exists: bool | None = field(default=None, compare=False)
+    runner_margin: float | None = field(default=None, compare=False)
 
 
 class TemplateMatcher:
     _MATCH_SIZE = (96, 96)
 
-    def __init__(self, catalog: RecognitionAssetCatalog, scan_kind: str, purpose: str) -> None:
+    def __init__(
+        self, catalog: RecognitionAssetCatalog, scan_kind: str, purpose: str
+    ) -> None:
         self.catalog = catalog
         self.templates = [
             (asset.identity, self._load_template(catalog.resolve(asset.path)))
@@ -284,79 +304,128 @@ class TemplateMatcher:
             for _identity, image in self.user_templates.values():
                 image.close()
             self.user_templates = {
-                sample_id: (identity, image.convert("RGB").resize(self._MATCH_SIZE, Image.Resampling.BILINEAR))
+                sample_id: (
+                    identity,
+                    image.convert("RGB").resize(
+                        self._MATCH_SIZE, Image.Resampling.BILINEAR
+                    ),
+                )
                 for sample_id, identity, image in samples
             }
 
-    def add_user_template(self, sample_id: str, identity: str, image: Image.Image) -> None:
+    def add_user_template(
+        self, sample_id: str, identity: str, image: Image.Image
+    ) -> None:
         with self._lock:
             if sample_id in self.user_templates:
                 return
             self.user_templates[sample_id] = (
-                identity, image.convert("RGB").resize(self._MATCH_SIZE, Image.Resampling.BILINEAR)
+                identity,
+                image.convert("RGB").resize(
+                    self._MATCH_SIZE, Image.Resampling.BILINEAR
+                ),
             )
 
     @classmethod
     def _load_template(cls, path: Path) -> Image.Image:
         with Image.open(path) as image:
-            return image.convert("RGB").resize(cls._MATCH_SIZE, Image.Resampling.BILINEAR)
+            return image.convert("RGB").resize(
+                cls._MATCH_SIZE, Image.Resampling.BILINEAR
+            )
 
     @staticmethod
     def _center(image: Image.Image, trim: float) -> Image.Image:
         if trim <= 0:
             return image
-        return image.crop((round(image.width * trim), round(image.height * trim), round(image.width * (1 - trim)), round(image.height * (1 - trim))))
+        return image.crop(
+            (
+                round(image.width * trim),
+                round(image.height * trim),
+                round(image.width * (1 - trim)),
+                round(image.height * (1 - trim)),
+            )
+        )
 
     def match(
-        self, image: Image.Image, *, center_trim: float = 0.0,
-        prefer_user: bool = False, threshold: float = 0.0, margin: float = 0.0,
+        self,
+        image: Image.Image,
+        *,
+        center_trim: float = 0.0,
+        prefer_user: bool = False,
+        threshold: float = 0.0,
+        margin: float = 0.0,
         allowed_identities: set[str] | None = None,
     ) -> Match:
         with self._lock:
             if prefer_user and self.user_templates:
-                preferred = self._match_preferred(image, center_trim, allowed_identities)
+                preferred = self._match_preferred(
+                    image, center_trim, allowed_identities
+                )
                 if (
                     preferred.source == "user_confirmed"
-                    and preferred.score >= threshold and preferred.margin >= margin
+                    and preferred.score >= threshold
+                    and preferred.margin >= margin
                 ):
                     return preferred
-            templates = self.templates if allowed_identities is None else [
-                item for item in self.templates if item[0] in allowed_identities
-            ]
+            templates = (
+                self.templates
+                if allowed_identities is None
+                else [item for item in self.templates if item[0] in allowed_identities]
+            )
             if not templates:
-                raise ScannerError("template_missing", "no templates match the requested inventory profile")
+                raise ScannerError(
+                    "template_missing",
+                    "no templates match the requested inventory profile",
+                )
             return self._match_templates(image, templates, center_trim, "bundled")
 
     def _match_preferred(
-        self, image: Image.Image, center_trim: float,
+        self,
+        image: Image.Image,
+        center_trim: float,
         allowed_identities: set[str] | None = None,
     ) -> Match:
         best_by_identity: dict[str, tuple[float, str]] = {}
         variants = [
             *((identity, template, "bundled") for identity, template in self.templates),
-            *((identity, template, "user_confirmed") for identity, template in self.user_templates.values()),
+            *(
+                (identity, template, "user_confirmed")
+                for identity, template in self.user_templates.values()
+            ),
         ]
         if allowed_identities is not None:
             variants = [item for item in variants if item[0] in allowed_identities]
         if not variants:
-            raise ScannerError("template_missing", "no templates match the requested inventory profile")
+            raise ScannerError(
+                "template_missing", "no templates match the requested inventory profile"
+            )
         for identity, template, source in variants:
             score = image_similarity(
-                self._center(image, center_trim), self._center(template, center_trim),
+                self._center(image, center_trim),
+                self._center(template, center_trim),
             )
             previous = best_by_identity.get(identity)
-            if previous is None or score > previous[0] or (
-                score == previous[0] and source == "user_confirmed"
+            if (
+                previous is None
+                or score > previous[0]
+                or (score == previous[0] and source == "user_confirmed")
             ):
                 best_by_identity[identity] = (score, source)
-        ranked = sorted(best_by_identity.items(), key=lambda item: item[1][0], reverse=True)
+        ranked = sorted(
+            best_by_identity.items(), key=lambda item: item[1][0], reverse=True
+        )
         identity, (score, source) = ranked[0]
         second = ranked[1][1][0] if len(ranked) > 1 else 0.0
-        return Match(identity, score, score - second, source)
+        return Match(identity, score, score - second, source,
+                     runner_exists=len(ranked) > 1,
+                     runner_margin=score - second if len(ranked) > 1 else None)
 
     def _match_templates(
-        self, image: Image.Image, templates: list[tuple[str, Image.Image]],
-        center_trim: float, source: str,
+        self,
+        image: Image.Image,
+        templates: list[tuple[str, Image.Image]],
+        center_trim: float,
+        source: str,
     ) -> Match:
         best_by_identity: dict[str, float] = {}
         for identity, template in templates:
@@ -365,17 +434,28 @@ class TemplateMatcher:
                 self._center(template, center_trim),
             )
             best_by_identity[identity] = max(score, best_by_identity.get(identity, 0.0))
-        ranked = sorted(best_by_identity.items(), key=lambda item: item[1], reverse=True)
+        ranked = sorted(
+            best_by_identity.items(), key=lambda item: item[1], reverse=True
+        )
         best_id, best_score = ranked[0]
         second = ranked[1][1] if len(ranked) > 1 else 0.0
-        return Match(best_id, best_score, best_score - second, source)
+        return Match(best_id, best_score, best_score - second, source,
+                     runner_exists=len(ranked) > 1,
+                     runner_margin=best_score - second if len(ranked) > 1 else None)
+
+    @property
+    def identities(self) -> frozenset[str]:
+        with self._lock:
+            return frozenset(identity for identity, _template in self.templates)
 
     def rank(self, image: Image.Image) -> list[tuple[str, float]]:
         """Full bundled portrait ranking; no candidate hint may remove a competitor."""
         with self._lock:
             scores: dict[str, float] = {}
             for identity, template in self.templates:
-                scores[identity] = max(image_similarity(image, template), scores.get(identity, 0.0))
+                scores[identity] = max(
+                    image_similarity(image, template), scores.get(identity, 0.0)
+                )
             return sorted(scores.items(), key=lambda item: item[1], reverse=True)
 
 
@@ -603,8 +683,11 @@ class StudentMatcherAdapter:
                 for sample in samples:
                     for bank in banks:
                         bank.add_user_template(
-                            sample.roi_name, sample.digit, sample.image,
+                            sample.roi_name,
+                            sample.digit,
+                            sample.image,
                             sample_id=sample.sample_id,
+                            validated=sample.validated,
                         )
             finally:
                 self.answer_samples.close(samples)
@@ -612,11 +695,15 @@ class StudentMatcherAdapter:
         if calibration is None or not calibration.bind_scope(profile_id, source_size):
             return
         for sample in calibration.numeric_samples(
-            profile_id=profile_id, source_size=source_size, student_ref=student_ref,
+            profile_id=profile_id,
+            source_size=source_size,
+            student_ref=student_ref,
         ):
             for bank in banks:
                 bank.add_session_template(
-                    sample.roi_name, sample.digit, sample.image,
+                    sample.roi_name,
+                    sample.digit,
+                    sample.image,
                     sample_id=sample.sample_id,
                 )
 
@@ -689,8 +776,12 @@ class StudentMatcherAdapter:
         return None
 
     def train_user_answer(
-        self, profile_id: str, candidate_id: str, specimen: dict[str, Any],
+        self,
+        profile_id: str,
+        candidate_id: str,
+        specimen: dict[str, Any],
         payload: dict[str, Any],
+        confirmed_fields: tuple[str, ...] = (),
     ) -> int:
         if self.answer_samples is None:
             return 0
@@ -698,12 +789,24 @@ class StudentMatcherAdapter:
         groups = specimen.get("numeric_groups")
         values = payload.get("values")
         if (
-            not isinstance(source_size, tuple) or len(source_size) != 2
-            or not isinstance(groups, dict) or not isinstance(values, dict)
+            not isinstance(source_size, tuple)
+            or len(source_size) != 2
+            or not isinstance(groups, dict)
+            or not isinstance(values, dict)
         ):
             return 0
-        saved = 0
-        for field in ("level", "bond_rank", "weapon_level", "equip1_level", "equip2_level", "equip3_level"):
+        saved = reused = quarantined = rejected = 0
+        issues, blocked_fields = [], set()
+        for field in (
+            "level",
+            "bond_rank",
+            "weapon_level",
+            "equip1_level",
+            "equip2_level",
+            "equip3_level",
+        ):
+            if field not in confirmed_fields:
+                continue
             value = values.get(field)
             if not isinstance(value, int) or isinstance(value, bool):
                 continue
@@ -713,25 +816,51 @@ class StudentMatcherAdapter:
             sample_field, group_name, roi_names = spec
             cells = groups.get(group_name)
             digits = str(value)
-            if not isinstance(cells, tuple) or len(cells) < len(digits) or len(roi_names) < len(digits):
+            if (
+                not isinstance(cells, tuple)
+                or len(cells) < len(digits)
+                or len(roi_names) < len(digits)
+            ):
                 continue
             for cell, roi_name, digit in zip(cells, roi_names, digits):
                 mask = source_digit_mask(cell, sample_field)
                 try:
-                    if mask.getbbox() is None:
+                    issue = numeric_mask_issue(mask, sample_field, roi_name)
+                    if issue:
+                        rejected += 1
+                        issues.append({"field": field, "roi": roi_name, "reason": issue})
                         continue
-                    sample_id = self.answer_samples.save_numeric(
-                        profile_id, source_size, field=sample_field, roi_name=roi_name,
-                        digit=digit, mask=mask, candidate_id=candidate_id,
+                    banks = (self.basic_recognizer.studio_numeric_bank,
+                             self.equipment_recognizer.studio_numeric_bank)
+                    bank = banks[1] if sample_field == "equipment_level" else banks[0]
+                    conflict = bank.sample_conflict(roi_name, digit, mask)
+                    receipt = self.answer_samples.write_numeric(
+                        profile_id,
+                        source_size,
+                        field=sample_field,
+                        roi_name=roi_name,
+                        digit=digit,
+                        mask=mask,
+                        candidate_id=candidate_id,
+                        quarantine_reason=conflict,
                     )
-                    for bank in (
-                        self.basic_recognizer.studio_numeric_bank,
-                        self.equipment_recognizer.studio_numeric_bank,
-                    ):
-                        bank.add_user_template(roi_name, digit, mask, sample_id=sample_id)
-                    saved += 1
+                    if receipt.quarantined:
+                        quarantined += int(receipt.created)
+                        blocked_fields.add(field)
+                        issues.append({"field": field, "roi": roi_name, "reason": conflict})
+                        continue
+                    for bank in banks:
+                        bank.add_user_template(
+                            roi_name, digit, mask, sample_id=receipt.sample_id, validated=True,
+                        )
+                    saved += int(receipt.created)
+                    reused += int(not receipt.created)
                 finally:
                     mask.close()
+        specimen["_sample_training_report"] = {
+            "sample_count": saved, "reused_count": reused, "quarantined_count": quarantined,
+            "rejected_count": rejected, "blocked_fields": sorted(blocked_fields), "issues": issues,
+        }
         return saved
 
     @staticmethod
@@ -764,6 +893,8 @@ class StudentMatcherAdapter:
     def _capture_identified(self, target, cancel):
         recovery = self._panel_recovery()
         attempts, entered = 0, False
+        self.last_identity_filter_evidence = None
+        filter_attempts = []
         while attempts < 2:
             if cancel.is_set():
                 raise ScannerError('cancelled', 'identity capture cancelled')
@@ -783,6 +914,12 @@ class StudentMatcherAdapter:
                 attempts += 1
                 identity = self.identity_recognizer.identify(frame, self.matcher, self.texture_region,
                     self._canonical_student_ref, self.threshold, self.margin)
+                filter_note = getattr(self.identity_recognizer, "last_filter_evidence", None)
+                if isinstance(filter_note, dict) and filter_note:
+                    filter_attempts.append(dict(filter_note))
+                    self.last_identity_filter_evidence = {
+                        **filter_note, "capture_attempts": list(filter_attempts),
+                    }
                 if identity is not None:
                     return frame, identity
             except Exception:
@@ -831,9 +968,17 @@ class StudentMatcherAdapter:
                 "source_size": crops.source_size,
                 "numeric_groups": self._numeric_groups(crops),
             }
+            review_details = weapon_fallback_review_details(fallback_evidence, crops)
+            if review_details:
+                answer_specimen["fallback_review_details"] = review_details
         finally:
             crops.close()
-        candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
+        identity_filter = getattr(self, "last_identity_filter_evidence", None)
+        if isinstance(identity_filter, dict):
+            candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence,
+                                               answer_specimen, identity_filter=identity_filter)
+        else:
+            candidate = self._assemble_student(identity, student_ref, observations, fallback_evidence, answer_specimen)
         progress(4, 4, "scanner.student.matched")
         return [candidate]
 
@@ -995,7 +1140,7 @@ class StudentMatcherAdapter:
             "note": observation.note,
         } for field, observation in observations.items()]
 
-    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen) -> dict[str, Any]:
+    def _assemble_student(self, identity, student_ref, observations, fallback_evidence, answer_specimen, identity_filter=None) -> dict[str, Any]:
         kept = {field: observation for field, observation in observations.items()
                 if observation.confirmed or observation.source == "panel_value_conflict"}
         values = {field: observation.value for field, observation in kept.items()}
@@ -1015,6 +1160,12 @@ class StudentMatcherAdapter:
             observation.status not in {"ok", "inferred", "skipped"}
             for observation in observations.values()
         )
+        if isinstance(identity_filter, dict):
+            evidence.append({
+                "field": "student_id", "status": "ok",
+                "source": "student_attribute_prefilter", "confidence": identity.score,
+                "note": json.dumps(identity_filter, ensure_ascii=False, sort_keys=True),
+            })
         return {
             "payload": {"version": 1, "student_id": student_ref, "values": values, "provenance": provenance},
             "evidence": evidence,
@@ -1247,6 +1398,7 @@ class _SlotReading:
     note: str
     profile_confirmed: bool
     detail_identity: bool = False
+    detail_read: bool = False
 
 
 @dataclass
@@ -1267,24 +1419,59 @@ class _InventoryScan:
     coverage_complete: bool = False
     offset: float = 0.0
     read_until: int = -1
-    anchored: int | None = None
+    gutter_calibration: float | None = None
+    rows_per_move: int = 1
+    row_centering: float = 0.0
+    first_page: Image.Image | None = None
+    seen_crops: dict[int, Image.Image] = field(default_factory=dict)
+    selected_index: int | None = None
+    bank: Any = None
+    order: dict[str, int] = field(default_factory=dict)
+    bank_guesses: dict[int, Any] = field(default_factory=dict)
+    bank_anchors: set[int] = field(default_factory=set)
+    bank_stats: dict[str, int] = field(default_factory=lambda: {"confident": 0, "order_prior": 0, "order_conflict": 0,
+                                                                 "unknown_new": 0, "skipped_detail": 0, "agree": 0,
+                                                                 "disagree": 0, "learned": 0, "count_read": 0,
+                                                                 "count_checked": 0, "count_agree": 0, "count_disagree": 0,
+                                                                 "numeric_synth_checked": 0, "numeric_synth_agree": 0})
+    unknown_new: set[int] = field(default_factory=set)
+    unresolved_slots: dict[int, dict[str, Any]] = field(default_factory=dict)
+    allow_synth: bool = False
+    count_bank: Any = None
+    glyph_seeds: dict[int, Any] = field(default_factory=dict)
+    detail_confirmed: list[tuple[str, Image.Image]] = field(default_factory=list)
     completed: bool = False
+    page_open: bool = False
+    input_stopped: ScannerError | None = None
 
     def skip(self, index: int, confidence: float, note: str) -> None:
         self.evidence.append({"field": f"slots[{index}]", "status": "skipped",
                               "source": "inventory_profile_catalog", "confidence": confidence, "note": note})
 
-    def candidate(self, evidence: list[dict[str, Any]], review_required: bool) -> dict[str, Any]:
+    def candidate(
+        self, evidence: list[dict[str, Any]], review_required: bool
+    ) -> dict[str, Any]:
+        specimen: dict[str, Any] = {
+            "source_size": self.source_size,
+            "slot_crops": self.slot_crops,
+        }
+        if self.unresolved_slots:
+            specimen["unresolved_slots"] = self.unresolved_slots
+            specimen["assigned_slots"] = set()
         return {
-            "payload": {"version": 1, "catalog_revision": CATALOG_REVISION, "entries": self.entries},
+            "payload": {
+                "version": 1,
+                "catalog_revision": CATALOG_REVISION,
+                "entries": self.entries,
+            },
             "evidence": evidence,
             "review_required": review_required,
-            "_answer_specimen": {"source_size": self.source_size, "slot_crops": self.slot_crops},
+            "_answer_specimen": specimen,
         }
 
 
 class InventoryMatcherAdapter:
-    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None) -> None:
+    def __init__(self, capture: CapturePort, catalog: RecognitionAssetCatalog, *, threshold: float = rt.value("inventory.grid_icon.score"), margin: float = rt.value("inventory.grid_icon.margin"), max_pages: int = 60, answer_samples: RecognitionAnswerSampleStore | None = None, detail_recovery=None, navigation=None, synth_provider=None) -> None:
         self.capture = capture
         self.catalog = catalog
         self.threshold = threshold
@@ -1294,6 +1481,7 @@ class InventoryMatcherAdapter:
         self.count_matcher = SlotCountMatcher(catalog)
         self.answer_samples = answer_samples
         self.detail_recovery = detail_recovery
+        self.synth_provider = synth_provider
         self.navigation = navigation
         regions = catalog.region("inventory").get("item", {})
         self.slots = regions.get("grid_slots")
@@ -1317,6 +1505,12 @@ class InventoryMatcherAdapter:
             return self._interrupted(scan, exc, cancel)
         finally:
             scan.frame.close()
+            if scan.first_page is not None:
+                scan.first_page.close()
+            for crop in scan.seen_crops.values():
+                crop.close()
+            for _identity, crop in scan.detail_confirmed:
+                crop.close()
             if not scan.completed:
                 for crop in scan.slot_crops.values():
                     crop.close()
@@ -1335,9 +1529,71 @@ class InventoryMatcherAdapter:
             scan.frame = self.capture.wait_stable(scan.target, cancel)
             scan.source_kind = scan.prepared.source
             scan.target = scan.target.replace(inventory_scan_profile=scan.prepared.profile_id)
+            scan.gutter_calibration = self._gutter_phase(scan, 0.0)
+            # C5e-1 (E6): move one row less than the fully readable rows, so one read row overlaps.
+            first_rows = {index // 5 for index in navigation.page_slots(scan.source_kind, 0.0)}
+            scan.rows_per_move = max(1, len(first_rows) - 1)
+            scan.row_centering = navigation.row_centering(scan.source_kind)
+            scan.first_page = scan.frame.copy()
         self._load_answer_samples(scan.target.get("profile_id"), scan.source_size)
         if scan.prepared is not None:
             scan.allowed_ids = {row.item_id for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+            scan.order = {row.item_id: row.order_index for row in CATALOG if row.profile_id == scan.prepared.profile_id}
+            scan.bank = self._tile_bank(scan.source_size)
+            scan.count_bank = self.__dict__.setdefault("count_banks", {}).setdefault(
+                tuple(scan.source_size), CountBank(scale=scan.source_size[1] / 720))
+            self._load_synth(scan)
+
+    def _tile_bank(self, source_size: tuple[int, int]) -> TileBank:
+        """C5e-2 session bank for this client size; it outlives one scan so later scans start from it."""
+        banks = self.__dict__.setdefault("tile_banks", {})
+        return banks.setdefault(tuple(source_size), TileBank())
+
+    def _synth_guard(self) -> SynthDriftGuard:
+        return self.__dict__.setdefault("synth_guard", SynthDriftGuard())
+
+    def _load_synth(self, scan: "_InventoryScan") -> None:
+        """C5e-6c: the synthetic tier below the session bank, for D16-gated profiles only."""
+        provider = getattr(self, "synth_provider", None)
+        profile = scan.prepared.profile_id
+        if provider is None:
+            return
+        if profile not in SYNTH_ENABLED_PROFILES:
+            # Count glyph seeds and detail icons do not depend on the grid-tile gate (C5e-3, 6d); tiles stay out.
+            try:
+                templates = provider(profile, scan.source_size)
+            except SynthUnavailable:
+                return
+            scan.glyph_seeds = dict(templates.glyphs)
+            self._load_synth_details(scan, templates)
+            return
+        if not self._synth_guard().enabled(profile):
+            scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
+                                  "note": f"profile={profile};disabled after synth_drift_detected"})
+            return
+        try:
+            templates = provider(profile, scan.source_size)
+        except SynthUnavailable as exc:
+            scan.evidence.append({"field": "synth_tier", "status": "uncertain", "source": "synth_bank", "confidence": 0.0,
+                                  "note": f"profile={profile};unavailable;{exc.reason}"})
+            return
+        for identity, tile in templates.tiles.items():
+            scan.bank.add_synth(identity, tile)
+        scan.glyph_seeds = dict(templates.glyphs)
+        self._load_synth_details(scan, templates)
+        scan.allow_synth = True
+        scan.evidence.append({"field": "synth_tier", "status": "ok", "source": "synth_bank", "confidence": 1.0,
+                              "note": f"profile={profile};tiles={len(templates.tiles)}"})
+
+    def _load_synth_details(self, scan: "_InventoryScan", templates) -> None:
+        recognizer = getattr(getattr(self, "detail_recovery", None), "recognizer", None)
+        if recognizer is None or not hasattr(recognizer, "synth_details") or not templates.details:
+            return
+        from core.recognition_image_ops import icon_vectors
+        allowed = scan.allowed_ids
+        recognizer.synth_details[scan.source_kind] = {
+            identity: icon_vectors(image) for identity, image in templates.details.items()
+            if allowed is None or identity in allowed}
 
     def _load_answer_samples(self, profile_id: object, source_size: tuple[int, int]) -> None:
         if self.answer_samples is None or not isinstance(profile_id, str):
@@ -1348,6 +1604,10 @@ class InventoryMatcherAdapter:
             self.matcher.replace_user_templates([
                 (sample.sample_id, sample.item_id, sample.image) for sample in samples
             ])
+            # User-approved tile samples (D1) are the bank's persistent tier.
+            bank = self._tile_bank(source_size)
+            for sample in samples:
+                bank.add(sample.item_id, sample.image, "user_confirmed")
         finally:
             self.answer_samples.close(samples)
 
@@ -1371,39 +1631,130 @@ class InventoryMatcherAdapter:
         if scan.prepared is not None and unread and min(unread) != scan.read_until + 1:
             # A tile row that was never fully visible would otherwise be skipped silently.
             raise ScannerError("inventory_scroll_unverified", f"rows skipped: next visible index {min(unread)} after {scan.read_until}")
-        for position, index in enumerate(sorted(visible)):
-            if index <= scan.read_until:
-                continue
-            if cancel.is_set():
-                raise ScannerError("cancelled", "inventory scan cancelled")
-            crop = ratio_crop(scan.frame, visible[index])
-            try:
-                reading = self._read_slot(scan, index, position, slots, crop, cancel)
-                if reading is None or not self._record_entry(scan, reading, crop):
+        self._match_page_bank(scan, visible)
+        try:
+            for position, index in enumerate(sorted(visible)):
+                if index <= scan.read_until:
                     continue
-                if isinstance(reading.identity, str):
-                    page_ids.append(reading.identity)
-                if reading.status != 'ok' or reading.quantity is None:
-                    page_unresolved = True
-                progress(len(scan.entries), None, "scanner.inventory.grid")
-            finally:
-                crop.close()
+                if cancel.is_set():
+                    raise ScannerError("cancelled", "inventory scan cancelled")
+                crop = ratio_crop(scan.frame, visible[index])
+                try:
+                    if scan.prepared is not None and image_has_visible_content(crop):
+                        scan.seen_crops[index] = crop.copy()
+                    reading = self._read_slot(scan, index, position, slots, crop, cancel)
+                    if reading is not None and self._record_entry(scan, reading, crop):
+                        if isinstance(reading.identity, str):
+                            page_ids.append(reading.identity)
+                        if reading.status != 'ok' or reading.quantity is None:
+                            page_unresolved = True
+                        progress(len(scan.entries), None, "scanner.inventory.grid")
+                finally:
+                    crop.close()
+                if scan.input_stopped is not None:
+                    # C5d: an unconfirmed selection already made its verified return; no further input.
+                    raise scan.input_stopped
+            if scan.page_open:
+                # C5e-1: the last verified selection sits in the bottom rows and stays visible after the
+                # next ~one-row drag, so a completed page keeps it instead of returning (no anchor click).
+                scan.page_open = False
+                self.detail_recovery.end_page(scan.target, keep_selection=True)
+        finally:
+            if scan.page_open:
+                scan.page_open = False
+                self.detail_recovery.end_page(scan.target)
         if visible:
             scan.read_until = max(scan.read_until, max(visible))
+            # Only the rows a move can keep on screen are needed for the next overlap check.
+            for index in [index for index in scan.seen_crops if index < scan.read_until - 10 * 5]:
+                scan.seen_crops.pop(index).close()
         if scan.prepared is not None:
-            if page_ids and not self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids):
-                # The current client can sort the mixed item page by quantity/name,
-                # so catalog order is not guaranteed even when every recognized
-                # identity belongs to the explicit profile. Keep the observations,
-                # but mark coverage partial and prohibit zero-fill below.
-                scan.evidence.append({
-                    "field": "profile_order", "status": "partial",
-                    "source": "inventory_profile_catalog", "confidence": 0.0,
-                    "note": "visible items do not match monotonic scan profile order; no zero-fill",
-                })
-                scan.review_required = True
+            # D23: order is judged once per scan at the end (longest increasing run); a page out of order only
+            # withholds the verified-profile flag that permits grid-count fallbacks.
+            ordered_page = bool(page_ids) and self.navigation.verify_profile_order(scan.prepared.profile_id, page_ids)
             scan.observed_profile_ids.extend(page_ids)
-            scan.target = scan.target.replace(inventory_profile_verified=bool(page_ids) and not page_unresolved)
+            scan.target = scan.target.replace(inventory_profile_verified=ordered_page and not page_unresolved)
+
+    def _match_page_bank(self, scan: "_InventoryScan", visible: dict[int, dict[str, Any]]) -> None:
+        """C5e-2 pass 1: match every new tile against the bank; confident tiles in catalog order are anchors."""
+        scan.bank_guesses, scan.bank_anchors = {}, set()
+        if scan.bank is None or not len(scan.bank):
+            return
+        previous = self._last_confirmed_order(scan)
+        candidates = self._bank_candidates(scan, scan.allowed_ids)
+        for index in sorted(visible):
+            if index <= scan.read_until:
+                continue
+            with ratio_crop(scan.frame, visible[index]) as crop:
+                if not image_has_visible_content(crop):
+                    continue
+                guess = scan.bank.match(crop, candidates, allow_synth=scan.allow_synth)
+            scan.bank_guesses[index] = guess
+            order = scan.order.get(guess.identity)
+            # An anchor must continue the sorted order; a confident tile out of order goes to the detail panel.
+            if guess.confident and order is not None and (previous is None or order > previous):
+                scan.bank_anchors.add(index)
+                previous = order
+
+    @staticmethod
+    def _learn_count(scan: "_InventoryScan", crop: Image.Image, quantity: str) -> None:
+        """Check the grid read against the detail quantity (evidence), then learn the label's glyphs."""
+        bank, stats = scan.count_bank, scan.bank_stats
+        if scan.glyph_seeds and not bank.seed:
+            bank.set_seeds(scan.glyph_seeds)
+        if quantity.isdigit() and int(quantity) < 10000:
+            if bank.ready():
+                read = bank.read(crop)
+                stats["count_checked"] += 1
+                if read.confident:
+                    stats["count_agree" if read.value == quantity else "count_disagree"] += 1
+            if bank.seed:
+                # D20: synthetic digits are evidence only until the profile passes the numeric gate.
+                seed_read = bank.read(crop, use_seed=True)
+                stats["numeric_synth_checked"] += 1
+                stats["numeric_synth_agree"] += seed_read.value == quantity
+        bank.learn(crop, quantity)
+
+    @staticmethod
+    def _bank_candidates(scan: "_InventoryScan", pool) -> set[str]:
+        """Bank candidates for a new tile: each item appears once in the list, so identities already recorded
+        in this scan cannot be it (live first scans: 14 of 14 confident wrong matches were such identities)."""
+        recorded = {entry["item_id"] for entry in scan.entries}
+        return set(pool if pool is not None else scan.bank.entries) - recorded
+
+    @staticmethod
+    def _last_confirmed_order(scan: "_InventoryScan") -> int | None:
+        for entry in reversed(scan.entries):
+            if entry.get("observed_slot") is not None and entry["item_id"] in scan.order:
+                return scan.order[entry["item_id"]]
+        return None
+
+    def _bank_identity(self, scan: "_InventoryScan", index: int, crop: Image.Image) -> "Any | None":
+        """C5e-2 pass 2: a confident bank identity for this tile, using the order prior when needed."""
+        guess = scan.bank_guesses.get(index)
+        if guess is None:
+            return None
+        if index in scan.bank_anchors:
+            scan.bank_stats["confident"] += 1
+            return guess
+        low = self._last_confirmed_order(scan)
+        later = [scan.order[scan.bank_guesses[i].identity] for i in sorted(scan.bank_anchors) if i > index]
+        high = later[0] if later else None
+        if low is None and high is None:
+            return None
+        overall, between = scan.bank.match_between(crop, self._bank_candidates(scan, scan.allowed_ids), scan.order, low, high,
+                                                   scan.allow_synth)
+        # The best candidate overall must itself lie between the neighbours; otherwise the detail panel decides.
+        if between.confident and overall.identity == between.identity:
+            scan.bank_stats["order_prior"] += 1
+            return between
+        # D23: the prior only narrows. A tile that confidently looks like a banked item (any profile) which
+        # cannot sit between its neighbours is an order conflict; either way the detail panel decides.
+        full = scan.bank.match(crop, self._bank_candidates(scan, None), allow_synth=scan.allow_synth)
+        order = scan.order.get(full.identity)
+        if full.confident and (order is None or (low is not None and order <= low) or (high is not None and order >= high)):
+            scan.bank_stats["order_conflict"] += 1
+        return None
 
     def _read_slot(self, scan: "_InventoryScan", index: int, position: int, slots: list[dict[str, Any]],
                    crop: Image.Image, cancel: Event) -> "_SlotReading | None":
@@ -1417,6 +1768,7 @@ class InventoryMatcherAdapter:
         # equipment ranks as its blueprint piece), so a profile scan with a detail panel never skips or
         # labels from the grid alone: identity and membership come from the detail panel.
         detail_required = scan.prepared is not None and detail_port is not None
+        banked = self._bank_identity(scan, index, crop) if detail_required else None
         # On the item page the verified category filter is the membership evidence, but only when the
         # detail panel names the tile; without it the F12 gate below still applies.
         category_filtered = detail_required and scan.prepared.source == "item"
@@ -1452,17 +1804,57 @@ class InventoryMatcherAdapter:
             return None
         confident = match.score >= self.threshold and match.margin >= self.margin
         count = self.count_matcher.match(crop)
+        count_source = 'slot_count_glyph'
+        count_bank = getattr(scan, "count_bank", None)
+        if count.value is None and count_bank is not None and count_bank.ready():
+            # C5e-3: the session glyph bank reads the current client's labels (the v6 glyphs never do).
+            read = count_bank.read(crop)
+            if read.confident:
+                count, count_source = CountMatch(read.value, read.score, read.margin), read.source
+                scan.bank_stats["count_read"] += 1
         reading = _SlotReading(
             index=index, identity=match.identity, score=match.score, margin=match.margin, source=source,
             status='ok' if confident else 'uncertain', quantity=count.value, count_score=count.score,
-            count_source='slot_count_glyph', note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
+            count_source=count_source, note=f'margin={count.margin:.6f}', profile_confirmed=profile_confirmed,
         )
-        if detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
+        if banked is not None and count.value is not None:
+            # C5e-2 fast path: a banked identity with a confident grid count needs no detail panel.
+            reading.identity, reading.score, reading.margin = banked.identity, banked.score, banked.margin
+            # A slot confirmed by a synthetic tile alone is recorded as such (C5e-6 principle).
+            reading.source = "synth_bank" if banked.tier == "synth" else f"tile_bank_{banked.tier}"
+            reading.status, reading.detail_identity = "ok", True
+            reading.profile_confirmed = banked.identity in (scan.allowed_ids or ())
+            scan.bank_stats["skipped_detail"] += 1
+        elif detail_port is not None and (detail_required or not (fast_confident and count.value is not None)):
             self._apply_detail(scan, reading, position, slots, match, count, confident, cancel)
+            if detail_required and reading.detail_identity and reading.source in ("inventory_detail_template", "synth_detail_icon"):
+                if banked is not None:
+                    scan.bank_stats["agree" if banked.identity == reading.identity else "disagree"] += 1
+                if scan.bank is not None:
+                    scan.bank.add(reading.identity, crop)
+                    scan.bank_stats["learned"] += 1
+                if scan.count_bank is not None and reading.quantity:
+                    self._learn_count(scan, crop, reading.quantity)
+                    if scan.allow_synth:
+                        scan.detail_confirmed.append((reading.identity, crop.copy()))
         if detail_required and not reading.detail_identity:
             # Never record a grid-guessed identity on a profile scan: keep the slot as unresolved evidence.
+            # D23: a tile the detail panel read but could not name is not a catalog item (new, or not yet in the
+            # catalog like blueprint pieces); it waits for labeling (6e). A failed read is not a new item.
+            flag = ""
+            if reading.detail_read:
+                scan.unknown_new.add(index)
+                scan.bank_stats["unknown_new"] += 1
+                scan.slot_crops[index] = crop.copy()
+                guess = scan.bank_guesses.get(index)
+                ranked = getattr(guess, "ranked", ()) if guess is not None else ()
+                scan.unresolved_slots[index] = {
+                    "profile": scan.prepared.profile_id,
+                    "candidates": [{"identity": identity, "score": score} for identity, score in ranked[:3]],
+                }
+                flag = "unknown_new;"
             scan.evidence.append({"field": f"slots[{index}]", "status": "partial", "source": "inventory_detail_panel",
-                                  "confidence": 0.0, "note": f"identity unresolved by detail panel;{reading.note}"})
+                                  "confidence": 0.0, "note": f"{flag}identity unresolved by detail panel;{reading.note}"})
             scan.review_required = True
             return None
         if allowed is not None and reading.identity not in allowed:
@@ -1475,17 +1867,29 @@ class InventoryMatcherAdapter:
 
     def _apply_detail(self, scan: "_InventoryScan", reading: "_SlotReading", position: int, slots: list[dict[str, Any]],
                       match: Match, count: CountMatch, confident: bool, cancel: Event) -> None:
-        outcome = self.detail_recovery.resolve(
-            scan.target, cancel, scan.frame, position, reading.identity, count.value, confident,
+        if not scan.page_open:
+            # C5d batch selection: one page session, slots selected in order, one verified return at the end.
+            self.detail_recovery.begin_page(scan.target, cancel, scan.frame, slots)
+            scan.page_open = True
+        outcome = self.detail_recovery.read(
+            scan.target, cancel, position, reading.identity, count.value, confident,
             profile_verified=scan.target.inventory_profile_verified is True,
-            scan_profile=scan.target.get('inventory_scan_profile'), slots=slots)
+            scan_profile=scan.target.get('inventory_scan_profile'))
+        if not outcome.stop:
+            scan.selected_index = reading.index
         if outcome.failure is not None:
-            # Only a verified return to the original selection makes a failed read partial.
-            if not outcome.restored or outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
+            if outcome.failure.code not in DETAIL_RECOVERABLE_CODES:
                 raise outcome.failure
-            reading.note = outcome.failure.code + ';original selection restored'
+            if outcome.stop:
+                # The session made its verified return already; this slot is partial and input stops.
+                scan.page_open = False
+                scan.input_stopped = outcome.failure
+                reading.note = outcome.failure.code + ';original selection restored;input stopped'
+            else:
+                reading.note = outcome.failure.code + ';selection confirmed;detail unread'
             reading.status = 'partial'
             return
+        reading.detail_read = True
         detail = outcome.detail
         reading.detail_identity = detail.identity is not None
         if detail.identity is not None:
@@ -1507,7 +1911,13 @@ class InventoryMatcherAdapter:
 
     @staticmethod
     def _record_entry(scan: "_InventoryScan", reading: "_SlotReading", crop: Image.Image) -> bool:
-        if any(entry["item_id"] == reading.identity for entry in scan.entries):
+        previous = next((entry for entry in scan.entries if entry["item_id"] == reading.identity), None)
+        if previous is not None:
+            if scan.prepared is not None and previous["observed_slot"] != reading.index:
+                # Every tile is read once by content index, so one identity at two indices means the
+                # page's rows were mapped to the wrong content rows (C5e-1 live: a one-row shift alias).
+                raise ScannerError("inventory_scroll_unverified",
+                                   f"{reading.identity} seen at slots {previous['observed_slot']} and {reading.index}")
             return False
         scan_profile = scan.prepared.profile_id if scan.prepared is not None else None
         scan.entries.append({"key": reading.identity, "quantity": reading.quantity, "item_id": reading.identity,
@@ -1539,11 +1949,13 @@ class InventoryMatcherAdapter:
             raise ScannerError("cancelled", "inventory scan cancelled")
         if navigation is None:
             return self._wheel_page(scan, cancel)
-        self._anchor_selection(scan, cancel)
-        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind)
+        moved = navigation.advance(scan.target, cancel, scan.frame, scan.source_kind, 
+            self.navigation.page_distance(scan.source_kind, scan.offset, scan.rows_per_move, scan.row_centering))
         shift_px = round(moved.shift * scan.source_size[1])
+        requested = getattr(moved, "requested", None)
+        requested_note = "" if requested is None else f";requested_px={requested * scan.source_size[1]:.1f}"
         scan.evidence.append({"field": "scroll_overlap", "status": "ok", "source": moved.reason,
-            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}"})
+            "confidence": 1.0, "note": f"shift_px={shift_px};reason={moved.reason}{requested_note}"})
         if moved.terminal:
             moved.frame.close()
             self._require_tail_read(scan)
@@ -1552,7 +1964,8 @@ class InventoryMatcherAdapter:
         scan.offset += moved.shift
         scan.frame.close()
         scan.frame = moved.frame
-        self._align_to_anchor(scan)
+        self._align_to_gutters(scan, cancel)
+        self._verify_overlap(scan)
         return True
 
     def _require_tail_read(self, scan: "_InventoryScan") -> None:
@@ -1565,47 +1978,62 @@ class InventoryMatcherAdapter:
                 if image_has_visible_content(crop):
                     raise ScannerError("inventory_scroll_unverified", f"tile {index} is filled but never readable at the list end")
 
-    def _align_to_anchor(self, scan: "_InventoryScan") -> None:
-        """Remove accumulated shift rounding: re-centre the offset where the anchored selection is detected.
+    def _gutter_phase(self, scan: "_InventoryScan", calibration: float) -> float | None:
+        """Median row-phase error of the gutters that agree with it, or None with fewer than two (C5e-1)."""
+        errors = self.navigation.phase_residuals(scan.frame, scan.source_kind, scan.offset, calibration)
+        if len(errors) < 2:
+            return None
+        middle = median(errors)
+        tolerance = rt.value("inventory.gutter.agreement") * scan.source_size[1]
+        agreeing = [error for error in errors if abs(error - middle) <= tolerance]
+        return median(agreeing) if len(agreeing) >= 2 else None
 
-        Each measured move is exact to about a pixel, but several moves drift past the few pixels the
-        selection-border check tolerates (live tail page: ~3px). The anchor is visible by construction.
+    def _align_to_gutters(self, scan: "_InventoryScan", cancel: Event) -> None:
+        """Verify the measured offset on the observed tile rows (C5e-1, E1/E6).
+
+        A deterministic drag keeps the row phase, so the gutters normally confirm it within the phase
+        tolerance; beyond it the frame is captured again before the gutters' phase is trusted.
         """
-        detail_port = getattr(self, 'detail_recovery', None)
-        if scan.anchored is None or detail_port is None:
-            return
         height = scan.source_size[1]
-        valid = []
-        for correction in range(-10, 11):
-            visible = self.navigation.page_slots(scan.source_kind, scan.offset + correction / height)
-            order = sorted(visible)
-            position = detail_port.recognizer.selected(scan.frame, scan.source_kind, [visible[i] for i in order])
-            if position is not None and 0 <= position < len(order) and order[position] == scan.anchored:
-                valid.append(correction)
-        scan.evidence.append({"field": "scroll_alignment", "status": "ok" if valid else "uncertain",
-            "source": "anchored_selection", "confidence": 1.0 if valid else 0.0,
-            "note": f"anchor={scan.anchored};window_px={valid[0]}..{valid[-1]}" if valid else f"anchor={scan.anchored};not found"})
-        if valid:
-            scan.offset += (valid[0] + valid[-1]) / 2 / height
+        tolerance = rt.value("inventory.scroll.phase_tolerance_px") / 720 * height
+        error = None if scan.gutter_calibration is None else self._gutter_phase(scan, scan.gutter_calibration)
+        remeasured = False
+        if error is not None and abs(error) > tolerance:
+            scan.frame.close()
+            scan.frame = self.capture.wait_stable(scan.target, cancel)
+            error, remeasured = self._gutter_phase(scan, scan.gutter_calibration), True
+        if error is None or abs(error) > rt.value("inventory.gutter.max_correction") * height:
+            note = "no calibration" if scan.gutter_calibration is None else "fewer than two agreeing gutters" if error is None else f"correction_px={error:.1f}"
+            raise ScannerError("inventory_scroll_unverified", f"tile row phase unverified: {note}")
+        # Within the tolerance the move is verified; the observed phase still refines the offset, since a
+        # row ending about a pixel from the list edge decides whether the last row is readable (live tail).
+        scan.offset -= error / height
+        scan.evidence.append({"field": "scroll_alignment", "status": "ok", "source": "gutter_phase", "confidence": 1.0,
+                              "note": f"correction_px={error:.1f}{';remeasured' if remeasured else ''}"})
 
-    def _anchor_selection(self, scan: "_InventoryScan", cancel: Event) -> None:
-        """Keep a visible selection across the scroll: select the page's last filled slot (C5)."""
-        detail_port = getattr(self, 'detail_recovery', None)
-        if detail_port is None or not hasattr(detail_port, 'anchor') or scan.prepared is None:
-            return
-        visible = self._visible_slots(scan, 0)
-        order = sorted(visible)
-        slots = [visible[index] for index in order]
-        # The bottom readable row can sit a few pixels from the list edge once offsets drift, clipping
-        # its selection border; one row higher still stays visible after a ~1-row drag.
-        rows = sorted({index // 5 for index in order})
-        preferred = [position for position in range(len(order)) if len(rows) > 1 and order[position] // 5 == rows[-2]]
-        for position in [*reversed(preferred), *reversed(range(len(slots)))]:
-            with ratio_crop(scan.frame, slots[position]) as crop:
+    def _verify_overlap(self, scan: "_InventoryScan") -> None:
+        """Cross-check the content index of re-seen tiles against their first reading (C5e-1).
+
+        The kept selection tints its own tile, so it is left out; a row mapped one row off scores like a
+        different tile (live: <= .814 vs >= .905 for the same tile).
+        """
+        visible = self.navigation.page_slots(scan.source_kind, scan.offset)
+        scores = []
+        for index in sorted(visible):
+            if index > scan.read_until or index == scan.selected_index or index not in scan.seen_crops:
+                continue
+            with ratio_crop(scan.frame, visible[index]) as crop:
                 if image_has_visible_content(crop):
-                    detail_port.anchor(scan.target, cancel, scan.frame, position, slots=slots)
-                    scan.anchored = order[position]
-                    return
+                    scores.append(ncc_per_channel_icon(scan.seen_crops[index], crop))
+        if len(scores) < 2:
+            scan.evidence.append({"field": "overlap_identity", "status": "uncertain", "source": "overlap_identity",
+                                  "confidence": 0.0, "note": f"compared={len(scores)}"})
+            return
+        middle = median(scores)
+        if middle < rt.value("inventory.scroll.overlap_icon"):
+            raise ScannerError("inventory_scroll_unverified", f"re-seen tiles do not match their first reading: median={middle:.3f}")
+        scan.evidence.append({"field": "overlap_identity", "status": "ok", "source": "overlap_identity",
+                              "confidence": round(middle, 6), "note": f"compared={len(scores)}"})
 
     def _wheel_page(self, scan: "_InventoryScan", cancel: Event) -> bool:
         """Navigation-free fallback: wheel once and compare whole frames."""
@@ -1625,11 +2053,25 @@ class InventoryMatcherAdapter:
 
     def _finalize(self, scan: "_InventoryScan") -> list[dict[str, Any]]:
         prepared = scan.prepared
+        if prepared is not None and scan.allow_synth:
+            # C5e-6b/D19: synth vs real on detail-confirmed tiles; two low scans switch the tier off.
+            scores = [score for identity, crop in scan.detail_confirmed
+                      if (score := scan.bank.synth_score(identity, crop)) is not None]
+            scan.evidence.append(self._synth_guard().record(prepared.profile_id, scores))
+        if prepared is not None and scan.bank is not None:
+            stats = scan.bank_stats
+            trusted = not stats["disagree"] and not stats["count_disagree"]
+            scan.evidence.append({"field": "tile_bank", "status": "ok" if trusted else "uncertain",
+                "source": "tile_bank", "confidence": 1.0 if trusted else 0.0,
+                "note": ";".join(f"{key}={value}" for key, value in stats.items()) + f";bank={len(scan.bank)}"})
         if prepared is not None:
-            ordered_ok = self.navigation.verify_profile_order(prepared.profile_id, scan.observed_profile_ids)
-            verified = scan.coverage_complete and not (scan.review_required or not ordered_ok)
+            excluded = self._order_outliers(scan)
+            # A scan that observed no catalog item has no order evidence at all: never zero-fill from it.
+            observed = any(entry.get("observed_slot") is not None and entry["item_id"] in scan.order for entry in scan.entries)
+            ordered_ok = observed and not excluded
+            verified = scan.coverage_complete and not scan.review_required and observed
             if verified:
-                self._zero_fill(scan)
+                self._zero_fill(scan, excluded)
             scan.evidence.append({"field": "scan_coverage", "status": "ok" if verified else "partial",
                 "source": "inventory_navigation", "confidence": 1.0 if verified else 0.0,
                 "note": f"profile={prepared.profile_id};terminal={scan.coverage_complete};ordered={ordered_ok}"})
@@ -1637,12 +2079,37 @@ class InventoryMatcherAdapter:
         return [scan.candidate(scan.evidence, scan.review_required)]
 
     @staticmethod
-    def _zero_fill(scan: "_InventoryScan") -> None:
+    def _order_outliers(scan: "_InventoryScan") -> list[tuple[int | None, int | None]]:
+        """D23: flag observed entries outside the longest increasing catalog-order run.
+
+        Returns, per flagged entry, the open catalog-order window between its in-run neighbours: a flagged
+        tile may really be any item in that window, so those items are not zero-filled.
+        """
+        observed = [entry for entry in scan.entries if entry.get("observed_slot") is not None]
+        orders = [scan.order.get(entry["item_id"]) for entry in observed]
+        run = increasing_run(orders)
+        windows = []
+        for position, entry in enumerate(observed):
+            if position in run:
+                continue
+            low = max((orders[i] for i in run if i < position), default=None)
+            high = min((orders[i] for i in run if i > position), default=None)
+            windows.append((low, high))
+            scan.evidence.append({"field": f"entries[{entry['observed_slot']}].order", "status": "uncertain",
+                "source": "inventory_order_run", "confidence": 0.0,
+                "note": "outside the longest increasing catalog-order run" if orders[position] is not None
+                        else "not in the profile catalog"})
+        return windows
+
+    @staticmethod
+    def _zero_fill(scan: "_InventoryScan", excluded=()) -> None:
         profile_id = scan.prepared.profile_id
         known = {row.item_id: row for row in CATALOG if row.profile_id == profile_id and row.zero_fill_allowed}
         present = {entry['item_id'] for entry in scan.entries}
         for item_id, row in sorted(known.items(), key=lambda pair: pair[1].order_index):
             if item_id in present:
+                continue
+            if any((low is None or row.order_index > low) and (high is None or row.order_index < high) for low, high in excluded):
                 continue
             scan.entries.append({"key": item_id, "quantity": "0", "item_id": item_id, "name": row.display_name,
                 "observed_slot": None, "profile_id": profile_id, "inventory_scan_profile": profile_id})
@@ -1654,7 +2121,7 @@ class InventoryMatcherAdapter:
         if error.code == "inventory_scroll_unverified" and scan.prepared is not None and not cancel.is_set():
             # Safe abort returns the list to its first page by re-applying verified settings (X10).
             try:
-                self.navigation.restore_first_page(scan.target, Event(), scan.frame)
+                self.navigation.restore_first_page(scan.target, Event(), scan.frame, scan.first_page, scan.read_until // 5 + 1)
                 restored, restore_note = True, "display settings re-applied; first page shown"
             except ScannerError as restore_error:
                 restored, restore_note = False, restore_error.code
@@ -1670,15 +2137,24 @@ class InventoryMatcherAdapter:
         return ScanBatchResult(retained, "cancelled" if cancel.is_set() or error.code == "cancelled" else "failed", error)
 
     def train_user_answer(
-        self, profile_id: str, candidate_id: str, specimen: dict[str, Any],
+        self,
+        profile_id: str,
+        candidate_id: str,
+        specimen: dict[str, Any],
         payload: dict[str, Any],
     ) -> int:
         if self.answer_samples is None:
             return 0
         source_size = specimen.get("source_size")
         slot_crops = specimen.get("slot_crops")
+        assigned_slots = specimen.get("assigned_slots", set())
         entries = payload.get("entries")
-        if not isinstance(source_size, tuple) or not isinstance(slot_crops, dict) or not isinstance(entries, list):
+        if (
+            not isinstance(source_size, tuple)
+            or not isinstance(slot_crops, dict)
+            or not isinstance(entries, list)
+            or not isinstance(assigned_slots, set)
+        ):
             return 0
         saved = 0
         for entry in entries:
@@ -1687,12 +2163,54 @@ class InventoryMatcherAdapter:
             item_id = entry.get("item_id")
             observed_slot = entry.get("observed_slot")
             crop = slot_crops.get(observed_slot)
-            if not isinstance(item_id, str) or not isinstance(observed_slot, int) or not isinstance(crop, Image.Image):
+            if observed_slot in assigned_slots:
+                # C5e-6e labels are learned immediately with their explicit persistence choice.
+                continue
+            if (
+                not isinstance(item_id, str)
+                or not isinstance(observed_slot, int)
+                or not isinstance(crop, Image.Image)
+            ):
                 continue
             sample_id = self.answer_samples.save_inventory(
-                profile_id, source_size, item_id=item_id, crop=crop,
-                candidate_id=candidate_id, observed_slot=observed_slot,
+                profile_id,
+                source_size,
+                item_id=item_id,
+                crop=crop,
+                candidate_id=candidate_id,
+                observed_slot=observed_slot,
             )
             self.matcher.add_user_template(sample_id, item_id, crop)
             saved += 1
         return saved
+
+    def assign_user_identity(
+        self,
+        profile_id: str | None,
+        source_size: tuple[int, int],
+        item_id: str,
+        crop: Image.Image,
+        candidate_id: str,
+        observed_slot: int,
+        persist: bool,
+    ) -> str | None:
+        """Learn one explicit C5e-6e label at the requested persistence tier."""
+        bank = self._tile_bank(source_size)
+        if not persist:
+            bank.add(item_id, crop, "session")
+            return None
+        if self.answer_samples is None or profile_id is None:
+            raise ValueError(
+                "persistent inventory labels require an account profile and sample store"
+            )
+        sample_id = self.answer_samples.save_inventory(
+            profile_id,
+            source_size,
+            item_id=item_id,
+            crop=crop,
+            candidate_id=candidate_id,
+            observed_slot=observed_slot,
+        )
+        bank.add(item_id, crop, "user_confirmed")
+        self.matcher.add_user_template(sample_id, item_id, crop)
+        return sample_id

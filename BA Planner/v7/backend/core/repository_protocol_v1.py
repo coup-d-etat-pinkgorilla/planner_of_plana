@@ -3,15 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from core.planning_authoring import AUTHORING_UNSET
 from core.repository_store import JsonRepository, RepositoryError
+from core.preset_store import PresetStore
 from core.runtime_paths import resolve_v6_root
 
 
 METHODS = frozenset({
     "repository.profile.list", "repository.profile.create", "repository.profile.current",
     "repository.profile.select", "repository.profile.rename", "repository.profile.update", "repository.profile.delete", "repository.state.get",
-    "repository.students.update", "repository.inventory.update", "repository.goals.save",
+    "repository.students.update", "repository.inventory.update", "repository.inventory.review.get", "repository.goals.save",
+    "repository.plan.get", "repository.plan.save", "repository.plan.replace",
+    "repository.presets.get", "repository.presets.save",
     "repository.migration.preview", "repository.migration.import",
+    "repository.history.summary", "repository.history.scan_latest",
+    "repository.history.events", "repository.history.diff",
 })
 
 
@@ -40,6 +46,7 @@ def _revision(value: object) -> int:
 class RepositoryProtocolV1:
     def __init__(self, repository: JsonRepository, *, v6_root: Path | None = None) -> None:
         self.repository = repository
+        self.presets = PresetStore(repository)
         self.v6_root = Path(v6_root) if v6_root is not None else resolve_v6_root()
 
     def handle(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -84,13 +91,49 @@ class RepositoryProtocolV1:
         if method == "repository.state.get":
             data = _require(payload, {"profile_id"})
             return self.repository.get_state(_text(data["profile_id"], "profile_id"))
+        if method == "repository.history.summary":
+            data = _require(payload, {"profile_ids"})
+            ids = data["profile_ids"]
+            if not isinstance(ids, list):
+                raise RepositoryError("invalid_payload", "profile_ids must be an array")
+            return self.repository.get_history_summary([_text(item, "profile_id") for item in ids])
+        if method == "repository.history.scan_latest":
+            return self.repository.get_history_scan_latest(payload)
+        if method == "repository.history.events":
+            return self.repository.get_history_events(payload)
+        if method == "repository.history.diff":
+            return self.repository.get_history_diff(payload)
+        if method == "repository.plan.get":
+            data = _require(payload, {"profile_id"})
+            return self.repository.get_plan(_text(data["profile_id"], "profile_id"))
+        if method == "repository.plan.save":
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data, profile_id, revision, key = self._mutation(payload, {"document"} | optional)
+            return self.repository.save_plan(profile_id, data["document"], revision, key, data.get("authoring", AUTHORING_UNSET))
+        if method == "repository.plan.replace":
+            optional = {"authoring"} if isinstance(payload, dict) and "authoring" in payload else set()
+            data, profile_id, revision, key = self._mutation(payload, {"document", "expected_scenario_revision", "archive_name", "archive_description"} | optional)
+            return self.repository.replace_plan(profile_id, data["document"], revision, data["expected_scenario_revision"], key, data["archive_name"], data["archive_description"], data.get("authoring", AUTHORING_UNSET))
+        if method == "repository.presets.get":
+            data = _require(payload, {"profile_id"})
+            return self.presets.get(_text(data["profile_id"], "profile_id"))
+        if method == "repository.presets.save":
+            data, profile_id, revision, key = self._mutation(payload, {"stage_presets", "student_groups"})
+            return self.presets.save(profile_id, revision, key, data["stage_presets"], data["student_groups"])
         if method == "repository.students.update":
             data, profile_id, revision, key = self._mutation(payload, {"students"})
             if not isinstance(data["students"], list): raise RepositoryError("invalid_payload", "students must be an array")
-            return self.repository.update_students(profile_id, data["students"], revision, key)
+            return self.repository.update_students(profile_id, data["students"], revision, key, manual=True)
+        if method == "repository.inventory.review.get":
+            data = _require(payload, {"profile_id"})
+            return self.repository.get_inventory_review(_text(data["profile_id"], "profile_id"))
         if method == "repository.inventory.update":
-            data, profile_id, revision, key = self._mutation(payload, {"inventory"})
-            return self.repository.update_inventory(profile_id, data["inventory"], revision, key)
+            extras = {"inventory", "applied_resource_keys"} if isinstance(payload, dict) and "applied_resource_keys" in payload else {"inventory"}
+            data, profile_id, revision, key = self._mutation(payload, extras)
+            if "applied_resource_keys" in data and not isinstance(data["applied_resource_keys"], list):
+                raise RepositoryError("invalid_payload", "applied_resource_keys must be an array")
+            return self.repository.update_inventory(profile_id, data["inventory"], revision, key, manual=True,
+                applied_resource_keys=data.get("applied_resource_keys"))
         if method == "repository.goals.save":
             data, profile_id, revision, key = self._mutation(payload, {"goals"})
             return self.repository.save_goals(profile_id, data["goals"], revision, key)
