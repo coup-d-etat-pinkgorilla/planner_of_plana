@@ -435,6 +435,15 @@ XB가 커밋한 백엔드·계약의 Dart 쪽(DTO·strict validator·Mock·proce
 
 FD-178: 학생 탭 현재값 직접 수정·전체 육성 부족 화면·백업·복원은 개편 뒤 별도 slice(FE11 후보), 전술 기록 캡처·붙여넣기·폴더 가져오기는 범위 밖.
 
+### 알파 차단 항목 — 프론트 몫 F1~F4 (CM 요청 2026-10-19 23:00, `docs/alpha/`)
+
+| slice | 내용 | 선행 · 상태 |
+|---|---|---|
+| F1 시안 | Design 캔버스 새 page `firstrun`: 첫 실행 3 · 연습 계정 띠 2 · 빈 상태 7 · 스캔 신고 띠 1 · 신고 창 1(+ 설정 1 선택). 시안 워커 프롬프트 `debug/frontend_redesign_handoff/f1-firstrun-artboards-prompt-20261020.md` | 의존 없음 — **2026-10-20 시안 워커에 배정**. 돌아오면 사본 `prototype/2026-10-20/` + MANIFEST + artboard 지도 + FD 신설 + slice 분할 |
+| F2 첫 실행 추출 | 체크리스트 ①·②: 게임 폴더 · 이미지 준비 진행 · 실패 수 · 설정 재시도 · 패치 감지 | 추출 로직은 백엔드에 있음(`recognition_asset_extract.py`), 프로토콜 노출 필요 → 백엔드 로그 2026-10-20 "요청(CF→XB) F2". 계약 커밋 전 Mock |
+| F3 체크리스트 · 연습 계정 · 빈 상태 | F1 시안대로, 빈 상태 golden 7 | F1 + XB X4(연습 계정 · `is_practice` · 저장 스캔 재생) |
+| F4 스캔 문제 신고 UI | 세션 종료 띠, 검토 화면 · 설정 버튼, 조각 이미지 체크박스, zip 뒤 폴더 열기 + GitHub Issues 링크 | F1 + XB X5 |
+
 ## 세션 운영 규칙
 
 1. 세션 시작 시 읽는 순서: `AGENTS.md` → `README.md` → 이 문서 → `frontend-redesign-status.md` → 결정 대장의 해당 절 → 해당 그룹 조사 보고서 → artboard 지도의 해당 행.
@@ -604,3 +613,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-19(01:10): FE4-b2 `aaf4445b` · FE10-s `7f1269a1`, gate `20261019_004710` GREEN(golden 67). 배정: Lane A FE4-g4(FD-180 병합 목표 올림·알림 + FE4-b2 후속 + `skill_book` 분류) · Lane B FE10-b(계획 밖 죽은 코드 2차·삭제 목록·깨진 글자). 다음: FE10-d(문서 반영) → FE10-z(Release·최종 둘러보기).
 - 2026-10-19(20:00): FE4-g4 `86a3e12c` · FE10-b `1fbb9a22`, gate `20261019_193503` GREEN(golden 68). 사용자: 검수 포인트 "승인만" 10건 지금 동작대로 승인. 배정: Lane A FE4-g5(상태 칩·알림 시제) · Lane B FE10-d(문서 반영). 다음: FE10-z(전체 회귀 + Windows Release + 사용자 최종 둘러보기).
 - 2026-10-19(21:40): FE4-g5 `6c21b88f` · FE10-d `21ffa562`, gate `20261019_211135` GREEN(golden 68). 대장 FD-020·052·136·ID 규칙(결번) 갱신. Windows Release 빌드 성공. FE10-z = 사용자 최종 둘러보기 대기(`debug/frontend_fe10z/walkthrough-checklist.md`). 남은 결정 후보: 한 명 모드 세그먼트, 설정 영어 문구, FD-081 시나리오 → 1단계 진입점.
+- 2026-10-20: 알파 차단 F1~F4 착수. F1 시안 워커 프롬프트 작성(캔버스 기존 57장 변화 0 확인, version `1792424802-befc`), F2 XB 요청(추출 프로토콜 노출). FE10-z는 사용자 둘러보기 진행 중. A2는 알파 밖.

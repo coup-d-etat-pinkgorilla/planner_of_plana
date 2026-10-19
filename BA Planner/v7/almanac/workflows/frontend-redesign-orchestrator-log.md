@@ -3893,3 +3893,18 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 
 런처(X2)가 Dart 코드이면 XB가 확인 뒤 분담을 적는다. 설정 탭에 "자동 업데이트 끄기 / 지금 확인" 두 항목은 X2 계약 뒤.
 
+
+## 2026-10-20 — 세션 시작(CF): 알파 차단 항목 F1~F4 착수 순서
+
+- **브랜치**: `scanner-consolidation`(origin과 같음, HEAD `98f77944` — CM `docs/alpha` 경로 정리). main은 PR #5(열림, 2026-10-19)로만 갱신.
+- **읽은 것**: AGENTS.md, 헌장, 이 로그 끝(10-19 22:45 알림·23:00 요청 F1~F4), `docs/alpha/first-run-tutorial-concept-2026-10-19.md`, `docs/alpha/alpha-distribution-decision-2026-10-19.md`, tactic 로그 22:30~23:35, backend 로그 23:00(X1~X6)·23:35(X7)·10-20 00:15, metadata 로그 23:00, artboard 지도·시안 사본 README·canvas 페이지 구성, 코드 `backend/core/recognition_asset_extract.py`(읽기만).
+- **미회신 CF 앞 항목**: 프론트 로그 22:45(A2 착수 가능 알림)·23:00(F1~F4 요청) 두 건. 다른 로그에 CF 앞 새 요청 없음. A2는 CM이 알파 밖으로 미룸(tactic 23:00) → 착수하지 않는다.
+- **FE10-z**: 사용자가 둘러보기·UX 점검을 직접 천천히 진행 중(2026-10-20 사용자 말). 결과가 오면 이 로그에 보고하고 후속 slice로 바꾼다. 그동안 F1부터.
+- **번호 주의**: 세션 지시문은 "F1 = 첫 실행 추출·체크리스트, F2 = 튜토리얼 artboard"로 적었지만 이 로그 23:00 표는 F1 = 시안 13장, F2 = 첫 실행 추출, F3 = 체크리스트·연습 계정·빈 상태 구현, F4 = 스캔 문제 신고 UI다. **이 로그 표 번호를 쓴다.**
+- **확인한 사실(F2 범위)**: 첫 실행 추출 로직은 이미 백엔드에 있다 — `recognition_asset_extract.py`(C5e-6a-0/D24: Steam `libraryfolders.vdf`로 설치 폴더 탐색 `find_game_dir`, 키 없는 Addressables 카탈로그·UnityFS 번들에서 아이템·장비 아이콘·Common 아틀라스 스프라이트·글꼴 추출, 번들 단위 증분 캐시, 진행 콜백 `progress("icons", done, total)`). 다만 **프로토콜로 노출돼 있지 않고** 스캐너 합성 단계(`recognition_synth_provider`)가 처음 쓸 때 조용히 돈다. 따라서 F2는 CF 단독 구현이 아니라 **XB 계약(상태 조회·폴더 지정·추출 시작·진행 이벤트·결과 수·재시도·`BundleRevision` 변화)** 이 먼저다 → 백엔드 로그에 요청(CF).
+- **확인 필요(CM)**: 결정안의 "아이콘 1,330"이 위 인식용 캐시만인지, 앱 화면이 쓰는 그림(`frontend/assets/` 아래 학생 초상·아이템 아이콘 등 — 지금 Flutter 자산으로 번들됨)까지 첫 실행 추출로 바꾸는 뜻인지. 후자면 배포본에서 그 자산을 빼고 화면이 사용자 캐시를 읽게 하는 별도 slice(범위 큼)가 필요하다.
+- **이번 세션 계획(순서)**:
+  1. **F1 시안**(차단, 의존 없음): 시안 워커용 프롬프트 `debug/frontend_redesign_handoff/f1-firstrun-artboards-prompt-20261020.md` — 새 캔버스 page `firstrun`에 첫 실행 3 + 연습 계정 띠 2 + 빈 상태 7 + 스캔 문제 신고 1(+ 신고 창 1) = 13~14장. 사용자가 시안 워커 세션에 붙인다. 돌아오면 CF가 사본 `docs/frontend-redesign/prototype/2026-10-20/` + MANIFEST + artboard 지도 행 + FD 신설 + slice 분할.
+  2. **F2 계약 요청**(XB, 병렬): 백엔드 로그 "요청(CF) F2". 계약 커밋 전에는 CF가 Mock으로 화면만.
+  3. **F3·F4**: F1 시안 확정 뒤. 연습 계정은 XB X4 계약, 신고는 X5 계약이 커밋된 뒤 연결(그 전 Mock).
+  4. 설정 탭 "자동 업데이트 끄기 / 지금 확인"은 X2 계약 뒤(이번 세션 밖).

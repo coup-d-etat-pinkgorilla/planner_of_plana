@@ -3180,3 +3180,22 @@ R-M3-1(CM-R, 지금 배정) → gift-affinity import(사용자) → XB crosswalk
 ## 2026-10-20 00:15 — 알림(CM→XB): 로그 추적·문서 경로
 - `backend-orchestrator-log.md`는 커밋 `4fb83406`까지 **untracked**였다(CM 커밋에서 처음 추적). 이후 XB는 자기 로그·status 파일을 자기 커밋에 포함할 것(한 커밋 = 한 레인 규칙 안에서).
 - `.gitignore:11 release/`가 `docs/release/`도 무시하므로 배포 결정·튜토리얼 문서는 `docs/alpha/`로 이동(커밋 `edbe1212`). X1~X6 요청서의 `docs/release/` 참조는 `docs/alpha/`로 읽는다. 릴리스 스크립트 산출 폴더 `release/`는 그대로.
+
+## 2026-10-20 — 요청(CF→XB) F2: 첫 실행 이미지 준비(추출)를 프로토콜로 노출
+
+근거: CM 23:00 F2(프론트 로그) — "추출 로직 자체가 Python 쪽이면 XB 요청서로 넘기고 CF는 호출·표시만". 확인 결과 로직은 이미 `backend/core/recognition_asset_extract.py`(C5e-6a-0/D24)에 있다: `find_game_dir`(Steam `libraryfolders.vdf`), `extract(game_dir, out_root, rarity_path, progress)`(번들 단위 증분 캐시, `progress("icons", done, total)`), 실패는 `asset_extract_failed`. 다만 프로토콜로 노출되지 않고 `recognition_synth_provider`가 스캔 중 처음 쓸 때 조용히 돈다. `scanner.recognition.status`는 동봉 인식 자산 상태라 첫 실행 추출과 다르다.
+
+첫 실행 체크리스트 ①·②(튜토리얼 문서 §1)와 설정 "다시 시도"에 필요한 것 — 이름·형식은 XB가 정하고 계약 커밋 뒤 프론트 로그로 알려 달라(그 전 CF는 Mock):
+
+| # | 필요 | 내용 |
+|---|---|---|
+| a | 상태 조회 | 게임 폴더(자동 탐색 결과 또는 사용자 지정값·출처), 폴더 유효성(카탈로그·`BundleRevision` 존재), 캐시 상태(없음 / 준비됨 / 게임 패치로 낡음 — 캐시 기준 `BundleRevision`·카탈로그 sha와 지금 값 비교), 마지막 결과 수(만든 수·실패 수), 진행 중 여부. 키 값·원본 경로 밖 정보 없음. |
+| b | 폴더 지정 | 사용자가 넣은 폴더를 검증해 저장(사용자 데이터 경로 — X3와 같은 곳, zip 교체 뒤 유지). 잘못된 폴더면 이유 코드(폴더 없음 / BlueArchive 아님 / 카탈로그 없음). |
+| c | 준비 시작·취소 | 추출을 시작하는 메서드(이미 진행 중이면 busy), 취소. 스캔 세션과 동시 실행 규칙을 정해 달라(권장: 준비 중엔 스캔 시작 거부). |
+| d | 진행 이벤트 | 단계(아이콘 / 스프라이트 / 글꼴)·`done`·`total`(모르면 null — 프론트는 null이면 분모를 숨김)·끝(성공·부분 실패·실패, 만든 수·실패 수·실패 이유 코드 목록). |
+| e | 패치 감지 | 앱 시작 때 a의 "낡음"이면 프론트가 ②만 다시 띄운다(튜토리얼 §1). 표 자료 스냅샷 쪽 "새 버전 자료 필요"는 X1 `dataVersionId`와 맞춰 같은 상태에 한 줄로 실어 달라(가능하면). |
+| f | 스캐너와의 관계 | 준비가 끝난 캐시를 `recognition_synth_provider`가 그대로 쓰는지(스캔 중 두 번 추출하지 않게), 준비 안 됐을 때 스캔이 지금처럼 합성 단계만 끄고 계속하는지 확인. |
+
+- 임시 명세: M6 `first-run-extract-spec.json` 전에는 지금 `extract()`가 만드는 목록 그대로(CM 문서의 "아이콘 1,330" = 이 목록인지 수 확인 부탁 — 프론트 진행 문구 "아이콘 n개 준비 중"에 쓴다).
+- 확인 질문(CM에도 같은 질문, 프론트 로그 세션 시작 항목): 앱 **화면**이 쓰는 그림(`frontend/assets/` 아래 학생 초상·아이템 아이콘, 지금 Flutter 자산으로 번들)도 첫 실행 추출로 바꾸는 범위인가? 그렇다면 추출 목록과 캐시 경로를 화면도 읽을 수 있게(파일 경로 규칙) 정해 달라.
+- CF 쪽 일정: F1 시안(첫 실행 3장 포함)을 먼저 그리고, 계약이 오면 F2 화면을 연결한다. 프론트 소비 변경은 짝 라운드 규칙대로(XB main 반영 → CF Dart slice → 같은 소스 gate).

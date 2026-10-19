@@ -1499,3 +1499,9 @@ FB-4 창 크기·게임 식별 기능을 커밋했으며 전체 Python1005 통�
 - **저장소 import 4건 완료**(사용자 실행, 전부 `claims_mismatch 0`): jp-1.73.0-e2baf70e에 `student-stats`, `animation-events`, `animation-spectrum`(A1-c partial note), `skill-logic-full`(index+zip). animation-events·animation-spectrum은 `claims_checked 2`.
 - **lock**: `debug/cm_lock_update_20261019/ba-data.proposed.lock` = 기존 2 pins + 20 extracts(새 kind 4 포함), `verify_lock.py` OK. live `ba-data.lock` 교체는 같은 세션에서 진행(아래 커밋에 포함).
 - 다음: R-M3-1 CM-R 세션 시작(`docs/tactic-editor/cm-r-task-blocks-2026-10-10.md` 끝), push.
+
+## 2026-10-20 — CF 보고: 10-18~10-19 프론트 커밋 · PR #5 · 알파 F1~F4 착수
+- 프론트 개편 커밋(gate GREEN, 자세한 것은 프론트 로그): FE8 끝(g3 `c0d72dbd` · g4a `280f135c` · g4b `0e869636` · g5a `4bc7a2c8` · g5b `7508ee42`), FE10-a `e1941271` · FE4-b2 `aaf4445b` · FE10-s `7f1269a1` · FE4-g4 `86a3e12c` · FE10-b `1fbb9a22`(파일 5개 삭제) · FE4-g5 `6c21b88f` · FE10-d `21ffa562`, 문서 `d695a580`. 마지막 gate `20261019_211135`(golden 68, process 101), `flutter build windows --release` 성공.
+- 공유 파일 변경: `frontend/lib/ui/app_shell.dart`(FE8-g4b: 아이템 큐 끝 → 스캔 탭, 진행 창 동안 본문 숨김 / FE8-g5b: `_handoffCandidate` 학생 · 인벤토리 분기 제거, 전술 로비만), `frontend/tool/fe_commit.ps1`(CF 전용 `deleted` 키). 계약 변경 0.
+- 사용자 push 뒤 PR #5(`scanner-consolidation` → `main`, 열림) — https://github.com/coup-d-etat-pinkgorilla/planner_of_plana/pull/5. FE10-z 사용자 둘러보기 진행 중.
+- 알파 F1~F4 착수(프론트 로그 2026-10-20 세션 시작): F1 시안 워커 배정, F2는 XB에 추출 프로토콜 노출 요청(백엔드 로그 2026-10-20), F3 · F4는 F1 + X4 · X5 뒤. 확인 질문(CM): "아이콘 1,330"이 인식 캐시만인지 화면 그림까지인지.
