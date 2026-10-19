@@ -1,0 +1,250 @@
+{
+ "schema": 1,
+ "protocol_sha256": "290708bc6cce5509e01bc406a0530539459e2a3582d25a3c3f9131160d93f968",
+ "input_png_sha256": "c3b71fb47b915156837d785b07f5a158414a02460927f42e95b9ed3a415019d0",
+ "user_review_confirmed": true,
+ "scope": "Unused-label targeted audit in same recording; never unbiased all211 accuracy",
+ "cases": [
+  {
+   "observed_slot": 203,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_himari",
+   "exact_student_name_and_variant": "히마리",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-203.png",
+   "crop_png_sha256": "9c15b64dc7038947de7c2d367f08164f76d7f1b85d81e5f0eb93f0eb30109e2f",
+   "box_image_px": [
+    334,
+    4055,
+    451,
+    4150
+   ]
+  },
+  {
+   "observed_slot": 102,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_ako_dress",
+   "exact_student_name_and_variant": "아코(드레스)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-102.png",
+   "crop_png_sha256": "9ff750be551632dba4b0a1d6a2d42a3953ef31147110cff87a6382dba418e756",
+   "box_image_px": [
+    226,
+    2032,
+    343,
+    2127
+   ]
+  },
+  {
+   "observed_slot": 130,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_ichika",
+   "exact_student_name_and_variant": "이치카",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-130.png",
+   "crop_png_sha256": "6fa9d09d5e89fdaf171833437aebb4303f0e3c333f2549bdc8a7bfb878690fce",
+   "box_image_px": [
+    8,
+    2639,
+    125,
+    2733
+   ]
+  },
+  {
+   "observed_slot": 154,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_kazusa_band",
+   "exact_student_name_and_variant": "카즈사(밴드)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-154.png",
+   "crop_png_sha256": "23d16964c65460d5ba07271fa44a171076ab3c7438ccc9dea49e0c052e3c3360",
+   "box_image_px": [
+    444,
+    3043,
+    560,
+    3138
+   ]
+  },
+  {
+   "observed_slot": 19,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_renge_swimsuit",
+   "exact_student_name_and_variant": "렌게(수영복)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-019.png",
+   "crop_png_sha256": "4861e8e3f94a1a2634edf03cbe47af382618c1099e9158985c352b43fd51976d",
+   "box_image_px": [
+    444,
+    311,
+    560,
+    406
+   ]
+  },
+  {
+   "observed_slot": 94,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_airi",
+   "exact_student_name_and_variant": "아이리",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-094.png",
+   "crop_png_sha256": "541d432dd2c2aa0fb3670abb5f1271cbbe1c55e72135a1ad06da01f49f0b5b28",
+   "box_image_px": [
+    444,
+    1831,
+    560,
+    1924
+   ]
+  },
+  {
+   "observed_slot": 128,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_izumi",
+   "exact_student_name_and_variant": "이즈미",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-128.png",
+   "crop_png_sha256": "636d42a20bcde7d3b4e253aadc21c9170da3a0f056abc4dd518b5385c578fca6",
+   "box_image_px": [
+    334,
+    2537,
+    451,
+    2633
+   ]
+  },
+  {
+   "observed_slot": 79,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_shiroko_terror",
+   "exact_student_name_and_variant": "시로코*테러",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-079.png",
+   "crop_png_sha256": "d3a860f188dad810059fceee03b7ed944936915c8e9133457715d9297ea9015f",
+   "box_image_px": [
+    444,
+    1526,
+    560,
+    1620
+   ]
+  },
+  {
+   "observed_slot": 136,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_tsurugi_swimsuit",
+   "exact_student_name_and_variant": "츠루기(수영복)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-136.png",
+   "crop_png_sha256": "758251cfd082b0d8f91850484ee88c1a948740a100ee659f19f19e539f5012d9",
+   "box_image_px": [
+    116,
+    2740,
+    233,
+    2835
+   ]
+  },
+  {
+   "observed_slot": 149,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_karin_bunny_girl",
+   "exact_student_name_and_variant": "카린(바니걸)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-149.png",
+   "crop_png_sha256": "7ffd68d48c55d3603d7c244202271f20aa59a4640fd388902cec9a0f1d269dde",
+   "box_image_px": [
+    444,
+    2942,
+    560,
+    3038
+   ]
+  },
+  {
+   "observed_slot": 0,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_nagisa_swimsuit",
+   "exact_student_name_and_variant": "나기사(수영복)",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-000.png",
+   "crop_png_sha256": "09664c964571d774aeaf2c4d17723f9408da33e90a416a6f912eb434d8c729ad",
+   "box_image_px": [
+    8,
+    7,
+    125,
+    102
+   ]
+  },
+  {
+   "observed_slot": 210,
+   "kind": "known",
+   "identity": "Item_Icon_SecretStone_hifumi",
+   "exact_student_name_and_variant": "히후미",
+   "notes": "user label (KR name as typed)",
+   "crop_file": "review-cards/slot-210.png",
+   "crop_png_sha256": "82a56a57ab7bfdd95fd5939039bf012a2eaab6c7a336d3145f87f3033a598665",
+   "box_image_px": [
+    8,
+    4258,
+    125,
+    4353
+   ]
+  },
+  {
+   "observed_slot": 211,
+   "kind": "empty",
+   "identity": null,
+   "exact_student_name_and_variant": null,
+   "notes": "user confirmed empty 2026-10-19 22:00 KST",
+   "crop_file": "review-cards/slot-211.png",
+   "crop_png_sha256": "94f3139a71cee3ac9db1d2890f783ec01c5c79e46dd20db961bbefc7e38a6f7c",
+   "box_image_px": [
+    116,
+    4258,
+    233,
+    4353
+   ]
+  },
+  {
+   "observed_slot": 212,
+   "kind": "empty",
+   "identity": null,
+   "exact_student_name_and_variant": null,
+   "notes": "user confirmed empty 2026-10-19 22:00 KST",
+   "crop_file": "review-cards/slot-212.png",
+   "crop_png_sha256": "47a298b8d492c1eed57b564e0d9a488d6beb728483cd322fd0de0689e0a2ab9f",
+   "box_image_px": [
+    226,
+    4258,
+    343,
+    4353
+   ]
+  },
+  {
+   "observed_slot": 213,
+   "kind": "empty",
+   "identity": null,
+   "exact_student_name_and_variant": null,
+   "notes": "user confirmed empty 2026-10-19 22:00 KST",
+   "crop_file": "review-cards/slot-213.png",
+   "crop_png_sha256": "47a298b8d492c1eed57b564e0d9a488d6beb728483cd322fd0de0689e0a2ab9f",
+   "box_image_px": [
+    334,
+    4258,
+    451,
+    4353
+   ]
+  },
+  {
+   "observed_slot": 214,
+   "kind": "empty",
+   "identity": null,
+   "exact_student_name_and_variant": null,
+   "notes": "user confirmed empty 2026-10-19 22:00 KST",
+   "crop_file": "review-cards/slot-214.png",
+   "crop_png_sha256": "f73117c5cd4198797331a65a436a78cdf92647fde4d0d5fb6ad3985857d2fa02",
+   "box_image_px": [
+    444,
+    4258,
+    560,
+    4353
+   ]
+  }
+ ],
+ "review_source": "user answers in CM chat 2026-10-19 21:58 KST, transcribed by CM; slot order 203,102,130,154,19,94,128,79,136,149,0,210; empties 211-214 confirmed 22:00"
+}
