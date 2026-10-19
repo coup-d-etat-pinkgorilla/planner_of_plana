@@ -1,0 +1,30 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181a240e0; end 0x181a24152; bound unwind; mode body
+181a240e0 mov qword ptr [rsp + 8], rbx
+181a240e5 mov qword ptr [rsp + 0x10], rsi
+181a240ea push rdi
+181a240eb sub rsp, 0x30
+181a240ef cmp byte ptr [rip + 0x832d85e], 0
+181a240f6 mov rsi, r8
+181a240f9 mov rbx, rdx
+181a240fc mov rdi, rcx
+181a240ff jne 0x181a24114
+181a24101 lea rcx, [rip + 0x7eb5a78]
+181a24108 call 0x180778b40
+181a2410d mov byte ptr [rip + 0x832d840], 1
+181a24114 mov rdx, qword ptr [rbx + 0x28]
+181a24118 test rdx, rdx
+181a2411b je 0x181a2414c
+181a2411d mov r9, qword ptr [rip + 0x7eb5a5c]
+181a24124 lea rcx, [rsp + 0x20]
+181a24129 mov r8, rsi
+181a2412c call 0x183abec40
+181a24131 movups xmm0, xmmword ptr [rsp + 0x20]
+181a24136 mov rbx, qword ptr [rsp + 0x40]
+181a2413b mov rax, rdi
+181a2413e mov rsi, qword ptr [rsp + 0x48]
+181a24143 movups xmmword ptr [rdi], xmm0
+181a24146 add rsp, 0x30
+181a2414a pop rdi
+181a2414b ret
+181a2414c call 0x180778cf0
+181a24151 int3

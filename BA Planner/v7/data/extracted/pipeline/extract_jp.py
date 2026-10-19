@@ -36,7 +36,9 @@ TABLES = ['CharacterExcel', 'CharacterSkillListExcel', 'SkillExcel', 'LocalizeSk
           # T4a stage 14 DamageLimitChecker input; JP rows are provisional for Steam (not the pinned Steam DB)
           'CharacterCalculationLimitExcel',
           # frontend request 2026-10-08 02:45: favor experience and cafe interaction rewards
-          'FavorLevelExcel', 'CafeInteractionExcel']
+          'FavorLevelExcel', 'CafeInteractionExcel',
+          # CM R-M3-1 approval 2026-10-19: complete source tables for gift-affinity
+          'CharacterAcademyTagsExcel', 'ItemExcel', 'ConstCommonExcel']
 
 
 def snake(name):
