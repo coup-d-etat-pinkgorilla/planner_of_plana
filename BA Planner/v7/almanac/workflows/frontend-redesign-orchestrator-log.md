@@ -3854,3 +3854,12 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - gate ① `20261019_003508`: 모두 PASS(process 101), golden RED 4 — 예측 3(`plan-flow-step1-filter` 배경 한 명 모드, 새 `plan-flow-step1-one`·`settings`) + 예측 밖 1(`plan-flow-step1-many` 8px — 정렬 칩 `이름`·`학교` 경계 AA, 확대 비교로 눈 차이 0 → 수용, fe4b2 `whole`에 CF가 추가) → ② `-UpdateGoldens` `20261019_004710` **GREEN**(golden 67).
 - 커밋: **fe4b2 `aaf4445b`** → **fe10s `7f1269a1`**. artboard 57장 전부 구현.
 - **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4g4-worker-prompt-20261019.md`(FD-180 나중 단계 올림·알림, FE4-b2 후속, `skill_book` 분류) · Lane B `debug/frontend_redesign_handoff/fe10b-worker-prompt-20261019.md`(계획 밖 죽은 코드 2차, 통째 삭제 목록 `delete-list.txt` — CF가 gate 전에 지우고 `deleted` 키, `scan_page` 깨진 글자). 그다음 FE10-d(fd-audit §3 누락 8건·검수 포인트 결정문·문구 목록) → FE10-z.
+## 2026-10-19 20:00 — FE4-g4·FE10-b 검토·gate·커밋(첫 파일 삭제), 다음 라운드
+
+- 수신: 두 워커 `TASK_OUTPUT_READY`. SHA 일치(fe4g4 16행, fe10b 15행), 겹침 0. 삭제 목록 5경로(`delete-list.txt`)는 CF가 참조 재확인(자기 시험 import 1건뿐 — 같이 삭제) 뒤 백업(scratchpad)하고 gate 전에 지움.
+- FE4-g4: 병합 때 나중 단계 키를 새 값까지 올리고 4단계에 "나중 단계 n개를 함께 올렸습니다" + 목록, 레일 부제 "1명 · 한 명 모드", `plan-flow-step1-filter` 장면 3명, Detail 칩 분류(기술 노트·BD·장비 설계도가 오파츠로 가던 같은 원인). 발견: 알림이 저장 전에도 완료형(→ FE4-g5), 초안 나중에 < 활성 나중에는 FD-180 밖이라 그대로 막음, 상태 칩 '—'(→ FE4-g5).
+- FE10-b: `ScanQueueReviewBar`·`StudentDiagonalFilterList`·`section_template` 미사용 함수 등 −2049줄(삭제 5파일 포함), `scan_page` 깨진 가운데점.
+- gate ① `20261019_192125`: 시험 전부 PASS, golden RED 3 = 예측(`-filter` 3명, `-one` 레일 부제, 새 `-step4-raised`), **almanac-validate FAIL** — `design/diagonal-parent-child-layout-guidelines-2026-08-04`의 sources 2개가 지운 파일을 가리킴 → CF가 sources·인용 정리 + "FE10-b에 지움" 한 줄 → ② `-UpdateGoldens` `20261019_193503` **GREEN**(golden 68).
+- 커밋: **fe4g4 `86a3e12c`**(CF: commit.json `modified`에서 status 문서 제거 — pre 사본 없음, `status=true`가 처리) → **fe10b `1fbb9a22`**(CF: `deleted` 5 + almanac 페이지 `whole`; 첫 시도는 CF가 Get-Content 결과를 그대로 JSON에 넣어 경로가 객체로 직렬화돼 멈춤 → 문자열로 다시 써서 통과). `fe_commit.ps1` `deleted` 키 동작 확인.
+- 사용자 결정(AskUserQuestion, 2026-10-19): 검수 포인트 "승인만" 10건(H1·H2·S1·S2·T1·ST3·SC1·SC2·SC3·SE2)은 지금 동작대로 승인.
+- **다음 라운드**: Lane A `debug/frontend_redesign_handoff/fe4g5-worker-prompt-20261019.md`(한 명 모드 상태 칩 · 올림 알림 시제) · Lane B `debug/frontend_redesign_handoff/fe10d-worker-prompt-20261019.md`(FD 반영 누락 8건 · 검수 포인트 결정문 · 낡은 서술 · README 목록 — 문서만). 그다음 FE10-z(CF: 전체 gate + `flutter build windows --release` + 사용자 최종 둘러보기 체크리스트).
