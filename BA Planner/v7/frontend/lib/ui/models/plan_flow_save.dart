@@ -120,6 +120,52 @@ Future<PlanFlowSaveSnapshot> loadPlanFlowSaveSnapshot(
   }
 }
 
+/// "페이즈로 추가" 병합에서 함께 올린 활성 계획 "나중에" 단계 목표 한 키(FD-180 (a), FE4-g4).
+@immutable
+class PlanFlowRaisedTarget {
+  const PlanFlowRaisedTarget({
+    required this.studentId,
+    required this.stageId,
+    required this.stageName,
+    required this.key,
+    required this.before,
+    required this.after,
+  });
+
+  final String studentId;
+
+  /// 올린 활성 계획 나중에 단계 id(병합에서 바꾸지 않는다).
+  final String stageId;
+  final String stageName;
+
+  /// 목표 키([planningDocumentTargetKeys]).
+  final String key;
+
+  /// 올리기 전 값. null이면 그 키에 목표가 없었다.
+  final int? before;
+
+  /// 올린 값(같은 학생 체인에서 바로 앞 단계의 값).
+  final int after;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlanFlowRaisedTarget &&
+      other.studentId == studentId &&
+      other.stageId == stageId &&
+      other.stageName == stageName &&
+      other.key == key &&
+      other.before == before &&
+      other.after == after;
+
+  @override
+  int get hashCode =>
+      Object.hash(studentId, stageId, stageName, key, before, after);
+
+  @override
+  String toString() =>
+      'PlanFlowRaisedTarget($studentId, $stageId, $key, $before→$after)';
+}
+
 /// 활성 계획 + 초안 페이즈 병합 결과([planFlowMergedPlanDocument]).
 @immutable
 class PlanFlowMergedPlan {
@@ -129,10 +175,12 @@ class PlanFlowMergedPlan {
     required Map<String, String> phaseIds,
     required Map<String, String> stageIds,
     required List<String> regressedStudentIds,
+    List<PlanFlowRaisedTarget> raisedTargets = const [],
     this.authoringReason,
   }) : phaseIds = Map.unmodifiable(phaseIds),
        stageIds = Map.unmodifiable(stageIds),
-       regressedStudentIds = List.unmodifiable(regressedStudentIds);
+       regressedStudentIds = List.unmodifiable(regressedStudentIds),
+       raisedTargets = List.unmodifiable(raisedTargets);
 
   /// 병합 문서(v2 `kind=plan`). [regressedStudentIds]가 있으면 null이다.
   final PlanningDocument? document;
@@ -155,6 +203,15 @@ class PlanFlowMergedPlan {
   /// 단계보다 낮을 수 없다. 낮은 값을 몰래 올리거나 버리지 않고 이 위치를 막는다.
   final List<String> regressedStudentIds;
 
+  /// 새 앞 단계(초안 배치 단계)보다 낮거나 비어 있어 그 값까지 올린 활성 계획 나중에 단계 목표(FD-180 (a)). 체인
+  /// 순서(활성 authoring `deferred_stages` 순서) · 키 순서([planningDocumentTargetKeys])다. 막혔으면 비어 있다.
+  final List<PlanFlowRaisedTarget> raisedTargets;
+
+  /// 함께 올린 나중에 단계 id(처음 나온 순서, 겹치지 않음).
+  List<String> get raisedStageIds => [
+    ...{for (final raised in raisedTargets) raised.stageId},
+  ];
+
   bool get blocked => document == null || authoring == null;
 }
 
@@ -167,6 +224,11 @@ class PlanFlowMergedPlan {
 ///   값을 이어 받는다(문서 규칙: 한 번 정한 목표는 뒤 단계에서 null로 돌아가지 않는다). 활성 계획에서도 정하지 않은
 ///   키는 null로 남는다.
 /// - 초안 값이 활성 값보다 낮으면 그 학생을 [PlanFlowMergedPlan.regressedStudentIds]에 넣고 문서를 만들지 않는다.
+/// - FD-180 (a)(FE4-g4): 같은 학생 체인에서 활성 나중에 단계는 초안 배치 단계 뒤에 온다. 앞 단계가 정한 키를 나중에
+///   단계가 그보다 낮게 두었거나 비워 두었으면(검증 `target_regression`) 그 키를 앞 값까지 올리고
+///   [PlanFlowMergedPlan.raisedTargets]에 남긴다(4단계 · 저장 결과가 알린다 — 몰래 올리지 않는다). 낮추지 않는다.
+///   나중에 단계가 여럿이면 체인 순서대로 바로 앞(올린 뒤) 단계 값을 기준으로 한다. 초안 나중에 단계는 올리지 않는다
+///   (초안 안 규칙은 2단계 편집기 · 계산기 handoff가 이미 지킨다. 활성 나중에 단계보다 낮으면 지금처럼 막는다).
 /// - goal_metadata는 활성 문서 → 활성 authoring → 초안 순서로 먼저 있는 것을 쓴다.
 /// - authoring([activeAuthoring], 없으면 활성 문서 기본값): 학생 순서는 활성 뒤에 초안의 새 학생, 같은 학생 체인은
 ///   활성 배치 → 초안 배치 → 활성 나중에 → 초안 나중에, `deferred_stages`는 활성 것 뒤에 초안 것, 직접 선행은 활성
@@ -245,10 +307,47 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
       PlanningDocumentPhase(id: phaseId, name: phase.name, stages: stages),
     );
   }
-  // 체인 순서: 활성 나중에 단계가 초안 배치 뒤에 온다. 초안 나중에 단계는 그 뒤 값을 이어 받는다.
-  for (final stage in activeBundle.deferredStages) {
-    last[stage.studentId] = stage.nullableTargets;
-  }
+  // 체인 순서: 활성 나중에 단계가 초안 배치 뒤에 온다. 앞 값보다 낮거나 비운 키는 앞 값까지 올린다(FD-180 (a)).
+  // 성장 규칙은 다시 돌리지 않는다: 앞 단계와 나중에 단계 모두 규칙을 지키고 규칙이 상한 · 하한 꼴(단조)이라 키마다
+  // 큰 값을 고른 결과도 규칙을 지킨다. 초안 나중에 단계는 그 뒤 값을 이어 받는다.
+  final raised = <PlanFlowRaisedTarget>[];
+  final activeDeferred = <PlanningDocumentStage>[
+    for (final stage in activeBundle.deferredStages)
+      () {
+        final previous = last[stage.studentId];
+        final targets = <String, int?>{};
+        var changed = false;
+        for (final key in planningDocumentTargetKeys) {
+          final before = stage.nullableTargets[key];
+          final floor = previous?[key];
+          if (floor != null && (before == null || before < floor)) {
+            targets[key] = floor;
+            changed = true;
+            raised.add(
+              PlanFlowRaisedTarget(
+                studentId: stage.studentId,
+                stageId: stage.id,
+                stageName: stage.name,
+                key: key,
+                before: before,
+                after: floor,
+              ),
+            );
+          } else {
+            targets[key] = before;
+          }
+        }
+        last[stage.studentId] = targets;
+        return changed
+            ? PlanningDocumentStage(
+                id: stage.id,
+                studentId: stage.studentId,
+                name: stage.name,
+                targets: targets,
+              )
+            : stage;
+      }(),
+  ];
   final deferred = <PlanningDocumentStage>[
     for (final stage in draft.deferredStages)
       () {
@@ -306,7 +405,7 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
         },
     ],
     'deferred_stages': [
-      for (final stage in activeBundle.deferredStages) stage.toWire(),
+      for (final stage in activeDeferred) stage.toWire(),
       for (final stage in deferred) stage.toWire(),
     ],
     'student_order': order,
@@ -345,7 +444,83 @@ PlanFlowMergedPlan planFlowMergedPlanDocument({
     phaseIds: phaseIds,
     stageIds: stageIds,
     regressedStudentIds: const [],
+    raisedTargets: authoring == null ? const [] : raised,
   );
+}
+
+/// 목표 키 이름(나중 단계 올림 알림, FE4-g4). 2단계 편집기 · 3단계 카드 요약과 같은 말이다.
+String planFlowTargetKeyLabel(String key) => switch (key) {
+  'level' => '레벨',
+  'bond_rank' => '인연',
+  'student_star' => '성급',
+  'weapon_level' => '전용무기 레벨',
+  'weapon_star' => '전용무기 성급',
+  'ex_skill' => 'EX',
+  'skill1' => '기본',
+  'skill2' => '강화',
+  'skill3' => '서브',
+  'equip1_tier' => '장비1 티어',
+  'equip2_tier' => '장비2 티어',
+  'equip3_tier' => '장비3 티어',
+  'equip1_level' => '장비1 레벨',
+  'equip2_level' => '장비2 레벨',
+  'equip3_level' => '장비3 레벨',
+  'equip4_tier' => '애장품',
+  'stat_hp' => 'HP',
+  'stat_atk' => 'ATK',
+  'stat_heal' => 'HEAL',
+  _ => key,
+};
+
+/// 올린 키 한 개(`레벨 70→80`, 목표가 없던 키는 `EX —→5`, 장비 티어는 `T`를 붙인다).
+String planFlowRaisedTargetText(PlanFlowRaisedTarget raised) {
+  final tier = const {
+    'equip1_tier',
+    'equip2_tier',
+    'equip3_tier',
+  }.contains(raised.key);
+  String value(int? number) => number == null
+      ? '—'
+      : tier
+      ? 'T$number'
+      : '$number';
+  return '${planFlowTargetKeyLabel(raised.key)} '
+      '${value(raised.before)}→${value(raised.after)}';
+}
+
+/// 나중 단계 올림 알림 제목(4단계 C, FD-180 (a)).
+String planFlowRaisedTitle(int stageCount) => '나중 단계 $stageCount개를 함께 올렸습니다';
+
+/// 함께 올린 목표를 단계마다 한 줄로 묶는다(학생 · 단계 · 키 이전→새 값): `호시노 · 나중에 칸 목표 · 레벨 70→80, EX
+/// —→5`. 단계 순서는 [raised] 순서(체인 순서)다.
+List<String> planFlowRaisedStageLines(
+  List<PlanFlowRaisedTarget> raised,
+  String Function(String studentId) displayName,
+) {
+  final byStage = <String, List<PlanFlowRaisedTarget>>{};
+  for (final item in raised) {
+    byStage.putIfAbsent(item.stageId, () => []).add(item);
+  }
+  return [
+    for (final items in byStage.values)
+      '${displayName(items.first.studentId)} · 나중에 칸 ${items.first.stageName} · '
+          '${items.map(planFlowRaisedTargetText).join(', ')}',
+  ];
+}
+
+/// 저장 결과 안내에 붙이는 같은 요약(한 문장). 단계가 [maxLines]개를 넘으면 "외 n개 단계"로 줄인다. 올린 것이 없으면
+/// null.
+String? planFlowRaisedSummary(
+  List<PlanFlowRaisedTarget> raised,
+  String Function(String studentId) displayName, {
+  int maxLines = 3,
+}) {
+  if (raised.isEmpty) return null;
+  final lines = planFlowRaisedStageLines(raised, displayName);
+  final shown = lines.take(maxLines).join(' / ');
+  final rest = lines.length - maxLines;
+  return '${planFlowRaisedTitle(lines.length)}'
+      '($shown${rest > 0 ? ' 외 $rest개 단계' : ''}).';
 }
 
 /// 시나리오 편입 결과([planFlowIncorporateScenario], FE4-f2).
@@ -839,6 +1014,7 @@ class PlanFlowSaveRequest {
     this.baseProfileRevision,
     this.scenarioId,
     this.description = '',
+    this.raisedTargets = const [],
   });
 
   final PlanFlowSaveTarget target;
@@ -869,6 +1045,9 @@ class PlanFlowSaveRequest {
   /// 시나리오 이름 또는 옮겨 둘 기존 계획 이름(이걸로 바꾸기). 페이즈로 추가는 활성 문서 이름.
   final String name;
   final String description;
+
+  /// 페이즈로 추가에서 함께 올린 나중에 단계 목표(FD-180 (a)). 저장 결과 안내가 같은 요약을 붙인다.
+  final List<PlanFlowRaisedTarget> raisedTargets;
 }
 
 /// 4단계 저장 상태: 위치 선택, 이름·저장한 뒤 토글, 저장 직전 상태와 비교, 보류 요청.
@@ -965,6 +1144,15 @@ class PlanFlowSaveController extends ChangeNotifier {
       name: active.name,
       activeAuthoring: _snapshot?.plan?.authoring,
     );
+  }
+
+  /// "페이즈로 추가"를 고르고 붙일 수 있을 때 함께 올리는 나중에 단계 목표(FD-180 (a)). 4단계 C가 알린다. 그 밖에는
+  /// 비어 있다.
+  List<PlanFlowRaisedTarget> get raisedTargets {
+    if (_target != PlanFlowSaveTarget.appendPhases) return const [];
+    final merged = this.merged;
+    if (merged == null || merged.blocked) return const [];
+    return merged.raisedTargets;
   }
 
   /// 지금 위치의 비교(페이즈로 추가는 병합 문서 기준). 아직 없으면 null.
@@ -1309,6 +1497,7 @@ class PlanFlowSaveController extends ChangeNotifier {
           authoring: authoring,
           expectedRevision: snapshot.revision,
           name: document.name,
+          raisedTargets: merged?.raisedTargets ?? const [],
         );
       case PlanFlowSaveTarget.replace:
         final active = snapshot.activeDocument;
@@ -1521,8 +1710,10 @@ class PlanFlowSaveController extends ChangeNotifier {
     String? archivedScenarioId,
   ) => switch (request.target) {
     PlanFlowSaveTarget.scenario => '${request.name} 시나리오를 저장했습니다.',
-    PlanFlowSaveTarget.appendPhases =>
+    PlanFlowSaveTarget.appendPhases => [
       '활성 계획에 페이즈 ${request.document.phases.length - snapshot.activePhaseCount}개를 붙였습니다.',
+      ?planFlowRaisedSummary(request.raisedTargets, flow.context.displayName),
+    ].join(' '),
     PlanFlowSaveTarget.replace =>
       archivedScenarioId == null
           ? '활성 계획을 바꿨습니다.'

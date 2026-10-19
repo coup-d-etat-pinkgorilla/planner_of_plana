@@ -257,6 +257,79 @@ Future<PlanFlowController> _flow(
   return flow;
 }
 
+/// 19키 nullable 목표(적지 않은 키는 null).
+Map<String, int?> _targets(Map<String, int?> values) => {
+  for (final key in planningDocumentTargetKeys) key: values[key],
+};
+
+/// 활성 "나중에" 칸 단계 하나(FE4-g4).
+PlanningDocumentStage _laterStage(
+  String id,
+  String studentId,
+  Map<String, int?> targets, {
+  String name = '나중',
+}) => PlanningDocumentStage(
+  id: id,
+  studentId: studentId,
+  name: name,
+  targets: _targets(targets),
+);
+
+/// [document]에 [later](활성 나중에 칸 단계, 체인 순서)를 더한 활성 authoring(공용 validator로 만든다).
+PlanningAuthoring _activeAuthoring(
+  PlanningDocument document,
+  List<PlanningDocumentStage> later,
+) {
+  final order = [
+    ...{
+      for (final stage in document.stages) stage.studentId,
+      for (final stage in later) stage.studentId,
+    },
+  ];
+  final placed = {for (final stage in document.stages) stage.studentId};
+  return PlanningAuthoring.fromWire({
+    'version': 1,
+    'prerequisites': const <Object>[],
+    'deferred_stages': [for (final stage in later) stage.toWire()],
+    'student_order': order,
+    'stage_order_by_student': {
+      for (final studentId in order)
+        studentId: [
+          for (final stage in document.stages)
+            if (stage.studentId == studentId) stage.id,
+          for (final stage in later)
+            if (stage.studentId == studentId) stage.id,
+        ],
+    },
+    'goal_metadata': {
+      for (final studentId in order)
+        if (!placed.contains(studentId))
+          studentId: planFlowDefaultGoalMetadata.toWire(),
+    },
+  }, document);
+}
+
+/// mock 활성 계획을 [targetsByStudent](배치) + [later](나중에 칸)로 바꾼다. 새 revision을 준다.
+Future<int> _seedActiveWithLater(
+  MockAppService service,
+  Map<String, Map<String, int?>> targetsByStudent,
+  List<PlanningDocumentStage> later,
+) async {
+  final plan = await service.loadRepositoryPlan(_profileId);
+  final document = _activeDocument(
+    targetsByStudent,
+    id: plan.document.id,
+    name: plan.document.name,
+  );
+  return service.saveRepositoryPlan(
+    profileId: _profileId,
+    document: document,
+    authoring: _activeAuthoring(document, later),
+    expectedRevision: plan.revision,
+    idempotencyKey: 'seed-later-${plan.revision}',
+  );
+}
+
 /// 저장 상태를 만들고 저장 직전 상태를 읽는다(흐름은 3단계에 둬서 저절로 읽지 않게 한다).
 Future<PlanFlowSaveController> _save(PlanFlowController flow) async {
   final save = PlanFlowSaveController(flow: flow);
@@ -790,6 +863,437 @@ void main() {
       await save.save();
       expect(service.creates.last.key, pending!.idempotencyKey);
     });
+  });
+
+  group('나중 단계 올림(FE4-g4, FD-180 (a))', () {
+    test('나중에 단계 여럿: 체인 순서대로 바로 앞 값까지 올리고 비운 키도 채운다. 높은 값 · 앞도 비운 키는 그대로다', () {
+      final active = _activeDocument({
+        'aru': {'level': 50},
+      });
+      final d1 = _laterStage('aru-later-1', 'aru', {
+        'level': 60,
+        'skill1': 5,
+      }, name: '나중 1');
+      final d2 = _laterStage('aru-later-2', 'aru', {
+        'level': 90,
+        'skill1': 5,
+        'ex_skill': 3,
+      }, name: '나중 2');
+      final merged = planFlowMergedPlanDocument(
+        active: active,
+        draft: _draft({
+          'aru': [
+            {'level': 70, 'ex_skill': 4},
+          ],
+        }),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: _activeAuthoring(active, [d1, d2]),
+      );
+      expect(merged.blocked, isFalse);
+      expect(merged.authoringReason, isNull);
+      // D1: 레벨 60→70(낮음), EX 없음→4(비움). 기본 5는 앞(초안 · 활성 모두 null)이 비워 그대로.
+      // D2: 레벨 90(높음) 그대로, EX 3→4(올린 D1 기준).
+      expect(merged.raisedTargets, const [
+        PlanFlowRaisedTarget(
+          studentId: 'aru',
+          stageId: 'aru-later-1',
+          stageName: '나중 1',
+          key: 'level',
+          before: 60,
+          after: 70,
+        ),
+        PlanFlowRaisedTarget(
+          studentId: 'aru',
+          stageId: 'aru-later-1',
+          stageName: '나중 1',
+          key: 'ex_skill',
+          before: null,
+          after: 4,
+        ),
+        PlanFlowRaisedTarget(
+          studentId: 'aru',
+          stageId: 'aru-later-2',
+          stageName: '나중 2',
+          key: 'ex_skill',
+          before: 3,
+          after: 4,
+        ),
+      ]);
+      expect(merged.raisedStageIds, ['aru-later-1', 'aru-later-2']);
+      final later = {
+        for (final stage in merged.authoring!.deferredStages) stage.id: stage,
+      };
+      expect(later['aru-later-1']!.nullableTargets['level'], 70);
+      expect(later['aru-later-1']!.nullableTargets['ex_skill'], 4);
+      expect(later['aru-later-1']!.nullableTargets['skill1'], 5);
+      expect(later['aru-later-2']!.nullableTargets['level'], 90);
+      expect(later['aru-later-2']!.nullableTargets['ex_skill'], 4);
+      // 검증(target_regression)은 그대로다: 올린 결과는 다시 읽어도 통과하고, 올리지 않은 원래 나중에 단계로는
+      // 거절한다(이 slice 전 동작).
+      final wire = merged.authoring!.toWire();
+      expect(
+        PlanningAuthoring.fromWire(wire, merged.document!).deferredStages,
+        hasLength(2),
+      );
+      expect(
+        () => PlanningAuthoring.fromWire({
+          ...wire,
+          'deferred_stages': [d1.toWire(), d2.toWire()],
+        }, merged.document!),
+        throwsA(
+          isA<PlanningAuthoringFormatException>().having(
+            (error) => error.reason,
+            'reason',
+            'target_regression',
+          ),
+        ),
+      );
+    });
+
+    test('MAX · 직접 입력 값도 숫자 그대로 올린다. 활성 계획에 나중에 단계만 있는 학생도 같다', () {
+      final active = _activeDocument({});
+      final merged = planFlowMergedPlanDocument(
+        active: active,
+        draft: _draft({
+          'hina': [
+            {'level': 90, 'bond_rank': 37},
+          ],
+        }),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: _activeAuthoring(active, [
+          _laterStage('hina-later', 'hina', {'level': 80, 'bond_rank': 20}),
+        ]),
+      );
+      expect(merged.blocked, isFalse);
+      expect(merged.raisedTargets.map(planFlowRaisedTargetText), [
+        '레벨 80→90',
+        '인연 20→37',
+      ]);
+    });
+
+    test('초안 나중에 단계는 올리지 않는다: 체인은 활성 배치 → 초안 배치 → 활성 나중에(올림) → 초안 나중에', () {
+      final active = _activeDocument({
+        'aru': {'level': 50},
+      });
+      final base = _draft({
+        'aru': [
+          {'level': 70},
+          {'level': 88},
+        ],
+      });
+      final merged = planFlowMergedPlanDocument(
+        active: active,
+        draft: base.copyWith(
+          phases: [base.phases.first],
+          deferredStageIds: ['aru-stage-2'],
+        ),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: _activeAuthoring(active, [
+          _laterStage('aru-later', 'aru', {'level': 60}),
+        ]),
+      );
+      expect(merged.blocked, isFalse);
+      expect(
+        merged.raisedTargets.map((item) => (item.stageId, item.key)).toList(),
+        [('aru-later', 'level')],
+      );
+      final authoring = merged.authoring!;
+      expect(authoring.stageOrderByStudent['aru'], [
+        'aru-stage-1',
+        'aru-stage-1-2',
+        'aru-later',
+        'aru-stage-2',
+      ]);
+      final later = {
+        for (final stage in authoring.deferredStages) stage.id: stage,
+      };
+      expect(later['aru-later']!.nullableTargets['level'], 70);
+      expect(later['aru-stage-2']!.nullableTargets['level'], 88);
+    });
+
+    test('초안 나중에 단계가 활성 나중에 단계보다 낮으면 지금처럼 막는다(올림 없음)', () {
+      final active = _activeDocument({
+        'aru': {'level': 50},
+      });
+      final base = _draft({
+        'aru': [
+          {'level': 70},
+          {'level': 85},
+        ],
+      });
+      final merged = planFlowMergedPlanDocument(
+        active: active,
+        draft: base.copyWith(
+          phases: [base.phases.first],
+          deferredStageIds: ['aru-stage-2'],
+        ),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: _activeAuthoring(active, [
+          _laterStage('aru-later', 'aru', {'level': 90}),
+        ]),
+      );
+      expect(merged.blocked, isTrue);
+      expect(merged.regressedStudentIds, ['aru']);
+      expect(merged.raisedTargets, isEmpty);
+    });
+
+    test('같거나 높은 나중에 단계 · 초안에 없는 학생은 그대로, 막힌 병합은 올림을 알리지 않는다', () {
+      final active = _activeDocument({
+        'aru': {'level': 50},
+        'ayane': {'level': 40},
+      });
+      final authoring = _activeAuthoring(active, [
+        _laterStage('aru-later', 'aru', {'level': 70}),
+        _laterStage('ayane-later', 'ayane', {'level': 45}),
+      ]);
+      final same = planFlowMergedPlanDocument(
+        active: active,
+        draft: _draft({
+          'aru': [
+            {'level': 70},
+          ],
+        }),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: authoring,
+      );
+      expect(same.blocked, isFalse);
+      expect(same.raisedTargets, isEmpty);
+      // 초안 배치가 활성 배치보다 낮으면 FE4-e 규칙대로 막는다(나중에 단계 EX는 비어 있지만 알리지 않는다).
+      final blocked = planFlowMergedPlanDocument(
+        active: active,
+        draft: _draft({
+          'aru': [
+            {'level': 40, 'ex_skill': 5},
+          ],
+        }),
+        id: active.id,
+        name: active.name,
+        activeAuthoring: authoring,
+      );
+      expect(blocked.blocked, isTrue);
+      expect(blocked.regressedStudentIds, ['aru']);
+      expect(blocked.raisedTargets, isEmpty);
+    });
+
+    test('시나리오 편입은 그대로다: 활성 나중에 단계와 맞지 않는 시나리오 단계는 빼고 올리지 않는다', () {
+      final active = _activeDocument({
+        'aru': {'level': 50},
+      });
+      final scenario = PlanningDocument(
+        id: 'scenario-1',
+        name: '후보',
+        kind: PlanningDocumentKind.scenario,
+        version: 2,
+        goalMetadata: {'aru': planFlowDefaultGoalMetadata},
+        phases: [
+          PlanningDocumentPhase(
+            id: 'scenario-phase-1',
+            name: '1순위',
+            stages: [
+              PlanningDocumentStage(
+                id: 'scenario-aru-1',
+                studentId: 'aru',
+                name: '1단계',
+                targets: _targets({'level': 80}),
+              ),
+            ],
+          ),
+        ],
+      );
+      final incorporated = planFlowIncorporateScenario(
+        active: active,
+        activeAuthoring: _activeAuthoring(active, [
+          _laterStage('aru-later', 'aru', {'level': 60}),
+        ]),
+        scenarioDocument: scenario,
+        scenarioName: '후보',
+        seedFor: _seed,
+      );
+      expect(incorporated.skippedStageCount, 1);
+      expect(incorporated.merged.raisedTargets, isEmpty);
+    });
+
+    test('알림 글자: 제목 · 단계마다 한 줄 · 저장 결과 요약(단계가 넘치면 외 n개 단계)', () {
+      const items = [
+        PlanFlowRaisedTarget(
+          studentId: 'aru',
+          stageId: 'a',
+          stageName: '목표',
+          key: 'level',
+          before: 70,
+          after: 80,
+        ),
+        PlanFlowRaisedTarget(
+          studentId: 'aru',
+          stageId: 'a',
+          stageName: '목표',
+          key: 'ex_skill',
+          before: null,
+          after: 5,
+        ),
+        PlanFlowRaisedTarget(
+          studentId: 'hina',
+          stageId: 'b',
+          stageName: '총력전',
+          key: 'equip1_tier',
+          before: 7,
+          after: 9,
+        ),
+      ];
+      String name(String id) => id == 'aru' ? '아루' : '히나';
+      expect(planFlowRaisedTitle(2), '나중 단계 2개를 함께 올렸습니다');
+      expect(planFlowRaisedStageLines(items, name), [
+        '아루 · 나중에 칸 목표 · 레벨 70→80, EX —→5',
+        '히나 · 나중에 칸 총력전 · 장비1 티어 T7→T9',
+      ]);
+      expect(
+        planFlowRaisedSummary(items, name),
+        '나중 단계 2개를 함께 올렸습니다(아루 · 나중에 칸 목표 · 레벨 70→80, EX —→5 / '
+        '히나 · 나중에 칸 총력전 · 장비1 티어 T7→T9).',
+      );
+      expect(
+        planFlowRaisedSummary(items, name, maxLines: 1),
+        '나중 단계 2개를 함께 올렸습니다(아루 · 나중에 칸 목표 · 레벨 70→80, EX —→5 외 1개 단계).',
+      );
+      expect(planFlowRaisedSummary(const [], name), isNull);
+    });
+
+    test('페이즈로 추가 저장: 올린 나중에 단계를 보내 검증을 통과하고 결과 안내에 같은 요약이 붙는다', () async {
+      final service = _RecordingService();
+      addTearDown(service.dispose);
+      await _seedActiveWithLater(
+        service,
+        {
+          'aru': {'level': 50},
+        },
+        [
+          _laterStage('aru-later', 'aru', {'level': 60}, name: '총력전'),
+        ],
+      );
+      service.planSaves.clear();
+      final flow = await _flow(
+        service,
+        _draft({
+          'aru': [
+            {'level': 70},
+          ],
+        }),
+      );
+      final save = await _save(flow);
+      // 시나리오로 저장을 고른 동안은 알리지 않는다.
+      expect(save.target, PlanFlowSaveTarget.scenario);
+      expect(save.raisedTargets, isEmpty);
+      expect(save.isAvailable(PlanFlowSaveTarget.appendPhases), isTrue);
+      save.selectTarget(PlanFlowSaveTarget.appendPhases);
+      expect(save.canSave, isTrue);
+      expect(save.raisedTargets.single.key, 'level');
+      final outcome = await save.save();
+      expect(outcome, isNotNull);
+      final name = flow.context.displayName('aru');
+      expect(
+        outcome!.message,
+        '활성 계획에 페이즈 1개를 붙였습니다. 나중 단계 1개를 함께 올렸습니다($name · 나중에 칸 총력전 · '
+        '레벨 60→70).',
+      );
+      final request = service.planSaves.single;
+      expect(
+        request.authoring!.deferredStages.single.nullableTargets['level'],
+        70,
+      );
+      expect(request.authoring!.stageOrderByStudent['aru'], [
+        'aru-stage-1',
+        'aru-stage-1-2',
+        'aru-later',
+      ]);
+      // mock 저장소가 받아 다시 읽은 활성 계획의 나중에 단계도 올라 있다.
+      final saved = await service.loadRepositoryPlan(_profileId);
+      expect(
+        saved.authoring.deferredStages.single.nullableTargets['level'],
+        70,
+      );
+    });
+
+    for (final size in const [Size(2560, 1208), Size(1280, 625)]) {
+      testWidgets(
+        '4단계 C: 페이즈로 추가를 고르면 저장 버튼 아래에 올린 나중 단계를 알린다(${size.width.toInt()}폭, 넘침 없음)',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          final service = MockAppService();
+          addTearDown(service.dispose);
+          await _seedActiveWithLater(
+            service,
+            {
+              'aru': {'level': 50},
+            },
+            [
+              _laterStage('aru-later', 'aru', {'level': 60}, name: '총력전'),
+            ],
+          );
+          final flow = await _flow(
+            service,
+            _draft({
+              'aru': [
+                {'level': 70, 'ex_skill': 4},
+              ],
+            }),
+            step: PlanFlowStep.save,
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: BAPlannerTheme.dark(),
+              home: Scaffold(
+                body: Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: size.width,
+                    height: size.height,
+                    child: PlanFlowWorkspace(
+                      flow: flow,
+                      service: service,
+                      onClosed: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(planFlowCalculationDebounce);
+          await tester.pump(AppMotion.section);
+          await tester.pump();
+          expect(
+            find.byKey(const ValueKey('plan-flow-save-raised-title')),
+            findsNothing,
+          );
+          await tester.tap(
+            find.byKey(const ValueKey('plan-flow-save-target-appendPhases')),
+          );
+          await tester.pump();
+          expect(find.text('나중 단계 1개를 함께 올렸습니다'), findsOneWidget);
+          final name = flow.context.displayName('aru');
+          expect(
+            find.text('$name · 나중에 칸 총력전 · 레벨 60→70, EX —→4'),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.tap(
+            find.byKey(const ValueKey('plan-flow-save-target-scenario')),
+          );
+          await tester.pump();
+          expect(
+            find.byKey(const ValueKey('plan-flow-save-raised-title')),
+            findsNothing,
+          );
+        },
+      );
+    }
   });
 
   testWidgets('A 레일 primary와 C 버튼 글자는 C에서 고른 저장 위치를 따른다(FD-079)', (

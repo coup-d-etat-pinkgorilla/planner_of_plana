@@ -101,17 +101,29 @@ const planFlowRailConnectorColor = Color.fromRGBO(56, 81, 107, 0.9);
 /// `· 나중에 n개`).
 ///
 /// 4단계 부제는 고른 저장 위치([saveLabel], FE4-e)이고, 없으면 "시나리오로 저장"이다.
+///
+/// 한 명만 골랐으면(FE4-b2 한 명 모드, 시안 Flow-1-Students-One) 1단계는 `1명 · 한 명 모드`, 2단계는 학생 이름과 상태
+/// (`리오(무장) · 설정 중`)다. 상태는 3단계 이후에 그 학생 단계가 있으면 `완료`, 그 전(1 · 2단계)은 `설정 중`이다(시안
+/// 1단계 장면이 단계가 있는데도 "설정 중"이다 — 2단계 학생 탭의 "설정 중"과 같은 말).
 String planFlowStepSubtitle(
   PlanFlowController flow,
   PlanFlowStep step, {
   String? saveLabel,
 }) {
   final draft = flow.draft;
+  final one = draft.studentCount == 1 ? draft.studentOrder.single : null;
   switch (step) {
     case PlanFlowStep.students:
       final count = draft.studentCount;
-      return count == 0 ? '아직 고르지 않았습니다' : '$count명 · 여러 명 모드';
+      if (count == 0) return '아직 고르지 않았습니다';
+      return one != null ? '1명 · 한 명 모드' : '$count명 · 여러 명 모드';
     case PlanFlowStep.goals:
+      if (one != null) {
+        final done =
+            flow.step.index > PlanFlowStep.goals.index &&
+            draft.completedStudentCount == 1;
+        return '${flow.context.displayName(one)} · ${done ? '완료' : '설정 중'}';
+      }
       return draft.studentCount == 0
           ? '고른 학생이 없습니다'
           : '${draft.studentCount}명 중 ${draft.completedStudentCount}명 완료';

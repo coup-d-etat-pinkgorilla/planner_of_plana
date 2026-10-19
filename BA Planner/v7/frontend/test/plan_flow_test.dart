@@ -633,9 +633,15 @@ void main() {
 
     flow.toggleStudent('aru');
     await tester.pump();
+    // FE4-g4(FE4-b2 발견 4): 한 명이면 시안 Flow-1-Students-One처럼 "한 명 모드" · 학생 이름 · 설정 중이다.
+    final name = flow.context.displayName('aru');
     expect(
       _text(tester, find.byKey(const ValueKey('plan-flow-step-1'))),
-      contains('1명 · 여러 명 모드'),
+      contains('1명 · 한 명 모드'),
+    );
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-2'))),
+      contains('$name · 설정 중'),
     );
     expect(_railButton(tester, 'plan-flow-next').onPressed, isNotNull);
     await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
@@ -652,8 +658,21 @@ void main() {
     );
     expect(
       _text(tester, find.byKey(const ValueKey('plan-flow-step-2'))),
-      contains('1명 중 0명 완료'),
+      contains('$name · 설정 중'),
     );
+    // 두 명 이상이면 지금처럼 여러 명 모드 · "n명 중 m명 완료"다.
+    flow.toggleStudent('hoshino');
+    await tester.pump();
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-1'))),
+      contains('2명 · 여러 명 모드'),
+    );
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-2'))),
+      contains('2명 중 0명 완료'),
+    );
+    flow.toggleStudent('hoshino');
+    await tester.pump();
     // 지난 스텝은 눌러서 돌아갈 수 있다.
     await tester.tap(find.byKey(const ValueKey('plan-flow-step-1')));
     await tester.pump();
@@ -675,7 +694,7 @@ void main() {
       tester.getSemantics(find.byKey(const ValueKey('plan-flow-step-1'))),
       isSemantics(
         label: '1단계 학생 고르기',
-        value: '완료, 1명 · 여러 명 모드',
+        value: '완료, 1명 · 한 명 모드',
         hint: '이 단계로 갑니다',
         isButton: true,
       ),
@@ -684,7 +703,7 @@ void main() {
       tester.getSemantics(find.byKey(const ValueKey('plan-flow-step-2'))),
       isSemantics(
         label: '2단계 목표 정하기',
-        value: '지금, 1명 중 1명 완료',
+        value: '지금, ${flow.context.displayName('aru')} · 설정 중',
         hint: '지금 단계입니다',
       ),
     );
@@ -703,6 +722,33 @@ void main() {
       isSemantics(label: '필요 크레딧', value: '1.2M'),
     );
     handle.dispose();
+  });
+
+  testWidgets('레일 한 명 부제: 3단계 이후 단계가 있으면 학생 이름 · 완료(FE4-g4)', (tester) async {
+    final service = _FlowService();
+    addTearDown(service.dispose);
+    final flow = await _controller(service);
+    _pick(flow, 'aru');
+    flow.confirmStudentStages('aru', [_stage('aru', 1)]);
+    await _pumpRail(tester, flow);
+    final name = flow.context.displayName('aru');
+    expect(flow.step, PlanFlowStep.goals);
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-2'))),
+      contains('$name · 설정 중'),
+    );
+    flow.goNext();
+    await tester.pump();
+    expect(flow.step, PlanFlowStep.order);
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-1'))),
+      contains('1명 · 한 명 모드'),
+    );
+    expect(
+      _text(tester, find.byKey(const ValueKey('plan-flow-step-2'))),
+      contains('$name · 완료'),
+    );
+    await _settle(tester);
   });
 
   testWidgets('디바운스: 연달아 고쳐도 계산은 한 번이고 레일 요약이 바뀐다', (tester) async {

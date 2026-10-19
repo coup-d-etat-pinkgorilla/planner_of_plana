@@ -29,6 +29,7 @@ import 'package:ba_planner_v7/ui/models/planning_models.dart';
 import 'package:ba_planner_v7/ui/models/student_filter_selection.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_rail.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_save_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_student_one.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
@@ -142,6 +143,56 @@ Future<void> _openPlanFlowSave(
   await tester.pump(planFlowCalculationDebounce);
   await tester.pumpAndSettle();
   expect(find.byKey(const ValueKey('plan-flow-save-body')), findsOneWidget);
+}
+
+/// FE4-g4 `plan-flow-step4-raised`: 학생 장면 활성 계획(문서 그대로)에 호시노 "나중에" 칸 단계 하나(레벨 70 · ★5 ·
+/// EX 5 · 기본/강화/서브 10, 나머지 목표 없음)를 authoring으로 더해 다시 저장한다. 4단계에서 호시노 초안 배치 단계
+/// (육성 2단계, 레벨 80)가 그보다 높아 "페이즈로 추가"가 그 나중에 단계를 새 값까지 올린다(FD-180 (a)).
+Future<void> _seedActivePlanLaterStage(
+  GoldenPlanFlowMockAppService service,
+) async {
+  final profile = (await service.listProfiles()).firstWhere(
+    (item) => item.selected,
+  );
+  final state = await service.loadRepositoryState(profile.id);
+  final document = GoldenStudentMockAppService.activePlanDocument();
+  final authoring = PlanningAuthoring.fromWire({
+    'version': 1,
+    'prerequisites': const <Object>[],
+    'deferred_stages': [
+      {
+        'stage_id': 'golden-hoshino-later',
+        'student_id': 'hoshino',
+        'name': '목표',
+        'targets': {
+          for (final key in planningDocumentTargetKeys) key: null,
+          'level': 70,
+          'student_star': 5,
+          'ex_skill': 5,
+          'skill1': 10,
+          'skill2': 10,
+          'skill3': 10,
+        },
+      },
+    ],
+    'student_order': const ['ayane', 'shun_swimsuit', 'hina', 'hoshino'],
+    'stage_order_by_student': const {
+      'ayane': ['golden-ayane-1', 'golden-ayane-2'],
+      'shun_swimsuit': ['golden-shun-1'],
+      'hina': ['golden-hina-1'],
+      'hoshino': ['golden-hoshino-later'],
+    },
+    'goal_metadata': const {
+      'hoshino': {'favorite': false, 'notes': ''},
+    },
+  }, document);
+  await service.saveRepositoryPlan(
+    profileId: profile.id,
+    document: document,
+    authoring: authoring,
+    expectedRevision: state.revision,
+    idempotencyKey: 'golden-plan-flow-raised-plan',
+  );
 }
 
 /// 1단계 B 그리드의 학생 카드를 누른다.
@@ -656,7 +707,12 @@ void main() {
     setGoldenViewport(tester);
     final service = await _planFlowService();
     await _openPlanFlow(tester, service);
-    await _tapFlowCard(tester, 'aru');
+    // FE4-g4(FE4-b2 발견 3): 시안 Flow-1-Students-Filter는 Flow-1-Students(3명 · 여러 명 모드) 위에 연다. plan-flow-step1과
+    // 같은 세 명을 고른다(한 명이면 스크림 아래가 한 명 모드가 된다).
+    for (final id in const ['hoshino', 'aru', 'shun_swimsuit']) {
+      await _tapFlowCard(tester, id);
+    }
+    expect(find.text('3명 골랐습니다'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('plan-flow-student-filter')));
     await tester.pump();
     await tester.pump();
@@ -689,6 +745,9 @@ void main() {
     expect(find.text('활성 계획 P1에 있음'), findsOneWidget);
     expect(find.text('P1 · 1단계'), findsOneWidget);
     expect(find.text('P2 · 2단계'), findsOneWidget);
+    // FE4-g4(FE4-b2 발견 4): 레일 1 · 2단계 부제가 한 명 모드 글자다.
+    expect(find.text('1명 · 한 명 모드'), findsOneWidget);
+    expect(find.text('아야네 · 설정 중'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('plan-flow-one-detail')),
@@ -974,6 +1033,36 @@ void main() {
     await _tapKey(tester, 'plan-flow-save-phase-${flow.draft.phases[1].id}');
     expect(find.text('앞 페이즈에서 쓰고 남은 양 기준입니다'), findsOneWidget);
     await expectGoldenScene(tester, 'plan-flow-step4-append');
+  }, variant: goldenPlatform);
+
+  testWidgets('plan-flow-step4-raised', (tester) async {
+    setGoldenViewport(tester);
+    final service = await _planFlowService();
+    await _seedActivePlanLaterStage(service);
+    await _openPlanFlowSave(tester, service);
+    // FE4-g4(FD-180 (a)): 활성 계획 호시노 "나중에" 단계(레벨 70)가 새 앞 단계(레벨 80)보다 낮아 페이즈로 추가가 그
+    // 단계를 올린다. C 저장 버튼 아래 안내 줄: "나중 단계 1개를 함께 올렸습니다" + 학생 · 단계 · 키 이전→새 값.
+    await _tapKey(tester, 'plan-flow-save-target-appendPhases');
+    expect(find.text('지금 P2 뒤에 P3~P5로 붙입니다'), findsOneWidget);
+    final save = tester
+        .widget<PlanFlowSaveAside>(find.byType(PlanFlowSaveAside))
+        .save;
+    expect(save.canSave, isTrue);
+    expect(save.merged!.authoring, isNotNull);
+    expect(save.raisedTargets.map((item) => item.stageId).toSet(), {
+      'golden-hoshino-later',
+    });
+    expect(find.text('나중 단계 1개를 함께 올렸습니다'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan-flow-save-raised-0')),
+        // 이 fixture의 호시노는 말줄임을 보이려는 긴 이름이다(학생 · 단계 · 키 이전→새 값).
+        matching: find.textContaining('· 나중에 칸 목표 · 레벨 70→80'),
+        matchRoot: true,
+      ),
+      findsOneWidget,
+    );
+    await expectGoldenScene(tester, 'plan-flow-step4-raised');
   }, variant: goldenPlatform);
 
   testWidgets('plan-flow-step3-many', (tester) async {

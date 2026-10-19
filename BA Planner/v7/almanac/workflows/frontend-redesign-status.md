@@ -10826,3 +10826,132 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_004710\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## FE4-g4 착수 기록 (2026-10-19 01:11, Lane A, 로컬 Claude Code)
+
+- 상태: **진행 중**. 시작 SHA `0fd6abbeb181c082bafc323e7611c9e3c132f71d`(브랜치 scanner-consolidation).
+- 범위: ① FD-180 (a) "페이즈로 추가" 병합에서 활성 계획 "나중에" 단계를 새 앞 단계 값까지 올리고 4단계 C · 저장 결과에 알린다(검증 `target_regression`은 그대로) ② FE4-b2 후속 — 레일 1·2단계 한 명 부제(발견 4), golden `plan-flow-step1-filter` 3명(발견 3), 상태 칩(발견 6) ③ `skill_book` 계획 칩 분류.
+- 막힘: 대장 "slice별 막힘 요약"에 FE4-g4 행 없음(FE4-g "—"), FD-180 확정 2026-10-19 (a). 열림 0건 — 멈출 사유 없음. 앞선 "FE4-g4 착수 기록" 없음.
+- 고칠 기존 파일(사본 `debug/frontend_fe4g4/pre/<경로>` 8개): `frontend/lib/ui/models/plan_flow_save.dart`, `frontend/lib/ui/widgets/plan_flow_save_step.dart`, `frontend/lib/ui/widgets/plan_flow_rail.dart`, `frontend/lib/ui/widgets/plan_section_layout.dart`(3만), `frontend/test/goldens/fe1g_baseline_golden_test.dart`(장면 조작 · 추가), `frontend/test/plan_flow_save_test.dart`, `frontend/test/plan_flow_test.dart`, `frontend/test/planning_page_test.dart`, 이 status 문서. `plan_flow_draft.dart` · `plan_flow_student_step.dart` · `plan_flow_student_one.dart` · `plan_flow_workspace.dart` · `plan_flow_studio_layout.dart`는 필요할 때만(그때 사본 추가).
+- 기존 미커밋 변경(WIP): `git status --short` 결과 위 파일 모두 없음. 줄 끝(`git ls-files --eol`): `plan_section_layout.dart`만 작업트리 CRLF, 나머지 7파일 · 이 문서 LF — 그대로 유지.
+
+## FE4-g4 종료 기록 (2026-10-19 01:35, Lane A, 코드 작성 완료 · gate 미실행)
+
+상태: 구현 끝, gate 미실행(CF 몫). 시작 SHA `0fd6abbeb181c082bafc323e7611c9e3c132f71d`. `debug/frontend_fe4g4/commit.json`(slice=fe4g4, status=true). 직접 커밋하지 않았다(git 쓰기 없음).
+
+### 실행한 명령 · 결과
+
+- `frontend`에서 `flutter analyze`: 첫 실행 5건(이 slice 2건 — golden 시험 불필요 import 2 → 지움; 나머지 3건은 Lane B 진행 중 파일, 발견 6) → 시험 작성 뒤 info 2건(`plan_flow_save_test` 불필요 import · 컬렉션 리터럴 → 고침) → 마지막 실행 **No issues found**(0건, info 포함).
+- `flutter test test/plan_flow_save_test.dart`: 첫 실행 23 통과 · 2 실패(① 시험 값 레벨 95가 최댓값 90을 넘어 validator `targets`로 거절 — 시험 값을 88로 ② 1280폭에서 알림 줄이 남은 높이 계산으로 0줄 — 작은 창에서도 첫 줄은 보이게 코드 수정) → 재실행 **25 통과 · 0 실패**(기존 15 + 새 10). 원인 확인용 임시 시험 `test/zz_fe4g4_debug_test.dart`는 실행 직후 지웠다.
+- `flutter test test/plan_flow_test.dart`: **16/0**(기존 15, 기대값 2건 갱신 + 새 1). `flutter test test/planning_page_test.dart`: **18/0**(기존 17 + 새 1).
+- 바뀐 동작에 걸리는 기존 시험(`ls test | grep -E "^(plan_|planning_|growth_calculator_|student_|widget_test)"`, process E2E 제외 — Python 백엔드를 띄우고 서비스 · 백엔드는 고치지 않음; `target_regression` · `planFlowMergedPlanDocument` · `PlanFlowSaveController` · `planResourceCategory` · `plan-flow-step-1/2` grep 결과 `plan_flow_authoring` · `plan_flow_handoff` · `plan_flow_save` · `plan_flow_test` · `planning_page_test`가 모두 이 목록 안)을 파일마다 따로 실행, 전부 통과(46파일): `growth_calculator_adapter_test` 24/0 · `growth_calculator_rules_test` 15/0 · `growth_calculator_state_test` 16/0 · `growth_calculator_view_test` 24/0 · `plan_detail_tabs_test` 8/0 · `plan_element_builder_test` 47/0 · `plan_flow_authoring_test` 18/0 · `plan_flow_goal_step_test` 23/0 · `plan_flow_handoff_test` 23/0 · `plan_flow_order_step_test` 19/0 · `plan_flow_presets_test` 13/0 · `plan_flow_save_test` 25/0 · `plan_flow_student_one_test` 8/0 · `plan_flow_student_step_test` 8/0 · `plan_flow_test` 16/0 · `plan_home_detail_test` 9/0 · `plan_preset_manager_test` 5/0 · `plan_scenario_compare_test` 7/0 · `plan_scenario_comparison_test` 2/0 · `plan_scenario_detail_test` 12/0 · `plan_scenario_list_test` 10/0 · `plan_scenario_preview_test` 9/0 · `plan_student_step_tile_test` 3/0 · `planning_authoring_service_test` 75/0 · `planning_document_projection_test` 1/0 · `planning_document_v2_service_test` 19/0 · `planning_growth_rules_test` 13/0 · `planning_page_test` 18/0 · `planning_protocol_client_test` 24/0 · `planning_protocol_contract_test` 7/0 · `planning_resource_assets_test` 1/0 · `student_bond_gauge_test` 12/0 · `student_bond_service_test` 11/0 · `student_calculation_service_test` 8/0 · `student_card_de_test` 17/0 · `student_catalog_service_test` 12/0 · `student_filter_followups_test` 4/0 · `student_filter_modal_test` 8/0 · `student_filter_selection_test` 15/0 · `student_form_cycle_test` 10/0 · `student_page_test` 8/0 · `student_range_condition_section_test` 4/0 · `student_scan_diagnostic_test` 2/0 · `student_search_section_test` 13/0 · `student_studio_layout_test` 45/0 · `widget_test` 16/0. 로그 `debug/frontend_fe4g4/logs/related_tests.txt`. 잠금 실패 없음.
+- 일회성 렌더(사본 `test/goldens/fe4g4_render_once_test.dart`, `@Tags` · `expectGoldenScene` grep 0건, `--name`으로 4장면만, 실행 뒤 바로 지움 — 지금 `test/goldens`에 fe4g4 파일 0개): 첫 두 번은 새 장면 기대식만 실패(fixture 호시노가 말줄임 시험용 긴 이름 → 이름을 빼고 `· 나중에 칸 목표 · 레벨 70→80`로, Text 자신에 키가 있어 `matchRoot: true`) → golden 시험 원본도 같이 고친 뒤 **+4 통과**, 넘침 예외 0. PNG `debug/frontend_fe4g4/render/`(`plan-flow-step1-filter.png` · `plan-flow-step1-one.png` · `plan-flow-step4-raised.png` · `plan-flow-step4-append.png`), 로그 `logs/render_once.log`.
+- `git diff --check`(고친 8파일 + 이 문서): 통과. 줄 끝 유지(`git ls-files --eol`): `plan_section_layout.dart` 작업트리 CRLF, 나머지 LF.
+- `dart format`: 고친 파일 모두 원래부터 형식 차이가 있어(이 slice와 무관한 줄) 파일 전체 재형식을 하지 않았다. 이 slice가 고친 덩어리는 `dart format --output=show` 결과와 비교해 차이 0(다른 1곳 `planning_page_test` 새 시험은 형식 결과로 바꿈).
+
+### 처리한 FD
+
+- **FD-180 (a)**(확정 2026-10-19): "페이즈로 추가" 병합에서 나중 단계를 새 값까지 올리고 알린다 — 구현. 검증(`lib/services/planning_authoring.dart` 191행 · `backend/core/planning_authoring.py` 101행)은 읽기만 했고 고치지 않았다.
+- 막힘 요약: FE4-g4 행 없음(FE4-g "—"), 열림 0건. '워커 재량' FD 새로 처리한 것 없음. FD-098 라벨(노트 · BD · 오파츠 · 설계도)은 그대로 쓰고 Detail 칩 분류만 인벤토리 카탈로그 분류(`tech_notes` · `tactical_bd` · `equipment`)에 맞췄다.
+
+### 1. FD-180 나중 단계 올림 — 구현
+
+- 위치: `planFlowMergedPlanDocument`(`lib/ui/models/plan_flow_save.dart`). 같은 학생 체인 = 활성 배치 → 초안 배치(새 단계) → **활성 나중에** → 초안 나중에. 활성 나중에 단계를 체인 순서대로 돌며, 바로 앞 단계(올린 뒤 값)가 정한 키를 나중에 단계가 그보다 낮게 두었거나 비워 두었으면(null) 그 키를 앞 값으로 올린다. 낮추지 않는다. 올린 키마다 `PlanFlowRaisedTarget`(학생 · 단계 id · 단계 이름 · 키 · 이전(null 가능) · 새 값)을 `PlanFlowMergedPlan.raisedTargets`에 남긴다. 단계 id는 바꾸지 않는다.
+- 성장 규칙(`normalizePlanningGrowthTargets`)은 다시 돌리지 않았다: 앞 단계와 나중에 단계가 모두 규칙을 지키고, 규칙이 모두 상한(장비 티어 → 레벨 상한, 전용무기 성급 → 레벨 상한, 성급 → 인연 상한) · 하한(스킬 → 성급 등) 꼴이라 키마다 큰 값을 고른 결과도 규칙을 지킨다. 검증 쪽 규칙은 범위 + 퇴행뿐이다(`planning_targets_from_wire`).
+- 알림(FE4-e "몰래 올리지 않는다"를 이것으로 지킨다):
+  - 4단계 C(시안에 자리가 없어 기존 안내 줄 문법 — muted · 말줄임 1줄): 저장 버튼 아래에 제목 `나중 단계 n개를 함께 올렸습니다`(굵게 · textSecondary) + 단계마다 한 줄 `{학생} · 나중에 칸 {단계 이름} · {키} {이전}→{새}, …`(예 `호시노 · 나중에 칸 목표 · 레벨 70→80`). 목표가 없던 키는 `EX —→5`, 장비 티어는 `T7→T9`. 남은 높이만큼만 줄을 보이고 넘치면 `외 n개 단계`(작은 창에서도 첫 줄은 보인다). 실패 안내 줄은 그 아래로 내려간다. "페이즈로 추가"를 고르고 붙일 수 있을 때만 보인다(`PlanFlowSaveController.raisedTargets`).
+  - 저장 결과 SnackBar: `활성 계획에 페이즈 k개를 붙였습니다. 나중 단계 n개를 함께 올렸습니다(호시노 · 나중에 칸 목표 · 레벨 70→80 / …).` 단계가 3개를 넘으면 `… 외 n개 단계).`(`planFlowRaisedSummary`). 요청 객체(`PlanFlowSaveRequest.raisedTargets`)가 들고 있어 같은 키 재시도에도 같은 요약이다.
+- 키 이름(`planFlowTargetKeyLabel`): 레벨 · 인연 · 성급 · 전용무기 레벨 · 전용무기 성급 · EX · 기본 · 강화 · 서브 · 장비1~3 티어 · 장비1~3 레벨 · 애장품 · HP · ATK · HEAL(2단계 · 3단계 카드 말과 같게).
+
+#### 올림 규칙 표(경계)
+
+| 경우 | 결과 | 시험 |
+|---|---|---|
+| 활성 나중에 단계 값 < 새 앞 단계 값 | 앞 값까지 올림, 알림 | `나중에 단계 여럿 …`(레벨 60→70) |
+| 나중에 단계가 그 키를 비움(null), 앞이 값을 정함 | 앞 값으로 채움(검증상 null 뒤 퇴행), 이전 `—` | 같은 시험(EX —→4) |
+| 앞(초안 배치 · 활성 배치 모두)도 그 키를 비움 | 그대로(값 · null 유지) | 같은 시험(기본 5 유지) |
+| 나중에 단계 값 ≥ 앞 값 | 그대로, 알리지 않음 | 같은 시험(레벨 90) · `같거나 높은 …`(70=70) |
+| 나중에 단계가 여럿(D1 → D2) | 체인 순서대로 바로 앞(올린 D1) 기준, 단계마다 셈 | 같은 시험(D2 EX 3→4, `raisedStageIds` 2개) |
+| MAX · 직접 입력 모드 | 모드 구분 없이 저장된 절대 숫자로 올림(MAX = 최댓값) | `MAX · 직접 입력 …`(레벨 80→90, 인연 20→37) |
+| 활성 계획에 나중에 단계만 있는 학생(배치 없음) | 같은 규칙(앞 = 초안 배치) | `MAX · 직접 입력 …`(히나) |
+| 초안에 없는 학생의 활성 나중에 단계 | 그대로(앞 = 활성 배치, 저장된 계획은 이미 검증 통과) | `같거나 높은 …`(아야네) |
+| 초안 안 나중에 단계(초안 배치 → 초안 나중에) | 올리지 않음(초안 안 규칙은 2단계 편집기 · handoff `planFlowRaiseLaterStages`가 이미 지킴). 체인 끝에 그대로 | `초안 나중에 단계는 올리지 않는다 …` |
+| 초안 나중에 단계 < (올린) 활성 나중에 단계 | 지금처럼 막음(`regressedStudentIds`, "목표가 활성 계획보다 낮아") | `초안 나중에 단계가 … 낮으면 …` |
+| 초안 배치 < 활성 배치(FE4-e) | 지금처럼 막음, 올림 알림 없음(`raisedTargets` 빈 목록) | `같거나 높은 … 막힌 병합 …` |
+| validator가 다른 이유로 거절(authoring null) | 막힘, 올림 알림 없음 | 코드(`raisedTargets: authoring == null ? [] : raised`) |
+| 시나리오 편입(FE4-f2 `planFlowIncorporateScenario`) | 그대로: 활성 나중에 단계와 맞지 않는 시나리오 배치 단계를 먼저 빼므로 병합에서 올릴 것이 없다 | `시나리오 편입은 그대로다 …` |
+| 활성 계획 고치기 흐름 | "페이즈로 추가"를 쓰지 않음(기존) — 해당 없음 | — |
+| 비교 타일(FD-080) | 나중에 단계는 문서 밖(authoring)이라 비교 · 계산 변화 없음 | — |
+
+#### 저장 검증 통과 근거(시험)
+
+- `나중에 단계 여럿 …`: 올린 병합 authoring을 `PlanningAuthoring.fromWire`(공용 validator, 백엔드와 같은 규칙)로 다시 읽어 통과, **올리지 않은 원래 나중에 단계로 바꾸면 `target_regression`으로 거절**(검증 그대로 · 올림이 필요했음).
+- `페이즈로 추가 저장 …`: `PlanFlowSaveController`가 mock `plan.save`에 올린 authoring을 보내고(`deferred_stages` 레벨 70, 체인 [활성 1단계, 새 단계, 나중에]), 다시 읽은 `plan.get` authoring도 70이다. 결과 안내 문구 확인.
+- golden 장면 `plan-flow-step4-raised`: 장면 안에서 `save.canSave` · `merged.authoring != null` 확인.
+- 실제 Python 백엔드 왕복 — 미실행(아래).
+
+### 2. FE4-b2 후속
+
+| 발견 | 처리 | 근거 · 시험 |
+|---|---|---|
+| 4 레일 부제(한 명) | 1단계 `1명 · 한 명 모드`, 2단계 `{학생 이름} · 설정 중`(1 · 2단계) / `· 완료`(3단계 이후 그 학생 단계가 있으면). 두 명 이상은 그대로(`n명 · 여러 명 모드`, `n명 중 m명 완료`) | 시안 Flow-1-Students-One "리오(무장) · 설정 중"(1단계 장면인데 단계가 있어도 설정 중). `plan_flow_test` 레일 시험 2건 갱신(기대값 바뀜: `1명 · 여러 명 모드` → `1명 · 한 명 모드`, `1명 중 0/1명 완료` → `아루 · 설정 중`) + 새 시험 1건(3단계 `· 완료`). golden `plan-flow-step1-one` 장면에 기대 2줄 추가 |
+| 3 filter 장면 | `plan-flow-step1-filter` 장면이 `plan-flow-step1`과 같은 세 명(호시노 · 아루 · 슌(수영복))을 고른 뒤 모달을 연다 | 시안 Flow-1-Students-Filter = Flow-1-Students(3명 · 여러 명 모드) 위 스크림 |
+| 6 상태 칩 | **'—' 그대로**. `PlanFlowContext`에는 활성 계획 문서(`activePlan`)만 있고 계산이 없다(`plan.get` calculation은 계획 화면 `_repositoryPlan`에만 있음). 흐름을 열 때 계산을 넘기려면 `plan_section_layout.dart` 흐름 context 생성부 + `PlanFlowContext` 필드가 필요한데, 이 slice는 `plan_section_layout`을 3번 분류에만 고칠 수 있어 하지 않았다 | 코드 확인(`plan_flow_draft.dart` 1512행 `PlanFlowContext`, `plan_flow_student_one.dart` `_StageRow`) |
+
+### 3. `skill_book` 분류 — 버그 맞음, 고침
+
+- 판정: **버그다.** Detail 칩 필터(`PlanDetailResourceFilter.includes`, `plan_scenario_detail.dart`)는 `planResourceCategory(id: resource_key, iconAsset: planningResourceIconAsset(category, itemId))`로 분류한다. 기술 노트는 `category = tech_notes` → 폴더 `skill_book` → `assets/item_icons/skill_book/Item_Icon_SkillBook_*.png`인데, 분류 함수는 `skill_note`/`skillnote`만 보아 **오파츠**(기본값)로 떨어졌다. 같은 원인으로 전술 교육 BD(`tactical_bd` → `skill_db/Item_Icon_Material_ExSkill_*`, 함수는 `tactical_bd`/`basic-bd`만 봄)와 장비 설계도(`equipment` → `item_icons/equipment/Equipment_Icon_*`, 함수는 `equipment_icons`만 봄)도 오파츠로 떨어졌다(옛 홈 견본 경로만 맞았다).
+- 고침(`plan_section_layout.dart` `planResourceCategory`, CRLF 유지): 노트 `skill_book`/`skillbook` 추가, BD `/skill_db/`/`material_exskill` 추가, 장비 `item_icons/equipment/`(강화석 `equipment_icon_exp` · 무기 부품 `weaponexp`를 먼저 본 뒤). 기존 견본 경로 분류는 그대로(기존 시험 통과). 인벤토리 카탈로그 분류(`tech_notes` · `tactical_bd` · `equipment` · `oopart`/`workbook`)와 같아졌다.
+- 시험: `planning_page_test` 새 시험 1건(노트 2 · BD · 설계도 · 강화석 · 무기 부품 · 오파츠 · 워크북 · 보고서 · 크레딧).
+
+### golden 변화 예상(장면별)
+
+- **바뀜 1 — `plan-flow-step1-filter`**: 장면이 호시노 · 아루 · 슌(수영복) 세 명을 고른 뒤 모달을 연다. 스크림 아래가 `plan-flow-step1`과 같은 여러 명 모드(레일 1단계 "3명 · 여러 명 모드", B "3명 골랐습니다" · 순서 배지 1~3, C 목록형 3행)가 되고 모달(학교 게헨나 · 계획에 없는 학생만 선택, "필터 1 / 10명")은 그대로다. **2026-10-19 이전 기준 이미지와 같지 않다**: 그 이미지는 아루 한 명(당시 여러 명 모드, C 1행 · "1명 골랐습니다")이었다(발견 5). 렌더 `render/plan-flow-step1-filter.png`.
+- **바뀜 2 — `plan-flow-step1-one`**: A 레일 글자만 — 1단계 부제 "1명 · 여러 명 모드" → **"1명 · 한 명 모드"**, 2단계 부제 "1명 중 0명 완료" → **"아야네 · 설정 중"**. 나머지(B · 짧은 C · S3) 그대로. 렌더 `render/plan-flow-step1-one.png`.
+- **새 장면 — `plan-flow-step4-raised`**(기준 없음): 시드 활성 계획 = 학생 장면 문서 + 호시노 "나중에" 칸 단계 `목표`(레벨 70 · ★5 · EX 5 · 기본/강화/서브 10). `plan-flow-step4`와 같은 세 명 흐름에서 "활성 계획에 페이즈로 추가"를 고름: B는 `plan-flow-step4-append`와 같은 P3~P5 · 비교 타일(76%→42% · 4→7종 · 46M→103.4M · 3→5명) · 늘어나는 재화 3줄(P4 팝오버 없음), A primary "활성 계획에 페이즈로 추가", C 옵션 2 선택 · 부제 "지금 P2 뒤에 P3~P5로 붙입니다" · "활성 계획 이름은 그대로 두고 페이즈만 붙입니다" · 토글 2 · 분홍 저장 버튼, 그 **아래 굵은 "나중 단계 1개를 함께 올렸습니다"** + muted 한 줄 "호시노(카드 하단 변보다 긴 이름은 말줄임으로 줄어듭니다) · 나중에 칸 목표 · 레벨 70→80"(fixture 긴 이름 그대로, 한 줄). 올린 키는 레벨 하나(초안 호시노 2단계의 다른 키는 나중에 단계 이하). 렌더 `render/plan-flow-step4-raised.png`.
+- **그대로**: 나머지 전부. `plan-flow-step4-append`는 활성 계획에 나중에 단계가 없어 올림 0 → 알림 없음(렌더 `render/plan-flow-step4-append.png`로 확인). `plan-flow-step1`(3명) · `-many`(8명) · `step2*`(2 · 3명) · `step3*` · `step4`는 고른 학생이 두 명 이상이라 레일 글자 그대로. Detail 칩 분류는 칩 필터를 쓰는 golden 장면이 없어(`toggleCategory`/`categories:` grep 0건) `plan-*` · `plan-scenario-*` 그대로.
+- 그래서 CF gate 예상: golden **3건 RED**(`plan-flow-step1-filter` · `plan-flow-step1-one` 바뀜, `plan-flow-step4-raised` 기준 없음), 나머지 GREEN.
+
+### 미검증("미실행")
+
+- 전체 `fe_gate.ps1` · golden 비교 · `-UpdateGoldens` — 미실행(CF 몫).
+- process E2E(`planning_authoring_process_e2e_test` 등 Python 백엔드를 띄우는 시험)와 실제 Python 백엔드에서 "페이즈로 추가" + 올린 authoring 저장 왕복 — 미실행. 서비스 · 백엔드는 고치지 않았고, Dart validator가 Python과 같은 규칙(`planning_authoring.py` 101행)임을 읽어 확인만 했다.
+- 바뀐 동작에 걸리지 않는 나머지 일반 시험(스캔 · 인벤토리 · 통계 · 택틱) — 미실행(gate에서).
+- 실제 앱(mock 모드) 클릭 검수 — 미실행(검수표).
+
+### 검수표 (mock 모드 `--dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review`, 2560×1392 최대화)
+
+| artboard · 확인 | 여는 방법 | 확인 포인트 | 자동 확인 |
+|---|---|---|---|
+| Flow-4-Save(페이즈로 추가 · 나중 단계 올림) | 활성 계획에서 학생 하나를 3단계 "나중에" 칸에 둔 채 저장(단계 순서 바꾸기) → 계획 만들기로 같은 학생 목표를 그 나중에 단계보다 높게 → 4단계 "활성 계획에 페이즈로 추가" | 옵션이 흐려지지 않음(예전: "나중에 칸 · 선행 조건과 맞출 수 없어 붙일 수 없습니다(뒤 단계 목표가 앞 단계보다 낮습니다)"), 저장 버튼 아래 "나중 단계 1개를 함께 올렸습니다" + 학생 · 나중에 칸 이름 · 키 이전→새 | 시험 4단계 C 위젯 2건(2560 · 1280폭), golden 새 장면 |
+| (저장 결과) | 위에서 저장 | SnackBar "활성 계획에 페이즈 k개를 붙였습니다. 나중 단계 1개를 함께 올렸습니다(…)" · 다시 연 활성 계획의 나중에 단계 값이 올라 있음 | 시험 `페이즈로 추가 저장 …` |
+| (다른 위치) | 같은 화면에서 "시나리오로 저장" · "이걸로 바꾸기" | 올림 알림 없음 | 위젯 시험 |
+| Flow-1-Students-One 레일 | 1단계에서 학생 한 명 | A 1단계 부제 "1명 · 한 명 모드", 2단계 "{이름} · 설정 중"; 3단계로 가면 "{이름} · 완료" | `plan_flow_test`, golden `plan-flow-step1-one` |
+| Flow-1-Students-Filter | 1단계에서 세 명 고른 뒤 필터 | 스크림 아래가 여러 명 모드(목록형 C 3행) | golden `plan-flow-step1-filter` |
+| Detail 칩(노트) | 계획 탭 Detail 홈 S3 "페이즈별"/"전체" → 재화 유형 칩에서 "기술 노트"만 | 기술 노트 타일이 남고 "오파츠"만 고르면 노트가 빠짐(BD · 장비도 같은 식) | `planning_page_test` 분류 시험 |
+| (작은 창) | 1280×720 | 4단계 C 알림 줄 넘침 예외 없음 | 위젯 시험 1280폭 |
+
+### 발견 사항
+
+1. **알림 문구 시점**: 4단계 알림은 저장 전 미리보기인데 지시 문구대로 "함께 올렸습니다"(완료형)다. 병합 문서 · 비교 타일이 이미 올린 상태를 보이므로 그대로 두었다. "저장하면 … 함께 올립니다"를 원하면 `planFlowRaisedTitle` 한 곳만 바꾸면 된다(golden 1장).
+2. **초안 나중에 단계 < 활성 나중에 단계**는 FD-180 범위 밖이라 지금처럼 막는다(새 나중 단계가 기존 앞 단계보다 낮은 경우 = FE4-e 규칙). 이것도 올리기를 원하면 별도 결정(FD 후보).
+3. **Detail 칩 분류의 같은 원인 2건(BD · 장비 설계도)**을 같은 함수에서 함께 고쳤다(지시는 `skill_book`만). 장면에 칩 필터를 쓰는 golden이 없어 golden 변화는 없다.
+4. **상태 칩 '—'**: 채우려면 `PlanFlowContext`에 활성 계획 계산(`RepositoryPlanState.calculation` 단계 결과)을 싣는 작은 후속(`plan_section_layout.dart` 흐름 context 생성부 + `plan_flow_draft.dart`)이 필요하다. 다음 slice 후보.
+5. `plan-flow-step1-filter`는 2026-10-19 이전 기준 이미지와 **같아지지 않는다**(아래 golden 절): 그 이미지도 아루 한 명(당시 여러 명 모드 한 행)이었고, 시안은 세 명이다. 한 명으로는 이제 한 명 모드가 되므로 예전 그림을 다시 만들 수 없다.
+6. analyze 첫 실행 때 Lane B 진행 중 파일(`scan_item_queue.dart` unused import 2, `student_section_layout.dart` unused parameter 1) 경고 3건이 보였다가 다음 실행에는 없었다(Lane B 편집 중). 이 slice 파일은 0건.
+
+### 사본 · commit.json
+
+- pre 사본: `debug/frontend_fe4g4/pre/<경로>` 8파일(고친 8). 착수 때 WIP 0 → `post_dir` 없음. 이 status 문서는 `status=true` 관례로 사본 없음.
+- `debug/frontend_fe4g4/commit.json`: slice `fe4g4`, modified 9(이 문서 포함), added 0, `whole` = [`frontend/test/goldens/baseline/plan-flow-step1-filter.png`, `frontend/test/goldens/baseline/plan-flow-step1-one.png`], `optional_added` = [`frontend/test/goldens/baseline/plan-flow-step4-raised.png`], `status=true`. 메시지는 ASCII(fe_commit PowerShell 5.1).
+- 인계: `debug/frontend_fe4g4/output.md`.
+
+### 다음 행동
+
+- CF: Lane B(FE10-b)가 멈춘 뒤 `fe_gate.ps1` 1회 → golden 3건(`plan-flow-step1-filter` · `plan-flow-step1-one` 바뀜, `plan-flow-step4-raised` 기준 없음) `failures/` 확인(렌더 PNG와 비교) → `-UpdateGoldens` → 재비교 → `fe_commit.ps1 -Slice fe4g4`.
+- CF 판단: 발견 1(알림 시점 문구), 2(초안 나중에 < 활성 나중에), 4(상태 칩 후속 slice).
+
+### fe4g4 commit record (2026-10-19 19:52, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_193503\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

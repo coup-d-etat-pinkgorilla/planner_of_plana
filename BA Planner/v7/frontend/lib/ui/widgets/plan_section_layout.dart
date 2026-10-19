@@ -123,6 +123,10 @@ const planBasicTacticalBdIconAsset =
     '${GameAssets.itemIconDirectory}/tactical_bd/Item_Icon_Material_ExSkill_Abydos_0.png';
 const planDefaultItemBackgroundAsset = GameAssets.itemBackgroundBasic;
 
+/// 계획 재화 유형(Detail 칩 · 옛 홈 분류). [iconAsset]은 [planningResourceIconAsset] 경로다(FE4-g4): 기술 노트는
+/// `skill_book/Item_Icon_SkillBook_*`, 전술 교육 BD는 `skill_db/Item_Icon_Material_ExSkill_*`, 장비 설계도는
+/// `item_icons/equipment/`(강화석 · 무기 부품도 같은 폴더라 그 둘을 먼저 본다). 인벤토리 카탈로그 분류(`tech_notes` ·
+/// `tactical_bd` · `equipment`, FD-098 라벨)와 같다. 어느 것에도 맞지 않으면 오파츠다.
 PlanResourceCategory planResourceCategory({
   required String id,
   required String iconAsset,
@@ -135,10 +139,16 @@ PlanResourceCategory planResourceCategory({
   if (equipmentTier != null || key.contains('equipment_icons')) {
     return PlanResourceCategory.equipment;
   }
-  if (key.contains('tactical_bd') || key.contains('basic-bd')) {
+  if (key.contains('tactical_bd') ||
+      key.contains('basic-bd') ||
+      key.contains('/skill_db/') ||
+      key.contains('material_exskill')) {
     return PlanResourceCategory.tacticalBd;
   }
-  if (key.contains('skill_note') || key.contains('skillnote')) {
+  if (key.contains('skill_note') ||
+      key.contains('skillnote') ||
+      key.contains('skill_book') ||
+      key.contains('skillbook')) {
     return PlanResourceCategory.skillNote;
   }
   if (key.contains('weaponexp') || key.contains('weapon-part')) {
@@ -146,6 +156,9 @@ PlanResourceCategory planResourceCategory({
   }
   if (key.contains('equipment_icon_exp') || key.contains('enhancement-stone')) {
     return PlanResourceCategory.enhancementStone;
+  }
+  if (key.contains('item_icons/equipment/')) {
+    return PlanResourceCategory.equipment;
   }
   if (key.contains('report') || key.contains('activity')) {
     return PlanResourceCategory.report;

@@ -9,6 +9,7 @@ import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/kit/diagonal_row.dart';
 import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/models/planning_models.dart';
+import 'package:ba_planner_v7/ui/models/planning_resource_assets.dart';
 import 'package:ba_planner_v7/ui/models/repository_plan_snapshot.dart';
 import 'package:ba_planner_v7/ui/pages/planning_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_element_builder.dart';
@@ -403,6 +404,61 @@ void main() {
       PlanResourceCategory.credits,
     );
   });
+
+  test(
+    'Detail filter chips classify real plan resource icons like the inventory catalog (FE4-g4)',
+    () {
+      // Detail 칩은 계산 응답 category · item_id로 만든 아이콘 경로를 분류한다(plan_scenario_detail includes).
+      PlanResourceCategory classify(String category, String itemId) =>
+          planResourceCategory(
+            id: itemId,
+            iconAsset:
+                planningResourceIconAsset(category: category, itemId: itemId) ??
+                category,
+          );
+      // 기술 노트(skill_book 폴더)는 오파츠가 아니다(FE10-a 버그 의심, FD-098 "노트").
+      expect(
+        classify('tech_notes', 'Item_Icon_SkillBook_Gehenna_3'),
+        PlanResourceCategory.skillNote,
+      );
+      expect(
+        classify('tech_notes', 'Item_Icon_SkillBook_Ultimate'),
+        PlanResourceCategory.skillNote,
+      );
+      expect(
+        classify('tactical_bd', 'Item_Icon_Material_ExSkill_Abydos_0'),
+        PlanResourceCategory.tacticalBd,
+      );
+      expect(
+        classify('equipment', 'Equipment_Icon_Hat_Tier3_Piece'),
+        PlanResourceCategory.equipment,
+      );
+      expect(
+        classify('equipment', 'Equipment_Icon_Exp_2'),
+        PlanResourceCategory.enhancementStone,
+      );
+      expect(
+        classify('equipment', 'Equipment_Icon_WeaponExpGrowthA_1'),
+        PlanResourceCategory.weaponParts,
+      );
+      expect(
+        classify('oopart', 'Item_Icon_Material_Nebra_2'),
+        PlanResourceCategory.ooparts,
+      );
+      expect(
+        classify('workbook', 'Item_Icon_WorkBook_PotentialMaxHP'),
+        PlanResourceCategory.ooparts,
+      );
+      expect(
+        classify('activity_report', 'Item_Icon_ExpItem_1'),
+        PlanResourceCategory.report,
+      );
+      expect(
+        classify('credits', 'Currency_Icon_Gold'),
+        PlanResourceCategory.credits,
+      );
+    },
+  );
 
   Future<void> pumpPage(
     WidgetTester tester,
