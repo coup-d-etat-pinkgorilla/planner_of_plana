@@ -3872,3 +3872,24 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - 커밋: **fe4g5 `6c21b88f`** → **fe10d `21ffa562`**.
 - CF 대장 갱신(FE10-d CF 요청 1~4): FD-020 사실 한 줄(스캔 시안 · FD-179), FD-052 줄 번호 → 절 이름, FD-136 반영 기록, ID 규칙에 FD-157~159 결번. 요청 5(FD-081 시나리오 → 1단계 진입점)는 사용자 둘러보기 결정 후보로.
 - **FE10-z**: `flutter build windows --release` 성공(74.7s, `frontend/build/windows/x64/runner/Release/ba_planner_v7.exe`, 추적 파일 변화 0). 최종 체크리스트 `debug/frontend_fe10z/walkthrough-checklist.md`(FE10-a 초안 + Scan-Item-Review · Flow-1-Students-One · FD-180 · 설정 + 알려진 차이 8). 사용자 둘러보기 결과에 따라 후속 slice를 정한다.
+
+## 2026-10-19 22:45 — 알림(CM→CF): A2 착수 가능 + 첫 실행·튜토리얼 설계 입력 + 알파 차단 항목
+
+- **A2 착수 조건 충족(부분)**: A0 계약 `contracts/animation-spectrum-v1.schema.json`(커밋 `987c0d0a`), A1 산출 `data/extracted/animation-spectrum/jp-1.73.0-e2baf70e/index.json` + 캐릭터 파일 1,468개(커밋 `1a037b77`), 표본 문서 `docs/tactic-editor/a1-animation-spectrum-samples-2026-10-10.md`(비나·미카). 한계: **스킬 로직 층이 클립에 연결되지 않음(0건)** — 원 마커는 index에 스킬별로 보존. 1차 화면은 anim 층(클립·이벤트) + "미배치 스킬 마커" 패널(스킬별 목록, 클립 축에 올리지 않음)로. 연결 규칙(A1-d)이 나오면 데이터만 바뀌고 계약은 그대로. 진입점 등록은 `tool_registry.dart` 1줄(CF). 착수 시점은 CF 판단(FE10-z 뒤 권장).
+- **설계 입력 2건(사용자 확정 대기, 읽어만 두길)**: `docs/alpha/first-run-tutorial-concept-2026-10-19.md`(첫 실행 체크리스트 3단계 + 빈 상태 7화면 = 안내 + 경로 3개, 별도 투어 없음), `docs/alpha/alpha-distribution-decision-2026-10-19.md`(zip / 시작 시 버전 확인 1회 / 테스터 1~2명). 사용자가 확정하면 CF가 slice로 쪼갠다.
+- **알파 차단 항목 중 CF 몫**: ① 첫 실행 추출 구현(사용자 설치본 → 아이콘 1,330; 명세는 M6 전까지 현재 기준팩 생성 목록을 임시로) ② 첫 실행 체크리스트 ③ 빈 상태 화면 7장 + golden. 우선순위는 사용자 확정 뒤.
+- 14:20 이후 보고 수신(FE10-s·FE10-b/d, Release 빌드 성공). FE10-z 둘러보기는 사용자 PC 복귀 후.
+
+## 2026-10-19 23:00 — 요청(CM→CF): 알파 배포 차단 항목 — 프론트 몫 4건 (시안 먼저)
+
+근거: `docs/alpha/alpha-distribution-decision-2026-10-19.md`(결정 A~E, 사용자 확정), `docs/alpha/first-run-tutorial-concept-2026-10-19.md`(§1-A 연습 계정, §7 진행 방식). 사용자 결정: **튜토리얼 화면은 기존 UI 아티팩트(시안) 워커와 artboard를 먼저 그리고, 그 시안을 따라 구현**한다. FE10-z 둘러보기 뒤 착수.
+
+| # | 항목 | 내용 |
+|---|---|---|
+| F1 | **시안 13장 안팎** | 첫 실행 체크리스트 3장(게임 설치 찾기 / 이미지 준비 진행 / 계정 만들기·v6 가져오기), 연습 계정 안내 띠 2장(탭 안내 상태·완료 상태), 빈 상태 7장(스캔·학생·인벤토리·계획·통계·전술·백엔드 미연결), 스캔 문제 신고 띠+버튼 1장. 기존 prototype 폴더 규칙·artboard 지도에 추가. 문구는 튜토리얼 문서 표를 기준으로, "할 일 1개 + 왜" 두 줄 이내. |
+| F2 | **첫 실행 추출 구현** | 첫 실행 체크리스트 ②: 사용자 Steam 설치본에서 아이콘 1,330개(현재 기준팩 생성 목록을 임시 명세로; M6 `first-run-extract-spec.json`이 나오면 교체) 생성, 진행·실패 수 표시, 설정에서 재시도. 추출 로직 자체가 Python 쪽이면 XB 요청서로 넘기고 CF는 호출·표시만. 게임 패치 감지(`BundleRevision` 변화) 시 ②만 재표시. |
+| F3 | **체크리스트·연습 계정·빈 상태 구현** | F1 시안대로. 연습 계정 생성/삭제/초기화·`is_practice`·저장 스캔 재생은 XB X4 계약이 커밋된 뒤 연결(그 전엔 mock). 빈 상태 7장은 golden 추가. |
+| F4 | **스캔 문제 신고 UI** | 세션 종료 띠(한계 초과 시), 검토 화면·설정의 버튼, 셀 조각 포함 체크박스, zip 생성 후 폴더 열기 + GitHub Issues 링크. 집계·zip은 XB X5. |
+
+런처(X2)가 Dart 코드이면 XB가 확인 뒤 분담을 적는다. 설정 탭에 "자동 업데이트 끄기 / 지금 확인" 두 항목은 X2 계약 뒤.
+

@@ -1,0 +1,262 @@
+{
+  "protocol_sha256": "290708bc6cce5509e01bc406a0530539459e2a3582d25a3c3f9131160d93f968",
+  "labels_sha256": "7311ed1dd7cbfae037ffec473cccab1cc04f96047c9e31385c0cbde34e827388",
+  "thresholds_changed": false,
+  "matcher_rerun": false,
+  "results": {
+    "R25-F16-single": {
+      "labeled_occupied": 12,
+      "labeled_empty": 4,
+      "correct_accept": 6,
+      "false_accept": 0,
+      "held": 6,
+      "decision_rate": 0.5,
+      "false_accept_among_accepts": 0.0,
+      "occupied_as_empty": 0,
+      "false_accept_from_empty": 0,
+      "correct_empty": 4,
+      "cases": [
+        {
+          "slot": 203,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_himari",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 102,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_ako_dress",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 130,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_ichika",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 154,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_kazusa_band",
+          "accepted_identity": "Item_Icon_SecretStone_kazusa_band",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 19,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_renge_swimsuit",
+          "accepted_identity": "Item_Icon_SecretStone_renge_swimsuit",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 94,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_airi",
+          "accepted_identity": "Item_Icon_SecretStone_airi",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 128,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_izumi",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 79,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_shiroko_terror",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 136,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_tsurugi_swimsuit",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 149,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_karin_bunny_girl",
+          "accepted_identity": "Item_Icon_SecretStone_karin_bunny_girl",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 0,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_nagisa_swimsuit",
+          "accepted_identity": "Item_Icon_SecretStone_nagisa_swimsuit",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 210,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_hifumi",
+          "accepted_identity": "Item_Icon_SecretStone_hifumi",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 211,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 212,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 213,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 214,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        }
+      ],
+      "scope": "Targeted unused-label same-recording audit; no all211/unbiased/cross-capture inference"
+    },
+    "R25-F16-local9": {
+      "labeled_occupied": 12,
+      "labeled_empty": 4,
+      "correct_accept": 10,
+      "false_accept": 0,
+      "held": 2,
+      "decision_rate": 0.8333333333333334,
+      "false_accept_among_accepts": 0.0,
+      "occupied_as_empty": 0,
+      "false_accept_from_empty": 0,
+      "correct_empty": 4,
+      "cases": [
+        {
+          "slot": 203,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_himari",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 102,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_ako_dress",
+          "accepted_identity": null,
+          "outcome": "held"
+        },
+        {
+          "slot": 130,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_ichika",
+          "accepted_identity": "Item_Icon_SecretStone_ichika",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 154,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_kazusa_band",
+          "accepted_identity": "Item_Icon_SecretStone_kazusa_band",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 19,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_renge_swimsuit",
+          "accepted_identity": "Item_Icon_SecretStone_renge_swimsuit",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 94,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_airi",
+          "accepted_identity": "Item_Icon_SecretStone_airi",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 128,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_izumi",
+          "accepted_identity": "Item_Icon_SecretStone_izumi",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 79,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_shiroko_terror",
+          "accepted_identity": "Item_Icon_SecretStone_shiroko_terror",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 136,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_tsurugi_swimsuit",
+          "accepted_identity": "Item_Icon_SecretStone_tsurugi_swimsuit",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 149,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_karin_bunny_girl",
+          "accepted_identity": "Item_Icon_SecretStone_karin_bunny_girl",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 0,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_nagisa_swimsuit",
+          "accepted_identity": "Item_Icon_SecretStone_nagisa_swimsuit",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 210,
+          "kind": "known",
+          "expected_identity": "Item_Icon_SecretStone_hifumi",
+          "accepted_identity": "Item_Icon_SecretStone_hifumi",
+          "outcome": "correct_accept"
+        },
+        {
+          "slot": 211,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 212,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 213,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        },
+        {
+          "slot": 214,
+          "kind": "empty",
+          "expected_identity": null,
+          "accepted_identity": null,
+          "outcome": "correct_empty"
+        }
+      ],
+      "scope": "Targeted unused-label same-recording audit; no all211/unbiased/cross-capture inference"
+    }
+  }
+}
