@@ -3156,7 +3156,7 @@ R-M3-1(CM-R, 지금 배정) → gift-affinity import(사용자) → XB crosswalk
 
 ## 2026-10-19 23:00 — 요청(CM→XB): 알파 배포 차단 항목 — 백엔드 몫 5건 + 우선순위 변경
 
-근거: `docs/release/alpha-distribution-decision-2026-10-19.md`(결정 A~E, 사용자 확정), `docs/release/first-run-tutorial-concept-2026-10-19.md`. 사용자 규칙 1개: **"깃허브에서 한 번만 받고 그 뒤는 알아서 갱신"**. 알파 완료 정의: 다른 사람이 zip을 풀어 첫 스캔·첫 계획까지 혼자 가는 것.
+근거: `docs/alpha/alpha-distribution-decision-2026-10-19.md`(결정 A~E, 사용자 확정), `docs/alpha/first-run-tutorial-concept-2026-10-19.md`. 사용자 규칙 1개: **"깃허브에서 한 번만 받고 그 뒤는 알아서 갱신"**. 알파 완료 정의: 다른 사람이 zip을 풀어 첫 스캔·첫 계획까지 혼자 가는 것.
 
 **우선순위 변경(사용자 승인)**: M6(스냅샷·latest.json) → M5 dry-run → M3 마무리(R-M3-1 결과 오는 대로 끼움) → M4. FB 요청서 우선 규칙은 유지하되, 아래 5건은 FB 요청서와 같은 급.
 
@@ -3176,3 +3176,7 @@ R-M3-1(CM-R, 지금 배정) → gift-affinity import(사용자) → XB crosswalk
 - v25 독립 채점(tactic 로그 23:35): local9 10/12 확정·보류 2·오인식 0, single 6/12·오인식 0. CM 판정 = local9 후보 진행, 채택 선언 보류.
 - **X7**(우선순위: X1~X6 뒤, 알파 차단 아님): 같은 프로토콜(`practical_roi_eval_v25/PROTOCOL.md`, 임계값 고정)을 **다른 캡처 1건**(가능하면 다른 해상도 또는 다른 계정의 엘레프 스크롤 스티치)에 적용, 라벨 게이트는 동일 방식(사용자 라벨 → `score_reviewed_labels.py`). false_accept 0 유지 시 CM이 채택 선언. 모델·임계값 재조정 금지.
 - 알림: 공용 저장소에 jp-1.73.0-e2baf70e `student-stats`·`animation-events`·`animation-spectrum`·`skill-logic-full` 4 kind 적재 완료, `ba-data.lock` 갱신(2 pins, 20 extracts). M3·M5 dry-run은 이 lock 기준으로 진행하면 된다. `student-stats` kind 이름 확정.
+
+## 2026-10-20 00:15 — 알림(CM→XB): 로그 추적·문서 경로
+- `backend-orchestrator-log.md`는 커밋 `4fb83406`까지 **untracked**였다(CM 커밋에서 처음 추적). 이후 XB는 자기 로그·status 파일을 자기 커밋에 포함할 것(한 커밋 = 한 레인 규칙 안에서).
+- `.gitignore:11 release/`가 `docs/release/`도 무시하므로 배포 결정·튜토리얼 문서는 `docs/alpha/`로 이동(커밋 `edbe1212`). X1~X6 요청서의 `docs/release/` 참조는 `docs/alpha/`로 읽는다. 릴리스 스크립트 산출 폴더 `release/`는 그대로.

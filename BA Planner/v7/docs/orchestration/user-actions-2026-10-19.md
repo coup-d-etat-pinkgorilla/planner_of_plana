@@ -35,6 +35,6 @@ Copy-Item "$V\docs\tactic-editor\evidence\skill-logic-full-index-jp-1.73.0.json"
 - push: `git push -u origin scanner-consolidation` (219+ 커밋, 첫 push 느림).
 
 ## 4. 결정만 해 주면 되는 것 (PC 불필요)
-- `docs/release/alpha-distribution-decision-2026-10-19.md` A/B/C 권고안 확정 여부.
-- `docs/release/first-run-tutorial-concept-2026-10-19.md` 방향(빈 상태=안내, 체크리스트 3단계) 동의 여부 → 동의하면 CF에 설계 입력으로 전달.
+- `docs/alpha/alpha-distribution-decision-2026-10-19.md` A/B/C 권고안 확정 여부.
+- `docs/alpha/first-run-tutorial-concept-2026-10-19.md` 방향(빈 상태=안내, 체크리스트 3단계) 동의 여부 → 동의하면 CF에 설계 입력으로 전달.
 - FE10-z 둘러보기는 PC 복귀 후.

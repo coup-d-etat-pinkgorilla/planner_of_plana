@@ -1477,8 +1477,8 @@ FB-4 창 크기·게임 식별 기능을 커밋했으며 전체 Python1005 통�
 - A2(CF) 착수 가능: 입력 = `data/extracted/animation-spectrum/jp-1.73.0-e2baf70e/index.json` + 비나·미카 파일 2개, `docs/tactic-editor/a1-animation-spectrum-samples-2026-10-10.md`. 1차 화면은 anim 층 + "미배치 스킬 마커(스킬별 목록)" 패널. 프론트 로그에 알림.
 
 ### 배포·튜토리얼 (사용자 부재 중 작성, 확정 대기)
-- `docs/release/alpha-distribution-decision-2026-10-19.md`: A zip / B 시작 시 버전 확인 1회(`latest.json`, 자동 다운로드 없음) / C 테스터 1~2명(없으면 새 Windows 계정). 알파 차단 4항목: 첫 실행 추출 구현(CF), M6 스냅샷 메타·latest.json(XB), 사용자 데이터 경로 확인(XB), 첫 실행 체크리스트(CF).
-- `docs/release/first-run-tutorial-concept-2026-10-19.md`: 체크리스트 3단계(게임 설치 찾기→이미지 준비→계정) + 빈 상태 7화면 = 안내 + 경로 3개. 별도 투어 없음.
+- `docs/alpha/alpha-distribution-decision-2026-10-19.md`: A zip / B 시작 시 버전 확인 1회(`latest.json`, 자동 다운로드 없음) / C 테스터 1~2명(없으면 새 Windows 계정). 알파 차단 4항목: 첫 실행 추출 구현(CF), M6 스냅샷 메타·latest.json(XB), 사용자 데이터 경로 확인(XB), 첫 실행 체크리스트(CF).
+- `docs/alpha/first-run-tutorial-concept-2026-10-19.md`: 체크리스트 3단계(게임 설치 찾기→이미지 준비→계정) + 빈 상태 7화면 = 안내 + 경로 3개. 별도 투어 없음.
 
 ### 스캔 v25
 사용자 라벨 16개 수신(12 known + 4 empty) → `reviewed-labels.json` 작성 완료. 채점 명령은 사용자 PC 복귀 후(`docs/orchestration/user-actions-2026-10-19.md`).
