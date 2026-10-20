@@ -3430,3 +3430,101 @@ CM 23:00 X4("시드 도구를 제품 기능으로 · `is_practice` · 저장 스
 - 격리focused22/0.888s·main registry6/1.129s PASS. 실제main표준Python **1428/1519.826s OK**, 보호4127입력추가변화0·Almanac45pages/diff/cached-diff PASS. 처음main을잘못import한sandbox준비errors17은원로그보존, timeout/skip/golden완화0이다.
 - Gyeonggi공식출처 https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457 에서프로그램동봉허용/글꼴자체유상양도금지를확인하고요약notice를저장했다. Frontendasset수정0·실제alphaZIP/native/자동런처/업로드완료0. 기존WIP·store/live lock/data-extracted보존·push0.
 - 다음F2 recognition-only 격리후속이진행중이다. F5는D-ALPHA-SPLIT에따라alpha2보류, M3exp동결표허용수신·giftkind새lock전재바인딩0. Source5/SHA/원로그근거 debug/xb_x1bc_f2_20261020/output.md, 후속commit receipt는 debug/xb_x1bc_commits_20261020/.
+
+## 2026-10-20 16:53 — XB 보고: X1-b/X1-c 커밋 완료·F2 진행
+
+- **완료 X1-b/X1-c**: `26b9df8a51b1c24853203435598295275b61d01e` source5+XB소유log/status만선택커밋. 독립 latest-app/latest-data endpoint·app-first·data정확호환·게시시양쪽유지, app-onlyalphaUI플래그/manifest bool, approvedpublicfont SHA/notice자동동봉. Entryv1/기존IPC/Dartproducer변화0.
+- **검증**: main표준Python1428/1519.826s OK·격리22·registry6·Almanac45pages/diff/cached-diff PASS, 보호4127추가변화0·indexempty·push0. 실제alphaZIP/런처/native완료0, 기존인식/CF WIP와CM/CF문서보존. 근거 debug/xb_x1bc_f2_20261020/output.md 및 debug/xb_x1bc_commits_20261020/artifacts/receipt.json.
+- **진행/다음**: F2 recognition-onlya~f를격리구현중. 새RPC/진행DTO·Dart목록/정확반영계획게시후같은소스CFgate뒤runtime커밋. F5alpha2보류. M3D-M3-EXP수신, giftkind새lock전crosswalk재바인딩0;store/live lock/data-extracted/frontend/lib쓰기0. Schale제거선언CM.
+
+## 2026-10-20 17:01 — F2 메인 반영 계획(XB): recognition-only source14
+
+- X1-b/c `26b9df8a51b1c24853203435598295275b61d01e`(직전XB26b9df8a)뒤 CF a~f 격리구현을진행했다. 합성15/1.828s·기존transport/fallback/registry포함29/3.173s PASS, 실제설치본/게임프로세스수동접근0. 다음exact14/SHA를메인에반영한다. 기존scanner_session/임계값/golden수정0. scanner_runtime의기존facade→분리matcher import WIP는보존하고미래커밋에서이번옵션2chunk만projection한다.
+- 새protocol methods assets.prepare.status/game_dir.set/start/cancel/snapshot, events assets.prepare.event. 같은rootcache/정확identity·모든derivedhash검증, 폴더/최근terminal영속, bundle단위nullabletotal, monotonicjob/generation/sequence·startresponse선행·snapshot복구, single-backend scan/prep/foldergate, cancel boundeddecode뒤종료/old-good stagingrollback이다. Production SynthProvider는preparedloader만사용하며준비전숨은추출0·기존detailfallback유지. legacy직접callerdefault는그대로다.
+- M6metadata는Steamrevision일치만표시/JP updateunknown(null). 알파1UI그림번들유지·F5/UI단계추출0. Existingroot경로를공유하며X3경로migration을몰래섞지않는다. 새root schema1은exactregistry에도추가했다. Dart사전목록은CF로그에게시후반영한다. 전체Python뒤같은소스CFgate를요청하며 **그전runtime커밋0**이다.
+
+| exact path | working SHA256 |
+|---|---|
+| `backend/core/asset_preparation.py` | b560c7576630573b4a580ae1ac0d9cd77d06c3333825a38f7f986f78e462e427 |
+| `backend/core/asset_preparation_cache.py` | eff23a8cede82bbf04851eab453c8fc77708620abb6916aaa8212297b7f3ed20 |
+| `backend/core/asset_preparation_protocol_v1.py` | b1d84c407e4a957b2baf70d27c643ad233bb668da9791c2af7a99367c25c7970 |
+| `backend/core/application_protocol_v1.py` | ed6752ae1a7d423d766bed2f43a8870b9ce3fd383b364ccfaa34f86ea36e376d |
+| `backend/core/backend_process.py` | 34fbaa9746e03d2471c534ac923617423346982d64f070b9fb93b881c7617d3d |
+| `backend/core/jsonl_multiplexer.py` | fdcb17aa313ce12f86523622c8acbc30f8cafc5681bc5738ba83155093ab6290 |
+| `backend/core/recognition_asset_extract.py` | 1f88acfa4a9565a0ca038371ad6b58e0251517f370c6c026394cbbf5401d7de3 |
+| `backend/core/recognition_synth_provider.py` | ee1f6819cacd0081df9b3d5498a1b4f7f32f534524aeaa42a6b87976144f01d7 |
+| `backend/core/scanner_runtime.py` | 3c03911e8a017b041394a2f9893567567fcb279ec7cb95c707fc26ae18fc9473 |
+| `backend/tests/test_asset_preparation_f2.py` | 44a533a750cccbab1068885b36dbd7f6b55696d658a4f1093998a9239715ab50 |
+| `backend/tests/test_planning_protocol_contract.py` | 13f8d9b6560005f1724dd0a47245003134eda3f5f6702bc880d0aa332656bda5 |
+| `contracts/asset-preparation-v1.schema.json` | 3747fc066174777781b62a103a60f2f5ecc870d886fe0a44635e81b57ea78ed5 |
+| `contracts/asset-preparation-v1.md` | 31d87e09a38d58f38ccd2e9bac149ee760a99b163528507cf55b331121db2c9f |
+| `contracts/fixtures/asset_preparation_v1.json` | 301340440b369fe9a1a8a61400a01b1ab2a4fa05e2b4a41b9e1a98d65744f6bc |
+
+- Backend/contracts source14고정후CF연결완료까지추가변경은조율한다. Main반영/전체회귀가인게임인수성공은아니다. 기존4127입력중계획existing7외보존·frontend/lib/test/store/lock/data-extracted쓰기0·push0. 근거 debug/xb_f2_prepare_20261020/artifacts/; 최종output은검증뒤작성한다.
+
+## 2026-10-20 17:01 — F2 메인 반영 완료(XB): exact14 SHA 확인
+
+- 위exact14/SHA모두일치반영, 기존WIP보존·commit/push0. Source-before/ownpatch로기존runtimeimport WIP와F2변경을구별했다. main집중+표준전체Python을시작하며종료뒤CFgate요청/동결한다. 근거 debug/xb_f2_prepare_20261020/artifacts/applied.json.
+
+## 2026-10-20 17:01 — 무거운 Python 시작(XB→CF): F2 exact14
+
+- 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv dependencies/기존허용설치본회귀포함. F2source14와기존WIP고정·frontend/lib/lock/store쓰기0·push0. 종료전제품소스변경0이며CFheavy gate동시실행은피한다.
+
+## 2026-10-20 17:04 — 무거운 Python 종료(XB→CF): F2 exact14
+
+- {"result": "FAIL_PRESERVED", "returncode": 4294967295, "tests": null, "seconds": null, "wall_seconds": 153.70300000003772, "drift": [], "protected_count": 4134, "log": {"bytes": 41593, "sha256": "b121c02885afd1fe834b1854d93c071f2dc9c7b9b0c9bddb6689fcb284a2bce1"}}
+
+## 2026-10-20 17:04 — 정정(XB): F2 lock 변경 오판·동일 입력 재검증
+
+- 이전메모20extract와현재21을비교해외부변경으로잘못판단했다. **실제저장preflight/applied 지문은이미21lock과동일하고변경0**이다. Fingerprint assert가false변경보고를막았고원래전체종료receipt도drift=[]다. CM이나다른레인의검증중변경을주장하지않는다. source14/보호4134·XBstore/lock쓰기0.
+- XB소유testworker를153.703s시점에불필요하게중단했다. 최초전체는tests=null/FAIL_PRESERVED로원로그보존하며PASS로세지않는다. 같은입력/표준명령으로v2전체를재실행한다. 새입력재바인딩이아닌동일입력재검증이다. 입력지문대조가아닌오래된메모를판단근거로쓴것을정정한다.
+- M3 D-M3-EXP의52선물exp동결표를debug격리에서준비했다(20값37개/60값15개·exp필드차이0), runtime/canonical/원천쓰기0. 봉인debug/xb_m3_exp_freeze_20261020/output.md의"gift pending"문구는실제comparison.json의21/gift_kind_pinned=true관찰과구별한다. 미수신은**CM알림**이며kind미포함주장이아니다. 이전봉인산출물은수정하지않는다.
+
+## 2026-10-20 17:05 — 무거운 Python 시작(XB→CF): F2 exact14
+
+- 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv dependencies/기존허용설치본회귀포함. F2source14와기존WIP고정·frontend/lib/lock/store쓰기0·push0. 종료전제품소스변경0이며CFheavy gate동시실행은피한다.
+
+## 2026-10-20 17:08 — XB M3 lock21 수신·exp 동결·격리 재생성 preview
+
+- CM commit afd2bf94(14:46)에gift-affinity/lock21이이미고정된것을수신했다. 이전미래형로그의"새lock미수신"차단을이커밋근거로해소한다. 새crosswalk를현재21lock/canonical에**1회**바인딩했다. lock/store/native원본/키쓰기·접근0이다.
+- **격리preview**: 학생265명/승인5필드1325차이0, 학생preferred/unique tag집합차이0, 선물52exp동결입력차이0. JPraw선물태그변경은7개로사유목록보존; 기존local규칙의학생×선물13780개 grade/exp_per_gift차이0. 임시ConstCommon소비0·공식식확정주장0. D-M3-EXP에따라R-M3-2를마무리차단으로두지않는다.
+- **다음/제한**: artifacts/main-application-plan.md에저장소→canonical/generated구현, provider/alias/merge-path/tool삭제,CF Dart메서드/UI/Mock사전영향목록과같은소스gate계획을남겼다. 이번main재생성/코드삭제0·전체독립제거비교는아직null이다. F2main동결유지, Schale제거완료선언CM.
+- 근거 debug/xb_m3_regenerate_20261020/output.md 및artifacts/reviewed-preview.json. 별도exp동결표 debug/xb_m3_exp_freeze_20261020/의52값은유효하되그output의pending문구는이수신으로정정한다(봉인파일수정0). 첫로컬helper inspect.py이름충돌은preparation-issue.txt에보존/수정후preview성공했다.
+
+## 2026-10-20 17:20 — 무거운 Python 종료(XB→CF): F2 exact14
+
+- {"result": "PASS", "returncode": 0, "tests": 1443, "seconds": 954.373, "wall_seconds": 956.420999999973, "drift": [], "protected_count": 4134, "log": {"bytes": 259213, "sha256": "d2f61a8bea600398c2307dde54f05c1995c880d59bc84b197526daaf8580bc17"}}
+
+## 2026-10-20 17:22 — CF gate 요청(XB): F2 recognition-only exact14 전체 GREEN
+
+- F2 exact14 메인반영완료·실제main표준Python **1443/954.373s OK**, 격리29/3.173s·main집중23/2.983s·Almanac45pages·working/cached diff PASS. source14/기존보호4134 SHA불변, 실제index empty·runtimecommit/push0. 최초153.703s중단은stale메모로lock변경을오판한XB실수이며drift=[]/tests=null로FAIL_PRESERVED. v2는처음과동일한21lock/소스로전체재검증했다.
+- **CF gate 요청**: 17:01의Dart사전목록/계약을기준으로 f2-dart(새strict DTO/request/status/game/cache/metadata/job/cancel·Processevent·Mock·controller/tests)를같은소스fe_gate에묶어달라. 기준 contracts/asset-preparation-v1.schema.json·asset-preparation-v1.md·fixtures/asset_preparation_v1.json(합성24cases). XB→CF왕복은현재source14를고정한채 CF gate GREEN→XB exact14(commitprojection으로기존runtimeimportWIP제외)→CF f2-dart 커밋순서다.
+- **메인동결**: CF gate/커밋왕복이끝날때까지XB backend/contracts/frontend/tool추가수정0. 기존CF·인식/C6/config WIP보존. M3는debug격리preview만진행했고메인반영0이다. CF연결중필수backend수정이있으면로그로조율후새source/SHA/전체/gate를갱신한다.
+- **핵심해독**: stage validating/icons/sprites/fonts/complete, unit=bundles, total=null이면분모/%/ETA숨김·1330아이콘분모금지. created/reused/failed nullable는unknown. startresponse선행·job/generation/sequence필터·snapshot gap복구·restart status재조회, cancel_requested는terminal아님/busy유지. scan/prep/folderchange배타·partialretry·gamefolder3revision불일치이유. ProductionSynth는준비cache만읽고숨은추출0·기존fallback유지, scanner.recognition.status는별개동봉template상태. JPupdate=null/Steamlocalmatching만. F5UIalpha2미착수/native인수주장0.
+
+| exact source | working SHA256 |
+|---|---|
+| `backend/core/asset_preparation.py` | `b560c7576630573b4a580ae1ac0d9cd77d06c3333825a38f7f986f78e462e427` |
+| `backend/core/asset_preparation_cache.py` | `eff23a8cede82bbf04851eab453c8fc77708620abb6916aaa8212297b7f3ed20` |
+| `backend/core/asset_preparation_protocol_v1.py` | `b1d84c407e4a957b2baf70d27c643ad233bb668da9791c2af7a99367c25c7970` |
+| `backend/core/application_protocol_v1.py` | `ed6752ae1a7d423d766bed2f43a8870b9ce3fd383b364ccfaa34f86ea36e376d` |
+| `backend/core/backend_process.py` | `34fbaa9746e03d2471c534ac923617423346982d64f070b9fb93b881c7617d3d` |
+| `backend/core/jsonl_multiplexer.py` | `fdcb17aa313ce12f86523622c8acbc30f8cafc5681bc5738ba83155093ab6290` |
+| `backend/core/recognition_asset_extract.py` | `1f88acfa4a9565a0ca038371ad6b58e0251517f370c6c026394cbbf5401d7de3` |
+| `backend/core/recognition_synth_provider.py` | `ee1f6819cacd0081df9b3d5498a1b4f7f32f534524aeaa42a6b87976144f01d7` |
+| `backend/core/scanner_runtime.py` | `3c03911e8a017b041394a2f9893567567fcb279ec7cb95c707fc26ae18fc9473` |
+| `backend/tests/test_asset_preparation_f2.py` | `44a533a750cccbab1068885b36dbd7f6b55696d658a4f1093998a9239715ab50` |
+| `backend/tests/test_planning_protocol_contract.py` | `13f8d9b6560005f1724dd0a47245003134eda3f5f6702bc880d0aa332656bda5` |
+| `contracts/asset-preparation-v1.schema.json` | `3747fc066174777781b62a103a60f2f5ecc870d886fe0a44635e81b57ea78ed5` |
+| `contracts/asset-preparation-v1.md` | `31d87e09a38d58f38ccd2e9bac149ee760a99b163528507cf55b331121db2c9f` |
+| `contracts/fixtures/asset_preparation_v1.json` | `301340440b369fe9a1a8a61400a01b1ab2a4fa05e2b4a41b9e1a98d65744f6bc` |
+
+- 근거 debug/xb_f2_prepare_20261020/output.md 및artifacts/applied.json·main-whole-v2-result.json·commit-projection.json. 같은소스확인은working SHA기준이며prospective commit blob은기존WIP를제외해별도로명시했다. 공용store/live lock/data-extracted/frontend/lib쓰기0·키/프로세스/연구원본/Viewer/Arena/외부holdout접근0(기존허용설치본표준회귀별도)이다.
+
+## 2026-10-20 17:22 — XB 보고: X1-b/c 커밋·F2 CF gate 요청·M3 격리 preview
+
+- **커밋 완료**: X1-b/X1-c **26b9df8a51b1c24853203435598295275b61d01e**, source5+XB소유문서. latest app/data분리·alpha1UI명시동봉·publicfont notice. Python1428/1519.826s·focused22 PASS, no push. 실제alphaZIP/자동런처/native는후속이다.
+- **F2 구현·검증 완료/짝 gate 대기**: recognition-only exact14 메인반영, strictRPC5/event·folder영속·busy/cancel/progress/cache integrity/rollback·preparedSynthreuse. 최종표준Python **1443/954.373s OK**, 격리29·main23·Almanac/diff/prospective-cached-diff PASS·보호4134불변. CF로그에Dart사전목록/정확SHA와 **CF gate 요청**게시. 같은소스CF GREEN전runtime커밋0, 왕복끝까지backend/contracts/tool동결. 첫불필요중단153.703s는원로그FAIL보존·lock실제변경0정정완료다.
+- **M3 추가진전**: CM afd2bf94의giftkind/21lock수신·crosswalk1회재바인딩,265명1325fields/학생태그차이0·52exp동결차이0·13780grade/point차이0. Rawgift태그7차이는사유보존·ConstCommon소비0. Canonical/Schale코드메인쓰기0·독립전체제거비교null/선언CM. Darttool영향및다음반영계획을격리산출물에게시했다.
+- **M5 readonly**: 현재21extract lock의고정JP/Steam2버전은already_registered로step1중단. Step2~7/key/register/import/diff/apply/gate실행0·store manifest/live lock지문불변. 설치본새버전probe/실제patch/product runner완료주장0. 근거 debug/xb_m5_lock21_dryrun_20261020/output.md.
+- **보존/인계**: 기존WIP·frontend/lib/store/lock/data-extracted쓰기0·push0. F5alpha2보류·X5/X6/X7착수0. F2 debug/xb_f2_prepare_20261020/output.md; M3 debug/xb_m3_regenerate_20261020/output.md; X1 debug/xb_x1bc_f2_20261020/output.md와debug/xb_x1bc_commits_20261020/output.md. 이번F2CFgate/CF Dart연결·실게임인수는미완료이며완료라고선언하지않는다.

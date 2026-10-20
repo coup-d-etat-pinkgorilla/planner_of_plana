@@ -1568,3 +1568,30 @@ XB 검토(커밋 `cb6758d6` X1 M6 / `96319b3e` X4 계약, main 전체 1422 OK):
 | X4 계약(create/current/reset/end/recover, `is_practice`, 가상 target `tutorial:1280x720`, 기존 scanner wire 재사용) | **수용**. tactical_bd 골든 없음 → 합성 시나리오 별도 라벨링은 X4 runtime 전제. CF Mock F3 착수 가능 |
 | extract progress done/total = bundle 수(아이콘 수 아님) | 수용. 튜토리얼 문서 "1,330" 표현은 CF 진행 문구에 쓰지 않음 |
 다음: 사용자 gift-affinity import → CM lock 갱신(21 extracts) → XB에 알림. XB 순서: X1-b/X1-c(작음) → F2(a~f) → X3(M3 마무리, 동결 스냅샷 포함) → X2.
+
+## XB 보고 — 2026-10-20 16:53: X1-b/X1-c 커밋 완료·F2 진행
+
+- **완료 X1-b/X1-c**: `26b9df8a51b1c24853203435598295275b61d01e` source5+XB소유log/status만선택커밋. 독립 latest-app/latest-data endpoint·app-first·data정확호환·게시시양쪽유지, app-onlyalphaUI플래그/manifest bool, approvedpublicfont SHA/notice자동동봉. Entryv1/기존IPC/Dartproducer변화0.
+- **검증**: main표준Python1428/1519.826s OK·격리22·registry6·Almanac45pages/diff/cached-diff PASS, 보호4127추가변화0·indexempty·push0. 실제alphaZIP/런처/native완료0, 기존인식/CF WIP와CM/CF문서보존. 근거 debug/xb_x1bc_f2_20261020/output.md 및 debug/xb_x1bc_commits_20261020/artifacts/receipt.json.
+- **진행/다음**: F2 recognition-onlya~f를격리구현중. 새RPC/진행DTO·Dart목록/정확반영계획게시후같은소스CFgate뒤runtime커밋. F5alpha2보류. M3D-M3-EXP수신, giftkind새lock전crosswalk재바인딩0;store/live lock/data-extracted/frontend/lib쓰기0. Schale제거선언CM.
+
+## XB 보고 — 2026-10-20 17:04: F2 lock 오판 정정·동일입력 재검증
+
+- 이전메모20extract와현재21을비교해외부변경으로잘못판단했다. **실제저장preflight/applied 지문은이미21lock과동일하고변경0**이다. Fingerprint assert가false변경보고를막았고원래전체종료receipt도drift=[]다. CM이나다른레인의검증중변경을주장하지않는다. source14/보호4134·XBstore/lock쓰기0.
+- XB소유testworker를153.703s시점에불필요하게중단했다. 최초전체는tests=null/FAIL_PRESERVED로원로그보존하며PASS로세지않는다. 같은입력/표준명령으로v2전체를재실행한다. 새입력재바인딩이아닌동일입력재검증이다. 입력지문대조가아닌오래된메모를판단근거로쓴것을정정한다.
+- M3 D-M3-EXP의52선물exp동결표를debug격리에서준비했다(20값37개/60값15개·exp필드차이0), runtime/canonical/원천쓰기0. 봉인debug/xb_m3_exp_freeze_20261020/output.md의"gift pending"문구는실제comparison.json의21/gift_kind_pinned=true관찰과구별한다. 미수신은**CM알림**이며kind미포함주장이아니다. 이전봉인산출물은수정하지않는다.
+
+## XB 보고 — 2026-10-20 17:08: M3 lock21 수신·격리 preview
+
+- CM commit afd2bf94(14:46)에gift-affinity/lock21이이미고정된것을수신했다. 이전미래형로그의"새lock미수신"차단을이커밋근거로해소한다. 새crosswalk를현재21lock/canonical에**1회**바인딩했다. lock/store/native원본/키쓰기·접근0이다.
+- **격리preview**: 학생265명/승인5필드1325차이0, 학생preferred/unique tag집합차이0, 선물52exp동결입력차이0. JPraw선물태그변경은7개로사유목록보존; 기존local규칙의학생×선물13780개 grade/exp_per_gift차이0. 임시ConstCommon소비0·공식식확정주장0. D-M3-EXP에따라R-M3-2를마무리차단으로두지않는다.
+- **다음/제한**: artifacts/main-application-plan.md에저장소→canonical/generated구현, provider/alias/merge-path/tool삭제,CF Dart메서드/UI/Mock사전영향목록과같은소스gate계획을남겼다. 이번main재생성/코드삭제0·전체독립제거비교는아직null이다. F2main동결유지, Schale제거완료선언CM.
+- 근거 debug/xb_m3_regenerate_20261020/output.md 및artifacts/reviewed-preview.json. 별도exp동결표 debug/xb_m3_exp_freeze_20261020/의52값은유효하되그output의pending문구는이수신으로정정한다(봉인파일수정0). 첫로컬helper inspect.py이름충돌은preparation-issue.txt에보존/수정후preview성공했다.
+
+## XB 보고 — 2026-10-20 17:22: X1-b/c 커밋·F2 CF gate 요청·M3 격리 preview
+
+- **커밋 완료**: X1-b/X1-c **26b9df8a51b1c24853203435598295275b61d01e**, source5+XB소유문서. latest app/data분리·alpha1UI명시동봉·publicfont notice. Python1428/1519.826s·focused22 PASS, no push. 실제alphaZIP/자동런처/native는후속이다.
+- **F2 구현·검증 완료/짝 gate 대기**: recognition-only exact14 메인반영, strictRPC5/event·folder영속·busy/cancel/progress/cache integrity/rollback·preparedSynthreuse. 최종표준Python **1443/954.373s OK**, 격리29·main23·Almanac/diff/prospective-cached-diff PASS·보호4134불변. CF로그에Dart사전목록/정확SHA와 **CF gate 요청**게시. 같은소스CF GREEN전runtime커밋0, 왕복끝까지backend/contracts/tool동결. 첫불필요중단153.703s는원로그FAIL보존·lock실제변경0정정완료다.
+- **M3 추가진전**: CM afd2bf94의giftkind/21lock수신·crosswalk1회재바인딩,265명1325fields/학생태그차이0·52exp동결차이0·13780grade/point차이0. Rawgift태그7차이는사유보존·ConstCommon소비0. Canonical/Schale코드메인쓰기0·독립전체제거비교null/선언CM. Darttool영향및다음반영계획을격리산출물에게시했다.
+- **M5 readonly**: 현재21extract lock의고정JP/Steam2버전은already_registered로step1중단. Step2~7/key/register/import/diff/apply/gate실행0·store manifest/live lock지문불변. 설치본새버전probe/실제patch/product runner완료주장0. 근거 debug/xb_m5_lock21_dryrun_20261020/output.md.
+- **보존/인계**: 기존WIP·frontend/lib/store/lock/data-extracted쓰기0·push0. F5alpha2보류·X5/X6/X7착수0. F2 debug/xb_f2_prepare_20261020/output.md; M3 debug/xb_m3_regenerate_20261020/output.md; X1 debug/xb_x1bc_f2_20261020/output.md와debug/xb_x1bc_commits_20261020/output.md. 이번F2CFgate/CF Dart연결·실게임인수는미완료이며완료라고선언하지않는다.

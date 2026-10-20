@@ -17,10 +17,10 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 | M0 출처 지도·계약 | 기존 산출물 수신 검증 완료(2026-10-10, XB) | 기존 커밋 `8b880441`, canonical 5/5 및 인계 manifest 21/21 크기·SHA 일치. M4 실물 검증과 구분 |
 | M1 백엔드 reader | 기본 조회 커밋 완료, 실제 출처 비교 후속 | `1fbc4ddd` exact18(M1 10+storetools8). same-source CF20261011_171338 GREEN·focused85·whole1169/1509.032s·annotation16 PASS. WIP 보존/push0 |
 | M2 도구 창 | CF 연결 커밋 완료·native 별도 검증 잔여 | CF `d2a53fed`/gate220445. 과거 별도 bundle symlink 실패는 보존; 전체 native 완료 미선언 |
-| M3 출처 전환 | CLI4·승인5필드265 readonly 일치, exp 동결표 허용 | CM14:50 D-M3-EXP 수신: R-M3-2 대기 불필요. 사용자 gift kind import/CM21extract lock 수신 후 crosswalk 1회 재바인딩·전체독립비교. 제거선언CM |
-| M4 자산 매핑 검증 | D-ALPHA-SPLIT: UI추출/manual449 알파2 보류 | 알파1 UI그림번들유지, F2는인식캐시만. F5원본→UI규칙은후속 |
-| M5 업데이트 관리자 | 현재2pin readonly dry-run·이미등록중단 확인 | Product runner/UI·설치본새patch검증은별도. 실제쓰기단계는CM승인+사용자실행 |
-| M6 배포 관리자 | X1 cb6758d6 + X1-b/c source5 검증 완료 | Python1428/focused22·앱/데이터descriptor분리·alpha1UI명시동봉·공개font notice. 실제alpha/런처/F2/native후속 |
+| M3 출처 전환 | CM afd2bf94 lock21 수신·격리재생성 preview | 265학생/1325fields·52exp·13780grade/point차이0, rawgift태그7사유보존. 메인provider/tool제거·독립전체비교·CF짝gate후속, 제거선언CM |
+| M4 자산 매핑 검증 | UI그림/manual449 알파2 보류 | D-ALPHA-SPLIT: alpha1UI동봉유지·F5미착수. F2인식cache exact14는main전체GREEN/CFgate대기 |
+| M5 업데이트 관리자 | 현재lock21/2pin readonly step1 중단 확인 | 두버전already_registered·store/lock불변, 설치본probe/실제patch/product runner는별도. 쓰기단계CM승인+사용자실행 |
+| M6 배포 관리자 | X1 cb6758d6 + X1-b/c26b9df8a 커밋 | latest앱/데이터분리·alpha1UIflag/fontnotice. F2 Python1443 PASS·CFgate대기, 실제alpha/자동런처/native후속 |
 
 ## 결정 기록
 - 2026-10-08 09:06 사용자: ① KR 전용 필드는 키 불필요 파일+수동값 ② SchaleDB 즉시 제거 ③ 편집기 흡수, 단 개발자 도구는 배포본에 없을 것 ④ 첫 실행 추출 구현은 프론트 레인.
@@ -84,3 +84,11 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 - 격리focused22/0.888s·main registry6/1.129s PASS. 실제main표준Python **1428/1519.826s OK**, 보호4127입력추가변화0·Almanac45pages/diff/cached-diff PASS. 처음main을잘못import한sandbox준비errors17은원로그보존, timeout/skip/golden완화0이다.
 - Gyeonggi공식출처 https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457 에서프로그램동봉허용/글꼴자체유상양도금지를확인하고요약notice를저장했다. Frontendasset수정0·실제alphaZIP/native/자동런처/업로드완료0. 기존WIP·store/live lock/data-extracted보존·push0.
 - 다음F2 recognition-only 격리후속이진행중이다. F5는D-ALPHA-SPLIT에따라alpha2보류, M3exp동결표허용수신·giftkind새lock전재바인딩0. Source5/SHA/원로그근거 debug/xb_x1bc_f2_20261020/output.md, 후속commit receipt는 debug/xb_x1bc_commits_20261020/.
+
+## 2026-10-20 17:22 — XB 보고: F2 gate 대기·M3 lock21 preview
+
+- **커밋 완료**: X1-b/X1-c **26b9df8a51b1c24853203435598295275b61d01e**, source5+XB소유문서. latest app/data분리·alpha1UI명시동봉·publicfont notice. Python1428/1519.826s·focused22 PASS, no push. 실제alphaZIP/자동런처/native는후속이다.
+- **F2 구현·검증 완료/짝 gate 대기**: recognition-only exact14 메인반영, strictRPC5/event·folder영속·busy/cancel/progress/cache integrity/rollback·preparedSynthreuse. 최종표준Python **1443/954.373s OK**, 격리29·main23·Almanac/diff/prospective-cached-diff PASS·보호4134불변. CF로그에Dart사전목록/정확SHA와 **CF gate 요청**게시. 같은소스CF GREEN전runtime커밋0, 왕복끝까지backend/contracts/tool동결. 첫불필요중단153.703s는원로그FAIL보존·lock실제변경0정정완료다.
+- **M3 추가진전**: CM afd2bf94의giftkind/21lock수신·crosswalk1회재바인딩,265명1325fields/학생태그차이0·52exp동결차이0·13780grade/point차이0. Rawgift태그7차이는사유보존·ConstCommon소비0. Canonical/Schale코드메인쓰기0·독립전체제거비교null/선언CM. Darttool영향및다음반영계획을격리산출물에게시했다.
+- **M5 readonly**: 현재21extract lock의고정JP/Steam2버전은already_registered로step1중단. Step2~7/key/register/import/diff/apply/gate실행0·store manifest/live lock지문불변. 설치본새버전probe/실제patch/product runner완료주장0. 근거 debug/xb_m5_lock21_dryrun_20261020/output.md.
+- **보존/인계**: 기존WIP·frontend/lib/store/lock/data-extracted쓰기0·push0. F5alpha2보류·X5/X6/X7착수0. F2 debug/xb_f2_prepare_20261020/output.md; M3 debug/xb_m3_regenerate_20261020/output.md; X1 debug/xb_x1bc_f2_20261020/output.md와debug/xb_x1bc_commits_20261020/output.md. 이번F2CFgate/CF Dart연결·실게임인수는미완료이며완료라고선언하지않는다.
