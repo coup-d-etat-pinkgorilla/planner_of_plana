@@ -1512,12 +1512,36 @@ FB-4 창 크기·게임 식별 기능을 커밋했으며 전체 Python1005 통�
 ## 2026-10-20 — CF 보고: 튜토리얼 재설계(FD-182) — 튜토리얼 구상 §1-A 대체
 - 사용자 의도 · 결정: 첫 계정 생성 직후 튜토리얼 자동 시작 → 임시 계정에서 가상 게임 창 연결 · 학생/아이템 가상 스캔 · 검토 · 학생 탭 · 계획 · 시나리오 비교 · 인벤토리 · 통계 10단계 → 끝/그만두기 때 임시 계정 삭제. 안내 = 단계 카드 + 누를 곳 강조(어둡게 덮지 않음). `docs/alpha/first-run-tutorial-concept-2026-10-19.md` §1-A(미리 채운 연습 계정 + 얇은 띠, 하이라이트 금지)를 대체 — 문서 갱신은 CM 몫.
 - F1 1차 시안 16장 수신(캔버스 `1792468151-c7f8`), 2차(튜토리얼 보드) 배정. XB X4 개정 요청(백엔드 로그 2026-10-20). 대장 FD-182.
+## 2026-10-20 13:40 — CM: R-M3-1 판정 (gift-affinity) + R-M3-2 작성
+결과: `debug/cm_r_m3_1_20261020/output.md`, 커밋 `1666aa56`(8파일: jp-json 3표, extract_jp.py TABLES, evidence JSON 660 KB, dis 2, source 문서). 상태 NOT_VERIFIED(라운드 소진).
+
+| 항목 | 판정 | 근거 |
+|---|---|---|
+| 학생 선호·고유 태그 | **수용** — 현재 canonical과 265/265 일치 [표] | `CharacterAcademyTagsExcel` 275행 중 265 join, rowSha 보존 |
+| 선물 태그 | **수용** — 45/52 일치, 7건은 JP에 태그가 더 있음(`i*` 계열), 현재 265명 등급에 영향 0 [표] | `gift-tag-differences.json`: currentOnly 전부 빈 배열 → JP가 상위집합 |
+| 등급 재생성 가능성 | **확인** — JP 3표 + 현 로컬 규칙 → 13,780쌍 전부 현재값과 일치 [표] | 로컬 규칙이 게임 식인지는 별개(미확정) — 그러나 "SchaleDB 없이 현재 등급표를 재생성할 수 있다"는 M3 조건은 충족 |
+| 선물 exp 식 | **미확정** — 지정 함수 `TryGetConsumeItemFavorExpParcelInfos`(RVA 0x1363fc0)는 parcel type 11 합산 경로, 태그 배율 없음 [코드]. ItemExcel Favor 52행 전부 type0/amount0 | CM의 함수 지정 오류. 후속 R-M3-2 |
+| ConstCommonExcel | **잠정(PROVISIONAL)** — ExcelDB에 없음, Excel.zip 대체 디코더 | canonical 소비 금지, evidence에 식별 명시됨 |
+| enum(결정 2) | **확인** — 6 enum 차이 0; JP/Steam 차이는 ItemCategory 5·School 1(Odyssey 17 등 표 밖 상수) | `comparison-summary.json` |
+| 안전 | PASS — 기존 21 JSON·lock 16파일 불변, 평문 DB 미포함, 키 미출력 | `verification.json` |
+
+결정:
+1. `gift-affinity` kind 저장소 import **승인**(note에 "formula NOT_VERIFIED, ConstCommon provisional" 명시). 명령은 `debug/cm_r_m3_1_20261020/artifacts/MASTER_REQUIRED.ps1`, 사용자 실행 → lock은 X-요청 처리 뒤 CM이 일괄 갱신.
+2. XB에 전달(백엔드 로그 13:40): 친화도 **등급**은 JP 3표 + 현 로컬 규칙으로 재생성(SchaleDB 입력 제거 가능). `exp_value`는 원천 미확정이므로 **현재 SchaleDB 유래 값을 동결 스냅샷 표로 보존**해 canonical에 공급하고 R-M3-2가 식을 확정하면 교체 — 이 "동결 스냅샷" 방식은 사용자 확인 대기(대안: R-M3-2까지 M3 마무리 보류). crosswalk 후보 lock 바인딩(`candidateLockHashMatchesCurrent=false`)은 현재 lock으로 재바인딩.
+3. R-M3-2 블록 작성(`cm-r-task-blocks-2026-10-10.md` 끝): `SplitFavorItemIdsByTagCount`·카페 선물 미리보기 경로에서 기본 exp 원천과 태그 배율 확정, 라운드 2.
+
+## 2026-10-20 13:45 — CM → CF 회신: 10-20 보고 3건
+- "아이콘 1,330": 인식용 캐시(`recognition_asset_extract.extract()` 목록)만이었다. FD-181로 범위가 UI 그림 1,045로 넓어졌고 그 수는 XB F5 계약이 정한다 — 진행 문구는 "그림 n개 준비 중"처럼 종류를 고정하지 말 것.
+- FD-181 → M4 알파 차단 여부: **CM 판단 = 알파를 둘로 나눈다(사용자 확인 대기)**. 알파-1은 UI 그림 번들 유지(66 MB, 지금처럼) + 인식 캐시만 첫 실행 추출; FD-181(UI 그림 추출 + M4 수동 규칙 449)은 알파-2. 이유: 449건 수동 규칙은 XB 1~2주 분량이고 X1·X4·F2가 그 앞에 있다. CF는 F5a(출처 추상화, 보이는 변화 0)까지만 알파-1에 넣고 F5b는 알파-2. 사용자가 "한 번에"를 택하면 M4 규칙 작성을 CM-R 과제로 떼어 XB 부담을 줄인다.
+- FD-182: `docs/alpha/first-run-tutorial-concept-2026-10-19.md` §1-A를 임시 계정 + 가상 스캔 10단계로 교체했다(이 커밋). X4 개정은 XB가 받았다(백엔드 로그 13:15 세션 시작에 포함). 튜토리얼 ①~④가 X4 계약에, ⑤~⑨가 §3 경로 3개에 대응.
+
 
 ## XB 보고 — 2026-10-20 13:53: X1/X4 최종 전체 검증 진행·lock 반영 시점 조율
 
 - X1 M6 source8·X4 계약 source5(unique12), 집중26 PASS 뒤 표준 Python whole v3 진행 중이다. 앞 두 시도의 중단/registry 누락 FAIL은 원 로그에 보존했고 제품 파일을 최종 지문으로 동결했다. 커밋/완료 선언은 아직 없다.
 - 현재 ba-data.lock 2pins/20extract 지문을 검증 입력으로 사용한다. gift-affinity 저장소 import와 live lock 교체는 CM 승인+사용자 실행 범위이며 XB는 쓰지 않는다. 새 live lock 반영 시점을 XB heavy 종료 통보 뒤로 맞춰 달라. 현재 CM13:40의 등급 재생성 승인·ConstCommon 금지·exp 제외·F2 다음/F5 보류를 수신했다.
 - 실제 source12의 기존 IPC/Dart producer 변화0, X4 runtime 미구현이다. 최종 검증 뒤 X1·X4 선택 커밋과 XB 자기 log/status 마감, 두 해시 보고를 이어간다. X5/X6/X7 미착수·push0.
+
 
 ## XB 보고 — 2026-10-20 14:33: X1 M6·X4 계약 커밋 완료
 
@@ -1527,3 +1551,20 @@ FB-4 창 크기·게임 식별 기능을 커밋했으며 전체 Python1005 통�
 - **추가진전**: M5현재2pin already_registered readonly step1중단검증, 제품runner/실제patch는후속. M3 CM승인5필드265명/1325개선택diff0·새lock canonical SHA재바인딩·stats2 exact/DTO/dryrunPASS. Rarity표현변환0·canonical생성쓰기0. CM13:40등급재생성승인/ConstCommon금지/exp제외수신; gift kind사용자import/live lock새반영 및독립전체비교전제거diff=null/BLOCKED·Schale제거선언CM.
 - **다음/제한**: CM13:40대로F2(first-run 추출a~f)다음, F5는사용자확인전보류. icons callback done/total은bundle단위이며1330고정아이콘분모로표시하면안된다는코드근거/후속메모를CF에전달했다. X5/X6/X7착수0, 전체M6/M3/FB/P0-P6/native완료주장0. 실제포장명령은커밋된문서에있으며firstalphaZIP은남은런처/F2/사용자수용후생성한다.
 - **인계**: source검증봉인 debug/xb_m6_x4_20261020/output.md, 선택커밋/문서/WIP보존인계 debug/xb_m6_x4_commits_20261020/output.md. 기존sealed산출물은수정하지않았다.
+
+## 2026-10-20 14:50 — CM: 사용자 결정 2건 + XB X1/X4 검토
+사용자 결정(14:41, "전부 권고대로"):
+- **D-M3-EXP**: 선물 `exp_value`는 현재 SchaleDB 유래 값을 **동결 스냅샷 표**로 보존해 canonical에 공급, R-M3-2가 식을 확정하면 교체. M3(SchaleDB 코드 제거)는 이 스냅샷으로 진행 가능.
+- **D-ALPHA-SPLIT**: 알파-1 = UI 그림 번들 유지(66 MB) + 인식 캐시만 첫 실행 추출. FD-181(UI 그림 추출 + M4 수동 규칙 449)은 알파-2. CF F5a까지 알파-1, F5b는 알파-2. XB F5 착수 보류.
+
+XB 검토(커밋 `cb6758d6` X1 M6 / `96319b3e` X4 계약, main 전체 1422 OK):
+| 항목 | 판정 |
+|---|---|
+| `release-latest-v1`(요구 6키 + schemaVersion/releaseType/dataSnapshotSha256) | **수용**. 결정 B와 일치 |
+| data ZIP = `app/backend/data/**` + 스냅샷만, staging 교체·롤백 요구 | **수용** |
+| **빈틈 1**: latest.json 1개에 `releaseType` 하나 → 최신이 data 릴리스일 때 앱이 낡은 사용자는 app ZIP URL을 알 수 없음 | X1-b 요청: `latest.json`을 `{app:{…}, data:{…}}` 두 절로(schemaVersion 2) 또는 `latest-app.json`/`latest-data.json` 분리. 런처 규칙: app.appVersion ≠ 설치본이면 app 먼저, 같으면 data만 |
+| **빈틈 2**: 포장기가 UI 그림·글꼴 payload를 실패로 처리 — D-ALPHA-SPLIT와 충돌 | X1-c 요청: 알파-1용 `--allow-bundled-ui-assets` 류 명시 플래그(기본 실패 유지, 플래그 시 매니페스트에 `bundledUiAssets:true` 기록) |
+| GyeonggiTitle 글꼴 | CM 판단: 경기도 공개 글꼴(경기천년제목)로 게임 추출물이 아님 — 라이선스 문구를 XB가 저장소에 넣고 동봉 유지. FD-181 범위 밖 |
+| X4 계약(create/current/reset/end/recover, `is_practice`, 가상 target `tutorial:1280x720`, 기존 scanner wire 재사용) | **수용**. tactical_bd 골든 없음 → 합성 시나리오 별도 라벨링은 X4 runtime 전제. CF Mock F3 착수 가능 |
+| extract progress done/total = bundle 수(아이콘 수 아님) | 수용. 튜토리얼 문서 "1,330" 표현은 CF 진행 문구에 쓰지 않음 |
+다음: 사용자 gift-affinity import → CM lock 갱신(21 extracts) → XB에 알림. XB 순서: X1-b/X1-c(작음) → F2(a~f) → X3(M3 마무리, 동결 스냅샷 포함) → X2.

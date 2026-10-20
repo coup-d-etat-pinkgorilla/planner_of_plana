@@ -2,7 +2,7 @@
   "schema": "ba-client-data.lock.v1",
   "consumer": "v7",
   "store_root": "C:\\Users\\brigh\\ba-client-data",
-  "written_utc": "2026-10-19T14:30:23+00:00",
+  "written_utc": "2026-10-20T05:43:51+00:00",
   "pins": {
     "jp": {
       "version_id": "jp-1.73.0-e2baf70e",
@@ -13550,6 +13550,16 @@
         "derived-output.zip": "7646d28e5565bb369ff3062210bb94068316a8a77e5f20bb95219282a6108bb6",
         "index.json": "330993b7e32b2ff8fb18142cf09ba74ed51cd355e2241c2653383c6bf162f285",
         "unassigned-skill-rows.json": "e199e423d0cc14ed377392c7d1fd8ec4e045c828b27c5e1a0ee6e37f622480cf"
+      }
+    },
+    {
+      "server": "jp",
+      "version_id": "jp-1.73.0-e2baf70e",
+      "kind": "gift-affinity",
+      "path": "extracts/jp/jp-1.73.0-e2baf70e/gift-affinity",
+      "provenance_sha256": "15b36936e02311ba410946f8b73704a32b47ade7bf7f86f0d38047dbcc83c585",
+      "files": {
+        "gift-affinity-jp-1.73.0.json": "2918b00d1e7f2f3961734bf7a64365dde3ea8a2f842e301a69cc2c7e232b0cba"
       }
     }
   ]

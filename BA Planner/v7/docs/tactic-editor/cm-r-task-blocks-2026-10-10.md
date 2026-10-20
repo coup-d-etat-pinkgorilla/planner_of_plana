@@ -96,3 +96,18 @@
 완료 보고: 식 확정/미확정, 265 대조 수치, enum 차이 유무. 재생성·canonical 적용·SchaleDB 삭제는 하지 않는다.
 ```
 
+
+## R-M3-2 — 선물 경험치 기본값·태그 배율의 실제 소비 경로 (라운드 2) — 2026-10-20 CM 작성
+R-M3-1(`debug/cm_r_m3_1_20261020/output.md`, 커밋 `1666aa56`) 결과: 학생 태그 265/265 일치, 선물 태그 45/52 일치(7건은 JP에만 추가된 태그, 현재 265명 등급에 영향 0), 현 로컬 규칙 대입 시 13,780쌍 전부 일치. **미확정**: 선물 기본 exp 원천(ItemExcel Favor 행은 전부 type0/amount0), 태그 일치 수·unique·MaxGiftTags·CommonFavorItemTags의 역할, ConstCommon ZIP 디코더. 지정했던 `TryGetConsumeItemFavorExpParcelInfos`는 parcel type 11 합산 경로라 선물 태그 배율과 무관 — CM의 함수 지정이 빗나갔다.
+
+```
+과제 R-M3-2. 읽을 것: debug/cm_r_m3_1_20261020/output.md, docs/metadata-manager/gift-affinity-source-2026-10-20.md, docs/tactic-editor/evidence/gift-affinity-jp-1.73.0.json(구조만), 공용 저장소 il2cpp-symbols kind(심볼 이름·RVA 검색용, 읽기 전용).
+목표: 게임이 "선물 1개를 학생에게 줄 때 오르는 인연 경험치"를 계산하는 실제 함수와 그 입력 표를 찾아 식을 [코드]로 확정한다. 가설 채택·관측 보정 금지.
+라운드 1 (심볼 탐색, dis 최대 3함수):
+  a. 심볼 테이블에서 후보를 모은다: MX.Data.ItemData.SplitFavorItemIdsByTagCount, 이름에 Favor+(Gift|Tag|Exp|Rank)가 함께 들어간 MX.Data.*/MX.GameLogic.Service.*/MX.Logic.Data.* 메서드, 카페 선물 미리보기(CafeGift*/FavorItem*Preview*) 호출부. 후보 표(심볼·RVA·크기·근거)를 먼저 쓴다.
+  b. 그중 "ItemExcel 행 + CharacterAcademyTagsExcel 행 → 정수 exp"로 끝나는 함수 최대 3개를 판독. 각 함수에서 (i) 기본 exp가 어디서 오는지(ItemExcel 필드? ConstCommon? 별도 표 — 예: FavorItem*Excel, ItemRarity별 상수), (ii) 태그 일치 수에 따른 배율/가산과 unique 태그 처리, (iii) MaxGiftTags·CommonFavorItemTags 사용 여부를 [코드]로 적는다.
+라운드 2 (대조): 식이 나오면 R-M3-1 evidence의 265×52 쌍에 적용해 현재 canonical(SchaleDB 유래 exp_value·등급)과 전수 비교. 결과 표: 일치/불일치/미판정, 불일치 상위 10(학생·선물·현재값·계산값). 불일치는 보고만.
+ConstCommon: 식이 ConstCommon 필드를 실제로 읽을 때만 해당 필드 1~2개의 디코드를 native accessor 또는 문자열 인덱스로 교차 검증. 전체 202필드 검증은 하지 않는다.
+산출물: debug/cm_r_m3_2_<date>/output.md + dis 텍스트(docs/tactic-editor/evidence/dis/) + 식 요약을 gift-affinity-source-2026-10-20.md 끝에 "R-M3-2 보충" 절로 추가(기존 본문 수정 금지) + 커밋 1건. 저장소 쓰기 없음(필요 시 MASTER_REQUIRED에 명령만).
+완료 보고: 식 확정/미확정, 기본 exp 원천, 대조 수치. 라운드 소진 시 "후보 n개, 미확정"으로 끝낸다.
+```
