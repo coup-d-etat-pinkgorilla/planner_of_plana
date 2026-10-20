@@ -6250,3 +6250,285 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 다음 행동
 
 - CF: `debug/frontend_fe10d/output.md` 확인 → gate → `fe_commit.ps1`(`debug/frontend_fe10d/commit.json`) → 위 CF 요청 1~5를 대장에 반영 → FE10-z.
+
+## f2-dart 착수 기록 (2026-10-20, Lane B)
+
+- 상태: **진행 중**. 시작 SHA `35d0a2365cf861e4f332ece13a08bd8d21a92f14`(브랜치 scanner-consolidation). 이 문서 끝에 다른 f2-dart 착수 기록 없음 확인.
+- 읽은 것: AGENTS.md → README.md → lane-charter §2·§3(4-1) → frontend-redesign-workflow(불변식 · 검증 · 운용 문단 · 파일 소유권 · F2 행) → `contracts/asset-preparation-v1.md` · schema · fixture(24 cases) → 오케스트레이터 로그 14:50 · 17:01 · 17:22 · 19:40 · 21:00 → backend `asset_preparation_protocol_v1.py` · `application_protocol_v1.py` · `backend_process.py` · `jsonl_multiplexer.py` · `asset_preparation.py` · `asset_preparation_cache.py`(읽기만) · `test_asset_preparation_f2.py` → Dart 서비스 · 기존 계약 시험 · `scanner_pause_process_e2e_test.dart`.
+- 막힘: 대장 막힘 요약 열림 0건 — 이 slice를 막는 열림 FD 없음.
+- 사용자 결정(착수 전 질문 2건, 2026-10-20):
+  1. `lib/services/planning_protocol_client.dart`는 프롬프트 목록 밖이지만 **추가만 하는 최소 수정 허용**. 지금 클라이언트는 `assets.prepare.event` 봉투 · `assets.prepare.*` 성공/오류 응답 · 스캔 시작의 `asset_prepare_busy`를 모두 치명적 프로토콜 오류로 보고 연결을 끊는다.
+  2. process E2E는 **임시 가짜 BA 폴더 + 존재하지 않는 경로만, `game_dir.set(null)` 제외**. 실제 백엔드는 사용자 폴더 설정이 없거나 null로 되돌리면 Steam 레지스트리 → 실제 설치 폴더 catalog 전체 해시 · BundleRevision을 읽는다(실제 게임 폴더 접근 0 규칙과 충돌).
+- 고칠 기존 파일(사본 `debug/frontend_f2dart/pre/<v7 기준 경로>`, 기존 미커밋 변경 = 착수 때 `git status`):
+
+| 파일 | 기존 미커밋 변경(WIP) | 줄바꿈 | 사본 SHA-256 |
+|---|---|---|---|
+| `frontend/lib/services/planning_protocol_client.dart` | 없음 | 혼합(CRLF 1054 / 1072줄) — 유지 | `31a8fb7706c305bf…` |
+| `frontend/lib/services/process_app_service.dart` | 없음 | 혼합(CRLF 1361 / 1385줄) — 유지 | `62b32c875a87a371…` |
+| `frontend/lib/services/mock_app_service.dart` | 없음 | 혼합(CRLF 3228 / 3356줄) — 유지 | `944c06773cd88361…` |
+
+- 새 파일(예정): `frontend/lib/services/asset_preparation_service.dart` · `frontend/lib/services/mock_asset_preparation.dart` · `frontend/lib/ui/first_run/asset_preparation_controller.dart` · `frontend/test/asset_preparation_{contract,protocol_client,mock,controller}_test.dart` · `frontend/test/asset_preparation_process_e2e_test.dart`.
+- 고치지 않을 예정: `app_service.dart` · `backend_process.dart` · `scanner_service.dart`(새 이벤트는 클라이언트에서 별도 스트림으로 갈라 스캐너 구독에 닿지 않게 한다 — 0줄 목표), backend/** · contracts/**, Lane A 파일, 화면 · golden.
+- XB 14파일 SHA 확인(착수, 17:22 게시값과 비교): **14/14 일치**.
+
+| XB 파일 | 작업 트리 SHA-256(앞 16자) | 17:22 게시값 |
+|---|---|---|
+| `backend/core/asset_preparation.py` | `b560c7576630573b…` | 일치 |
+| `backend/core/asset_preparation_cache.py` | `eff23a8cede82bbf…` | 일치 |
+| `backend/core/asset_preparation_protocol_v1.py` | `b1d84c407e4a957b…` | 일치 |
+| `backend/core/application_protocol_v1.py` | `ed6752ae1a7d423d…` | 일치 |
+| `backend/core/backend_process.py` | `34fbaa9746e03d24…` | 일치 |
+| `backend/core/jsonl_multiplexer.py` | `fdcb17aa313ce12f…` | 일치 |
+| `backend/core/recognition_asset_extract.py` | `1f88acfa4a9565a0…` | 일치 |
+| `backend/core/recognition_synth_provider.py` | `ee1f6819cacd0081…` | 일치 |
+| `backend/core/scanner_runtime.py` | `3c03911e8a017b04…` | 일치 |
+| `backend/tests/test_asset_preparation_f2.py` | `44a533a750cccbab…` | 일치 |
+| `backend/tests/test_planning_protocol_contract.py` | `13f8d9b6560005f1…` | 일치 |
+| `contracts/asset-preparation-v1.schema.json` | `3747fc0661747777…` | 일치 |
+| `contracts/asset-preparation-v1.md` | `31d87e09a38d58f3…` | 일치 |
+| `contracts/fixtures/asset_preparation_v1.json` | `301340440b369fe9…` | 일치 |
+
+## f2-dart 종료 기록 (2026-10-20, Lane B)
+
+- 상태: **COMPLETED(워커 몫)** — CF 같은-소스 `fe_gate.ps1` 대기. 인계 `debug/frontend_f2dart/output.md`, 커밋 입력 `debug/frontend_f2dart/commit.json`(slice `f2dart`, `post_dir` = `debug/frontend_f2dart/post`, status=false, whole = 이 문서).
+- golden: 변화 0, 새 장면 0(화면 · 위젯 0줄). pubspec · 의존성 · frontend/tool · backend/** · contracts/** 0바이트.
+- 기존 파일 변경(모두 **추가만**, 삭제 0줄, 주변 줄의 CRLF 유지, 추가 줄은 `dart format` 안정 확인): `planning_protocol_client.dart` +26, `process_app_service.dart` +31, `mock_app_service.dart` +49. `app_service.dart` · `backend_process.dart` · `scanner_service.dart` **0줄** — 준비 이벤트를 클라이언트에서 별도 스트림(`assetPreparationEvents`)으로 갈라 스캐너 구독(`events`)에 닿지 않게 했고, 스캔 시작 `asset_prepare_busy`는 클라이언트 오류 집합 한 줄로 받는다. AppService 확장(`assetPreparation`)은 새 파일에 있다.
+
+### 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(전체, 마지막) | No issues found(info 0) |
+| `flutter test --exclude-tags golden test/asset_preparation_{contract,protocol_client,mock,controller}_test.dart` | +38 All passed(format 뒤 재실행; curly 수정 뒤 contract · client +18 재실행 통과) |
+| `flutter test --exclude-tags golden --concurrency=1 test/asset_preparation_process_e2e_test.dart` | +1 All passed(17초) |
+| 바뀐 서비스(`MockAppService` · `ProcessAppService` · `PlanningProtocolClient` · `ScannerProtocolClient`)를 쓰는 기존 시험 grep — unit 102파일, 40개씩 3묶음 `--exclude-tags golden` | +450 · +741 · +304 = **1,495 passed, 실패 0** |
+| 같은 grep — process 32파일(fe_gate 분류식), `--concurrency=1` | **+101 passed, 실패 0**(6분 54초) |
+| `dart format`(새 파일 8개만 각각; 기존 3파일은 `.dart_tool/f2dart_fmt/` 사본에서 추가 줄만 비교) | 새 파일 서식 반영, 기존 파일 추가 줄 26 · 31 · 49 서식 차이 0 |
+| 백엔드 탐침 1회(`backend/.venv` python, 임시 폴더, 준비 서비스 없는 ApplicationProtocolV1) | 발견 1 재현 |
+
+로그: `debug/frontend_f2dart/logs/related-unit.log` · `related-process.log` · `slice-tests.log`. golden 비교 · 전체 fe_gate · Python 전체는 실행하지 않았다.
+
+### XB 14파일 SHA 확인(착수 · 종료)
+
+| XB 파일 | SHA-256(앞 16자) | 착수 | 종료 |
+|---|---|---|---|
+| `backend/core/asset_preparation.py` | `b560c7576630573b…` | 일치 | 일치 |
+| `backend/core/asset_preparation_cache.py` | `eff23a8cede82bbf…` | 일치 | 일치 |
+| `backend/core/asset_preparation_protocol_v1.py` | `b1d84c407e4a957b…` | 일치 | 일치 |
+| `backend/core/application_protocol_v1.py` | `ed6752ae1a7d423d…` | 일치 | 일치 |
+| `backend/core/backend_process.py` | `34fbaa9746e03d24…` | 일치 | 일치 |
+| `backend/core/jsonl_multiplexer.py` | `fdcb17aa313ce12f…` | 일치 | 일치 |
+| `backend/core/recognition_asset_extract.py` | `1f88acfa4a9565a0…` | 일치 | 일치 |
+| `backend/core/recognition_synth_provider.py` | `ee1f6819cacd0081…` | 일치 | 일치 |
+| `backend/core/scanner_runtime.py` | `3c03911e8a017b04…` | 일치 | 일치 |
+| `backend/tests/test_asset_preparation_f2.py` | `44a533a750cccbab…` | 일치 | 일치 |
+| `backend/tests/test_planning_protocol_contract.py` | `13f8d9b6560005f1…` | 일치 | 일치 |
+| `contracts/asset-preparation-v1.schema.json` | `3747fc0661747777…` | 일치 | 일치 |
+| `contracts/asset-preparation-v1.md` | `31d87e09a38d58f3…` | 일치 | 일치 |
+| `contracts/fixtures/asset_preparation_v1.json` | `301340440b369fe9…` | 일치 | 일치 |
+
+### DTO 표(메서드 → 요청 · 응답 · 오류)
+
+| 메서드 | 요청(Dart 검사, 어기면 보내기 전 FormatException) | 성공 응답 DTO | 오류(BackendRemoteException → `AssetPrepareFailure`) |
+|---|---|---|---|
+| `assets.prepare.status` | `{}` 정확히 | `AssetPrepareStatus`(game_dir · cache · busy · scanner_busy · job? · last_result? · metadata, 7키 정확히) | `asset_prepare_unavailable` · `asset_prepare_io_error` |
+| `assets.prepare.game_dir.set` | `AssetGameDirRequest(path)`: null 또는 1..32767자(공백뿐 · NUL 거부) | `AssetPrepareStatus` | `invalid_game_dir`(+`reason` 8종) · `asset_prepare_busy` · `scanner_busy` · `invalid_payload` |
+| `assets.prepare.start` | `{}` 정확히 | `AssetPrepareJobRef`(job_id 1..128 · generation 정수 ≥1) | `asset_prepare_busy` · `scanner_busy` · `invalid_game_dir`(+reason) · `asset_prepare_unavailable` |
+| `assets.prepare.cancel` | `AssetPrepareJobRef.toWire()`(boolean · 0 generation 거부) | `AssetPrepareCancelResult`(job · `cancelRequested` — terminal 아님; 요청 cursor와 다르면 FormatException) | `asset_prepare_job_not_found` · `invalid_payload` |
+| `assets.prepare.snapshot` | 같은 cursor | `AssetPrepareJob`(cursor 다르면 FormatException) | `asset_prepare_job_not_found` |
+| 이벤트 `assets.prepare.event` | — | `AssetPrepareEvent`(kind progress/terminal + job; progress = running·cancelling + complete 아닌 단계, terminal = 끝난 상태 + complete, sequence ≥1) | 봉투 · 본문 위반 = 치명적 프로토콜 오류(연결 끊음) |
+
+공통: job 13키 정확히, `unit == "bundles"`, reason_codes 유일 · 5종, nullable(total · created · reused · failed, cache.failed, metadata 4개)은 null 그대로, `jp_update_required`는 null만, sha256 소문자 64자, data_version_id `(jp|steam)-…`. 계약 밖 오류 코드(예 `asset_prepare_cancelled`)는 `BackendProtocolException` + 연결 끊음(기존 규칙과 같음). 계약 전체 판정 `isValidAssetPreparationProtocolMessage`(요청 · 응답 · 이벤트 봉투)는 fixture 시험이 쓴다.
+
+### 이벤트 처리 규칙(`AssetPrepareEventFilter`, Process · Mock 공용)
+
+1. **순서**: start 진행 중에 온 이벤트는 잡아 두고, start 응답으로 cursor(job_id · generation)를 만든 뒤 그 작업 것만 sequence 순으로 넣는다(백엔드 multiplexer가 응답을 먼저 쓰지만 Dart microtask 순서 대비).
+2. **거르기**: 다른 job_id · generation = 버림, sequence ≤ last = 중복 버림, cursor가 terminal 이벤트를 받은 뒤 = 버림. 컨트롤러도 자기 job ref · sequence로 한 번 더 거른다.
+3. **빈틈**: last+1이 아니면 snapshot을 한 번 요청하고 그동안 온 이벤트는 잡아 둔다. snapshot cursor가 권위값 — 앞으로 나아갔으면 `recovered: true` 이벤트로 내고, 잡아 둔 것 중 그 뒤만 넣는다. **끝난 상태의 snapshot은 cursor를 닫지 않는다**(발견 2: 백엔드는 끝난 상태를 기록한 뒤 terminal 이벤트를 다음 sequence로 내므로 그 이벤트를 여전히 받는다). snapshot 실패(job_not_found 등) = cursor 버림 + 스트림 오류 → 컨트롤러가 status 재조회.
+4. **재시작**: 연결이 connected가 아니게 되면 cursor · 버퍼 · 진행 중 복구를 모두 버린다(epoch로 늦은 snapshot 응답 버림). 이전 작업 복구 0 — 컨트롤러는 다시 connected가 되면 status를 읽는다. status에 진행 중 작업이 있으면 snapshot으로 그 작업에 붙는다(`adopt`).
+
+### Mock 의미 표(`MockAssetPreparation`, `MockAppService.assetPreparationMock`)
+
+| 시나리오 · 조작 | 의미 |
+|---|---|
+| `firstRun`(기본) | 자동 폴더(합성 경로) valid, 캐시 missing, last_result null |
+| `noGameDir` | source none · path null · `game_dir_not_found`, 캐시 unknown, start = `invalid_game_dir` |
+| `ready` · `partial` · `stale` | 캐시 ready(12/3/1) · partial(10/3/1, failed 2) · stale(이전 revision), 저장된 last_result 있음 |
+| `extractFails` · `extractPartial` | 다음 한 번 failed(`asset_extract_failed`, 수 null, 캐시 보존) · partial(`assets_missing`, failed 2) |
+| start | 번들 단계 validating 0/null → icons 0/2 · 2/2 → sprites 1/null → fonts 1/1 → terminal(available 16 = created 16 · reused 0). ready 캐시면 validating → succeeded(created 0 · reused 16). partial 재시도 = 다시 추출(created 2 · reused 14) |
+| 준비 중 | start · game_dir.set = `asset_prepare_busy`, 스캔 시작(`startScannerSession`) = `asset_prepare_busy` |
+| 스캔 중(끝나지 않은 세션, 일시정지 포함) | start · game_dir.set = `scanner_busy`, status `scanner_busy` true |
+| cancel | 요청 접수(`cancel_requested` true, state cancelling, 이벤트 없음, busy 유지) → 다음 단계에서 cancelled terminal(수 null · available 0, 캐시 보존). 끝난 작업 cancel = false |
+| 폴더 지정 | 합성 `validGameDirs`만 valid, 그 밖은 `game_dir_not_found`(또는 `gameDirReasons`에 둔 이유) — 거절은 저장 안 함. 지정 뒤 이유가 바뀌어도 user 유지. null = 자동으로 |
+| `simulatePatch()` | BundleRevision +1 → 캐시 stale |
+| `dropNextProgressEvents(n)` | progress n개를 보내지 않음(sequence는 오름) → 필터가 snapshot으로 복구 |
+| `restartBackend()` | 진행 중 작업 사라짐(snapshot = job_not_found), generation 1부터, 폴더 설정 · last_result · 캐시 유지 |
+
+### 컨트롤러 공개 API(F3b 체크리스트 ①·② · F3e 설정 줄 입력)
+
+`AssetPreparationController(AssetPreparationService service, {ValueListenable<AppServiceState>? appState})` — ChangeNotifier. 서비스는 `appService.assetPreparation`(지원 안 하면 null).
+
+- 동작: `Future<void> refresh()` · `Future<bool> setGameDir(String? path)`(null = 자동 탐색) · `Future<bool> start()`(재시도도 같음) · `Future<bool> cancel()` · `dispose()`.
+- `value`(`AssetPreparationViewState`): `loaded` · `loading` · `gameDir` · `folderPath` · `folderSource`(auto/user/none) · `folderValid` · `folderReason`(status 이유) · `cache`(state · 수) · `ready` · `metadata`(JP 갱신 여부는 말하지 않음) · `job`(진행 중만) · `preparing` · `progress`(`stage` · `done` · `total`?, `hasDenominator`, `fraction`? — total null이면 분모 · % · 남은 시간 숨김) · `lastResult` · `outcome`(state · created? · reused? · failed? · available · reasonCodes, `succeeded`) · `backendBusy` · `scannerBusy` · `cancelRequested` · `requestInFlight` · `busy` · `errorCode`(`AssetPrepareErrorCode`) · `errorReason`(거절된 폴더 이유) · `canStart` · `canRetry`(partial 캐시 또는 partial · failed · cancelled 결과) · `canCancel` · `canChangeFolder`.
+- 규칙: terminal 이벤트(또는 status가 끝을 알림)에서 job → lastResult, 이어서 status 재조회(캐시 상태 · 권한 해제 확인). 연결 끊김 = job · cursor 버림, `loaded=false`(폴더 · 캐시 · 결과 표시는 남김), 재연결 = status 재조회. dispose · 재연결 뒤 늦은 응답 · 이벤트는 epoch로 버린다. 화면 문구는 F3b · F3e 몫(이 slice 문구 0).
+
+### 계약 fixture 24 cases 결과
+
+- `test/asset_preparation_contract_test.dart` 7 tests 통과: 24/24 판정 일치(유효 19 · 무효 5 — start extra · cancel boolean generation · set path 5 · unit icons · terminal running), 유효 19건 DTO → wire 왕복이 원문과 같음(null 그대로), schema enum 8곳(오류 코드 · 폴더 이유 · source · 캐시 상태 · 작업 상태 · 단계 · 사유 · terminal 집합)과 Dart enum 일치, fixture 밖 엄격 거부(모르는 키 · boolean/0 generation · 빈 id · `jp_update_required: false` · 음수 · 모르는 enum · 대문자 sha · 중복 사유 · details 키 · progress/terminal 짝 · sequence 0 · 봉투 키).
+
+### process E2E 범위(`test/asset_preparation_process_e2e_test.dart`)
+
+- 실제 `core.backend_process`(ProcessAppService, `BackendProcessConfig.resolve`), 환경: `BA_PLANNER_STORAGE_ROOT` = 임시/repository, `BA_PLANNER_EXTRACTED_ASSET_DIR` = 임시/user/recognition-assets.
+- 순서: ① 첫 F2 요청 = 임시 합성 BA 폴더 지정(`CCDB\x01synthetic` + BundleRevision 123 셋) → user · valid · revision 123 · 캐시 missing · failed null · job/last_result null, 설정 파일 생김, status 동일 ② 없는 경로 → `invalid_game_dir`/`game_dir_not_found`, BA 아닌 폴더 → `not_blue_archive`, 둘 다 저장 안 됨, 빈 경로 = Dart FormatException ③ Preload revision 124 → user 유지 · `bundle_revision_mismatch` · 캐시 unknown ④ 폴더 이름 바꿈 → `game_dir_not_found` → start 거절(`invalid_game_dir`/`game_dir_not_found`), job null ⑤ 옛 cursor snapshot · cancel = `asset_prepare_job_not_found` ⑥ 재시작 뒤 user 지정 유지 · job/last_result null · jp null. 이벤트 0 · 오류 0 · 연결 유지 · 추출 캐시 폴더 생성 0.
+- **실제 폴더 접근 0 근거**: 백엔드 `_game()`은 저장된 사용자 지정이 있으면 `game_identity(user path)`만 부르고, Steam 탐색(`find_game_dir`: 레지스트리 → libraryfolders → appmanifest → 실제 catalog 해시)은 지정이 없을 때만 탄다. 시험의 첫 F2 요청이 지정이고(`set_game_dir`는 검증 → 저장 → status 순), `game_dir.set(null)`은 보내지 않는다(사용자 결정 2026-10-20). start는 폴더 검증에서 거절돼 작업 · 추출이 없다. ProcessAppService 연결 때는 기존 `scanner.recognition.status` · `scanner.target.list`(창 목록, 기존 E2E와 같음)만 돈다 — 인식 캐시 로더(`prepared_assets`)는 인벤토리 스캔 중에만 불린다.
+
+### 미검증("미실행")
+
+- 미실행: CF 같은-소스 `fe_gate.ps1`(golden 비교 · almanac validate · `git diff --check` 포함), Python 전체(XB 몫), 실제 설치본 · 실제 추출 · 실제 취소 타이밍(합성만), `game_dir.set(null)`의 실제 백엔드 왕복(자동 탐색 = 실제 설치 폴더 — fixture · Mock · 가짜 연결 시험으로만), 화면(F3b · F3e).
+- 기존 시험은 Lane A F5a가 작업 중인 작업 트리(Lane A 미커밋 파일 포함)에서 돌린 결과다. CF gate가 최종.
+
+### 발견 사항(계약 ↔ 백엔드, 고치지 않음 — CF가 XB와 조율)
+
+1. **`asset_prepare_unavailable`에 `details`가 없다**(schema `$defs.error`는 `details` 필수). 재현: `ApplicationProtocolV1(storage_root=<임시>)`(준비 서비스 없음).handle(`{"protocol":1,"id":"r","type":"request","method":"assets.prepare.status","payload":{}}`) → `{"payload":{"error":{"code":"asset_prepare_unavailable","message":"asset preparation runtime is not available"}}}`. `ScannerProtocolV1._error`가 빈 details를 빼기 때문이다. 제품 `backend_process`는 준비 서비스를 늘 넣으므로 이 경로를 타지 않는다. Dart 클라이언트는 받아들이고(기존 오류 검사는 details 선택), 엄격 판정 `isValidAssetPrepareErrorPayload`는 거부한다.
+2. **끝난 상태가 terminal 이벤트보다 한 sequence 먼저 보인다**: `_run` finally가 `_job.update(state=끝, stage=complete)` → 결과 저장(실패하면 `result_not_saved` 덧붙임) → gate 해제 → `_emit('terminal')`(sequence +1) 순서라, 그 사이의 snapshot · status는 끝난 상태를 sequence N으로, 이벤트는 N+1로 준다(그 사이 snapshot에는 `result_not_saved`가 빠질 수 있다). Dart는 끝난 상태 snapshot으로 cursor를 닫지 않고 뒤의 terminal 이벤트를 받는다. 계약 문구 "treat its cursor as authoritative"와 충돌은 아니지만 계약에 한 줄 있으면 좋다.
+3. **status · `game_dir.set(null)`이 실제 설치 폴더를 읽는다**(설계대로이지만 시험 경계): 사용자 지정이 없으면 status마다 Steam 탐색 + catalog 전체 SHA-256. 실제 백엔드로 set(null) · 지정 없는 status를 시험하려면 탐색을 끄는 시험 훅(예: env)이 필요하다 — XB 판단.
+4. 참고: `game_dir.set`은 경로를 `resolve()`해 저장 · 응답하므로 응답 path가 입력과 다를 수 있다(대소문자 · 짧은 이름). F3b는 응답 path를 보여야 한다.
+
+### 다음 행동
+
+- CF: `debug/frontend_f2dart/output.md` 확인 → Lane A F5a가 끝난 뒤 같은-소스 `fe_gate.ps1` 1회(XB source14 포함) → GREEN이면 XB exact14 커밋 요청 → `fe_commit.ps1 -Slice f2dart`(pre · post 사본, 기존 파일은 추가 줄만). 발견 1~3은 XB에 전달.
+- 화면 연결: F3b(체크리스트 ①·②) · F3e(설정 줄 "그림 다시 준비")가 위 컨트롤러 API를 쓴다. 폴더 고르기 창(파일 선택)은 F3b 몫.
+- 정리 후보(워커는 지우지 않음): `frontend/.dart_tool/f2dart_fmt/`(서식 비교 사본 6개, git 밖).
+
+## F3a 착수 기록 — 튜토리얼 부품 · 대본 데이터 · 상태 기계 (Lane B, 2026-10-20)
+
+- 상태: **진행 중**. 시작 SHA `531b54632596fd72b9ed56a79b8cdfe7672228b9`(브랜치 `scanner-consolidation`). 이 파일 끝에 다른 "F3a 착수 기록" 없음을 확인했다.
+- 근거: W-Tutorial-Card · W-Plana-Dialogue · Tutorial-Plana-Script(대표 장면 Plana-01 · Plana-04 · 02 · 05 · Quit · Done), FD-181 · FD-182 · FD-183. 막힘 요약에 F3a를 막는 '열림' FD 없음(현재 열림 0건).
+- 만들 새 파일(전부 새 파일):
+  - `frontend/lib/ui/tutorial/tutorial_tokens.dart` · `tutorial_script.dart` · `tutorial_flow.dart` · `tutorial_card_placement.dart` · `tutorial_step_card.dart` · `tutorial_highlight.dart` · `plana_dialogue.dart` · `tutorial_quit_dialog.dart`
+  - `frontend/test/tutorial_parts_f3a_test.dart` · `frontend/test/goldens/f3a_tutorial_parts_golden_test.dart` · `frontend/test/fixtures/tutorial_f3a_fixture.dart`
+  - `debug/frontend_f3a/commit.json` · `debug/frontend_f3a/output.md`
+- **기존 파일 수정 0**(이 status 파일 끝에 덧붙이는 것만 예외 — commit.json `whole`). app_shell · 탭 · `lib/ui/kit/**` · `lib/services/**` · pubspec · golden harness 그대로. 의존성 추가 0(Spine 없음).
+
+## F3a 종료 기록 — 튜토리얼 부품 · 대본 데이터 · 상태 기계 (Lane B, 2026-10-20)
+
+- 상태: **완료(워커 몫)**. 시작 SHA `531b5463`. 새 파일 11개만 만들었다(아래 "새 파일"). **기존 파일 수정 0**(이 status 파일 끝 덧붙임만). 의존성 추가 0, Spine 없음, golden harness · kit · services · pubspec 그대로. `frontend/pubspec.lock` 변화 없음(`git status` 확인).
+- 근거: W-Tutorial-Card · W-Plana-Dialogue · Tutorial-Plana-Script(+ 장면 보드 Tutorial-01~10 · 07a~07d · Plana-01~11 · 04b · Quit · Done, `dc_outline.py`와 path 좌표만 발췌), FD-181 · FD-182 · FD-183.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze lib/ui/tutorial` | 1회차 info 3(`prefer_initializing_formals`) → 고침 |
+| `flutter analyze lib/ui/tutorial test/tutorial_parts_f3a_test.dart test/fixtures/tutorial_f3a_fixture.dart` | 1회차 error 1(`RenderParagraph` import) → 고침 → **No issues found** |
+| `flutter test test/tutorial_parts_f3a_test.dart` | 1회차 +30 −4(시험 쪽: SemanticsHandle 정리 위치 · Scaffold의 ModalBarrier 오검출 · 걷힘 ticker 시작 프레임 · `hasRunningAnimations`가 Scaffold 움직임 포함) → 고침 → 2 · 3 · 4회차 **+34 All tests passed** |
+| `dart format <파일>` × 11(+ 2 재실행) | 파일 경로만 하나씩 |
+| `flutter analyze`(frontend 전체) | 1회차 info 3(내 파일 `curly_braces_in_flow_control_structures`) → 고침 → **No issues found!**(error · warning · info 0) |
+| 공백 · 개행 검사(새 파일 11개) | 줄 끝 공백 0, CR 0, 파일 끝 개행 하나 |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교, 맨 `flutter test`, 일회성 golden 렌더(보드 2장은 위젯 시험에서 2560×1392로 렌더 · 예외 0만 확인). 로그: `debug/frontend_f3a/test_run1~4.log`, `analyze_full.log`(로컬, 커밋 대상 아님).
+
+### 새 파일
+
+`frontend/lib/ui/tutorial/` `tutorial_tokens.dart` · `tutorial_script.dart` · `tutorial_flow.dart` · `tutorial_card_placement.dart` · `tutorial_step_card.dart` · `tutorial_highlight.dart` · `plana_dialogue.dart` · `tutorial_quit_dialog.dart`, `frontend/test/tutorial_parts_f3a_test.dart`(34 tests), `frontend/test/goldens/f3a_tutorial_parts_golden_test.dart`(golden 2), `frontend/test/fixtures/tutorial_f3a_fixture.dart`.
+
+### 처리한 FD
+
+- FD-182 적용: 단계 카드 · 강조 테두리는 어둡게 덮지 않고 입력을 막지 않는다(덧그림 `hitTest=false`, 카드 층은 카드 밖 누르기를 아래로 통과). 동작(신호)을 받으면 자동 진행(완료 체크 1.2초 → 다음).
+- FD-183 적용: 대사 장면 = 검정 64% · 입력 막음 · 한 글자씩 · 밝히기 · 그만두기 · 0.3초 걷힘. 그림은 **대신할 것 경로만**: `ImageProvider? figure`(정지 그림 자리) → null이면 대사 띠만(시안 ③). 표정은 `PlanaExpression` 데이터로만 넘기고 그리지 않는다. Spine 의존성 추가 0(F3f · 사용자 승인 뒤).
+- FD-181: 얼굴 칩 · 서 있는 그림은 `ImageProvider` 자리만 둔다(F5 `GameImage`/`GameArtScope`에 프라나 키가 아직 없음 — XB 추출 · F3f가 공급). 그림이 없어도 모든 동작이 돈다(시험).
+- '워커 재량' FD: F3a에 걸린 항목 없음. 막힘 요약에 F3a를 막는 '열림' FD 없음.
+
+### 부품 공개 API
+
+- 대본 데이터(`tutorial_script.dart`): `PlanaExpression`(6: `neutral 기본` · `slightSmile 살짝 미소` · `smile 미소` · `troubled 곤란` · `serious 진지` · `thinking 생각`, `.label` · `.id`), `PlanaLine(text, expression, revealKeys, figureLeft)`(`boardDrawn` = 장면 보드에 그린 대사), `PlanaScene(id, title, label, context, lines, nextStepId)` + `counterText(i)`('튜토리얼 · 시작 · 대사 3 / 5') + `figureLeftFor(i)`, `TutorialCheckItem(label, signal, doneAtStart)`, `TutorialStep(id, number, feature, title, why, completeSignal, highlightKey, checks, waitSignal · waitTitle · waitWhy · waitProgressLabel, doneTitle · doneWhy, presentation card|inlineLine, inlineText, inlineAnchorKey, cardWidth)`, `TutorialFlowItem` = `TutorialSceneItem` | `TutorialStepItem` | `TutorialDoneItem`, 상수 `tutorialScenes`(19) · `tutorialSteps`(17) · `tutorialFlow`(36칸) · `tutorialQuitSceneId` · `tutorialDoneFeatures`, `TutorialSignals`(25 + `all`), `TutorialTargets`(`highlightKeys` 17 · `revealKeys` 18), `TutorialCopy`(머리글 칩 · 이름표 · 다음 안내 · 그만두기 확인 · 끝 화면 문구, `quitBody(account)` · `doneNote(account)` · `doneButton(account)` · `stepCounter(n)`), `koreanEuro(word)`(으로/로).
+- 상태 기계(`tutorial_flow.dart`): `TutorialFlowController({flow, scenes, steps, completeHold = 1.2s})` ChangeNotifier. 동작 `start()` · `advanceLine()` · `signal(name)` · `requestQuit()` · `cancelQuit()` · `confirmQuit()` · `finish()` · `dispose()`. 읽기 `phase`(`idle · dialogue · step · stepComplete · confirmingQuit · quitDialogue · doneScreen · ended`) · `outcome`(`completed · quit`) · `flowIndex` · `currentItem` · `scene` · `lineIndex` · `line` · `isLastLine` · `step` · `cardMode`(`progress · waiting · complete`) · `checkStates`(`done · current · pending`) · `highlightKey`(진행 중일 때만) · `revealKeys`(대사 중일 때만). 상관없는 신호는 무시, 완료 체크 중 그만두기는 시간을 멈추고 계속하면 다시 1.2초.
+- 단계 카드(`tutorial_step_card.dart`): `TutorialStepCard(step, mode, checkStates, waitDone, waitTotal, face, onQuit, width)`(`quitKey`), `TutorialInlineStepLine(step, face, onQuit)`(진행 창 한 줄, `quitKey`), `TutorialFaceChip(image, size 30|24, radius)`(그림 없으면 흐린 '프', `placeholderKey`), `TutorialHeaderChip()`, `TutorialSpinner()`, `TutorialCardNub()`, `TutorialCardLayer(card, target, bounds, avoid)`(카드 크기를 잰 뒤 자리 규칙 · 꼭지, target null이면 직전 자리), `tutorialCardPath(size)`.
+- 카드 자리(`tutorial_card_placement.dart`): `placeTutorialCard({target, card, bounds, gap = 34, avoid})` → `TutorialCardPlacement(rect, nubSide, nubOffset)`, `tutorialCardBounds(screen, headerHeight = 184)`, `TutorialNubSide`.
+- 강조 테두리(`tutorial_highlight.dart`): `TutorialHighlight(child, active, shape, targetRadius)`(대상 위젯 감싸기), `TutorialHighlightRing(target, shape, targetRadius)`(Stack 안 사각형), `TutorialHighlightShape.parallelogram | roundedRect`, `tutorialHighlightPath(target, …)`(대상 +5px), `paintTutorialRing(canvas, path, glow)`, `TutorialGlowBuilder`, `tutorialHighlightBounds`.
+- 대사 띠(`plana_dialogue.dart`): `PlanaDialogueOverlay(scene, lineIndex, onNext, onQuit, revealRects, figure, figureLeft, charactersPerSecond = 40)`(키 `overlayKey · bandKey · textKey · nextHintKey · quitKey · figureKey · dimKey`, state `PlanaDialogueOverlayState.advance() · lineComplete · visibleCharacters`), `planaScaleFor` · `planaBandSpan` · `planaFigureX` · `planaDimPath`, 상수 `planaBandHeight 362` · `planaFigureSize 609×1170` · `planaExitDuration 300ms` · `planaBandRevealGap 60`.
+- 그만두기 확인(`tutorial_quit_dialog.dart`): `TutorialQuitPanel(onContinue, onQuit, accountName)`(키 `continueKey · quitKey · panelKey`), `TutorialQuitOverlay(...)`(스크림 · Esc · 스크림 누르기 = 계속하기, 계속하기 기본 포커스).
+
+### 장면 · 단계 순서(시안 frFlow1~9와 대조 — 일치)
+
+| frFlow | 순서(`tutorialFlow`) |
+|---|---|
+| 1–5 | (③ 계정은 F3b) → 프라나 01 → 프라나 02 |
+| 6–10 | 1단계 → 프라나 03 → 2단계 → 프라나 04(04b = 같은 장면 대사 4) |
+| 11–15 | 3단계 → 프라나 05 → 4단계 → 프라나 06 → 5단계(진행 창 한 줄) |
+| 16–20 | 프라나 07 → 6단계 → 프라나 08(08b = 대사 4) → 7-1 |
+| 21–25 | 프라나 08c → 7-2 → 프라나 08g → 7-2b → 7-2c |
+| 26–30 | 프라나 08d → 7-3 → 프라나 08e → 7-4 → 프라나 08f |
+| 31–35 | 7-5 → 프라나 09(09b = 대사 2) → 7-6 → 프라나 09c |
+| 36–40 | 8단계 → 프라나 09d → 프라나 10 → 9단계 → 10단계 |
+| 41–42 · 갈래 | 프라나 11 → 끝 화면 / 그만두기 확인 → 프라나 그만둘 때(어느 단계에서든) |
+
+대사 수: 01 5 · 02 2 · 03 2 · 04 5 · 05 2 · 06 2 · 07 2 · 08 4 · 08c 3 · 08g 3 · 08d 3 · 08e 3 · 08f 3 · 09 3 · 09c 3 · 09d 3 · 10 2 · 11 3 · 그만둘 때 2(시험으로 고정).
+
+### 신호 이름(F3c가 앱 신호에 연결)
+
+| 단계 | 완료 신호 | 하위 체크 · 기다림 신호 |
+|---|---|---|
+| 1 | `connect.virtualWindow.connected` | `connect.virtualWindow.picked` |
+| 2 | `scan.student.finished` | `tab.scan.opened` · `scan.studentScope.allSelected` · `scan.student.started`(= 기다림 시작) |
+| 3 | `scan.studentReview.applied` | — |
+| 4 | `students.calculator.targetChanged` | `students.student.opened` · `students.detail.opened` · `students.calculator.opened` |
+| 5 | `scan.item.finished` | — |
+| 6 | `scan.itemReview.applied` | `scan.itemReview.uncertainApproved` |
+| 7-1 · 7-2 · 7-2b · 7-2c | `plan.flow.studentsConfirmed` · `plan.flow.allMaxApplied` · `plan.flow.makiStage1Set` · `plan.flow.makiStage2Set` | — |
+| 7-3 · 7-4 · 7-5 · 7-6 | `plan.flow.ranksPlaced` · `plan.flow.kannaAkaneLinked` · `plan.flow.laterMoved` · `plan.flow.savedAsScenario` | — |
+| 8 · 9 · 10 | `plan.scenario.compareOpened` · `inventory.topShortage.opened` · `statistics.growthTrend.viewed` | — |
+
+### 밝힐 대상 · 강조 대상 키(F3c가 위젯에 붙임)
+
+- 강조(단계 카드 다음에 누를 곳): 1 `home.connect.useSelectedWindow` · 2 `scan.student.startFullScan` · 3 `scan.studentReview.applyChanged` · 4 `students.calculator.levelTargetPlus`(둥근 사각형) · 5 한 줄 자리 `scan.itemRun.progressWindow` · 6 `scan.itemReview.applyApproved` · 7-1 `plan.flow.nextToGoals` · 7-2 `plan.flow.goals.allMaxPreset` · 7-2b `plan.flow.goals.makiStage1Skills` · 7-2c `plan.flow.goals.makiAddStage` · 7-3 `plan.flow.order.card.akane` · 7-4 `plan.flow.order.card.kannaSwimsuit` · 7-5 `plan.flow.order.laterColumn` · 7-6 `plan.flow.save.asScenario` · 8 `plan.scenario.compareSideBySide` · 9 `inventory.shortage.topRow` · 10 `statistics.growthTrendTile`(둥근 사각형).
+- 밝히기(대사): 04-2 `scan.studentReview.uncertainGroup` · 04-4 `scan.studentReview.fallbackCheck` · 08-3 `plan.flow.stepList` · 08-4 `plan.flow.students.selected` · 08c-2 `plan.flow.goals.stageCells` · 08g-2 `plan.flow.goals.makiStage1Skills` · 08d-1 `plan.flow.order.rankColumns` · 08e-1 `…card.kannaSwimsuit` + `…card.akane` · 08f-2 `…card.neruUniform` + `…card.makiStage2` + `plan.flow.order.laterColumn` · 09-1 `plan.flow.save.phases` · 09-2 `plan.flow.save.choice` · 09c-1 `plan.scenario.list.binahPlan` + `…binahAllMax` · 09d-2 `plan.scenario.compare.columnB` + `…columnC`. 그 밖 대사는 밝히기 없음(시안에 구멍 없음).
+
+### 표정 이름(F3f · XB 추출 입력)
+
+`neutral`(기본) · `slightSmile`(살짝 미소) · `smile`(미소, 11-3에만) · `troubled`(곤란, 01-2 · 그만둘 때 1) · `serious`(진지) · `thinking`(생각). 대사마다 하나(`PlanaLine.expression`). 서 있는 그림 x(기준 2560 px)는 보드 대사의 `figureLeft`(01 1000 · 02 300 · 03 1500 · 04 1950/900 · 05 1000 · 06 1100 · 07 1500 · 08 1000/1250 · 08c 1950 · 08g 60 · 08d 1950 · 08e 1500 · 08f 1900 · 09 1950/1300 · 09c 1650 · 09d 60 · 10 900 · 11 1000 · 그만둘 때 1000), 보드에 없는 대사는 같은 장면 앞 대사 값.
+
+### 새 장면 기대 모습(golden 2장, 기존 장면 변화 0)
+
+- `tutorial-card-parts`: 남색 바탕(#101722). 왼쪽 x60에 카드 4장 — y172 3단계 진행(얼굴 칩 흐린 '프' · '프라나' · '3 / 10' · 진행 칸 하늘 2 + 분홍 1 + 회색 7 · 그만두기, 큰 분홍 '3', '6명 한 번에 적용' 문구 두 줄), y392 7-2 하위 체크(✓ 학생 고르기 · ● 목표 정하기 · ○ 단계 순서 · ○ 저장), y646 2단계 기다림(도는 표시 · '가상 스캔 중… 34 / 128' · 막대 27%), y898 3단계 완료(초록 원 체크 · '적용했습니다' · '곧 다음 단계로 넘어갑니다.', 진행 칸 하늘 3, 얼굴 칩 분홍 그림). 가운데 사선 버튼 '학생 전체 스캔 시작' · 사선 행 '리오(무장)의 엘레프' · 둥근 타일 둘레에 하늘색 2.5px 테두리 + 빛(.6 멈춤), 아래 '학생' + '튜토리얼 · 임시 계정' 칩, 진행 창 한 줄('5 / 10 끝나면 결과 검토로 넘어갑니다' + 그만두기). 오른쪽 어두운 영역에 대상 '적용'(강조) → 9단계 카드가 왼쪽에 붙고 오른쪽 변 가운데 꼭지.
+- `plana-dialogue`: 가짜 화면(머리글 '스캔' + 칩, 판 3개, 행 6개)이 검정 64%로 어둡고, (565,342)-(1860,581) 둥근 구멍 안만 밝고 하늘색 테두리. 아래 362px 대사 띠: 분홍 사선 띠 · '프라나'(경기천년제목 34) · '싯딤의 상자'(하늘) · 오른쪽 '튜토리얼 · 학생 검토 · 대사 2 / 5' · 그만두기, 구분선, 대사 "다만 2명은 읽은 값을 확신할 수 없어, '확인 필요'로 따로 모아 두었습니다." 전체, 오른쪽 아래 '클릭 · Space · Enter로 다음' + 분홍 ▼. 서 있는 그림 없음.
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 생성(새 기준 PNG 2장 없음 → 첫 gate는 이 2장만 RED 예상), `fe_gate.ps1` 전체, 실제 글꼴로 대사 두 줄 확인(위젯 시험은 시험 글꼴 기준 — 모든 대사 2줄 이내 확인), 실제 앱 연결 · 실제 신호 · 실제 대상 위젯 자리(F3c), 프라나 그림(정지 · 움직임, F3f), 사용자 시각 검수, 마우스 hover · 키보드 Tab 순서 수동 확인.
+- README 수치(시험 208 → 209, golden 시험 15 → 16, 장면 68 → 70)는 기존 파일이라 고치지 않았다 — CF가 커밋 때 갱신 여부 판단.
+
+### 키트 승격 후보(지금은 tutorial 폴더 안)
+
+1. `TutorialGlyph.check · flag`(시안 svg 체크 · 깃발) → `KitGlyph`.
+2. `TutorialQuitButton`(tonal 30/40/26px, 간격 5/7/4, 굵기 700, × 아이콘) → `TonalButton`에 간격 · 굵기 · 아이콘 크기 매개변수.
+3. 강조 테두리(`tutorialHighlightPath` · `paintTutorialRing` · `TutorialGlowBuilder`) → 키트 "focus ring"(F3c · F4에서도 씀).
+4. `TutorialSpinner`(`.tut-spin`) → 키트 작은 도는 표시.
+5. `TutorialHeaderChip`(26px 칩 + 앞 아이콘 + 안쪽 1px 링) → `BaChip`에 앞 아이콘 · 링 변형.
+6. 그만두기 확인 패널의 평행사변형 텍스처 버튼 · 취소 텍스처(`account_create_modal.dart`의 비공개 `_PathButton` · `_cancelTexture` 복제) → 공용 "평행사변형 패널 버튼".
+
+### 발견 사항(고치지 않음)
+
+1. **7단계 카드는 8장**: 프롬프트 "7-1~7-6"과 달리 지도 · 대본 보드에 7-2b · 7-2c(마키)가 있어 대본 보드 순서대로 8장으로 했다. 하위 체크 목록이 카드마다 다르다(7-1 · 7-2 · 7-6 = 학생 고르기/목표 정하기/단계 순서/저장, 7-2b · 7-2c = 7명 MAX/마키 1단계/마키 2단계, 7-3~7-5 = 1·2순위/아카네 잇기/나중에) — 장면 보드 그대로.
+2. **완료 체크 제목은 3단계('적용했습니다')만 시안에 있다**. 다른 단계는 '—'로 나온다 → CF 문구 결정 필요(후보: 단계별 짧은 과거형).
+3. **5단계 시작 안내 없음**: 아이템 스캔은 진행 창 한 줄만 그려져 있고, 프라나 06 뒤 '아이템 스캔 시작'을 누르라는 카드 · 강조가 시안에 없다 → F3c · CF 결정(자동 시작 또는 카드 추가).
+4. **대사 띠 잘림 위치**: 04b는 대상 왼쪽 − 60(1740), 08f는 대상 오른쪽 + 149(1060)로 보드끼리 다르다. 구현은 양쪽 60(08f → 971) + 끝 12% 흐림. 글자 폭은 `띠 폭 − 520`(보드 04b 1220 · 08f 980과 같은 식).
+5. **카드 폭 · 기울기**: 부품 보드는 560, 장면 보드는 455(7-2) · 600(4 · 7-2b · 7-2c · 7-4) · 620(7-3) — `cardWidth`에 장면 보드 값. 카드 윗변 기울기는 높이와 상관없이 17.6px(80°가 아님, 시안 path 그대로).
+6. **계정 이름 문구**: 그만두기 확인 "'메인 계정' 계정으로"는 계정 이름 매개변수(`accountName`)로 했다 — 이름이 '…계정'이면 '계정 계정'이 된다(시안 그대로). 프라나 11 대사 2의 "'메인 계정'으로"는 대본에 박힌 예시 — 실제 이름으로 바꿀지 F3c · CF 결정.
+7. **얼굴 칩 그림 없음 규칙**이 튜토리얼 시안에 없어 W-Missing-Art "이름 첫 글자 흐리게"를 따랐다('프', rgba(111,131,151,.7)).
+8. **강조 대상은 단계에 하나**: 하위 체크가 있는 단계(1 · 2 · 4 · 6)도 시안은 마지막 동작의 대상만 그렸다. 앞 줄(예: '스캔 탭 열기')의 대상 키는 두지 않았다 — 대상이 화면에 없으면 F3c가 강조를 생략.
+9. 대사 띠 · 그림은 다른 창 크기에서 기준 대비 작은 배율(0.4~1)로 같이 줄인다(띠 안만 FittedBox — 계정 추가 모달 선례). 1280×720에서 넘침 0(시험).
+10. 그만두기 확인 버튼의 누르는 범위는 사각형(KitPressable)이다(그림은 평행사변형). 계정 추가 모달은 평행사변형 범위.
+
+### F3c 입력
+
+- 상태 기계 하나(`TutorialFlowController`)를 첫 실행 ③ 뒤에 `start()`. `phase`별: `dialogue · quitDialogue` → `PlanaDialogueOverlay(scene, lineIndex, onNext: advanceLine, onQuit: requestQuit, revealRects: revealKeys의 위젯 사각형, figure: F3f/null)`, `step · stepComplete` → `TutorialCardLayer(target: highlightKey 사각형, card: TutorialStepCard(mode: cardMode, checkStates, waitDone/Total: 가상 스캔 진행))` + 대상 위젯에 `TutorialHighlight`(또는 `TutorialHighlightRing`), 5단계(`presentation == inlineLine`)는 카드 대신 아이템 스캔 진행 창(`scan.itemRun.progressWindow`)에 `TutorialInlineStepLine`, `confirmingQuit` → 뒤 층 위에 `TutorialQuitOverlay`(또는 `BaModal` + `TutorialQuitPanel`), `doneScreen` → 끝 화면(문구 `TutorialCopy.done*` · `tutorialDoneFeatures`, 버튼 → `finish()`), `ended` → `outcome`이 무엇이든 임시 계정 삭제 · 첫 계정 홈.
+- 대상 키 → 위젯 자리: 키마다 `GlobalKey`나 등록표로 사각형(오버레이 좌표)을 구하고, 모양(사선 = `parallelogram`, 타일 · '+' = `roundedRect` + `targetRadius`)을 함께 넘긴다. 카드 `bounds`는 실제 머리글 아래, 결과 자리 · 다른 버튼은 `avoid`.
+- 신호: 위 표 이름 그대로 `signal()`. 상관없는 신호는 무시되므로 앱 이벤트를 그대로 흘려도 된다.
+- 튜토리얼 동안 모든 탭 머리글 제목 옆 `TutorialHeaderChip`.
+- 대사 장면 바탕 화면(대본 `context`)으로 탭 · 모드를 먼저 옮긴 뒤 대사를 띄운다(01은 타이틀 위).
+- 발견 2 · 3 · 6의 문구 · 흐름 결정이 F3c 전에 필요.
+
+### 다음 행동
+
+- CF: `debug/frontend_f3a/output.md` 검토 → (다른 레인 정지 뒤) `fe_gate.ps1` — 새 golden 2장은 기준 PNG가 없어 RED 예상 → 실패 이미지 검토 → `fe_gate.ps1 -UpdateGoldens` → `fe_gate.ps1` GREEN → `fe_commit.ps1 -Slice f3a`. 그다음 F3c(XB X4 개정 뒤), F3f(XB 에셋 형식 · 라이선스 확인 → 사용자 승인).
