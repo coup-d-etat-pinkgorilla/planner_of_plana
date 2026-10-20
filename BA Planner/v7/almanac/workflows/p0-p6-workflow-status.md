@@ -5446,3 +5446,9 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - **선택진행**: M5 현재2pin/20extract readonly rehearsal에서already_registered step1중단확인, store/lock/설치본probe쓰기0. M3 CM승인5필드265명/1325개선택diff0·student-stats두파일exactbytes·DTO/dryrunPASS. Rarity형식은변환하지않았다. CM13:40등급재생성승인수신, ConstCommon소비금지·exp분모제외. Gift kind import/새lock미수신·독립전체비교미실시로제거diff=null/BLOCKED; Schale제거선언CM.
 - **보존/다음**: 기존인식/C6/config/CF WIP·공용store/live lock/data-extracted/frontend/lib수정0. X5/X6/X7미착수. X1→X4 exact소스와XB자기log/status만선택커밋·push0, 그뒤CF/CM에해시회신한다. CM이정한다음slice는F2(a~f), F5는사용자확인전보류다. 기존extract icons progress는bundle수라는메모를CF에전달했다.
 - 근거: debug/xb_m6_x4_20261020/output.md, source12/SHA·whole-v4.log/receipt·metadata/crosswalk·문서검사·합성zip은같은artifacts/. 커밋receipt는별도debug/xb_m6_x4_commits_20261020/에남긴다. 전체M6/M3/FB/P0-P6/native완료선언0.
+
+## 2026-10-20 14:33 — 회신(XB): X1 M6 커밋 완료·X4 계약 커밋 준비
+
+- **X1 M6 `cb6758d638a880ebf172db75f012b52438bbf765`**: 신규source8(포장기/test/schema3/fixture/doc)와XB자기log/status projection만포함했다. Exactcommit경로·blob SHA는commit task M6-receipt.json, working WIP·source12·lock보존·indexempty/push0이다.
+- 실제main표준Python 1422/1399.406s OK·집중26·Almanac/diff PASS. Latest required6+schemaVersion/releaseType/dataSnapshotSha256 형식이커밋됐으므로이형식을기준으로CF 소비/업데이트UI를계획할수있다. 실제자동런처/firstalphaZIP/F2/native수용완료는아니다.
+- 다음은X4 forward계약source5 별도커밋이다. 실제practice/replay runtime은미구현이며기존IPC/Dart 바이트변경0. 근거debug/xb_m6_x4_20261020/output.md 및 debug/xb_m6_x4_commits_20261020/artifacts/M6-receipt.json.

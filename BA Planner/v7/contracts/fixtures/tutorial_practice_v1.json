@@ -1,0 +1,261 @@
+{
+  "format": "ba-planner-tutorial-practice-v1",
+  "version": 1,
+  "runtimeImplemented": false,
+  "cases": [
+    {
+      "id": "repository.practice.create-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.create",
+        "payload": {
+          "origin_profile_id": "real-fixture-profile",
+          "expected_origin_revision": 0,
+          "idempotency_key": "start-1"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.create-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.create",
+        "payload": {
+          "practice": {
+            "profile_id": "tutorial-fixture-profile",
+            "origin_profile_id": "real-fixture-profile",
+            "is_practice": true,
+            "revision": 0,
+            "dataset_version": "tutorial-v1",
+            "virtual_target_id": "tutorial:1280x720"
+          },
+          "selected_profile_id": "tutorial-fixture-profile"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.current-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.current",
+        "payload": {}
+      }
+    },
+    {
+      "id": "repository.practice.current-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.current",
+        "payload": {
+          "practice": {
+            "profile_id": "tutorial-fixture-profile",
+            "origin_profile_id": "real-fixture-profile",
+            "is_practice": true,
+            "revision": 0,
+            "dataset_version": "tutorial-v1",
+            "virtual_target_id": "tutorial:1280x720"
+          },
+          "selected_profile_id": "tutorial-fixture-profile"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.reset-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.reset",
+        "payload": {
+          "profile_id": "tutorial-fixture-profile",
+          "expected_revision": 3,
+          "idempotency_key": "reset-1"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.reset-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.reset",
+        "payload": {
+          "practice": {
+            "profile_id": "tutorial-fixture-profile",
+            "origin_profile_id": "real-fixture-profile",
+            "is_practice": true,
+            "revision": 0,
+            "dataset_version": "tutorial-v1",
+            "virtual_target_id": "tutorial:1280x720"
+          },
+          "selected_profile_id": "tutorial-fixture-profile"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.end-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.end",
+        "payload": {
+          "profile_id": "tutorial-fixture-profile",
+          "expected_revision": 3,
+          "idempotency_key": "end-1",
+          "reason": "dismissed"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.end-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.end",
+        "payload": {
+          "deleted_profile_id": "tutorial-fixture-profile",
+          "selected_profile_id": "real-fixture-profile",
+          "already_deleted": false
+        }
+      }
+    },
+    {
+      "id": "repository.practice.recover-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.recover",
+        "payload": {
+          "idempotency_key": "recover-process-1"
+        }
+      }
+    },
+    {
+      "id": "repository.practice.recover-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.recover",
+        "payload": {
+          "removed_profile_ids": [
+            "tutorial-fixture-profile"
+          ],
+          "selected_profile_id": "real-fixture-profile"
+        }
+      }
+    },
+    {
+      "id": "reject-expected_origin_revision",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.create",
+        "payload": {
+          "origin_profile_id": "real-fixture-profile",
+          "expected_origin_revision": true,
+          "idempotency_key": "start-1"
+        }
+      }
+    },
+    {
+      "id": "reject-is_practice",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.create",
+        "payload": {
+          "origin_profile_id": "real-fixture-profile",
+          "expected_origin_revision": 0,
+          "idempotency_key": "start-1",
+          "is_practice": true
+        }
+      }
+    },
+    {
+      "id": "reject-seed_path",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "request",
+        "method": "repository.practice.create",
+        "payload": {
+          "origin_profile_id": "real-fixture-profile",
+          "expected_origin_revision": 0,
+          "idempotency_key": "start-1",
+          "seed_path": "C:/private/real.json"
+        }
+      }
+    },
+    {
+      "id": "reject-normal-profile",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.create",
+        "payload": {
+          "practice": {
+            "profile_id": "tutorial-fixture-profile",
+            "origin_profile_id": "real-fixture-profile",
+            "is_practice": false,
+            "revision": 0,
+            "dataset_version": "tutorial-v1",
+            "virtual_target_id": "tutorial:1280x720"
+          },
+          "selected_profile_id": "tutorial-fixture-profile"
+        }
+      }
+    },
+    {
+      "id": "reject-alias-flag",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "id": "x4-fixture",
+        "type": "response",
+        "method": "repository.practice.create",
+        "payload": {
+          "practice": {
+            "profile_id": "tutorial-fixture-profile",
+            "origin_profile_id": "real-fixture-profile",
+            "is_practice": true,
+            "revision": 0,
+            "dataset_version": "tutorial-v1",
+            "virtual_target_id": "tutorial:1280x720",
+            "is_tutorial": true
+          },
+          "selected_profile_id": "tutorial-fixture-profile"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,866 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/tutorial-practice-v1.schema.json",
+  "title": "X4 FD-182 tutorial practice lifecycle contract v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "request"
+        },
+        "method": {
+          "const": "repository.practice.create"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "origin_profile_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expected_origin_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "idempotency_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "origin_profile_id",
+            "expected_origin_revision",
+            "idempotency_key"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "response"
+        },
+        "method": {
+          "const": "repository.practice.create"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "practice": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "origin_profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "is_practice": {
+                          "const": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "dataset_version": {
+                          "const": "tutorial-v1"
+                        },
+                        "virtual_target_id": {
+                          "const": "tutorial:1280x720"
+                        }
+                      },
+                      "required": [
+                        "profile_id",
+                        "origin_profile_id",
+                        "is_practice",
+                        "revision",
+                        "dataset_version",
+                        "virtual_target_id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selected_profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "practice",
+                "selected_profile_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "profile_not_found",
+                        "revision_conflict",
+                        "idempotency_conflict",
+                        "practice_profile_required",
+                        "practice_session_active",
+                        "practice_cleanup_failed",
+                        "corrupt_data",
+                        "storage_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "retryable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "request"
+        },
+        "method": {
+          "const": "repository.practice.current"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "response"
+        },
+        "method": {
+          "const": "repository.practice.current"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "practice": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "origin_profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "is_practice": {
+                          "const": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "dataset_version": {
+                          "const": "tutorial-v1"
+                        },
+                        "virtual_target_id": {
+                          "const": "tutorial:1280x720"
+                        }
+                      },
+                      "required": [
+                        "profile_id",
+                        "origin_profile_id",
+                        "is_practice",
+                        "revision",
+                        "dataset_version",
+                        "virtual_target_id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selected_profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "practice",
+                "selected_profile_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "profile_not_found",
+                        "revision_conflict",
+                        "idempotency_conflict",
+                        "practice_profile_required",
+                        "practice_session_active",
+                        "practice_cleanup_failed",
+                        "corrupt_data",
+                        "storage_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "retryable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "request"
+        },
+        "method": {
+          "const": "repository.practice.reset"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "profile_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expected_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "idempotency_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "profile_id",
+            "expected_revision",
+            "idempotency_key"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "response"
+        },
+        "method": {
+          "const": "repository.practice.reset"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "practice": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "origin_profile_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "is_practice": {
+                          "const": true
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "dataset_version": {
+                          "const": "tutorial-v1"
+                        },
+                        "virtual_target_id": {
+                          "const": "tutorial:1280x720"
+                        }
+                      },
+                      "required": [
+                        "profile_id",
+                        "origin_profile_id",
+                        "is_practice",
+                        "revision",
+                        "dataset_version",
+                        "virtual_target_id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selected_profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "practice",
+                "selected_profile_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "profile_not_found",
+                        "revision_conflict",
+                        "idempotency_conflict",
+                        "practice_profile_required",
+                        "practice_session_active",
+                        "practice_cleanup_failed",
+                        "corrupt_data",
+                        "storage_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "retryable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "request"
+        },
+        "method": {
+          "const": "repository.practice.end"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "profile_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expected_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "idempotency_key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "enum": [
+                "completed",
+                "dismissed"
+              ]
+            }
+          },
+          "required": [
+            "profile_id",
+            "expected_revision",
+            "idempotency_key",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "response"
+        },
+        "method": {
+          "const": "repository.practice.end"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "deleted_profile_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "selected_profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "already_deleted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "deleted_profile_id",
+                "selected_profile_id",
+                "already_deleted"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "profile_not_found",
+                        "revision_conflict",
+                        "idempotency_conflict",
+                        "practice_profile_required",
+                        "practice_session_active",
+                        "practice_cleanup_failed",
+                        "corrupt_data",
+                        "storage_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "retryable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "request"
+        },
+        "method": {
+          "const": "repository.practice.recover"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "idempotency_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "idempotency_key"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "const": "response"
+        },
+        "method": {
+          "const": "repository.practice.recover"
+        },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "removed_profile_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "uniqueItems": true
+                },
+                "selected_profile_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "removed_profile_ids",
+                "selected_profile_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_payload",
+                        "profile_not_found",
+                        "revision_conflict",
+                        "idempotency_conflict",
+                        "practice_profile_required",
+                        "practice_session_active",
+                        "practice_cleanup_failed",
+                        "corrupt_data",
+                        "storage_error"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "retryable": {
+                      "type": "boolean"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "retryable"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocol",
+        "id",
+        "type",
+        "method",
+        "payload"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "practice": {
+      "type": "object",
+      "properties": {
+        "profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "origin_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "is_practice": {
+          "const": true
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dataset_version": {
+          "const": "tutorial-v1"
+        },
+        "virtual_target_id": {
+          "const": "tutorial:1280x720"
+        }
+      },
+      "required": [
+        "profile_id",
+        "origin_profile_id",
+        "is_practice",
+        "revision",
+        "dataset_version",
+        "virtual_target_id"
+      ],
+      "additionalProperties": false
+    },
+    "readProfileExtension": {
+      "type": "object",
+      "properties": {
+        "is_practice": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+}

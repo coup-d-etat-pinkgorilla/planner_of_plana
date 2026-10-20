@@ -20,7 +20,7 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 | M3 출처 전환 | CLI4 커밋·승인5필드265 readonly 일치 | crosswalk v1/1325 fields diff0·stats2 exact. gift-affinity pin/R-M3-2 공식식/전체제거비교 BLOCKED(null), 제거선언CM |
 | M4 자산 매핑 검증 | 실물 매핑·FD181 UI 추출 후속 | CF F5 요청 수신, manual449 포함 원본→UI 규칙/첫 실행 명세 검증 필요 |
 | M5 업데이트 관리자 | 현재2pin readonly dry-run·이미등록중단 확인 | Product runner/UI·설치본새patch검증은별도. 실제쓰기단계는CM승인+사용자실행 |
-| M6 배포 관리자 | X1 source8 검증완료·선택커밋준비 | 표준Python1422·집중26 PASS, snapshot/latest/app-data ZIP 형식. 실제alpha/런처/추출명세/native는후속 |
+| M6 배포 관리자 | X1 source8 커밋 `cb6758d6` | Python1422/focused26·snapshot/latest/app-data ZIP 형식. 실제alpha/런처/추출명세/native는후속 |
 
 ## 결정 기록
 - 2026-10-08 09:06 사용자: ① KR 전용 필드는 키 불필요 파일+수동값 ② SchaleDB 즉시 제거 ③ 편집기 흡수, 단 개발자 도구는 배포본에 없을 것 ④ 첫 실행 추출 구현은 프론트 레인.
@@ -62,3 +62,9 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 - **선택진행**: M5 현재2pin/20extract readonly rehearsal에서already_registered step1중단확인, store/lock/설치본probe쓰기0. M3 CM승인5필드265명/1325개선택diff0·student-stats두파일exactbytes·DTO/dryrunPASS. Rarity형식은변환하지않았다. CM13:40등급재생성승인수신, ConstCommon소비금지·exp분모제외. Gift kind import/새lock미수신·독립전체비교미실시로제거diff=null/BLOCKED; Schale제거선언CM.
 - **보존/다음**: 기존인식/C6/config/CF WIP·공용store/live lock/data-extracted/frontend/lib수정0. X5/X6/X7미착수. X1→X4 exact소스와XB자기log/status만선택커밋·push0, 그뒤CF/CM에해시회신한다. CM이정한다음slice는F2(a~f), F5는사용자확인전보류다. 기존extract icons progress는bundle수라는메모를CF에전달했다.
 - 근거: debug/xb_m6_x4_20261020/output.md, source12/SHA·whole-v4.log/receipt·metadata/crosswalk·문서검사·합성zip은같은artifacts/. 커밋receipt는별도debug/xb_m6_x4_commits_20261020/에남긴다. 전체M6/M3/FB/P0-P6/native완료선언0.
+
+## 2026-10-20 14:33 — 회신(XB): X1 M6 커밋 완료·X4 계약 커밋 준비
+
+- **X1 M6 `cb6758d638a880ebf172db75f012b52438bbf765`**: 신규source8(포장기/test/schema3/fixture/doc)와XB자기log/status projection만포함했다. Exactcommit경로·blob SHA는commit task M6-receipt.json, working WIP·source12·lock보존·indexempty/push0이다.
+- 실제main표준Python 1422/1399.406s OK·집중26·Almanac/diff PASS. Latest required6+schemaVersion/releaseType/dataSnapshotSha256 형식이커밋됐으므로이형식을기준으로CF 소비/업데이트UI를계획할수있다. 실제자동런처/firstalphaZIP/F2/native수용완료는아니다.
+- 다음은X4 forward계약source5 별도커밋이다. 실제practice/replay runtime은미구현이며기존IPC/Dart 바이트변경0. 근거debug/xb_m6_x4_20261020/output.md 및 debug/xb_m6_x4_commits_20261020/artifacts/M6-receipt.json.
