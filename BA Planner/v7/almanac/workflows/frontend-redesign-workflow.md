@@ -440,12 +440,12 @@ FD-178: 학생 탭 현재값 직접 수정·전체 육성 부족 화면·백업�
 | slice | 내용 | 선행 · 상태 |
 |---|---|---|
 | F1 시안 | **1차 완료 2026-10-20**(캔버스 `1792468151-c7f8`, 16장 — 기존 57장 변화 0). **2차 배정**: 튜토리얼 보드로 교체(FD-182). Design 캔버스 새 page `firstrun`: 첫 실행 3 · 연습 계정 띠 2 · 빈 상태 7 · 스캔 신고 띠 1 · 신고 창 1(+ 설정 1 선택). 시안 워커 프롬프트 `debug/frontend_redesign_handoff/f1-firstrun-artboards-prompt-20261020.md` | 의존 없음 — **2026-10-20 시안 워커에 배정**. 돌아오면 사본 `prototype/2026-10-20/` + MANIFEST + artboard 지도 + FD 신설 + slice 분할 |
-| F2 첫 실행 추출 | 체크리스트 ①·②: 게임 폴더 · 이미지 준비 진행 · 실패 수 · 설정 재시도 · 패치 감지 | 추출 로직은 백엔드에 있음(`recognition_asset_extract.py`), 프로토콜 노출 필요 → 백엔드 로그 2026-10-20 "요청(CF→XB) F2". 계약 커밋 전 Mock — **XB 계약 · 구현 완료(source14 메인 반영, 미커밋), 짝 라운드 f2-dart 2026-10-20 Lane B 배정**(`f2dart-worker-prompt-20261020.md`: DTO · Process · Mock · 컨트롤러 · 시험, 화면 0). 단위 = 번들, total null이면 분모 숨김 |
+| F2 첫 실행 추출 | 체크리스트 ①·②: 게임 폴더 · 이미지 준비 진행 · 실패 수 · 설정 재시도 · 패치 감지 | 추출 로직은 백엔드에 있음(`recognition_asset_extract.py`), 프로토콜 노출 필요 → 백엔드 로그 2026-10-20 "요청(CF→XB) F2". 계약 커밋 전 Mock — **XB 계약 · 구현 완료(source14 메인 반영, 미커밋), 짝 라운드 f2-dart 2026-10-20 Lane B 배정**(`f2dart-worker-prompt-20261020.md`: DTO · Process · Mock · 컨트롤러 · 시험, 화면 0). 단위 = 번들, total null이면 분모 숨김 — **f2-dart 완료 2026-10-21**: XB `ec43d230` → CF `f8a25bd4`, 같은-소스 gate `20261020_221153` |
 | F3 첫 실행 · 튜토리얼 · 빈 상태 | 시안 `prototype/2026-10-20/`(58장, artboard 지도 "첫 실행 · 안내" 절) — 아래 F3a~F3f로 나눔 | F1 2차 완료 2026-10-20(캔버스 `1792494343-3aed`), FD-181~183 |
-| F3a 튜토리얼 부품(새 파일만) | 단계 카드(진행 · 하위 체크 · 기다림 · 완료) · 강조 테두리 · 머리글 칩, 프라나 대사 띠(어둡게 · 입력 막음 · 한 글자씩 · 밝히기 구멍 · 그림 없음/정지 그림 대신), 대본 데이터 모델(장면 · 대사 · 표정 · 밝힐 대상 키) + `Tutorial-Plana-Script` 전체 대본, 상태 기계 뼈대 — 단독 위젯 · golden 2장(W-Tutorial-Card · W-Plana-Dialogue) | 의존 없음 — 프롬프트 `f3a-worker-prompt-20261020.md` 준비됨, CM 19:40 요청으로 f2-dart 뒤 다음 라운드 |
-| F3b 첫 실행 ①~③ | FirstRun-1~3: 타이틀 위 모달, 게임 폴더 · 그림 준비(F2 Mock) · 계정 → 바로 튜토리얼 | F5a 뒤(타이틀 파일 겹침), F2 계약 전 Mock |
+| F3a 튜토리얼 부품(새 파일만) | 단계 카드(진행 · 하위 체크 · 기다림 · 완료) · 강조 테두리 · 머리글 칩, 프라나 대사 띠(어둡게 · 입력 막음 · 한 글자씩 · 밝히기 구멍 · 그림 없음/정지 그림 대신), 대본 데이터 모델(장면 · 대사 · 표정 · 밝힐 대상 키) + `Tutorial-Plana-Script` 전체 대본, 상태 기계 뼈대 — 단독 위젯 · golden 2장(W-Tutorial-Card · W-Plana-Dialogue) | 의존 없음 — 프롬프트 `f3a-worker-prompt-20261020.md` 준비됨, CM 19:40 요청으로 f2-dart 뒤 다음 라운드 — **완료 2026-10-21**: 커밋 `2197bb0b`, gate `20261021_004759`(새 `tutorial-card-parts` · `plana-dialogue`) |
+| F3b 첫 실행 ①~③ | FirstRun-1~3: 타이틀 위 모달, 게임 폴더 · 그림 준비(F2 Mock) · 계정 → 바로 튜토리얼 | F5a 뒤(타이틀 파일 겹침), F2 계약 전 Mock — 2026-10-21 Lane A 배정(`f3b-worker-prompt-20261020.md`) |
 | F3c 튜토리얼 흐름 | 임시 계정 전환 · 단계 진행 감지 · 화면별 강조 대상 연결 · 끝/그만두기 · 임시 계정 삭제, `Tutorial-*` · `Tutorial-Plana-*` 장면 순서 | F3a + XB X4 개정(대본에 맞춘 seed · 가상 스캔) |
-| F3d 빈 상태 7 | Empty-* + golden 7 | F5a 뒤(탭 파일 겹침) |
+| F3d 빈 상태 7 | Empty-* + golden 7 | F5a 뒤(탭 파일 겹침) — 2026-10-21 Lane B 배정(`f3d-worker-prompt-20261021.md`, 6장 — Empty-Backend는 셸 덮개라 F3c) |
 | F3e 설정 줄 | Settings-Help: 안내 다시 열기 · 그림 다시 준비 · 튜토리얼 다시 하기 · 스캔 신고 · 도움말 · 자동 업데이트 자리 | F2 · X2 계약 뒤 실제 연결 |
 | F3f 프라나 움직이는 그림 | Spine 재생, 대사별 표정 · 숨쉬기 · 깜빡임 · 입 움직임, 얼굴 칩 | XB 에셋 형식 · 버전 확인 + 런타임 라이선스 확인 → 사용자 승인(FD-183) |
 | F4 스캔 문제 신고 UI | 세션 종료 띠, 검토 화면 · 설정 버튼, 조각 이미지 체크박스, zip 뒤 폴더 열기 + GitHub Issues 링크 | F1 + XB X5 |
@@ -622,3 +622,4 @@ AGENTS.md → README.md → almanac/workflows/lane-charter-2026-10-10.md(§2·§
 - 2026-10-19(21:40): FE4-g5 `6c21b88f` · FE10-d `21ffa562`, gate `20261019_211135` GREEN(golden 68). 대장 FD-020·052·136·ID 규칙(결번) 갱신. Windows Release 빌드 성공. FE10-z = 사용자 최종 둘러보기 대기(`debug/frontend_fe10z/walkthrough-checklist.md`). 남은 결정 후보: 한 명 모드 세그먼트, 설정 영어 문구, FD-081 시나리오 → 1단계 진입점.
 - 2026-10-20: 알파 차단 F1~F4 착수. F1 시안 워커 프롬프트 작성(캔버스 기존 57장 변화 0 확인, version `1792424802-befc`), F2 XB 요청(추출 프로토콜 노출). FE10-z는 사용자 둘러보기 진행 중. A2는 알파 밖.
 - 2026-10-20(21:00): F1 2차 시안 사본 · FD-183 · F3 분할. CM 14:50 D-ALPHA-SPLIT(F5b 알파-2) · X4 계약 커밋(`96319b3e`). XB F2 source14 같은-소스 gate 대기 → Lane B f2-dart(최우선), Lane A F5a 진행 중. F3a는 다음 라운드. gate 전 CM tactic 로그 끝 공백(1604행) 정리 필요.
+- 2026-10-21(01:10): F5a `fa8a85ea` · f2-dart `f8a25bd4`(XB `ec43d230` 짝) · F3a `2197bb0b`, gate `20261021_004759` GREEN(golden 70). 배정: Lane A F3b · Lane B F3d. 다음: F3c(F3b 뒤 — 셸 겹침, X4 runtime은 XB), F3e, F4(X5), F3f(라이선스 확인).
