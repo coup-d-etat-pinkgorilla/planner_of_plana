@@ -4252,3 +4252,12 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **F3c 전 CF 결정(F3a 발견 2 · 3 · 6)**: ② 완료 체크 제목 — 시안에 3단계('적용했습니다')만 있으므로 단계별 짧은 과거형으로 CF가 F3c 프롬프트에 표로 정한다 ③ 5단계(아이템 스캔) — 프라나 06 뒤 다른 단계처럼 "아이템 2종을 고르고 스캔을 시작해 주십시오" 카드 + 시작 버튼 강조를 둔다(진행 중에는 진행 창 한 줄) ⑥ 프라나 11 대사와 그만두기 확인의 계정 이름은 실제 첫 계정 이름으로('…계정 계정' 겹침은 이름이 '계정'으로 끝나면 '계정' 한 번만).
 - 배정: **Lane A F3b**(`debug/frontend_redesign_handoff/f3b-worker-prompt-20261020.md` — 첫 실행 ①~③, f2-dart 컨트롤러) · **Lane B F3d**(`debug/frontend_redesign_handoff/f3d-worker-prompt-20261021.md` — 빈 상태 6). F3c는 F3b 뒤(셸 겹침).
 - XB 후속 대기: f2-dart 발견 3건(오류 `details` · terminal 순서 · 탐색 끄는 시험 훅), X4 runtime(가상 게임 창 · 가상 스캔 · 대본 구성 seed), 프라나 에셋 형식 · 버전. CM 답 대기: FD-183 알파-1 그림 출처, untracked `item_icons/activity_reports/` 처리.
+## 2026-10-21 08:10 — F3b 커밋, F3d 수정 라운드, F3e 배정, XB 동결 해제 회신
+
+- 검토: F3b SHA 10행 · F3d 34행 일치, 작업 트리 frontend 변경 = 두 slice 목록과 같음(다른 레인 0). XB 워커 0(무거운 Python 없음) 확인 뒤 gate.
+- gate ① `20261021_072702` analyze · 시험 1~5 · process 102 · almanac · diff PASS, golden 70 통과 · RED 9 = 새 장면 기준 없음(F3b 3 · F3d 6) → ② `-UpdateGoldens` `20261021_074209` **GREEN**(golden 79, 기존 변화 0).
+- 새 이미지 9장 확인: first-run 3장 · empty-scan · empty-student · empty-inventory · empty-stats · empty-tactical 통과. **empty-plan 결함**: 2560×1392에서 안내 묶음이 S2 사선 판 왼쪽 경계에 잘림(아이콘 상자 · 제목/설명 첫 글자 · 예시 줄 왼쪽) — 안내가 키 큰 판 세로 가운데인데 여백은 판 폭 비율만 씀. → Lane B `f3d-fix-worker-prompt-20261021.md`. 빈 기준 이미지 6장은 미추적으로 두고 수정 뒤 다시 만든다.
+- **F3b 커밋 `3100cbd6`**(13파일, golden +3).
+- CF 결정: F3b 발견 2 — 알파-1 문구로 고침(① "스캔이 게임 화면을 알아보는 데 쓸 그림을 이 PC의 게임 설치본에서 준비합니다." ② "게임 설치본에서 스캔용 그림을 준비하고 있습니다. 끝날 때까지 기다려 주십시오.") → F3e에 포함. 발견 3(건너뜀 기억) — 새 저장소 없이 알파 유지, 다시 여는 길은 설정 줄. F3d 발견 1(시나리오 수 안 읽음) · 2(배율 '—') · 6(통계 주제 무관) — 알파 그대로. F3d 발견 7(학생 빈 상태 오른쪽 판이 첫 카탈로그 학생 'UNOWNED') — FE10-z 사용자 검수 항목으로.
+- 배정: **Lane A F3e**(`f3e-worker-prompt-20261021.md`) · **Lane B F3d 수정**. F3c는 두 slice 커밋 뒤(탭 · 셸 겹침).
+- XB 회신(backend-orchestrator-log 08:10): f2-dart 짝 커밋 완료 · F2 동결 해제 · 36경로 후속 진행 가능, NP0035 수신.
