@@ -1512,3 +1512,18 @@ FB-4 창 크기·게임 식별 기능을 커밋했으며 전체 Python1005 통�
 ## 2026-10-20 — CF 보고: 튜토리얼 재설계(FD-182) — 튜토리얼 구상 §1-A 대체
 - 사용자 의도 · 결정: 첫 계정 생성 직후 튜토리얼 자동 시작 → 임시 계정에서 가상 게임 창 연결 · 학생/아이템 가상 스캔 · 검토 · 학생 탭 · 계획 · 시나리오 비교 · 인벤토리 · 통계 10단계 → 끝/그만두기 때 임시 계정 삭제. 안내 = 단계 카드 + 누를 곳 강조(어둡게 덮지 않음). `docs/alpha/first-run-tutorial-concept-2026-10-19.md` §1-A(미리 채운 연습 계정 + 얇은 띠, 하이라이트 금지)를 대체 — 문서 갱신은 CM 몫.
 - F1 1차 시안 16장 수신(캔버스 `1792468151-c7f8`), 2차(튜토리얼 보드) 배정. XB X4 개정 요청(백엔드 로그 2026-10-20). 대장 FD-182.
+
+## XB 보고 — 2026-10-20 13:53: X1/X4 최종 전체 검증 진행·lock 반영 시점 조율
+
+- X1 M6 source8·X4 계약 source5(unique12), 집중26 PASS 뒤 표준 Python whole v3 진행 중이다. 앞 두 시도의 중단/registry 누락 FAIL은 원 로그에 보존했고 제품 파일을 최종 지문으로 동결했다. 커밋/완료 선언은 아직 없다.
+- 현재 ba-data.lock 2pins/20extract 지문을 검증 입력으로 사용한다. gift-affinity 저장소 import와 live lock 교체는 CM 승인+사용자 실행 범위이며 XB는 쓰지 않는다. 새 live lock 반영 시점을 XB heavy 종료 통보 뒤로 맞춰 달라. 현재 CM13:40의 등급 재생성 승인·ConstCommon 금지·exp 제외·F2 다음/F5 보류를 수신했다.
+- 실제 source12의 기존 IPC/Dart producer 변화0, X4 runtime 미구현이다. 최종 검증 뒤 X1·X4 선택 커밋과 XB 자기 log/status 마감, 두 해시 보고를 이어간다. X5/X6/X7 미착수·push0.
+
+## XB 보고 — 2026-10-20 14:33: X1 M6·X4 계약 커밋 완료
+
+- **완료 X1**: M6 snapshot/latest/ZIP 생성도구 source8 커밋 **`cb6758d638a880ebf172db75f012b52438bbf765`**. Lock2pins/20kinds·runtime data14파일 metadata preview, app/data zip·SHA·변경기록·latest출력, 신규schema3/fixture/test/문서가포함됐다. 소비형식은contracts/release-package-v1.md. 합성검토zip만생성했고실제alpha/native/자동업데이트런처/업로드는후속이다.
+- **완료 X4 계약**: FD182 forward-contract source5 **`96319b3eefb8b0d719cdef6119ce967a64403dd8`**. repository.practice.create/current/reset/end/recover·is_practice·가상target/replay경계·수명계약, 커밋전Dart DTO목록CF게시완료. CF는이커밋으로Mock F3를진행할수있다. **Runtime미구현**·기존normalProfile/IPC/scannerproducer변화0; 실제RPC/replay연결은후속runtime 및same-source CFgate뒤다.
+- **검증/보존**: 최종기존project .venv 의존성을사용한실제main표준Python **1422/1399.406s OK**, 집중26/1.935s+Excel89/5.533s PASS·Almanac/diff/cached-diff PASS. 첫import준비실패·경로보강전700.219s/684.203s중단전체(registry FAIL1 포함)와v3 1355/errors5(global openpyxl 누락)는원로그보존, 테스트/timeout/skip/golden완화0. 기존4114입력보존+최종source12불변(기존registry test1개계획변경), 다른레인문서WIP도HEAD+XB소유항목만indexprojection해보존, sourcecommits두개와자기문서마감커밋외push0. frontend/lib/store/lock/data-extracted쓰기0·키/게임프로세스/연구원본/Viewer/Arena/외부holdout접근0이다.
+- **추가진전**: M5현재2pin already_registered readonly step1중단검증, 제품runner/실제patch는후속. M3 CM승인5필드265명/1325개선택diff0·새lock canonical SHA재바인딩·stats2 exact/DTO/dryrunPASS. Rarity표현변환0·canonical생성쓰기0. CM13:40등급재생성승인/ConstCommon금지/exp제외수신; gift kind사용자import/live lock새반영 및독립전체비교전제거diff=null/BLOCKED·Schale제거선언CM.
+- **다음/제한**: CM13:40대로F2(first-run 추출a~f)다음, F5는사용자확인전보류. icons callback done/total은bundle단위이며1330고정아이콘분모로표시하면안된다는코드근거/후속메모를CF에전달했다. X5/X6/X7착수0, 전체M6/M3/FB/P0-P6/native완료주장0. 실제포장명령은커밋된문서에있으며firstalphaZIP은남은런처/F2/사용자수용후생성한다.
+- **인계**: source검증봉인 debug/xb_m6_x4_20261020/output.md, 선택커밋/문서/WIP보존인계 debug/xb_m6_x4_commits_20261020/output.md. 기존sealed산출물은수정하지않았다.
