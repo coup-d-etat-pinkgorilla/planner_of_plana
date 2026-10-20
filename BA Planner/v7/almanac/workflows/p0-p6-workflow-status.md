@@ -5476,3 +5476,29 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - **M3 추가진전**: CM afd2bf94의giftkind/21lock수신·crosswalk1회재바인딩,265명1325fields/학생태그차이0·52exp동결차이0·13780grade/point차이0. Rawgift태그7차이는사유보존·ConstCommon소비0. Canonical/Schale코드메인쓰기0·독립전체제거비교null/선언CM. Darttool영향및다음반영계획을격리산출물에게시했다.
 - **M5 readonly**: 현재21extract lock의고정JP/Steam2버전은already_registered로step1중단. Step2~7/key/register/import/diff/apply/gate실행0·store manifest/live lock지문불변. 설치본새버전probe/실제patch/product runner완료주장0. 근거 debug/xb_m5_lock21_dryrun_20261020/output.md.
 - **보존/인계**: 기존WIP·frontend/lib/store/lock/data-extracted쓰기0·push0. F5alpha2보류·X5/X6/X7착수0. F2 debug/xb_f2_prepare_20261020/output.md; M3 debug/xb_m3_regenerate_20261020/output.md; X1 debug/xb_x1bc_f2_20261020/output.md와debug/xb_x1bc_commits_20261020/output.md. 이번F2CFgate/CF Dart연결·실게임인수는미완료이며완료라고선언하지않는다.
+
+## 2026-10-20 22:49 — XB 역할 인수·F2 CF GREEN 수신
+
+- XB 마스터 프롬프트·헌장·현재 상태와 각 레인 최근 인계를 확인했다. CF22:25의 `20261020_221153` compare GREEN 원본 summary와 기존 F2 Python1443/954.373s PASS receipt를 읽었다. 기존 17:22의 CF gate 대기는 **GREEN 수신·XB exact14 선택 커밋 준비** 상태로 갱신하며, 현재 제품 SHA 재확인과 실제 커밋은 다음 실행에 남아 있다.
+- 다음 순서: source14/선택 projection/WIP 보존 확인 → XB14 커밋 → CF f2-dart 커밋 확인·동결 해제 → CM19:40 조건의 M3. CF 후속3건과 X4/FD-183 요청도 인수했다. 이번 역할 인수는 제품 변경·새 시험·커밋·push0이며 P0-P6/M3/F2 전체 완료를 뜻하지 않는다. 상세는 backend-orchestrator-log 22:49 항목.
+
+
+## 2026-10-20 22:53 — 회신(XB): F2 exact14 커밋 완료·CF 짝 커밋 요청
+
+- F2 exact14 커밋 **`ec43d2305e56ac62cf65057bbc62ee28c70d3c04`** 완료. 기존 source14 working SHA14/14·선택 commit blob14/14 일치, 현재 보호 입력 4134개 불변·기존 scanner import WIP 보존·index empty·push0.
+- 검증: 기존 실제 main Python1443/954.373s PASS 원로그 SHA 확인, 같은 소스 CF gate `20261020_221153` GREEN 원본 수신, 새 working/cached 공백 검사 PASS. 제품 소스 추가 수정0.
+- **CF 요청**: 이 해시를 기준으로 `fe_commit.ps1 -Slice f2dart` 커밋 후 왕복 완료/동결 해제를 회신해 달라. 그 전 backend/contracts/tool 동결 유지. CF 후속3건은 별도 수정·검증으로 진행하며 M3는 우선 격리 준비한다.
+- 근거: `debug/xb_f2_commit_followups_20261020/output.md` 및 `artifacts/receipt.json`.
+
+
+## XB 후속 상태 — 2026-10-21 00:31: 격리 구현·검증 및 F2 왕복 대기
+
+- **이번 실제 커밋**: F2 exact14 **ec43d2305e56ac62cf65057bbc62ee28c70d3c04**, 기존 main Python1443/954.373s 및 CF gate20261020_221153 GREEN에 기반한 선택 커밋. 제품 후속은 동결 때문에 debug 후보이며 새로운 main runtime 커밋은 없다. F2 commit receipt `debug/xb_f2_commit_followups_20261020/output.md`.
+- **격리 구현**: F2 후속3건(오류 details/terminal cursor·영속 순서/자동 탐색 시험 훅), M3 store read-only 재생성8산출물/Schale 모듈4·메서드7 제거 후보/명시 CharacterId267 바인딩, X3 v7 namespace·원본 보존 복사/잠금·journal 차단/시작 통합, 검증 root 경로 해석 중복 제거(모든 파일 매번 SHA 검증 유지), FD183 합성 데이터. 정확한 후속 **36경로** 패치·원/결과 SHA `artifacts/future-backend-overlay.patch/json` — 아직 main 적용0, main 보호4134 및 source338 지문 불변.
+- **독립 대조**: canonical 전체/생성265명13581필드·선언5종 차이0, JP stats2 exact bytes, 제거 후 별도 인터프리터 runtime **선물13780·형태stats267·인연계산1060 전부 차이0**. 승인 raw gift tag7 변경 사유 별도 유지, exp52 동결표 사용·ConstCommon 미소비. CM 제거 완료 선언/메인 제거는 아직 없다.
+- **검증**: 마지막 격리 전체 `1461/1460.226s` exit0/source drift0, **조건부 생략 2건**(새 임시 사용자 폴더에 승인 Bold 글꼴 캐시가 없어 name matcher 시험2건). 기존 공개 asset_pack의 승인 SHA f490194d9bf161f70076d01c9fb0a24d0019a324102de46c5fef579188ee96e6을 지문 확인해 fonts-only 시험 캐시로 공급한 동일 소스 name matcher **13/3.432s, skip0 PASS**로 해당2건을 별도 실행했다. 전체를 무생략 실행했다고 쓰지 않는다. 집중86 및 통합53 PASS. 원본 whole-v1 FAIL165/ERROR38/SKIP5와 누락 모듈명/시작 timeout·직렬화/도구 명령 실패를 보존, 테스트/10초 기준/golden 완화0. 향후 실제 main 전체 gate는 승인 font fixture도 포함한 격리 user dir로 실행할 것.
+- **X2**: C# dual-mode 런처/build 후보 실제 컴파일, 실제 M6 ZIP 소비 포함 컴파일 harness **19 PASS/4.579s**, install staging·정확 membership/hash·호환 data·offline·flag·rollback/recovery 검증. 앱 실행·실네트워크/URL 확정·first alpha/native는 미검증. 설정 flag 경로/CF UI 연결 조건은 `prepared-handoffs.md`; `check_now`는 다음 안전한 launcher 시작 때 소비하며 현재 UI 즉시 확인이 완성된 뜻은 아니다.
+- **X3 정정/경계**: 첫 startup 통합 시험에서 기존 subprocess가 user dir를 지정하지 않아 실제 기본 경로 guard에 진입했다. 해당 프로세스 종료·v7/이관마커/owned staging 부재 확인; private payload 이동/삭제는 하지 않았다. 이후 runner와 stdio subprocess는 새 임시 BA_PLANNER_USER_DIR, 실제 migration startup 시험도 합성 LOCALAPPDATA로 고정했다. 이관7 tests와 전체 검증은 합성 자료이며 실제 사용자 이관 완료 주장은 없다.
+- **X4/X5/X6/X7**: 지정7학생·6changed/1new/2review·56승인+4unknown 인벤토리·비나MAX 합성 JSON/3 tests 제공, X4 실제 practice 수명/RPC/가상 replay는 **미구현**. X5 기존 진단↔privacy ROI replay 차이 감사만(새 ZIP/RPC 미구현). X6 user-run 절차·진단 수집기 **3 PASS**, 실제 native/두번째PC 측정·N/T 판정은 사용자/CM. X7 다른 캡처와 사용자 라벨 미지정으로 독립 평가/튜닝/채택0. 단계 우선순위는 M3→X2 이후 순서 유지.
+- **FD183 최종(사용자 NP0035 지정 반영)**: 사용자가 2026-10-21 프라나 대상 **NP0035**를 직접 확인했다. 해당 실제 키 없는 자산은 **Spine binary4.2.33**, skel464931B SHA057e67b3832098958459cc0ae713f8eb815880009994ecb42b6f693778786fa3·atlas9721B SHAeaac5acc3206141fc0a6d1f7eceebcbb29fe0ecf97d79ac8e185ed0907109314·Texture2D2048×2048 한 장이다. Unity ClipName34개(00~20/99/Eye_Close_01/Idle_01/LookEnd_01_A/M·Look_01_M/PatEnd_01_A/M·Pat_01_A/M/Set_Front/Left/Right), bone315/slot152, Mouth_1/2/3 bone 및 Mouth_01 slot 존재 확인. 이것은 입 rig 존재 근거이며 실제 lip-sync 재생 검증은 아니다. 복잡 rig의 constraints/skin/timeline reader와 완성 정지 전신·머리 fallback은 NOT_VERIFIED, 재생 runtime/라이선스·알파1 범위 결정은 CF/CM 후속이다. 앞선 NP0090 추정은 배제/REJECTED·전 로그 정정했고 그 그림/메타데이터를 프라나로 사용하지 않는다. `plana-final-status.json`/`plana-np0035-inspection.json`이 최신 근거. 별도의 이름 Plana 3D family와 혼동하지 않는다. 키/게임 프로세스/원본 bundle·skel·mesh geometry export/Viewer·Arena/독립holdout 접근0, F2/UI 추출 runtime 확장0.
+- **진행 중/차단**: 워커0. CF의 F2 f2dart 짝 커밋/동결 해제 미회신으로 main backend/contracts/tool을 계속 동결한다. CF 회신 뒤 실제36경로에서 coherent slice별 선택·경로/SHA 게시→actual main Python/Almanac/diff→M3 도구 UI 제거 및 같은소스 CF gate→선택 커밋. 후보 전체 PASS는 main/CF/native gate를 대체하지 않는다. store/ba-data.lock/data-extracted/frontend/lib·test 쓰기0, push0. 전체 P0-P6/알파/Schale 제거 완료 선언0.
