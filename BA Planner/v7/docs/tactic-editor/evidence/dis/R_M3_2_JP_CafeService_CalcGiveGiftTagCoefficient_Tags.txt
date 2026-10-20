@@ -1,0 +1,67 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181334010; end 0x181334120; bound unwind; mode body
+181334010 mov qword ptr [rsp + 8], rbx
+181334015 mov qword ptr [rsp + 0x10], rsi
+18133401a push rdi
+18133401b sub rsp, 0x20
+18133401f cmp byte ptr [rip + 0x8a1a534], 0
+181334026 mov esi, r8d
+181334029 mov rdi, rdx
+18133402c mov rbx, rcx
+18133402f jne 0x181334068
+181334031 lea rcx, [rip + 0x8609488]
+181334038 call 0x180778b40
+18133403d lea rcx, [rip + 0x8620354]
+181334044 call 0x180778b40
+181334049 lea rcx, [rip + 0x8680680]
+181334050 call 0x180778b40
+181334055 lea rcx, [rip + 0x8689b3c]
+18133405c call 0x180778b40
+181334061 mov byte ptr [rip + 0x8a1a4f2], 1
+181334068 test rdi, rdi
+18133406b je 0x1813340e9
+18133406d test rbx, rbx
+181334070 jne 0x1813340c4
+181334072 mov rbx, qword ptr [rip + 0x862031f]
+181334079 mov rax, qword ptr [rbx + 0x38]
+18133407d mov rax, qword ptr [rax]
+181334080 test byte ptr [rax + 0x132], 1
+181334087 jne 0x181334091
+181334089 mov rcx, rax
+18133408c call 0x180731df0
+181334091 cmp dword ptr [rax + 0xe0], 0
+181334098 jne 0x1813340a2
+18133409a mov rcx, rax
+18133409d call 0x18070e020
+1813340a2 mov rax, qword ptr [rbx + 0x38]
+1813340a6 mov rax, qword ptr [rax]
+1813340a9 test byte ptr [rax + 0x132], 1
+1813340b0 jne 0x1813340ba
+1813340b2 mov rcx, rax
+1813340b5 call 0x180731df0
+1813340ba mov rax, qword ptr [rax + 0xb8]
+1813340c1 mov rbx, qword ptr [rax]
+1813340c4 mov r8, qword ptr [rip + 0x8680605]
+1813340cb mov rdx, rbx
+1813340ce mov rcx, rdi
+1813340d1 call 0x1827d3190 ; System.Linq.Enumerable.Intersect<FlatData.Tag> (methodSpec metadata)
+1813340d6 mov rdx, qword ptr [rip + 0x86093e3]
+1813340dd mov rcx, rax
+1813340e0 call 0x1827b7000 ; System.Linq.Enumerable.Count<FlatData.Tag> (methodSpec metadata)
+1813340e5 mov ebx, eax
+1813340e7 jmp 0x1813340eb
+1813340e9 xor ebx, ebx
+1813340eb mov rcx, qword ptr [rip + 0x8689aa6]
+1813340f2 cmp dword ptr [rcx + 0xe0], 0
+1813340f9 jne 0x181334100
+1813340fb call 0x18070e020
+181334100 xor r8d, r8d
+181334103 mov edx, esi
+181334105 mov ecx, ebx
+181334107 call 0x1860833d0 ; System.Math.Min(int,int)
+18133410c mov rbx, qword ptr [rsp + 0x30]
+181334111 inc eax
+181334113 mov rsi, qword ptr [rsp + 0x38]
+181334118 cdqe
+18133411a add rsp, 0x20
+18133411e pop rdi
+18133411f ret

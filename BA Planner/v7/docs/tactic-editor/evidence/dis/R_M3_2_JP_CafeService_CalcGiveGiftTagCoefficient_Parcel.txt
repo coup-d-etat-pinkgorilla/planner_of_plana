@@ -1,0 +1,138 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181333db0; end 0x181334006; bound unwind; mode body
+181333db0 mov qword ptr [rsp + 0x10], rbx
+181333db5 push rbp
+181333db6 push rsi
+181333db7 push rdi
+181333db8 sub rsp, 0x40
+181333dbc cmp byte ptr [rip + 0x8a1a796], 0
+181333dc3 mov rbp, rdx
+181333dc6 mov rdi, rcx
+181333dc9 jne 0x181333e0e
+181333dcb lea rcx, [rip + 0x85541de]
+181333dd2 call 0x180778b40
+181333dd7 lea rcx, [rip + 0x864313a]
+181333dde call 0x180778b40
+181333de3 lea rcx, [rip + 0x864e646]
+181333dea call 0x180778b40
+181333def lea rcx, [rip + 0x860a842]
+181333df6 call 0x180778b40
+181333dfb lea rcx, [rip + 0x8560b1e]
+181333e02 call 0x180778b40
+181333e07 mov byte ptr [rip + 0x8a1a74b], 1
+181333e0e mov rcx, qword ptr [rip + 0x860a823]
+181333e15 xor ebx, ebx
+181333e17 xorps xmm0, xmm0
+181333e1a mov qword ptr [rsp + 0x60], rbx
+181333e1f movups xmmword ptr [rsp + 0x20], xmm0
+181333e24 mov qword ptr [rsp + 0x78], rbx
+181333e29 cmp dword ptr [rcx + 0xe0], ebx
+181333e2f jne 0x181333e36
+181333e31 call 0x18070e020
+181333e36 mov rcx, qword ptr [rip + 0x864e5f3]
+181333e3d call 0x1833de5c0
+181333e42 mov rsi, rax
+181333e45 test rdi, rdi
+181333e48 je 0x181334000
+181333e4e mov rcx, qword ptr [rip + 0x8560acb]
+181333e55 movups xmm0, xmmword ptr [rdi + 0x10]
+181333e59 movups xmmword ptr [rsp + 0x30], xmm0
+181333e5e cmp dword ptr [rcx + 0xe0], ebx
+181333e64 jne 0x181333e6b
+181333e66 call 0x18070e020
+181333e6b test rsi, rsi
+181333e6e je 0x181334000
+181333e74 mov rdx, qword ptr [rsp + 0x38]
+181333e79 lea r8, [rsp + 0x60]
+181333e7e xor r9d, r9d
+181333e81 mov rcx, rsi
+181333e84 call 0x181a275f0 ; MX.Data.ItemData.TryGetTags
+181333e89 mov rcx, qword ptr [rip + 0x864e5a0]
+181333e90 call 0x1833de5c0
+181333e95 movups xmm0, xmmword ptr [rdi + 0x10]
+181333e99 test rax, rax
+181333e9c je 0x181334000
+181333ea2 psrldq xmm0, 8
+181333ea7 lea r8, [rsp + 0x20]
+181333eac movq rdx, xmm0
+181333eb1 xor r9d, r9d
+181333eb4 mov rcx, rax
+181333eb7 call 0x181a27910 ; MX.Data.ItemData.TryGetValue -> ItemExcel
+181333ebc mov rcx, qword ptr [rip + 0x8643055]
+181333ec3 call 0x1833de5c0
+181333ec8 test rax, rax
+181333ecb je 0x181334000
+181333ed1 xor r9d, r9d
+181333ed4 lea r8, [rsp + 0x78]
+181333ed9 mov rdx, rbp
+181333edc mov rcx, rax
+181333edf call 0x1819a9b50 ; MX.Data.AcademyData.TryGetCharacterFavorItemTags
+181333ee4 mov rdi, qword ptr [rsp + 0x60]
+181333ee9 lea rcx, [rsp + 0x20]
+181333eee mov rsi, qword ptr [rsp + 0x78]
+181333ef3 xor edx, edx
+181333ef5 call 0x1810ceba0 ; MX.Data.Excel.ItemExcel.get_MaxGiftTags (typed ItemExcel receiver)
+181333efa mov rcx, qword ptr [rip + 0x85540af]
+181333f01 mov ebp, eax
+181333f03 cmp dword ptr [rcx + 0xe0], ebx
+181333f09 jne 0x181333f10
+181333f0b call 0x18070e020
+181333f10 cmp byte ptr [rip + 0x8a1a644], bl
+181333f16 jne 0x181333f4f
+181333f18 lea rcx, [rip + 0x86095a1]
+181333f1f call 0x180778b40
+181333f24 lea rcx, [rip + 0x862046d]
+181333f2b call 0x180778b40
+181333f30 lea rcx, [rip + 0x8680799]
+181333f37 call 0x180778b40
+181333f3c lea rcx, [rip + 0x8689c55]
+181333f43 call 0x180778b40
+181333f48 mov byte ptr [rip + 0x8a1a60b], 1
+181333f4f test rsi, rsi
+181333f52 je 0x181333fce
+181333f54 test rdi, rdi
+181333f57 jne 0x181333fab
+181333f59 mov rbx, qword ptr [rip + 0x8620438]
+181333f60 mov rax, qword ptr [rbx + 0x38]
+181333f64 mov rax, qword ptr [rax]
+181333f67 test byte ptr [rax + 0x132], 1
+181333f6e jne 0x181333f78
+181333f70 mov rcx, rax
+181333f73 call 0x180731df0
+181333f78 cmp dword ptr [rax + 0xe0], 0
+181333f7f jne 0x181333f89
+181333f81 mov rcx, rax
+181333f84 call 0x18070e020
+181333f89 mov rax, qword ptr [rbx + 0x38]
+181333f8d mov rax, qword ptr [rax]
+181333f90 test byte ptr [rax + 0x132], 1
+181333f97 jne 0x181333fa1
+181333f99 mov rcx, rax
+181333f9c call 0x180731df0
+181333fa1 mov rax, qword ptr [rax + 0xb8]
+181333fa8 mov rdi, qword ptr [rax]
+181333fab mov r8, qword ptr [rip + 0x868071e]
+181333fb2 mov rdx, rdi
+181333fb5 mov rcx, rsi
+181333fb8 call 0x1827d3190 ; System.Linq.Enumerable.Intersect<FlatData.Tag> (methodSpec metadata)
+181333fbd mov rdx, qword ptr [rip + 0x86094fc]
+181333fc4 mov rcx, rax
+181333fc7 call 0x1827b7000 ; System.Linq.Enumerable.Count<FlatData.Tag> (methodSpec metadata)
+181333fcc mov ebx, eax
+181333fce mov rcx, qword ptr [rip + 0x8689bc3]
+181333fd5 cmp dword ptr [rcx + 0xe0], 0
+181333fdc jne 0x181333fe3
+181333fde call 0x18070e020
+181333fe3 xor r8d, r8d
+181333fe6 mov edx, ebp
+181333fe8 mov ecx, ebx
+181333fea call 0x1860833d0 ; System.Math.Min(int,int)
+181333fef mov rbx, qword ptr [rsp + 0x68]
+181333ff4 inc eax
+181333ff6 cdqe
+181333ff8 add rsp, 0x40
+181333ffc pop rdi
+181333ffd pop rsi
+181333ffe pop rbp
+181333fff ret
+181334000 call 0x180778cf0
+181334005 int3

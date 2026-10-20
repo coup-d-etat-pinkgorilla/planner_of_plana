@@ -1,0 +1,360 @@
+# SHA256 e2baf70eeb56fc02be00dc35e43374652282ce72dd3f1cd88a5b853e33c0afc1; start 0x181334320; end 0x181334987; bound unwind; mode body
+181334320 mov qword ptr [rsp + 0x20], r9
+181334325 mov qword ptr [rsp + 0x18], r8
+18133432a mov qword ptr [rsp + 8], rcx
+18133432f push rbx
+181334330 push rsi
+181334331 push rdi
+181334332 push r12
+181334334 push r13
+181334336 push r14
+181334338 push r15
+18133433a sub rsp, 0xe0
+181334341 mov r14, r9
+181334344 mov rbx, r8
+181334347 mov rdi, rdx
+18133434a mov rsi, rcx
+18133434d cmp byte ptr [rip + 0x8a1a204], 0
+181334354 jne 0x181334445
+18133435a lea rcx, [rip + 0x8553c4f]
+181334361 call 0x180778b40
+181334366 lea rcx, [rip + 0x8642bab]
+18133436d call 0x180778b40
+181334372 lea rcx, [rip + 0x864e0b7]
+181334379 call 0x180778b40
+18133437e lea rcx, [rip + 0x860a2b3]
+181334385 call 0x180778b40
+18133438a lea rcx, [rip + 0x859e647]
+181334391 call 0x180778b40
+181334396 lea rcx, [rip + 0x86727fb]
+18133439d call 0x180778b40
+1813343a2 lea rcx, [rip + 0x8662faf]
+1813343a9 call 0x180778b40
+1813343ae lea rcx, [rip + 0x869269b]
+1813343b5 call 0x180778b40
+1813343ba lea rcx, [rip + 0x8692917]
+1813343c1 call 0x180778b40
+1813343c6 lea rcx, [rip + 0x8692b8b]
+1813343cd call 0x180778b40
+1813343d2 lea rcx, [rip + 0x8581e47]
+1813343d9 call 0x180778b40
+1813343de lea rcx, [rip + 0x86af1e3]
+1813343e5 call 0x180778b40
+1813343ea lea rcx, [rip + 0x86bd45f]
+1813343f1 call 0x180778b40
+1813343f6 lea rcx, [rip + 0x86bcccb]
+1813343fd call 0x180778b40
+181334402 lea rcx, [rip + 0x8647cb7]
+181334409 call 0x180778b40
+18133440e lea rcx, [rip + 0x855faf3]
+181334415 call 0x180778b40
+18133441a lea rcx, [rip + 0x855ffef]
+181334421 call 0x180778b40
+181334426 lea rcx, [rip + 0x86c7f73]
+18133442d call 0x180778b40
+181334432 lea rcx, [rip + 0x86deb27]
+181334439 call 0x180778b40
+18133443e mov byte ptr [rip + 0x8a1a113], 1
+181334445 xor r12d, r12d
+181334448 mov qword ptr [rsp + 0x48], r12
+18133444d mov dword ptr [rsp + 0x30], r12d
+181334452 mov qword ptr [rsp + 0x50], r12
+181334457 xorps xmm0, xmm0
+18133445a movups xmmword ptr [rsp + 0x70], xmm0
+18133445f mov qword ptr [rsp + 0x40], r12
+181334464 mov qword ptr [r14], r12
+181334467 xor edx, edx
+181334469 mov rcx, r14
+18133446c call 0x180778540
+181334471 mov r15, qword ptr [rsp + 0x140]
+181334479 mov qword ptr [r15], r12
+18133447c xor edx, edx
+18133447e mov rcx, r15
+181334481 call 0x180778540
+181334486 test rsi, rsi
+181334489 je 0x181334946
+18133448f test rdi, rdi
+181334492 je 0x181334946
+181334498 mov rdx, qword ptr [rip + 0x86726f9]
+18133449f mov rcx, rbx
+1813344a2 call 0x182940770
+1813344a7 test al, al
+1813344a9 jne 0x181334946
+1813344af mov rcx, qword ptr [rip + 0x860a182]
+1813344b6 cmp dword ptr [rcx + 0xe0], r12d
+1813344bd jne 0x1813344c4
+1813344bf call 0x18070e020
+1813344c4 mov rcx, qword ptr [rip + 0x864df65]
+1813344cb call 0x1833de5c0
+1813344d0 mov qword ptr [rsp + 0x68], rax
+1813344d5 test rax, rax
+1813344d8 je 0x181334946
+1813344de mov rcx, qword ptr [rip + 0x860a153]
+1813344e5 cmp dword ptr [rcx + 0xe0], r12d
+1813344ec jne 0x1813344f3
+1813344ee call 0x18070e020
+1813344f3 mov rcx, qword ptr [rip + 0x8642a1e]
+1813344fa call 0x1833de5c0
+1813344ff test rax, rax
+181334502 je 0x181334946
+181334508 xor r9d, r9d
+18133450b lea r8, [rsp + 0x48]
+181334510 mov rdx, qword ptr [rsi + 0x18]
+181334514 mov rcx, rax
+181334517 call 0x1819a9b50 ; MX.Data.AcademyData.TryGetCharacterFavorItemTags
+18133451c test al, al
+18133451e je 0x181334946
+181334524 mov r13, r12
+181334527 mov qword ptr [rsp + 0x38], r12
+18133452c mov rcx, qword ptr [rip + 0x855f9d5]
+181334533 call 0x18073bb70
+181334538 mov rbx, rax
+18133453b test rax, rax
+18133453e je 0x181334981
+181334544 xor edx, edx
+181334546 mov rcx, rax
+181334549 call 0x1813b5a50
+18133454e mov qword ptr [r15], rbx
+181334551 mov rdx, rbx
+181334554 mov rcx, r15
+181334557 call 0x180778540
+18133455c mov rcx, qword ptr [rip + 0x8647b5d]
+181334563 call 0x18073bb70
+181334568 mov rbx, rax
+18133456b test rax, rax
+18133456e je 0x181334981
+181334574 mov rdx, qword ptr [rip + 0x86bcb4d]
+18133457b mov rcx, rax
+18133457e call 0x1843a7f40
+181334583 mov qword ptr [r14], rbx
+181334586 mov rdx, rbx
+181334589 mov rcx, r14
+18133458c call 0x180778540
+181334591 mov rdx, qword ptr [rdi + 0x10]
+181334595 test rdx, rdx
+181334598 je 0x181334981
+18133459e mov r8, qword ptr [rip + 0x859e433]
+1813345a5 lea rcx, [rsp + 0xb0]
+1813345ad call 0x183997270
+1813345b2 movups xmm0, xmmword ptr [rsp + 0xb0]
+1813345ba movups xmmword ptr [rsp + 0x80], xmm0
+1813345c2 movups xmm1, xmmword ptr [rsp + 0xc0]
+1813345ca movups xmmword ptr [rsp + 0x90], xmm1
+1813345d2 movsd xmm0, qword ptr [rsp + 0xd0]
+1813345db movsd qword ptr [rsp + 0xa0], xmm0
+1813345e4 mov qword ptr [rsp + 0x58], r12
+1813345e9 lea rbx, [rsp + 0x80]
+1813345f1 mov qword ptr [rsp + 0x60], rbx
+1813345f6 nop word ptr [rax + rax]
+181334600 mov rdx, qword ptr [rip + 0x86926d1]
+181334607 lea rcx, [rsp + 0x80]
+18133460f call 0x183da5d10
+181334614 test al, al
+181334616 je 0x1813348d8
+18133461c mov rcx, qword ptr [rip + 0x86de93d]
+181334623 call 0x18073bb70
+181334628 mov r15, rax
+18133462b test rax, rax
+18133462e je 0x181334975
+181334634 xor edx, edx
+181334636 mov rcx, rax
+181334639 call 0x1807e3e20
+18133463e movups xmm0, xmmword ptr [rsp + 0x90]
+181334646 movups xmmword ptr [r15 + 0x10], xmm0
+18133464b mov rsi, qword ptr [rsp + 0x130]
+181334653 test rsi, rsi
+181334656 je 0x1813348c7
+18133465c mov rcx, qword ptr [rip + 0x8581bbd]
+181334663 call 0x18073bb70
+181334668 mov rdi, rax
+18133466b test rax, rax
+18133466e je 0x181334970
+181334674 xor r9d, r9d
+181334677 mov r8, qword ptr [rip + 0x86c7d22]
+18133467e mov rdx, r15
+181334681 mov rcx, rax
+181334684 call 0x1843e8870
+181334689 mov r8, qword ptr [rip + 0x8662cc8]
+181334690 mov rdx, rdi
+181334693 mov rcx, rsi
+181334696 call 0x1827c9c70
+18133469b mov r14, rax
+18133469e test rax, rax
+1813346a1 je 0x1813348c7
+1813346a7 xor r9d, r9d
+1813346aa lea r8, [rsp + 0x70]
+1813346af mov rdx, qword ptr [rax + 0x18]
+1813346b3 mov rdi, qword ptr [rsp + 0x68]
+1813346b8 mov rcx, rdi
+1813346bb call 0x181a27910 ; MX.Data.ItemData.TryGetValue -> ItemExcel
+1813346c0 test al, al
+1813346c2 je 0x1813348b6
+1813346c8 xor r9d, r9d
+1813346cb lea r8, [rsp + 0x40]
+1813346d0 mov rdx, qword ptr [r14 + 0x18]
+1813346d4 mov rcx, rdi
+1813346d7 call 0x181a275f0 ; MX.Data.ItemData.TryGetTags -> List<FlatData.Tag>
+1813346dc test al, al
+1813346de je 0x1813348a2
+1813346e4 xor edx, edx
+1813346e6 lea rcx, [rsp + 0x70]
+1813346eb call 0x1810ceba0 ; MX.Data.Excel.ItemExcel.get_MaxGiftTags (typed ItemExcel receiver)
+1813346f0 mov r13d, eax
+1813346f3 mov rdi, qword ptr [rsp + 0x40]
+1813346f8 mov rsi, qword ptr [rsp + 0x48]
+1813346fd mov rcx, qword ptr [rip + 0x85538ac]
+181334704 cmp dword ptr [rcx + 0xe0], 0
+18133470b jne 0x181334712
+18133470d call 0x18070e020
+181334712 cmp byte ptr [rip + 0x8a19e41], 0
+181334719 jne 0x181334752
+18133471b lea rcx, [rip + 0x8608d9e]
+181334722 call 0x180778b40
+181334727 lea rcx, [rip + 0x861fc6a]
+18133472e call 0x180778b40
+181334733 lea rcx, [rip + 0x867ff96]
+18133473a call 0x180778b40
+18133473f lea rcx, [rip + 0x8689452]
+181334746 call 0x180778b40
+18133474b mov byte ptr [rip + 0x8a19e08], 1
+181334752 test rsi, rsi
+181334755 je 0x181334790
+181334757 test rdi, rdi
+18133475a jne 0x18133476b
+18133475c mov rcx, qword ptr [rip + 0x861fc35]
+181334763 call 0x180002930
+181334768 mov rdi, rax
+18133476b mov r8, qword ptr [rip + 0x867ff5e]
+181334772 mov rdx, rdi
+181334775 mov rcx, rsi
+181334778 call 0x1827d3190 ; System.Linq.Enumerable.Intersect<FlatData.Tag> (methodSpec metadata)
+18133477d mov rdx, qword ptr [rip + 0x8608d3c]
+181334784 mov rcx, rax
+181334787 call 0x1827b7000 ; System.Linq.Enumerable.Count<FlatData.Tag> (methodSpec metadata)
+18133478c mov edi, eax
+18133478e jmp 0x181334793
+181334790 mov edi, r12d
+181334793 mov rcx, qword ptr [rip + 0x86893fe]
+18133479a cmp dword ptr [rcx + 0xe0], 0
+1813347a1 jne 0x1813347a8
+1813347a3 call 0x18070e020
+1813347a8 xor r8d, r8d
+1813347ab mov edx, r13d
+1813347ae mov ecx, edi
+1813347b0 call 0x1860833d0 ; System.Math.Min(int,int)
+1813347b5 mov edi, eax
+1813347b7 xor edx, edx
+1813347b9 lea rcx, [rsp + 0x70]
+1813347be call 0x1810cf050 ; MX.Data.Excel.ItemExcel.get_StackableFunction (typed ItemExcel receiver)
+1813347c3 lea ecx, [rdi + 1]
+1813347c6 movsxd rdx, ecx
+1813347c9 imul rdx, qword ptr [r15 + 0x18]
+1813347ce cdqe
+1813347d0 imul rdx, rax
+1813347d4 mov r13, qword ptr [rsp + 0x38]
+1813347d9 add r13, rdx
+1813347dc mov qword ptr [rsp + 0x38], r13
+1813347e1 mov rax, qword ptr [rsp + 0x140]
+1813347e9 mov rsi, qword ptr [rax]
+1813347ec mov r14, qword ptr [r14 + 0x18]
+1813347f0 mov r15, qword ptr [r15 + 0x18]
+1813347f4 mov rcx, qword ptr [rip + 0x855fc15]
+1813347fb call 0x18073bb70
+181334800 mov rdi, rax
+181334803 test rax, rax
+181334806 je 0x18133496b
+18133480c mov qword ptr [rsp + 0x20], r12
+181334811 mov r9, r15
+181334814 mov r8, r14
+181334817 mov edx, 4
+18133481c mov rcx, rax
+18133481f call 0x1813b8380 ; MX.GameLogic.Parcel.ParcelInfo..ctor (parcel type 4, item cost)
+181334824 test rsi, rsi
+181334827 je 0x181334966
+18133482d xor r8d, r8d
+181334830 mov rdx, rdi
+181334833 mov rcx, rsi
+181334836 call 0x1813b4e30
+18133483b mov rax, qword ptr [rsp + 0x138]
+181334843 mov rsi, qword ptr [rax]
+181334846 mov rax, qword ptr [rsp + 0x120]
+18133484e mov r14, qword ptr [rax + 0x18]
+181334852 mov rcx, qword ptr [rip + 0x855fbb7]
+181334859 call 0x18073bb70
+18133485e mov rdi, rax
+181334861 test rax, rax
+181334864 je 0x181334961
+18133486a mov qword ptr [rsp + 0x20], r12
+18133486f mov r9, r13
+181334872 mov r8, r14
+181334875 mov edx, 0xb
+18133487a mov rcx, rax
+18133487d call 0x1813b8380 ; MX.GameLogic.Parcel.ParcelInfo..ctor (parcel type 11, FavorExp)
+181334882 test rsi, rsi
+181334885 je 0x18133495b
+18133488b mov r8, qword ptr [rip + 0x86bcfbe]
+181334892 mov rdx, rdi
+181334895 mov rcx, rsi
+181334898 call 0x1807cd190
+18133489d jmp 0x181334600
+1813348a2 mov rdx, qword ptr [rip + 0x86921a7]
+1813348a9 mov rcx, rbx
+1813348ac call 0x1807ce070
+1813348b1 jmp 0x181334946
+1813348b6 mov rdx, qword ptr [rip + 0x8692193]
+1813348bd mov rcx, rbx
+1813348c0 call 0x1807ce070
+1813348c5 jmp 0x181334946
+1813348c7 mov rdx, qword ptr [rip + 0x8692182]
+1813348ce mov rcx, rbx
+1813348d1 call 0x1807ce070
+1813348d6 jmp 0x181334946
+1813348d8 mov rdx, qword ptr [rip + 0x8692171]
+1813348df mov rcx, rbx
+1813348e2 call 0x1807ce070
+1813348e7 jmp 0x18133490c
+1813348e9 mov rdx, qword ptr [rip + 0x8692160]
+1813348f0 mov rcx, qword ptr [rsp + 0x60]
+1813348f5 call 0x1807ce070
+1813348fa mov rcx, qword ptr [rsp + 0x58]
+1813348ff test rcx, rcx
+181334902 jne 0x18133497b
+181334904 xor r12d, r12d
+181334907 mov r13, qword ptr [rsp + 0x38]
+18133490c mov qword ptr [rsp + 0x20], r12
+181334911 lea r9, [rsp + 0x50]
+181334916 lea r8, [rsp + 0x30]
+18133491b mov rdx, r13
+18133491e mov rsi, qword ptr [rsp + 0x120]
+181334926 mov rcx, rsi
+181334929 call 0x181364420 ; MX.GameLogic.Service.CharacterDBService.TryGetFavorRankAndExpAfterFeed
+18133492e test al, al
+181334930 je 0x181334946
+181334932 mov eax, dword ptr [rsp + 0x30]
+181334936 mov dword ptr [rsi + 0x30], eax
+181334939 mov rax, qword ptr [rsp + 0x50]
+18133493e mov qword ptr [rsi + 0x38], rax
+181334942 mov al, 1
+181334944 jmp 0x181334948
+181334946 xor al, al
+181334948 add rsp, 0xe0
+18133494f pop r15
+181334951 pop r14
+181334953 pop r13
+181334955 pop r12
+181334957 pop rdi
+181334958 pop rsi
+181334959 pop rbx
+18133495a ret
+18133495b call 0x180778cf0
+181334960 nop
+181334961 call 0x180778cf0
+181334966 call 0x180778cf0
+18133496b call 0x180778cf0
+181334970 call 0x180778cf0
+181334975 call 0x180778cf0
+18133497a nop
+18133497b call 0x1807047e0
+181334980 int3
+181334981 call 0x180778cf0
+181334986 int3

@@ -137,3 +137,60 @@ sumExp = sum(ItemExcel.UsingResultAmount * requestedCount
 [코드] 기존 함수는 TABLES 외 변경하지 않아 일반 extract_jp.py 전체 실행에 ConstCommon namespace/미존재 표 문제가 남는다. 후속 pipeline 지원 수정은 별도 권한이며 이번 블록을 이유로 범위를 확장하지 않는다.
 
 [?] 저장소 import 명령은 worker output.md에 준비만 남겼다. evidence의 NOT_VERIFIED와 ConstCommon 잠정 출처를 검토한 뒤 CM 승인·사용자 실행이 필요하다.
+
+
+## R-M3-2 보충
+
+[코드] JP 동일 pin을 정적 조사했다. 라운드 한도 2, native 본문 한도 3을 모두 사용했다. 아래 내용은 앞의 R-M3-1 미확정 결론을 부분 보충하며, 기존 본문·원 evidence는 수정하지 않았다.
+
+| 항목 | 결과 | 근거 |
+|---|---|---|
+| 기본 경험치 원천 | [코드] **ItemExcel.StackableFunction** | CanGiveGiftToCharacter, RVA `0x1334320`; getter 호출 VA `0x1813347be` |
+| 현재 exp_value 대조 | [표][코드] **일치 52 / 불일치 0 / 미판정 0** | 전체 Favor 행의 해당 필드와 현재 GIFT_ITEMS를 전수 비교 |
+| 캐시 입력 이후 경험치 식 | [코드] PASS | 아래 식; 지급 함수와 계수 overload 두 개가 같은 교집합·상한 연산 사용 |
+| 원천 표부터의 완전한 경험치 식 | [?] **NOT_VERIFIED** | AcademyData의 학생 태그 캐시 구성 미판독 |
+| 학생 전체 조합 판정 | [?] 학생 일치 0 / 불일치 0 / 미판정 265; 선물쌍 일치 0 / 불일치 0 / 미판정 13,780 | unique·공통 태그가 캐시에 들어가는 조건을 추정으로 메우지 않음 |
+
+### 확인한 지급 경로와 식
+
+[코드] 실제 경로는 `MX.GameLogic.Service.CafeService.CanGiveGiftToCharacter` 중 CharacterDB·ConsumeRequestDB·itemDBs·rewards/out·cost/out 서명의 overload다. RVA `0x1334320`, 크기 1,639 bytes, 실행 가능 섹션과 exact unwind를 확인했다. ItemData.TryGetValue/TryGetTags와 AcademyData.TryGetCharacterFavorItemTags의 결과를 사용한다. `UsingResultAmount`나 Rarity별 표를 읽는 계산이 아니다.
+
+[코드] 캐시에서 받은 학생 태그 목록을 C, 아이템 태그를 T라고 놓으면, 선물 한 개의 지급 경험치는 다음과 같다. C를 원천 행의 특정 태그 벡터와 같다고 가정하지 않는다.
+
+```text
+[코드] n = Count(Intersect<FlatData.Tag>(C, T))
+[코드] coefficient = 1 + Math.Min(n, ItemExcel.MaxGiftTags)
+[코드] expOne = ItemExcel.StackableFunction * coefficient
+```
+
+[코드] `Intersect<Tag>`와 `Count<Tag>`는 encoded metadata methodSpec과 실제 호출 직전 MethodInfo 슬롯을 함께 읽어 확인했다. 교집합은 중복을 제거한 태그 수다. `System.Math.Min(int,int)`는 VA `0x1860833d0`의 metadata method pointer로 확인했다. 별도의 helper 본문 판독은 하지 않았다. C가 null이면 교집합 개수 0, T가 null이면 빈 태그 열거를 사용한다.
+
+[코드] 지급 함수의 핵심은 VA `0x181334778` Intersect, `0x181334787` Count, `0x1813347b0` Min, `0x1813347be` StackableFunction, `0x1813347c3` +1, `0x1813347c9` 요청 수량 곱, `0x1813347d0` 기본 경험치 곱이다. VA `0x18133486a..0x18133487d`에서 계산 결과를 FavorExp(parcel type 11)에 넣는다. 여러 소비 항목의 누적 parcel 동작은 별도 일반화하지 않고 과제의 선물 한 개 범위로 판정했다.
+
+[코드] 계수 overload는 `CalcGiveGiftTagCoefficient(ParcelInfo,long)` RVA `0x1333db0` / 598 bytes와 `CalcGiveGiftTagCoefficient(List<Tag>,List<Tag>,int)` RVA `0x1334010` / 272 bytes다. 둘 다 같은 Count(Intersect) → Min(maxGiftTags) → +1을 사용한다. 판독 본문은 이 둘과 지급 함수로 총 3개다. UI 호출부·AcademyData 전처리·추가 getter 본문은 판독하지 않았다.
+
+[표][코드] 현재 Favor 아이템 52개는 모두 MaxGiftTags=3이다. **C에 포함된 태그 기준**으로 일치 0/1/2/3개 이상일 때 계수는 1/2/3/4다. 이 결과만으로 원천 unique 태그의 계수나 친화도 명칭을 확정할 수는 없다.
+
+### 기본값 전수 대조
+
+[표][코드] `data/extracted/jp-json/ItemExcel.json` 전체 행의 `stackable_function`을 기존 evidence의 아이템 ID·raw rowSha와 결합했다. 현재 `backend/core/gift_meta_data.py`의 GIFT_ITEMS literal을 실행 없이 AST로 읽어 52개 전체를 비교했다. 일치 52, 불일치 0, 미판정 0이다. 상세는 `debug/cm_r_m3_2_20261020/artifacts/base-exp-comparison.json`에 있다.
+
+| Rarity / Quality | 아이템 수 | StackableFunction | 현재 exp_value와 대조 |
+|---|---:|---:|---|
+| [표] SR(2) / 3 | [표] 35 | [표] 20 | [표][코드] 전부 일치 |
+| [표] SSR(3) / 4 | [표] 15 | [표] 60 | [표][코드] 전부 일치 |
+| [표] SSR(3) / 4, ID 5998·5999 | [표] 2 | [표] 20 | [표][코드] 전부 일치 |
+
+[표][코드] Rarity/Quality만으로 기본값을 만들면 마지막 예외를 잃는다. 이 지급 함수는 행의 StackableFunction을 직접 읽는다. canonical·동결 snapshot·원 evidence를 재생성하거나 적용하지 않았다.
+
+### 남은 불확실성과 전수 비교의 한계
+
+[코드] 세 판독 본문에는 unique 태그 전용 가산/배율 분기와 ConstCommon 필드 직접 읽기가 없다. 학생 태그는 `AcademyData.TryGetCharacterFavorItemTags` 호출에서 받아온다. metadata에는 characterFavorItemTags 캐시가 있으나 그 내용이 `FavorItemTags`, `FavorItemUniqueTags`, `CommonFavorItemTags`에서 어떻게 구성되는지는 확인되지 않았다. 따라서 unique를 무시한다거나 common이 사용되지 않는다고 결론 내리지 않는다.
+
+[?] 현재 canonical 265명 × Favor 52개의 13,780쌍은 모두 원 행 ID·rowSha에 결합했다. 현재 등급·배율·점수는 `pair-comparison.csv`에 기록하되, 게임 캐시 입력이 미확정이므로 native 배율·점수는 비워 두었다. 학생 기준 일치 0 / 불일치 0 / 미판정 265, 쌍 기준 일치 0 / 불일치 0 / 미판정 13,780이다. 불일치 상위 10개는 판정 가능한 쌍이 없어서 빈 목록이며, 완전 일치를 뜻하지 않는다. 이전 로컬 규칙 진단의 13,780 일치를 native 판정으로 승격하지 않았다.
+
+[코드][?] ConstCommon의 실제 필드 읽기가 이번 본문에서 확인되지 않아 조건부 교차 검증은 수행하지 않았다(대상 필드 0). 이전 ZIP decoder의 PROVISIONAL_DECODER 상태도 유지한다. 전체 202필드를 다시 읽거나 검증하지 않았다.
+
+[코드] 후속 본문 후보 3개: `AcademyData.TryGetCharacterFavorItemTags` RVA `0x19a9b50` / 100 bytes, `AcademyData.PreprocessCommon` RVA `0x19a8420` / 5,936 bytes, `AcademyData.PrepareInitialData` RVA `0x19a6930` / 6,884 bytes. 현재는 metadata 후보이며 내부 내용이나 호출 관계를 확정한 것이 아니다. 새 블록이 허용하면 캐시 쓰기 경로를 확인하고, 실제 CommonFavorItemTags 읽기가 나오는 경우에만 해당 필드 디코드를 교차 검증해야 한다.
+
+[?] **라운드 소진, 후속 후보 3개, 원천 표부터의 전체 식 미확정.** 기본 경험치 원천과 캐시 입력 이후의 정수 산식은 [코드]로 확인했다. 적재·canonical 적용·네트워크 요청·키 접근은 수행하지 않았다.
