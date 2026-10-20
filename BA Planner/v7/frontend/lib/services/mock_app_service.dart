@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 
 import '../ui/models/planning_models.dart';
 import 'app_service.dart';
+import 'asset_preparation_service.dart';
 import 'diagnostics_service.dart';
+import 'mock_asset_preparation.dart';
 import 'mock_student_fixture.dart';
 import 'mock_student_calculation_fixture.dart';
 import 'mock_student_bond_fixture.dart';
@@ -31,6 +33,7 @@ const mockEmptyResourceAcquisitionRevision =
 class MockAppService
     implements
         AppService,
+        AssetPreparationService,
         PlanningStudentCalculationService,
         PlanningStudentBondCalculationService,
         PlanningDocumentService,
@@ -58,6 +61,8 @@ class MockAppService
     Map<String, Map<String, dynamic>>? repositoryStates,
     DateTime Function()? historyClock,
     Map<String, RepositoryCurrentHistory>? repositoryHistories,
+    this.assetPreparationScenario = MockAssetPreparationScenario.firstRun,
+    this.assetPreparationStep = const Duration(milliseconds: 250),
   }) : _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
        _scannerTargets = List.unmodifiable(
          scannerTargets ??
@@ -150,6 +155,16 @@ class MockAppService
   int _nextPlanningScenarioId = 1;
 
   final MockScannerScenario scannerScenario;
+  final MockAssetPreparationScenario assetPreparationScenario;
+  final Duration assetPreparationStep;
+
+  /// F2 Mock 준비(합성 값). 스캔(일시정지 포함)이 끝나지 않았으면 준비 · 폴더 변경은 `scanner_busy`다.
+  late final MockAssetPreparation assetPreparationMock = MockAssetPreparation(
+    scenario: assetPreparationScenario,
+    step: assetPreparationStep,
+    scannerActive: () =>
+        _scannerHistory.keys.any((id) => !_scannerTerminals.containsKey(id)),
+  );
   final bool fullStudentCatalog;
   final List<ScannerTarget> _scannerTargets;
   final Map<String, dynamic> _scannerReadiness;
@@ -206,6 +221,31 @@ class MockAppService
   ValueListenable<AppServiceState> get state => _state;
 
   @override
+  Stream<AssetPrepareEvent> get assetPrepareEvents =>
+      assetPreparationMock.assetPrepareEvents;
+
+  @override
+  Future<AssetPrepareStatus> assetPrepareStatus() =>
+      assetPreparationMock.assetPrepareStatus();
+
+  @override
+  Future<AssetPrepareStatus> setAssetGameDir(String? path) =>
+      assetPreparationMock.setAssetGameDir(path);
+
+  @override
+  Future<AssetPrepareJobRef> startAssetPreparation() =>
+      assetPreparationMock.startAssetPreparation();
+
+  @override
+  Future<AssetPrepareCancelResult> cancelAssetPreparation(
+    AssetPrepareJobRef job,
+  ) => assetPreparationMock.cancelAssetPreparation(job);
+
+  @override
+  Future<AssetPrepareJob> assetPrepareSnapshot(AssetPrepareJobRef job) =>
+      assetPreparationMock.assetPrepareSnapshot(job);
+
+  @override
   Future<void> reconnect() => _reconnectFlight ??= _mockReconnect();
 
   Future<void> _mockReconnect() async {
@@ -249,6 +289,7 @@ class MockAppService
         processGeneration: _diagnostics.value.processGeneration + 1,
       );
       _syncDiagnostics();
+      assetPreparationMock.handleBackendRestart();
       await Future<void>.delayed(const Duration(milliseconds: 300));
       await reconnect();
     } finally {
@@ -331,6 +372,13 @@ class MockAppService
     StudentScanMode studentScanMode = StudentScanMode.single,
     InventoryScanProfile? inventoryScanProfile,
   }) async {
+    // F2: 준비 · 폴더 변경이 실행 권한을 가진 동안 스캔 시작은 거절된다(backend 공용 gate).
+    if (assetPreparationMock.busy) {
+      throw BackendRemoteException(
+        code: 'asset_prepare_busy',
+        message: 'another scanner or asset preparation operation is active',
+      );
+    }
     final target = _scannerTargets.where((item) => item.id == targetId);
     if (target.isEmpty || target.single.status != ScannerTargetStatus.ready) {
       throw StateError('target_not_ready');
@@ -3280,6 +3328,7 @@ class MockAppService
       timer.cancel();
     }
     await _scannerEvents.close();
+    await assetPreparationMock.dispose();
     _diagnostics.dispose();
     _state.dispose();
   }

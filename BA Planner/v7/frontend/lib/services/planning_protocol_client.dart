@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'app_service.dart';
+import 'asset_preparation_service.dart';
 import 'backend_process.dart';
 import 'diagnostics_service.dart';
 import 'repository_service.dart';
@@ -81,6 +82,8 @@ class PlanningProtocolClient {
       StreamController<BackendProtocolException>.broadcast();
   final StreamController<Map<String, dynamic>> _events =
       StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _assetPreparationEvents =
+      StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, _PendingRequest> _pending = {};
 
   BackendProcessHandle? _process;
@@ -137,6 +140,8 @@ class PlanningProtocolClient {
       'import_batch_conflict',
       'unknown_method',
     },
+    // F2(contracts/asset-preparation-v1 `$defs.error`): assets.prepare.* 오류 7개.
+    'assets.prepare': assetPrepareErrorWireCodes,
     'tactical': {
       'invalid_payload',
       'profile_not_found',
@@ -202,12 +207,18 @@ class PlanningProtocolClient {
       'identity_conflict',
       'assignment_unavailable',
       'sample_storage_failed',
+      // F2(contracts/asset-preparation-v1): 준비 · 폴더 변경이 실행 권한을 가진 동안의 스캔 시작 거절.
+      'asset_prepare_busy',
       'unknown_method',
     },
   };
 
   Stream<BackendProtocolException> get protocolErrors => _protocolErrors.stream;
   Stream<Map<String, dynamic>> get events => _events.stream;
+
+  /// F2 `assets.prepare.event` 봉투(엄격 검사 뒤). 스캐너 이벤트([events])와 섞지 않는다.
+  Stream<Map<String, dynamic>> get assetPreparationEvents =>
+      _assetPreparationEvents.stream;
 
   Future<void> start() async {
     if (_disposed) {
@@ -403,6 +414,7 @@ class PlanningProtocolClient {
     diagnostics.dispose();
     await _protocolErrors.close();
     await _events.close();
+    await _assetPreparationEvents.close();
   }
 
   void _handleLine(String line, int generation) {
@@ -421,6 +433,16 @@ class PlanningProtocolClient {
       return;
     }
     if (decoded['type'] == 'event') {
+      if (decoded['method'] == assetPrepareEventMethod) {
+        if (!isValidAssetPrepareEventEnvelope(decoded)) {
+          _fatalProtocolError('Invalid protocol event envelope', generation);
+          return;
+        }
+        if (!_assetPreparationEvents.isClosed) {
+          _assetPreparationEvents.add(Map<String, dynamic>.from(decoded));
+        }
+        return;
+      }
       if (!_validEventEnvelope(decoded)) {
         _fatalProtocolError('Invalid protocol event envelope', generation);
         return;
@@ -513,6 +535,8 @@ class PlanningProtocolClient {
         method,
         payload,
       ),
+      _ when method.startsWith('assets.prepare.') =>
+        isValidAssetPrepareSuccessPayload(method, payload),
       _ when method.startsWith('tactical.') => _validTacticalSuccessPayload(
         method,
         payload,
@@ -623,6 +647,8 @@ class PlanningProtocolClient {
         ? _methodErrorCodes['scanner']!
         : method.startsWith('tactical.')
         ? _methodErrorCodes['tactical']!
+        : method.startsWith('assets.prepare.')
+        ? _methodErrorCodes['assets.prepare']!
         : (_methodErrorCodes[method] ?? const {'unknown_method'});
     if (!error.keys.toSet().containsAll(requiredKeys) ||
         !allowedKeys.containsAll(error.keys) ||

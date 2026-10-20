@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../ui/models/planning_models.dart';
 
 import 'app_service.dart';
+import 'asset_preparation_service.dart';
 import 'backend_process.dart';
 import 'diagnostics_service.dart';
 import 'planning_protocol_client.dart';
@@ -20,6 +21,7 @@ class ProcessAppService
     with WidgetsBindingObserver
     implements
         AppService,
+        AssetPreparationService,
         PlanningStudentCalculationService,
         PlanningStudentBondCalculationService,
         PlanningDocumentService,
@@ -53,6 +55,7 @@ class ProcessAppService
       ) {
     _scanner = ScannerProtocolClient(_client);
     _scannerSubscription = _scanner.scannerEvents.listen(_handleScannerEvent);
+    _assetPreparation = AssetPreparationProtocolClient(_client);
     _client.connection.addListener(_syncConnection);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -117,6 +120,7 @@ class ProcessAppService
   final PlanningProtocolClient _client;
   late final ScannerProtocolClient _scanner;
   late final StreamSubscription<ScannerEvent> _scannerSubscription;
+  late final AssetPreparationProtocolClient _assetPreparation;
   final ValueNotifier<AppServiceState> _state;
   bool _disposed = false;
   Future<void>? _reconnectFlight;
@@ -124,6 +128,32 @@ class ProcessAppService
 
   @override
   ValueListenable<AppServiceState> get state => _state;
+
+  /// F2 인식 캐시 준비(`assets.prepare.*`). 재시작 · 연결 끊김이면 작업 cursor를 버린다 — status를 다시 읽는다.
+  @override
+  Stream<AssetPrepareEvent> get assetPrepareEvents =>
+      _assetPreparation.assetPrepareEvents;
+
+  @override
+  Future<AssetPrepareStatus> assetPrepareStatus() =>
+      _assetPreparation.assetPrepareStatus();
+
+  @override
+  Future<AssetPrepareStatus> setAssetGameDir(String? path) =>
+      _assetPreparation.setAssetGameDir(path);
+
+  @override
+  Future<AssetPrepareJobRef> startAssetPreparation() =>
+      _assetPreparation.startAssetPreparation();
+
+  @override
+  Future<AssetPrepareCancelResult> cancelAssetPreparation(
+    AssetPrepareJobRef job,
+  ) => _assetPreparation.cancelAssetPreparation(job);
+
+  @override
+  Future<AssetPrepareJob> assetPrepareSnapshot(AssetPrepareJobRef job) =>
+      _assetPreparation.assetPrepareSnapshot(job);
 
   @override
   Future<Map<String, dynamic>?> getStudent(String studentId) async {
@@ -1337,6 +1367,7 @@ class ProcessAppService
     _client.connection.removeListener(_syncConnection);
     await _scannerSubscription.cancel();
     await _scanner.dispose();
+    await _assetPreparation.dispose();
     await _client.dispose();
     _state.dispose();
   }
