@@ -3917,3 +3917,10 @@ Base HEAD 8f3c34d58a4620dc05121aa7af4377a24e093fe6. Main working bytes/index unc
 - F1 시안 프롬프트 갱신: ② 문구를 화면 그림 포함으로, 15번 `W-Missing-Art`(그림 없을 때 카드 · 타일 · 초상 모습) 추가 — 15장(+선택 1).
 - XB 요청 추가: 백엔드 로그 "요청(CF→XB) F5"(F2 요청 확장 — UI 그림 추출 목록 · 캐시 경로 · 파일 이름 규칙).
 - 남은 별도 결정(사용자): 저장소(GitHub)에 이미 추적된 게임 그림을 지울지 — 배포본 제외와 다른 문제라 지금은 손대지 않는다.
+## 2026-10-20 — F1 1차 수신 · 사용자 의도로 튜토리얼 재설계(FD-182) · F1 2차 배정
+
+- F1 1차: 시안 워커가 캔버스 version `1792468151-c7f8`에 page `firstrun` 16장(FirstRun 3 · Practice-Band 2 · Empty 7 · Scan-Report 2 · W-Missing-Art · Settings-Help)을 그림. 기존 57장 크기 · canvas 항목 변화 0 확인. 사본은 2차가 끝난 뒤 한 번에 `prototype/2026-10-20/`로(지금은 scratch에 내려받기만).
+- 사용자 의도(그대로): "프로그램을 받고 → 폴더에 연결해 에셋을 받고 → 첫 계정을 생성하고 → 튜토리얼을 시작하면 임시 계정으로 라우팅되어 시나리오를 밟으며 모든 기능을 한 번씩 써 보고 끝난다. mock에 연결해 가상 스캔 → 계획 → 인벤토리 · 통계 확인 → 종료." 1차의 "미리 채운 연습 계정 + 얇은 띠"와 다르다.
+- 사용자 결정(AskUserQuestion): 끝 · 그만두기 때 임시 계정 삭제 후 첫 계정 홈 / 단계 카드 + 누를 곳 강조(어둡게 덮지 않음, 동작하면 자동 진행) / 시나리오에 학생 탭 둘러보기 · 아이템 스캔 · 시나리오 비교 추가 / 첫 계정 뒤 바로 시작(건너뛰기 제안 없음). → 대장 **FD-182**(튜토리얼 구상 문서 §1-A와 "하이라이트 금지"를 대체).
+- F1 2차 프롬프트 `debug/frontend_redesign_handoff/f1b-tutorial-artboards-prompt-20261020.md`: FirstRun-3 · Settings-Help 고침, Practice-Band 2장 삭제, 새 W-Tutorial-Card · Tutorial-Start · Tutorial-01~10 · Tutorial-Quit · Tutorial-Done.
+- XB X4 개정 요청(백엔드 로그): 미리 채운 연습 계정 → 튜토리얼 임시 계정(지난 스캔 1회분 seed) + 가상 게임 창 대상 + 학생 전체 · 아이템 2종 가상 스캔(fixture 재생을 실제 후보 · commit 경로로) + 끝 때 삭제.
