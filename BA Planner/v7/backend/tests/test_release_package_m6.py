@@ -106,10 +106,10 @@ class ReleasePackageM6Tests(unittest.TestCase):
 
     def test_same_identity_changed_notes_cannot_republish(self):
         self.run_package()
-        old = (self.output / 'latest.json').read_bytes()
+        old = (self.output / 'latest-data.json').read_bytes()
         with self.assertRaisesRegex(ValueError, 'different changelog notes'):
             self.run_package(notes='silently changed')
-        self.assertEqual(old, (self.output / 'latest.json').read_bytes())
+        self.assertEqual(old, (self.output / 'latest-data.json').read_bytes())
 
     def test_missing_app_executable_or_launcher_rejected(self):
         with self.assertRaises(ValueError): self.run_package('app', launcher=None)
@@ -164,7 +164,7 @@ class ReleasePackageM6Tests(unittest.TestCase):
             return original(archive, name, **kwargs)
         with patch.object(m6, '_zip_entry', side_effect=mutate), self.assertRaisesRegex(ValueError, 'changed while archiving'):
             self.run_package()
-        self.assertFalse((self.output/'latest.json').exists())
+        self.assertFalse((self.output/'latest-data.json').exists())
         self.assertEqual(list(self.output.iterdir()), [])
 
     def test_output_inside_bundle_does_not_archive_previous_release_recursively(self):
@@ -172,7 +172,82 @@ class ReleasePackageM6Tests(unittest.TestCase):
         self.run_package()
         result = self.run_package()
         with zipfile.ZipFile(result['zip']) as z:
-            self.assertFalse(any(name.endswith(('.zip','.sha256','latest.json')) for name in z.namelist()))
+            self.assertFalse(any(name.endswith(('.zip','.sha256','latest.json',
+                                                 'latest-app.json','latest-data.json')) for name in z.namelist()))
+
+    def test_app_data_descriptors_survive_independent_channel_publication(self):
+        app = self.run_package('app')
+        app_raw = (self.output/'latest-app.json').read_bytes()
+        self.put('backend/data/metadata/v1/catalog.json', b'{"students":["updated"]}\n')
+        data = self.run_package()
+        self.assertEqual(app_raw, (self.output/'latest-app.json').read_bytes())
+        data_raw = (self.output/'latest-data.json').read_bytes()
+        self.assertEqual(json.loads(app_raw)['zipUrl'], app['latest']['zipUrl'])
+        self.assertEqual(json.loads(data_raw), data['latest'])
+        newer = self.run_package('app', app_version='7.0.0-alpha.2')
+        self.assertEqual(data_raw, (self.output/'latest-data.json').read_bytes())
+        self.assertNotEqual(newer['latest']['appVersion'], data['latest']['appVersion'])
+        # Consumer must choose this new app before considering the now-incompatible data entry.
+        self.assertEqual(Path(data['latestPath']).name, 'latest-data.json')
+        self.assertFalse((self.output/'latest.json').exists())
+
+    def test_alpha_ui_allowance_is_explicit_and_manifest_records_policy(self):
+        self.put('data/flutter_assets/assets/student_portraits/synthetic.png', b'synthetic UI sentinel')
+        with self.assertRaisesRegex(ValueError, 'first-run game assets'):
+            self.run_package('app')
+        result = self.run_package('app', allow_bundled_ui_assets=True)
+        with zipfile.ZipFile(result['zip']) as z:
+            manifest = json.loads(z.read('release-manifest.json'))
+            self.validate('release-package-v1.schema.json', manifest)
+            self.assertIs(manifest['bundledUiAssets'], True)
+            self.assertEqual(z.read('app/data/flutter_assets/assets/student_portraits/synthetic.png'),
+                             b'synthetic UI sentinel')
+        repeated = self.run_package('app', allow_bundled_ui_assets=True)
+        self.assertEqual(result['latest']['sha256'], repeated['latest']['sha256'])
+
+    def test_alpha_ui_flag_cannot_allow_recognition_private_or_data_mode(self):
+        for name in ('backend/assets/recognition/v1/synthetic.png',
+                     'backend/tools/hidden.py', 'profiles/secret.json'):
+            path = self.put(name, b'forbidden synthetic sentinel')
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.run_package('app', allow_bundled_ui_assets=True)
+            path.unlink()
+            for parent in sorted(self.bundle.rglob('*'), reverse=True):
+                if parent.is_dir() and not any(parent.iterdir()): parent.rmdir()
+        for value in (True, 'yes'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.run_package(allow_bundled_ui_assets=value)
+        self.assertFalse(self.output.exists())
+
+    def test_approved_public_font_gets_unchanged_notice_even_without_ui_flag(self):
+        font = self.put(m6.GYEONGGI_PATH, b'synthetic pinned font')
+        with patch.object(m6, 'GYEONGGI_SHA256', m6.sha(font.read_bytes())):
+            result = self.run_package('app')
+        with zipfile.ZipFile(result['zip']) as z:
+            self.assertEqual(z.read('app/' + m6.GYEONGGI_PATH), font.read_bytes())
+            self.assertEqual(z.read('app/licenses/GyeonggiTitle-LICENSE.txt'), m6.GYEONGGI_NOTICE.read_bytes())
+            manifest = json.loads(z.read('release-manifest.json'))
+            self.assertIs(manifest['bundledUiAssets'], False)
+            self.assertIn('app/licenses/GyeonggiTitle-LICENSE.txt', {f['path'] for f in manifest['files']})
+
+    def test_public_font_requires_exact_approved_bytes_and_notice(self):
+        font = self.put(m6.GYEONGGI_PATH, b'synthetic pinned font')
+        with self.assertRaisesRegex(ValueError, 'unapproved GyeonggiTitle'):
+            self.run_package('app', allow_bundled_ui_assets=True)
+        with patch.object(m6, 'GYEONGGI_SHA256', m6.sha(font.read_bytes())):
+            self.put('licenses/GyeonggiTitle-LICENSE.txt', b'different notice')
+            with self.assertRaisesRegex(ValueError, 'differs from approved notice'):
+                self.run_package('app')
+        self.assertFalse(self.output.exists())
+
+    def test_data_manifest_cannot_claim_bundled_ui_assets(self):
+        result = self.run_package()
+        with zipfile.ZipFile(result['zip']) as z:
+            manifest = json.loads(z.read('release-manifest.json'))
+        self.assertIs(manifest['bundledUiAssets'], False)
+        manifest['bundledUiAssets'] = True
+        schema = json.loads((ROOT/'contracts/release-package-v1.schema.json').read_text(encoding='utf-8'))
+        self.assertFalse(Draft202012Validator(schema).is_valid(manifest))
 
     def test_schema_fixture_positive_and_negative(self):
         fixture = json.loads((ROOT/'contracts/fixtures/release_latest_v1.json').read_text())

@@ -17,10 +17,10 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 | M0 출처 지도·계약 | 기존 산출물 수신 검증 완료(2026-10-10, XB) | 기존 커밋 `8b880441`, canonical 5/5 및 인계 manifest 21/21 크기·SHA 일치. M4 실물 검증과 구분 |
 | M1 백엔드 reader | 기본 조회 커밋 완료, 실제 출처 비교 후속 | `1fbc4ddd` exact18(M1 10+storetools8). same-source CF20261011_171338 GREEN·focused85·whole1169/1509.032s·annotation16 PASS. WIP 보존/push0 |
 | M2 도구 창 | CF 연결 커밋 완료·native 별도 검증 잔여 | CF `d2a53fed`/gate220445. 과거 별도 bundle symlink 실패는 보존; 전체 native 완료 미선언 |
-| M3 출처 전환 | CLI4 커밋·승인5필드265 readonly 일치 | crosswalk v1/1325 fields diff0·stats2 exact. gift-affinity pin/R-M3-2 공식식/전체제거비교 BLOCKED(null), 제거선언CM |
-| M4 자산 매핑 검증 | 실물 매핑·FD181 UI 추출 후속 | CF F5 요청 수신, manual449 포함 원본→UI 규칙/첫 실행 명세 검증 필요 |
+| M3 출처 전환 | CLI4·승인5필드265 readonly 일치, exp 동결표 허용 | CM14:50 D-M3-EXP 수신: R-M3-2 대기 불필요. 사용자 gift kind import/CM21extract lock 수신 후 crosswalk 1회 재바인딩·전체독립비교. 제거선언CM |
+| M4 자산 매핑 검증 | D-ALPHA-SPLIT: UI추출/manual449 알파2 보류 | 알파1 UI그림번들유지, F2는인식캐시만. F5원본→UI규칙은후속 |
 | M5 업데이트 관리자 | 현재2pin readonly dry-run·이미등록중단 확인 | Product runner/UI·설치본새patch검증은별도. 실제쓰기단계는CM승인+사용자실행 |
-| M6 배포 관리자 | X1 source8 커밋 `cb6758d6` | Python1422/focused26·snapshot/latest/app-data ZIP 형식. 실제alpha/런처/추출명세/native는후속 |
+| M6 배포 관리자 | X1 cb6758d6 + X1-b/c source5 검증 완료 | Python1428/focused22·앱/데이터descriptor분리·alpha1UI명시동봉·공개font notice. 실제alpha/런처/F2/native후속 |
 
 ## 결정 기록
 - 2026-10-08 09:06 사용자: ① KR 전용 필드는 키 불필요 파일+수동값 ② SchaleDB 즉시 제거 ③ 편집기 흡수, 단 개발자 도구는 배포본에 없을 것 ④ 첫 실행 추출 구현은 프론트 레인.
@@ -77,3 +77,10 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 - **추가진전**: M5현재2pin already_registered readonly step1중단검증, 제품runner/실제patch는후속. M3 CM승인5필드265명/1325개선택diff0·새lock canonical SHA재바인딩·stats2 exact/DTO/dryrunPASS. Rarity표현변환0·canonical생성쓰기0. CM13:40등급재생성승인/ConstCommon금지/exp제외수신; gift kind사용자import/live lock새반영 및독립전체비교전제거diff=null/BLOCKED·Schale제거선언CM.
 - **다음/제한**: CM13:40대로F2(first-run 추출a~f)다음, F5는사용자확인전보류. icons callback done/total은bundle단위이며1330고정아이콘분모로표시하면안된다는코드근거/후속메모를CF에전달했다. X5/X6/X7착수0, 전체M6/M3/FB/P0-P6/native완료주장0. 실제포장명령은커밋된문서에있으며firstalphaZIP은남은런처/F2/사용자수용후생성한다.
 - **인계**: source검증봉인 debug/xb_m6_x4_20261020/output.md, 선택커밋/문서/WIP보존인계 debug/xb_m6_x4_commits_20261020/output.md. 기존sealed산출물은수정하지않았다.
+
+## 2026-10-20 16:53 — XB X1-b/X1-c 검증 완료·선택 커밋 준비
+
+- CM14:50 X1후속 offline source5완료: latest-app.json/latest-data.json 분리·app-first/exact-compatible-data 소비규칙·GitHub latest 게시시두descriptor carry-forward 의무, app-only --allow-bundled-ui-assets/manifest bool, approved GyeonggiTitle SHA+공식조건 notice 자동동봉. 기본UI거부/인식이미지/private/developer거부유지. 기존entry schema v1/runtime/IPC/Dart producer바이트변화0, 현재Dart필수변경0을CF사전게시했다.
+- 격리focused22/0.888s·main registry6/1.129s PASS. 실제main표준Python **1428/1519.826s OK**, 보호4127입력추가변화0·Almanac45pages/diff/cached-diff PASS. 처음main을잘못import한sandbox준비errors17은원로그보존, timeout/skip/golden완화0이다.
+- Gyeonggi공식출처 https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457 에서프로그램동봉허용/글꼴자체유상양도금지를확인하고요약notice를저장했다. Frontendasset수정0·실제alphaZIP/native/자동런처/업로드완료0. 기존WIP·store/live lock/data-extracted보존·push0.
+- 다음F2 recognition-only 격리후속이진행중이다. F5는D-ALPHA-SPLIT에따라alpha2보류, M3exp동결표허용수신·giftkind새lock전재바인딩0. Source5/SHA/원로그근거 debug/xb_x1bc_f2_20261020/output.md, 후속commit receipt는 debug/xb_x1bc_commits_20261020/.

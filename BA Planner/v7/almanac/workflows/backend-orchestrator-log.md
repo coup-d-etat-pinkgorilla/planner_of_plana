@@ -3389,3 +3389,44 @@ CM 23:00 X4("시드 도구를 제품 기능으로 · `is_practice` · 저장 스
   - GyeonggiTitle: 경기도 공개 글꼴로 판단 — 라이선스 파일 동봉 후 허용 목록에 넣는다(게임 추출물 아님). 출처 문구는 XB가 확인해 기록.
 - X4 계약 `96319b3e` 수용. CF Mock 착수 가능 통지함. tactical_bd 합성 시나리오 라벨링은 X4 runtime 블록에 포함.
 - lock: gift-affinity import(사용자) 뒤 CM이 21 extracts로 갱신하고 이 로그에 알린다. 그 전 X3 crosswalk 재바인딩은 하지 말 것(한 번만 하도록).
+
+## 2026-10-20 15:01 — 세션 시작(XB): CM14:50 X1-b/X1-c 우선 → F2
+
+- AGENTS/README/헌장/master/P0 상태와 XB·CF·CM·metadata 최신 로그를 확인했다. CM14:50 X1/X4 수용·D-M3-EXP·D-ALPHA-SPLIT를 수신했다. HEAD afd2bf941ff9cf7c3e574758ba04b56a1b4ac7a7, scanner-consolidation, index empty. 기존 보호입력 4126개 지문을 artifacts/preflight.json에 보존했다.
+- 먼저 X1-b는 독립 latest-app.json/latest-data.json(v1 entry schema 공용)으로 앱 ZIP 탐색 경로를 보존한다. 앱 버전이 다르면 app 먼저, 같으면 호환 data descriptor만 적용하는 소비 규칙과 배포 두 파일 유지 의무를 문서화한다. X1-c는 명시 --allow-bundled-ui-assets로 알파-1 UI 그림만 허용하고 manifest bundledUiAssets를 기록한다. 인식 이미지·private/developer payload는 계속 금지한다.
+- GyeonggiTitle은 경기도 공식 출처/사용 조건을 확인해 저장소 license notice와 ZIP 동봉을 구현한다. Frontend/lib/test/assets는 쓰지 않는다. 소스는 격리 검증→정확 경로 계획 게시→메인 반영→전체 Python/almanac/diff→선택 커밋 순서다. 기존 runtime/IPC/Dart 변화0인 offline release 후속과 새 F2 runtime/paired gate를 구분한다.
+- 그뒤 F2 인식 캐시 a~f 계약/격리 구현을 진행한다. F5 UI 추출은 알파-2로 보류 확정, 공용store/live lock/data-extracted 쓰기0·push0. Gift kind 새 lock 알림 전 M3 crosswalk 재바인딩0이다. 근거 debug/xb_x1bc_f2_20261020/input.md.
+
+## 2026-10-20 15:05 — X1-b/X1-c 메인 반영 계획(XB): offline source5
+
+- 격리 후보 focused22/0.888s OK. 최초 준비 실행은 PYTHONPATH를 main으로 잘못 지정했고 sandbox atomic replace 오류 등 errors17이 나 원로그를 보존했다. 정확 candidate/tools import와 기존 master 파일 권한으로 동일22개를 검증했으며 시험/timeout/권한설정 변경0이다.
+- 다음 exact5를 아래 SHA 그대로 반영한다. CM14:50가 허용한 파일 분리 방식으로 latest-app/latest-data entry schema v1은 유지하고, ZIP manifest optional bundledUiAssets(default false)·app-only alpha flag를 추가한다. Public font approved SHA + license notice 자동동봉, backend recognition/private 금지는 유지한다. 기존 runtime/IPC/Dart producer/인식 소스 변화0. 새 schema 루트 추가0, 기존 registry set 변화0.
+
+| 경로 | working SHA256 |
+|---|---|
+| `backend/tools/package_release.py` | ac9569fae9a54ab6a1f131a00bd4bca2e61ae17dd00f0e9e8f97776cf4f7fc58 |
+| `backend/tests/test_release_package_m6.py` | 93716f9dc82bffadfdba423f42dabc3548d81659af6060f22d3dcaee8fbd1ab9 |
+| `contracts/release-package-v1.schema.json` | b30eeff202089d77f7b8ac0ec73c8bd914c7cda2c53beb196c5f19c595859f4a |
+| `contracts/release-package-v1.md` | 8a178cfdbb037d95d3d5d698dedc38d0d755c07cb6b25e8689b4bbe60feb0bb1 |
+| `backend/licenses/GyeonggiTitle-LICENSE.txt` | af5785eae3d49d999f5d537c7d3de000237ee96ec76de30ab4d966f6e584a655 |
+
+- 현재 Dart 변경0/기존 UI 소비자0인 offline 후속이다. CF에는 향후 M6 소비 시 두 stable endpoint를 조회하고 app-first/exact-compatible-data 규칙과 optional manifest bool을 수용해야 함을 커밋 전에 게시한다. F2 RPC/runtime은 별도격리/사전DTO/paired gate다. 실제alphaZIP/native/런처/업로드완료0·기존4126입력 중계획4변경 외보존, store/lock/frontend/lib쓰기0·push0.
+
+## 2026-10-20 15:05 — X1-b/X1-c 메인 반영 완료(XB): source5 SHA 확인
+
+- 위계획 exact5/SHA5개일치 반영. artifact applied.json에경로/bytes/SHA고정. 기존runtime/IPC/Dart/인식WIP변화0·commit/push0. 다음 실제main표준전체Python + Almanac/diff뒤 선택커밋한다.
+
+## 2026-10-20 15:05 — 무거운 Python 시작(XB→CF): X1-b/X1-c
+
+- 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv site-packages 사용, 기존설치본회귀사용자허용유지. Frozen source5와기존입력을검사하며 진행중제품추가수정0. CF heavy gate와겹치지않도록시작통보.
+
+## 2026-10-20 15:30 — 무거운 Python 종료(XB→CF): X1-b/X1-c
+
+- {"result": "PASS_STANDARD_MAIN_WHOLE", "returncode": 0, "tests": 1428, "test_seconds": 1519.826, "wall_seconds": 1522.8429999999935, "drift": [], "protected_count": 4127, "log": {"bytes": 256623, "sha256": "146d43ff6701c894191e2709fcb0fcfcf409f1522b21c806c7f670cb0cc115cd"}}
+
+## 2026-10-20 16:53 — XB X1-b/X1-c 검증 완료·선택 커밋 준비
+
+- CM14:50 X1후속 offline source5완료: latest-app.json/latest-data.json 분리·app-first/exact-compatible-data 소비규칙·GitHub latest 게시시두descriptor carry-forward 의무, app-only --allow-bundled-ui-assets/manifest bool, approved GyeonggiTitle SHA+공식조건 notice 자동동봉. 기본UI거부/인식이미지/private/developer거부유지. 기존entry schema v1/runtime/IPC/Dart producer바이트변화0, 현재Dart필수변경0을CF사전게시했다.
+- 격리focused22/0.888s·main registry6/1.129s PASS. 실제main표준Python **1428/1519.826s OK**, 보호4127입력추가변화0·Almanac45pages/diff/cached-diff PASS. 처음main을잘못import한sandbox준비errors17은원로그보존, timeout/skip/golden완화0이다.
+- Gyeonggi공식출처 https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457 에서프로그램동봉허용/글꼴자체유상양도금지를확인하고요약notice를저장했다. Frontendasset수정0·실제alphaZIP/native/자동런처/업로드완료0. 기존WIP·store/live lock/data-extracted보존·push0.
+- 다음F2 recognition-only 격리후속이진행중이다. F5는D-ALPHA-SPLIT에따라alpha2보류, M3exp동결표허용수신·giftkind새lock전재바인딩0. Source5/SHA/원로그근거 debug/xb_x1bc_f2_20261020/output.md, 후속commit receipt는 debug/xb_x1bc_commits_20261020/.

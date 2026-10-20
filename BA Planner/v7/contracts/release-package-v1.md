@@ -7,10 +7,14 @@ No network, installed client, shared-store write or lock update is performed by
 
 ## Files and identity
 
-- `release-latest-v1.schema.json`: exact required keys `schemaVersion:1`,
+- `latest-app.json` and `latest-data.json` are **independent stable endpoints**.
+  Each uses `release-latest-v1.schema.json`: exact required keys `schemaVersion:1`,
   `releaseType:app|data`, `appVersion`, `dataVersionId`, `dataSnapshotSha256`,
   `zipUrl`, `sha256`, `notes`, `minLauncher`. Versions are semantic version strings;
   the URL is absolute HTTPS without credentials/fragment; SHA256 is lowercase hex.
+  `releaseType` must match the endpoint. This split supersedes the original single
+  `latest.json`; new generation does not write that ambiguous file. The schema of
+  each entry remains v1. Publishing one channel preserves the other file's bytes.
 - `data-snapshot-v1.schema.json`: `.ba_planner_data_snapshot.json` records the raw
   lock SHA, both server pins and their client-file hashes, each pinned kind's
   provenance SHA and canonical files-map SHA, and the exact shipped
@@ -26,6 +30,30 @@ No network, installed client, shared-store write or lock update is performed by
   the ZIP: release type/versions/snapshot SHA and every other archive member's
   portable path/byte count/SHA. The manifest does not hash itself. All other
   members must appear exactly once, with no unlisted members/case collisions.
+  Newly generated manifests also record `bundledUiAssets` (boolean). For older
+  manifests its absence means false. Only app manifests may set it true.
+
+## App first, then compatible data
+
+The launcher reads `latest-app.json` first and validates its app entry. If
+`app.appVersion` differs from the installed version, offer/install the app ZIP
+first, subject to explicit user confirmation and version/downgrade policy. Never
+apply a data ZIP to make up for a missing or invalid app descriptor. After the
+new app starts, check `latest-data.json`. If app versions already match, only
+consider a data entry with that **same appVersion** and a different
+`dataSnapshotSha256`; a missing data endpoint or a data entry for another app
+version means no compatible data update. Comparing the game version alone misses
+rebuilds under the same pin. An app mismatch is not permission for a silent
+downgrade. `minLauncher`, hashes, staging/rollback and user confirmation still
+apply. The updater itself is a separate implementation.
+
+Both descriptor URLs must remain reachable independently. Publish the current
+app descriptor even when only data is released. If both URLs are assets of the
+same GitHub `releases/latest` release, **attach both descriptors on every release**,
+carrying forward the unchanged counterpart and its immutable ZIP URL. Keeping a
+descriptor only on an older tag does not satisfy that latest-release URL. The
+offline packager preserves a counterpart already in output-dir but does not
+fetch one or claim a complete publication when that counterpart is absent.
 
 ## ZIP layouts and consumer rules
 
@@ -58,12 +86,15 @@ requirements, not implemented updater behavior in this commit.
 cd backend
 py -3.11 tools/package_release.py --mode data --bundle-dir ../release --output-dir ../release --app-version 7.0.0-alpha.1 --zip-url 'https://github.com/OWNER/REPO/releases/download/TAG/{filename}' --notes 'Data release description'
 # Full app: use --mode app and add --launcher '../BA Planner v7.exe'.
+# Alpha-1 full app with existing UI images: also add --allow-bundled-ui-assets.
 ```
 
 Replace OWNER/REPO/TAG and the version/notes; no upload is automatic. The filename
 is `BA-Planner-v7-<mode>-<appVersion>-<dataVersionId>-<snapshotSHA12>.zip`.
-`{filename}` is substituted only in this command argument; latest.json contains
-the concrete final URL. Publish the generated ZIP and latest.json to those URLs.
+`{filename}` is substituted only in this command argument; `latest-<mode>.json`
+contains the concrete final URL. Publish the ZIP/checksum and both independent
+descriptor endpoints according to the rule above. CLI output `latestPath` names
+the descriptor actually generated in this call; `latest` contains its v1 entry.
 The generator also writes `<zip>.sha256`, `.ba_planner_data_snapshot.json` and
 `CHANGELOG-data.md` in output-dir. Use release as output-dir for the requested
 release sidecars, or a separate debug folder for inspection.
@@ -71,13 +102,29 @@ release sidecars, or a separate debug folder for inspection.
 Repeated identical generation produces identical ZIP bytes and one changelog
 entry. A published filename cannot be overwritten with different bytes. Notes
 cannot silently change for an existing release identity. The ZIP is generated
-from pinned file bytes and latest.json is atomically replaced last. Changed
+from pinned file bytes and its channel descriptor is atomically replaced last. Changed
 inputs during archiving abort publication. A separate developer_tools bundle
 beside the main release is omitted; private repository/log/cache state, developer
 writers and unexpected game image/font payloads cause a full-package failure.
 
-FD-181 game pictures must already have been removed from the runtime bundle by
-the F2/F5 follow-up. Current UI/recognition images are not silently exported or
-marked as ready. The unclassified GyeonggiTitle font is blocked pending a source
-decision. M4 manual mappings and the first-run extraction spec remain separate.
+CM D-ALPHA-SPLIT (2026-10-20): alpha-1 keeps existing UI images. By default,
+Flutter UI images still cause failure; the explicit app-only
+`--allow-bundled-ui-assets` flag allows images under
+`data/flutter_assets/assets/**` and records `bundledUiAssets:true` in the ZIP
+manifest. It does **not** allow `backend/assets/**` recognition images, private
+state or developer code. Data mode rejects the flag. It does not mark a user's
+recognition cache ready. FD-181 UI extraction/removal and M4 manual449 are alpha-2
+(F5), while F2 covers recognition caches only.
+
+The public GyeonggiTitle Medium font at
+`data/flutter_assets/assets/fonts/GyeonggiTitle-Medium.ttf` is independently
+allowlisted by SHA256. It is not a game extraction. When present, the packager
+includes the unchanged `backend/licenses/GyeonggiTitle-LICENSE.txt` source notice
+as `app/licenses/GyeonggiTitle-LICENSE.txt` and hashes it in the manifest. A
+different font hash/path or conflicting bundled notice fails. The official
+[Gyeonggi font use conditions](https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457)
+permit embedding/distribution with programs and prohibit selling/transferring
+the font itself for a fee. No frontend asset is changed by the packager.
+
+M4 mappings and the first-run extraction spec remain separate.
 Synthetic packaging tests do not satisfy CM's native acceptance decision D.

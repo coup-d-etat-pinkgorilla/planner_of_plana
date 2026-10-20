@@ -94,3 +94,10 @@ topics: [workflow, data]
 - **추가진전**: M5현재2pin already_registered readonly step1중단검증, 제품runner/실제patch는후속. M3 CM승인5필드265명/1325개선택diff0·새lock canonical SHA재바인딩·stats2 exact/DTO/dryrunPASS. Rarity표현변환0·canonical생성쓰기0. CM13:40등급재생성승인/ConstCommon금지/exp제외수신; gift kind사용자import/live lock새반영 및독립전체비교전제거diff=null/BLOCKED·Schale제거선언CM.
 - **다음/제한**: CM13:40대로F2(first-run 추출a~f)다음, F5는사용자확인전보류. icons callback done/total은bundle단위이며1330고정아이콘분모로표시하면안된다는코드근거/후속메모를CF에전달했다. X5/X6/X7착수0, 전체M6/M3/FB/P0-P6/native완료주장0. 실제포장명령은커밋된문서에있으며firstalphaZIP은남은런처/F2/사용자수용후생성한다.
 - **인계**: source검증봉인 debug/xb_m6_x4_20261020/output.md, 선택커밋/문서/WIP보존인계 debug/xb_m6_x4_commits_20261020/output.md. 기존sealed산출물은수정하지않았다.
+
+## 2026-10-20 16:53 — XB X1-b/X1-c 검증 완료·선택 커밋 준비
+
+- CM14:50 X1후속 offline source5완료: latest-app.json/latest-data.json 분리·app-first/exact-compatible-data 소비규칙·GitHub latest 게시시두descriptor carry-forward 의무, app-only --allow-bundled-ui-assets/manifest bool, approved GyeonggiTitle SHA+공식조건 notice 자동동봉. 기본UI거부/인식이미지/private/developer거부유지. 기존entry schema v1/runtime/IPC/Dart producer바이트변화0, 현재Dart필수변경0을CF사전게시했다.
+- 격리focused22/0.888s·main registry6/1.129s PASS. 실제main표준Python **1428/1519.826s OK**, 보호4127입력추가변화0·Almanac45pages/diff/cached-diff PASS. 처음main을잘못import한sandbox준비errors17은원로그보존, timeout/skip/golden완화0이다.
+- Gyeonggi공식출처 https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457 에서프로그램동봉허용/글꼴자체유상양도금지를확인하고요약notice를저장했다. Frontendasset수정0·실제alphaZIP/native/자동런처/업로드완료0. 기존WIP·store/live lock/data-extracted보존·push0.
+- 다음F2 recognition-only 격리후속이진행중이다. F5는D-ALPHA-SPLIT에따라alpha2보류, M3exp동결표허용수신·giftkind새lock전재바인딩0. Source5/SHA/원로그근거 debug/xb_x1bc_f2_20261020/output.md, 후속commit receipt는 debug/xb_x1bc_commits_20261020/.

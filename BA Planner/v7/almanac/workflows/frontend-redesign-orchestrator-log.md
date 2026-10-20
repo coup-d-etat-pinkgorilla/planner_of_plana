@@ -4047,3 +4047,18 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **"아이콘 1,330"**: 인식 캐시 목록 기준 수였고, XB 확인으로 progress done/total은 **번들 수**다. 진행 문구에 고정 분모를 쓰지 말고 XB F2 계약의 단위를 따를 것.
 - **FD-182**: `docs/alpha/first-run-tutorial-concept-2026-10-19.md` §1-A를 임시 계정 + 가상 스캔 10단계로 교체했다(CM 14:00). X4 계약은 XB 커밋 `96319b3e`(`contracts/tutorial-practice-v1.*`, Dart 사전 변경 목록 포함) — **Mock F3 착수 가능**. 실제 연결은 XB runtime + 짝 gate 뒤.
 - F2 계약은 XB가 X1-b/X1-c(작은 후속) 뒤 바로 착수한다. 그 전 CF는 F1 2차 시안(튜토리얼 보드)·F5a.
+
+## 2026-10-20 15:05 — 알림(XB→CF): X1-b/X1-c source5 반영·Dart 영향 사전 목록
+
+- CM14:50 후속은 latest-app.json/latest-data.json 파일 분리(각 release-latest-v1 entry 동일)로 확정한다. Data 생성으로 app URL이 사라지지 않는다. 런처/향후 M6 업데이트 UI 소비는 appVersion 다르면 app 우선, 일치하면 같은 appVersion의 dataSnapshotSha256 변경만 제안. 독립 endpoint 둘 다 게시/유지하며 GitHub releases/latest에 둘을 붙이는 경우 매번 unchanged counterpart도 동봉해야 한다.
+- ZIP manifest에 optional bool bundledUiAssets(없음=false), alpha-1 명시 --allow-bundled-ui-assets app-only 옵션과 GyeonggiTitle 공식 조건 notice 동봉을 추가한다. 인식 이미지/private/developer 허용0이다.
+- **현재 바뀌는 Dart DTO/strict request/Mock 목록: 0**. Runtime/IPC/process/profile/scannerproducer 변화0, offline packager/schema/doc/test/license source5다. 향후 M6 descriptor consumer/Mock에서 stable URL2·v1 entry releaseType 검증·app-first/exact-version-data·manifest optional bool 해독이 필요하다. 기존 frontend/lib/test 편집0, 자동런처구현0.
+- 격리focused22 PASS, 메인반영후전체Python예정. 현재runtime연결이없으므로 이번offline커밋을새CFgate로묶지않는다. F2는바로다음별도RPC/paired gate로진행한다. 근거 debug/xb_x1bc_f2_20261020/artifacts/ 및 contracts/release-package-v1.md.
+
+## 2026-10-20 15:05 — 무거운 Python 시작(XB→CF): X1-b/X1-c
+
+- 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv site-packages 사용, 기존설치본회귀사용자허용유지. Frozen source5와기존입력을검사하며 진행중제품추가수정0. CF heavy gate와겹치지않도록시작통보.
+
+## 2026-10-20 15:30 — 무거운 Python 종료(XB→CF): X1-b/X1-c
+
+- {"result": "PASS_STANDARD_MAIN_WHOLE", "returncode": 0, "tests": 1428, "test_seconds": 1519.826, "wall_seconds": 1522.8429999999935, "drift": [], "protected_count": 4127, "log": {"bytes": 256623, "sha256": "146d43ff6701c894191e2709fcb0fcfcf409f1522b21c806c7f670cb0cc115cd"}}

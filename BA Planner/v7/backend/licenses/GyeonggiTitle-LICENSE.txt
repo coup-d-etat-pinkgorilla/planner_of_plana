@@ -1,0 +1,24 @@
+GyeonggiTitle-Medium.ttf / 경기천년제목 Medium
+Copyright / 권리자: 경기도 (Gyeonggi Province)
+
+Official source / 공식 출처:
+https://www.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457
+Official mirror inspected 2026-10-20:
+https://web1.gg.go.kr/contents/contents.do?ciIdx=679&menuId=2457
+
+Use conditions, paraphrased from the official font copyright section:
+The font may be downloaded and used without a separate permission process or
+fee, including use in different media and distribution embedded in a program.
+Selling or transferring the font itself for a fee is prohibited.
+This notice records those conditions and source; it does not replace the
+rights holder's published terms or relicense the font under another license.
+
+공식 안내의 사용 조건 요약:
+별도 허가 절차나 사용료 없이 사용할 수 있으며 프로그램 동봉 배포도 허용됩니다.
+글꼴 자체를 판매하거나 유상으로 양도해서는 안 됩니다.
+이 파일은 출처와 조건의 요약이며 경기도의 원래 이용 조건을 대체하지 않습니다.
+
+BA Planner keeps the existing font bytes unchanged. This is a public provincial
+font, not an asset extracted from a Blue Archive client.
+Approved repository file SHA256:
+da6fc2e29f3fdc1f25a1f94e18549040acef06ac8d7d9dc373e0f6eabbcae8da

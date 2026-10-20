@@ -25,6 +25,11 @@
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
     },
+    "bundledUiAssets": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicit alpha-1 app UI image policy; never allows recognition images. Older manifests without this key mean false."
+    },
     "files": {
       "type": "array",
       "items": {
@@ -61,5 +66,11 @@
     "dataSnapshotSha256",
     "files"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"releaseType": {"const": "data"}}},
+      "then": {"properties": {"bundledUiAssets": {"const": false}}}
+    }
+  ]
 }
