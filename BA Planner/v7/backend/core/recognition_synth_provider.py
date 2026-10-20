@@ -16,21 +16,29 @@ from core.recognition_synth_cache import SynthCache
 
 class SynthProvider:
     def __init__(self, extracted_root: Path, synth_root: Path, rarity_path: Path,
-                 game_dir: Callable[[], Path | None] = find_game_dir) -> None:
+                 game_dir: Callable[[], Path | None] = find_game_dir,
+                 assets_loader: Callable | None = None) -> None:
         self.extracted_root, self.synth_root, self.rarity_path = Path(extracted_root), Path(synth_root), Path(rarity_path)
         self._game_dir = game_dir
+        self._assets_loader = assets_loader
         self._assets = None
         self._rarity = None
         self._failure: str | None = None
         self._sets: dict[tuple[str, tuple[int, int]], SynthTemplateSet] = {}
 
     def __call__(self, profile: str, window: tuple[int, int]) -> SynthTemplateSet:
-        if self._failure is not None:
+        if self._failure is not None and self._assets_loader is None:
             raise SynthUnavailable(self._failure)
         key = (profile, tuple(window))
-        if key in self._sets:
-            return self._sets[key]
         try:
+            if self._assets_loader is not None:
+                assets = self._assets_loader()
+                if self._assets is None or self._assets.manifest != assets.manifest or self._assets.root != assets.root:
+                    self._assets, self._rarity = assets, json.loads(assets.rarity_path.read_text(encoding='utf-8'))
+                    self._sets.clear()
+                self._failure = None
+            if key in self._sets:
+                return self._sets[key]
             if self._assets is None:
                 game = self._game_dir()
                 if game is None:

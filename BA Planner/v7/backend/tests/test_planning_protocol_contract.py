@@ -86,6 +86,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "release-latest-v1.schema.json",
             "release-package-v1.schema.json",
             "tutorial-practice-v1.schema.json",
+            "asset-preparation-v1.schema.json",
             "developer-tools-metadata-manager-v1.schema.json",
             "planning-student-bond-v1.schema.json",
             "planning-authoring-v1.schema.json",

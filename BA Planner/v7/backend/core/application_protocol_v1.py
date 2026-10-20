@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from core.protocol_v1 import PlanningProtocolV1
+from core.asset_preparation_protocol_v1 import METHODS as PREPARATION_METHODS, AssetPreparationProtocolV1
 from core.repository_protocol_v1 import METHODS, RepositoryProtocolV1
 from core.repository_store import JsonRepository
 from core.scenario_protocol_v1 import METHODS as SCENARIO_METHODS, ScenarioProtocolV1
@@ -20,6 +21,7 @@ class ApplicationProtocolV1:
         self, *, storage_root: Path, planning: PlanningProtocolV1 | None = None,
         scanner_service: ScannerSessionService | None = None,
         v6_root: Path | None = None,
+        preparation_service=None,
     ) -> None:
         self.planning = planning or PlanningProtocolV1()
         repository = JsonRepository(storage_root)
@@ -33,16 +35,30 @@ class ApplicationProtocolV1:
         self.tactical_v2 = TacticalProtocolV2(TacticalV2Store(storage_root, repository))
         self.scanner_service = scanner_service
         self.scanner = ScannerProtocolV1(scanner_service) if scanner_service is not None else None
+        self.preparation_service = preparation_service
+        self.preparation = AssetPreparationProtocolV1(preparation_service) if preparation_service is not None else None
 
     def bind_event_sink(self, event_sink: EventSink) -> None:
+        if self.preparation_service is not None:
+            self.preparation_service.set_event_sink(event_sink)
         if self.scanner_service is not None:
             self.scanner_service.set_event_sink(event_sink)
 
     def close(self) -> None:
+        if self.preparation_service is not None:
+            self.preparation_service.close()
         if self.scanner_service is not None:
             self.scanner_service.close()
 
     def handle(self, message: object) -> dict[str, Any] | None:
+        if isinstance(message, dict) and message.get('method') in PREPARATION_METHODS:
+            trusted = PlanningProtocolV1._trusted_request(message)
+            if trusted is None:
+                return None
+            if self.preparation is None:
+                return ScannerProtocolV1._error(trusted['id'], trusted['method'],
+                                                'asset_prepare_unavailable', 'asset preparation runtime is not available')
+            return self.preparation.handle(trusted)
         if isinstance(message, dict) and message.get("method") in SCANNER_METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)
             if trusted is None:

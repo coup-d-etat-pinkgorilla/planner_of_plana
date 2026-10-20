@@ -21,22 +21,22 @@ class JsonlMultiplexer:
         self._queue: Queue[dict[str, Any] | object] = Queue(maxsize=capacity)
         self._lock = RLock()
         self._session_lock = RLock()
-        self._held: dict[str, list[dict[str, Any]]] = {}
-        self._released: set[str] = set()
-        self._coalesced: OrderedDict[tuple[str, int], dict[str, Any]] = OrderedDict()
+        self._held: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        self._released: set[tuple[str, str]] = set()
+        self._coalesced: OrderedDict[tuple[tuple[str, str], int], dict[str, Any]] = OrderedDict()
         self._closed = False
         self._thread = Thread(target=self._run, name="jsonl-output", daemon=True)
         self._thread.start()
 
     def publish_response(self, response: dict[str, Any]) -> None:
         self._reliable_put(deepcopy(response))
-        if response.get("method") != "scanner.session.start":
+        if response.get("method") not in {"scanner.session.start", "assets.prepare.start"}:
             return
         payload = response.get("payload")
         if not isinstance(payload, dict) or "error" in payload:
             return
-        session_id = payload.get("session_id")
-        if not isinstance(session_id, str):
+        session_id = self._stream_key(response)
+        if session_id is None:
             return
         with self._session_lock:
             events = self._held.pop(session_id, [])
@@ -46,9 +46,9 @@ class JsonlMultiplexer:
 
     def publish_event(self, event: dict[str, Any]) -> None:
         payload = event.get("payload")
-        session_id = payload.get("session_id") if isinstance(payload, dict) else None
-        if not isinstance(session_id, str):
-            raise ValueError("scanner event requires session_id")
+        session_id = self._stream_key(event)
+        if session_id is None:
+            raise ValueError("event requires a scanner session_id or preparation job_id")
         with self._session_lock:
             if session_id not in self._released:
                 held = self._held.setdefault(session_id, [])
@@ -79,7 +79,7 @@ class JsonlMultiplexer:
         try:
             self._queue.put_nowait(event)
         except Full:
-            key = (payload["session_id"], payload["generation"])
+            key = (self._stream_key(event), payload["generation"])
             with self._lock:
                 self._coalesced[key] = event
                 self._coalesced.move_to_end(key)
@@ -89,6 +89,13 @@ class JsonlMultiplexer:
             if self._closed:
                 raise RuntimeError("JSONL multiplexer is closed")
         self._queue.put(message)
+
+    @staticmethod
+    def _stream_key(message):
+        preparation = message.get('method') in {'assets.prepare.start', 'assets.prepare.event'}
+        payload = message.get('payload')
+        identity = payload.get('job_id' if preparation else 'session_id') if isinstance(payload, dict) else None
+        return ('prepare' if preparation else 'scanner', identity) if isinstance(identity, str) else None
 
     def _flush_coalesced(self, *, block: bool = False) -> None:
         while True:

@@ -1,0 +1,495 @@
+{
+  "description": "Synthetic only; never real-client acceptance. Paths and data are inert.",
+  "cases": [
+    {
+      "id": "assets.prepare.status-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.status",
+        "payload": {}
+      }
+    },
+    {
+      "id": "assets.prepare.status-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.status",
+        "payload": {
+          "game_dir": {
+            "path": "C:/Synthetic/BlueArchive",
+            "source": "auto",
+            "valid": true,
+            "reason": null,
+            "catalog_sha256": "0b6cc9486b251fc25a063376c8759aaf2a88d9f254de1a03fae427308e00dd99",
+            "bundle_revision": "123"
+          },
+          "cache": {
+            "state": "missing",
+            "catalog_sha256": null,
+            "bundle_revision": null,
+            "icons": 0,
+            "sprites": 0,
+            "fonts": 0,
+            "failed": null
+          },
+          "busy": false,
+          "scanner_busy": false,
+          "job": null,
+          "last_result": null,
+          "metadata": {
+            "data_version_id": null,
+            "data_snapshot_sha256": null,
+            "steam_bundle_revision": null,
+            "steam_matches_snapshot": null,
+            "jp_update_required": null
+          }
+        }
+      }
+    },
+    {
+      "id": "assets.prepare.game_dir.set-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.game_dir.set",
+        "payload": {
+          "path": null
+        }
+      }
+    },
+    {
+      "id": "assets.prepare.game_dir.set-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.game_dir.set",
+        "payload": {
+          "game_dir": {
+            "path": "C:/Synthetic/BlueArchive",
+            "source": "auto",
+            "valid": true,
+            "reason": null,
+            "catalog_sha256": "0b6cc9486b251fc25a063376c8759aaf2a88d9f254de1a03fae427308e00dd99",
+            "bundle_revision": "123"
+          },
+          "cache": {
+            "state": "missing",
+            "catalog_sha256": null,
+            "bundle_revision": null,
+            "icons": 0,
+            "sprites": 0,
+            "fonts": 0,
+            "failed": null
+          },
+          "busy": false,
+          "scanner_busy": false,
+          "job": null,
+          "last_result": null,
+          "metadata": {
+            "data_version_id": null,
+            "data_snapshot_sha256": null,
+            "steam_bundle_revision": null,
+            "steam_matches_snapshot": null,
+            "jp_update_required": null
+          }
+        }
+      }
+    },
+    {
+      "id": "assets.prepare.start-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.start",
+        "payload": {}
+      }
+    },
+    {
+      "id": "assets.prepare.start-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.start",
+        "payload": {
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1
+        }
+      }
+    },
+    {
+      "id": "snapshot-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.snapshot",
+        "payload": {
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1
+        }
+      }
+    },
+    {
+      "id": "snapshot-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.snapshot",
+        "payload": {
+          "job": {
+            "job_id": "bafb93c56923472e9473be277ae35cd3",
+            "generation": 1,
+            "sequence": 6,
+            "state": "succeeded",
+            "stage": "complete",
+            "done": 1,
+            "total": 1,
+            "unit": "bundles",
+            "created": 16,
+            "available": 16,
+            "reused": 0,
+            "failed": 0,
+            "reason_codes": []
+          }
+        }
+      }
+    },
+    {
+      "id": "cancel-request",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.cancel",
+        "payload": {
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1
+        }
+      }
+    },
+    {
+      "id": "cancel-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.cancel",
+        "payload": {
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "cancel_requested": false
+        }
+      }
+    },
+    {
+      "id": "event-0",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "progress",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 1,
+          "state": "running",
+          "stage": "validating",
+          "done": 0,
+          "total": null,
+          "unit": "bundles",
+          "created": null,
+          "available": 0,
+          "reused": null,
+          "failed": null,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "event-1",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "progress",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 2,
+          "state": "running",
+          "stage": "icons",
+          "done": 0,
+          "total": 2,
+          "unit": "bundles",
+          "created": null,
+          "available": 0,
+          "reused": null,
+          "failed": null,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "event-2",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "progress",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 3,
+          "state": "running",
+          "stage": "icons",
+          "done": 2,
+          "total": 2,
+          "unit": "bundles",
+          "created": null,
+          "available": 0,
+          "reused": null,
+          "failed": null,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "event-3",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "progress",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 4,
+          "state": "running",
+          "stage": "sprites",
+          "done": 1,
+          "total": null,
+          "unit": "bundles",
+          "created": null,
+          "available": 0,
+          "reused": null,
+          "failed": null,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "event-4",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "progress",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 5,
+          "state": "running",
+          "stage": "fonts",
+          "done": 1,
+          "total": 1,
+          "unit": "bundles",
+          "created": null,
+          "available": 0,
+          "reused": null,
+          "failed": null,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "event-5",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "terminal",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 6,
+          "state": "succeeded",
+          "stage": "complete",
+          "done": 1,
+          "total": 1,
+          "unit": "bundles",
+          "created": 16,
+          "available": 16,
+          "reused": 0,
+          "failed": 0,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "start-invalid-payload",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.start",
+        "payload": {
+          "extra": true
+        }
+      }
+    },
+    {
+      "id": "start-error-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.start",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "asset preparation payload has invalid fields",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "cancel-invalid-payload",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.cancel",
+        "payload": {
+          "job_id": "x",
+          "generation": true
+        }
+      }
+    },
+    {
+      "id": "cancel-error-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.cancel",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "job cursor must be a nonempty ID and positive generation",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "game_dir.set-invalid-payload",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "request",
+        "id": "r",
+        "method": "assets.prepare.game_dir.set",
+        "payload": {
+          "path": 5
+        }
+      }
+    },
+    {
+      "id": "game_dir.set-error-response",
+      "valid": true,
+      "message": {
+        "protocol": 1,
+        "type": "response",
+        "id": "r",
+        "method": "assets.prepare.game_dir.set",
+        "payload": {
+          "error": {
+            "code": "invalid_payload",
+            "message": "path must be null or a nonempty path",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "wrong-unit",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "terminal",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 6,
+          "state": "succeeded",
+          "stage": "complete",
+          "done": 1,
+          "total": 1,
+          "unit": "icons",
+          "created": 16,
+          "available": 16,
+          "reused": 0,
+          "failed": 0,
+          "reason_codes": []
+        }
+      }
+    },
+    {
+      "id": "terminal-not-running",
+      "valid": false,
+      "message": {
+        "protocol": 1,
+        "type": "event",
+        "method": "assets.prepare.event",
+        "payload": {
+          "event_kind": "terminal",
+          "job_id": "bafb93c56923472e9473be277ae35cd3",
+          "generation": 1,
+          "sequence": 6,
+          "state": "running",
+          "stage": "complete",
+          "done": 1,
+          "total": 1,
+          "unit": "bundles",
+          "created": 16,
+          "available": 16,
+          "reused": 0,
+          "failed": 0,
+          "reason_codes": []
+        }
+      }
+    }
+  ]
+}

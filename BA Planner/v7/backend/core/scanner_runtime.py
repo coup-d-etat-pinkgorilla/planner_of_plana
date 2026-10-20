@@ -23,7 +23,7 @@ from core.recognition_synth_provider import SynthProvider
 from core.runtime_paths import BACKEND_DIR, resolve_extracted_asset_root, resolve_synth_cache_root
 
 
-def build_scanner_service(storage_root: Path) -> ScannerSessionService:
+def build_scanner_service(storage_root: Path, *, prepared_assets_loader=None) -> ScannerSessionService:
     catalog = RecognitionAssetCatalog()
     catalog.verify()
     windows = WindowsCaptureInputAdapter()
@@ -49,7 +49,8 @@ def build_scanner_service(storage_root: Path) -> ScannerSessionService:
         navigation=InventoryNavigation(windows,catalog,inventory_detail),
         # C5e-6c: synthetic tier from the user's own client (D24); unavailable -> scans continue without it.
         synth_provider=SynthProvider(resolve_extracted_asset_root(), resolve_synth_cache_root(),
-                                     BACKEND_DIR / "assets" / "recognition" / "spec" / "item-rarity-v1.json"),
+                                     BACKEND_DIR / "assets" / "recognition" / "spec" / "item-rarity-v1.json",
+                                     assets_loader=prepared_assets_loader),
     )
 
     def train_answer(

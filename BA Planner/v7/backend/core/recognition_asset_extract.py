@@ -267,7 +267,9 @@ def _targets(catalog: AddressablesCatalog, rarity: dict[str, Any]) -> dict[str, 
     return targets
 
 
-def extract(game_dir: Path, out_root: Path, rarity_path: Path, progress: Callable[[str, int, int], None] | None = None) -> AssetCache:
+def extract(game_dir: Path, out_root: Path, rarity_path: Path,
+            progress: Callable[[str, int, int | None], None] | None = None, *,
+            cancelled: Callable[[], bool] | None = None, force: bool = False) -> AssetCache:
     started = time.monotonic()
     resources = resource_dir(game_dir)
     catalog_path = resources / "Catalog" / "Windows" / "catalog_Windows.bytes"
@@ -282,9 +284,20 @@ def extract(game_dir: Path, out_root: Path, rarity_path: Path, progress: Callabl
     catalog_sha = _file_sha(catalog_path)
     out_root = Path(out_root)
     target = out_root / catalog_sha[:16]
-    current = _load_manifest(target)
-    if current and current.get("extractor_version") == EXTRACTOR_VERSION and current.get("catalog_sha256") == catalog_sha:
-        return AssetCache(target, current)
+    backup = target.with_name('.previous-' + target.name)
+    if not target.exists() and backup.exists():
+        os.replace(backup, target)
+    from core.asset_preparation_cache import game_identity, validated_cache
+    initial_identity = game_identity(Path(game_dir), 'user')
+    revision = initial_identity['bundle_revision']
+    initial_rarity_sha = _file_sha(Path(rarity_path))
+    current = validated_cache(target, catalog_sha, Path(rarity_path), revision)
+    if current is not None and not force:
+        return current
+    def notify(stage, done, total):
+        _check_cancel(cancelled)
+        if progress:
+            progress(stage, done, total)
     previous_root, previous = _previous_cache(out_root, target)
     catalog = AddressablesCatalog(catalog_path.read_bytes())
     rarity = json.loads(Path(rarity_path).read_text(encoding="utf-8"))
@@ -293,19 +306,29 @@ def extract(game_dir: Path, out_root: Path, rarity_path: Path, progress: Callabl
     for folder in ("icons/items", "icons/equipment", "sprites", "fonts"):
         (staging / folder).mkdir(parents=True, exist_ok=True)
     manifest: dict[str, Any] = {"extractor_version": EXTRACTOR_VERSION, "client": "KR/Steam", "catalog_sha256": catalog_sha,
-                                "icons": {}, "sprites": {}, "fonts": {}, "bundles": {}, "missing": [], "reused_bundles": 0}
+                                "bundle_revision": revision,
+                                "icons": {}, "sprites": {}, "fonts": {}, "bundles": {}, "missing": [], "reused_bundles": 0,
+                                "reused_files": 0}
     try:
-        _extract_icons(catalog, rarity, resources, staging, manifest, previous_root, previous, progress)
-        _extract_sprites(catalog, resources, staging, manifest, previous_root, previous)
-        _extract_fonts(resources, staging, manifest, previous_root, previous)
+        _extract_icons(catalog, rarity, resources, staging, manifest, previous_root, previous, notify, cancelled)
+        _extract_sprites(catalog, resources, staging, manifest, previous_root, previous, notify, cancelled)
+        _extract_fonts(resources, staging, manifest, previous_root, previous, notify, cancelled)
+        _check_cancel(cancelled)
         shutil.copyfile(rarity_path, staging / "item-rarity.json")
         manifest["rarity_sha256"] = _file_sha(staging / "item-rarity.json")
         if not manifest["icons"] or len(manifest["sprites"]) < len(ATLAS_SPRITES) + 1 or len(manifest["fonts"]) < len(FONTS):
             raise AssetExtractFailed(f"incomplete extraction: icons={len(manifest['icons'])} sprites={len(manifest['sprites'])} fonts={len(manifest['fonts'])}")
         manifest["seconds"] = round(time.monotonic() - started, 1)
         (staging / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
-        shutil.rmtree(target, ignore_errors=True)
-        os.replace(staging, target)
+        if game_identity(Path(game_dir), 'user') != initial_identity or _file_sha(Path(rarity_path)) != initial_rarity_sha:
+            raise AssetExtractFailed('client or rarity snapshot changed during preparation')
+        if any(_bundle_file(resources, name) is None or _stat(_bundle_file(resources, name)) != value
+               for name, value in manifest['bundles'].items()):
+            raise AssetExtractFailed('client bundles changed during preparation')
+        if validated_cache(staging, catalog_sha, Path(rarity_path), revision) is None:
+            raise AssetExtractFailed('staged cache failed identity validation')
+        _check_cancel(cancelled)
+        _publish_cache(staging, target)
     except AssetExtractFailed:
         shutil.rmtree(staging, ignore_errors=True)
         raise
@@ -315,6 +338,32 @@ def extract(game_dir: Path, out_root: Path, rarity_path: Path, progress: Callabl
     if previous_root is not None and previous_root != target:
         shutil.rmtree(previous_root, ignore_errors=True)
     return AssetCache(target, manifest)
+
+
+def _check_cancel(cancelled):
+    if cancelled and cancelled():
+        raise AssetExtractFailed('asset preparation cancelled')
+
+
+def _publish_cache(staging, target):
+    """Restore the previous target if publishing the staged tree fails."""
+    backup = target.with_name('.previous-' + target.name)
+    if backup.exists():
+        if not target.exists():
+            os.replace(backup, target)
+        else:
+            shutil.rmtree(backup)
+    moved = target.exists()
+    if moved:
+        os.replace(target, backup)
+    try:
+        os.replace(staging, target)
+    except BaseException:
+        if moved:
+            os.replace(backup, target)
+        raise
+    if moved:
+        shutil.rmtree(backup, ignore_errors=True)
 
 
 def _load_manifest(root: Path) -> dict[str, Any] | None:
@@ -338,8 +387,15 @@ def _reuse(bundle_stat: list, section: dict, names, previous_root: Path | None, 
     """Copy this bundle's entries from the previous cache when the bundle file is unchanged."""
     if previous is None or previous.get("bundles", {}).get(bundle_stat[0]) != bundle_stat:
         return None
-    entries = {name: previous[section].get(name) for name in names}
-    if any(entry is None or not (previous_root / entry["path"]).is_file() for entry in entries.values()):
+    from core.asset_preparation_cache import entry_path
+    try:
+        entries = {name: previous[section].get(name) for name in names}
+        if any(entry is None or _file_sha(entry_path(previous_root, entry['path'])) != entry.get('sha256')
+               for entry in entries.values()):
+            return None
+        for entry in entries.values():
+            entry_path(staging, entry['path'])
+    except (KeyError, TypeError, ValueError, OSError):
         return None
     for entry in entries.values():
         _link_or_copy(previous_root / entry["path"], staging / entry["path"])
@@ -363,7 +419,7 @@ def _save_png(image, staging: Path, relative: str) -> dict[str, Any]:
             "sha256": hashlib.sha256(buffer.getvalue()).hexdigest()}
 
 
-def _extract_icons(catalog, rarity, resources, staging, manifest, previous_root, previous, progress) -> None:
+def _extract_icons(catalog, rarity, resources, staging, manifest, previous_root, previous, progress, cancelled=None) -> None:
     import UnityPy
     by_bundle: dict[str, dict[str, tuple[str, str]]] = {}
     for identity, (kind, address) in _targets(catalog, rarity).items():
@@ -374,7 +430,7 @@ def _extract_icons(catalog, rarity, resources, staging, manifest, previous_root,
         by_bundle.setdefault(bundle, {})[address.rsplit("/", 1)[-1]] = (identity, kind)
     for done, (bundle, wanted) in enumerate(sorted(by_bundle.items()), 1):
         if progress:
-            progress("icons", done, len(by_bundle))
+            progress("icons", done - 1, len(by_bundle))
         path = _bundle_file(resources, bundle)
         if path is None:
             manifest["missing"].extend(identity for identity, _ in wanted.values())
@@ -388,9 +444,11 @@ def _extract_icons(catalog, rarity, resources, staging, manifest, previous_root,
         if reused is not None:
             manifest["icons"].update(reused)
             manifest["reused_bundles"] += 1
+            manifest['reused_files'] += len(reused)
             continue
         found = set()
         for obj in UnityPy.load(str(path)).objects:
+            _check_cancel(cancelled)
             if obj.type.name != "Texture2D":
                 continue
             texture = obj.read()
@@ -404,24 +462,31 @@ def _extract_icons(catalog, rarity, resources, staging, manifest, previous_root,
             manifest["icons"][identity] = entry
             found.add(name)
         manifest["missing"].extend(identity for name, (identity, _) in wanted.items() if name not in found)
+    progress('icons', len(by_bundle), len(by_bundle))
 
 
-def _extract_sprites(catalog, resources, staging, manifest, previous_root, previous) -> None:
+def _extract_sprites(catalog, resources, staging, manifest, previous_root, previous, progress, cancelled=None) -> None:
     import UnityPy
     names = [*ATLAS_SPRITES]
     atlas_found = False
+    progress('sprites', 0, None)
+    inspected = 0
     for path in sorted((resources / "Preload" / "Windows").glob(ATLAS_BUNDLE_GLOB)):
+        progress('sprites', inspected, None)
+        inspected += 1
         stat = _stat(path)
         reused = _reuse(stat, "sprites", names, previous_root, previous, staging) if previous else None
         if reused is not None and all(entry.get("bundle") == path.name for entry in reused.values()):
             manifest["sprites"].update(reused)
             manifest["bundles"][path.name] = stat
             manifest["reused_bundles"] += 1
+            manifest['reused_files'] += len(reused)
             atlas_found = True
             break
         env = UnityPy.load(str(path))
         atlas = None
         for obj in env.objects:
+            _check_cancel(cancelled)
             if obj.type.name == "MonoBehaviour":
                 try:
                     tree = obj.read_typetree()
@@ -438,6 +503,7 @@ def _extract_sprites(catalog, resources, staging, manifest, previous_root, previ
         image = texture.image
         rects = {sprite["name"]: sprite for sprite in atlas["mSprites"]}
         for name in names:
+            _check_cancel(cancelled)
             sprite = rects.get(name)
             if sprite is None:
                 manifest["missing"].append(f"sprite:{name}")
@@ -453,6 +519,8 @@ def _extract_sprites(catalog, resources, staging, manifest, previous_root, previ
         manifest["missing"].append(f"atlas:{ATLAS_NAME}")
     # Blueprint card background (UITexture Card_Bg_Gear) is its own texture.
     bundle = catalog.bundle_for(BLUEPRINT_KEY)
+    progress('sprites', inspected, None)
+    inspected += 1
     path = _bundle_file(resources, bundle) if bundle else None
     if path is None:
         manifest["missing"].append("sprite:Card_Item_Bg_C")
@@ -461,6 +529,7 @@ def _extract_sprites(catalog, resources, staging, manifest, previous_root, previ
     reused = _reuse(stat, "sprites", ["Card_Item_Bg_C"], previous_root, previous, staging) if previous else None
     if reused is not None:
         manifest["sprites"].update(reused)
+        manifest['reused_files'] += len(reused)
     else:
         texture = next((obj.read() for obj in UnityPy.load(str(path)).objects
                         if obj.type.name == "Texture2D" and obj.read().m_Name == "Card_Item_Bg_C"), None)
@@ -471,20 +540,28 @@ def _extract_sprites(catalog, resources, staging, manifest, previous_root, previ
         entry["bundle"] = bundle
         manifest["sprites"]["Card_Item_Bg_C"] = entry
     manifest["bundles"][bundle] = stat
+    progress('sprites', inspected, inspected)
 
 
-def _extract_fonts(resources, staging, manifest, previous_root, previous) -> None:
+def _extract_fonts(resources, staging, manifest, previous_root, previous, progress, cancelled=None) -> None:
     import UnityPy
     wanted = {unity: name for name, unity in FONTS.items()}
+    progress('fonts', 0, None)
+    inspected = 0
     for path in sorted((resources / "Preload" / "Windows").glob(FONT_BUNDLE_GLOB)):
+        progress('fonts', inspected, None)
+        inspected += 1
         stat = _stat(path)
         reused = _reuse(stat, "fonts", list(FONTS), previous_root, previous, staging) if previous else None
         if reused is not None and all(entry.get("bundle") == path.name for entry in reused.values()):
             manifest["fonts"].update(reused)
             manifest["bundles"][path.name] = stat
+            manifest['reused_files'] += len(reused)
+            progress('fonts', inspected, inspected)
             return
         found = {}
         for obj in UnityPy.load(str(path)).objects:
+            _check_cancel(cancelled)
             if obj.type.name != "Font":
                 continue
             font = obj.read()
@@ -498,5 +575,7 @@ def _extract_fonts(resources, staging, manifest, previous_root, previous) -> Non
             manifest["fonts"].update(found)
             manifest["bundles"][path.name] = stat
         if len(manifest["fonts"]) == len(FONTS):
+            progress('fonts', inspected, inspected)
             return
     manifest["missing"].extend(f"font:{name}" for name in FONTS if name not in manifest["fonts"])
+    progress('fonts', inspected, inspected)
