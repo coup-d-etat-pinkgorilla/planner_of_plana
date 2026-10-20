@@ -1,0 +1,606 @@
+{
+  "source": "https://claude.ai/artifact/BqhYfDnvkiQCTjDv8XgYJ3",
+  "canvas_title": "BA Planner v7 UI 개선 시안",
+  "artifact_version": "1792494343-3aed",
+  "history": [
+    {
+      "date": "2026-10-20",
+      "artifact_version": "1792468151-c7f8",
+      "artboards": 16,
+      "note": "F1 1st round (page firstrun). Superseded by the 2nd round; not copied."
+    },
+    {
+      "date": "2026-10-20",
+      "artifact_version": "1792494343-3aed",
+      "artboards": 58,
+      "note": "F1 2nd round: page firstrun only (first run, tutorial with Plana dialogue, empty states, scan report, missing art, settings rows). Other pages unchanged by size; their copies stay in ../2026-10-05/."
+    }
+  ],
+  "scope": "page firstrun only. Images (/_blob/...) not included.",
+  "canvas_json": {
+    "bytes": 41759,
+    "sha256": "9772efdb3bc58049f273c264514e848a5ce9c1b387c94ca3b30b0934683b7951"
+  },
+  "artboards": [
+    {
+      "file": "Empty-Backend.dc.html",
+      "title": "빈 상태 · 계산 엔진 연결 전 — 머리글 칩 빨강 · 본문 반투명 막 + 안내 패널 · 다시 연결",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 27944,
+      "sha256": "76a73ff055c4574b10fee578183ec5f84824d9a8367a2fae3d04f7cbf02dc416",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Inventory.dc.html",
+      "title": "빈 상태 · 인벤토리 (0개) — 스캔하러 가기",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 31351,
+      "sha256": "c156a5911388905e00582a1f845df5c5aa7740695aae33f27003113ce39155a7",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Plan.dc.html",
+      "title": "빈 상태 · 계획 탭 (계획 0개) — 예시 한 줄 · 계획 만들기",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 33253,
+      "sha256": "7d73a5c26b4ae242c40cd87f7087f82f62b6a027588c22d9b724d86697c306a7",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Scan.dc.html",
+      "title": "빈 상태 · 스캔 탭 (스캔 0회) — 창 모드 안내 · 창 인식 상태 · 창 찾기 → 스캔 시작",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 32948,
+      "sha256": "cd09959069508cabb8f7c1c10c9989d2459f319ef2084ed3f124bdaa44c5f336",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Stats.dc.html",
+      "title": "빈 상태 · 통계 (이력 0) — 버튼 없음",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 26435,
+      "sha256": "bbf27a87d8077a2d87e5731c8fd9ce940ca8d3ac89908e546b5b57228e2ef34b",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Student.dc.html",
+      "title": "빈 상태 · 학생 탭 (확정 0명) — 스캔하러 가기 · 직접 입력(비활성)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 37292,
+      "sha256": "978af002bb7b6ea1a97081b9a2a01145e4613d9728c54ddb14b82f3e9e4fe3bc",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Empty-Tactical.dc.html",
+      "title": "빈 상태 · 전술대항전 (기록 0) — 기록하기",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 28188,
+      "sha256": "000ec05335433bf20b62d286049cff57e5fba576ca1a6ee2c24d80b2c8ba3b9f",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "FirstRun-1-Game.dc.html",
+      "title": "첫 실행 · ① 게임 설치 찾기 — 자동으로 찾음 / 못 찾았을 때 (타이틀 위 모달 · 건너뛰기 언제나)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 43122,
+      "sha256": "31e5f079cac380eb5e7aebf291fd29a09c49c3d3a4184d7cd37f008561ffae44",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "FirstRun-2-Images.dc.html",
+      "title": "첫 실행 · ② 이미지 준비 — 준비 중 / 일부 실패 / 게임 업데이트 뒤 ②만 다시",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 50605,
+      "sha256": "1ee9871e54ab259e6e9b2ea8bcf7960530ae7914f0d1456f3a91afe37a1c3da3",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "FirstRun-3-Account.dc.html",
+      "title": "첫 실행 · ③ 계정 만들기 — 이름 입력 · 만들고 튜토리얼 시작 (연습 계정 줄 없음 · v6 가져오기 없음)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 29306,
+      "sha256": "9ac3fc234c59c0f3ee01072c95f752b07d10f3919931a2d9d258d60aa033581d",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Scan-Report-Band.dc.html",
+      "title": "스캔 신고 · 검토 화면 위 띠 (막지 않음) — 신고하기 · 닫기 · 머리 쪽 상시 '스캔 문제 신고' 버튼",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 113172,
+      "sha256": "6c32721252af1c0f9062b615050d75c93d2beecee526342b7e3551fa2f81243e",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Scan-Report-Dialog.dc.html",
+      "title": "스캔 신고 · 신고 창 — 요약 · 그림 조각 포함(기본 켜짐) · 한 줄 입력 · 들어가는 것 / 안 들어가는 것 → 만든 뒤 폴더 열기 · GitHub 새 글",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 131349,
+      "sha256": "2f51c53f4c6b38ef0b50ea9678f5648be3c18d10d3f45fa5444922e78b81ec59",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Settings-Help.dc.html",
+      "title": "첫 실행 · 설정 탭에 들어갈 줄 자리 (선택) — 안내 다시 열기 · 그림 다시 준비 · 튜토리얼 다시 하기 · 스캔 신고 · 도움말 · 자동 업데이트",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 34652,
+      "sha256": "f50dec9372cfef6c7343b11526fd6648e90b917c8dd40aa140c008ea96e883bb",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-01-Connect.dc.html",
+      "title": "튜토리얼 · 1/10 가상 게임 창에 연결 — Home-Connect-Pick 사본 · 맨 위 줄 '가상 게임 창 · 튜토리얼' · 강조: 선택한 창 사용",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 55452,
+      "sha256": "2e9c2ff331dd0af4f2e23dc00aa6242edd82fa1e123b96c241590adf1a7d10e2",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-02-StudentScan.dc.html",
+      "title": "튜토리얼 · 2/10 학생 가상 스캔 — Scan 사본 · 하위 체크(탭 → 학생 전체 → 시작) · 강조: 학생 전체 스캔 시작",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 231172,
+      "sha256": "65e1d54bd8f89b8ba8b5271fb165de8803c3b8e09ef1465fed4cda9568dac258",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-03-StudentApply.dc.html",
+      "title": "튜토리얼 · 3/10 학생 결과 적용 — Scan-Student-Review 사본 · 지난 스캔 1회분 대비 바뀐 6 · 새 1 · 강조: 6명 한 번에 적용",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 117902,
+      "sha256": "fbe7cc8fa868ff3de909004a14314ed00c114424e05fca7697211868852ee9b5",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-04-StudentCalc.dc.html",
+      "title": "튜토리얼 · 4/10 학생 상세 · 성장 계산기 — Calc-Student 사본 · 하위 체크 4개 · 강조: 레벨 목표 + · 카드는 결과를 가리지 않는 빈자리",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 143666,
+      "sha256": "66f67d86602e6085ce8363b967504f6a22ce693b61d34618979ee219c20465de",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-05-ItemScan.dc.html",
+      "title": "튜토리얼 · 5/10 아이템 가상 스캔 — Scan-Item-Run 사본 · 플래너가 뒤로 가므로 단계 카드 대신 진행 창 안 한 줄",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 60357,
+      "sha256": "a98b7da81f7979f097abd6d2156764e825c7ea02f5b5daa898dffa6ad74d151e",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-06-ItemApply.dc.html",
+      "title": "튜토리얼 · 6/10 아이템 결과 적용 — Scan-Item-Review 사본 · 하위 체크(확인 필요 승인 → 적용) · 강조: 승인한 56칸 인벤토리에 적용",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 70889,
+      "sha256": "724ef43263fee54cec6bb592c1a4f351d84be6a5b1c86e78ab72118e1b8309de",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07-Plan.dc.html",
+      "title": "튜토리얼 · 7-2/10 계획 · 목표 정하기 — 학생마다 한 단계 · 강조: 고른 7명 모두 한 번에 MAX로",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 99312,
+      "sha256": "e7a172dbab9e429d2420b6498a59aa82a447b08324d0835cd2e8b5b86fe130a5",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07a-PlanStudents.dc.html",
+      "title": "튜토리얼 · 7-1/10 계획 · 학생 고르기 — 비나 대비 7명(아카네 · 칸나(수영복) · 마키 · 미카 · 히마리(무장) · 시로코(수영복) · 네루(교복)) · 강조: 다음 · 목표 정하기",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 182281,
+      "sha256": "3aa6ad17a8c8ede278829072befb056b04f39697cacaa4765e9313e35b38f161",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07b2-PlanMaki1.dc.html",
+      "title": "튜토리얼 · 7-2b/10 계획 · 마키 1단계 — 마키 탭 · 한 번에 MAX로 들어간 1단계를 M/M/1/1로 · 강조: 1단계 스킬 칸",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 112671,
+      "sha256": "95fc882a3062ee1cece95960d9b17b27477957ff139e7c0d0ef5a479dddc71da",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07b3-PlanMaki2.dc.html",
+      "title": "튜토리얼 · 7-2c/10 계획 · 마키 2단계 — 1단계 M/M/1/1 · 단계 추가로 2단계 M/M/7/7 · 강조: 단계 추가",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 112748,
+      "sha256": "77ed486828a60abc2d3dc5ec5a487afe427ab72c514eb5a636ffa5c8a0bb9163",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07c-PlanOrder.dc.html",
+      "title": "튜토리얼 · 7-3/10 계획 · 순서 놓기 — 고른 순서대로 놓인 상태 · 1순위 칸나(수영복) · 마키 · 미카 / 2순위 시로코(수영복) · 히마리(무장) / 3순위 아카네로 · 강조: 아카네 카드",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 84097,
+      "sha256": "a386cd262e7f00c74e080dce3860c8789e03a3c32b906769ac00d8dcf3a3e87c",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07c2-PlanLink.dc.html",
+      "title": "튜토리얼 · 7-4/10 계획 · 칸나 다음 아카네 — 칸나(수영복) 아래 점 → 아카네로 잇기(선행 조건) · 강조: 칸나(수영복) 카드",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 84261,
+      "sha256": "55aa60e41d99135f15953e8da00882d4fe58397ce71a06fea0470d3851a7370e",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07c3-PlanLater.dc.html",
+      "title": "튜토리얼 · 7-5/10 계획 · 나중에 — 네루(교복) · 마키 2단계를 나중에 칸으로(페이즈 아님) · 강조: 나중에 칸",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 83817,
+      "sha256": "bb65bc0e1336d18cbfbb59e7c3104cad90dad36c10e1649a23d42c03d25f577e",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-07d-PlanSave.dc.html",
+      "title": "튜토리얼 · 7-6/10 계획 · 저장 — P1 칸나(수영복) · 마키 1단계 · 미카 / P2 시로코(수영복) · 히마리(무장) / P3 아카네(칸나 다음) / 나중에 네루(교복) · 마키 2단계 · 강조: 시나리오로 저장",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 74691,
+      "sha256": "375d7b31a5f8a2e17f4e404d0fad54b2a33489a7e1205bb0043455671a801a23",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-08-Scenario.dc.html",
+      "title": "튜토리얼 · 8/10 시나리오 비교 — 시나리오 목록(비나 대비 · 예시 · 튜토리얼 바탕) · 비교에 A 활성 · B 비나 대비 · C 한 번에 MAX · 강조: 나란히 비교",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 83462,
+      "sha256": "22d7c6036fb42c7afaf19318a290d36d99376c2f16bbdc3b0300d8f1a062f5ee",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-09-Inventory.dc.html",
+      "title": "튜토리얼 · 9/10 부족한 재화 확인 — Inventory 사본 · 강조: 맨 위 행 · 카드는 상세 자리를 피해 목록 아래",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 62252,
+      "sha256": "f5f9020e49733e3e42c26d6ac98aba95a12f7f52c27a964371c2b24b33347856",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-10-Stats.dc.html",
+      "title": "튜토리얼 · 10/10 통계에서 변화 확인 — Stats-Growth 사본 · 강조: 성장 추이 타일",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 100789,
+      "sha256": "bd9d9a196ca59363d2cfb312f2cca3b38f9acdeafda933daefc2cd2cad3d8c26",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Done.dc.html",
+      "title": "튜토리얼 · 끝 — 써 본 기능 10개 · 실제 게임 창 모드 안내 · '메인 계정'으로 돌아가기 (임시 계정 삭제)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 103860,
+      "sha256": "e78074a8fa4d4de2c931b187915a9d32b9e77a7b9e5564ad5a757740cb6a9f10",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-01-Intro.dc.html",
+      "title": "튜토리얼 · 프라나 01 시작 — ③ 계정을 만든 직후 · 타이틀 위 · 아로나 선배 과로 → 따로 마련한 프로세스 → 가상 공간 (대사 3 / 5)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 22064,
+      "sha256": "caa1f4e8dd42228611228c3e8216896b6b354a987bc484974ada9e20e8f84ec5",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-02-Connect.dc.html",
+      "title": "튜토리얼 · 프라나 02 연결 — 프라나 01 뒤 · 1단계 전 · 홈 연결 패널 · 가상 게임 창 고르기 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 52780,
+      "sha256": "f3ecb6fac3abcbef1978234b41869401d2f2a3c7a378bb66db4e3625ec86e2e6",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-03-StudentScan.dc.html",
+      "title": "튜토리얼 · 프라나 03 학생 스캔 — 1단계 뒤 · 2단계 전 · 스캔 탭 · 게임 창을 뒤에 둔 채 학생 스캔 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 228121,
+      "sha256": "e16204473a2824ba1f6ef49875c136c3cb2b5fff12398e8b22000dff5e129290",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-04-StudentReview.dc.html",
+      "title": "튜토리얼 · 프라나 04 학생 검토 — 2단계 뒤 · 3단계 전 · 바뀐 6 · 새 1 · '확인 필요' 2명을 밝힘 (대사 2 / 5)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 117092,
+      "sha256": "b1cd6f448ba59054fe39fd592379621ea943bdd654fc898819add53378ac33da",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-04b-Uncertain.dc.html",
+      "title": "튜토리얼 · 프라나 04b 학생 검토 · 확인 필요 — 같은 장면 대사 4 / 5 · 폴백 캡처와 확정할 값을 밝힘(대사 띠는 왼쪽까지만)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 117289,
+      "sha256": "b0d492f59992f9102ae688b274d8308a4a85137dd78df3c4e9ea8dc45463c9af",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-05-StudentCalc.dc.html",
+      "title": "튜토리얼 · 프라나 05 학생 계산 — 3단계 뒤 · 4단계 전 · 학생 탭 · 학생 한 명 · 목표 → 필요량 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 191433,
+      "sha256": "f2f5499bf555b9168ab1eeda8d5223d9f1bb89ddc848cb5e6ef5f5d5935ad505",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-06-ItemScan.dc.html",
+      "title": "튜토리얼 · 프라나 06 아이템 스캔 — 4단계 뒤 · 5단계 전 · 스캔 탭 · 게임 창이 앞으로 · 입력하면 멈춤 (대사 1 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 228118,
+      "sha256": "e8adb17d848459df15613611e9a25307d82720d4e1edff980a86f7d34be37137",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-07-ItemReview.dc.html",
+      "title": "튜토리얼 · 프라나 07 아이템 검토 — 5단계 뒤 · 6단계 전 · 아이템 결과 검토 · 칸별 비교 · 승인한 칸만 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 68331,
+      "sha256": "2547d58613f7f5c1cd019b68cd49e80b280ac9e2ca4663b0cfc3a5f874aa62dd",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08-Plan.dc.html",
+      "title": "튜토리얼 · 프라나 08 계획 — 6단계 뒤 · 총력전 비나 대비 · 계획은 네 단계 · 왼쪽 단계 목록을 밝힘 (대사 3 / 4)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 180422,
+      "sha256": "f6841702951b24bbde88cc38c4eb9afba33a5902ba2dc5a9e4ef36d8719ff092",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08b-PlanStudents.dc.html",
+      "title": "튜토리얼 · 프라나 08b 계획 · 학생 — 같은 장면 대사 4 / 4 · 비나전에 쓸 7명 · 고른 학생을 밝힘",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 180545,
+      "sha256": "ca41232e057d13c471234984109c43e98d1fb9e07c37735df0148beb34dea23f",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08c-Goals.dc.html",
+      "title": "튜토리얼 · 프라나 08c 계획 · 목표 — 7-1 뒤 · 이번에는 학생마다 한 단계 · 단계 칸을 밝힘 (대사 2 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 98507,
+      "sha256": "ba3e4927900614559b1d6f1423b38f94f993439080401f4bcd1a221f5fdb99fc",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08d-Order.dc.html",
+      "title": "튜토리얼 · 프라나 08d 계획 · 순서 — 7-2 뒤 · 칸 하나 = 페이즈 하나 · 1순위 칸나(수영복) · 마키 · 미카, 2순위 시로코(수영복) · 히마리(무장), 3순위 아카네 (대사 1 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 82402,
+      "sha256": "cfa49023097a19d39920047ca3c8e04bf166505cd47dbea6bceed99622e02964",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08e-Link.dc.html",
+      "title": "튜토리얼 · 프라나 08e 계획 · 잇기 — 7-3 뒤 · 아카네는 칸나(수영복)의 대체 학생 · 상위 난이도용 → 칸나 다음에 키우도록 잇기 · 두 카드를 밝힘 (대사 1 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 82731,
+      "sha256": "992d9afd1eba6e378821ee00e3da94a64671aed456f61eec94d37a7bec3ce299",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08f-Later.dc.html",
+      "title": "튜토리얼 · 프라나 08f 계획 · 나중에 — 7-4 뒤 · 네루(교복) · 마키 2단계는 나중에 칸으로 · 대사 띠는 오른쪽에서 (대사 2 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 82718,
+      "sha256": "385235954faaaca5e2361adc021b5de2776ebfa80926a9c504a88ae44f94b6cf",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-08g-Maki.dc.html",
+      "title": "튜토리얼 · 프라나 08g 계획 · 마키 — 7-2 뒤 · 마키만 두 단계: 이번엔 M/M/1/1, 나중에 M/M/7/7 · 1단계 스킬 칸을 밝힘 (대사 2 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 110940,
+      "sha256": "1208aa4d356a215d966e41f8d1a1af7186cbf411bd6bde6144f30971df04d400",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-09-Scenario.dc.html",
+      "title": "튜토리얼 · 프라나 09 계획 · 저장 — 7-5 뒤 · 순위 칸 → 페이즈 · 나중에 칸은 페이즈 아님 · 페이즈를 밝힘 (대사 1 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 72579,
+      "sha256": "35d53034cb6e302ebfe74adc82ac4445239c622a8d9fee715e493cbc601aaf4d",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-09b-Save.dc.html",
+      "title": "튜토리얼 · 프라나 09b 계획 · 저장 — 같은 장면 대사 2 / 3 · 활성 계획과 시나리오의 차이 · 저장 선택을 밝힘",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 72538,
+      "sha256": "ac9aa587d4f14e4b265d74ff37eb91d94a4eb880d8edfe487fc873f094417d47",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-09c-Example.dc.html",
+      "title": "튜토리얼 · 프라나 09c 비교 · 예시 — 7-6 뒤 · 시나리오 목록 · 비교용 예시 '비나 대비 · 한 번에 MAX'를 미리 넣어 둠 · 두 안을 밝힘 (대사 1 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 81919,
+      "sha256": "ced81d6004781ffb2f9a1faffb7dd807e13621f91444ad3c561ef933196de3ac",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-09d-Compare.dc.html",
+      "title": "튜토리얼 · 프라나 09d 비교 — 8단계 뒤 · 나란히 비교 A 활성 / B 비나 대비 / C 한 번에 MAX · 크레딧 −32M · 첫 병목 P1 → P2 · B · C 숫자를 밝힘 (대사 2 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 184510,
+      "sha256": "3639c9463d6aef0ffb14128be4dc1cf8d9749e23a82236b802e77af0d9b98664",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-10-Check.dc.html",
+      "title": "튜토리얼 · 프라나 10 확인 — 8단계 뒤 · 9단계 전 · 인벤토리 · 부족한 것 · 늘어난 것 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 60380,
+      "sha256": "c7c31637915a7b69cc793e0b1c58ef846fc19d074ab7fd5a274e7463f71987f0",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-11-End.dc.html",
+      "title": "튜토리얼 · 프라나 11 끝 — 10단계 뒤 · 끝 화면 전 · 통계 · 가상 공간 정리 → '앞으로도 잘 부탁드립니다' (대사 3 / 3)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 98876,
+      "sha256": "c8868a42b08bc9ad2bbde352f0f0ceb6118cd2065d6f3917778fef5d8625ee7b",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-Quit.dc.html",
+      "title": "튜토리얼 · 프라나 그만둘 때 — 그만두기 확인에서 '그만두기'를 누른 뒤 · 어느 단계에서든 · 가상 공간 정리 · 설정에서 다시 (대사 2 / 2)",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 115950,
+      "sha256": "aa026890df3a9a5ee424ed28efd4b3c191543c484eb0a124f069bc426b596ef4",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Plana-Script.dc.html",
+      "title": "튜토리얼 · 프라나 대본 — 장면 18개 + 그만둘 때 · 계획은 총력전 비나 대비(마키 두 단계 · 예시 시나리오와 비교) · 대사마다 표정",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1840,
+      "bytes": 66400,
+      "sha256": "f8756a6b381636d964675664c868e3224ec30c611418a64d3e34d98aab06d821",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "Tutorial-Quit.dc.html",
+      "title": "튜토리얼 · 그만두기 확인 — 임시 계정을 지우고 '메인 계정'으로 · 계속하기가 기본 버튼",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1392,
+      "bytes": 123774,
+      "sha256": "74910df2f32b846ecc3a67d4d9e8ee02bdb4d23d5e3bca6286d3b455963e56ee",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "W-Missing-Art.dc.html",
+      "title": "빈 상태 · 그림이 없을 때 (부품) — 준비 중(흐르는 사선) / 만들지 못함(멈춘 빗금) · 카드 · 초상 · 아이템 · 엘레프 · 로고 · 장비",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1240,
+      "bytes": 35342,
+      "sha256": "f419f5a2ac24a01096f8f93759c1cda038860db2d8ae9dd0e26327be67520104",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "W-Plana-Dialogue.dc.html",
+      "title": "튜토리얼 · 프라나 대사 띠 (부품) — 어둡게 · 이름표 · 대사 두 줄 · 한 글자씩 · 그림 없을 때 · 밝히기 · ⑤ 메모: 게임 설치본의 움직이는 그림을 꺼내 대사마다 표정 바꾸기",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1860,
+      "bytes": 29226,
+      "sha256": "4c8bcbe99cf30cfc49af3085b12a3dfce6936c311eb1905d4affe187a7b3f4b0",
+      "added": "2026-10-20"
+    },
+    {
+      "file": "W-Tutorial-Card.dc.html",
+      "title": "튜토리얼 · 단계 카드 · 강조 테두리 (부품) — 진행 / 하위 체크 / 기다림 / 완료 체크 · #71c7f4 2.5px · 머리글 칩 · 카드 자리 규칙",
+      "page": "firstrun",
+      "w": 2560,
+      "h": 1100,
+      "bytes": 42987,
+      "sha256": "5bdb037dff50b34f06e244218abcb68dad9ee95a3353db750d4971a6dc64a8ae",
+      "added": "2026-10-20"
+    }
+  ]
+}

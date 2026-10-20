@@ -1,6 +1,6 @@
 # Frontend Redesign Artboard Map
 
-- **시안 원본**: Design 캔버스 "BA Planner v7 UI 개선 시안" — https://claude.ai/artifact/BqhYfDnvkiQCTjDv8XgYJ3 (2026-10-05 version `1791201546-3bff` 50장, 2026-10-06 version `1791216886-b4f5`에서 스캔 탭 6장·성장 계산기 1장 추가)
+- **시안 원본**: Design 캔버스 "BA Planner v7 UI 개선 시안" — https://claude.ai/artifact/BqhYfDnvkiQCTjDv8XgYJ3 (2026-10-05 version `1791201546-3bff` 50장, 2026-10-06 version `1791216886-b4f5`에서 스캔 탭 6장·성장 계산기 1장 추가, 2026-10-20 version `1792494343-3aed`에서 page `firstrun` 58장 추가 — 사본 `prototype/2026-10-20/`)
 - **저장소 사본**: `docs/frontend-redesign/prototype/2026-10-05/` (artboard 파일명 동일). 택틱 페이지(`Tactic-*`, `Boss-*`, `Tactical-Timeline.dc.html`)는 범위 밖이라 사본에 없다.
 - **범위**: canvas.json `boards` 80개 중 택틱 23개(`Tactic-*` 5, `Boss-*` 17, `Tactical-Timeline` 1)를 뺀 **57개** 전부. 모든 화면 artboard는 2560×1392 절대좌표(최대화 작업영역 canonical viewport)이고 부품 보드(page `parts`)는 크기가 제각각이다.
 - **Dart 칸**: 조사 보고서 A~J에서 grep으로 확인된 파일·클래스만 적었다(경로는 `frontend/lib/` 기준). "신규"는 대응 코드가 없다는 뜻이다. 결정이 걸린 항목은 `FD-###`(decision-register.md)로 표시했다.
@@ -116,6 +116,72 @@
 | Statistics-Proposal.dc.html | 통계 · 기능 제안 + 그래프 매핑 (질문 → 그래프 · 1/2/3차 · 확정 사항) | 문서형 보드(2560×3054) | `statistics_page.dart`, `statistics_projection.dart`(기준 문서) | FE7(FE7-a 기준, 차트 견본은 FE2-d) | 확정 사항 4개 반영 여부(범위는 FD-104로 갱신, 1차 목록, C3 계단선, 스냅샷 1회 문구) / 색 역할(크기 파랑, 강조 분홍, 모름 빗금, 과잉 노랑) / 원·도넛·이중 축 없음(FD-033) / 이동한 탭 머리글의 "← 통계" 칩(FD-108) |
 
 ---
+
+## 첫 실행 · 안내 (page `firstrun`, 2026-10-20 추가 — 사본 `prototype/2026-10-20/`)
+
+- 출처: 캔버스 version `1792494343-3aed`(F1 2차). 결정: FD-181(그림은 설치본에서) · FD-182(튜토리얼 = 임시 계정 시나리오) · FD-183(프라나 대사 · 움직이는 그림). 흐름 순서는 캔버스 메모 frFlow1~9(첫 실행 ①~③ → 프라나 01 → … → 프라나 11 → 끝, 그만두기 갈래).
+- slice 칸: F3a 튜토리얼 부품(새 파일) · F3b 첫 실행 ①~③ · F3c 튜토리얼 흐름(임시 계정 · 단계 진행) · F3d 빈 상태 · F3e 설정 줄 · F3f 프라나 움직이는 그림 · F4 스캔 신고 · F5 그림 출처. Dart 칸은 구현 때 채운다.
+
+| artboard 파일 | 캔버스 제목 | slice | Dart |
+|---|---|---|---|
+| Empty-Backend.dc.html | 빈 상태 · 계산 엔진 연결 전 — 머리글 칩 빨강 · 본문 반투명 막 + 안내 패널 · 다시 연결 | F3d | 신규 |
+| Empty-Inventory.dc.html | 빈 상태 · 인벤토리 (0개) — 스캔하러 가기 | F3d | 신규 |
+| Empty-Plan.dc.html | 빈 상태 · 계획 탭 (계획 0개) — 예시 한 줄 · 계획 만들기 | F3d | 신규 |
+| Empty-Scan.dc.html | 빈 상태 · 스캔 탭 (스캔 0회) — 창 모드 안내 · 창 인식 상태 · 창 찾기 → 스캔 시작 | F3d | 신규 |
+| Empty-Stats.dc.html | 빈 상태 · 통계 (이력 0) — 버튼 없음 | F3d | 신규 |
+| Empty-Student.dc.html | 빈 상태 · 학생 탭 (확정 0명) — 스캔하러 가기 · 직접 입력(비활성) | F3d | 신규 |
+| Empty-Tactical.dc.html | 빈 상태 · 전술대항전 (기록 0) — 기록하기 | F3d | 신규 |
+| FirstRun-1-Game.dc.html | 첫 실행 · ① 게임 설치 찾기 — 자동으로 찾음 / 못 찾았을 때 (타이틀 위 모달 · 건너뛰기 언제나) | F3b (+F2) | 신규 |
+| FirstRun-2-Images.dc.html | 첫 실행 · ② 이미지 준비 — 준비 중 / 일부 실패 / 게임 업데이트 뒤 ②만 다시 | F3b (+F2) | 신규 |
+| FirstRun-3-Account.dc.html | 첫 실행 · ③ 계정 만들기 — 이름 입력 · 만들고 튜토리얼 시작 (연습 계정 줄 없음 · v6 가져오기 없음) | F3b (+F2) | 신규 |
+| Scan-Report-Band.dc.html | 스캔 신고 · 검토 화면 위 띠 (막지 않음) — 신고하기 · 닫기 · 머리 쪽 상시 '스캔 문제 신고' 버튼 | F4 | 신규 |
+| Scan-Report-Dialog.dc.html | 스캔 신고 · 신고 창 — 요약 · 그림 조각 포함(기본 켜짐) · 한 줄 입력 · 들어가는 것 / 안 들어가는 것 → 만든 뒤 폴더 열기 · GitHub 새 글 | F4 | 신규 |
+| Settings-Help.dc.html | 첫 실행 · 설정 탭에 들어갈 줄 자리 (선택) — 안내 다시 열기 · 그림 다시 준비 · 튜토리얼 다시 하기 · 스캔 신고 · 도움말 · 자동 업데이트 | F3e | 신규 |
+| Tutorial-01-Connect.dc.html | 튜토리얼 · 1/10 가상 게임 창에 연결 — Home-Connect-Pick 사본 · 맨 위 줄 '가상 게임 창 · 튜토리얼' · 강조: 선택한 창 사용 | F3c | 신규 |
+| Tutorial-02-StudentScan.dc.html | 튜토리얼 · 2/10 학생 가상 스캔 — Scan 사본 · 하위 체크(탭 → 학생 전체 → 시작) · 강조: 학생 전체 스캔 시작 | F3c | 신규 |
+| Tutorial-03-StudentApply.dc.html | 튜토리얼 · 3/10 학생 결과 적용 — Scan-Student-Review 사본 · 지난 스캔 1회분 대비 바뀐 6 · 새 1 · 강조: 6명 한 번에 적용 | F3c | 신규 |
+| Tutorial-04-StudentCalc.dc.html | 튜토리얼 · 4/10 학생 상세 · 성장 계산기 — Calc-Student 사본 · 하위 체크 4개 · 강조: 레벨 목표 + · 카드는 결과를 가리지 않는 빈자리 | F3c | 신규 |
+| Tutorial-05-ItemScan.dc.html | 튜토리얼 · 5/10 아이템 가상 스캔 — Scan-Item-Run 사본 · 플래너가 뒤로 가므로 단계 카드 대신 진행 창 안 한 줄 | F3c | 신규 |
+| Tutorial-06-ItemApply.dc.html | 튜토리얼 · 6/10 아이템 결과 적용 — Scan-Item-Review 사본 · 하위 체크(확인 필요 승인 → 적용) · 강조: 승인한 56칸 인벤토리에 적용 | F3c | 신규 |
+| Tutorial-07-Plan.dc.html | 튜토리얼 · 7-2/10 계획 · 목표 정하기 — 학생마다 한 단계 · 강조: 고른 7명 모두 한 번에 MAX로 | F3c | 신규 |
+| Tutorial-07a-PlanStudents.dc.html | 튜토리얼 · 7-1/10 계획 · 학생 고르기 — 비나 대비 7명(아카네 · 칸나(수영복) · 마키 · 미카 · 히마리(무장) · 시로코(수영복) · 네루(교복)) · 강조: 다음 · 목표 정하기 | F3c | 신규 |
+| Tutorial-07b2-PlanMaki1.dc.html | 튜토리얼 · 7-2b/10 계획 · 마키 1단계 — 마키 탭 · 한 번에 MAX로 들어간 1단계를 M/M/1/1로 · 강조: 1단계 스킬 칸 | F3c | 신규 |
+| Tutorial-07b3-PlanMaki2.dc.html | 튜토리얼 · 7-2c/10 계획 · 마키 2단계 — 1단계 M/M/1/1 · 단계 추가로 2단계 M/M/7/7 · 강조: 단계 추가 | F3c | 신규 |
+| Tutorial-07c-PlanOrder.dc.html | 튜토리얼 · 7-3/10 계획 · 순서 놓기 — 고른 순서대로 놓인 상태 · 1순위 칸나(수영복) · 마키 · 미카 / 2순위 시로코(수영복) · 히마리(무장) / 3순위 아카네로 · 강조: 아카네 카드 | F3c | 신규 |
+| Tutorial-07c2-PlanLink.dc.html | 튜토리얼 · 7-4/10 계획 · 칸나 다음 아카네 — 칸나(수영복) 아래 점 → 아카네로 잇기(선행 조건) · 강조: 칸나(수영복) 카드 | F3c | 신규 |
+| Tutorial-07c3-PlanLater.dc.html | 튜토리얼 · 7-5/10 계획 · 나중에 — 네루(교복) · 마키 2단계를 나중에 칸으로(페이즈 아님) · 강조: 나중에 칸 | F3c | 신규 |
+| Tutorial-07d-PlanSave.dc.html | 튜토리얼 · 7-6/10 계획 · 저장 — P1 칸나(수영복) · 마키 1단계 · 미카 / P2 시로코(수영복) · 히마리(무장) / P3 아카네(칸나 다음) / 나중에 네루(교복) · 마키 2단계 · 강조: 시나리오로 저장 | F3c | 신규 |
+| Tutorial-08-Scenario.dc.html | 튜토리얼 · 8/10 시나리오 비교 — 시나리오 목록(비나 대비 · 예시 · 튜토리얼 바탕) · 비교에 A 활성 · B 비나 대비 · C 한 번에 MAX · 강조: 나란히 비교 | F3c | 신규 |
+| Tutorial-09-Inventory.dc.html | 튜토리얼 · 9/10 부족한 재화 확인 — Inventory 사본 · 강조: 맨 위 행 · 카드는 상세 자리를 피해 목록 아래 | F3c | 신규 |
+| Tutorial-10-Stats.dc.html | 튜토리얼 · 10/10 통계에서 변화 확인 — Stats-Growth 사본 · 강조: 성장 추이 타일 | F3c | 신규 |
+| Tutorial-Done.dc.html | 튜토리얼 · 끝 — 써 본 기능 10개 · 실제 게임 창 모드 안내 · '메인 계정'으로 돌아가기 (임시 계정 삭제) | F3c | 신규 |
+| Tutorial-Plana-01-Intro.dc.html | 튜토리얼 · 프라나 01 시작 — ③ 계정을 만든 직후 · 타이틀 위 · 아로나 선배 과로 → 따로 마련한 프로세스 → 가상 공간 (대사 3 / 5) | F3c | 신규 |
+| Tutorial-Plana-02-Connect.dc.html | 튜토리얼 · 프라나 02 연결 — 프라나 01 뒤 · 1단계 전 · 홈 연결 패널 · 가상 게임 창 고르기 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-03-StudentScan.dc.html | 튜토리얼 · 프라나 03 학생 스캔 — 1단계 뒤 · 2단계 전 · 스캔 탭 · 게임 창을 뒤에 둔 채 학생 스캔 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-04-StudentReview.dc.html | 튜토리얼 · 프라나 04 학생 검토 — 2단계 뒤 · 3단계 전 · 바뀐 6 · 새 1 · '확인 필요' 2명을 밝힘 (대사 2 / 5) | F3c | 신규 |
+| Tutorial-Plana-04b-Uncertain.dc.html | 튜토리얼 · 프라나 04b 학생 검토 · 확인 필요 — 같은 장면 대사 4 / 5 · 폴백 캡처와 확정할 값을 밝힘(대사 띠는 왼쪽까지만) | F3c | 신규 |
+| Tutorial-Plana-05-StudentCalc.dc.html | 튜토리얼 · 프라나 05 학생 계산 — 3단계 뒤 · 4단계 전 · 학생 탭 · 학생 한 명 · 목표 → 필요량 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-06-ItemScan.dc.html | 튜토리얼 · 프라나 06 아이템 스캔 — 4단계 뒤 · 5단계 전 · 스캔 탭 · 게임 창이 앞으로 · 입력하면 멈춤 (대사 1 / 2) | F3c | 신규 |
+| Tutorial-Plana-07-ItemReview.dc.html | 튜토리얼 · 프라나 07 아이템 검토 — 5단계 뒤 · 6단계 전 · 아이템 결과 검토 · 칸별 비교 · 승인한 칸만 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-08-Plan.dc.html | 튜토리얼 · 프라나 08 계획 — 6단계 뒤 · 총력전 비나 대비 · 계획은 네 단계 · 왼쪽 단계 목록을 밝힘 (대사 3 / 4) | F3c | 신규 |
+| Tutorial-Plana-08b-PlanStudents.dc.html | 튜토리얼 · 프라나 08b 계획 · 학생 — 같은 장면 대사 4 / 4 · 비나전에 쓸 7명 · 고른 학생을 밝힘 | F3c | 신규 |
+| Tutorial-Plana-08c-Goals.dc.html | 튜토리얼 · 프라나 08c 계획 · 목표 — 7-1 뒤 · 이번에는 학생마다 한 단계 · 단계 칸을 밝힘 (대사 2 / 3) | F3c | 신규 |
+| Tutorial-Plana-08d-Order.dc.html | 튜토리얼 · 프라나 08d 계획 · 순서 — 7-2 뒤 · 칸 하나 = 페이즈 하나 · 1순위 칸나(수영복) · 마키 · 미카, 2순위 시로코(수영복) · 히마리(무장), 3순위 아카네 (대사 1 / 3) | F3c | 신규 |
+| Tutorial-Plana-08e-Link.dc.html | 튜토리얼 · 프라나 08e 계획 · 잇기 — 7-3 뒤 · 아카네는 칸나(수영복)의 대체 학생 · 상위 난이도용 → 칸나 다음에 키우도록 잇기 · 두 카드를 밝힘 (대사 1 / 3) | F3c | 신규 |
+| Tutorial-Plana-08f-Later.dc.html | 튜토리얼 · 프라나 08f 계획 · 나중에 — 7-4 뒤 · 네루(교복) · 마키 2단계는 나중에 칸으로 · 대사 띠는 오른쪽에서 (대사 2 / 3) | F3c | 신규 |
+| Tutorial-Plana-08g-Maki.dc.html | 튜토리얼 · 프라나 08g 계획 · 마키 — 7-2 뒤 · 마키만 두 단계: 이번엔 M/M/1/1, 나중에 M/M/7/7 · 1단계 스킬 칸을 밝힘 (대사 2 / 3) | F3c | 신규 |
+| Tutorial-Plana-09-Scenario.dc.html | 튜토리얼 · 프라나 09 계획 · 저장 — 7-5 뒤 · 순위 칸 → 페이즈 · 나중에 칸은 페이즈 아님 · 페이즈를 밝힘 (대사 1 / 3) | F3c | 신규 |
+| Tutorial-Plana-09b-Save.dc.html | 튜토리얼 · 프라나 09b 계획 · 저장 — 같은 장면 대사 2 / 3 · 활성 계획과 시나리오의 차이 · 저장 선택을 밝힘 | F3c | 신규 |
+| Tutorial-Plana-09c-Example.dc.html | 튜토리얼 · 프라나 09c 비교 · 예시 — 7-6 뒤 · 시나리오 목록 · 비교용 예시 '비나 대비 · 한 번에 MAX'를 미리 넣어 둠 · 두 안을 밝힘 (대사 1 / 3) | F3c | 신규 |
+| Tutorial-Plana-09d-Compare.dc.html | 튜토리얼 · 프라나 09d 비교 — 8단계 뒤 · 나란히 비교 A 활성 / B 비나 대비 / C 한 번에 MAX · 크레딧 −32M · 첫 병목 P1 → P2 · B · C 숫자를 밝힘 (대사 2 / 3) | F3c | 신규 |
+| Tutorial-Plana-10-Check.dc.html | 튜토리얼 · 프라나 10 확인 — 8단계 뒤 · 9단계 전 · 인벤토리 · 부족한 것 · 늘어난 것 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-11-End.dc.html | 튜토리얼 · 프라나 11 끝 — 10단계 뒤 · 끝 화면 전 · 통계 · 가상 공간 정리 → '앞으로도 잘 부탁드립니다' (대사 3 / 3) | F3c | 신규 |
+| Tutorial-Plana-Quit.dc.html | 튜토리얼 · 프라나 그만둘 때 — 그만두기 확인에서 '그만두기'를 누른 뒤 · 어느 단계에서든 · 가상 공간 정리 · 설정에서 다시 (대사 2 / 2) | F3c | 신규 |
+| Tutorial-Plana-Script.dc.html | 튜토리얼 · 프라나 대본 — 장면 18개 + 그만둘 때 · 계획은 총력전 비나 대비(마키 두 단계 · 예시 시나리오와 비교) · 대사마다 표정 | F3a (대본 데이터) | 신규 |
+| Tutorial-Quit.dc.html | 튜토리얼 · 그만두기 확인 — 임시 계정을 지우고 '메인 계정'으로 · 계속하기가 기본 버튼 | F3c | 신규 |
+| W-Missing-Art.dc.html | 빈 상태 · 그림이 없을 때 (부품) — 준비 중(흐르는 사선) / 만들지 못함(멈춘 빗금) · 카드 · 초상 · 아이템 · 엘레프 · 로고 · 장비 | F5a/F5b | 신규 |
+| W-Plana-Dialogue.dc.html | 튜토리얼 · 프라나 대사 띠 (부품) — 어둡게 · 이름표 · 대사 두 줄 · 한 글자씩 · 그림 없을 때 · 밝히기 · ⑤ 메모: 게임 설치본의 움직이는 그림을 꺼내 대사마다 표정 바꾸기 | F3a (+F3f 움직임) | 신규 |
+| W-Tutorial-Card.dc.html | 튜토리얼 · 단계 카드 · 강조 테두리 (부품) — 진행 / 하위 체크 / 기다림 / 완료 체크 · #71c7f4 2.5px · 머리글 칩 · 카드 자리 규칙 | F3a (+F3f 움직임) | 신규 |
 
 ## slice → artboard 역색인
 

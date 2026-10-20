@@ -4048,6 +4048,7 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **FD-182**: `docs/alpha/first-run-tutorial-concept-2026-10-19.md` §1-A를 임시 계정 + 가상 스캔 10단계로 교체했다(CM 14:00). X4 계약은 XB 커밋 `96319b3e`(`contracts/tutorial-practice-v1.*`, Dart 사전 변경 목록 포함) — **Mock F3 착수 가능**. 실제 연결은 XB runtime + 짝 gate 뒤.
 - F2 계약은 XB가 X1-b/X1-c(작은 후속) 뒤 바로 착수한다. 그 전 CF는 F1 2차 시안(튜토리얼 보드)·F5a.
 
+
 ## 2026-10-20 15:05 — 알림(XB→CF): X1-b/X1-c source5 반영·Dart 영향 사전 목록
 
 - CM14:50 후속은 latest-app.json/latest-data.json 파일 분리(각 release-latest-v1 entry 동일)로 확정한다. Data 생성으로 app URL이 사라지지 않는다. 런처/향후 M6 업데이트 UI 소비는 appVersion 다르면 app 우선, 일치하면 같은 appVersion의 dataSnapshotSha256 변경만 제안. 독립 endpoint 둘 다 게시/유지하며 GitHub releases/latest에 둘을 붙이는 경우 매번 unchanged counterpart도 동봉해야 한다.
@@ -4055,19 +4056,23 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **현재 바뀌는 Dart DTO/strict request/Mock 목록: 0**. Runtime/IPC/process/profile/scannerproducer 변화0, offline packager/schema/doc/test/license source5다. 향후 M6 descriptor consumer/Mock에서 stable URL2·v1 entry releaseType 검증·app-first/exact-version-data·manifest optional bool 해독이 필요하다. 기존 frontend/lib/test 편집0, 자동런처구현0.
 - 격리focused22 PASS, 메인반영후전체Python예정. 현재runtime연결이없으므로 이번offline커밋을새CFgate로묶지않는다. F2는바로다음별도RPC/paired gate로진행한다. 근거 debug/xb_x1bc_f2_20261020/artifacts/ 및 contracts/release-package-v1.md.
 
+
 ## 2026-10-20 15:05 — 무거운 Python 시작(XB→CF): X1-b/X1-c
 
 - 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv site-packages 사용, 기존설치본회귀사용자허용유지. Frozen source5와기존입력을검사하며 진행중제품추가수정0. CF heavy gate와겹치지않도록시작통보.
 
+
 ## 2026-10-20 15:30 — 무거운 Python 종료(XB→CF): X1-b/X1-c
 
 - {"result": "PASS_STANDARD_MAIN_WHOLE", "returncode": 0, "tests": 1428, "test_seconds": 1519.826, "wall_seconds": 1522.8429999999935, "drift": [], "protected_count": 4127, "log": {"bytes": 256623, "sha256": "146d43ff6701c894191e2709fcb0fcfcf409f1522b21c806c7f670cb0cc115cd"}}
+
 
 ## 2026-10-20 16:53 — XB 보고: X1-b/X1-c 커밋 완료·F2 진행
 
 - **완료 X1-b/X1-c**: `26b9df8a51b1c24853203435598295275b61d01e` source5+XB소유log/status만선택커밋. 독립 latest-app/latest-data endpoint·app-first·data정확호환·게시시양쪽유지, app-onlyalphaUI플래그/manifest bool, approvedpublicfont SHA/notice자동동봉. Entryv1/기존IPC/Dartproducer변화0.
 - **검증**: main표준Python1428/1519.826s OK·격리22·registry6·Almanac45pages/diff/cached-diff PASS, 보호4127추가변화0·indexempty·push0. 실제alphaZIP/런처/native완료0, 기존인식/CF WIP와CM/CF문서보존. 근거 debug/xb_x1bc_f2_20261020/output.md 및 debug/xb_x1bc_commits_20261020/artifacts/receipt.json.
 - **진행/다음**: F2 recognition-onlya~f를격리구현중. 새RPC/진행DTO·Dart목록/정확반영계획게시후같은소스CFgate뒤runtime커밋. F5alpha2보류. M3D-M3-EXP수신, giftkind새lock전crosswalk재바인딩0;store/live lock/data-extracted/frontend/lib쓰기0. Schale제거선언CM.
+
 
 ## 2026-10-20 17:01 — 알림(XB→CF): F2 source14 메인 반영 계획·Dart DTO 사전 변경 목록
 
@@ -4078,13 +4083,16 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **관계**: preparation/pausedscan/folderchange원자배타(singlebackend), 준비전productionSynth는추출안하고기존detail/labelfallback. scanner.recognition.status의동봉template준비와별개다. metadata steam_matches_snapshot만로컬비교, jp_update_required=null. F5UI는alpha2예약뿐이번추출없음. 실제native검증0.
 - 전체Python종료후정확SHA와함께 **CF gate 요청**을별도게시한다. 그전CFgate/전체Python동시실행은피해달라. Backend 로그동일시각의14경로표참조.
 
+
 ## 2026-10-20 17:01 — 무거운 Python 시작(XB→CF): F2 exact14
 
 - 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv dependencies/기존허용설치본회귀포함. F2source14와기존WIP고정·frontend/lib/lock/store쓰기0·push0. 종료전제품소스변경0이며CFheavy gate동시실행은피한다.
 
+
 ## 2026-10-20 17:04 — 무거운 Python 종료(XB→CF): F2 exact14
 
 - {"result": "FAIL_PRESERVED", "returncode": 4294967295, "tests": null, "seconds": null, "wall_seconds": 153.70300000003772, "drift": [], "protected_count": 4134, "log": {"bytes": 41593, "sha256": "b121c02885afd1fe834b1854d93c071f2dc9c7b9b0c9bddb6689fcb284a2bce1"}}
+
 
 ## 2026-10-20 17:04 — 정정(XB): F2 lock 변경 오판·동일 입력 재검증
 
@@ -4092,13 +4100,16 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - XB소유testworker를153.703s시점에불필요하게중단했다. 최초전체는tests=null/FAIL_PRESERVED로원로그보존하며PASS로세지않는다. 같은입력/표준명령으로v2전체를재실행한다. 새입력재바인딩이아닌동일입력재검증이다. 입력지문대조가아닌오래된메모를판단근거로쓴것을정정한다.
 - M3 D-M3-EXP의52선물exp동결표를debug격리에서준비했다(20값37개/60값15개·exp필드차이0), runtime/canonical/원천쓰기0. 봉인debug/xb_m3_exp_freeze_20261020/output.md의"gift pending"문구는실제comparison.json의21/gift_kind_pinned=true관찰과구별한다. 미수신은**CM알림**이며kind미포함주장이아니다. 이전봉인산출물은수정하지않는다.
 
+
 ## 2026-10-20 17:05 — 무거운 Python 시작(XB→CF): F2 exact14
 
 - 실제main표준 py -3.11 -m unittest discover -s tests -v. 기존project .venv dependencies/기존허용설치본회귀포함. F2source14와기존WIP고정·frontend/lib/lock/store쓰기0·push0. 종료전제품소스변경0이며CFheavy gate동시실행은피한다.
 
+
 ## 2026-10-20 17:20 — 무거운 Python 종료(XB→CF): F2 exact14
 
 - {"result": "PASS", "returncode": 0, "tests": 1443, "seconds": 954.373, "wall_seconds": 956.420999999973, "drift": [], "protected_count": 4134, "log": {"bytes": 259213, "sha256": "d2f61a8bea600398c2307dde54f05c1995c880d59bc84b197526daaf8580bc17"}}
+
 
 ## 2026-10-20 17:22 — CF gate 요청(XB): F2 recognition-only exact14 전체 GREEN
 
@@ -4126,6 +4137,7 @@ completion, crash recovery proof or permission to connect unavailable methods.
 
 - 근거 debug/xb_f2_prepare_20261020/output.md 및artifacts/applied.json·main-whole-v2-result.json·commit-projection.json. 같은소스확인은working SHA기준이며prospective commit blob은기존WIP를제외해별도로명시했다. 공용store/live lock/data-extracted/frontend/lib쓰기0·키/프로세스/연구원본/Viewer/Arena/외부holdout접근0(기존허용설치본표준회귀별도)이다.
 
+
 ## 2026-10-20 17:22 — XB 보고: X1-b/c 커밋·F2 CF gate 요청·M3 격리 preview
 
 - **커밋 완료**: X1-b/X1-c **26b9df8a51b1c24853203435598295275b61d01e**, source5+XB소유문서. latest app/data분리·alpha1UI명시동봉·publicfont notice. Python1428/1519.826s·focused22 PASS, no push. 실제alphaZIP/자동런처/native는후속이다.
@@ -4133,3 +4145,35 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **M3 추가진전**: CM afd2bf94의giftkind/21lock수신·crosswalk1회재바인딩,265명1325fields/학생태그차이0·52exp동결차이0·13780grade/point차이0. Rawgift태그7차이는사유보존·ConstCommon소비0. Canonical/Schale코드메인쓰기0·독립전체제거비교null/선언CM. Darttool영향및다음반영계획을격리산출물에게시했다.
 - **M5 readonly**: 현재21extract lock의고정JP/Steam2버전은already_registered로step1중단. Step2~7/key/register/import/diff/apply/gate실행0·store manifest/live lock지문불변. 설치본새버전probe/실제patch/product runner완료주장0. 근거 debug/xb_m5_lock21_dryrun_20261020/output.md.
 - **보존/인계**: 기존WIP·frontend/lib/store/lock/data-extracted쓰기0·push0. F5alpha2보류·X5/X6/X7착수0. F2 debug/xb_f2_prepare_20261020/output.md; M3 debug/xb_m3_regenerate_20261020/output.md; X1 debug/xb_x1bc_f2_20261020/output.md와debug/xb_x1bc_commits_20261020/output.md. 이번F2CFgate/CF Dart연결·실게임인수는미완료이며완료라고선언하지않는다.
+
+## 2026-10-20 19:40 — 요청(CM→CF): F2-dart 슬라이스를 최우선으로 (XB 동결 해제용)
+- XB가 F2(첫 실행 추출 프로토콜) 백엔드 exact14를 메인에 반영하고 **같은-소스 CF gate를 17:22부터 기다리는 중**이다. 이 왕복이 끝날 때까지 XB는 backend/contracts를 동결하고 있어 M3 메인 반영도 멈춰 있다.
+- 요청: 튜토리얼 시안(F1 2차)은 시안 워커가 계속하고, **코드 워커 1명을 f2-dart에 즉시 배정** — 기준 `contracts/asset-preparation-v1.schema.json`·`asset-preparation-v1.md`·`fixtures/asset_preparation_v1.json`(24 cases), XB가 백엔드 로그 17:01/17:22에 게시한 Dart 사전 목록. 순서: CF fe_gate GREEN → XB exact14 커밋 → CF f2-dart 커밋(fe_commit). 화면 연결(F2 체크리스트 ②)은 시안이 끝난 뒤 별도 slice여도 되고, 이번 slice는 DTO/Process/Mock/controller/tests까지만으로 충분하다.
+- 진행 문구 규칙(XB 해독): 단계 validating/icons/sprites/fonts/complete, 단위 = 번들, total null이면 분모·%·ETA 숨김, "1,330" 고정 분모 금지.
+
+## 2026-10-20 — F1 2차 수신 · 시안 사본 · FD-183 · F3 분할 · 배정
+
+- F1 2차: 캔버스 `1792494343-3aed` page `firstrun` **58장**(FirstRun 3 · Tutorial 단계 21 · Tutorial-Plana 대사 장면 23 · Quit/Done · W-Tutorial-Card · W-Plana-Dialogue · 대본 · Empty 7 · Scan-Report 2 · W-Missing-Art · Settings-Help). 다른 page 80장은 크기 그대로. 흐름은 캔버스 메모 frFlow1~9(첫 실행 → 프라나 01 → 1단계 → … → 프라나 11 → 끝, 그만두기 갈래). 계획 시나리오는 총력전 비나 대비 7명(마키 두 단계 · 아카네는 칸나 다음 · 네루 · 마키 2단계 나중에) + 예시 시나리오와 비교.
+- 사본: `docs/frontend-redesign/prototype/2026-10-20/`(58장 + canvas.json + MANIFEST sha256 + README). artboard 지도에 "첫 실행 · 안내" 절(58행, slice 칸) 추가.
+- 사용자 결정(AskUserQuestion): **프라나는 알파부터 움직이는 그림**(FD-183 (b)). CF 위험 표시: Flutter Spine 재생 패키지 라이선스(Spine Editor 라이선스 조건으로 알려짐) · 지원 버전 — XB 에셋 형식 확인 + CF 라이선스 확인 뒤 의존성 추가를 사용자에게 다시 묻는다. 그 전 구현은 정지 그림 → 대사 띠만 경로.
+- 워크플로 F3 → F3a~F3f로 분할. **배정: Lane A F5a**(`f5a-worker-prompt-20261020.md`, 그림 공용 위젯 · 보이는 변화 0) · **Lane B F3a**(`f3a-worker-prompt-20261020.md`, 튜토리얼 부품 · 대본 데이터 · 상태 기계 — 새 파일만, golden 2). 다음: F3b · F3d(F5a 뒤), F3c(X4 개정 뒤), F3f(라이선스 확인 뒤), F4(X5 뒤).
+- XB 요청(백엔드 로그): X4 데이터를 대본 구성에 맞춤, 프라나 대화용 그림 형식 · 버전 확인 + 추출.
+## 2026-10-20 21:00 — 회신(CF→XB·CM): F2 같은-소스 gate 왕복 착수 · D-ALPHA-SPLIT 반영 · gate 막는 공백 1건
+
+- **XB 17:22 CF gate 요청 · CM 19:40 요청 수신**: XB source14 작업 트리 SHA 14/14 일치 확인(17:22 게시값). Lane B에 **f2-dart** 배정(`debug/frontend_redesign_handoff/f2dart-worker-prompt-20261020.md` — DTO · Process 이벤트 · Mock · 컨트롤러 · 계약 fixture 24 · process E2E, 화면 0, backend/contracts 읽기만). 순서 그대로: f2-dart 끝 + Lane A F5a 끝 → CF `fe_gate.ps1` 1회(source14 포함 같은-소스) → GREEN이면 XB exact14 커밋 요청 → CF f2-dart · F5a 커밋. 그 전 XB 동결 유지 부탁.
+- **CM 14:50 수신**: D-ALPHA-SPLIT 반영 — 대장 FD-181에 알파-1/알파-2 구분, 워크플로 F5 행(F5a 알파-1 · F5b 알파-2). "1,330" 고정 분모 금지 · 단위 = 번들은 f2-dart 프롬프트에 넣음. X4 계약(`96319b3e`)으로 Mock F3 착수 가능 확인.
+- **CM에게 질문(FD-183)**: 사용자가 "프라나는 알파부터 움직이는 그림"을 골랐다. D-ALPHA-SPLIT에서 알파-1은 UI 그림을 번들로 두는데, 프라나 움직이는 그림은 (a) 알파-1에서도 설치본 추출(F2 범위 확장 — XB) (b) 알파-1은 번들(새 게임 그림을 배포본에 넣는 일) 중 어느 쪽인지 정해 달라. 또 Spine 재생 패키지 라이선스 · 버전 확인 뒤 의존성 추가를 사용자에게 다시 묻는다.
+- **gate를 막는 것(CM)**: 오늘 20:37 CF gate(`20261020_203754`)에서 `git-diff-check` FAIL 1건 — `almanac/workflows/tactic-editor-orchestrator-log.md:1604` 끝 공백(CM 2026-10-20 19:40 항목 "R-M3-2" 줄, 미커밋). 같은-소스 gate 전에 그 줄 끝 공백을 지워 달라(CF는 다른 레인 미커밋 글을 고치지 않는다). 나머지 단계는 전부 PASS(golden 68, process 101) — 다만 그때 Lane A F5a가 편집 중이라 코드 쪽 결과는 쓰지 않는다.
+- CF 문서(시안 사본 58장 · artboard 지도 · FD-183 · 이 로그)는 다음 GREEN gate 뒤 커밋한다(작업 트리에 있음).
+## 2026-10-20 22:25 — CF gate GREEN(XB F2 source14 같은-소스) → 요청(CF→XB): exact14 커밋 · F5a 커밋 · f2-dart 발견 3건
+
+- **gate `20261020_221153` GREEN**: analyze 0, 시험 1,124(1~5 묶음) + process 102(새 `asset_preparation_process_e2e` 포함), golden 68 변화 0, almanac 45 OK, `git diff --check` 0. gate 직전 XB source14 작업 트리 SHA **14/14 일치**(17:22 게시값) 재확인. 같은 작업 트리에 Lane A F5a · Lane B f2-dart 포함.
+- **XB에게**: 이 GREEN 기준으로 **exact14 커밋해 달라**(commit projection으로 다른 WIP 제외 — 17:22 계획대로). 커밋 해시를 이 로그에 남기면 CF가 바로 `fe_commit.ps1 -Slice f2dart`. 그 뒤 동결 해제.
+- **F5a 커밋 `fa8a85ea`**(22파일, 게임 그림 공용 `GameImage` · 출처 추상화, 보이는 변화 0 — golden 68 그대로). f2-dart는 XB 커밋 뒤.
+- **f2-dart가 찾은 계약 ↔ 백엔드 차이(XB 후속, 이번 커밋을 막지 않음 — Dart는 셋 다 견딘다)**:
+  1. `asset_prepare_unavailable` 오류에 `details`가 없다(schema `$defs.error`는 `details` 필수). 재현: 준비 서비스 없는 `ApplicationProtocolV1(storage_root=<임시>)`에 `assets.prepare.status` → error에 code · message만.
+  2. 끝난 상태가 terminal 이벤트보다 sequence 하나 먼저 보인다(`_run` finally: job update(끝) → 결과 저장 → gate 해제 → `_emit('terminal')` 순서라 그 사이 snapshot/status는 N, 이벤트는 N+1, 그 사이 snapshot엔 `result_not_saved`가 빠질 수 있음). 계약 문구 "terminal snapshot이면 cursor를 닫는다"와 어긋날 수 있어 순서 정리 또는 문구 정정.
+  3. 지정 폴더 없이 status · `game_dir.set(null)`은 실제 Steam 탐색 + catalog 전체 SHA-256을 돈다(설계대로) — process E2E에서 실제 설치본을 건드리지 않게 탐색을 끄는 시험 훅(env 등)이 있으면 좋다.
+  - 참고: `game_dir.set`은 경로를 `resolve()`해 응답 — F3b는 응답 path를 보인다.
+- **F5a 발견(CF 메모)**: 스캐너 소유 `scan_student_review_workspace.dart`에 번들 직접 읽기 3곳(알파-2 F5b 전 조율), `pubspec.yaml`이 git 미추적 `item_icons/activity_reports/`(4장)를 자산으로 등록 — **새로 받은 저장소에서 빌드 실패 가능**(CM/사용자 판단: 그 4장 + `ooparts/Item_Icon_WorkBook_Potential*` 3장을 추적할지, pubspec에서 뺄지).
+- **CM 공백**: 사용자 승인으로 CF가 tactic 로그 1604행(CM 19:40 항목) 끝 공백 1개만 지웠다(내용 변화 0, CF는 그 줄을 커밋하지 않음).
