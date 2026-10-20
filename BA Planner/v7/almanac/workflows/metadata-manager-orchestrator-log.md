@@ -46,3 +46,36 @@ topics: [workflow, data]
 - 수신 근거 `debug/xb_intake_m0_s4c6_20261010/output.md`: 원 manifest 21/21, 주요 canonical 5/5 크기/SHA 일치. 부모도 새 인계 artifacts 4개 크기/SHA를 확인했다. 필드141(수동89/대체44/추출8/보류0), 자산1831(UI1045/recognition786, 주소1093/manual738) 및 schema/negative 통과는 기존 검증 결과로 구분한다.
 - metadata-manager-status의 M0 행과 수신 기록을 갱신했다. source-map 본문·canonical 데이터·workflow 결정은 바꾸지 않았다. M4의 물리 자산/등록 snapshot은 미검증이며 SchaleDB 제거 완료를 선언하지 않는다.
 - FB 인계 왕복과 CM 계약 승인이 먼저다. M1/M3/M5/M6 백엔드는 XB, M2/탭 UI와 A2 도구 등록은 CF라는 헌장을 적용한다. M3에는 FB-11b student_bond_data 출처 전환을 유지한다. M1 착수 때 승인된 M0 파일을 그대로 입력으로 사용한다.
+
+## 2026-10-20 13:24 — XB X1 M6·X4 계약 source11 검증 시작 준비
+
+- X1 새snapshot/latest/ZIP 도구7과 X4 FD182 forward계약4를 격리집중18 PASS 뒤 신규경로로만 반영했다. 기존runtime/IPC/인식/CF source변화0, commit/push0. actualmain표준Python전체를 거쳐 별도커밋한다.
+- 이번 X4는 계약고정/Mock착수용이며 runtime/replay/비정상종료정리 구현완료가 아니다. Dart사전목록은CF로그에게시했다. M6 실제alphaZIP/자동런처/FD181이미지제거·M4 first-run명세/전체P0-P6/native도 미완료다.
+- M3 승인규칙·student-stats20extract lock수신, 공용store/lock/data-extracted쓰기0. M5readonly→M3는두필수목표뒤다. X5/X6/X7 미착수. 근거debug/xb_m6_x4_20261020/artifacts/applied.json.
+
+## 2026-10-20 13:30 — XB M5 현재 pin dry-run·M3 승인 crosswalk readonly 진전
+
+- **M5**: 현재 lock의 JP/Steam 2 pins·20 extracts 대상으로 reader.versions를 읽어 모두 already_registered로 확인하고 step1에서 중단했다. Step2(key)~7은 실행0. Store client manifests/lock 전후SHA불변·store/lock쓰기0. 설치본현재버전은새로조회하지않았고 “pin 대상 rehearsal”로한정한다. Product updater/checklist UI runner·실제patch 검증은미구현/미검증이다. 근거 artifacts/m5-dry-run.json.
+- **M3**: R-M3-1 `1666aa56` 연구보고와 CM10-19 22:30 승인 규칙을 수신했다. 현재lock+canonical SHA에 바인딩한 **crosswalk v1**을 새로작성하고 JP에확인된school/attack/defense/role+weapon5개를 검증했다. 후보265/verified265·투영1325·selected field difference0. 이 값은 **부분 필드 preview**이며 독립Schale제거차이0이 아니다. Canonical/generated/provider쓰기0이다.
+- 최초대조는 rarity의source정수와canonical문자열차이 때문에265개를보류로기록해 보존했다. 새 reviewed대조는 그 필드를변환하지않고 미투영/수동보존한다. 기존형식을정수로자동변경하지않았으며CM필수4항목검증을무효화하지않는다. Crosswalk/preview 최종파일은 m3-crosswalk-v1-reviewed.json·m3-readonly-preview-reviewed.json·m3-readonly-result-reviewed.json.
+- **student-stats**: 새kind의catalog/formula DTO검증과실제 `--from-store student-stats --dry-run` exit0. 두문서가현재backend/data판과exactbytes동일하다. 실제sync/lock교체0.
+- **M3 남은 차단**: gift-affinity가현재lock에미포함(사용자import/CMlock갱신필요); R-M3-1은공식gift exp/tag배율미확정이고CM-R R-M3-2대기; gift 태그7차이·rarity표현형식·전체재생성parity판정필요. 기존CLI의고정blocked reason중“crosswalk미승인”은이번승인으로해소됐으나효과적인blockers는별도receipt에기록했다. 독립제거비교는계속BLOCKED/diff=null, SchaleDB제거선언CM.
+- **X1 실제 metadata preview**: 새M6코드로현재2pins/20kinds·runtime data14파일스냅샷을debug안에만생성하고새schema검증했다. SHA256 2b596ec8fd206f26f4336f2b960816ae63cd1ce3ceced18a1625e27b5cd95ea7. 실제release/ZIP/native게임수용·GitHub업로드0, 앱전체배포는FD181정리/배포런처등후속뒤다.
+- X1/X4 main표준Python전체는진행중이며끝나기전PASS/커밋을선언하지않는다. Main source11추가수정0·frontend/lib/store/lock/data-extracted쓰기0·X5/X6/X7착수0. 근거debug/xb_m6_x4_20261020/artifacts/.
+
+## 2026-10-20 13:34 — 회신(XB): CM13:40 수신·F2 다음 순서·M3 차단 정정
+
+- X1·X4 현재완료목표유지, 그뒤F2(a~f)프로토콜우선을수신했다. F5(UI449)는사용자확인전착수하지않는다. 현재X1/X4제품source11은전체Python진행중이라추가변경0이다. F2읽기전용다음slice메모만 artifacts/first-run-next-slice.md에준비했다.
+- CM이학생태그/선물태그+현로컬규칙의친화도등급재생성을승인한것을수신했다. 앞13:30 보고의“gift태그7차이및공식tag배율미확정”을등급재생성전체의독립차단으로계속사용하지않는다. ConstCommon은canonical소비금지, exp_value는기존결정대로제거비교분모에서제외하며동결표보존제안의사용자확인회신을기다린다.
+- 현재실행차단은gift-affinity의실제사용자import/live lock반영미수신과전체재생성/독립비교미실시다. 승인된crosswalk는현재20extract lock에재바인딩완료,265명5필드1325개선택diff0이다. Gift kind가등록되면다시새lock에바인딩해야한다. Canonical/Schale삭제0, 제거완료선언CM이다.
+- F2추가발견:현재extract.progress의icons done/total은아이콘수가아니라**bundle수**다. “1,330개”를고정분모로쓰지않고실제manifest완료수와단위로계약을정할예정이다. 현재data/Steam캐시patch와JPdataVersion필드의신선도를혼동하지않는다. runtime/API확정이아닌사전조사다.
+- 로그/문서기존WIP와CM13:40항목도보존하고XB소유log/status부분만선택커밋한다. stage/commit/push0, 실제새런처/firstalphaZIP/X4runtime/X5~X7완료주장0.
+
+## 2026-10-20 14:33 — XB X1 M6·X4 계약 검증 완료·선택 커밋 준비
+
+- **X1 source8**: M6 snapshot/latest/ZIP manifest schema3, offline app/data 포장기, fixture/test/설명문서 준비 완료. latest는 요구6키에schemaVersion/releaseType/dataSnapshotSha256을더해교체범위/같은게임pin의재생성을구분한다. Source/Dart현재IPC변화0. current metadata preview 2pins/20kinds·data14파일과schema검증, 합성data ZIP1695B를debug에보존했다. 실제alphaZIP/자동업데이트런처/첫추출명세/native수용/업로드는후속이다.
+- **X4 source5**: FD182 임시연습계정create/current/reset/end/recover의forward schema/fixture/doc/test, is_practice선택불리언읽기·가상target tutorial:1280x720·기존scanner event/review/commit재사용계약을확정했다. 커밋전CF로그에RepositoryProfile/서비스/Process/Mock/controller/test변경목록게시완료. **runtimeImplemented=false**, 이번계약으로CF Mock착수가능·실제연결은후속runtime/paired gate뒤다.
+- **검증**: 실제main표준 `py -3.11 -m unittest discover -s tests -v` **1422/1399.406s OK**, 실패/오류/skip0·보호입력4126변화0. 경로보강후집중26/1.935s PASS, Almanac/diff/cached-diff PASS·index empty. 첫도구패키지준비import실패와700.219s/684.203s중단전체(registry FAIL1 포함)와v3 1355/errors5(global openpyxl 누락)는원본FAIL/미완료로보존했다. 새source12전체를표준명령으로다시검증했고timeout/skip/exclusion/golden완화0이다.
+- **선택진행**: M5 현재2pin/20extract readonly rehearsal에서already_registered step1중단확인, store/lock/설치본probe쓰기0. M3 CM승인5필드265명/1325개선택diff0·student-stats두파일exactbytes·DTO/dryrunPASS. Rarity형식은변환하지않았다. CM13:40등급재생성승인수신, ConstCommon소비금지·exp분모제외. Gift kind import/새lock미수신·독립전체비교미실시로제거diff=null/BLOCKED; Schale제거선언CM.
+- **보존/다음**: 기존인식/C6/config/CF WIP·공용store/live lock/data-extracted/frontend/lib수정0. X5/X6/X7미착수. X1→X4 exact소스와XB자기log/status만선택커밋·push0, 그뒤CF/CM에해시회신한다. CM이정한다음slice는F2(a~f), F5는사용자확인전보류다. 기존extract icons progress는bundle수라는메모를CF에전달했다.
+- 근거: debug/xb_m6_x4_20261020/output.md, source12/SHA·whole-v4.log/receipt·metadata/crosswalk·문서검사·합성zip은같은artifacts/. 커밋receipt는별도debug/xb_m6_x4_commits_20261020/에남긴다. 전체M6/M3/FB/P0-P6/native완료선언0.

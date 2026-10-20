@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/release-latest-v1.schema.json",
+  "title": "M6 launcher latest descriptor v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "releaseType": {
+      "enum": [
+        "app",
+        "data"
+      ]
+    },
+    "appVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "dataVersionId": {
+      "type": "string",
+      "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+    },
+    "dataSnapshotSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "zipUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://[^\\s/@]+(?:/[^\\s]*)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192
+    },
+    "minLauncher": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "releaseType",
+    "appVersion",
+    "dataVersionId",
+    "dataSnapshotSha256",
+    "zipUrl",
+    "sha256",
+    "notes",
+    "minLauncher"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/release-package-v1.schema.json",
+  "title": "M6 ZIP manifest v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "releaseType": {
+      "enum": [
+        "app",
+        "data"
+      ]
+    },
+    "appVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "dataVersionId": {
+      "type": "string",
+      "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+    },
+    "dataSnapshotSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))(?!.*[\\\\:\\x00-\\x1f])[^/]+(?:/[^/]+)*$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "releaseType",
+    "appVersion",
+    "dataVersionId",
+    "dataSnapshotSha256",
+    "files"
+  ],
+  "additionalProperties": false
+}

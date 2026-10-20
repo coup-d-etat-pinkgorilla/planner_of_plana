@@ -1,0 +1,221 @@
+{
+  "format": "ba-planner-release-latest-v1",
+  "cases": [
+    {
+      "id": "data-descriptor",
+      "valid": true,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "bad-sha256",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "BAD",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "bad-releaseType",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "partial",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "bad-schemaVersion",
+      "valid": false,
+      "message": {
+        "schemaVersion": 2,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "bad-minLauncher",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": 1
+      }
+    },
+    {
+      "id": "bad-zipUrl",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "http://example.invalid/unsafe.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-schemaVersion",
+      "valid": false,
+      "message": {
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-releaseType",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-appVersion",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-dataVersionId",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-dataSnapshotSha256",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-zipUrl",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-sha256",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "notes": "Synthetic schema fixture; not a published release.",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-notes",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "minLauncher": "1.0.0"
+      }
+    },
+    {
+      "id": "missing-minLauncher",
+      "valid": false,
+      "message": {
+        "schemaVersion": 1,
+        "releaseType": "data",
+        "appVersion": "7.0.0-alpha.1",
+        "dataVersionId": "jp-1.73.0-e2baf70e",
+        "dataSnapshotSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "zipUrl": "https://example.invalid/releases/data.zip",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "notes": "Synthetic schema fixture; not a published release."
+      }
+    }
+  ]
+}

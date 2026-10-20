@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ba-planner.local/contracts/data-snapshot-v1.schema.json",
+  "title": "M6 shipped data snapshot v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "dataVersionId": {
+      "type": "string",
+      "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+    },
+    "lockSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "pins": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "jp": {
+          "type": "object",
+          "properties": {
+            "versionId": {
+              "type": "string",
+              "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+            },
+            "clientVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bundleRevision": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "files": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "versionId",
+            "clientVersion",
+            "bundleRevision",
+            "files"
+          ],
+          "additionalProperties": false
+        },
+        "steam": {
+          "type": "object",
+          "properties": {
+            "versionId": {
+              "type": "string",
+              "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+            },
+            "clientVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bundleRevision": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "files": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "versionId",
+            "clientVersion",
+            "bundleRevision",
+            "files"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "extracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "server": {
+            "enum": [
+              "jp",
+              "steam"
+            ]
+          },
+          "versionId": {
+            "type": "string",
+            "pattern": "^(jp|steam)-[a-z0-9][a-z0-9._-]*$"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provenanceSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "filesSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "server",
+          "versionId",
+          "kind",
+          "provenanceSha256",
+          "filesSha256"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "provenanceScope": {
+      "const": "lock-records-only; shipped-files-hashed-separately; manual-fields-retained"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!/)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))(?!.*[\\\\:\\x00-\\x1f])[^/]+(?:/[^/]+)*$"
+              },
+              {
+                "type": "string",
+                "pattern": "^backend/data/"
+              }
+            ]
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "dataVersionId",
+    "lockSha256",
+    "pins",
+    "extracts",
+    "provenanceScope",
+    "files"
+  ],
+  "additionalProperties": false
+}

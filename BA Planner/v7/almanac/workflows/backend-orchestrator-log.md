@@ -3223,3 +3223,119 @@ CM 23:00 X4("시드 도구를 제품 기능으로 · `is_practice` · 저장 스
 
 - 저장 스캔 "재생"이 실제 이벤트 경로를 타는 것이 핵심이다(프론트는 튜토리얼이라고 다른 화면을 쓰지 않는다 — 실제 스캔 탭 · 진행 창 · 검토 보드 그대로).
 - X5(스캔 신고) · F2/F5(추출)와 독립. 우선순위는 CM 판단.
+
+## 2026-10-20 13:15 — 세션 시작(XB): CM X1 M6·X4 계약 확정 우선
+
+- CM 10-19 23:00(X1~X6/우선순위), 23:35(20 extracts/student-stats kind), 10-20 00:15(로그·status 자기 커밋 포함/docs/alpha 경로)을 읽었다. AGENTS/README/헌장/metadata workflow·status/관련 세 로그/P0 상태를 재확인했다. 브랜치 scanner-consolidation, HEAD 8787717f9fe3f928e4543d8daa884264a00a8937, index empty.
+- 이번 완료 목표는 **X1 snapshot·latest.json·app/data ZIP 생성 스크립트 커밋**과 **X4 FD182 임시 계정/가상 스캔 계약·Dart DTO 목록 게시**다. 이후 M5 dry-run→M3 순서이며 이번 사용자 문장의 X2/X3는 이 두 트랙을 뜻한다. CM 표의 자동런처/사용자경로 구현을 선택 과제로 혼동하지 않는다. X5/X6/X7 착수0.
+- CF F2/F5 새 요청(첫 실행 추출 API/화면 이미지 캐시)와 X4 개정 FD182도 읽었다. F2/F5는 별도 후속 slice로 범위·입력/짝 gate를 회신하며 현재 명시한 두 완료 목표를 우선한다. FE9-c333bc952 커밋에 따른 과거 scanner 동결 해제를 수신했다. 새 DTO가 필요한 변경은 CF 로그에 미리 게시한다.
+- M6는 현재 C# 개발 런처(frontend/windows/release_launcher/Program.cs)를 소비자로 삼을 형식만 이번에 고정하며 자동 다운로드/교체 런처 구현은 후속 XB 소유다. 이번 runtime IPC/Dart producer는 바꾸지 않아 UI 계약 연결 완료와 구별한다. 메인 source 반영 전에 exact 후보 경로·계획을 게시한다.
+- 기존 인식/C6/config/CF WIP를 지문으로 보존하고 frontend/lib·공용store/live lock/data/extracted 쓰기0·push0. 근거 debug/xb_m6_x4_20261020/input.md 및 artifacts/preflight.json. 무거운 Python 시작/종료를 별도 통보한다.
+
+## 2026-10-20 13:24 — 메인 반영 계획(XB): X1 M6 source7 + X4 forward-contract source4
+
+- 격리 새 모듈 집중18 PASS(0.895s), 최초 tools package 초기화 누락은 테스트 실행 전 import 실패로 원 로그 보존 후 실제 unchanged init을 사본에 맞췄다. 제품/테스트 기대값/timeout 완화0.
+- 아래 **신규 exact11**만 반영한다. 기존 core/scanner/repository/recognition/CF source 변경0, package init은 격리 입력일 뿐 메인 대상이 아니다. 표준 main Python 전체→Almanac/diff→X1 source7와 X4 source4 별도 커밋, 자기 log/status 포함, push0 순서다.
+- X1은 offline generator와 새 release schema이며 기존 IPC/Dart/runtime producer 영향0. X4는 forward contract만으로 아직 runtimeImplemented=false다. CF는 커밋된 계약으로 Mock 화면을 만들 수 있고, 실제 새 RPC/replay 연결은 후속 구현·same-source paired gate 뒤다. 현재 사용 중 Dart 요청/응답·scanner event 바이트 변화0이므로 이번 새 계약/오프라인 도구 커밋은 CF의 기존 앱 gate를 새 backend runtime 연결 gate로 대체하지 않는다.
+
+| Main new path | Bytes | SHA256 |
+|---|---:|---|
+| backend/tools/package_release.py | 15631 | `0764b28db73be32a22e681be4ccee94a00fa3a5eb872a8c4c9479dae7306f8bf` |
+| backend/tests/test_release_package_m6.py | 10409 | `7569e66dfc6886fbed596c360eb71565119419a41cd659a3feba33a0047f5579` |
+| contracts/data-snapshot-v1.schema.json | 4421 | `8bdca9b1474cc5b8072ee9d376cfe2885ce51fd15b8d0f46c1f3ff8a9df84ffd` |
+| contracts/release-latest-v1.schema.json | 1366 | `23a5318d556ddfcaddf7cbe120828e5791c1acfd80b5f4a9da491499e5668d94` |
+| contracts/release-package-v1.schema.json | 1517 | `76d9bd933e501a3441f0f9ca207de6563e4e8b47ee27ffa6568d1aaf37566f6f` |
+| contracts/fixtures/release_latest_v1.json | 8544 | `244f369793d3b585b3dfb7775f1ade8c2a7376eff249e406a9bac38e4f26f8eb` |
+| contracts/release-package-v1.md | 5243 | `a83b8910739b9f956e7c57542a7c53a3bbba19e6b4abb5b733beaedc483c7612` |
+| contracts/tutorial-practice-v1.schema.json | 23890 | `4594990ccecd00259a923dea8a91f72bfad573b0b27d8ad857bd4ad5131ef4bc` |
+| contracts/fixtures/tutorial_practice_v1.json | 7443 | `7c4cfd4e3480368da52afa0fa6b2b7483b8723e4252d7218466e00a9a64ac287` |
+| contracts/tutorial-practice-v1.md | 8366 | `c9fe88ff88701b0b9970e9d9a24d132818eef6446b878bffca80068a1af930b8` |
+| backend/tests/test_tutorial_practice_contract.py | 2346 | `088aa8b4b44ed0b26497dafbd547d1cecb300eeb02141d65c187f84e19d56b17` |
+
+## 2026-10-20 13:24 — X1 M6·X4 계약 source11 메인 반영 완료(XB)
+
+- 위 신규11 SHA11/11 일치. 기존 source/WIP 수정0, stage/commit/push0. X4 Dart목록을 커밋전에CF로그에 게시했다. 다음 실제main표준Python전체 실행·시작/종료통보다. 실제first alpha ZIP·자동런처·X4 runtime/replay완료를 선언하지 않는다.
+
+## 2026-10-20 13:25 — 무거운 Python 시작(XB→CF): X1 M6·X4 계약 실제 main 전체
+
+- 실제 backend에서 `py -3.11 -m unittest discover -s tests -v` 표준 명령을 실행한다. CF heavy gate는 종료 통보 뒤다. 기존 설치본 자산 회귀만 기존 명시 허용 범위로 실행하며 키/프로세스/연구 원본/Viewer/Arena/외부holdout 접근을 확장하지 않는다. Timeout/skip/exclusion/golden 변경0, main source11과 기존 WIP/lock 보존·commit/push0. 새 X4 runtime 완료 주장은 없다.
+
+## 2026-10-20 13:30 — XB M5 현재 pin dry-run·M3 승인 crosswalk readonly 진전
+
+- **M5**: 현재 lock의 JP/Steam 2 pins·20 extracts 대상으로 reader.versions를 읽어 모두 already_registered로 확인하고 step1에서 중단했다. Step2(key)~7은 실행0. Store client manifests/lock 전후SHA불변·store/lock쓰기0. 설치본현재버전은새로조회하지않았고 “pin 대상 rehearsal”로한정한다. Product updater/checklist UI runner·실제patch 검증은미구현/미검증이다. 근거 artifacts/m5-dry-run.json.
+- **M3**: R-M3-1 `1666aa56` 연구보고와 CM10-19 22:30 승인 규칙을 수신했다. 현재lock+canonical SHA에 바인딩한 **crosswalk v1**을 새로작성하고 JP에확인된school/attack/defense/role+weapon5개를 검증했다. 후보265/verified265·투영1325·selected field difference0. 이 값은 **부분 필드 preview**이며 독립Schale제거차이0이 아니다. Canonical/generated/provider쓰기0이다.
+- 최초대조는 rarity의source정수와canonical문자열차이 때문에265개를보류로기록해 보존했다. 새 reviewed대조는 그 필드를변환하지않고 미투영/수동보존한다. 기존형식을정수로자동변경하지않았으며CM필수4항목검증을무효화하지않는다. Crosswalk/preview 최종파일은 m3-crosswalk-v1-reviewed.json·m3-readonly-preview-reviewed.json·m3-readonly-result-reviewed.json.
+- **student-stats**: 새kind의catalog/formula DTO검증과실제 `--from-store student-stats --dry-run` exit0. 두문서가현재backend/data판과exactbytes동일하다. 실제sync/lock교체0.
+- **M3 남은 차단**: gift-affinity가현재lock에미포함(사용자import/CMlock갱신필요); R-M3-1은공식gift exp/tag배율미확정이고CM-R R-M3-2대기; gift 태그7차이·rarity표현형식·전체재생성parity판정필요. 기존CLI의고정blocked reason중“crosswalk미승인”은이번승인으로해소됐으나효과적인blockers는별도receipt에기록했다. 독립제거비교는계속BLOCKED/diff=null, SchaleDB제거선언CM.
+- **X1 실제 metadata preview**: 새M6코드로현재2pins/20kinds·runtime data14파일스냅샷을debug안에만생성하고새schema검증했다. SHA256 2b596ec8fd206f26f4336f2b960816ae63cd1ce3ceced18a1625e27b5cd95ea7. 실제release/ZIP/native게임수용·GitHub업로드0, 앱전체배포는FD181정리/배포런처등후속뒤다.
+- X1/X4 main표준Python전체는진행중이며끝나기전PASS/커밋을선언하지않는다. Main source11추가수정0·frontend/lib/store/lock/data-extracted쓰기0·X5/X6/X7착수0. 근거debug/xb_m6_x4_20261020/artifacts/.
+
+## 2026-10-20 13:34 — 회신(XB): CM13:40 수신·F2 다음 순서·M3 차단 정정
+
+- X1·X4 현재완료목표유지, 그뒤F2(a~f)프로토콜우선을수신했다. F5(UI449)는사용자확인전착수하지않는다. 현재X1/X4제품source11은전체Python진행중이라추가변경0이다. F2읽기전용다음slice메모만 artifacts/first-run-next-slice.md에준비했다.
+- CM이학생태그/선물태그+현로컬규칙의친화도등급재생성을승인한것을수신했다. 앞13:30 보고의“gift태그7차이및공식tag배율미확정”을등급재생성전체의독립차단으로계속사용하지않는다. ConstCommon은canonical소비금지, exp_value는기존결정대로제거비교분모에서제외하며동결표보존제안의사용자확인회신을기다린다.
+- 현재실행차단은gift-affinity의실제사용자import/live lock반영미수신과전체재생성/독립비교미실시다. 승인된crosswalk는현재20extract lock에재바인딩완료,265명5필드1325개선택diff0이다. Gift kind가등록되면다시새lock에바인딩해야한다. Canonical/Schale삭제0, 제거완료선언CM이다.
+- F2추가발견:현재extract.progress의icons done/total은아이콘수가아니라**bundle수**다. “1,330개”를고정분모로쓰지않고실제manifest완료수와단위로계약을정할예정이다. 현재data/Steam캐시patch와JPdataVersion필드의신선도를혼동하지않는다. runtime/API확정이아닌사전조사다.
+- 로그/문서기존WIP와CM13:40항목도보존하고XB소유log/status부분만선택커밋한다. stage/commit/push0, 실제새런처/firstalphaZIP/X4runtime/X5~X7완료주장0.
+
+## 2026-10-20 13:37 — 무거운 Python 종료(XB→CF): FAIL_PRESERVED
+
+- actual main None/700.219s, exit4294967295, failures0/errors0/skips0, protected source drift0. 원로그/receipt는 debug/xb_m6_x4_20261020/artifacts/whole.log·whole-result.json. CF heavy 대기 종료, 최종 문서·지문 확인 뒤 선택 커밋 판단. 결과의 범위는 Python 회귀이며 새 runtime/실기 수용 완료가 아니다.
+
+## 2026-10-20 13:38 — 경로 계약 보강·전체 재검증 계획(XB)
+
+- 최초main전체는신규계약경로점검중발견한data-prefix바로뒤../누락을고치려고 **700.219s에서명시중단**했다. tests=null/exit4294967295/FAIL_PRESERVED, 그시점실패/오류/skip0·기존입력변화0이며최종PASS가아니다. 원로그/receipt불변보존, 해당unittest트리만중단했고wrapper가종료통보를남겼다.
+- snapshot/manifest의공통경로제약을정리하고16개악성경로조합을회귀에추가했다. 포장기portable path검사와같이첫구간/중첩../·./·drive·control·backslash를거부한다. 문서에안내한명시debug산출경로도출력금지목록에서구별하고실제생성검증을추가한다. Store/사용자데이터출력금지는유지한다.
+- 아래X1후보변경경로만기존메인원SHA를확인하고반영한다: backend/tools/package_release.py, backend/tests/test_release_package_m6.py, contracts/data-snapshot-v1.schema.json, contracts/release-package-v1.schema.json. X4source4 및대상밖기존WIP불변. 집중20→**같은표준명령전체재실행**→선택커밋, skip/timeout/검사완화0·push0이다.
+
+## 2026-10-20 13:38 — 무거운 Python 시작(XB→CF): X1 M6·X4 계약 실제 main 전체
+
+- 실제 backend에서 `py -3.11 -m unittest discover -s tests -v` 표준 명령을 실행한다. CF heavy gate는 종료 통보 뒤다. 기존 설치본 자산 회귀만 기존 명시 허용 범위로 실행하며 키/프로세스/연구 원본/Viewer/Arena/외부holdout 접근을 확장하지 않는다. Timeout/skip/exclusion/golden 변경0, main source11과 기존 WIP/lock 보존·commit/push0. 새 X4 runtime 완료 주장은 없다.
+
+## 2026-10-20 13:49 — 무거운 Python 종료(XB→CF): FAIL_PRESERVED
+
+- actual main None/684.203s, exit4294967295, failures0/errors0/skips0, protected source drift0. 원로그/receipt는 debug/xb_m6_x4_20261020/artifacts/whole-v2.log·whole-v2-result.json. CF heavy 대기 종료, 최종 문서·지문 확인 뒤 선택 커밋 판단. 결과의 범위는 Python 회귀이며 새 runtime/실기 수용 완료가 아니다.
+
+## 2026-10-20 13:50 — schema registry 통합 회귀 보강 계획·반영(XB)
+
+- v2전체는기존PlanningProtocolContractTests의root-schema inventory exactset에새4개가미등록돼test_schema_documents_use_draft_2020_12의 **FAIL marker1**을잡았고684.203s에명시중단했다. wrapper는종료footer의FAIL목록만모으기때문에errors/failures0으로종료통보했으나실제관측실패1이있다. 원whole-v2.log/receipt는불변보존하고이항목으로정정한다. 최종PASS/커밋은없다.
+- 기존 test_planning_protocol_contract.py의expectedset에새schema4개이름만추가한다. 기존expectation제거/약화0·새producer/registryruntime변경0이다. 원파일은preflightSHA와일치했다. 집중새20+기존planning contract전체를선행확인한뒤표준whole v3를다시실행한다.
+- source목록은**X1 M6 exact8 / X4 exact5, unique12**로갱신한다. 공유된registry test는첫M6 commit에schema3명만, 다음X4 commit에4번째명을추가하는indexprojection으로각커밋의독립정합성을지킨다. Working판은4명추가최종본으로유지하고다른WIP를보존한다. 기존indexpreview11은superseded이며새applied-v3.json이최종이다.
+- skip/timeout/golden/표준명령완화0·push0, F2/F5/X4runtime미착수범위는이전과같다.
+
+## 2026-10-20 13:50 — 무거운 Python 시작(XB→CF): X1 M6·X4 계약 실제 main 전체
+
+- 실제 backend에서 `py -3.11 -m unittest discover -s tests -v` 표준 명령을 실행한다. CF heavy gate는 종료 통보 뒤다. 기존 설치본 자산 회귀만 기존 명시 허용 범위로 실행하며 키/프로세스/연구 원본/Viewer/Arena/외부holdout 접근을 확장하지 않는다. Timeout/skip/exclusion/golden 변경0, main source11과 기존 WIP/lock 보존·commit/push0. 새 X4 runtime 완료 주장은 없다.
+
+## XB 보고 — 2026-10-20 13:53: X1/X4 최종 전체 검증 진행·lock 반영 시점 조율
+
+- X1 M6 source8·X4 계약 source5(unique12), 집중26 PASS 뒤 표준 Python whole v3 진행 중이다. 앞 두 시도의 중단/registry 누락 FAIL은 원 로그에 보존했고 제품 파일을 최종 지문으로 동결했다. 커밋/완료 선언은 아직 없다.
+- 현재 ba-data.lock 2pins/20extract 지문을 검증 입력으로 사용한다. gift-affinity 저장소 import와 live lock 교체는 CM 승인+사용자 실행 범위이며 XB는 쓰지 않는다. 새 live lock 반영 시점을 XB heavy 종료 통보 뒤로 맞춰 달라. 현재 CM13:40의 등급 재생성 승인·ConstCommon 금지·exp 제외·F2 다음/F5 보류를 수신했다.
+- 실제 source12의 기존 IPC/Dart producer 변화0, X4 runtime 미구현이다. 최종 검증 뒤 X1·X4 선택 커밋과 XB 자기 log/status 마감, 두 해시 보고를 이어간다. X5/X6/X7 미착수·push0.
+
+## 2026-10-20 14:05 — 무거운 Python 종료(XB→CF): FAIL_PRESERVED
+
+- actual main 1355/916.438s, exit1, failures0/errors5/skips0, protected source drift0. 원로그/receipt는 debug/xb_m6_x4_20261020/artifacts/whole-v3.log·whole-v3-result.json. CF heavy 대기 종료, 최종 문서·지문 확인 뒤 선택 커밋 판단. 결과의 범위는 Python 회귀이며 새 runtime/실기 수용 완료가 아니다.
+
+## 2026-10-20 14:07 — v3 환경 오류 진단·기존 project runtime으로 재검증(XB)
+
+- v3 표준전체는 **1355/916.438s·exit1·errors5**였다. 전부global `py -3.11`에openpyxl이없는ModuleNotFoundError다. 네Excel모듈loader미실행과fb6b case1 오류를원로그에보존했다. 제품source12·기존입력변화0, skip0이며전체GREEN이아니다.
+- pyproject의고정openpyxl3.1.5/defusedxml0.7.1은기존backend/.venv에이미있음을확인했다. Pillow12.3/UnityPy1.25.3도같은projectsite출처다. 설치·네트워크·OS설정/ACL·소스변경0. **직전성공main1402 실행(run.py:110,138)과같은** PYTHONPATH=backend+backend/.venv/Lib/site-packages를사용한다. 인터프리터/표준명령/timeout/검사목록은바꾸지않는다.
+- 이환경으로실패했던5모듈집중 **89/5.533s·exit0**. 성공뒤같은source12로표준whole v4를실행한다. 새라이브러리우회나에러case제외가아니라기존선언runtime 의존성의정상사용이다. 실제modulepath/version은project-dependencies.json, 원집중로그/receipt도보존한다. commit/push0.
+
+## 2026-10-20 14:07 — 무거운 Python 시작(XB→CF): X1 M6·X4 계약 실제 main 전체
+
+- 실제 backend에서 `py -3.11 -m unittest discover -s tests -v` 표준 명령을 실행한다. CF heavy gate는 종료 통보 뒤다. 기존 설치본 자산 회귀만 기존 명시 허용 범위로 실행하며 키/프로세스/연구 원본/Viewer/Arena/외부holdout 접근을 확장하지 않는다. Timeout/skip/exclusion/golden 변경0, main source11과 기존 WIP/lock 보존·commit/push0. 새 X4 runtime 완료 주장은 없다.
+
+## 2026-10-20 14:31 — 무거운 Python 종료(XB→CF): PASS_STANDARD_MAIN_WHOLE
+
+- actual main 1422/1399.406s, exit0, failures0/errors0/skips0, protected source drift0. 원로그/receipt는 debug/xb_m6_x4_20261020/artifacts/whole-v4.log·whole-v4-result.json. CF heavy 대기 종료, 최종 문서·지문 확인 뒤 선택 커밋 판단. 결과의 범위는 Python 회귀이며 새 runtime/실기 수용 완료가 아니다.
+
+## 2026-10-20 14:33 — XB X1 M6·X4 계약 검증 완료·선택 커밋 준비
+
+- **X1 source8**: M6 snapshot/latest/ZIP manifest schema3, offline app/data 포장기, fixture/test/설명문서 준비 완료. latest는 요구6키에schemaVersion/releaseType/dataSnapshotSha256을더해교체범위/같은게임pin의재생성을구분한다. Source/Dart현재IPC변화0. current metadata preview 2pins/20kinds·data14파일과schema검증, 합성data ZIP1695B를debug에보존했다. 실제alphaZIP/자동업데이트런처/첫추출명세/native수용/업로드는후속이다.
+- **X4 source5**: FD182 임시연습계정create/current/reset/end/recover의forward schema/fixture/doc/test, is_practice선택불리언읽기·가상target tutorial:1280x720·기존scanner event/review/commit재사용계약을확정했다. 커밋전CF로그에RepositoryProfile/서비스/Process/Mock/controller/test변경목록게시완료. **runtimeImplemented=false**, 이번계약으로CF Mock착수가능·실제연결은후속runtime/paired gate뒤다.
+- **검증**: 실제main표준 `py -3.11 -m unittest discover -s tests -v` **1422/1399.406s OK**, 실패/오류/skip0·보호입력4126변화0. 경로보강후집중26/1.935s PASS, Almanac/diff/cached-diff PASS·index empty. 첫도구패키지준비import실패와700.219s/684.203s중단전체(registry FAIL1 포함)와v3 1355/errors5(global openpyxl 누락)는원본FAIL/미완료로보존했다. 새source12전체를표준명령으로다시검증했고timeout/skip/exclusion/golden완화0이다.
+- **선택진행**: M5 현재2pin/20extract readonly rehearsal에서already_registered step1중단확인, store/lock/설치본probe쓰기0. M3 CM승인5필드265명/1325개선택diff0·student-stats두파일exactbytes·DTO/dryrunPASS. Rarity형식은변환하지않았다. CM13:40등급재생성승인수신, ConstCommon소비금지·exp분모제외. Gift kind import/새lock미수신·독립전체비교미실시로제거diff=null/BLOCKED; Schale제거선언CM.
+- **보존/다음**: 기존인식/C6/config/CF WIP·공용store/live lock/data-extracted/frontend/lib수정0. X5/X6/X7미착수. X1→X4 exact소스와XB자기log/status만선택커밋·push0, 그뒤CF/CM에해시회신한다. CM이정한다음slice는F2(a~f), F5는사용자확인전보류다. 기존extract icons progress는bundle수라는메모를CF에전달했다.
+- 근거: debug/xb_m6_x4_20261020/output.md, source12/SHA·whole-v4.log/receipt·metadata/crosswalk·문서검사·합성zip은같은artifacts/. 커밋receipt는별도debug/xb_m6_x4_commits_20261020/에남긴다. 전체M6/M3/FB/P0-P6/native완료선언0.
