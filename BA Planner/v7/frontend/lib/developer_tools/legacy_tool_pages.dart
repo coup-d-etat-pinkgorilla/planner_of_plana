@@ -11,6 +11,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
 import '../app/theme.dart';
+import '../ui/kit/game_image.dart';
 import 'tool_backend_client.dart';
 
 mixin ToolPageState<T extends StatefulWidget> on State<T> {
@@ -1003,7 +1004,7 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
       borderRadius: BorderRadius.circular(12),
     ),
     clipBehavior: Clip.antiAlias,
-    child: Image.asset(
+    child: GameImage(
       'assets/student_portraits/$templateName',
       fit: BoxFit.cover,
       alignment: Alignment.topCenter,
@@ -1096,7 +1097,7 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
                                           color: color,
                                           size: 30,
                                         )
-                                      : Image.asset(
+                                      : GameImage(
                                           gift['icon_asset'] as String,
                                           fit: BoxFit.contain,
                                         ),
@@ -1227,10 +1228,7 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
                     size: 46,
                     color: AppColors.textMuted,
                   )
-                : Image.asset(
-                    gift['icon_asset'] as String,
-                    fit: BoxFit.contain,
-                  ),
+                : GameImage(gift['icon_asset'] as String, fit: BoxFit.contain),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1910,7 +1908,7 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
           SizedBox(
             width: 22,
             height: 22,
-            child: Image.asset(
+            child: GameImage(
               asset,
               fit: BoxFit.contain,
               errorBuilder: (_, _, _) => Icon(icon, size: 16),
@@ -2405,20 +2403,22 @@ class _MetadataEditorPageState extends State<MetadataEditorPage>
               decoration: BoxDecoration(
                 color: AppColors.surfaceRaised,
                 borderRadius: BorderRadius.circular(10),
-                image: const DecorationImage(
-                  image: AssetImage('assets/item_backgrounds/square.png'),
-                  fit: BoxFit.cover,
-                ),
+                image: switch (GameArtScope.of(
+                  context,
+                ).resolve('assets/item_backgrounds/square.png')) {
+                  final ImageProvider background => DecorationImage(
+                    image: background,
+                    fit: BoxFit.cover,
+                  ),
+                  null => null,
+                },
               ),
               child: row['icon_asset'] == null
                   ? const Icon(
                       Icons.inventory_2_outlined,
                       color: AppColors.textMuted,
                     )
-                  : Image.asset(
-                      row['icon_asset'] as String,
-                      fit: BoxFit.contain,
-                    ),
+                  : GameImage(row['icon_asset'] as String, fit: BoxFit.contain),
             ),
             const SizedBox(width: 11),
             Expanded(

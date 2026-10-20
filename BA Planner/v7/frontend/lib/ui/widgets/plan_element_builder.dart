@@ -8,6 +8,7 @@ import '../../services/app_service.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/game_image.dart';
 import '../kit/stepper.dart';
 import '../models/planning_growth_rules.dart';
 import '../models/planning_models.dart';
@@ -3016,13 +3017,13 @@ class _PresetEquipmentSlot extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
+                GameImage(
                   defaultStudentPortraitBackgroundAsset,
                   fit: BoxFit.contain,
                   filterQuality: FilterQuality.medium,
                 ),
                 if (_assetPath != null)
-                  Image.asset(
+                  GameImage(
                     _assetPath!,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.medium,
@@ -3694,7 +3695,7 @@ class _UnassignedPlanElementRowState extends State<_UnassignedPlanElementRow> {
                             alignment: Alignment.center,
                             children: [
                               Positioned.fill(
-                                child: Image.asset(
+                                child: GameImage(
                                   GameAssets.itemBackgroundBasic,
                                   fit: BoxFit.contain,
                                 ),
@@ -3703,7 +3704,7 @@ class _UnassignedPlanElementRowState extends State<_UnassignedPlanElementRow> {
                                 dimension: 36,
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
-                                  child: Image.asset(
+                                  child: GameImage(
                                     'assets/student_portraits/${widget.item.studentId}.png',
                                     fit: BoxFit.cover,
                                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../services/app_service.dart';
+import '../kit/game_image.dart';
 import 'asset_image_grid.dart';
 import 'bond_rank_portrait.dart';
 import 'student_form_cycle.dart';
@@ -73,12 +74,11 @@ class StudentGridImageWarmup {
   }
 
   Future<void> _precacheAsset(BuildContext context, String asset) async {
+    // 그리드와 같은 출처에서 읽는다(F5a). 출처에 없는 그림은 완료로 치지 않는다.
+    final image = GameArtScope.read(context).resolve(asset);
+    if (image == null) return;
     var succeeded = true;
-    await precacheImage(
-      AssetImage(asset),
-      context,
-      onError: (_, _) => succeeded = false,
-    );
+    await precacheImage(image, context, onError: (_, _) => succeeded = false);
     if (succeeded) _completedAssets.add(asset);
   }
 }

@@ -12,6 +12,7 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../app_section.dart';
 import '../app_shell.dart';
+import '../kit/game_image.dart';
 import '../kit/skew_bar.dart';
 import '../studio/section_studio_document.dart';
 import '../studio/section_template.dart';
@@ -563,7 +564,7 @@ class _BrandSection extends StatelessWidget {
               child: FractionallySizedBox(
                 widthFactor: 0.43,
                 alignment: Alignment.center,
-                child: Image.asset(
+                child: GameImage(
                   'assets/studio_features/plan_a_title.png',
                   fit: BoxFit.contain,
                 ),
@@ -750,7 +751,7 @@ class _AccountSection extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Image.asset(
+                  GameImage(
                     'assets/studio_features/square.png',
                     fit: BoxFit.contain,
                   ),
@@ -761,7 +762,7 @@ class _AccountSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       child: portraitStudentId == null
                           ? const _PortraitFallback()
-                          : Image.asset(
+                          : GameImage(
                               'assets/student_portraits/$portraitStudentId.png',
                               fit: BoxFit.contain,
                               errorBuilder: (_, _, _) =>
@@ -1055,7 +1056,7 @@ class _StudioTitleCanvas extends StatelessWidget {
                   _positionedMarker('title-brand-section', brandRect),
                   _positionedContent(
                     titleRect,
-                    Image.asset(
+                    GameImage(
                       titleFeature.imageAsset!,
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.high,

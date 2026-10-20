@@ -579,8 +579,8 @@ class _OopartTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image(
-            image: const ItemIconAssetImage(GameAssets.itemBackgroundBasic),
+          GameImage(
+            GameAssets.itemBackgroundBasic,
             fit: BoxFit.fill,
             errorBuilder: (context, error, stackTrace) =>
                 const ItemIconPlaceholder(),
@@ -590,8 +590,8 @@ class _OopartTile extends StatelessWidget {
           else
             Positioned.fromRect(
               rect: ItemIconTile.iconRectFor(size),
-              child: Image(
-                image: ItemIconAssetImage(asset),
+              child: GameImage(
+                asset,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => fallback,
               ),

@@ -9,6 +9,7 @@ import '../kit/ba_chip.dart';
 import '../kit/ba_modal.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/game_image.dart';
 import '../kit/hatch.dart';
 import '../kit/kit_pressable.dart';
 import '../kit/skew_box.dart';
@@ -3118,7 +3119,7 @@ class StudentLevelStatus extends StatelessWidget {
                             Colors.white,
                             BlendMode.srcIn,
                           ),
-                          child: Image.asset(
+                          child: GameImage(
                             schoolLogoAsset!,
                             key: const ValueKey('student-detail-school-logo'),
                             fit: BoxFit.contain,
@@ -3681,7 +3682,7 @@ class _StudentEquipmentSlot extends StatelessWidget {
           fit: StackFit.expand,
           alignment: Alignment.center,
           children: [
-            Image.asset(
+            GameImage(
               defaultStudentPortraitBackgroundAsset,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.medium,
@@ -3690,7 +3691,7 @@ class _StudentEquipmentSlot extends StatelessWidget {
               FractionallySizedBox(
                 widthFactor: 0.96,
                 heightFactor: 0.96,
-                child: Image.asset(
+                child: GameImage(
                   assetPath!,
                   fit: BoxFit.contain,
                   filterQuality: FilterQuality.medium,

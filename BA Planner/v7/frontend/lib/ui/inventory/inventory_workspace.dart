@@ -39,6 +39,7 @@ import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/diagonal_scroll_viewport.dart';
 import '../kit/game_assets.dart';
+import '../kit/game_image.dart';
 import '../kit/info_popover.dart';
 import '../kit/item_icon_tile.dart';
 import '../kit/kit_overlay.dart' show KitOverlayAlign, KitOverlayPlacement;

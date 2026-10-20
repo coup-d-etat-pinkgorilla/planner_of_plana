@@ -4,8 +4,8 @@
 // 상자 폭 기준이라 위쪽도 폭의 4%다). 크기 변형은 42×34 / 47×38 / 52×42 / 74×60이고, 플라이아웃처럼
 // 다른 크기도 받는다.
 // 그림 파일이 없으면(배포본은 첫 실행 때 사용자 설치본에서 추출) 배경 자리에 빈 상자를 그리고 예외를 내지 않는다.
-// 아이콘 그림만 없으면 배경만 그린다. 그림을 읽는 도중 타일이 트리에서 빠져도(목록 다시 그리기·정렬) 오류를 조용히
-// 받는다([ItemIconAssetImage]).
+// 아이콘 그림만 없으면 배경만 그린다. 그림은 공용 출처([GameImage], F5a)에서 읽고, 읽는 도중 타일이 트리에서
+// 빠져도(목록 다시 그리기·정렬) 오류를 조용히 받는다([GameArtAssetImage]).
 // 아이템 타일(W-Data "아이템 타일 + 충족 막대"): 74×74 칸에 `.pt` 74×60, 오른쪽 아래 수량(`.dsp` 13 흰색 +
 // 그림자), 밑 막대 64.9×4(왼쪽 1.5, 위 64, r1, 기울임, 충족 상태 색 · 계획 무관이면 없음),
 // 선택 = 2px 핑크 링 + 14px 글로우(r6).
@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import 'game_assets.dart';
+import 'game_image.dart';
 import 'kit_overlay.dart';
 import 'skew_bar.dart';
 import 'titles.dart';
@@ -75,8 +76,8 @@ class ItemIconTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image(
-              image: ItemIconAssetImage(backgroundAsset ?? background.asset),
+            GameImage(
+              backgroundAsset ?? background.asset,
               fit: BoxFit.fill,
               errorBuilder: (_, _, _) => const ItemIconPlaceholder(),
             ),
@@ -94,8 +95,8 @@ class ItemIconTile extends StatelessWidget {
             if (iconAsset != null)
               Positioned.fromRect(
                 rect: iconRect,
-                child: Image(
-                  image: ItemIconAssetImage(iconAsset),
+                child: GameImage(
+                  iconAsset,
                   fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
@@ -104,40 +105,6 @@ class ItemIconTile extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// 그림 파일이 없을 때 오류를 조용히 받는 [AssetImage].
-///
-/// [Image.errorBuilder]는 위젯이 스트림을 듣는 동안에만 오류를 받는다. 읽기가 끝나기 전에 위젯이 트리에서
-/// 빠지면(목록 다시 그리기·정렬) 듣는 곳이 없는 스트림이 버려지고, 늦게 온 "파일 없음" 오류가 `FlutterError`로
-/// 올라간다(위젯 테스트에서는 실패). 첫 결과(그림 또는 오류)가 올 때까지만 리스너 하나를 붙여 두어 그 경우에도
-/// 조용히 끝낸다. 읽기·캐시 key·그리기는 [AssetImage]와 같다.
-class ItemIconAssetImage extends AssetImage {
-  const ItemIconAssetImage(super.assetName);
-
-  @override
-  void resolveStreamForKey(
-    ImageConfiguration configuration,
-    ImageStream stream,
-    AssetBundleImageKey key,
-    ImageErrorListener handleError,
-  ) {
-    super.resolveStreamForKey(configuration, stream, key, handleError);
-    final completer = stream.completer;
-    // 캐시에서 읽는 중인 그림에만 붙인다. 이미 다 읽힌(또는 이미 실패한) completer에 붙이면 리스너가 그 자리에서
-    // 불려 바로 떨어지고, 그때 듣는 곳이 없으면 completer가 버려진다.
-    final status = PaintingBinding.instance.imageCache.statusForKey(key);
-    if (completer == null || !status.pending) return;
-    late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (image, _) {
-        image.dispose();
-        completer.removeListener(listener);
-      },
-      onError: (_, _) => completer.removeListener(listener),
-    );
-    completer.addListener(listener);
   }
 }
 

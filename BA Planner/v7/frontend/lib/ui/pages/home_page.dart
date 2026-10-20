@@ -11,6 +11,7 @@ import '../home/connect_target_panel.dart';
 import '../home/home_menu_swap.dart';
 import '../home/home_scan_popup.dart';
 import '../kit/ba_modal.dart' show BaScrim;
+import '../kit/game_image.dart';
 import '../kit/kit_overlay.dart' show KitOverlayEscape;
 import '../scan/connected_target_controller.dart';
 import '../scan/scan_pick_logic.dart' show ScanStartBlock, scanStartNote;
@@ -851,7 +852,7 @@ class _CardImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (loadState) {
-      ImageLoadState.loaded => Image.asset(
+      ImageLoadState.loaded => GameImage(
         'assets/home_menu/$fileName',
         fit: BoxFit.cover,
         filterQuality: FilterQuality.medium,

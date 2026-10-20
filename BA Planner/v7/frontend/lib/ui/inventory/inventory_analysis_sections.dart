@@ -1221,7 +1221,7 @@ class _SchoolEmblem extends StatelessWidget {
           ? fallback
           : Opacity(
               opacity: 0.92,
-              child: Image.asset(
+              child: GameImage(
                 asset,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.medium,
@@ -1692,8 +1692,8 @@ class _OopartPointIcon extends StatelessWidget {
       child: OverflowBox(
         maxWidth: radius * 2 + 4,
         maxHeight: radius * 2 + 4,
-        child: Image(
-          image: ItemIconAssetImage(asset),
+        child: GameImage(
+          asset,
           width: radius * 2 + 4,
           height: radius * 2 + 4,
           fit: BoxFit.contain,

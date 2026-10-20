@@ -11,6 +11,7 @@ import '../geometry/diagonal_geometry.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_scrollbar.dart';
 import '../kit/game_assets.dart';
+import '../kit/game_image.dart';
 import '../kit/skew_bar.dart';
 import '../models/plan_flow_draft.dart';
 import '../models/plan_flow_save.dart'
@@ -2780,7 +2781,7 @@ class _ComparisonSummaryPane extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Image.asset(planCreditIconAsset, width: 32, height: 32),
+                  GameImage(planCreditIconAsset, width: 32, height: 32),
                   const SizedBox(width: 8),
                   Expanded(
                     child: FittedBox(
@@ -3265,7 +3266,7 @@ class _ComparisonResourceTitle extends StatelessWidget {
     return Row(
       children: [
         if (asset != null)
-          Image.asset(
+          GameImage(
             asset,
             width: 72,
             height: 72,

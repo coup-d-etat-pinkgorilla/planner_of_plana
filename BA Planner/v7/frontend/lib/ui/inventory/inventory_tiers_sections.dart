@@ -600,8 +600,8 @@ class _PlainItemIcon extends StatelessWidget {
           ? fallback
           : Padding(
               padding: EdgeInsets.all(size.width * 0.04),
-              child: Image(
-                image: ItemIconAssetImage(asset),
+              child: GameImage(
+                asset,
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => fallback,
               ),

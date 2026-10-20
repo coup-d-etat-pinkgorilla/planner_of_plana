@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../geometry/diagonal_geometry.dart';
+import '../kit/game_image.dart';
 import 'bond_rank_portrait.dart';
 import 'section_template_surface.dart';
 import 'student_portrait_status_overlay.dart';
@@ -855,7 +856,7 @@ class _EquipmentIcon extends StatelessWidget {
       fit: StackFit.expand,
       alignment: Alignment.center,
       children: [
-        Image.asset(
+        GameImage(
           defaultStudentPortraitBackgroundAsset,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.medium,
@@ -863,7 +864,7 @@ class _EquipmentIcon extends StatelessWidget {
         FractionallySizedBox(
           widthFactor: 0.98,
           heightFactor: 0.98,
-          child: Image.asset(
+          child: GameImage(
             assetPath,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.medium,

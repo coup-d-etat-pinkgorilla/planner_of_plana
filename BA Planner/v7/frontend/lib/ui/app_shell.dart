@@ -11,6 +11,7 @@ import '../services/scanner_service.dart';
 import 'app_section.dart';
 import 'kit/ba_chip.dart';
 import 'kit/ba_modal.dart';
+import 'kit/game_image.dart';
 import 'kit/kit_pressable.dart';
 import 'models/recent_students.dart';
 import 'models/student_filter_controller.dart';
@@ -1209,7 +1210,7 @@ class _AppHeader extends StatelessWidget {
                           BoxShadow(color: AppColors.text, spreadRadius: 2),
                         ],
                       ),
-                      child: Image.asset(
+                      child: GameImage(
                         'assets/student_portraits/${profile!.avatarStudentId}.png',
                         fit: BoxFit.cover,
                         alignment: const Alignment(0, -0.56),

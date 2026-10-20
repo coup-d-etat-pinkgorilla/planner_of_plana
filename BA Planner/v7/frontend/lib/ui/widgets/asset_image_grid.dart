@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../kit/game_image.dart';
+
 typedef AssetImageClipPathBuilder = Path Function(Rect rect);
 
 const assetImageCompositingLayerPadding = 2.0;
@@ -148,10 +150,29 @@ class _AssetImageGridState extends State<AssetImageGrid> {
   /// 프레임에 넣는다. 다음 프레임까지 기다리면 그 한 프레임 동안 그림이 비어 깜박인다(FE3-e 폼 교대).
   bool _swapping = false;
 
+  /// 그림 출처(F5a). 바뀌면 모든 칸을 새 출처에서 다시 읽는다.
+  GameArtSource? _source;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final source = GameArtScope.of(context);
+    if (!identical(source, _source)) {
+      if (_source != null) _dropImages();
+      _source = source;
+    }
     _resolveImages();
+  }
+
+  void _dropImages() {
+    for (final entry in _streams.entries) {
+      entry.value.removeListener(_listeners[entry.key]!);
+    }
+    _streams.clear();
+    _listeners.clear();
+    _pendingImages.clear();
+    _pendingImageRemovals.clear();
+    _images = const {};
   }
 
   @override
@@ -188,9 +209,10 @@ class _AssetImageGridState extends State<AssetImageGrid> {
     }
     for (final asset in assets) {
       if (_streams.containsKey(asset)) continue;
-      final stream = AssetImage(
-        asset,
-      ).resolve(createLocalImageConfiguration(context));
+      // 출처에 없는 그림은 그 칸을 비운다(읽기 실패와 같다).
+      final image = _source!.resolve(asset);
+      if (image == null) continue;
+      final stream = image.resolve(createLocalImageConfiguration(context));
       late final ImageStreamListener listener;
       listener = ImageStreamListener(
         (info, _) {

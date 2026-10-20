@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../kit/game_image.dart';
 
 class AdaptiveSyncPage extends StatefulWidget {
   const AdaptiveSyncPage({super.key});
@@ -125,10 +126,7 @@ class _ProbeCardState extends State<_ProbeCard> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              'assets/home_menu/${widget.fileName}',
-              fit: BoxFit.cover,
-            ),
+            GameImage('assets/home_menu/${widget.fileName}', fit: BoxFit.cover),
             if (_hovered) const ColoredBox(color: Color(0x24ffffff)),
           ],
         ),

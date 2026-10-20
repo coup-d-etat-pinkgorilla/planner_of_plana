@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../kit/game_image.dart';
+
 const defaultStudentPortraitBackgroundAsset =
     'assets/studio_features/square.png';
 const blueStudentPortraitBackgroundAsset =
@@ -41,7 +43,7 @@ class BondRankPortrait extends StatelessWidget {
       fit: StackFit.expand,
       alignment: Alignment.center,
       children: [
-        Image.asset(
+        GameImage(
           bondRankPortraitBackgroundAsset(bondRank),
           fit: BoxFit.contain,
           filterQuality: FilterQuality.medium,
@@ -49,7 +51,7 @@ class BondRankPortrait extends StatelessWidget {
         FractionallySizedBox(
           widthFactor: 0.98,
           heightFactor: 0.98,
-          child: Image.asset(
+          child: GameImage(
             portraitAsset,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.medium,

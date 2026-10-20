@@ -11078,3 +11078,168 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261019_211135\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F5a 착수 기록 (2026-10-20 01:21, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 게임 그림을 한 곳(공용 위젯 · 출처 추상화)에서 읽게 하는 정리 — 보이는 변화 0 · golden 변화 0(FD-181 확정 (a), 워크플로 "알파 차단 항목 F1~F5" F5a).
+- 시작 SHA: `d42d74b2cda35fdc19fa030cf3bd816e90f077e8`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 F5a 착수 기록 없음 확인.
+- 막힘 확인: 대장 "slice별 막힘 요약"에 F5 행 없음, 현재 `열림` FD 0건 → 막히지 않는다.
+- 고칠 파일(기존 18, 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**, 사본 `debug/frontend_f5a/pre/<경로>`):
+  `frontend/lib/app/app.dart`(앱 루트 주입), `frontend/lib/ui/kit/game_assets.dart`(머리 주석만), `frontend/lib/ui/kit/item_icon_tile.dart`,
+  `frontend/lib/ui/widgets/asset_image_grid.dart`, `frontend/lib/ui/widgets/student_grid_warmup.dart`, `frontend/lib/ui/app_shell.dart`(그림 1줄),
+  `frontend/lib/ui/inventory/inventory_analysis_sections.dart`, `frontend/lib/ui/inventory/inventory_opa_sections.dart`, `frontend/lib/ui/inventory/inventory_tiers_sections.dart`,
+  `frontend/lib/ui/pages/adaptive_sync_page.dart`, `frontend/lib/ui/pages/home_page.dart`, `frontend/lib/ui/pages/title_page.dart`,
+  `frontend/lib/ui/widgets/bond_rank_portrait.dart`, `frontend/lib/ui/widgets/diagonal_media_list_item.dart`, `frontend/lib/ui/widgets/plan_element_builder.dart`,
+  `frontend/lib/ui/widgets/plan_section_layout.dart`, `frontend/lib/ui/widgets/student_section_layout.dart`, `frontend/lib/developer_tools/legacy_tool_pages.dart`.
+- 새 파일: `frontend/lib/ui/kit/game_image.dart`, `frontend/test/game_image_f5a_test.dart`.
+- 고치지 않음: `pubspec.yaml`, `frontend/assets/**`, golden harness · 기준 이미지, `lib/services/**`, 스캐너 소유 `scan_student_review_workspace.dart`(그림 줄 목록만), 택틱 소유 파일.
+
+## F5a 종료 기록 (2026-10-20, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회 남음. 시작 SHA `d42d74b2`(착수 기록 참조), 커밋 없음(git 쓰기 안 함).
+- 결과: 화면의 게임 그림을 새 공용 위젯 · 출처 하나(`frontend/lib/ui/kit/game_image.dart`)로 모았다. 기본 출처는 지금 번들 자산과 같은 `AssetImage` 키라 **보이는 변화 0 · golden 변화 0**(아래 근거). 출처가 "없음"이면 같은 크기의 빈 그림 자리를 그리고, 6개 주요 화면이 예외 · 넘침 없이 이름 · 수치를 보인다(새 시험 10건).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집 뒤, 포맷 반영 뒤 2회) | `No issues found!`(info 0) — 1회째 74.2초(편집 직후), 2회째 3.1초(새 시험 · 포맷 반영 뒤) |
+| `flutter test test/game_image_f5a_test.dart` | 10/10 통과(`All tests passed!`, 약 5초) |
+| `flutter test --exclude-tags golden <파일 40개씩>` × 5 묶음 — golden(`test/goldens/**`) · 프로세스 E2E(`fe_gate.ps1`과 같은 패턴 `ProcessAppService\|Process.start\|…`) 제외 unit/widget 파일 177개 전부(`debug/frontend_f5a/unit_tests.txt`, 로그 `debug/frontend_f5a/logs/`) | 5묶음 모두 exit 0 · `All tests passed!` — 390 + 408 + 603 + 519 + 166 = **2,086건 통과, 실패 0**(새 시험 포함) |
+| `dart format`(이 slice가 고친 4파일 · 새 시험만 파일 단위) | 아래 "포맷" |
+
+- 관련 시험 고르기: 고친 모듈을 **직접** import하는 시험은 36개(`debug/frontend_f5a/related_tests.txt`)지만, `AssetImageGrid` · `ItemIconTile` · `BAPlannerApp`을 거쳐 거의 모든 화면이 닿으므로 golden · 프로세스 E2E를 뺀 unit/widget 177개를 모두 돌렸다(gate 3단계와 같은 범위, golden 비교 · E2E · 전체 gate는 실행하지 않음).
+- 포맷: 고친 파일마다 사본과 현재 파일을 각각 `dart format`한 차이 줄 수를 비교했다. 차이가 이 slice 줄에만 생긴 4파일(`student_grid_warmup.dart` · `adaptive_sync_page.dart` · `legacy_tool_pages.dart` · 새 `game_image.dart`)만 포매터 결과를 반영했고, 나머지(예: `student_section_layout.dart` 기존 832줄 차이)는 SDK 포매터 차이라 손대지 않았다(FE4-g5 발견 3과 같음). 새 시험 파일은 포맷 반영.
+- 줄바꿈: 고친 파일은 모두 LF(작업트리 기준)였고 그대로 유지했다. 새 두 파일도 LF. 이 status 문서도 LF(착수 기록을 처음 CRLF로 붙였다가 바로 LF로 고쳤다 — 이 문서 다른 줄은 바뀌지 않음).
+
+### 주입 방식 · 위젯 · 빈 그림 임시 모양(권장안으로 진행)
+
+- **출처 추상화**: `abstract class GameArtSource { ImageProvider? resolve(String key); }`. 키 = 지금의 `assets/...` 상대 경로(`GameAssets` 함수 값 그대로). 기본 `BundledGameArtSource` → `GameArtAssetImage(key)`(기존 `ItemIconAssetImage`를 옮기고 이름만 바꿈 — `AssetImage` 하위 클래스, 읽기 중 위젯이 빠져도 오류를 조용히 받음, 캐시 키 `AssetBundleImageKey`는 `AssetImage`와 같음).
+- **주입**: `GameArtScope`(InheritedWidget, 이 저장소 관례 `StudentFormClockScope` · `KitOverlayBounds`와 같은 꼴). `of(context)`(빌드, 의존성 등록) / `read(context)`(미리 읽기, 의존성 없음), 조상이 없으면 `GameArtScope.fallback`(번들). 앱 루트: `BAPlannerApp`에 `gameArtSource` 인자(기본 = 번들)를 두고 `MaterialApp`을 `GameArtScope`로 감쌌다(`lib/app/app.dart` +15/−7 — 라우트 · 오버레이 · 대화상자 모두 같은 출처를 보게 하려고 `MaterialApp` 바깥). F5b는 여기(또는 `main.dart`)에 사용자 캐시 출처를 넘기면 된다.
+  - 대안: (b) 전역 싱글턴(`StudentGridImageWarmup.shared`처럼) — 런타임 교체는 쉽지만 위젯 시험에서 화면별로 바꾸기 어렵고 다시 그리기 신호가 없다. (c) `AppService` 메서드 — `lib/services/**` 금지 범위이고 그림 출처를 백엔드 연결과 묶는다. → (a) InheritedWidget 권장.
+- **위젯**: `GameImage(key, {width, height, fit, alignment = center, filterQuality = medium, errorBuilder})` — `Image.asset`과 같은 인자 · 같은 기본값으로 `Image(image: 출처 그림, …)`을 만든다. 출처가 `null`이면 `errorBuilder(context, GameArtMissing(key), null)`을, `errorBuilder`가 없으면 빈 그림 자리를 그린다. 읽기 실패도 같은 `errorBuilder`. 기존 사용처의 `errorBuilder`(인벤토리 이름 글자 fallback, 타이틀 `_PortraitFallback`, 홈 `_ImageFailure` 등)는 그대로 넘겨 "없음"일 때도 그 화면의 기존 대체 모양이 나온다.
+- **빈 그림 자리 임시 모양**: `GameImagePlaceholder` = 같은 `width`/`height`의 투명 `SizedBox`(크기 유지, 그 위 이름 · 수치 레이아웃 그대로). 대안: (b) `ItemIconPlaceholder`처럼 옅은 `AppColors.indicatorSurface` 면(r4) — 배경 + 초상을 겹쳐 그리는 자리(학생 카드 · 장비 칸)에서 면이 두 겹으로 진해진다, (c) 아이콘(사람 · 상자) — 크기가 작은 칸(22~36px)에서 수치와 겹친다. 최종 모양은 F1 시안 `W-Missing-Art`를 F5b/F3에서 따른다.
+- **`AssetImageGrid`**: 칸마다 `AssetImage(asset)` 대신 출처의 그림을 읽는다. 출처가 `null`이면 그 칸을 비운다(지금의 읽기 실패와 같은 모양). 출처가 바뀌면(`GameArtScope` 갱신) 모든 칸을 새 출처에서 다시 읽는다(F5b에서 첫 실행 추출이 끝난 뒤 출처를 바꿔 끼울 때 필요).
+- **warmup**: `StudentGridImageWarmup._precacheAsset`이 `GameArtScope.read(context)`의 그림을 `precacheImage`한다. 출처가 `null`인 키는 완료로 치지 않는다. `studentGridWarmupAssetPaths`(golden harness가 씀)는 그대로.
+- **분류 함수**: `gameArtKindOf(key)` → `gameArt` / `sourceCheck` / `other`(아래 표의 폴더 목록 `gameArtDirectories` · `gameArtSourceCheckDirectories`). 지금은 시험만 쓰고, F5b 사용자 캐시 출처가 "게임 그림만 캐시, 나머지는 번들"을 가를 때 쓴다.
+
+### 3. `frontend/assets/` 분류 표
+
+| 폴더 | 파일 · 크기 | 분류(FD-181) | 이 폴더를 읽는 코드(lib, 문자열 · `GameAssets` 함수) | 그리는 곳(F5a 뒤) |
+|---|---|---|---|---|
+| `student_portraits/` | 267 · 21M | **게임 그림** | 문자열 25줄 · 16파일(`app_shell`, `home_scan_popup`, `game_assets`, `shortage_flyout`(주석), `title_page`, `scan_student_review_board`, `scan_tab_sections`, `account_section_cluster`, `plan_element_builder`, `plan_section_layout`, `plan_student_step_tile`, `scan_student_review_workspace`★, `student_form_cycle`(`studentPortraitDirectory` 5곳), `student_grid_warmup`, `student_section_layout`, `legacy_tool_pages`) + `GameAssets.studentPortrait` 2 · `portraitBackground` 1 | `GameImage` · `AssetImageGrid` · warmup |
+| `student_elephs/` | 265 · 21M | **게임 그림** | `GameAssets.studentEleph` 1(`planning_resource_assets`) | `ItemIconTile` 등 → `GameImage` |
+| `item_icons/`(9 하위: equipment 200 · ooparts 127 · presents 75 · skill_book 54 · skill_db 44 · school_logo 16 · activity_reports 4 · currency 1 · tactical_bd 1) | 522 · 28M | **게임 그림** | 문자열 6줄 · 3파일(`game_assets`, `ui_kit_data_section`(갤러리 `__missing__` 견본), `scan_student_review_workspace`★) + `GameAssets.itemIcon` 5 · `creditIcon` 5 · `equipmentIcon` 7 · `schoolLogo` 2 · `itemIconDirectory` 2 | `GameImage` |
+| `equipment_icons/` | 3 · 152K | **게임 그림** | 문자열 6줄 · 2파일(`game_assets`, `scan_student_review_workspace`★) + `GameAssets.equipment*T10` 3(`plan_student_step_tile`) | `DiagonalMediaListItem` → `GameImage` |
+| `item_backgrounds/`(square · purple · yellow) | 3 · 140K | **출처 확인 필요**(정사각 배경) | 문자열 5줄 · 3파일(`game_assets`, `ui_kit_data_section`, `legacy_tool_pages`) + `GameAssets.itemBackground*` 4 · `portraitBackground` 1 | `GameImage` · `AssetImageGrid` |
+| `student_bond_backgrounds/`(blue · yellow · purple) | 3 · 148K | **출처 확인 필요**(정사각 배경) | 문자열 6줄 · 2파일(`bond_rank_portrait`, `student_grid_warmup`) | `GameImage` · `AssetImageGrid` · warmup |
+| `home_menu/`(7) | 7 · 996K | **출처 확인 필요** | 문자열 2줄 · 2파일(`home_page`, `adaptive_sync_page`) + 파일 이름은 홈 메뉴 모델 | `GameImage` |
+| `studio_features/`(`square.png` 252×204, `plan_a_title.png` 834×250) | 2 · 72K | **출처 확인 필요**(`square.png`는 `item_backgrounds/square.png`와 다른 파일) | 문자열 12줄 · 7파일(`home_scan_popup`, `title_page`, `scan_student_review_board`, `scan_tab_sections`, `section_template`(상수 2), `account_section_cluster`, `bond_rank_portrait`) + `section_template_studio_page`가 `rootBundle.load`로 바이트를 직접 읽음(디자인 도구, 아래 발견 3) | `GameImage` · `AssetImageGrid` (studio 도구만 직접) |
+| `fonts/` `GyeonggiTitle-Medium.ttf` | 1 | **출처 확인 필요**(글꼴, `pubspec.yaml` `fonts:`) — 라이선스 파일 없음 | 코드 문자열 0(테마 `fontFamily`) | 그림 아님 — `GameImage` 대상 아님 |
+| `fonts/` Pretendard 4 + OFL | 5 · 8.9M(글꼴 전체) | 게임 그림 아님(OFL, 동봉 유지) | — | — |
+| `studio_sections/`(json 2) | 2 · 32K | 게임 그림 아님 | `account_studio_layout`, `title_studio_layout` | 그대로 |
+| `student_catalog.json` | 1 · 124K | 게임 그림 아님(목록 자료) | `mock_app_service`, `design_review/statistics_growth_data`(services) | 그대로 |
+
+★ `scan_student_review_workspace.dart`(스캐너 소유) — **고치지 않음, 목록만**: `Image.asset` 3곳(333 · 618 · 1080행, 학생 초상), 경로 문자열 987~993행(장비 아이콘 `assets/item_icons/equipment/…`, `assets/equipment_icons/{hat,hairpin,watch}_t10.png`) · 1004행(`mediaAssetPath` 초상 → `DiagonalMediaListItem`은 F5a에서 이미 출처를 거침). 333 · 618 · 1080행만 아직 번들을 직접 읽는다 → CF가 스캐너 쪽과 조율(`GameImage`로 바꾸는 3줄 + import 1줄).
+
+### 2. 바꾼 사용처 표(파일 → 이전 → 이후)
+
+| 파일 | 이전 | 이후 |
+|---|---|---|
+| `lib/ui/kit/item_icon_tile.dart` | `Image(image: ItemIconAssetImage(배경))`, `Image(image: ItemIconAssetImage(아이콘))`, 클래스 `ItemIconAssetImage` | `GameImage(배경)`, `GameImage(아이콘)`(같은 `fit` · `errorBuilder`); 클래스는 `game_image.dart`의 `GameArtAssetImage`로 옮김 |
+| `lib/ui/widgets/asset_image_grid.dart` | `AssetImage(asset).resolve(…)` | `GameArtScope.of`의 출처 `resolve(asset)`, `null`이면 빈 칸, 출처가 바뀌면 다시 읽기(+25/−3) |
+| `lib/ui/widgets/student_grid_warmup.dart` | `precacheImage(AssetImage(asset), …)` | `precacheImage(GameArtScope.read(context).resolve(asset), …)`, `null`은 건너뜀 |
+| `lib/app/app.dart` | `MaterialApp(…)` | `GameArtScope(source: gameArtSource, child: MaterialApp(…))`, 인자 `gameArtSource`(기본 번들) |
+| `lib/ui/app_shell.dart` | 머리 계정 초상 `Image.asset` 1 | `GameImage` 1 + import 1(+2/−1) |
+| `lib/ui/inventory/inventory_workspace.dart` | — | import 1(아래 세 `part` 파일용) |
+| `lib/ui/inventory/inventory_analysis_sections.dart` | `Image.asset`(학교 로고) 1, `Image(image: ItemIconAssetImage)`(원형 아이콘) 1 | `GameImage` 2 |
+| `lib/ui/inventory/inventory_opa_sections.dart` | `Image(image: ItemIconAssetImage)` 2(배경 · 오파츠) | `GameImage` 2 |
+| `lib/ui/inventory/inventory_tiers_sections.dart` | `Image(image: ItemIconAssetImage)` 1 | `GameImage` 1 |
+| `lib/ui/pages/title_page.dart` | `Image.asset` 4(`plan_a_title` · `square` · 계정 초상 · 타이틀 feature 그림) | `GameImage` 4 |
+| `lib/ui/pages/home_page.dart` | 홈 메뉴 카드 `Image.asset` 1 | `GameImage` 1 |
+| `lib/ui/pages/adaptive_sync_page.dart` | 홈 메뉴 그림 `Image.asset` 1 | `GameImage` 1 |
+| `lib/ui/widgets/bond_rank_portrait.dart` | `Image.asset` 2(인연 배경 · 초상) | `GameImage` 2 |
+| `lib/ui/widgets/diagonal_media_list_item.dart` | `Image.asset` 2(배경 · 장비 아이콘) | `GameImage` 2 |
+| `lib/ui/widgets/plan_element_builder.dart` | `Image.asset` 4(장비 배경 · 장비 · 아이템 배경 · 초상) | `GameImage` 4 |
+| `lib/ui/widgets/plan_section_layout.dart` | `Image.asset` 2(크레딧 32 · 자원 72) | `GameImage` 2 |
+| `lib/ui/widgets/student_section_layout.dart` | `Image.asset` 3(학교 로고(key `student-detail-school-logo` 유지) · 장비 배경 · 장비) | `GameImage` 3 |
+| `lib/developer_tools/legacy_tool_pages.dart` | `Image.asset` 5 + `DecorationImage(AssetImage(square))` 1 | `GameImage` 5 + 출처가 주면 `DecorationImage`, 없으면 장식 없음 |
+| `lib/ui/kit/game_assets.dart` | 머리 주석 "키트 위젯은 파일이 없으면 빈 상자" | 경로 = 그림 키, 그림은 `GameImage` 공용 출처에서(주석 3줄만) |
+
+- 합계: 직접 읽기 33곳 → `GameImage`, 공용 2곳(`AssetImageGrid` · warmup) → 출처. 경로를 만들기만 하는 곳(`GameAssets` 함수, `planning_resource_assets`, `school_labels`, `plan_section_layout` 상수, `student_form_cycle`, 각 화면의 `AssetImageGridItem(asset: …)`)은 키 생산이라 그대로.
+- 개발자 도구 포함 판단: **포함**(`legacy_tool_pages.dart` 6곳). F5b에서 `pubspec.yaml` 게임 그림을 빼면 같은 패키지 자산을 쓰는 개발자 도구도 그림을 잃으므로 같은 출처를 거치게 했다. `developer_tools_main.dart`에는 `GameArtScope`가 없어 기본(번들)이고, F5b에서 개발용 사본 출처를 넘길 자리다.
+- lib 전체 grep(`Image\.asset|AssetImage\(|ItemIconAssetImage|precacheImage`, `game_image.dart` 제외) 결과: 스캐너 소유 `scan_student_review_workspace.dart` 3곳과 warmup의 `precacheImage`(출처 그림) 1곳만 남음.
+
+### 4. 누락 시 동작 시험(`test/game_image_f5a_test.dart`, 10건 통과)
+
+| 시험 | 화면 · 크기 | 확인 |
+|---|---|---|
+| 그림 키 분류 | — | `gameArtKindOf` 3분류 |
+| 기본 출처 | `GameImage` 단독 | 조상 없음 → `Image` + `AssetImage('assets/…')`, `fit` · `filterQuality` · 크기 그대로(번들 동등) |
+| 없음 → 빈 자리 · errorBuilder | `GameImage` 2 | `Image` 0, 빈 자리 40×30 유지, `errorBuilder`가 `GameArtMissing(key)`를 받음 |
+| 아이템 아이콘 · 그림 그리드 | `ItemIconTile` 74×60 + `AssetImageGrid` | 크기 유지, 이름 글자 "크레딧" 보임, 물어본 키 3개, 예외 0 |
+| 타이틀 계정 카드 | `BAPlannerApp(showTitle, gameArtSource: 없음)` 1280×720 | **앱 루트 주입 경로**, 계정 카드 · 이름 라벨 · 보유 `0` `/ 2`, 자산 그림 0, 예외 · 넘침 0 |
+| 홈 머리 · 학생 그리드 · 학생 상세 | `BAPlannerApp` 1280×720 → 학생 탭 | 머리 초상 62×52 유지, 상세 레벨 · 인연 · 장비 제목 · 학교 로고 자리, 초상 · 학교 로고 · 홈 메뉴 키를 출처에 물음, 예외 0 |
+| 인벤토리 ×2 | `InventoryPage`(FE6-a fixture) 1280×720 · 2560×1392 | 리오 행 · 위험도 `100`, 전체 보기 타일, 자산 그림 0, 예외 0 |
+| 계획 1단계 | `PlanningPage` 1280×720 → 계획 만들기 → 아루 카드 | 학생 그리드 · 한 명 모드 aside · detail, 자산 그림 0, 예외 0 |
+| 스캔 학생 검토 보드 | `ScanReviewBoardHarness` 1280×720 | 목록 → 노도카 행 → "노도카 · 학생 정보", 자산 그림 0, 예외 0 |
+
+("자산 그림 0" = 화면의 `Image` 중 `AssetImage`가 하나도 없음 — 출처를 거치지 않고 번들을 읽는 곳이 남지 않았다는 확인. 스캔 보드의 `Image.memory`(스캔 조각)는 게임 그림이 아니라 제외.)
+
+### golden 변화 0 근거
+
+1. 기본 출처(조상 없음 · `BAPlannerApp` 기본) = `GameArtAssetImage(key)` → `AssetImage`와 같은 `AssetBundleImageKey`(bundle · name · scale) — 같은 디코드 · 같은 이미지 캐시 항목. golden harness의 `precacheVisibleImages`(`Image.image`, `AssetImageGrid.items`의 `AssetImage(item.asset)`)와 `finishStudentGridWarmup`이 미리 읽는 항목과 같은 키다.
+2. `GameImage`는 `Image.asset`과 같은 인자 · 같은 기본값(`alignment: center`, `filterQuality: medium`, `scale`/`cacheWidth` 쓰는 곳 없음)으로 `Image`를 만든다. 추가된 것은 렌더 객체 없는 `StatelessWidget` 한 겹.
+3. 기본 빈 자리(`errorBuilder` 없던 곳)는 읽기 실패 때만 나온다. 디버그에서 `errorBuilder` 없는 `Image`의 실패는 `FlutterError`로 올라가 golden 장면의 `expect(tester.takeException(), isNull)`을 깨뜨리므로, 지금 기준선에는 그런 실패가 없다 → 기준선 장면에서 새 빈 자리는 나타나지 않는다. `errorBuilder`가 있던 곳은 그대로 넘겼다.
+4. `AssetImageGrid`는 같은 키로 같은 순서 · 같은 프레임 규칙(`_swapping` 포함)으로 읽는다. 출처 교체 경로(`_dropImages`)는 출처가 바뀔 때만 탄다(기본 상수 출처는 `identical`).
+5. golden harness · 기준 이미지 · 새 장면: 손대지 않음 / 0. golden 비교 자체는 **미실행**(CF `fe_gate.ps1`).
+
+### F5b 입력
+
+- **사용자 캐시 출처가 받을 것**: 키 = 지금의 `assets/<폴더>/<하위 경로>` 문자열(`GameAssets` 함수 값 · 화면이 쓰는 경로 그대로). 권장 규칙: 캐시 파일 = `<캐시 루트>/<키에서 'assets/'를 뗀 경로>`(예: `…/student_portraits/aru.png`, `…/item_icons/equipment/Equipment_Icon_Hat_Tier7.png`) — 파일 이름을 지금 번들 이름과 같게 두면 키 변환이 없다. 게임 원본 이름 ↔ 이 이름 대응은 asset map(M0: 596 자동, **M4 수동 규칙 449: 초상 267 · 엘레프 182**)이 XB 추출 단계에서 맡는다.
+- **캐시 루트**: 결정 A(사용자 데이터 `%LOCALAPPDATA%\BA Planner\v7\`) 아래 한 폴더(예 `…\v7\game-art\`) — XB 계약(F5 요청)에서 확정: 루트 경로, `BundleRevision`별 하위 폴더 여부, 추출 목록(manifest: 키 · 성공/실패), 갱신 이벤트.
+- **출처 구현 메모**: `resolve`는 빌드마다 수백 번 불리므로 파일 존재 확인(`existsSync`)을 하지 말고 manifest에서 읽은 키 집합(`Set<String>`)으로 판정 → `FileImage`. `gameArtKindOf(key) == other`는 번들(`AssetImage`) 유지, `sourceCheck`는 결정 전까지 번들. 추출이 끝나면 **새 출처 인스턴스**를 `BAPlannerApp.gameArtSource`로 넘긴다(같은 인스턴스를 고쳐 쓰면 `updateShouldNotify`가 알리지 않는다). `FileImage` 캐시 키는 경로 기준이라 재추출(패치) 뒤에는 `imageCache.clear()` 또는 루트를 revision별로 나눠 키를 바꾼다.
+- **`pubspec.yaml`에서 뺄 목록**(F5b): `assets/student_portraits/`, `assets/student_elephs/`, `assets/item_icons/{activity_reports,currency,equipment,ooparts,presents,school_logo,skill_book,skill_db,tactical_bd}/`, `assets/equipment_icons/`. 출처 확인 뒤 같은 규칙: `assets/home_menu/`, `assets/item_backgrounds/`, `assets/student_bond_backgrounds/`, `assets/studio_features/`, 글꼴 `GyeonggiTitle`. 남김: `studio_sections/`, `student_catalog.json`, Pretendard.
+- **시험 · golden용 개발 사본 후보**:
+  (a) 그림 파일을 `pubspec` 밖 개발 폴더(예 `frontend/dev_assets/`, 배포 빌드에 안 들어감)에 두고, 시험에서 `DefaultAssetBundle`을 그 폴더를 읽는 bundle로 바꾼다 → 키 · `AssetImage` · golden harness precache 그대로(harness가 bundle 주입 한 줄만 필요).
+  (b) 시험용 `GameArtSource`가 개발 폴더를 `FileImage`로 읽는다 → harness `precacheVisibleImages`의 `AssetImage(item.asset)`가 다른 캐시 키가 되므로 harness를 출처 기반으로 고쳐야 한다(golden 재생성 위험).
+  (c) Flutter 자산 flavor(`assets: - path: … flavors: [dev]`) — Windows desktop · `flutter test`에서 flavor 자산이 들어가는지 **확인 필요**.
+  → 권장 (a): 화면 · golden 변화 0을 유지하기 가장 쉽다. 배포 검사(F5b)는 release 산출물의 `flutter_assets/`에 위 폴더가 없음을 확인하는 스크립트(XB `build_windows_release.ps1` 쪽 또는 CF 시험).
+- **남은 직접 읽기**: 스캐너 소유 `scan_student_review_workspace.dart` 3곳, `section_template_studio_page.dart`의 `rootBundle.load(studio_features)`(디자인 도구) — F5b 전에 정리 또는 개발 전용으로 둘지 판단.
+
+### 미검증 항목(미실행)
+
+- golden 비교(`test/goldens`) — 미실행(지시). "변화 0"은 위 근거에 따른 예상이고, CF `fe_gate.ps1`로 확인한다.
+- 프로세스 E2E(`*_process_e2e_test.dart` 등 Python 백엔드를 띄우는 시험) — 미실행. 이 slice는 서비스 · 프로토콜을 건드리지 않았다.
+- `almanac validate` · `git diff --check` — 미실행(gate 몫). 새 파일 · 고친 줄에 끝 공백 없음, 파일 끝 개행 하나를 직접 확인했다.
+- 실제 앱 실행(mock 모드) 눈 검수 — 미실행(보이는 변화 0 slice).
+- 사용자 캐시 출처 · 배포본 제외 — F5b 범위.
+
+### 발견 사항
+
+1. **스캐너 소유 `scan_student_review_workspace.dart`에 번들 직접 읽기 3곳이 남는다**(위 ★). F5b에서 `pubspec`을 빼기 전에 스캐너 쪽과 조율해 `GameImage`로 바꿔야 그 화면이 빈 그림 자리로 동작한다(지금은 `errorBuilder` 유무에 따라 디버그 오류 표시).
+2. **기본 빈 그림 자리가 "읽기 실패"에도 적용된다**: 전에는 `errorBuilder` 없는 `Image.asset`(타이틀 · 인연 초상 · 장비 칸 등)이 파일이 없으면 디버그에서 오류 상자 · `FlutterError`였고, 이제는 같은 크기의 투명 자리다(FD-181 "그림이 없어도 모든 기능"에 맞춘 의도된 변화, 번들 파일이 다 있으면 보이지 않음).
+3. `section_template_studio_page.dart`(Section Template Studio)는 `studio_features` 두 장을 `rootBundle.load` → `instantiateImageCodec`으로 직접 디코드한다(`ImageProvider`가 아님). 디자인 도구라 이번에는 그대로 두었다 — F5b에서 `studio_features`를 빼면 이 도구가 실패하므로 개발 사본(후보 a)이나 출처 기반 로드가 필요하다.
+4. 홈 메뉴 카드(`home_page.dart`)는 출처가 "없음"이면 기존 `errorBuilder` `_ImageFailure`(실패 모양)를 그린다 — `W-Missing-Art`와 다른 모양일 수 있다(F3에서 맞춤).
+5. 출처가 바뀌면 `AssetImageGrid`가 모든 칸을 비우고 다시 읽는다(한두 프레임 빈 칸). 첫 실행 추출 뒤 한 번만 일어나는 일이라 받아들였다. 매끄럽게 하려면 새 그림이 올 때까지 옛 그림을 두는 방식(별도 판단).
+6. `frontend/assets/item_icons/activity_reports/`(4장)와 `ooparts/Item_Icon_WorkBook_Potential*.png` 3장이 **git 미추적**인데 `pubspec.yaml`이 `activity_reports/`를 자산으로 등록한다 — 새로 받은 저장소에서는 이 폴더가 없어 `flutter build`가 자산 폴더 없음으로 실패할 수 있다(이 slice와 무관, 손대지 않음).
+7. `GyeonggiTitle-Medium.ttf`는 이름상 경기도 공공 글꼴로 보이나 `assets/fonts/`에 라이선스 파일이 없다 — 출처 확인 항목(FD-181 범위)으로 남긴다.
+8. 대장 · 워크플로 표의 "직접 사용 약 20곳"은 실제 `Image.asset`/`ItemIconAssetImage` 직접 읽기 33곳(+ 공용 2곳, 스캐너 3곳)이었다.
+
+### 사본 · commit.json
+
+- pre 사본: `debug/frontend_f5a/pre/<경로>` 19파일(착수 기록의 18 + `frontend/lib/ui/inventory/inventory_workspace.dart`(`part` 파일 import 때문에 착수 뒤 추가, 착수 때 WIP 없음)). 착수 때 WIP 0 → `post_dir` 없음. 이 status 문서는 `status=true` 관례로 사본 · `modified` 없음.
+- `debug/frontend_f5a/commit.json`: slice `f5a`, modified 19, added 2(`frontend/lib/ui/kit/game_image.dart`, `frontend/test/game_image_f5a_test.dart`), `whole` = [], `status=true`. 메시지 ASCII, 근거 FD-181.
+- 인계: `debug/frontend_f5a/output.md`.
+
+### 다음 행동
+
+- CF: `fe_gate.ps1` 1회 → golden 비교 GREEN(변화 0 예상) 확인 → `fe_commit.ps1 -Slice f5a -DryRun` → `fe_commit.ps1 -Slice f5a`.
+- CF ↔ 스캐너(XB): `scan_student_review_workspace.dart` 3곳 `GameImage` 전환 조율(발견 1).
+- CF 판단: 빈 그림 자리 임시 모양(투명) 유지 여부, 개발 사본 방식(F5b 후보 a 권장), studio 도구 처리(발견 3).
+- F5b: XB F5 계약(캐시 루트 · manifest · 갱신 이벤트) 뒤 사용자 캐시 출처 · `pubspec` 제외 · 배포 검사.
+
+### f5a commit record (2026-10-20 22:21, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261020_221153\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
