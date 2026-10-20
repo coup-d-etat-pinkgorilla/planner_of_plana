@@ -12,6 +12,8 @@ import '../../services/app_service.dart';
 import '../../services/repository_service.dart';
 import '../app_section.dart';
 import '../app_shell.dart';
+import '../first_run/first_run_modal.dart';
+import '../first_run/first_run_rules.dart';
 import '../kit/game_image.dart';
 import '../kit/skew_bar.dart';
 import '../studio/section_studio_document.dart';
@@ -105,10 +107,22 @@ const _actionTexture = BATriangleTextureConfig(
 enum _InitialAccountAction { create, imported, cancelled }
 
 class TitlePage extends StatefulWidget {
-  const TitlePage({super.key, required this.service, this.onExitRequested});
+  const TitlePage({
+    super.key,
+    required this.service,
+    this.onExitRequested,
+    this.firstRun = FirstRunLaunch.off,
+    this.onStartTutorial,
+  });
 
   final AppService service;
   final VoidCallback? onExitRequested;
+
+  /// 첫 실행 ①~③ 모달(F3b). 기본은 띄우지 않는다(실제 앱은 `main.dart`가 켠다).
+  final FirstRunLaunch firstRun;
+
+  /// ③에서 계정을 만든 뒤 튜토리얼을 시작한다(F3c). 없으면 홈으로 간다.
+  final FirstRunTutorialStarter? onStartTutorial;
 
   @override
   State<TitlePage> createState() => _TitlePageState();
@@ -130,6 +144,9 @@ class _TitlePageState extends State<TitlePage>
   /// 계정 목록·state를 읽다가 실패했다(이관 실패 포함). 주 버튼은 첫 실행 흐름 대신 다시 읽는다.
   bool _accountLoadFailed = false;
   AccountClusterEntry? _accountClusterEntry;
+
+  /// 첫 실행 모달이 떠 있다(Space 시작을 막는다).
+  bool _firstRunOpen = false;
   StudentCatalogEntry? _studentGridWarmupPreview;
   bool _studentGridWarmupActive = false;
   int _studentGridWarmupRequest = 0;
@@ -415,6 +432,16 @@ class _TitlePageState extends State<TitlePage>
     });
   }
 
+  /// F3b ③: 첫 실행에서 만든 계정으로 튜토리얼을 시작한다(F3c 자리). 시작 콜백이 없으면 지금처럼 홈으로 간다.
+  void _handleFirstRunAccount(RepositoryProfile account) {
+    final startTutorial = widget.onStartTutorial;
+    if (startTutorial != null) {
+      startTutorial(context, account);
+      return;
+    }
+    _openShell(AppSection.home);
+  }
+
   Future<void> _openAccountManager() async {
     if (_transitioning) return;
     setState(() => _transitioning = true);
@@ -451,6 +478,7 @@ class _TitlePageState extends State<TitlePage>
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     final titleIsActive =
         _accountClusterEntry == null &&
+        !_firstRunOpen &&
         !_transitioning &&
         _exitController.isDismissed;
     if (titleIsActive &&
@@ -512,6 +540,18 @@ class _TitlePageState extends State<TitlePage>
                   onBackToTitle: _returnFromAccountCluster,
                   onEnterHome: () => _openShell(AppSection.home),
                   onProfileDeleted: _forgetDeletedProfile,
+                ),
+              ),
+            if (widget.firstRun != FirstRunLaunch.off)
+              Positioned.fill(
+                child: FirstRunGate(
+                  service: widget.service,
+                  launch: widget.firstRun,
+                  hasAccount: _loading || _accountLoadFailed
+                      ? null
+                      : _profile != null,
+                  onOpenChanged: (open) => setState(() => _firstRunOpen = open),
+                  onAccountCreated: _handleFirstRunAccount,
                 ),
               ),
             if (_error != null)

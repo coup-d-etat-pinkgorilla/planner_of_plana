@@ -11248,3 +11248,128 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_004759\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3b 착수 기록 (2026-10-21 01:26, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 첫 실행 ①~③ 화면(타이틀 위 모달 하나, 3단계 — FirstRun-1-Game · FirstRun-2-Images · FirstRun-3-Account, contracts/asset-preparation-v1, FD-182, D-ALPHA-SPLIT).
+- 시작 SHA: `678af3868a02365deb9343604a0384d7eead1cd2`(브랜치 `scanner-consolidation`). f2-dart 커밋 포함 확인: `f8a25bd4 f2-dart: F2 recognition cache preparation Dart connection (no screen)`(프롬프트의 "f2dart:" 표기와 달리 커밋 제목은 "f2-dart:"이다 — 같은 slice로 보고 진행). 이 status 끝에 다른 F3b 착수 기록 없음 확인.
+- 막힘 확인: 대장 열림 FD 0건 → 막히지 않는다.
+- 사용자 결정(2026-10-21, AskUserQuestion — 프롬프트 밖 모호점 3):
+  1. 켜는 자리: `BAPlannerApp` · `TitlePage`에 첫 실행 옵션을 두고 **기본은 끈다**(Mock 기본 준비 상태가 cache missing이라 자동으로 켜면 `BAPlannerApp(showTitle: true)` 기존 시험 · 타이틀 golden에 ②가 뜬다). **`lib/main.dart`에서 실제 앱만 켠다**(프롬프트 고칠 곳 목록 밖 — 사용자 승인). `--dart-define=BA_PLANNER_FIRST_RUN=full`이면 계정이 있어도 ①부터(design-review 검수용).
+  2. 건너뛰기 = 첫 실행 전체를 닫는다(시안 (i) 문구 · ③ 메모 "건너뛰면 계정 없이 타이틀로").
+  3. ② 취소 = 준비 중에는 "다시 시도" 자리(150×54)에 "취소". 준비 중 건너뛰기는 모달만 닫고 준비는 백엔드에서 계속한다.
+- 고칠 기존 파일(사본 `debug/frontend_f3b/pre/<v7 기준 경로>`, 3개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**):
+  `frontend/lib/ui/pages/title_page.dart`(모달 자리 · 첫 실행 판단 · 계정 흐름 최소), `frontend/lib/app/app.dart`(옵션 전달), `frontend/lib/main.dart`(실제 앱 켜기, 사용자 결정 1).
+- 새 파일(예정): `frontend/lib/ui/first_run/first_run_rules.dart` · `first_run_modal.dart` · `first_run_folder_picker.dart`, `frontend/lib/ui/studio/first_run_studio_layout.dart`, `frontend/test/first_run_f3b_test.dart`, `frontend/test/goldens/f3b_first_run_golden_test.dart`, `debug/frontend_f3b/commit.json` · `output.md`.
+- 고치지 않음: `lib/ui/first_run/asset_preparation_controller.dart`(그대로 쓴다), `lib/ui/tutorial/**`(Lane B), `lib/services/**`, `lib/ui/kit/**`, backend/** · contracts/**, golden harness · 기존 기준 이미지, frontend/tool/**, pubspec, 택틱 · 스캐너 소유 파일.
+
+## F3b 종료 기록 (2026-10-21 01:52, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden 새 장면 3장 `-UpdateGoldens` 포함) 남음. 시작 SHA `678af386`, 커밋 없음(git 쓰기 안 함).
+- 결과: 타이틀 위 모달 하나에 ① 게임 설치 찾기 → ② 이미지 준비 → ③ 계정 만들기를 넣었다(새 `lib/ui/first_run/first_run_modal.dart` · `first_run_rules.dart` · `first_run_folder_picker.dart`, 좌표 `lib/ui/studio/first_run_studio_layout.dart`). 준비 상태는 f2-dart 컨트롤러를 그대로 쓴다(컨트롤러 · 서비스 0줄). 기존 파일은 `title_page.dart` +41/−1(옵션 2 · 모달 자리 · Space 막기 · ③ 뒤 처리), `app.dart` +15/−1(옵션 전달), `main.dart` +10/−1(실제 앱 켜기, 사용자 결정 1).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(전체, 편집마다 · 마지막) | `No issues found!`(info 0) |
+| `flutter test --exclude-tags golden test/first_run_f3b_test.dart` | 1회째 15 통과 · 3 실패(② 안내 문구가 "취소" 단추를 덮음 — 화면 버그 수정, 시험 도우미 2곳 수정) → 2회째 **18/18 통과**, hit-test 경고 0 |
+| 관련 기존 시험 grep(`BAPlannerApp\|TitlePage\|title_page.dart\|app/app.dart\|asset_preparation\|first_run`, golden · process E2E 제외) 36파일, 2묶음 `--exclude-tags golden` | 묶음 A +192 −8, 묶음 B +185 −24. **실패 32건은 모두 셸 · 스캔 탭 · 통계 시험**(connected_target_fe8d 3 · app_navigation_fe7d 3 · growth_calculator_view 1 · home_app_shell 1 · scan_tab_page_fe8g1 7 · scan_review_board_fe8g4b 5 · scan_item_review_fe8g5b 4 · scan_run_view_fe8g2 4 · scan_item_queue_fe8g3 2 · statistics_app_shell 1 · widget_test 1 "scan tab …") — 아래 "발견 1" |
+| 같은 grep 중 이 slice가 닿는 시험: `title_page_test` · `account_editor_fe8c` · `account_manager_fe8b` · `profile_delete_fb2d` · `game_image_f5a` · `asset_preparation_{contract,controller,mock,protocol_client}` · `first_run_f3b` | 모두 실패 0 |
+| `flutter test --exclude-tags golden test/first_run_f3b_test.dart test/title_page_test.dart`(마지막 서식 수정 뒤) | **+43 All tests passed** |
+| 일회성 렌더(사본 `frontend/.dart_tool/f3b_render/`, `@Tags(['golden'])` · `expectGoldenScene` grep 0건 확인, PNG는 세션 임시 폴더) | 3장 렌더 · 눈 확인 뒤 사본 폴더 삭제 |
+| `dart format`(새 파일 6개만 각각, 기존 3파일은 `.dart_tool/f3b_fmt/` 사본에서 비교) | 새 파일 반영. `title_page.dart` 이 slice 줄 1곳(2줄 → 1줄) 반영 뒤 사본 서식 차이 0, `app.dart` · `main.dart` 0 |
+
+로그: `debug/frontend_f3b/logs/`(`f3b-test-1.log` · `f3b-test-2.log` · `related-a.log` · `related-b.log` · `final.log` · `render-1.log`), 시험 목록 `debug/frontend_f3b/related_tests.txt`. golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 언제 뜨나(`decideFirstRun`, 새 저장소 없음 — 계정 목록과 `assets.prepare.status` cache.state만)
+
+| 켜는 값(`FirstRunLaunch`) | 계정 | cache.state | 띄움 |
+|---|---|---|---|
+| `off`(BAPlannerApp · TitlePage 기본 — 시험 · golden) | — | — | 없음 |
+| `auto`(`main.dart`, define 없음) | 없음 | 아무거나(status를 못 읽어도) | ① → ② → ③ |
+| `auto` | 있음 | missing · stale · invalid | ②만(stale = 시안 "게임이 업데이트되어 이미지를 다시 준비합니다", missing · invalid = "첫 실행 준비") |
+| `auto` | 있음 | ready · partial · unknown(폴더 못 씀) · status 실패 | 없음 |
+| `full`(`--dart-define=BA_PLANNER_FIRST_RUN=full`, 검수) | 아무거나 | 아무거나 | ① → ② → ③ |
+
+- 판단은 타이틀이 계정 목록을 다 읽은 뒤(읽기 실패면 판단 안 함) status를 한 번 읽고 **타이틀 하나당 한 번**. 준비 서비스가 없는 AppService면 띄우지 않는다. 건너뛰면 이번 실행에서는 다시 안 뜨고, 다음 실행에서 조건이 남아 있으면 또 뜬다(발견 3).
+- 건너뛰기 · Esc = 전체 닫기(스크림 누르기는 닫지 않음). ② 준비 중에 닫아도 작업은 계속된다(시험 확인). ③ 만드는 중에는 닫히지 않는다.
+
+### 이유 코드 → 문구(칩 · 설명 첫 문장 + 안내). 시안 문구는 `game_dir_not_found`뿐, 나머지는 워커 문구
+
+| reason | 칩 | 설명 |
+|---|---|---|
+| `game_dir_not_found` | 찾지 못함(시안) | 설치 폴더를 찾지 못했습니다.(시안) + 경로 안내 |
+| `not_blue_archive` | 게임 폴더 아님 | 이 폴더에는 블루 아카이브가 설치되어 있지 않습니다. + 경로 안내 |
+| `catalog_missing` | 게임 파일 없음 | 게임 파일 목록이 없습니다. + 업데이트 안내 |
+| `catalog_invalid` | 게임 파일 확인 실패 | 게임 파일 목록을 읽지 못했습니다. + 업데이트 안내 |
+| `bundle_revision_missing` | 게임 버전 없음 | 게임 버전 정보가 없습니다. + 업데이트 안내 |
+| `bundle_revision_invalid` | 게임 버전 확인 실패 | 게임 버전 정보를 읽지 못했습니다. + 업데이트 안내 |
+| `bundle_revision_mismatch` | 게임 버전 다름 | 게임 파일의 버전이 서로 다릅니다. + 업데이트 안내 |
+| `game_dir_unreadable` | 폴더 읽기 실패 | 설치 폴더를 읽지 못했습니다. + 경로 안내 |
+
+경로 안내 = "Steam → 게임 → 관리 → 로컬 파일 보기로 연 경로를 넣어 주십시오."(시안), 업데이트 안내 = "게임을 실행해 업데이트를 마친 뒤 다시 지정해 주십시오." 거절된 지정(`invalid_game_dir`)은 저장되지 않으므로 칩을 입력 줄 오른쪽(① A) 또는 상태 칩 자리(① B)에 보인다. 그 밖의 요청 오류 코드(`scanner_busy` 등 7종)는 빨간 한 줄 문구(`firstRunPrepareErrorText`). ① 지정 뒤 위 상자는 **`game_dir.set` 응답의 path**(f2-dart 발견 4)를 보이고 칩은 자동 = "찾음 · Steam"(시안), 사용자 지정 = "지정함"(워커 문구).
+
+### ② 진행 표시 규칙(분모 숨김 근거: contracts/asset-preparation-v1 "Jobs and UI events")
+
+- 큰 수 = 지금 단계의 `done`(번들), 뒤 글자 = total 있으면 "/ n개 번들", **total null이면 "개 번들"**(분모 없음) + 막대 채움 대신 빗금(모름) + 설명 앞 "전체 수를 아직 모름 · ". %는 어디에도 없고, 남은 시간은 계약에 시각 정보가 없어 늘 숨긴다. 작업 전체 고정 분모 없음(시안 "2,400" · "1,090"은 예시 — FD-025).
+- 단계 줄 3개(알파-1): 아이템 아이콘(icons) · 스캔용 그림(sprites) · 글꼴(fonts). 진행 중 = "만드는 중" + `done / total`(또는 `done`), 지나간 단계 = 그 작업에서 마지막으로 본 값, 뒤 단계 = "대기" "—". 끝나면 status 캐시 수(파일 수)로 바꾸고 partial이면 아이콘 줄 "일부 실패 · n · m개 실패".
+- 끝: succeeded/partial = 큰 수 `available` "개 준비함"(partial이고 failed를 알면 "/ (available+failed)개 준비함", 막대 초록 + 노랑), 설명 줄 "만든 n · 재사용 n · 실패 n"(null = '—') + 사유. failed/cancelled = 큰 수 '—', 수 '—'. 일부 실패 문구는 시안("그림 n개를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다." + "… 나중에 설정 → 그림 다시 준비에서 다시 시도합니다.").
+- 단추: 준비 중 = "다시 시도" 자리에 "취소"(요청 → "취소하는 중", terminal까지 이전 · 다음 · 취소 꺼짐 — 시험 확인), 이때 안내 "준비가 끝나면 다음으로 넘어갑니다"는 취소 왼쪽으로 옮긴다(시안 자리는 취소와 겹침). 끝난 뒤 캐시가 ready가 아니면 "다시 시도"(partial · failed · cancelled). ② 들어갈 때 캐시가 ready가 아니면 자동 시작(시안에 시작 단추 없음), ready면 다시 만들지 않는다. ②만은 이 모달이 시작한 작업이 succeeded로 끝나면 스스로 닫는다(시안 변형에 다음 단추 없음 — 워커 판단).
+
+### 튜토리얼 시작 콜백 자리(F3c 입력)
+
+- `typedef FirstRunTutorialStarter = void Function(BuildContext context, RepositoryProfile account)`(`first_run_rules.dart`). `BAPlannerApp(onStartTutorial: …)` → `TitlePage(onStartTutorial: …)` → ③ "만들고 튜토리얼 시작"이 `createProfile` → (선택 안 됐으면) `selectProfile` 뒤 모달을 닫고 `_handleFirstRunAccount`에서 부른다. `account`는 고른 계정(revision = select 응답). 콜백이 없으면 지금처럼 `_openShell(AppSection.home)`. `main.dart`는 아직 콜백을 넘기지 않는다(F3c가 넘김).
+
+### 그리지 않은 시안 줄(알파-2)
+
+- ② 학생 초상 · 엘레프 단계 줄(FirstRun-2 상태 A · B 첫 두 줄) — D-ALPHA-SPLIT으로 알파-1은 인식 캐시만 준비한다. F5b(화면 그림 추출)가 들어오면 `firstRunStageRows`에 단계를 더하면 된다(계약 단계 enum 확장 필요).
+
+### golden
+
+- 기존 장면 변화 **0 예상**: 첫 실행은 기본 꺼짐이라 타이틀 장면(`title` · `account-new`)과 다른 장면의 위젯 트리는 같다(`TitlePage`에 `FirstRunGate`가 들어가지 않음, `app.dart`는 기본값 인자 전달뿐).
+- 새 장면 3장(`test/goldens/f3b_first_run_golden_test.dart`, 계정 없는 Mock + `FirstRunLaunch.auto`, 2560×1392): `first-run-game`(① 자동으로 찾음 — 합성 경로 `C:/Synthetic/Steam/steamapps/common/BlueArchive`, "찾음 · Steam", 이전 흐림), `first-run-images`(② 스캔용 그림 단계 — 큰 수 1 "개 번들", 빗금 막대, "전체 수를 아직 모름 · 스캔용 그림을 만드는 중", 아이템 아이콘 완료 2 / 2 · 스캔용 그림 만드는 중 1 · 글꼴 대기 —, 취소 · 다음 흐림), `first-run-account`(③ "메인 계정"(입력 포커스 · 전체 선택), 단계 1 · 2 체크). 모두 패널 1500 폭 가운데(③ 530,461). 기준 PNG는 만들지 않았다(CF `-UpdateGoldens`).
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 새 기준 PNG 생성, 전체 `fe_gate.ps1`, process E2E(`asset_preparation_process_e2e_test.dart` 포함 — 서비스 0줄), almanac validate, `git diff --check`(직접 끝 공백 · 끝 개행 확인만), Python.
+- 미실행: **실제 설치본 준비**(실제 Steam 탐색 · 추출 · 취소 타이밍 · 실제 `game_dir.set` 응답 path 정규화), 운영체제 폴더 대화상자(`getDirectoryPath`) 실제 열기, 실제 앱 mock 실행 눈 검수(아래 검수표).
+
+### 검수표(사용자 · CF)
+
+| artboard | 여는 방법 | 확인 |
+|---|---|---|
+| FirstRun-1-Game 상태 A | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review --dart-define=BA_PLANNER_FIRST_RUN=full` | 패널 위치 · 경로 상자 · 찾음 칩 · 다른 폴더 입력 · 폴더 고르기 · 건너뛰기 · 이전(흐림) · 다음 |
+| FirstRun-1-Game 상태 B | 시험 `first_run_f3b_test.dart` "1: not found …"(Mock `noGameDir`; design-review는 자동 폴더가 있어 앱으로는 안 열림) | 분홍 입력 · 찾지 못함 칩 · 다음 꺼짐 · "경로를 넣으면 다음으로 넘어갑니다" |
+| FirstRun-2-Images 상태 A | 위 실행 → 다음 | 번들 수 · null 분모 숨김 · 단계 줄 3개(초상 · 엘레프 없음) · 취소 · 안내 문구가 취소 왼쪽 |
+| FirstRun-2-Images 상태 B | 시험 "2: partial …"(Mock `extractPartial`) | 일부 실패 문구 · 다시 시도 · 아이콘 줄 일부 실패 |
+| FirstRun-2 변형 ②만 | design-review 기본(define 없이) 실행 — 계정 있음 + cache missing | 한 줄 패널 · 단계 칩 ②만 · 건너뛰기 · 끝나면 닫힘 |
+| FirstRun-3-Account | ② 끝 → 다음 | 이름 "메인 계정" · 만들고 튜토리얼 시작 → (콜백 없음) 홈 |
+
+### 발견 사항
+
+1. **다른 작업의 미커밋 변경과 겹침**: 착수 뒤 작업 트리에 `lib/ui/inventory/inventory_workspace.dart` · `pages/{statistics,student,tactical}_page.dart` · `scan/scan_tab_{page,sections}.dart` · `statistics/statistics_workspace.dart` · `tactical/tactical_workspace.dart` · `widgets/{plan_section_layout,student_section_layout}.dart` 변경과 새 `widgets/empty_state_panel.dart` · `test/empty_states_f3d_test.dart` · `test/goldens/f3d_empty_states_golden_test.dart`가 생겼다(이 slice 아님 — F3d로 보임). 관련 시험 실패 32건은 모두 이 파일들의 화면(셸 · 스캔 탭 · 통계)이고 타이틀을 거치지 않는 시험(`BAPlannerApp(service)` · showTitle 없음)이다. 이 slice의 `app.dart` 변경은 기본값 인자 전달뿐이라 그 트리를 바꾸지 않는다. CF gate는 그 작업이 멈춘 뒤 돌려야 한다.
+2. **알파-1 문구와 범위 차이**: 시안 ① · ② 문구 "학생 · 아이템 그림은 이 PC의 게임 설치본에서 가져옵니다 — 플래너 배포본에는 그림이 들어 있지 않습니다", "화면에 쓸 그림을 만들고 있습니다"는 알파-2(F5b) 기준이다. 알파-1은 인식 캐시만 준비하고 화면 그림은 번들이다(D-ALPHA-SPLIT). 지시대로 시안 문구를 그대로 두었다 — CF 판단(알파-1 문구 바꿀지).
+3. **"처음 열 때 한 번만"**: 새 저장소를 만들지 않으므로 건너뛴 뒤 다음 실행에서 조건(계정 없음 · 캐시 missing)이 남아 있으면 다시 뜬다. 한 번만 띄우려면 "건너뜀" 기록이 필요하다(F3e 설정 줄 · 저장 위치 결정).
+4. **v6 가져오기**: ③에는 v6 가져오기 줄이 없다(시안 결정 "v6 가져오기 없음"). 첫 실행을 끝까지 가면 기존 타이틀의 v6 미리보기 대화상자를 거치지 않는다. 건너뛰면 지금 흐름(`_InitialAccountAction`)이 그대로 남는다.
+5. design-review Mock은 계정이 있고 캐시가 missing이라 `BA_PLANNER_FIRST_RUN` 없이 실행하면 매번 ②만이 뜬다(250ms 단계, 곧 끝나 닫힘). 기본 Mock(시나리오 없음)도 같다.
+6. ③ 입력은 포커스 때 기본 이름 전체가 선택된다(바로 덮어쓰기 쉬움). golden에도 선택 표시가 찍힌다.
+7. 프롬프트의 착수 조건 "`git log --oneline -5`에 f2dart: 커밋"은 실제 커밋 제목 `f2-dart:`(`f8a25bd4`)로 확인했다.
+8. `frontend/.dart_tool/f3b_fmt/`(서식 비교 사본 6개, git 밖) — 정리 후보(워커는 지우지 않음).
+
+### 사본 · commit.json
+
+- pre 사본 3개(`debug/frontend_f3b/pre/frontend/lib/{ui/pages/title_page.dart,app/app.dart,main.dart}`), 착수 때 WIP 0 → `post_dir` 없음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3b/commit.json`: slice `f3b`, modified 3, added 6, `whole` = [](기존 기준 이미지 변화 0 예상), `optional_added` = 새 기준 3장(`first-run-game` · `first-run-images` · `first-run-account`.png — CF `-UpdateGoldens` 뒤 생김). 메시지 ASCII.
+- 인계: `debug/frontend_f3b/output.md`.
+
+### 다음 행동
+
+- CF: F3d로 보이는 작업이 멈춘 뒤 `fe_gate.ps1` → golden 새 장면 3장 RED 확인 → `failures/` 검토 → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3b -DryRun` → `fe_commit.ps1 -Slice f3b`.
+- CF 판단: 발견 2(알파-1 문구), 발견 3(건너뜀 기록), ②만 성공 뒤 자동 닫힘 유지 여부, 워커 문구(이유 칩 7종 · "지정함" · 오류 문구) 검수.
+- F3c: `onStartTutorial`을 `main.dart`/`BAPlannerApp`에 넘겨 튜토리얼을 연결. F3e: 설정 줄 "안내 다시 열기"는 `FirstRunPanel`(entry full)을, "그림 다시 준비"는 `FirstRunPanel`(entry imagesOnly) 또는 컨트롤러를 재사용할 수 있다.
+
+### f3b commit record (2026-10-21 07:59, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_074209\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
