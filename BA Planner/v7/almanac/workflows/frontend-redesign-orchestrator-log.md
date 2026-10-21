@@ -4286,3 +4286,12 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - 커밋: **F3c-3 `60145f40`**(24파일) · **F3c-4 `22296766`**(7파일).
 - CF 결정: F3c-3 발견 3 → (a) 3단계 완료 뒤 튜토리얼이 임시 계정의 남은 학생 후보를 정리 + 한 줄 안내. F3c-4 발견 1 → Mock seed에 예시 시나리오(대본 우선, XB에 계약 문장 요청). 발견 2 → 7-6 이름 미리 채움.
 - 배정: **Lane A F3c-5**(계획 탭 임시 계정 · 계획 장면 모드 · 이름 · 예시 seed · 남은 후보 정리 · 중복 경고 · 실제 신호로 1~10) · **Lane B K1**(키트 승격 1차 — 키트에 부품 6 + account_create_modal 1곳).
+
+## 2026-10-21 20:15 — F3c-5 커밋, 사용자 결정 2건, F3c-6 배정, K1 재배정
+
+- **K1 산출물 없음**: `debug/frontend_k1` · status-lane-b "K1 착수/종료 기록" · 키트 파일 변경 모두 0 — Lane B가 K1 프롬프트를 돌리지 않은 것으로 봄. 같은 프롬프트(머리말 · git 확인 커밋만 갱신)로 재배정.
+- F3c-5 검토: SHA 16행 일치(크기 칸에 백틱 없음 — 다음 프롬프트부터 크기도 백틱 명시), 목록 밖 변경 0.
+- gate ① `20261021_193955` 시험 · process 103 · almanac · diff PASS, golden RED 1 = 새 `tutorial-plan-order` → 확인: 7-3 카드가 1순위 칸의 칸나(수영복) · 마키 카드(끌어야 할 대상)를 덮음 → F3c-6에서 카드 자리 고침(지금 기준은 현재 코드 그대로) → ② `-UpdateGoldens` `20261021_195415` **GREEN**(golden 83). 커밋 **F3c-5 `3c92f975`**(18파일).
+- **사용자 결정(AskUserQuestion, FD-182 보충)**: 9단계 — 7-6 저장 시나리오를 활성 계획으로도 적용, 부족 1위 실제 행 · 실제 이름. 7-3 — 튜토리얼일 때만 칸 3개로 시작.
+- F3c-5 발견 8(Windows golden 변형에서 Mock 아이템 스캔이 진행 창 dock을 기다려 끝나지 않음)은 사용자 Windows 검수를 막을 수 있어 F3c-6 우선 항목으로.
+- 배정: **Lane A F3c-6** · **Lane B K1(재배정)**.
