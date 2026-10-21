@@ -17,6 +17,7 @@ import 'package:ba_planner_v7/ui/widgets/diagonal_menu.dart';
 import 'package:ba_planner_v7/ui/widgets/lifted_path_shadow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 class _ConnectionGatedShellService extends MockAppService {
   _ConnectionGatedShellService()
@@ -582,7 +583,8 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final service = MockAppService();
+    // F3d: 스캔 기록 0회 계정은 고르기 대신 빈 상태 안내라(empty_states_f3d_test), 스캔 1회가 있는 계정으로 연다.
+    final service = F3dScannedMockAppService();
     addTearDown(service.dispose);
     await tester.pumpWidget(BAPlannerApp(service: service));
     await tester.pumpAndSettle();

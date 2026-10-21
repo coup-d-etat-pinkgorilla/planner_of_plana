@@ -68,6 +68,7 @@ import '../tactical/tactical_window.dart';
 import '../tactical/tactical_workspace.dart';
 import '../widgets/account_section_cluster.dart'
     show repositoryProfileWithRevision;
+import '../widgets/empty_state_panel.dart';
 import '../widgets/page_header_override.dart';
 
 /// 목록 · 작성 섹션 안내 문구.
@@ -2151,6 +2152,27 @@ class _TacticalPageState extends State<TacticalPage> {
       onDropJokbo: jokbo.cards.isEmpty ? null : _copyJokbo,
       lobby: _lobbyPanel(),
       sectionOffset: offset,
+      emptyGuide: _emptyGuideShown ? _emptyGuide() : null,
     );
   }
+
+  /// 기록 0건(F3d): 이 계정의 v2 · 이전 형식 기록이 하나도 없고(목록 문구가 빈 상태), 사용자가 아직 초안을 열지 않았다
+  /// ("기록하기" · "새 기록" · 로비 카드 · 분석 복사는 모두 [_autoSelect]를 끈다).
+  bool get _emptyGuideShown => _autoSelect && _listMessage == tacticalEmptyText;
+
+  Widget _emptyGuide() => EmptyStateGuide(
+    key: const ValueKey('tactical-empty-guide'),
+    glyph: EmptyStateGlyph.swords,
+    width: 820,
+    title: '방어 편성을 기록하면 추천이 시작됩니다.',
+    body: '상대 방어 덱과 결과가 쌓여야 족보와 대응 덱을 추천할 수 있습니다. 엑셀로 한꺼번에 가져와도 됩니다.',
+    actions: [
+      EmptyStateAction(
+        key: const ValueKey('tactical-empty-record'),
+        label: '기록하기',
+        glyph: EmptyStateGlyph.plus,
+        onPressed: _available && !_busy ? _onNewRecord : null,
+      ),
+    ],
+  );
 }

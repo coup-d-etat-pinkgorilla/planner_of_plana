@@ -52,6 +52,7 @@ import '../kit/skew_controls.dart';
 import '../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../kit/titles.dart';
 import '../studio/statistics_studio_layout.dart';
+import '../widgets/empty_state_panel.dart';
 import '../widgets/plan_scenario_preview.dart' show planScenarioBottleneckValue;
 import 'statistics_balance_charts.dart';
 import 'statistics_breakdown_charts.dart';
@@ -190,9 +191,13 @@ class StatisticsWorkspace extends StatelessWidget {
     this.history = const StatisticsHistoryView(),
     this.filter = const StatisticsFilterView(),
     this.evidenceActions,
+    this.emptyGuide,
   });
 
   final StatisticsMode mode;
+
+  /// 이력 스냅샷 0 안내(F3d, 시안 Empty-Stats). 있으면 가운데 섹션은 주제 제목 줄 + 이 안내만이다(KPI 띠 · 타일 없음).
+  final Widget? emptyGuide;
 
   /// `_reload()`가 읽은 원천 자료(읽기 상태 · 안내).
   final StatisticsSourceData data;
@@ -232,6 +237,7 @@ class StatisticsWorkspace extends StatelessWidget {
               supply: supply,
               history: history,
               filter: filter,
+              emptyGuide: emptyGuide,
             ),
           ),
           Positioned.fill(
@@ -775,6 +781,7 @@ class _WidgetsSection extends StatelessWidget {
     required this.supply,
     required this.history,
     required this.filter,
+    this.emptyGuide,
   });
 
   final Size size;
@@ -784,9 +791,11 @@ class _WidgetsSection extends StatelessWidget {
   final StatisticsSupplyView supply;
   final StatisticsHistoryView history;
   final StatisticsFilterView filter;
+  final Widget? emptyGuide;
 
   @override
   Widget build(BuildContext context) {
+    final emptyGuide = this.emptyGuide;
     final points = statisticsSectionPolygon(size, statisticsWidgetsSectionId);
     // 통계 필터는 학생 성장에만 걸린다(FD-104).
     final scope = mode == StatisticsMode.students && filter.applied
@@ -827,6 +836,16 @@ class _WidgetsSection extends StatelessWidget {
                     filter: scope,
                   ),
                 ),
+                if (emptyGuide != null)
+                  // 시안 Empty-Stats: 안내는 섹션 위에서 160, 제목 왼쪽 + 10.3(기준 (646.2, 369.2), 높이 160).
+                  Positioned(
+                    left: titleLeft + 10.3,
+                    top: top + 160,
+                    width: math.max(0.0, titleRight - titleLeft - 10.3),
+                    height: 160,
+                    child: EmptyStateFit(child: emptyGuide),
+                  )
+                else
                 Positioned.fromRect(
                   rect: viewport.rect,
                   child: _TopicViewport(

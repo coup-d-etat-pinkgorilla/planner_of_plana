@@ -362,7 +362,7 @@ void main() {
     },
   );
 
-  testWidgets('no recorded history: — everywhere and the zero-snapshot note', (
+  testWidgets('no recorded history: — everywhere and the empty-state guide', (
     tester,
   ) async {
     await _pump(tester, service: _HistoryService(recorded: false));
@@ -370,12 +370,14 @@ void main() {
       expect(_base(tester, key).label, '—', reason: key);
       expect(_base(tester, key).tone, AppTones.gray, reason: key);
     }
-    expect(find.text('스냅샷 0회'), findsOneWidget);
+    // F3d: 스냅샷 0이면 가운데 섹션은 KPI 띠 · 타일(A6 "스냅샷 0회") 대신 빈 상태 안내다. 주제를 바꿔도 같다.
+    final guide = find.byKey(const ValueKey('statistics-empty-guide'));
+    expect(guide, findsOneWidget);
+    expect(find.text('스냅샷 0회'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('statistics-topic-inventory')));
     await tester.pumpAndSettle();
-    expect(find.text('스냅샷 0회'), findsOneWidget);
+    expect(guide, findsOneWidget);
     expect(find.text('활성 계획 기준 · 인벤토리 스캔 —'), findsOneWidget);
-    expect(_deltas(tester, 'inventory').take(4), ['—', '—', '—', '—']);
   });
 
   testWidgets('a history read across a save is not mixed in', (tester) async {

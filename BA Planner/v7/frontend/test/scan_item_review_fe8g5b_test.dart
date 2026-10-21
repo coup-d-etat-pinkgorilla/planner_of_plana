@@ -22,6 +22,7 @@ import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_inventory_identity_review.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 const _profileId = '000000000000000000000001';
 const _keyA = 'Item_Icon_SkillBook_Gehenna_0';
@@ -33,7 +34,9 @@ const _png =
 
 /// 세션 시작만 받고 후보 · 끝 이벤트는 시험이 낸다. review · commit은 Mock 그대로 하되 요청을 적고, 정한 후보의 commit을
 /// 실패시킨다. 미식별 슬롯 · identity 지정은 시험이 정한다. 마지막 스캔(by_resource_key)은 지금 − 3일로 답한다.
-class _ItemReviewService extends MockAppService implements AppClockSource {
+class _ItemReviewService extends MockAppService
+    with F3dScannedHistory
+    implements AppClockSource {
   @override
   DateTime get clockNow => DateTime(2026, 10, 18, 12);
 

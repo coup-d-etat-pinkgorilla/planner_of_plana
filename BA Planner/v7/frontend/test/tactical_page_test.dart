@@ -363,6 +363,17 @@ void main() {
           tacticalJokboNoSignatureText,
         );
         expect(_text(tester, 'tactical-jokbo-target-blank'), '모두 빈칸');
+        // F3d: 기록 0건이면 S3은 "공격 기록" + 빈 상태 안내다. "기록하기"를 누르면 새 초안 작성 칸이 열린다.
+        expect(
+          find.byKey(const ValueKey('tactical-empty-guide')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('tactical-editor-header')),
+          findsNothing,
+        );
+        await tester.tap(find.byKey(const ValueKey('tactical-empty-record')));
+        await tester.pumpAndSettle();
         expect(_text(tester, 'tactical-editor-header'), '새 공격 기록');
         // tidy2: 시즌을 모르면(기록 없음 → 새 초안 시즌 '') 시즌 칩은 '—'다.
         expect(find.text('시즌 —'), findsOneWidget);
@@ -541,6 +552,8 @@ void main() {
       addTearDown(service.dispose);
       await _ownStudents(service, ['aru', 'ayane']);
       await _pump(tester, service);
+      // F3d: 기록 0건이면 빈 상태 안내라 "기록하기"로 작성 칸을 연다.
+      await _tapKey(tester, 'tactical-empty-record');
 
       await tester.enterText(
         find.byKey(const ValueKey('tactical-opponent-name')),

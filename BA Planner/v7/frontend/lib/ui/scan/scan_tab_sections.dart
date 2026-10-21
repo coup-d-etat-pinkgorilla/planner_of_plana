@@ -38,6 +38,7 @@ import '../kit/titles.dart';
 import '../models/planning_resource_assets.dart';
 import '../studio/scan_studio_layout.dart';
 import '../widgets/asset_image_grid.dart';
+import '../widgets/empty_state_panel.dart';
 import '../widgets/section_template_surface.dart' show sectionCanvasElementRect;
 import '../widgets/student_section_layout.dart' show studentGridCardPath;
 import 'connected_target_controller.dart';
@@ -113,7 +114,15 @@ class ScanPickView {
     required this.onOpenPanel,
     required this.onClosePanel,
     required this.onUseTarget,
+    this.firstScan = false,
+    this.onStartFirstScan,
   });
+
+  /// 스캔 기록 0회(F3d, 시안 Empty-Scan): 가운데 섹션은 안내 두 줄 · 창 인식 타일('창 찾기' · '스캔 시작')만이다.
+  final bool firstScan;
+
+  /// 빈 상태 '스캔 시작'(기본 학생 전체 스캔). 창을 찾지 못했거나 시작할 수 없으면 null.
+  final VoidCallback? onStartFirstScan;
 
   final ScanSessionController controller;
   final AppService service;
@@ -811,6 +820,63 @@ class _PickSection extends StatelessWidget {
 
     final titleLeft = points[0].dx + ScanMetrics.titleLeftInset;
     final titleRight = points[1].dx - ScanMetrics.titleRightInset;
+    final connectionChip = _ConnectionStatusChip(
+      state: HeaderConnectionChipState.resolve(
+        view.service.state.value.connection,
+        view.connectedTarget?.target ?? controller.selectedTarget,
+      ),
+    );
+    if (view.firstScan) {
+      // 시안 Empty-Scan: 제목 '스캔' + 연결 칩, 안내 블록(위 90 · 높이 140, 왼쪽 사선에서 72.4 — 기준 (640.4, 299.2)),
+      // 창 인식 타일(위 200 · 높이 120, 사선에서 30 — 기준 (582.1, 409.2, 1454.5×120)).
+      return SectionFrame(
+        section: scanSection(scanPickSectionId),
+        surfaceKey: const ValueKey('scan-pick-surface'),
+        children: [
+          Positioned(
+            left: titleLeft,
+            top: top + ScanMetrics.titleTop * scale,
+            width: math.max(0.0, titleRight - titleLeft),
+            height: ScanMetrics.titleHeight * scale,
+            child: SectionScaledBox(
+              scale: scale,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      '스캔',
+                      key: const ValueKey('scan-empty-title'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: kitDisplayStyle(AppType.headlineSize),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  connectionChip,
+                ],
+              ),
+            ),
+          ),
+          scaled(
+            band(90, 140, 72.4),
+            const EmptyStateFit(
+              child: EmptyStateGuide(
+                key: ValueKey('scan-empty-guide'),
+                glyph: EmptyStateGlyph.scanFrame,
+                width: 1100,
+                title: '게임을 창 모드(1280×720 이상, 배율 100%)로 켜고 학생 목록 화면을 여십시오.',
+                body: "플래너가 그 창을 찾아야 스캔을 시작할 수 있습니다. 창을 띄운 뒤 '창 찾기'를 누릅니다.",
+              ),
+            ),
+          ),
+          scaled(
+            band(200, 120, ScanMetrics.bandEdgeGap),
+            _FirstScanTargetTile(view: view),
+            key: const ValueKey('scan-empty-target-tile'),
+          ),
+        ],
+      );
+    }
     final children = <Widget>[
       Positioned(
         left: titleLeft,
@@ -832,12 +898,7 @@ class _PickSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _ConnectionStatusChip(
-                state: HeaderConnectionChipState.resolve(
-                  view.service.state.value.connection,
-                  view.connectedTarget?.target ?? controller.selectedTarget,
-                ),
-              ),
+              connectionChip,
             ],
           ),
         ),
@@ -1091,6 +1152,152 @@ class _PickSection extends StatelessWidget {
       ),
     ];
   }
+}
+
+/// 빈 상태 창 인식 타일(F3d, 시안 Empty-Scan `.tile` 120 높이). 창 크기 · 게임 여부는 `scanner.target.list`(FB-4 client
+/// 크기 · game) 값이고 모르면 '—'다. 배율은 프로토콜에 값이 없어 늘 '—'다. 못 찾으면 테두리 빨강 2.4, 찾으면 기본 2.
+class _FirstScanTargetTile extends StatelessWidget {
+  const _FirstScanTargetTile({required this.view});
+
+  final ScanPickView view;
+
+  @override
+  Widget build(BuildContext context) {
+    final connected = view.connectedTarget;
+    final target = connected != null
+        ? connected.target
+        : view.controller.selectedTarget;
+    final found = target != null;
+    final size = target != null && target.hasClientSize
+        ? '${target.clientWidth}×${target.clientHeight}'
+        : '—';
+    final game = target?.game == ScannerTargetGame.blueArchive
+        ? 'Blue Archive'
+        : '—';
+    Widget value(String label, String text, String key) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 64,
+          child: Text(label, maxLines: 1, style: _body(13, color: _muted)),
+        ),
+        const SizedBox(width: 18),
+        Text(
+          text,
+          key: ValueKey(key),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _body(13, weight: FontWeight.w700),
+        ),
+      ],
+    );
+    return CustomPaint(
+      painter: _FirstScanTilePainter(found: found),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 31.2 + 10),
+        child: Row(
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 280),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('창 인식', maxLines: 1, style: kitDisplayStyle(10)),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        found ? '찾음' : '찾지 못함',
+                        key: const ValueKey('scan-empty-target-state'),
+                        maxLines: 1,
+                        style: kitDisplayStyle(22),
+                      ),
+                      const SizedBox(width: 10),
+                      BaChip(
+                        label: found ? '게임 창' : '게임 창 없음',
+                        tone: found ? AppTones.ok : AppTones.danger,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 26),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                value('창 크기', size, 'scan-empty-target-size'),
+                const SizedBox(height: 6),
+                value('게임 여부', game, 'scan-empty-target-game'),
+                const SizedBox(height: 6),
+                value('배율', '—', 'scan-empty-target-scale'),
+              ],
+            ),
+            const Spacer(),
+            EmptyStateActionRow(
+              actions: [
+                EmptyStateAction(
+                  key: const ValueKey('scan-empty-find'),
+                  label: '창 찾기',
+                  glyph: EmptyStateGlyph.search,
+                  onPressed: view.onOpenPanel,
+                  primary: !found,
+                ),
+                EmptyStateAction(
+                  key: const ValueKey('scan-empty-start'),
+                  label: '스캔 시작',
+                  glyph: EmptyStateGlyph.play,
+                  onPressed: found ? view.onStartFirstScan : null,
+                  primary: found,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FirstScanTilePainter extends CustomPainter {
+  const _FirstScanTilePainter({required this.found});
+
+  final bool found;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cut = diagonalCutDepth(size.height);
+    final path = diagonalRoundedPolygon(
+      [
+        Offset(cut, 0),
+        Offset(size.width, 0),
+        Offset(size.width - cut, size.height),
+        Offset(0, size.height),
+      ],
+      radius: 8,
+      corner: DiagonalCornerStyle.quadratic,
+    );
+    canvas.drawPath(
+      path,
+      Paint()..color = const Color.fromRGBO(16, 24, 35, 0.6),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = found ? 2 : 2.4
+        ..color = found
+            ? const Color.fromRGBO(113, 199, 244, 0.16)
+            : const Color.fromRGBO(255, 126, 138, 0.55),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FirstScanTilePainter oldDelegate) =>
+      oldDelegate.found != found;
 }
 
 /// 제목 줄 오른쪽 연결 칩(시안 `.conn 연결됨 · Blue Archive`). 머리글 칩과 같은 상태 · 모양이지만 누를 수 없고, 머리글 칩의

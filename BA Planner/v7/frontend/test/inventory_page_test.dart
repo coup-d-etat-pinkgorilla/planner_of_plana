@@ -74,7 +74,7 @@ void main() {
   );
 
   testWidgets(
-    'shortage view without a plan, all view edit-save, plan and scan actions',
+    'empty guide, all view edit-save, plan and scan actions, shortage view without a plan',
     (tester) async {
       await _standardSurface(tester);
       final service = MockAppService();
@@ -89,11 +89,15 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('inventory-page')), findsOneWidget);
-      // 기본 진입은 부족 진단(FD-094). 저장된 계획이 없으면 그렇게 알린다.
-      expect(find.textContaining('저장된 계획이 없습니다'), findsOneWidget);
+      // 기본 진입은 부족 진단(FD-094). F3d: 확정 인벤토리가 0개면 그 자리에 빈 상태 안내(스캔하러 가기)다.
+      expect(
+        find.byKey(const ValueKey('inventory-empty-guide')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('저장된 계획이 없습니다'), findsNothing);
       expect(_text(tester, 'inventory-kpi-shortage'), '—');
-      await _tap(tester, 'inventory-open-plan');
-      expect(planOpened, 1);
+      await _tap(tester, 'inventory-empty-open-scan');
+      expect(scanOpened, 1);
 
       await _tap(tester, 'inventory-view-all');
       // FE6-b: 전체 보기는 종류별 타일이다.
@@ -126,9 +130,16 @@ void main() {
       expect(_text(tester, 'inventory-detail-owned'), '0');
 
       await _tap(tester, 'inventory-action-plan');
-      expect(planOpened, 2);
+      expect(planOpened, 1);
       await _tap(tester, 'inventory-action-scan');
-      expect(scanOpened, 1);
+      expect(scanOpened, 2);
+
+      // 확정 항목이 생긴 뒤의 부족 진단: 저장된 계획이 없으면 그렇게 알린다.
+      await _tap(tester, 'inventory-view-shortage');
+      expect(find.byKey(const ValueKey('inventory-empty-guide')), findsNothing);
+      expect(find.textContaining('저장된 계획이 없습니다'), findsOneWidget);
+      await _tap(tester, 'inventory-open-plan');
+      expect(planOpened, 2);
       await service.dispose();
     },
   );

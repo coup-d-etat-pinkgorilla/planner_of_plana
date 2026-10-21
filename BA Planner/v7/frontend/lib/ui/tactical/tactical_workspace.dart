@@ -33,6 +33,7 @@ import '../kit/kit_pressable.dart';
 import '../kit/section_frame.dart';
 import '../kit/skew_controls.dart';
 import '../studio/tactical_studio_layout.dart';
+import '../widgets/empty_state_panel.dart';
 import '../widgets/section_template_surface.dart' show sectionCanvasElementRect;
 import 'tactical_deck_widgets.dart';
 import 'tactical_jokbo_view.dart';
@@ -205,10 +206,14 @@ class TacticalWorkspace extends StatelessWidget {
     this.onDropJokbo,
     this.lobby = const TacticalLobbyPanel.unavailable(),
     this.sectionOffset,
+    this.emptyGuide,
   });
 
   /// S2 로비 스캔(FE9-c).
   final TacticalLobbyPanel lobby;
+
+  /// 기록 0건 안내(F3d, 시안 Empty-Tactical). 있으면 S3은 제목 "공격 기록"과 이 안내만이다(작성 칸 없음).
+  final Widget? emptyGuide;
 
   /// 하위 화면 전환 중 섹션마다 민 거리(FE9-e, 부착면 intro/outro). null이면 제자리.
   final Offset Function(String sectionId)? sectionOffset;
@@ -877,11 +882,49 @@ class TacticalWorkspace extends StatelessWidget {
 
   // --- S3 기록 작성 -------------------------------------------------------------
 
+  /// 시안 Empty-Tactical 안내 자리(S3 윗변 기준 위 150 · 높이 200, 왼쪽은 그 아래 높이의 사선에서 77.6 — 기준 (799.7, 587.2)).
+  static const _emptyGuideSlot = TacticalSlotSpec(
+    top: 150,
+    height: 200,
+    leftGap: 77.6,
+    rightGap: 24,
+  );
+
   Widget _editorSection(Size size, double scale) {
     final edges = TacticalSectionEdges.of(
       size,
       tacticalSection(tacticalEditorSectionId),
     );
+    final emptyGuide = this.emptyGuide;
+    if (emptyGuide != null) {
+      return SectionFrame(
+        section: tacticalSection(tacticalEditorSectionId),
+        surfaceKey: const ValueKey('tactical-section-$tacticalEditorSectionId'),
+        children: [
+          tacticalPlaced(
+            'tactical-slot-editor-header',
+            edges.slot(TacticalMetrics.editorHeader, scale),
+            scale,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.3),
+              child: Text(
+                '공격 기록',
+                key: const ValueKey('tactical-empty-title'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _display(20),
+              ),
+            ),
+          ),
+          tacticalPlaced(
+            'tactical-slot-empty-guide',
+            edges.slot(_emptyGuideSlot, scale),
+            scale,
+            EmptyStateFit(child: emptyGuide),
+          ),
+        ],
+      );
+    }
     final draft = this.draft;
     final editable = this.editable;
     final onSlotTap = this.onSlotTap;

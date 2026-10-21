@@ -17,9 +17,10 @@ import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_companion_dock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 /// 세션 시작만 받고 이벤트는 시험이 낸다. [failProfiles]의 종류는 시작 응답이 실패한다.
-class _QueueService extends MockAppService {
+class _QueueService extends MockAppService with F3dScannedHistory {
   final StreamController<ScannerEvent> events = StreamController.broadcast();
   final List<InventoryScanProfile?> starts = [];
   final List<String> cancels = [];
@@ -576,7 +577,7 @@ void main() {
     }) async {
       await tester.binding.setSurfaceSize(size);
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = MockAppService();
+      final service = F3dScannedMockAppService();
       addTearDown(service.dispose);
       await tester.pumpWidget(BAPlannerApp(service: service));
       await tester.pumpAndSettle();

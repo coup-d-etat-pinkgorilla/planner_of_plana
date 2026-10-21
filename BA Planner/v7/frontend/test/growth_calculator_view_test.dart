@@ -26,6 +26,7 @@ import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 /// 재화 행 id. 지어낸 id는 아이콘 파일이 없으므로 assets/item_icons/ooparts에 있는 실제 inventory id를 쓴다.
 const _resourceIds = [
@@ -43,11 +44,12 @@ const _resourceIds = [
 /// 단일 학생 계산(FB-11a) 호출 수를 세고, 정한 결과(또는 오류)를 돌려주는 mock. 크레딧 내역은 합이
 /// 1,234,567인 9범주다.
 class _CalculatorService extends MockAppService {
+  // F3d: 확정 학생 0명이면 학생 탭 그리드 대신 빈 상태 안내라, 카탈로그(aru · ayane) 밖 학생 하나만 확정으로 둔다.
   _CalculatorService({
     this.fail = false,
     this.resourceCount = 0,
     this.warnings = const [],
-  });
+  }) : super(repositoryStates: f3dOwnedStudentStates(const ['airi']));
 
   final bool fail;
   final int resourceCount;

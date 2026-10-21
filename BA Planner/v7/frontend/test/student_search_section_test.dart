@@ -16,6 +16,7 @@ import 'package:ba_planner_v7/ui/widgets/student_portrait_status_overlay.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 /// 학생 탭 canvas(기준 viewport 2560×1392에서 헤더 아래 2560×1208).
 const _canvas = Size(2560, 1208);
@@ -470,7 +471,10 @@ void main() {
 
   group('학생 페이지 연결', () {
     testWidgets('고른 학생이 최근 본 학생 앞에 오고 앱 셸 목록을 쓴다', (tester) async {
-      final service = MockAppService();
+      // F3d: 확정 학생 0명이면 그리드 대신 빈 상태 안내라, 카탈로그(aru · ayane) 밖 학생 하나만 확정으로 둔다.
+      final service = MockAppService(
+        repositoryStates: f3dOwnedStudentStates(const ['airi']),
+      );
       final recent = RecentStudents();
       tester.view.physicalSize = const Size(2560, 1392);
       tester.view.devicePixelRatio = 1;

@@ -84,6 +84,7 @@ import '../statistics/statistics_supply_evidence.dart';
 import '../statistics/statistics_topics.dart';
 import '../statistics/statistics_workspace.dart';
 import '../widgets/account_section_cluster.dart' show accountLastScanText;
+import '../widgets/empty_state_panel.dart';
 import '../widgets/student_filter_modal.dart';
 
 export '../statistics/statistics_topics.dart' show StatisticsMode;
@@ -573,6 +574,25 @@ class _StatisticsPageState extends State<StatisticsPage> {
     if (!mounted || generation != _generation) return;
     await _loadHistory(generation, profile);
   }
+
+  /// 이력 스냅샷 0(F3d): 이력을 끝까지 읽었고 오류가 없는데 스냅샷이 하나도 없다.
+  bool get _historyEmpty {
+    final history = _history;
+    return !_loading &&
+        !_historyLoading &&
+        _historyError == null &&
+        history != null &&
+        history.snapshotTimes.isEmpty;
+  }
+
+  /// 시안 Empty-Stats 안내(버튼 없음).
+  static const _emptyGuide = EmptyStateGuide(
+    key: ValueKey('statistics-empty-guide'),
+    glyph: EmptyStateGlyph.bars,
+    width: 900,
+    title: '스캔이 쌓이면 변화가 보입니다.',
+    body: '학생 · 인벤토리를 스캔할 때마다 기록이 남고, 두 번째 스캔부터 추이를 그립니다.',
+  );
 
   /// 이력(FE7-h): events 전부(같은 anchor, cursor 끝까지), 보유 학생 · 카탈로그 재화의 scan_latest(256개씩).
   Future<void> _loadHistory(int generation, RepositoryProfile profile) async {
@@ -1210,6 +1230,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
         ),
         evidenceActions: _evidenceActions(growthView, supplyView, scope: scope),
+        emptyGuide: _historyEmpty ? _emptyGuide : null,
         onModeChanged: (mode) => setState(() {
           _mode = mode;
           _growthSelection = null;

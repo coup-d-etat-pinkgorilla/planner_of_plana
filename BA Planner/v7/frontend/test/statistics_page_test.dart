@@ -15,37 +15,45 @@ import 'package:ba_planner_v7/ui/statistics/statistics_workspace.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 RepositoryState repositoryState({bool goals = false}) =>
-    RepositoryState.fromWire({
-      'profile_id': '000000000000000000000001',
-      'revision': 4,
-      'students': [
-        {
-          'version': 1,
-          'student_id': 'aru',
-          'values': {'level': 50, 'bond_rank': 100, 'student_star': 3},
-        },
-      ],
-      'inventory': {
-        'version': 1,
-        'entries': [
-          {
-            'key': 'Item_Icon_ExpItem_0',
-            'item_id': 'Item_Icon_ExpItem_0',
-            'quantity': '0',
-          },
-        ],
+    RepositoryState.fromWire(repositoryStateWire(goals: goals));
+
+/// F3d: 이력 스냅샷 0이면 가운데 섹션이 빈 상태 안내라, 타일을 보는 시험은 이 상태로 끝나는 스캔 1건 이력을 준다.
+RepositoryCurrentHistory scannedHistory({bool goals = false}) =>
+    f3dOneScanHistory(repositoryStateWire(goals: goals));
+
+Map<String, dynamic> repositoryStateWire({bool goals = false}) => {
+  'profile_id': '000000000000000000000001',
+  'revision': 4,
+  'students': [
+    {
+      'version': 1,
+      'student_id': 'aru',
+      'values': {'level': 50, 'bond_rank': 100, 'student_star': 3},
+    },
+  ],
+  'inventory': {
+    'version': 1,
+    'entries': [
+      {
+        'key': 'Item_Icon_ExpItem_0',
+        'item_id': 'Item_Icon_ExpItem_0',
+        'quantity': '0',
       },
-      'goals': {
-        'version': 1,
-        'goals': goals
-            ? [
-                {'student_id': 'aru', 'target_level': 60},
-              ]
-            : <dynamic>[],
-      },
-    });
+    ],
+  },
+  'goals': {
+    'version': 1,
+    'goals': goals
+        ? [
+            {'student_id': 'aru', 'target_level': 60},
+          ]
+        : <dynamic>[],
+  },
+};
+
 
 Widget _subject(
   AppService service, {
@@ -191,7 +199,10 @@ void main() {
   testWidgets('topic buttons switch the tile list without reading again', (
     tester,
   ) async {
-    final service = _StatisticsService(repositoryState());
+    final service = _StatisticsService(
+      repositoryState(),
+      history: scannedHistory(),
+    );
     addTearDown(service.dispose);
     await tester.pumpWidget(_subject(service));
     await tester.pumpAndSettle();
@@ -339,7 +350,10 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(size);
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = _StatisticsService(repositoryState(goals: true));
+      final service = _StatisticsService(
+        repositoryState(goals: true),
+        history: scannedHistory(goals: true),
+      );
       addTearDown(service.dispose);
       await tester.pumpWidget(_subject(service));
       await tester.pumpAndSettle();
@@ -358,8 +372,12 @@ class _StatisticsService extends MockAppService {
     this.snapshot, {
     this.studentFailure = false,
     this.stateLoads = const [],
+    this.history,
   });
   final RepositoryState snapshot;
+
+  /// 이력(F3d). 없으면 기록 없는 계정이다.
+  final RepositoryCurrentHistory? history;
   int grossCalls = 0, shortageCalls = 0, profileCalls = 0;
   bool studentFailure, noProfile = false;
   final List<Future<RepositoryState>> stateLoads;
@@ -406,7 +424,7 @@ class _StatisticsService extends MockAppService {
   @override
   Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
     RepositoryHistoryEventsRequest request,
-  ) async => repositoryHistoryEvents(_current, null, request);
+  ) async => repositoryHistoryEvents(_current, history, request);
 
   @override
   Future<RepositoryHistoryScanLatestResult> loadRepositoryHistoryScanLatest(
@@ -414,7 +432,7 @@ class _StatisticsService extends MockAppService {
   ) async => repositoryHistoryScanLatest(
     request.profileId,
     _current.revision,
-    null,
+    history,
     request,
   );
 

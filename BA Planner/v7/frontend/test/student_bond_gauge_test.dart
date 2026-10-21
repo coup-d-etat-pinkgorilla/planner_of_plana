@@ -12,6 +12,7 @@ import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 /// 시안 학생 S3 인연 삼각형 자리 크기(56.10×318.16). 오른쪽 위가 꼭짓점인 직각삼각형.
 const _gaugeSize = Size(56.1, 318.16);
@@ -358,7 +359,10 @@ void main() {
 
   group('학생 탭 연결', () {
     testWidgets('S3 게이지가 저장된 활성 계획의 마지막 단계 목표를 쓴다', (tester) async {
-      final service = MockAppService();
+      // F3d: 확정 학생 0명이면 그리드 대신 빈 상태 안내라, 카탈로그(aru · ayane) 밖 학생 하나만 확정으로 둔다.
+      final service = MockAppService(
+        repositoryStates: f3dOwnedStudentStates(const ['airi']),
+      );
       await tester.binding.setSurfaceSize(const Size(1920, 1080));
       addTearDown(() async {
         await tester.binding.setSurfaceSize(null);

@@ -11,6 +11,7 @@ import 'package:ba_planner_v7/ui/pages/student_page.dart';
 import 'package:ba_planner_v7/ui/widgets/student_section_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 Widget _subject(
   MockAppService service,
@@ -41,7 +42,10 @@ void main() {
   testWidgets('catalog search and calculator entry use services', (
     tester,
   ) async {
-    final service = MockAppService();
+    // F3d: 확정 학생 0명이면 그리드 대신 빈 상태 안내라, 카탈로그(aru · ayane) 밖 학생 하나만 확정으로 둔다.
+    final service = MockAppService(
+      repositoryStates: f3dOwnedStudentStates(const ['airi']),
+    );
     PlanningStudentSeed? seed;
     await tester.binding.setSurfaceSize(const Size(1024, 768));
     addTearDown(() async {
@@ -104,7 +108,10 @@ void main() {
   testWidgets('long names and missing metadata remain searchable', (
     tester,
   ) async {
-    final service = MockAppService();
+    // F3d: 확정 학생 0명이면 그리드 대신 빈 상태 안내라, 카탈로그(aru · ayane) 밖 학생 하나만 확정으로 둔다.
+    final service = MockAppService(
+      repositoryStates: f3dOwnedStudentStates(const ['airi']),
+    );
     service.setLongNames(true);
     service.setMissingMetadata(true);
     addTearDown(service.dispose);

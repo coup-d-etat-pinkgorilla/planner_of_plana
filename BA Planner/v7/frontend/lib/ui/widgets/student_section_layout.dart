@@ -24,6 +24,7 @@ import 'animated_section_stack.dart';
 import 'asset_image_grid.dart';
 import 'ba_triangle_background.dart';
 import 'bond_rank_portrait.dart';
+import 'empty_state_panel.dart';
 import 'growth_calculator_section.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_student_step_tile.dart';
@@ -836,6 +837,31 @@ Path? studentFeaturePath(Size size, String id) {
   return Path.combine(PathOperation.intersect, raw, parent);
 }
 
+/// F3d 빈 상태(시안 Empty-Student): 안내는 (448, 360), 점선 카드 줄은 (224, 640)이다(기준 콘텐츠 2560×1208). 그 비율
+/// 자리를 S2 목록 자리 안 좌표로 옮기고, 작은 창에서는 [EmptyStateFit]이 줄이기만 한다.
+List<Widget> _studentEmptyChildren(Size size, Rect listBounds, Widget guide) {
+  final sx = size.width / 2560;
+  final sy = size.height / 1208;
+  return [
+    Positioned(
+      left: math.max(0, 448 * sx - listBounds.left),
+      top: math.max(0, 360 * sy - listBounds.top),
+      right: 0,
+      height: 250 * sy,
+      child: EmptyStateFit(child: guide),
+    ),
+    Positioned(
+      left: math.max(0, 224 * sx - listBounds.left),
+      top: math.max(0, 640 * sy - listBounds.top),
+      right: 0,
+      height: EmptyStateCardOutlines.cardSize.height * sy,
+      child: const EmptyStateFit(
+        child: EmptyStateCardOutlines(key: ValueKey('student-empty-cards')),
+      ),
+    ),
+  ];
+}
+
 class StudentSectionLayout extends StatefulWidget {
   const StudentSectionLayout({
     super.key,
@@ -862,6 +888,7 @@ class StudentSectionLayout extends StatefulWidget {
     this.restrictedIds,
     this.restrictionLabel,
     this.onClearRestriction,
+    this.emptyGuide,
   });
 
   final List<StudentCatalogEntry> students;
@@ -904,6 +931,10 @@ class StudentSectionLayout extends StatefulWidget {
   final Set<String>? restrictedIds;
   final String? restrictionLabel;
   final VoidCallback? onClearRestriction;
+
+  /// 확정 학생 0명 안내(F3d, 시안 Empty-Student). 있으면 S2 그리드 · 목록 자리에 안내와 점선 카드 줄만 둔다(계산기
+  /// 모드가 아닐 때). S1 · S3 · S4는 그대로다.
+  final Widget? emptyGuide;
 
   @override
   State<StudentSectionLayout> createState() => _StudentSectionLayoutState();
@@ -1444,7 +1475,9 @@ class _StudentSectionLayoutState extends State<StudentSectionLayout>
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            if (_section2View == StudentSection2View.grid)
+                            if (widget.emptyGuide case final guide?)
+                              ..._studentEmptyChildren(size, listBounds, guide)
+                            else if (_section2View == StudentSection2View.grid)
                               StudentDiagonalGrid(
                                 key: const ValueKey(
                                   'student-section-2-grid-view',

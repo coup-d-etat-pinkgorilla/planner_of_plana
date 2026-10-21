@@ -32,6 +32,7 @@ import 'animated_section_stack.dart';
 import 'ba_triangle_background.dart';
 import 'diagonal_menu.dart' show roundedPolygonPath;
 import 'diagonal_media_list_item.dart';
+import 'empty_state_panel.dart';
 import 'lifted_path_shadow.dart';
 import 'plan_flow_workspace.dart';
 import 'plan_preset_manager.dart';
@@ -1230,10 +1231,7 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
         widget.loadRepositoryPlan ? 'plan-home-loading' : 'plan-home-not-loaded',
       );
     } else if (document.stages.isEmpty) {
-      resourceNotice = _homeNotice(
-        '활성 계획이 비어 있습니다. 계획 만들기로 시작할 수 있습니다.',
-        'plan-home-empty',
-      );
+      resourceNotice = _homeNotice('—', 'plan-home-empty');
     } else if (_calculationUnavailable) {
       resourceNotice = _homeNotice(
         planCalculationUnavailableMessage,
@@ -1247,8 +1245,20 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     } else {
       resourceNotice = null;
     }
+    // F3d 시안 Empty-Plan: 활성 계획이 비어 있으면 S2 판에 안내 두 줄 · 예시 한 줄 · "계획 만들기", S3는 '—'.
+    final emptyPlan =
+        !noProfile &&
+        calculationError == null &&
+        document != null &&
+        document.stages.isEmpty;
+    final createScenario =
+        busy || noProfile || widget.service is! PlanningScenarioRepositoryService
+        ? null
+        : _openScenarioCreation;
     final Widget phaseNotice = calculationError != null && document == null
         ? _homeNotice('활성 계획을 읽지 못했습니다.', 'plan-home-load-error')
+        : emptyPlan
+        ? _PlanEmptyGuide(onCreate: createScenario)
         : (resourceNotice ?? const SizedBox.shrink());
     String count(int? value, String unit) =>
         value == null ? '—' : '$value$unit';
@@ -1935,6 +1945,91 @@ Rect planScenarioComparisonRailBandRect(
   final left = planPhaseLeftBoundary(size, bandBottom) + inset;
   final right = planPhaseRightBoundary(size, bandTop) - inset;
   return Rect.fromLTRB(left, bandTop, math.max(left + 1, right), bandBottom);
+}
+
+/// 활성 계획 0(F3d, 시안 Empty-Plan). 시안은 S2 위쪽 776.8×360 타일 안쪽 좌우 73.5 + 10 · 위아래 24에 두 줄 · 예시 한
+/// 줄 · "계획 만들기"를 22 간격으로 세로 가운데에 둔다. 앱은 키 큰 S2 판의 맨 위 높이 360 띠를 그 타일로 본다. 판 왼쪽
+/// 사선은 위로 갈수록 안쪽이라 왼쪽은 내용 칸 위 끝, 오른쪽은 아래 끝의 사선 경계에서 [_gap] 안쪽에 둔다(어떤 판
+/// 크기에서도 사선 안쪽). 자리보다 크면 줄이기만 한다.
+class _PlanEmptyGuide extends StatelessWidget {
+  const _PlanEmptyGuide({required this.onCreate});
+
+  static const _tileWidth = 776.8;
+  static const _tileHeight = 360.0;
+  static const _inset = 73.5 + 10;
+  static const _padding = 24.0;
+  static const _contentWidth = _tileWidth - _inset * 2;
+
+  /// 시안 타일에서 내용 칸 왼쪽(83.5)과 그 위 끝(24)의 사선 경계(63.5 × (1 − 24/360)) 사이 = 24.2.
+  static const _gap = 24.0;
+
+  final VoidCallback? onCreate;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      // 판(`_ParallelogramClipper`) 안 Center라 최대 크기가 곧 판 크기다.
+      final panel = Size(
+        constraints.maxWidth.isFinite ? constraints.maxWidth : _tileWidth,
+        constraints.maxHeight.isFinite ? constraints.maxHeight : _tileHeight,
+      );
+      final bandBottom = math.min(_tileHeight, panel.height);
+      final contentBottom = math.max(_padding, bandBottom - _padding);
+      final left = planPhaseLeftBoundary(panel, _padding) + _gap;
+      final right = math.max(
+        left,
+        planPhaseRightBoundary(panel, contentBottom) - _gap,
+      );
+      return SizedBox.fromSize(
+        size: panel,
+        child: Stack(
+          children: [
+            Positioned.fromRect(
+              rect: Rect.fromLTRB(left, 0, right, bandBottom),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: _padding),
+                child: EmptyStateFit(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    key: const ValueKey('plan-empty-guide'),
+                    width: _contentWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const EmptyStateLines(
+                          title: '학생을 고르고 목표를 정하면 필요한 재료가 계산됩니다.',
+                          body: '계획이 하나 생기면 이 자리에 페이즈와 학생 목록이 나옵니다.',
+                        ),
+                        const SizedBox(height: 22),
+                        EmptyStateExampleRow(
+                          portraitAsset: GameAssets.studentPortrait('mika'),
+                          name: '미카',
+                          change: '레벨 70 → 90',
+                          result: '크레딧 4.8M · 활동 보고서 (최상급) 38',
+                        ),
+                        const SizedBox(height: 22),
+                        EmptyStateActionRow(
+                          actions: [
+                            EmptyStateAction(
+                              key: const ValueKey('plan-empty-create'),
+                              label: '계획 만들기',
+                              glyph: EmptyStateGlyph.plus,
+                              onPressed: onCreate,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class _PlanComparisonTarget {

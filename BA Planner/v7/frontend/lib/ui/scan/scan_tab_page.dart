@@ -179,6 +179,21 @@ class _ScanTabPageState extends State<ScanTabPage> {
     _lastView = view;
   }
 
+  /// 스캔 기록 0회(F3d): FB-2b 종류별 마지막 스캔을 읽었는데 학생 · 아이템 모두 스캔 없음이고, 이 실행에서도 스캔하지 않았다.
+  /// 읽기 전 · 실패(null)면 지금 화면 그대로다.
+  bool get _firstScan {
+    final scans = _lastScans;
+    if (scans == null || _controller.recent.isNotEmpty) return false;
+    bool none(ScanLastScan scan) => scan.known && scan.at == null;
+    return none(scans.student) && scans.items.values.every(none);
+  }
+
+  /// 빈 상태 '스캔 시작': 기본 학생 전체 스캔으로 시작한다.
+  void _startFirstScan() {
+    _controller.pickStudent(StudentScanMode.full);
+    unawaited(_controller.startPick());
+  }
+
   void _openPanel() {
     if (widget.connectedTarget == null) return;
     setState(() => _panelRequested = true);
@@ -363,10 +378,12 @@ class _ScanTabPageState extends State<ScanTabPage> {
     final pageShown =
         sessionShown && !runShown && !reviewShown && !itemReviewShown;
     final connectedTarget = widget.connectedTarget;
+    final firstScan = !sessionShown && _firstScan;
+    // 빈 상태에서는 창 선택 패널이 저절로 붙지 않는다('창 찾기'가 연다, 시안 Empty-Scan).
     final panelVisible =
         widget.active &&
         connectedTarget != null &&
-        (_panelRequested || (!_connected && !_panelDismissed));
+        (_panelRequested || (!_connected && !_panelDismissed && !firstScan));
     ScanPickView pickView({required bool panel}) => ScanPickView(
       controller: _controller,
       service: widget.service,
@@ -378,6 +395,10 @@ class _ScanTabPageState extends State<ScanTabPage> {
       onOpenPanel: panel && connectedTarget != null ? _openPanel : null,
       onClosePanel: _closePanel,
       onUseTarget: _useTarget,
+      firstScan: panel && firstScan,
+      onStartFirstScan: scanStartBlock(_controller) == ScanStartBlock.none
+          ? _startFirstScan
+          : null,
     );
     return Stack(
       key: const ValueKey('scan-tab-page'),

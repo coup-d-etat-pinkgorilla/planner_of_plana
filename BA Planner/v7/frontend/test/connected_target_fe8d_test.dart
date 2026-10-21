@@ -9,6 +9,7 @@ import 'package:ba_planner_v7/ui/scan/connected_target_controller.dart';
 import 'package:ba_planner_v7/ui/scan/header_connection_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 const _ready = ScannerTarget(
   id: 'ba-window',
@@ -57,7 +58,7 @@ const _baseState = AppServiceState(
 );
 
 /// 창 목록을 테스트가 바꿀 수 있는 Mock(그 밖의 동작은 [MockAppService]와 같다).
-class _TargetListMock extends MockAppService {
+class _TargetListMock extends MockAppService with F3dScannedHistory {
   _TargetListMock() : super();
 
   List<ScannerTarget> targets = const [_ready];
@@ -400,7 +401,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1280, 720));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = MockAppService();
+      final service = F3dScannedMockAppService();
       addTearDown(service.dispose);
       await tester.pumpWidget(BAPlannerApp(service: service));
       await tester.pumpAndSettle();
@@ -442,7 +443,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final service = MockAppService();
+      final service = F3dScannedMockAppService();
       addTearDown(service.dispose);
       await tester.pumpWidget(BAPlannerApp(service: service));
       await tester.pumpAndSettle();

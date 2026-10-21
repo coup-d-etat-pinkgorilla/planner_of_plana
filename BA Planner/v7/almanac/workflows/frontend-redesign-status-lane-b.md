@@ -6532,3 +6532,179 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 다음 행동
 
 - CF: `debug/frontend_f3a/output.md` 검토 → (다른 레인 정지 뒤) `fe_gate.ps1` — 새 golden 2장은 기준 PNG가 없어 RED 예상 → 실패 이미지 검토 → `fe_gate.ps1 -UpdateGoldens` → `fe_gate.ps1` GREEN → `fe_commit.ps1 -Slice f3a`. 그다음 F3c(XB X4 개정 뒤), F3f(XB 에셋 형식 · 라이선스 확인 → 사용자 승인).
+
+## F3d 착수 기록 — 빈 상태 6장 (Lane B, 2026-10-21)
+
+- 상태: **진행 중**. 시작 SHA `7214461c97d5177dca256da1692472e500c93027`(브랜치 `scanner-consolidation`). 이 파일 끝에 다른 "F3d 착수 기록" 없음을 확인했다. 같은 시각 Lane A가 F3b(`lib/ui/first_run/**` · title_page · app.dart · app_shell 시작 판단)를 하고 있다 — 그 파일들은 건드리지 않는다.
+- 근거: Empty-Scan · Empty-Student · Empty-Inventory · Empty-Plan · Empty-Stats · Empty-Tactical(`docs/frontend-redesign/prototype/2026-10-20/`, Empty-Backend는 F3c), 캔버스 메모 frEmpty · frEmpty2, 튜토리얼 구상 §2. 막힘 요약에 F3d를 막는 '열림' FD 없음(열림 0건).
+- 착수 전 사용자 결정(AskUserQuestion, 2026-10-21): ① 기본 `MockAppService()`가 여섯 탭 모두 빈 계정이라 빈 안내가 기존 위젯 시험의 화면을 가린다 → **기존 시험을 고친다**(데이터를 넣거나 안내를 지나가게, 고친 시험 파일마다 pre 사본). ② 스캔 이력 0인데 게임 창이 이미 연결된 경우 → **첫 스캔 전까지 안내 유지**(창 인식 타일 '찾음' + '스캔 시작' = 기본 학생 전체 스캔).
+- 고칠 기존 파일(pre 사본 `debug/frontend_f3d/pre/frontend/...`, 전부 **기존 미커밋 변경 없음**, CRLF):
+  - `frontend/lib/ui/scan/scan_tab_page.dart` · `scan_tab_sections.dart`
+  - `frontend/lib/ui/pages/student_page.dart` · `frontend/lib/ui/widgets/student_section_layout.dart`
+  - `frontend/lib/ui/inventory/inventory_workspace.dart`
+  - `frontend/lib/ui/widgets/plan_section_layout.dart`
+  - `frontend/lib/ui/pages/statistics_page.dart` · `frontend/lib/ui/statistics/statistics_workspace.dart`
+  - `frontend/lib/ui/pages/tactical_page.dart` · `frontend/lib/ui/tactical/tactical_workspace.dart`
+  - 기존 시험 파일: 빈 안내 때문에 깨지는 것만, 고치기 직전에 pre 사본(종료 기록에 목록).
+- 새 파일: `frontend/lib/ui/widgets/empty_state_panel.dart`(키트 밖 공용 빈 상태 위젯), `frontend/test/empty_states_f3d_test.dart`, `frontend/test/goldens/f3d_empty_states_golden_test.dart`, `debug/frontend_f3d/commit.json` · `output.md`.
+- 안 고침: Lane A 파일 · `lib/ui/tutorial/**` · `lib/services/**` · `lib/ui/kit/**` · golden harness · 기존 기준 이미지 · `frontend/tool/**` · backend · contracts · pubspec · 택틱 · 스캐너 소유 파일.
+
+## F3d 종료 기록 — 빈 상태 6장 (Lane B, 2026-10-21)
+
+- 상태: **완료(워커 몫)**. 시작 SHA `7214461c`. 고친 기존 파일 28개(lib 10 · 시험 18, 전부 pre 사본 있음 · 기존 미커밋 변경 없음), 새 파일 4개. 의존성 · pubspec · kit · services · golden harness · 기존 기준 이미지 · Lane A 파일 그대로.
+- 착수 기록 정정: 고친 파일의 줄바꿈은 섞여 있다 — CRLF는 `statistics_page.dart` · `tactical_page.dart` · `plan_section_layout.dart` · `inventory_page_test.dart` · `statistics_app_shell_test.dart` · `statistics_page_test.dart` · `widget_test.dart`, 나머지는 LF. 파일마다 원래 줄바꿈을 유지했다(바이트 검사: CRLF 파일은 CRLF 수 = 줄 수, LF 파일은 CR 0).
+- 근거: Empty-Scan · Empty-Student · Empty-Inventory · Empty-Plan · Empty-Stats · Empty-Tactical, frEmpty · frEmpty2, 튜토리얼 구상 §2. 착수 전 사용자 결정 2건(착수 기록).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze <바꾼 lib 11개>` | No issues found |
+| `dart format` 새 파일 3개(경로만) · 기존 파일은 사본에서 형식 비교 뒤 내 줄만 반영(5곳) | — |
+| `flutter test` 관련 83개 파일(1회차, 코드만 바꾼 뒤) | +967 −47(22개 파일 — 전부 기본 빈 Mock에서 안내가 가린 finder 실패, 넘침 예외 0) → 시험 고침 |
+| `flutter test test/empty_states_f3d_test.dart` | **+22 All tests passed** |
+| 그룹별 재실행(스캔 8 · 학생 5 · 인벤토리/통계 4 · 전술 1) | 스캔 1회차 −2(fe8g3 셸 열기 helper) → 고침 → 전부 통과 |
+| `flutter analyze`(frontend 전체) | **No issues found!**(error · warning · info 0) |
+| `flutter test` 90개 파일(관련 83 + 셸 · 탭을 여는 6 + 새 시험, Lane A 진행 중 `first_run_f3b_test.dart` 제외) | **+1112 All tests passed** |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교, 일회성 golden 렌더(파일 삭제 금지라 사본을 만들지 않음), 맨 `flutter test`, Python. 로그: `debug/frontend_f3d/test_run1.log` · `test_run2.log` · `test_*2.log` · `analyze_full.log`(로컬).
+- 같은 시각 Lane A가 `app.dart` · `main.dart` · `title_page.dart` · `lib/ui/first_run/**`를 고치는 중이었다 — 위 90개 파일 실행은 그 작업트리 상태에서 통과했다.
+
+### 탭별 빈 판단 조건(하나라도 있으면 지금 화면 그대로)
+
+| 탭 | 빈 상태 조건(코드) | 값 출처 |
+|---|---|---|
+| 스캔 | 고르기 보기이고, FB-2b `scan_latest` by_kind를 읽었고(null = 읽기 전 · 실패면 아님) 학생 · 아이템 모두 `ScanLastScan.none`, 이 실행 최근 스캔(`controller.recent`) 0 | 스캔 탭이 이미 읽는 `_lastScans` |
+| 학생 | 계정 상태를 읽었고 `students` 0(확정 0명) | `_repositoryState` |
+| 인벤토리 | "부족한 것" 보기 · 읽기 끝 · 연결 · 목록/계정 오류 없음 · 카탈로그 있음 · `inventory.entries` 0 | `controller.repositoryState` |
+| 계획 | 계정 있음 · 계산 오류 없음 · 활성 계획 문서를 읽었고 `stages` 0. **시나리오 0개는 보지 않는다**(발견 1) | `_document` |
+| 통계 | 읽기 끝 · 이력 읽기 끝 · 이력 오류 없음 · `StatisticsHistory.snapshotTimes` 0. 주제(학생 성장 · 인벤토리 · 계획)와 상관없이 가운데 섹션 | `_history` |
+| 전술대항전 | 목록 문구가 `tacticalEmptyText`(v2 + 이전 형식 기록 0, 연결 · 계정 · 읽기 오류 없음)이고 아직 초안을 열지 않음(`_autoSelect`) | `_rows` · `_listMessage` |
+
+### 버튼 → 동작
+
+| 탭 | 버튼(key) | 동작 |
+|---|---|---|
+| 스캔 | 창 찾기(`scan-empty-find`, 못 찾으면 분홍) | 기존 창 선택 패널을 오른쪽 섹션 자리에 연다(`_openPanel`). 빈 상태에서는 패널이 저절로 붙지 않는다 |
+| 스캔 | 스캔 시작(`scan-empty-start`) | 창을 찾았고 시작 막힘이 없을 때만 켜짐 → `pickStudent(full)` + `startPick()`(기본 학생 전체 스캔) |
+| 학생 | 스캔하러 가기(`student-empty-open-scan`) | 기존 `onOpenScan`(셸 `_open(AppSection.scan)`) |
+| 학생 | 직접 입력(`student-empty-manual`) | 비활성 + '다음 버전에 들어갑니다'(FD-178) |
+| 인벤토리 | 스캔하러 가기(`inventory-empty-open-scan`) | 기존 `onOpenScan` |
+| 계획 | 계획 만들기(`plan-empty-create`) | 기존 `_openScenarioCreation`(S1 `plan-scenario-create-launch`와 같은 조건으로 켜짐) |
+| 통계 | — | 버튼 없음 |
+| 전술대항전 | 기록하기(`tactical-empty-record`) | 기존 `_onNewRecord`(새 공격 초안) → 안내가 걷히고 작성 칸 |
+
+### golden 변화 0 근거 + 새 장면 기대 모습
+
+- 기존 장면 70장은 모두 데이터가 있는 서비스다: 스캔 장면 = by_kind 6행(`_ScanTabGoldenService`), 학생 = `GoldenStudentMockAppService` 확정 7명, 인벤토리 = fixture 서비스(항목 있음), 통계 = 이력 fixture(스냅샷 7), 전술 = v2 seed · 로비 seed · 이관 장면은 v1 기록 2(조건이 이전 형식도 센다). 계획 장면은 활성 계획 있음(`GoldenActivePlanHomeMockAppService`)이거나 흐름 · 목록 · 비교 · 프리셋 화면(홈 섹션은 이미 내려가 있음 — 목록을 열기 전 `controller.reverse()`)이고, `loadRepositoryPlan: false` 장면은 `document == null`이라 조건 밖이다. 홈 · 설정 · 계정 · 타이틀 · 튜토리얼 장면은 여섯 탭을 보이지 않는다.
+- 공유 코드 변화: 스캔 고르기 제목 줄의 연결 칩을 변수로 뺀 것(같은 위젯 · 같은 인자)뿐, 데이터가 있을 때의 그리기 경로는 그대로다.
+- 새 장면 6장(`test/goldens/f3d_empty_states_golden_test.dart`, `GoldenMockAppService` 빈 계정 · 2560×1392):
+  - `empty-scan`: 가운데 '스캔' + '연결 안 됨' 칩, 안내 두 줄 · 스캔 틀 아이콘, 빨강 테두리 창 인식 타일('찾지 못함' · '게임 창 없음' · 창 크기/게임 여부/배율 '—' · '창 찾기' 분홍 · '스캔 시작' 흐림). 오른쪽은 지금 '시작 전 안내' 빈 문구.
+  - `empty-student`: S2에 학생 아이콘 안내 · '스캔하러 가기' 분홍 · '직접 입력' 흐림 + 이유, 점선 카드 8장. S3은 첫 카탈로그 학생(아루, 미보유) 그대로.
+  - `empty-inventory`: "부족 위험도 순위" 아래 상자 아이콘 안내 · '스캔하러 가기'.
+  - `empty-plan`: S2 판 안 두 줄 · '예시' 칩 · 미카 카드 · '레벨 70 → 90' → '크레딧 4.8M · 활동 보고서 (최상급) 38' · '계획 만들기', S3 '—'.
+  - `empty-stats`: '학생 성장' 제목 줄 아래 막대 아이콘 안내, KPI 띠 · 타일 없음.
+  - `empty-tactical`: S3 '공격 기록' + 칼 아이콘 안내 · '기록하기'.
+  - 기준 PNG가 없어 첫 gate는 이 6장만 RED 예상.
+
+### 기존 시험 변경(18개 파일, 지운 시험 0)
+
+- 공용 시험 fixture `test/fixtures/f3d_seeded_account.dart`: `F3dScannedHistory`(by_kind가 비면 학생 스캔 1건으로 답하는 mixin, 계정 상태 · revision 그대로) · `F3dScannedMockAppService` · `f3dOwnedStudentStates` · `f3dOneScanHistory`(지금 상태로 끝나는 스캔 1건 이력).
+- 스캔 8: `scan_tab_page_fe8g1`(셸 helper 기본 서비스 · 마지막 스캔 카드 단언을 "학생 1회 · 아이템 스캔 없음"으로) · `scan_item_queue_fe8g3` · `scan_item_review_fe8g5b` · `scan_review_board_fe8g4b` · `scan_run_view_fe8g2` · `connected_target_fe8d` · `home_app_shell` · `widget_test` — 서비스에 mixin 또는 `F3dScannedMockAppService`.
+- 학생 5: `student_page`(2) · `student_bond_gauge` · `student_search_section` · `growth_calculator_view` — 카탈로그(aru · ayane) 밖 `airi` 하나만 확정(보이는 카드 상태 그대로). `app_navigation_fe7d` 셸 서비스 = revision 1 계정 + 성장 fixture로 끝나는 스캔 1건 이력.
+- 인벤토리 1: `inventory_page_test` — 첫 화면 단언을 안내 · '스캔하러 가기'로, 편집 저장 뒤 "부족한 것"으로 돌아가 '저장된 계획이 없습니다' · '계획 열기'(시험 이름 변경).
+- 통계 3: `statistics_page_test`(타일을 보는 5개 시험에 스캔 1건 이력, 상태 wire 함수 분리), `statistics_app_shell_test`(1280×720 마지막 단언 = 안내), `statistics_history_view_test`(이력 0 시험 = '—' + 안내, 이름 변경).
+- 전술 1: `tactical_page_test`(빈 계정 3개 크기 시험은 안내 확인 뒤 '기록하기', 새 기록 저장 시험은 '기록하기'부터).
+
+### 처리한 FD
+
+- FD-178 적용: 학생 '직접 입력'은 개편 뒤 기능이라 비활성 + 시안 이유. '워커 재량' FD 중 F3d에 걸린 것 없음. 막힘 요약 '열림' 0건.
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 생성(새 기준 PNG 6장 없음), `fe_gate.ps1` 전체, 일회성 렌더로 시안과 눈 비교, 실제 앱(mock) 눈 확인, 실제 게임 창 · DPI, process E2E, Python.
+- 시안 좌표: 안내 블록 자리는 시안 기준 viewport의 섹션 상대 값(스캔 위 90 · 200, 인벤토리 위 140, 통계 위 160, 전술 위 150, 학생 (448, 360) 비율)으로 넣었다. studio 문서에 새 요소를 만들지 않았고 ±2px는 재지 않았다.
+
+### 검수표
+
+| artboard | 앱에서 여는 법 | 확인 포인트 |
+|---|---|---|
+| Empty-Scan | mock 기본 실행(`BA_PLANNER_MOCK_SCENARIO` 없음) → 스캔 탭 | 안내 두 줄 · 타일 '찾지 못함' · '—' 3개 · '창 찾기' → 오른쪽 패널 → 창 고르기 → '찾음' · 2560×1440 · Blue Archive · '스캔 시작' 켜짐 |
+| Empty-Student | 기본 mock은 확정 학생이 있어(전체 카탈로그) 안 보임 → 계정 추가로 새 빈 계정 → 학생 탭 | 그리드 자리 안내 · 점선 카드 8 · '직접 입력' 흐림 + 이유 · '스캔하러 가기' → 스캔 탭 |
+| Empty-Inventory | mock 기본 → 인벤토리 탭 | "부족 위험도 순위" 안내 · '전체 아이템'은 타일 그대로 |
+| Empty-Plan | mock 기본 → 계획 탭 | S2 두 줄 · 예시 줄(미카) · '계획 만들기' → 1단계, S3 '—' |
+| Empty-Stats | mock 기본 → 통계 탭 | '학생 성장' 아래 안내만 · 왼쪽 기준 데이터 '—' |
+| Empty-Tactical | mock 기본 → 전술대항전 탭 | S3 '공격 기록' + 안내 · '기록하기' → '새 공격 기록' 작성 칸 |
+
+### 발견 사항(CF 판단)
+
+1. **계획 "시나리오 0개"는 보지 않았다**: 계획 홈은 시나리오 목록을 읽지 않는다(목록 화면에서만 `listScenarios`). 새 서비스 호출을 만들지 않는 규칙대로 조건은 "활성 계획 비어 있음"만이다 → 시나리오는 있는데 활성 계획이 빈 계정도 안내가 뜬다. 필요하면 CF가 `_loadRepositoryPlan`에 시나리오 수 읽기를 더할지 결정.
+2. **스캔 '배율'은 늘 '—'**: `scanner.target.list`(FB-4)에 DPI · 배율 값이 없다. 게임 여부는 `game == null`이면 '—'(모름, '아님'이 아님). XB에 배율 필드 요청 여부 CF 결정.
+3. **스캔 "창을 찾은 뒤" 띠**: 시안 아래 띠('Blue Archive · 1280×720 · 찾음' + '스캔 시작')는 찾은 뒤 상태를 보여 주는 캔버스 설명으로 보고, 같은 타일이 '찾음'으로 바뀌게 구현했다(띠를 따로 그리지 않음). 시안 오른쪽 섹션 '선택한 스캔 —'은 앱에 없는 섹션이라 지금 '시작 전 안내' 그대로.
+4. **스캔 빈 상태에서 창 선택 패널이 저절로 붙지 않는다**(시안: '창 찾기'가 연다). 데이터가 있는 계정은 지금처럼 미연결이면 저절로 붙는다.
+5. **스캔 '스캔 시작'은 학생 전체 스캔만**(사용자 결정 ②) — 첫 스캔 전에는 아이템 스캔을 고를 수 없다. 이력 읽기 전(첫 프레임)에는 고르기 화면이 잠깐 보인 뒤 안내로 바뀔 수 있다.
+6. **통계는 주제와 상관없이** 이력 0이면 가운데 섹션이 안내다(시안은 학생 성장만 그림). v6 가져오기처럼 학생 · 인벤토리는 있는데 스캔 이력이 0인 계정도 타일이 숨는다 — CF 확인.
+7. **인벤토리는 "부족한 것" 보기에만** 안내(전체 아이템 보기는 수량 직접 고치기 경로라 그대로). 학생 탭 S3 · S4(첫 카탈로그 학생 선택, '표시 n / 전체 n · 보유 0'), 통계 왼쪽 · 오른쪽, 전술 S1 · S2 · S4는 빈 계정의 지금 모습 그대로다(시안의 '고른 학생 없음' · '전체 —'와 다름).
+8. **mock 기본 실행(`createMockAppService` = 전체 카탈로그 + 확정 학생)**에서는 학생 탭 빈 상태가 보이지 않는다(스캔 · 인벤토리 · 계획 · 통계 · 전술은 보임). 검수표대로 새 빈 계정을 만들어야 한다.
+9. 안내는 시안 크기로 그린 뒤 자리보다 크면 줄이기만 한다(`EmptyStateFit`, 1280×720 넘침 0 — 시험). 아이콘은 시안 svg path를 옮긴 빈 상태 전용 글리프(키트 `KitGlyph` 승격 후보).
+10. README 시험 · golden 수치는 기존 파일이라 고치지 않았다(새 시험 파일 1 · golden 시험 1 · 장면 +6).
+
+### 다음 행동
+
+- CF: `debug/frontend_f3d/output.md` 검토 → (Lane A 정지 뒤) `fe_gate.ps1` — 새 golden 6장 RED 예상 → 실패 이미지 검토 → `fe_gate.ps1 -UpdateGoldens` → GREEN → `fe_commit.ps1 -Slice f3d`. 발견 1 · 2 · 6 결정.
+
+## F3d 수정 착수 기록 — empty-plan 사선 잘림 (Lane B, 2026-10-21)
+
+- 상태: **진행 중**. HEAD `f99b73b2`(브랜치 `scanner-consolidation`, F3d 미커밋 작업 트리 그대로). 이 파일 끝에 다른 "F3d 수정 착수 기록" 없음을 확인했다. 같은 시각 Lane A가 F3e(설정 줄)를 하고 있다 — 그 파일들은 건드리지 않는다.
+- 근거: CF 검토(gate `20261021_072702` → `20261021_074209` GREEN) — `empty-plan` 2560×1392에서 `_PlanEmptyGuide` 왼쪽이 S2 사선 판 왼쪽 경계에 잘림. 범위: 계획 안내 자리, 다른 다섯 탭 같은 종류 잘림 확인, 사선 안쪽 시험 2크기.
+- 고칠 파일: `frontend/lib/ui/widgets/plan_section_layout.dart`(안내 자리만), 필요하면 `frontend/lib/ui/widgets/empty_state_panel.dart`, `frontend/test/empty_states_f3d_test.dart`. pre 사본은 F3d 착수 때 것 그대로.
+
+## F3d 수정 기록 — empty-plan 사선 잘림 (Lane B, 2026-10-21)
+
+- 상태: **완료(워커 몫)**. HEAD `f99b73b2`, F3d 미커밋 작업 트리 위. 고친 파일 2개(`frontend/lib/ui/widgets/plan_section_layout.dart` `_PlanEmptyGuide`만, `frontend/test/empty_states_f3d_test.dart`) — 둘 다 commit.json에 이미 있음(modified · added), pre 사본은 F3d 착수 때 것 그대로. `empty_state_panel.dart` · 다른 다섯 탭 파일 · Lane A 파일 · kit · services · golden harness · 기준 이미지 무수정. 줄바꿈 유지(plan_section_layout CRLF 3621/3621, 시험 파일 LF · CR 0), 끝 개행 하나.
+
+### 원인 · 고친 방법
+
+- 원인: 안내를 키 큰 S2 판(2560×1392에서 816×1099, 80° 평행사변형, 사선 깊이 194)의 **세로 가운데**에 두고 좌우 안쪽 여백을 판 폭 비율(`width × 83.5 / 776.8` ≈ 88)로만 정했다. 판 왼쪽 사선은 위로 갈수록 안쪽("/" 모양 — `planPhaseLeftBoundary(y) = depth × (1 − y/h)`)이라, 안내 위 끝(판 안 y ≈ 446)에서 경계가 ≈ 115로 여백 88보다 안쪽 → 왼쪽 ≈ 27px가 판 밖(계산 추정, CF 관찰과 일치).
+- 시안(Empty-Plan, `dc_outline.py`): 안내는 S2 **위쪽**(섹션 위 끝 + 60) 776.8×360 타일 안, 좌우 73.5 + 10 · 위아래 24, 세로 가운데. 아이콘 상자는 없다(두 줄 · 예시 줄 · 버튼뿐 — 앱 코드도 같음). 그래서 시험은 "아이콘 상자" 대신 안내 묶음(`plan-empty-guide`) 네 꼭짓점을 본다.
+- 고침: 판 맨 위 높이 360(판이 낮으면 판 높이) 띠를 시안 타일로 보고, 내용 칸은 위아래 24 안쪽. **왼쪽 = 내용 칸 위 끝(y=24)의 판 왼쪽 경계 + 24, 오른쪽 = 내용 칸 아래 끝(y=띠−24)의 판 오른쪽 경계 − 24**(`planPhaseLeftBoundary` · `planPhaseRightBoundary` 그대로). "/" 판에서는 왼쪽은 위 끝, 오른쪽은 아래 끝이 가장 좁은 곳이라 이 두 값이면 띠 안 어디에 그려져도 사선 안쪽이다. 프롬프트 권장(왼쪽 = 아래 y)은 이 판 방향에선 반대라 바꿨다. 24는 시안 타일에서 내용 칸 왼쪽(83.5)과 그 위 끝 사선(63.5 × (1 − 24/360) = 59.3)의 차 24.2. 자리보다 크면 기존 `EmptyStateFit`(줄이기만, 왼쪽 가운데 정렬).
+
+### 실행한 명령 · 수치(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter test test/empty_states_f3d_test.dart`(일시 probe 포함 3회 · inventory probe 1회) | 매번 All tests passed(+36 · +2). probe는 측정 뒤 시험 파일에서 지웠다(grep `PROBE`/`probe` 0건) |
+| `dart format` — 사본(스크래치)에서 두 파일 형식 비교 → 내 줄만 반영(시험 파일 변화 0) | — |
+| `flutter analyze`(frontend 전체) | **No issues found!** |
+| `flutter test` 34개 파일(`empty_states_f3d_test` + `plan_*` 19 + `planning_page_test` · `app_navigation_tidy1_test` · `game_image_f5a_test` · `tidy1_followups_test` · `growth_calculator_view_test` · `widget_test`, golden 태그 0건 확인, process E2E 제외) | **+378 All tests passed**(로그 `debug/frontend_f3d/test_fix1.log`) |
+
+- 고친 뒤 계획 안내(전역 좌표, 판 = `plan-home-phase-panel`):
+  - 2560×1392: 판 240.8–1056.9 × 281.2–1380.0, 안내 454.3–973.6 × 373.4–548.9(519×176), 판 위 끝 + 92. 사선까지 가로 여유 왼쪽 위 37 · 오른쪽 아래 47(묶음 안 글줄 · 카드 · 버튼 사각형 모두 판 clip 안, 밖 0).
+  - 1280×720: 판 134.1–500.8 × 267.2–708.0, 안내 231.6–417.6 × 415.8–478.6(186×63), 여유 46 · 50, 밖 0.
+
+### 다섯 탭 확인(일회성 probe — 시험 파일 안 임시 그룹, golden 태그 · `expectGoldenScene` 없음, 측정 뒤 지움)
+
+- 방법: 안내 아래 그려지는 사각형(글줄 · 아이콘 상자 · 버튼 · 카드, FittedBox 변환 포함) 네 꼭짓점을 조상 `RenderClipPath`의 clip path에 넣어 보고, 사선까지 가로 여유를 1px씩 셈. clip 조상이 없는 인벤토리는 섹션 polygon(`sectionCanvasElementPolygon(inventorySection(inventoryRiskSectionId))`)으로 같은 검사.
+
+| 탭 | 대조한 경계 | 1280×720 밖 · 왼쪽/오른쪽 여유 | 2560×1392 밖 · 왼쪽/오른쪽 여유 |
+|---|---|---|---|
+| 스캔 | `SectionShapeClipper` | 0 · 62 / 225 | 0 · 48 / 400+ |
+| 학생 | `_ContainerBoundsClipper` | 0 · 129 / 109 | 0 · 262 / 400+ |
+| 인벤토리 | 섹션 polygon | 0 · 28 / 64 | 0 · 28 / 149 |
+| 통계 | `SectionShapeClipper` | 0 · 66 / 152 | 0 · 66 / 400+ |
+| 전술대항전 | `SectionShapeClipper` | 0 · 19 / 159 | 0 · 43 / 220 |
+
+- 다섯 탭 모두 잘림 없음 → 고치지 않음(그 탭 golden 그대로). 이유: 안내를 섹션 **위쪽**(위 끝 + 90~160)에 두고 왼쪽을 그 높이의 섹션 변 + 여백으로 잡아 "/" 경계의 좁은 쪽을 이미 쓰고 있다. 학생 1280의 안내 상자(SizedBox 1060 축소) 오른쪽 끝은 clip 경계와 같지만 그려지는 내용 오른쪽은 109 안쪽.
+
+### 새 시험(`empty_states_f3d_test.dart` plan 그룹, 22 → 24)
+
+- `1280×720 계획 안내 묶음은 판 사선 안쪽` · `2560×1392 …`: `plan-empty-guide` 왼쪽 위 · 왼쪽 아래 x > 판 왼쪽 경계(그 y), 오른쪽 위 · 오른쪽 아래 x < 판 오른쪽 경계, 위 끝 > 판 위 끝, 아래 끝 ≤ 판 위 끝 + 360(시안처럼 위쪽 띠), 예외 0. 고치기 전 코드로는 2560에서 왼쪽 위가 경계 밖(위 추정)이라 실패하는 조건이다(고치기 전 코드로 따로 돌리지는 않음).
+
+### empty-plan 기대 모습(CF가 기준을 다시 만든다)
+
+- S2 판 **위쪽**: 판 위 끝에서 ≈ 92 아래부터 두 줄 · 예시 줄(미카) · '계획 만들기'가 판 사선 안쪽에 온전히 보인다(첫 글자 · 예시 줄 왼쪽 끝 잘림 없음). 그 아래 판은 비어 있다. S1 · S3 · 나머지 F3d 5장 · 기존 70장 + F3b 3장은 변화 0 예상(공유 코드 무수정).
+- **발견(CF 판단)**: 2560×1392에서도 안내가 ≈ 0.85배로 줄어든다(제목 19 → ≈ 16px). 앱 판(816 폭, 사선 깊이 194)의 한 줄 폭 622가 시안 타일(776.8, 깊이 63.5)의 713보다 좁아, 시안 내용 폭 609.8 + 312 높이 사선 55 + 여백 48이 들어가지 않는다. 덜 줄이려면 내용 폭을 줄이거나(예시 줄 말줄임 위험) 여백 24를 줄이는 방법이 있다 — 지금은 시안 수치 그대로 두고 줄이기만 했다. 1280×720은 ≈ 0.3배(고치기 전과 비슷한 크기).
+
+### 미검증("미실행")
+
+- golden 비교 · 생성(`empty-plan` 새 기준), `fe_gate.ps1` 전체, 고친 화면 눈 확인(일회성 렌더 이미지 안 만듦 — 측정은 probe 수치), 실제 앱(mock), process E2E, Python, Lane A 진행 중 파일을 쓰는 시험.

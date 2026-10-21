@@ -11,6 +11,7 @@ import 'package:ba_planner_v7/ui/scan/scan_session_controller.dart';
 import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 const _ready = ScannerTarget(
   id: 'mock-window',
@@ -23,7 +24,7 @@ const _ready = ScannerTarget(
 );
 
 /// 세션 시작 · 일시정지 · 이어서 · 중지는 받기만 하고, 이벤트는 시험이 직접 낸다(FB-10 고정 범위의 키만).
-class _HeldScanService extends MockAppService {
+class _HeldScanService extends MockAppService with F3dScannedHistory {
   final StreamController<ScannerEvent> events = StreamController.broadcast();
   final List<String> calls = [];
   ScannerSession? lastSession;

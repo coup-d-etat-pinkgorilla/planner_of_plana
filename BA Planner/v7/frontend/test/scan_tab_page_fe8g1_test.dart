@@ -11,6 +11,8 @@ import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'fixtures/f3d_seeded_account.dart';
+
 const _ready = ScannerTarget(
   id: 'mock-window',
   title: 'Mock Blue Archive',
@@ -81,7 +83,8 @@ Future<MockAppService> _openScanTab(
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  final mock = service ?? MockAppService();
+  // F3d: 스캔 기록 0회면 고르기 대신 빈 상태 안내라, 학생 스캔 1회가 있는 계정으로 연다.
+  final mock = service ?? F3dScannedMockAppService();
   addTearDown(mock.dispose);
   await tester.pumpWidget(BAPlannerApp(service: mock));
   await tester.pumpAndSettle();
@@ -555,9 +558,15 @@ void main() {
       tester,
     ) async {
       await _openScanTab(tester);
-      // Mock 계정은 스캔 적용 기록이 없다 → 모든 종류 `스캔 없음`(0으로 채우지 않는다).
+      // 시험 계정은 학생 스캔 1회뿐이다(F3d) → 아이템 종류는 모두 `스캔 없음`(0으로 채우지 않는다).
+      expect(
+        find.descendant(
+          of: _key('scan-last-scan-student'),
+          matching: find.text('스캔 없음'),
+        ),
+        findsNothing,
+      );
       for (final key in [
-        'student',
         for (final profile in scanPickInventoryOrder) profile.wireName,
       ]) {
         final row = _key('scan-last-scan-$key');

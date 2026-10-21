@@ -58,6 +58,7 @@ import '../studio/inventory_studio_layout.dart';
 import '../studio/section_template.dart' show SectionCanvasElement;
 import '../widgets/growth_calculator_section.dart'
     show growthCalculatorCompactNumber, growthCalculatorNumber;
+import '../widgets/empty_state_panel.dart';
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart';
 import 'inventory_analysis.dart';
@@ -757,6 +758,24 @@ class InventoryWorkspace extends StatelessWidget {
         ),
       );
     }
+    if (_showEmptyGuide) {
+      // F3d 시안 Empty-Inventory: 안내 블록은 섹션 위에서 140, 그 높이의 섹션 왼쪽 변 + 27.5(기준 (707.5, 505.2)).
+      final guideTop = top + 140;
+      final guideLeft = quad.leftAt(guideTop) + 27.5;
+      children.add(
+        Positioned(
+          left: guideLeft,
+          top: guideTop,
+          width: math.max(
+            0.0,
+            quad.rightAt(guideTop) - InventoryMetrics.titleRight - guideLeft,
+          ),
+          height: math.max(0.0, math.min(200.0, bottom - guideTop - 24)),
+          child: EmptyStateFit(child: _emptyGuide()),
+        ),
+      );
+      return Stack(clipBehavior: Clip.none, children: children);
+    }
     children.add(
       Positioned.fromRect(
         rect: listRect,
@@ -768,6 +787,33 @@ class InventoryWorkspace extends StatelessWidget {
     );
     return Stack(clipBehavior: Clip.none, children: children);
   }
+
+  /// 확정 인벤토리 0개(F3d): 계정 상태를 읽었고 목록이 있는데 확정 항목이 하나도 없을 때, "부족한 것" 보기에서만 안내를
+  /// 둔다. "전체 아이템" 보기는 그대로(수량 직접 고치기 경로 유지).
+  bool get _showEmptyGuide =>
+      controller.view == InventoryView.shortage &&
+      controller.loaded &&
+      !controller.disconnected &&
+      controller.catalogError == null &&
+      controller.profileError == null &&
+      controller.catalog.isNotEmpty &&
+      controller.repositoryState?.inventory.entries.isEmpty == true;
+
+  Widget _emptyGuide() => EmptyStateGuide(
+    key: const ValueKey('inventory-empty-guide'),
+    glyph: EmptyStateGlyph.box,
+    width: 900,
+    title: '인벤토리 스캔 전입니다. 아이템을 한 번 스캔하면 보유 수량이 채워집니다.',
+    body: '보유 수량이 있어야 계획에 필요한 재화와 부족 위험을 계산할 수 있습니다.',
+    actions: [
+      EmptyStateAction(
+        key: const ValueKey('inventory-empty-open-scan'),
+        label: '스캔하러 가기',
+        glyph: EmptyStateGlyph.scanFrame,
+        onPressed: onOpenScan,
+      ),
+    ],
+  );
 
   Widget _riskTitle() => Row(
     children: [

@@ -2,6 +2,7 @@ import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 void main() {
   testWidgets('AppShell keeps a held student candidate in the scan review', (
@@ -9,7 +10,7 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final service = MockAppService(
+    final service = F3dScannedMockAppService(
       scannerScenario: MockScannerScenario.reviewRequired,
     );
     addTearDown(service.dispose);

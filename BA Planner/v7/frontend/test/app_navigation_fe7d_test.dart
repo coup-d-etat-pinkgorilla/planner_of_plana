@@ -29,6 +29,7 @@ import 'inventory_fe6a_fixture.dart';
 import 'statistics_growth_fixture.dart';
 import 'statistics_plan_fixture.dart';
 import 'statistics_supply_fixture.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 const _canvas = Size(2560, 1208);
 const _profileId = '0123456789abcdef01234567';
@@ -86,7 +87,31 @@ class _StatisticsService extends MockAppService {
 }
 
 /// 앱 셸 테스트용: Mock 기본 계정(선택됨)에 성장 fixture 학생 · 상태를 준다.
+///
+/// F3d: 이력 스냅샷 0이면 통계 가운데 섹션이 빈 상태 안내라, 계정을 revision 1로 두고 지금 상태로 끝나는 학생 스캔 1건
+/// 이력을 준다(스냅샷 1).
 class _ShellService extends MockAppService {
+  _ShellService()
+    : super(
+        profiles: const [
+          RepositoryProfile(
+            id: f3dDefaultProfileId,
+            displayName: 'Main',
+            revision: 1,
+            selected: true,
+          ),
+        ],
+        repositoryStates: {
+          f3dDefaultProfileId: {
+            'profile_id': f3dDefaultProfileId,
+            'revision': 1,
+            'students': <dynamic>[],
+            'inventory': {'version': 1, 'entries': <dynamic>[]},
+            'goals': {'version': 1, 'goals': <dynamic>[]},
+          },
+        },
+      );
+
   /// revision은 Mock 계정 그대로 둔다(활성 계획 `plan.get`과 같은 revision이어야 계획 흐름이 열린다).
   @override
   Future<RepositoryState> loadRepositoryState(String profileId) async =>
@@ -94,6 +119,21 @@ class _ShellService extends MockAppService {
         profileId: profileId,
         revision: (await super.loadRepositoryState(profileId)).revision,
       );
+
+  @override
+  Future<RepositoryHistoryEventsResult> loadRepositoryHistoryEvents(
+    RepositoryHistoryEventsRequest request,
+  ) async {
+    final state = await loadRepositoryState(request.profileId);
+    final wire = {
+      'profile_id': request.profileId,
+      'revision': state.revision,
+      'students': statisticsGrowthFixtureStudentsWire(),
+      'inventory': {'version': 1, 'entries': <dynamic>[]},
+      'goals': statisticsGrowthFixtureGoalsWire(),
+    };
+    return repositoryHistoryEvents(state, f3dOneScanHistory(wire), request);
+  }
 
   @override
   Future<List<StudentCatalogEntry>> listStudents() async =>

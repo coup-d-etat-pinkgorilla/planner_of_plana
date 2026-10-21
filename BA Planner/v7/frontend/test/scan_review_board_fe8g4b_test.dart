@@ -18,10 +18,11 @@ import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:ba_planner_v7/ui/widgets/scan_student_review_workspace.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'fixtures/f3d_seeded_account.dart';
 
 /// 세션 시작만 받고 후보 · 끝 이벤트는 시험이 낸다. review · commit은 Mock 그대로 하되 횟수 · 요청을 적고, 정한 후보의
 /// commit을 실패시킨다.
-class _ReviewScanService extends MockAppService {
+class _ReviewScanService extends MockAppService with F3dScannedHistory {
   /// 전체 카탈로그 + 보유 학생 확정값(바뀐 학생 후보를 만들 수 있게).
   _ReviewScanService() : super(fullStudentCatalog: true);
 

@@ -17,6 +17,7 @@ import '../models/recent_students.dart';
 import '../models/repository_plan_snapshot.dart';
 import '../models/student_filter_controller.dart';
 import '../navigation/app_navigation_intent.dart';
+import '../widgets/empty_state_panel.dart';
 import '../widgets/growth_calculator_section.dart';
 import '../widgets/page_header_override.dart';
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
@@ -551,6 +552,31 @@ class _StudentPageState extends State<StudentPage> {
     }
   }
 
+  /// 확정 학생 0명 안내(F3d, 시안 Empty-Student). "직접 입력"은 FD-178 개편 뒤 기능이라 비활성이다.
+  Widget _emptyGuide() => EmptyStateGuide(
+    key: const ValueKey('student-empty-guide'),
+    glyph: EmptyStateGlyph.students,
+    width: 1060,
+    title: '아직 확정된 학생이 없습니다. 학생 스캔을 한 번 하면 목록이 채워집니다.',
+    body: '스캔은 보유 학생과 레벨 · 스킬 · 장비를 읽어 옵니다. 직접 입력은 다음 버전에 들어갑니다.',
+    actions: [
+      EmptyStateAction(
+        key: const ValueKey('student-empty-open-scan'),
+        label: '스캔하러 가기',
+        glyph: EmptyStateGlyph.scanFrame,
+        onPressed: widget.onOpenScan,
+      ),
+      const EmptyStateAction(
+        key: ValueKey('student-empty-manual'),
+        label: '직접 입력',
+        glyph: EmptyStateGlyph.pencil,
+        onPressed: null,
+        primary: false,
+        reason: '다음 버전에 들어갑니다',
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
@@ -629,6 +655,9 @@ class _StudentPageState extends State<StudentPage> {
                   onOpenScan: widget.onOpenScan,
                   onOpenFilter: () {},
                   onOpenCalculator: _openCalculator,
+                  emptyGuide: _repositoryState?.students.isEmpty == true
+                      ? _emptyGuide()
+                      : null,
                   calculator: switch (_calculator) {
                     final state? => GrowthCalculatorModeData(
                       state: state,

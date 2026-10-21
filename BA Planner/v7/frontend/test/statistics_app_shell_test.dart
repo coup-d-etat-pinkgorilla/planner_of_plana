@@ -74,6 +74,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
-    expect(find.byKey(const ValueKey('statistics-tile-A1')), findsOneWidget);
+    // F3d: 기본 Mock 계정은 이력 스냅샷 0이라 가운데 섹션이 빈 상태 안내다(타일 배치는 statistics_page_test가 본다).
+    expect(
+      find.byKey(const ValueKey('statistics-empty-guide')),
+      findsOneWidget,
+    );
   });
 }
