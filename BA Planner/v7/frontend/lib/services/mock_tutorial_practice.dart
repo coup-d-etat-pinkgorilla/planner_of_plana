@@ -181,7 +181,8 @@ Map<String, dynamic> _emptyState(String profileId, int revision) => {
 };
 
 /// 고정 seed: 빈 상태(revision [baseRevision]) → 지난 학생 스캔(+1) → 지난 기술 노트 스캔(+2). 이력은 그 한 번의 지난
-/// 스캔(세션 [tutorialPracticePreviousScanSessionId], 후보 둘)뿐이다. 목표 · 계획 · 시나리오는 비어 있다.
+/// 스캔(세션 [tutorialPracticePreviousScanSessionId], 후보 둘)뿐이다. 목표 · 계획은 비어 있다. 시나리오는 예시 하나
+/// ([tutorialPracticeExampleScenario], F3c-5 — Mock이 따로 놓는다).
 ({Map<String, dynamic> state, RepositoryCurrentHistory history})
 tutorialPracticeSeed(
   String profileId, {
@@ -235,6 +236,87 @@ tutorialPracticeSeed(
         ],
       );
   return (state: full, history: history);
+}
+
+/// 예시 시나리오 이름(대본 8단계 `why` · 09c, 데이터셋 `example_scenario.name`과 같다).
+const tutorialPracticeExampleScenarioName = '비나 대비 · 한 번에 MAX';
+
+/// 예시 시나리오 단계 목표(데이터셋 `example_scenario`의 단계마다 같은 '한 번에 MAX' 목표).
+const tutorialPracticeExampleMaxTargets = <String, int>{
+  'level': 90,
+  'bond_rank': 100,
+  'student_star': 5,
+  'weapon_level': 60,
+  'weapon_star': 4,
+  'ex_skill': 5,
+  'skill1': 10,
+  'skill2': 10,
+  'skill3': 10,
+  'equip1_tier': 10,
+  'equip2_tier': 10,
+  'equip3_tier': 10,
+  'equip1_level': 70,
+  'equip2_level': 70,
+  'equip3_level': 70,
+  'equip4_tier': 0,
+  'stat_hp': 25,
+  'stat_atk': 25,
+  'stat_heal': 25,
+};
+
+/// 예시 시나리오 페이즈(대본 우선, CF 결정 2026-10-21 · 사용자 결정 2026-10-21): 데이터셋은 한 페이즈 '한 번에'에 7명이지만,
+/// 대본 09c "마키 씨도 한 번에 MAX로 키우고, 네루(교복) 씨도 2순위 페이즈에 넣은 안"을 따라 7-3 순위(칸나(수영복) · 마키 ·
+/// 미카 1순위, 시로코(수영복) · 히마리(무장) 2순위, 아카네 3순위)에 네루(교복)를 2순위로 더했다. 잇기 · 나중에 칸은 없다.
+const tutorialPracticeExamplePhases = <(String, List<String>)>[
+  ('1순위', ['kanna_swimsuit', 'maki', 'mika']),
+  ('2순위', ['shiroko_swimsuit', 'himari_battle', 'neru_school_uniform']),
+  ('3순위', ['akane']),
+];
+
+/// 임시 계정 seed의 예시 시나리오 기록(`PlanningScenarioRecord` wire). 계약(`contracts/tutorial-practice-v1`)은
+/// "scenarios start empty"인데 대본 8단계 체크 '예시와 함께 비교에 담기'(처음부터 끝남) · 09c "예시 시나리오를 하나 더
+/// 준비해 두었습니다"가 이 시나리오를 전제한다(F3c-4 발견 1) — 차이는 CF가 XB에 요청한다.
+Map<String, dynamic> tutorialPracticeExampleScenario(
+  String profileId, {
+  required String scenarioId,
+  required int baseProfileRevision,
+  required DateTime recordedAt,
+}) {
+  final at = recordedAt.toUtc().toIso8601String();
+  return {
+    'version': 1,
+    'scenario_id': scenarioId,
+    'revision': 0,
+    'profile_id': profileId,
+    'name': tutorialPracticeExampleScenarioName,
+    'description': '',
+    'base_profile_revision': baseProfileRevision,
+    'document': {
+      'version': 1,
+      'document_id': 'tutorial-binah-max',
+      'kind': 'scenario',
+      'name': tutorialPracticeExampleScenarioName,
+      'phases': [
+        for (final (index, (name, studentIds))
+            in tutorialPracticeExamplePhases.indexed)
+          {
+            'phase_id': 'tutorial-phase-${index + 1}',
+            'name': name,
+            'stages': [
+              for (final studentId in studentIds)
+                {
+                  'stage_id': 'tutorial-max-$studentId',
+                  'student_id': studentId,
+                  'name': '한 번에 MAX',
+                  'targets': tutorialPracticeExampleMaxTargets,
+                },
+            ],
+          },
+      ],
+    },
+    'created_at': at,
+    'updated_at': at,
+  };
 }
 
 /// 재생 한 단계(안전 지점 하나).
@@ -378,6 +460,13 @@ List<TutorialReplayStep> tutorialPracticeReplay(
 
 // ---- 데이터셋에서 옮겨 적은 상수 ----
 
+/// 데이터셋과 다른 학생 값(대본 우선, 사용자 결정 2026-10-21 F3c-5): 대본 7-2b "마키 1단계 M/M/1/1"은 강화 · 서브 목표 1을
+/// 요구하는데 목표는 지금 값보다 낮게 둘 수 없다(`PlanFlowGoalEditor.setTarget`). 데이터셋의 마키 강화 · 서브 4를 지난
+/// 스캔 · 가상 스캔 둘 다 1로 둔다(레벨 · EX · 기본은 그대로 — '바뀐 학생'은 그대로). CF가 XB에 데이터셋 정렬을 요청한다.
+const tutorialPracticeScriptStudentOverrides = <String, Map<String, int>>{
+  'maki': {'skill2': 1, 'skill3': 1},
+};
+
 /// 지난 스캔 1회분 학생(seed, 데이터셋 `previous_students`).
 const tutorialPracticePreviousStudents = <TutorialPracticeStudent>[
   TutorialPracticeStudent('kanna_swimsuit', {
@@ -398,14 +487,15 @@ const tutorialPracticePreviousStudents = <TutorialPracticeStudent>[
     'skill2': 4,
     'skill3': 4,
   }),
+  // F3c-5: 강화 · 서브는 대본 7-2b(M/M/1/1)에 맞춰 1([tutorialPracticeScriptStudentOverrides]).
   TutorialPracticeStudent('maki', {
     'level': 62,
     'student_star': 3,
     'bond_rank': 10,
     'ex_skill': 3,
     'skill1': 4,
-    'skill2': 4,
-    'skill3': 4,
+    'skill2': 1,
+    'skill3': 1,
   }),
   TutorialPracticeStudent('mika', {
     'level': 63,
@@ -464,14 +554,15 @@ const tutorialPracticeStudentExamples = <TutorialPracticeStudentExample>[
   ),
   TutorialPracticeStudentExample(
     TutorialPracticeStudentClass.changed,
+    // F3c-5: 강화 · 서브 1(대본 7-2b, [tutorialPracticeScriptStudentOverrides]).
     TutorialPracticeStudent('maki', {
       'level': 72,
       'student_star': 3,
       'bond_rank': 10,
       'ex_skill': 3,
       'skill1': 4,
-      'skill2': 4,
-      'skill3': 4,
+      'skill2': 1,
+      'skill3': 1,
     }),
   ),
   TutorialPracticeStudentExample(

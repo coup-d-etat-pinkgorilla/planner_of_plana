@@ -68,6 +68,12 @@ String? _tutorialRowKey(String name) => switch (name) {
   _ => null,
 };
 
+/// 튜토리얼 비교 슬롯 순서(대본 09d "왼쪽부터 활성 계획, 방금 만든 안, 예시 안").
+const _tutorialCompareKeys = [
+  TutorialTargets.scenarioListBinahPlan,
+  TutorialTargets.scenarioListBinahAllMax,
+];
+
 /// 섹션 모션(부착면 규칙 FD-078과 같다): S1 0/180(왼쪽), S2 80/260(아래), S3 180/0(오른쪽).
 const planScenarioMenuMotion = (intro: 0.0, outro: 180.0);
 const planScenarioListBodyMotion = (intro: 80.0, outro: 260.0);
@@ -473,11 +479,35 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         _error = null;
       });
       _state.retainExisting(result.scenarios);
+      _tutorialFillCompare(result.scenarios);
       _syncPreview();
     } on Object catch (error) {
       if (mounted && generation == _loadGeneration) {
         setState(() => _error = error);
       }
+    }
+  }
+
+  /// F3c-5(사용자 결정 2026-10-21): 튜토리얼 동안 비교 슬롯이 비어 있고 대본의 두 시나리오(방금 저장한 안 · 예시 안)가
+  /// 모두 있으면 그 순서로 담는다(대본 09c "비교에는 이미 담아 두었습니다", 8단계 체크 '예시와 함께 비교에 담기'). 튜토리얼이
+  /// 꺼져 있으면 아무것도 하지 않는다.
+  void _tutorialFillCompare(List<PlanningScenarioSummary> scenarios) {
+    final hooks = context
+        .getInheritedWidgetOfExactType<TutorialHooksScope>()
+        ?.hooks;
+    if (hooks == null || !hooks.active.value || _state.compareIds.isNotEmpty) {
+      return;
+    }
+    final ids = [
+      for (final key in _tutorialCompareKeys)
+        ?scenarios
+            .where((scenario) => _tutorialRowKey(scenario.name) == key)
+            .firstOrNull
+            ?.id,
+    ];
+    if (ids.length != _tutorialCompareKeys.length) return;
+    for (final id in ids) {
+      _state.toggleCompare(id);
     }
   }
 

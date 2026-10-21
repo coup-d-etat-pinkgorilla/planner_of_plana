@@ -11837,3 +11837,147 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_180548\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-5 착수 기록 (2026-10-21 18:55, Lane A 워커)
+
+- 상태: **진행 중**. 범위 F3c-5 — Mock 튜토리얼이 사용자 손으로 1~10단계를 끝까지 가게(계획 탭 임시 계정 · 계획 장면 모드 · 시나리오 이름 · 예시 시나리오 seed · 3단계 뒤 남은 후보 정리 · 중복 등록 경고 · 실제 신호 한 바퀴 · golden 새 장면 1).
+- 시작 SHA: `f526076df1e01b541bf30b87090c75d9eb4d24ca`(브랜치 `scanner-consolidation`). `git log --oneline -3`에 `22296766 F3c-4:` 있음, 이 status · status-lane-b 끝에 다른 "F3c-5 착수 기록" 없음 확인. 막힘 확인: 대장 열림 FD 0건(FD-182 확정).
+- 착수 전 사용자 결정(AskUserQuestion 2026-10-21): ① 09c "비교에는 이미 담아 두었습니다"(8단계 체크 '예시와 함께 비교에 담기' 처음부터 끝남) — 비교 슬롯을 `plan_scenario_list.dart`에서 채운다(튜토리얼이 켜져 있고 목록을 읽었을 때 대본 이름 두 행 '총력전 비나 대비' · '비나 대비 · 한 번에 MAX'를 빈 슬롯에 담음, 프롬프트 고칠 곳 밖 → 사용자 허락). ② 예시 시나리오 seed는 대본 순위(1순위 칸나(수영복) · 마키 · 미카, 2순위 시로코(수영복) · 히마리(무장) · 네루(교복), 3순위 아카네, 단계마다 데이터셋 '한 번에 MAX' 목표, 잇기 · 나중에 없음). 데이터셋(한 페이즈 '한 번에' 7명)과 다른 점은 대본 우선.
+- 고칠 기존 파일(사본 `debug/frontend_f3c5/pre/<v7 기준 경로>`, 14개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**): `frontend/lib/ui/widgets/plan_section_layout.dart`(CRLF, 1만) · `widgets/plan_flow_workspace.dart` · `widgets/plan_flow_save_step.dart` · `pages/planning_page.dart` · `widgets/plan_scenario_list.dart`(결정 ①) · `tutorial_host/tutorial_session.dart` · `tutorial_host/tutorial_overlay.dart` · `tutorial_targets/tutorial_hooks.dart` · `tutorial/tutorial_script.dart` · `tutorial/tutorial_step_card.dart` · `frontend/lib/services/mock_tutorial_practice.dart` · `services/mock_app_service.dart`(CRLF) · `frontend/test/tutorial_host_f3c3_test.dart` · `test/tutorial_targets_f3c2_test.dart`(나머지 LF). 실제로 고치지 않게 되는 파일은 종료 기록에 적는다(사본만 남음).
+- 새 파일(예정): `frontend/lib/ui/widgets/plan_tutorial_entry.dart`(계획 튜토리얼 진입점), `frontend/test/tutorial_plan_f3c5_test.dart`, `frontend/test/goldens/f3c5_tutorial_plan_golden_test.dart`(`tutorial-plan-order`).
+- `scan_session_controller.dart`는 고치지 않는다(공개 `candidates` · `candidateResolution` · `discardStudentCandidate` · `profile`로 충분).
+
+## F3c-5 종료 기록 (2026-10-21 19:20, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(새 golden 1 `tutorial-plan-order` → `-UpdateGoldens`, 기존 장면 변화 0 기대) 남음. 시작 SHA `f526076d`, 커밋 없음(git 쓰기 안 함). 실제 runtime 미실행(실제 백엔드는 지금 `unsupported`).
+- 결과: Mock 튜토리얼을 사용자 손으로 1~10단계 끝까지 갈 수 있다(계획 7-x · 8은 실제 화면 동작과 F3c-4 실제 신호). 계획 탭이 임시 계정을 읽고, 대본 장면 08~09d가 계획 탭 안 모드(학생 7명 고른 흐름 · 목표 · 마키 탭 · 단계 순서 · 저장 · 시나리오 목록)를 연다. 저장 이름은 '총력전 비나 대비'로 채워지고, 임시 계정 seed에 예시 시나리오 '비나 대비 · 한 번에 MAX'가 있고, 시나리오 목록이 두 안을 비교에 담아 둔다. 3단계 뒤 임시 계정의 남은 학생 후보 3개를 튜토리얼이 폐기 경로로 정리하고 4단계 카드 아래 한 줄로 알린다. 중복 등록 경고는 프레임 뒤에 다시 센다.
+- 착수 전 · 도중 사용자 결정(AskUserQuestion 2026-10-21): ① 09c 비교 슬롯은 `plan_scenario_list.dart`에서 채움(프롬프트 고칠 곳 밖) ② 예시 시나리오는 대본 순위 3페이즈 ③ **(도중)** 마키 7-2b M/M/1/1이 seed(마키 강화 · 서브 4)와 부딪침 — 목표는 지금 값보다 낮게 둘 수 없어(`PlanFlowGoalEditor.setTarget`) 사람이 7-2b를 끝낼 수 없었다 → seed 마키 강화 · 서브를 1로(대본 우선, `tutorialPracticeScriptStudentOverrides`, 데이터셋 비교 시험은 덮어 비교).
+- 기존 파일 diff(`+/−`): `widgets/plan_section_layout.dart` +7/−9(1만 — 고른 계정 판정 2곳 `tutorialSelectedProfile` + import) · `pages/planning_page.dart` +11/−5 · `widgets/plan_flow_workspace.dart` +39/−0 · `widgets/plan_scenario_list.dart` +30/−0 · `tutorial_host/tutorial_session.dart` +71/−0 · `tutorial_host/tutorial_overlay.dart` +1/−0 · `tutorial_targets/tutorial_hooks.dart` +22/−7 · `tutorial/tutorial_step_card.dart` +42/−0 · `services/mock_tutorial_practice.dart` +96/−5 · `services/mock_app_service.dart` +15/−2, 시험 `tutorial_host_f3c3_test.dart` +204/−35 · `tutorial_practice_contract_test.dart` +11/−2 · `tutorial_practice_mock_test.dart` +5/−2. 새 파일: `lib/ui/widgets/plan_tutorial_entry.dart`(223줄), `test/tutorial_plan_f3c5_test.dart`(440줄), `test/goldens/f3c5_tutorial_plan_golden_test.dart`(207줄).
+- 고치지 않게 된 파일(사본만 남음): `widgets/plan_flow_save_step.dart`(이름 채우기는 흐름 화면이 저장 상태에 넣음), `tutorial/tutorial_script.dart`(대본 데이터 그대로), `test/tutorial_targets_f3c2_test.dart`(기존 중복 경고 시험이 그대로 통과). `scan_session_controller.dart`는 공개 API만 썼다. 사본 추가 2: `test/tutorial_practice_contract_test.dart`(결정 ③) · `test/tutorial_practice_mock_test.dart`(예시 seed — F3c-1 시험의 시나리오 0 기대), 둘 다 고치기 전 HEAD와 같음 확인.
+- 서식: 고친 줄만 — 사본에 `dart format`을 돌려 "고치기 전 format 차이 = 고친 뒤 format 차이" 4파일(기존 차이만) 확인, 새 golden 시험 한 줄은 formatter 모양으로 고침. 줄바꿈 유지(CRLF: `plan_section_layout` · `mock_app_service`, 나머지 LF), 끝 개행 하나, 줄 끝 공백 0, `git diff --check -- frontend` 출력 없음. `.orig` · `.rej` 0.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집마다 · 마지막) | 중간 info 1(`use_null_aware_elements`, 진입점) → 고침 → **No issues found!** |
+| `flutter test --exclude-tags golden test/tutorial_host_f3c3_test.dart --plain-name "Mock walkthrough"` | 1회 −1(7-1: 흐름이 퇴장 모션 뒤 넘어가 `_afterComplete` 한 번에 못 봄 → `_waitDone`) → 2회 −1(흐름 화면 레일이 화면 밖: 셸 `_planTabActive` false — 발견 7 → 시험 `_frames` 10ms씩) → 3회 −1(누르는 순간 신호 → 한 번 그리기) → 4회 −1(**7-2b 마키 M/M/1/1을 둘 수 없음** → 사용자 결정 ③) → 5회(7-2b만 임시 hooks로 넘겨 뒤 단계 확인) +1 → seed 고친 뒤 6회 **+14 All passed**(파일 전체 + 계약 시험) |
+| `flutter test --exclude-tags golden test/tutorial_plan_f3c5_test.dart` | 1회 +9 −2(레코드 안 리스트 비교, 진짜 계정 시험이 1단계를 hooks로 넘겨 가상 창이 없음) → 2회 **+11 All passed** |
+| 일회성 렌더(사본 `test/goldens/f3c5_render_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, PNG는 세션 임시 폴더) | 새 장면 3회(1 · 2회: Windows 변형에서 아이템 스캔이 끝나지 않음 → 4~6 hooks 출구) → 3회 통과 · 그림 확인. F3c-3 장면 2(`tutorial-step-scan` · `tutorial-dialogue-review`)도 렌더해 기준 PNG와 **픽셀 데이터 같음**(PNG 압축 해제 비교 — golden 비교 시험은 아님). 사본 삭제(grep 0) |
+| 관련 기존 시험 123파일(grep: 고친 lib · 앱 · 셸을 쓰는 시험, golden 0건, process 3파일 제외 — `related_tests.txt` · `related_run.txt`) 3묶음 `--exclude-tags golden` | **+478 · +707 · +530 −1**: −1은 `tutorial_practice_mock_test` "create keeps …"의 시나리오 0 기대(예시 seed — 의도한 변경) → 시험 고침 → 그 파일 **+11 All passed** |
+| 마지막 묶음 `tutorial_host_f3c3` · `tutorial_plan_f3c5` · `tutorial_targets_f3c2` · `tutorial_practice_contract` · `tutorial_practice_mock` · `plan_flow_tutorial_signals_f3c4` · `tutorial_parts_f3a` | **+92 All passed**. `registered twice`는 F3c-2의 일부러 겹친 'dup' 시험 1줄뿐, 한 바퀴 로그 0줄 |
+| `dart format`(세션 임시 폴더 사본만) · 바이트 검사 · `git diff --check -- frontend` | 고친 줄 format 차이 0, 줄바꿈 유지 · 끝 개행 하나 · 줄 끝 공백 0, 출력 없음 |
+
+로그: `debug/frontend_f3c5/logs/`(`walk-1~6` · `f3c5-test-1~2` · `render-1~4` · `related-00~02` · `related-02-rerun` · `core-final`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 단계 1~10 → 사용자 동작 → 신호 → 확인(`tutorial_host_f3c3_test` "Mock walkthrough")
+
+| 단계 | 사용자 동작(시안 카드) | 완료 신호(나는 자리) | 시험이 쓴 것 |
+|---|---|---|---|
+| 1 | 가상 창 행 → '선택한 창 사용' | `connect.virtualWindow.connected`(홈 연결 패널) | **실제 누르기** |
+| 2 | 학생 전체 → 스캔 시작 → 기다림 | `scan.student.finished` | **실제 누르기** + Mock 재생 |
+| 3 | '바뀐 6명 한 번에 적용' | `scan.studentReview.applied` | **실제 누르기**. 뒤에 튜토리얼이 남은 후보 3개 폐기(새 학생 1 · 확인 필요 2) — 시험이 정리 수 3 · 남은 미결 0 · 4단계 카드 한 줄 확인 |
+| 4 | 학생 · 상세 · 계산기 · 목표 + | `students.calculator.targetChanged` | **hooks 출구**(임시 계정 그리드가 전체 카탈로그라 첫 화면에 보유 카드 없음 — F3c-3 그대로) |
+| 5 | 아이템 2종 고르기 → 시작 → 진행 창 한 줄 | `scan.item.finished` | **실제 누르기** + Mock 큐 |
+| 6 | 확인 필요 2칸 승인 → 승인한 칸 적용 | `scan.itemReview.applied` | 승인은 **hooks 출구**, 적용은 **실제 누르기** |
+| 7-1 | (08이 대본 7명을 고른 흐름을 연다) '다음 · 목표 정하기' | `plan.flow.studentsConfirmed`(F3c-4 감시) | **실제 누르기** — 흐름 초안 7명 · 임시 계정 상태 확인 |
+| 7-2 | '한 번에 MAX' 고르기 → '고른 7명 모두 한 번에 MAX로' | `plan.flow.allMaxApplied` | **실제 누르기** 2번 |
+| 7-2b | (08g가 마키 탭을 연다) 1단계 스킬 M/M/1/1 | `plan.flow.makiStage1Set`(감시) | 마키 탭 선택 확인, 값은 **편집기 `setTarget`**(스테퍼 대신) |
+| 7-2c | '단계 추가' → 2단계 M/M/7/7 | `plan.flow.makiStage2Set`(감시) | 추가는 **실제 누르기**, 값은 **편집기 `setTarget`** |
+| 7-3 | (08d가 3단계로 옮김) 카드를 1 · 2 · 3순위에 끌어 놓기 | `plan.flow.ranksPlaced`(감시) | **편집기 `move`**(끌어 놓기 대신), 3순위 칸은 `addPhase`(화면의 '+ 칸 추가'와 같은 동작 — 발견 3) |
+| 7-4 | 칸나(수영복) 카드 아래 점 → 아카네 카드 | `plan.flow.kannaAkaneLinked`(보드 DragTarget) | **실제 끌기**(점 → 카드, 제스처) |
+| 7-5 | 네루(교복) · 마키 2단계 → 나중에 칸 | `plan.flow.laterMoved`(감시) | **편집기 `move`**(끌어 놓기 대신) |
+| 7-6 | (09가 4단계로 옮기고 이름 칸 '총력전 비나 대비') '시나리오로 저장' | `plan.flow.savedAsScenario` | **실제 누르기** — 이름 칸 글자 확인. 저장 뒤 '시나리오 보기로 이동'(기본 켬)으로 목록이 열림 |
+| 8 | (09c — 목록 비교 슬롯에 두 안이 담겨 있음) '나란히 비교' | `scenario.compare.opened` | **실제 누르기** |
+| 9 | 부족 1위 행 누르기 | `inventory.topShortage.opened` | **hooks 출구** — 활성 계획이 없어(7-6은 시나리오 저장) 부족 목록이 빈다(발견 1) |
+| 10 | '성장 추이'에서 한 시점 고르기 | `statistics.growthTrend.viewed` | **hooks 출구**(성장 추이 점 고르기 동작은 통계 시험 몫 — 미검증) |
+
+- 그 밖 시험(`tutorial_plan_f3c5_test`): 장면 → 모드 표가 대본의 계획 탭 장면 전부와 같음, 대본 읽기(이름 '총력전 비나 대비' · 마키 · 학생 id), 요청 id · clear · dispose, 튜토리얼 없으면 계획 화면 이동 의도 그대로, seed(임시 계정만 예시 1개 · 3페이즈 · MAX 목표 · 마키 강화 · 서브 1, reset 뒤 다시 1개), 비교 슬롯(튜토리얼 켬 → 대본 순서 두 안, 꺼짐 → 빔, 한 안 없음 → 빔), 같은 프레임 바꿔 끼우기 → 경고 0, **진짜 계정이 스캔 컨트롤러에 있으면 3단계 뒤 폐기 0 · 줄 없음**.
+
+### 계획 진입점 API(`lib/ui/widgets/plan_tutorial_entry.dart`)
+
+| 이름 | 하는 일 |
+|---|---|
+| `PlanTutorialMode` | `students` · `goals` · `goalsMaki` · `order` · `save` · `scenarioList` · `compare` |
+| `planTutorialSceneModes` | 장면 → 모드: 08 students, 08c goals, 08g goalsMaki, 08d · 08e · 08f order, 09 save, 09c scenarioList, 09d compare |
+| `PlanTutorialEntry` | 세션이 가진 요청 통로(`TutorialSession.plan`). `open(mode)`(id 오름) · `clear()`(튜토리얼 끝) · `PlanTutorialEntry.of(context)`(세션 없으면 null, 의존 없음) |
+| `PlanTutorialNavigation` | `PlanningPage`가 `PlanSectionLayout`을 감싼다. `students` 요청 → 대본 7명(7-1 `why`) 이름을 카탈로그로 id로 바꿔 기존 `PlanNavigationIntent.students`(새 시나리오 1단계, 학생 미리 고름)로 넘김. 셸 의도와 둘 중 나중 것(id 큰 쪽) |
+| `planTutorialFlowStep(mode)` · `planTutorialFocusName(mode)` · `planTutorialScenarioName()` · `planTutorialStudentIds()` | `PlanFlowWorkspace`가 요청마다 한 번: 흐름 단계 옮기기(`_selectStep`, 퇴장 모션 포함), 마키 탭(`PlanFlowGoalEditor.selectStudent`), save 요청 때 저장 이름 칸 = 7-6 `why` 따옴표 |
+
+- 세션 → 진입점: 대사 장면에 들어가면 탭 요청과 함께 `plan.open(mode)`. 09c · 09d는 기록만(7-6 저장 · 8단계 사용자 동작이 연다). 흐름이 열리기 전 요청은 흐름 화면이 따르지 않는다(연 쪽 몫). 튜토리얼이 꺼져 있으면 세션 · 요청이 없어 계획 탭 동작 변화 0.
+
+### 남은 후보 정리 규칙(임시 계정만)
+
+- 언제: 흐름이 3단계(`tutorialCandidateCleanupAfterStep = '3'`) 다음 칸으로 넘어갈 때 한 번.
+- 조건(모두): 세션의 임시 계정이 있음 · 스캔 컨트롤러 `profile`이 `isPractice`이고 id가 임시 계정 id와 같음 · 지금 세션이 학생 스캔. 하나라도 아니면 아무것도 하지 않는다(시험: 진짜 계정 → 폐기 0).
+- 무엇: `candidates` 중 `candidateResolution == null`(적용 · 폐기 안 함)을 `discardStudentCandidate`(스캔 화면 폐기 경로, `discarded_in_scan_page`)로 하나씩. 도중 계정이 바뀌면 멈춤, 늦은 응답은 generation으로 버림.
+- 알림: 정리한 수가 있으면 4단계 진행 카드 맨 아래 한 줄 **'남은 후보는 튜토리얼이 정리했습니다'**(워커 문구 — CF 검수, 아이콘 + 흐린 글자, `TutorialStepCard.note`).
+
+### seed 예시 시나리오 값(`tutorialPracticeExampleScenario`)
+
+| 항목 | 값 |
+|---|---|
+| 이름 · 문서 id | '비나 대비 · 한 번에 MAX' · `tutorial-binah-max`(kind scenario, 설명 '') |
+| 1순위 | 칸나(수영복) · 마키 · 미카 |
+| 2순위 | 시로코(수영복) · 히마리(무장) · 네루(교복) |
+| 3순위 | 아카네 |
+| 단계 | 학생마다 '한 번에 MAX' 하나 — 레벨 90 · 성급 5 · 인연 100 · 전용무기 60 / 4성 · EX 5 · 스킬 10/10/10 · 장비 T10 ×3 · Lv70 ×3 · 애장품 0 · 능력 개방 25/25/25(데이터셋 목표 그대로) |
+| 잇기 · 나중에 · authoring | 없음(DTO 기본값) |
+| 놓는 곳 | `MockAppService._seedMockPractice`(create · reset 모두), 시나리오 id는 Mock 순번, 모음 revision 0, `base_profile_revision` = seed 끝 revision |
+
+- 데이터셋과 다른 점(대본 우선 — CF가 XB에 요청): ① 데이터셋은 한 페이즈 '한 번에' 7명 → 대본 09c대로 3페이즈 ② 계약 "scenarios start empty"인데 예시 1개 ③ 마키 강화 · 서브 4 → 1(결정 ③).
+
+### golden
+
+| 장면 | 변화 · 근거 |
+|---|---|
+| 기존 장면 전부 | **변화 0 기대**: 계획 화면 감싸개는 렌더 객체 없음 · 고른 계정 판정은 임시 계정이 없으면 예전과 같음 · 흐름 화면 · 목록 비교 담기 · 카드 한 줄은 튜토리얼(세션 · `hooks.active`)이 있을 때만 · 중복 경고는 기록뿐 · Mock seed 변경은 임시 계정에만. F3c-3 장면 2(임시 계정)는 일회성 렌더로 기준 PNG와 눈으로 대조(아래) |
+| 새 `tutorial-plan-order` | 셸 계획 탭, 머리글 '계획' 옆 '튜토리얼 · 임시 계정' 칩, 왼쪽 레일 계획 만들기(1 학생 고르기 완료 · 2 목표 정하기 완료 · 3 단계 순서 지금 · 4 남음, 지금까지 학생 7명 · 단계 8개), 가운데 단계 순서 보드(1순위 칸에 1단계 카드 7장 — 아카네 · 칸나(수영복) · 마키 · 미카 · 히마리(무장) · 시로코(수영복) · 네루(교복), 2순위 칸에 마키 2단계, '+ 칸 추가', 나중에 칸 비어 있음), 아카네 카드 둘레 하늘색 강조 테두리 · 빛, 그 오른쪽 위에 7-3 카드('프' 칩 · 프라나 · 7 / 10 · 진행 칸 · 그만두기, 큰 '7', 제목 두 줄, why, ● 1 · 2순위에 놓기 ○ 아카네 3순위 · 칸나와 잇기 ○ 네루 · 마키 2단계 나중에), 오른쪽 보조 섹션 '아카네 1단계'. 시각 고정 Mock, 1~3 실제 · 4~6 hooks 출구(Windows 변형의 아이템 스캔은 진행 창 경로를 기다림) · 7-1 · 7-2 실제 · 마키 값 편집기 |
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 생성, 전체 `fe_gate.ps1`, process E2E(`student_calculation_service_test` · `tactical_fb6/fb7_dart_test`는 백엔드 프로세스라 묶음에서 뺌), almanac validate, Python, **실제 runtime**(practice 수명 · 예시 시나리오 · 실제 백엔드 seed).
+- 미실행: 사람 손 끌어 놓기(7-3 · 7-5 — 시험은 편집기 `move`), 스테퍼로 마키 값 맞추기(시험은 `setTarget`), 4 · 6(승인) · 9 · 10 실제 화면 동작, 실제 앱 mock 실행 눈 검수, 1280×720에서 계획 장면 카드 · 보드 겹침(1280 시험은 신호로 건너뜀), 키보드 흐름.
+
+### 검수표(사용자 · CF — mock 앱으로 한 바퀴)
+
+| 단계 | 여는 방법 · 할 일 | 확인 |
+|---|---|---|
+| 시작 | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_FIRST_RUN=full` → 첫 실행 ① ② ③ '만들고 튜토리얼 시작'(또는 설정 '튜토리얼 다시 하기') | 타이틀 위 프라나 01 |
+| 1~3 | 가상 창 연결 → 학생 전체 스캔 → 6명 적용 | 3단계 뒤 스캔 탭이 고르기로 돌아감(남은 후보 정리), 4단계 카드 아래 '남은 후보는 튜토리얼이 정리했습니다' |
+| 4~6 | 학생 탭 계산기 목표 + → 아이템 2종 스캔 → 확인 필요 2칸 승인 → 적용 | F3c-3과 같음 |
+| 7-1 (Tutorial-07a) | 프라나 08 뒤 | 계획 탭이 '튜토리얼' 계정으로 계획 만들기 1단계, 7명 골라져 있음 → '다음 · 목표 정하기' |
+| 7-2 · 7-2b · 7-2c (07b2 · 07b3) | '한 번에 MAX' → 7명 모두 → (08g 뒤 마키 탭) 강화 · 서브 1까지 내리기 → '단계 추가' → 강화 · 서브 7 | 마키 탭이 저절로 열림, 1까지 내려감(seed 마키 1) |
+| 7-3 ~ 7-5 (07c · 07c2 · 07c3) | (08d 뒤 3단계) '+ 칸 추가' → 카드 끌기 → 칸나 점 → 아카네 → 네루 · 마키 2단계 나중에 | 각 단계 완료 체크 |
+| 7-6 (07d) | (09 뒤 4단계) | 이름 칸 '총력전 비나 대비'(고칠 수 있음) → '시나리오로 저장' → 시나리오 목록 |
+| 8 (Tutorial-08) | 09c 뒤 | 목록 비교 슬롯 B '총력전 비나 대비' · C '비나 대비 · 한 번에 MAX'가 담겨 있음 → '나란히 비교' → 4열 비교 |
+| 9 · 10 | 프라나 10 뒤 인벤토리 · 통계 | 9는 부족 목록이 비어 끝낼 수 없음(발견 1) — 그만두기로 끝 확인 |
+
+### 발견 사항
+
+1. **9단계에 닿을 수 없다**: 7-6은 시나리오로 저장하므로 활성 계획이 비어 인벤토리 부족 목록(활성 계획 기준)이 빈다 → '리오(무장)의 엘레프' 1위 행이 없다(리오(무장)는 대본 7명에도 없음). 임시 계정 seed에 활성 계획(리오(무장) 포함)을 두거나, 9단계 대상을 시나리오 기준으로 바꾸는 결정이 필요(CF · XB).
+2. **10단계 실제 동작 미검증**: 3 · 6단계 적용 뒤 이력이 생겨 성장 추이 점은 있을 것으로 보이나 이 시험은 hooks 출구다.
+3. **7-3 보드 칸 수**: 흐름이 3단계에 들어올 때 칸이 2개(1단계 카드는 모두 1순위, 마키 2단계는 2순위로 자동 배치)라 아카네를 3순위에 놓으려면 '+ 칸 추가'를 먼저 눌러야 한다. 카드 문장에는 없다(시안 Plana-08 레일은 "순서 3칸"). 대본 문장 또는 흐름 기본 칸 수 결정 필요.
+4. **7-3 카드가 1순위 칸 카드를 가린다**(새 golden): 카드가 강조 대상(아카네 카드) 오른쪽 위에 놓여 칸나(수영복) · 마키 카드 일부를 덮는다. 카드 자리 규칙(`tutorial_card_placement.dart`)은 F3a 그대로 — CF 눈 검수.
+5. **마키 seed 값**: 데이터셋 마키 강화 · 서브 4 → 1(대본 우선, 결정 ③). 레벨 · EX · 기본은 그대로라 '바뀐 학생' 분류는 같다. XB 데이터셋 정렬 요청 필요.
+6. **예시 시나리오 · 계약**: 계약 "scenarios start empty"와 다름(결정, 코드 주석에 근거) — CF가 XB에 요청.
+7. **시험 프레임 간격**: 움직임 줄이기에서 셸 탭 전환은 약 48ms라, 100ms 한 번에 넘기면 `AnimatedSectionStack.onIncomingReady`가 불리지 않아 계획 탭(`_planTabActive`)이 꺼진 채 남는다(흐름 화면 섹션이 화면 밖). 실제 앱(60fps)에는 없는 시험 환경 문제 — 시험 `_frames`를 10ms씩으로 바꿨다. 셸 쪽(완료 상태에서도 알림) 개선은 `app_shell` · `animated_section_stack` 소유자 몫.
+8. golden 변형(Windows)에서는 아이템 스캔이 진행 창(dock) 경로를 기다려 끝나지 않는다(F3c-3 발견 6과 같은 뿌리) — 새 golden은 4~6을 hooks 출구로 갔다.
+9. 중복 등록 경고: 한 바퀴 시험 로그에 `registered twice` 0줄(F3c-3 때는 계정 전환 프레임에 2줄).
+
+### 사본 · commit.json
+
+- pre 사본 16개(`debug/frontend_f3c5/pre/frontend/...`, 착수 14 + 도중 시험 2), 모두 착수 · 고치기 전 HEAD와 같음 → `post_dir` 없음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c5/commit.json`: slice `f3c5`, modified 13, added 3, `whole` = [], `optional_added` = [`frontend/test/goldens/baseline/tutorial-plan-order.png`]. 메시지 ASCII.
+- 인계: `debug/frontend_f3c5/output.md`.
+
+### 다음 행동
+
+- CF: `fe_gate.ps1` → golden RED 1 예상(`tutorial-plan-order` 기준 없음) → `failures/` 검토 → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c5 -DryRun` → `fe_commit.ps1 -Slice f3c5`.
+- CF 결정: 발견 1(9단계 활성 계획 seed), 3(7-3 칸 수), 4(카드 자리), 워커 문구 '남은 후보는 튜토리얼이 정리했습니다'.
+- XB(CF 요청): 데이터셋 정렬 — 예시 시나리오 3페이즈 · 계약 "scenarios start empty" 예외 · 마키 강화 · 서브 1 · (발견 1이면) 활성 계획.
+
+### f3c5 commit record (2026-10-21 20:10, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_195415\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

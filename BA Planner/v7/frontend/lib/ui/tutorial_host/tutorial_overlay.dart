@@ -284,6 +284,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
             waitTotal: total,
             onQuit: flow.requestQuit,
             width: step.cardWidth,
+            note: _session.stepNote,
           ),
         ),
       ),

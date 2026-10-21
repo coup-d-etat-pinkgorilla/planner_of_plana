@@ -270,6 +270,12 @@ void main() {
   });
 
   test('Mock constants are the XB dataset (size, students, items)', () {
+    // 대본 우선으로 바꾼 학생 값(F3c-5 마키 강화 · 서브 1)은 데이터셋 위에 덮어 비교한다.
+    Object withScript(Object? studentId, Object? values) => {
+      ...(values as Map),
+      ...?tutorialPracticeScriptStudentOverrides[studentId],
+    };
+
     // SHA-256은 주석 · output.md에 둔다(crypto 의존성 없음). 여기서는 크기와 내용 전부를 본다.
     final raw = File(_datasetPath).readAsBytesSync();
     expect(raw, hasLength(39483));
@@ -284,7 +290,10 @@ void main() {
     expect(
       [
         for (final row in dataset['previous_students'] as List)
-          {'id': row['student_id'], 'values': row['values']},
+          {
+            'id': row['student_id'],
+            'values': withScript(row['student_id'], row['values']),
+          },
       ],
       [
         for (final student in tutorialPracticePreviousStudents)
@@ -302,7 +311,7 @@ void main() {
           [
             classes[row['classification']],
             row['student']['student_id'],
-            row['student']['values'],
+            withScript(row['student']['student_id'], row['student']['values']),
             row['review_required'],
             row['fallback_capture_required'],
           ],

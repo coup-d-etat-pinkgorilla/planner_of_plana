@@ -43,6 +43,7 @@ import 'plan_scenario_list.dart';
 import 'plan_scenario_preview.dart' show planScenarioPreviewAmount;
 import 'section_surface.dart';
 import '../tutorial/tutorial_script.dart';
+import '../tutorial_host/tutorial_session.dart' show tutorialSelectedProfile;
 import '../tutorial_targets/tutorial_hooks.dart';
 
 export 'plan_scenario_list.dart'
@@ -360,10 +361,9 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (repository == null) return;
     try {
       final profiles = await repository.listProfiles();
-      final selected = profiles.cast<RepositoryProfile?>().firstWhere(
-        (profile) => profile?.selected == true,
-        orElse: () => null,
-      );
+      if (!mounted) return;
+      // F3c-5: 튜토리얼 임시 계정은 일반 목록에 없다 — 탭 공용 판정(F3c-3 발견 1).
+      final selected = tutorialSelectedProfile(context, profiles);
       if (selected == null) {
         // 계정 없음 빈 상태로 끝낸다("활성 계획을 읽는 중입니다."에 머물지 않는다, FE5-f1 발견 2).
         if (mounted) setState(_markNoProfile);
@@ -796,12 +796,10 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
     if (service is! RepositoryService) return null;
     final repository = service as RepositoryService;
     final profiles = await repository.listProfiles();
-    final selected = profiles.cast<RepositoryProfile?>().firstWhere(
-      (profile) => profile?.selected == true,
-      orElse: () => null,
-    );
+    if (!mounted) return null;
+    final selected = tutorialSelectedProfile(context, profiles);
     if (selected == null) {
-      if (mounted) setState(_markNoProfile);
+      setState(_markNoProfile);
       return null;
     }
     final snapshot = await loadRepositoryPlanSnapshot(repository, selected.id);

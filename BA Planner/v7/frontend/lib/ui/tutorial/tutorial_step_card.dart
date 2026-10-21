@@ -185,6 +185,7 @@ class TutorialStepCard extends StatelessWidget {
     this.face,
     this.onQuit,
     this.width,
+    this.note,
   });
 
   final TutorialStep step;
@@ -201,6 +202,9 @@ class TutorialStepCard extends StatelessWidget {
 
   /// 카드 폭. null이면 [TutorialStep.cardWidth].
   final double? width;
+
+  /// 진행 카드 맨 아래 한 줄(F3c-5 — 튜토리얼이 대신 한 일, 예: 남은 후보 정리). null이면 없다.
+  final String? note;
 
   static const quitKey = ValueKey('tutorial-card-quit');
 
@@ -270,6 +274,11 @@ class TutorialStepCard extends StatelessWidget {
                           ),
                   ),
                 },
+                if (note case final note?
+                    when mode == TutorialCardMode.progress) ...[
+                  const SizedBox(height: 10),
+                  _NoteLine(text: note),
+                ],
               ],
             ),
           ),
@@ -433,6 +442,39 @@ class _NumberedBody extends StatelessWidget {
       ],
     );
   }
+}
+
+/// 카드 맨 아래 한 줄(튜토리얼이 대신 한 일).
+class _NoteLine extends StatelessWidget {
+  const _NoteLine({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    key: const ValueKey('tutorial-card-note'),
+    children: [
+      const SizedBox(width: 48),
+      const Icon(
+        Icons.auto_fix_high_outlined,
+        size: 15,
+        color: AppColors.textMuted,
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tutorialText(
+            AppType.popoverBodySize,
+            color: AppColors.textMuted,
+            weight: AppType.regular,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 class _CheckList extends StatelessWidget {

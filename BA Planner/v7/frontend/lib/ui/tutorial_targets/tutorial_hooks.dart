@@ -45,11 +45,13 @@ abstract interface class TutorialTargetHandle {
   bool get group;
 }
 
-/// 키 → 지금 붙어 있는 대상 위젯. 같은 키가 두 위젯에서 동시에 등록되면(조각 등록이 아니면) 경고를 남기고 나중 등록을
-/// 쓴다. 조각([TutorialTargetHandle.group])끼리는 경고 없이 보이는 조각의 사각형을 합친다.
+/// 키 → 지금 붙어 있는 대상 위젯. 같은 키가 두 위젯에서 동시에 등록되면(조각 등록이 아니면) 나중 등록을 쓰고, 그 프레임이
+/// 끝난 뒤에도 둘 이상 남아 있으면 경고를 남긴다(F3c-5 — 계정 전환으로 탭을 다시 만드는 프레임에는 새 탭이 옛 탭보다
+/// 먼저 등록되므로 바로 세지 않는다). 조각([TutorialTargetHandle.group])끼리는 경고 없이 보이는 조각의 사각형을 합친다.
 class TutorialTargetRegistry extends ChangeNotifier {
   final Map<String, List<TutorialTargetHandle>> _byId = {};
   final List<String> _warnings = [];
+  final Set<String> _duplicateChecks = {};
   bool _notifyScheduled = false;
   bool _disposed = false;
 
@@ -65,14 +67,25 @@ class TutorialTargetRegistry extends ChangeNotifier {
   void register(String id, TutorialTargetHandle handle) {
     final handles = _byId.putIfAbsent(id, () => []);
     if (handles.contains(handle)) return;
-    if (handles.isNotEmpty &&
-        !(handle.group && handles.every((other) => other.group))) {
+    handles.add(handle);
+    if (_duplicated(handles)) _duplicateChecks.add(id);
+    _scheduleNotify();
+  }
+
+  /// 조각이 아닌 등록이 둘 이상이다.
+  static bool _duplicated(List<TutorialTargetHandle> handles) =>
+      handles.length > 1 && !handles.every((handle) => handle.group);
+
+  /// 프레임 뒤: 아직 겹친 키만 경고한다(옛 등록이 그 사이 떨어졌으면 경고 없음).
+  void _checkDuplicates() {
+    for (final id in _duplicateChecks) {
+      final handles = _byId[id];
+      if (handles == null || !_duplicated(handles)) continue;
       final warning = 'tutorial target "$id" registered twice';
       _warnings.add(warning);
       debugPrint('TutorialTargetRegistry: $warning');
     }
-    handles.add(handle);
-    _scheduleNotify();
+    _duplicateChecks.clear();
   }
 
   void unregister(String id, TutorialTargetHandle handle) {
@@ -138,7 +151,9 @@ class TutorialTargetRegistry extends ChangeNotifier {
     _notifyScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _notifyScheduled = false;
-      if (!_disposed) notifyListeners();
+      if (_disposed) return;
+      _checkDuplicates();
+      notifyListeners();
     });
   }
 

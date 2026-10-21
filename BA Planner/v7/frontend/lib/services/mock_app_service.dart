@@ -2508,7 +2508,7 @@ class MockAppService
     return practice;
   }
 
-  /// 고정 seed를 [baseRevision]부터 놓는다(지난 스캔 이력 하나, 목표 · 계획 · 시나리오 0). 끝 revision을 돌려준다.
+  /// 고정 seed를 [baseRevision]부터 놓는다(지난 스캔 이력 하나, 목표 · 계획 0, 예시 시나리오 1). 끝 revision을 돌려준다.
   int _seedMockPractice(String profileId, int baseRevision) {
     final seed = tutorialPracticeSeed(
       profileId,
@@ -2526,7 +2526,20 @@ class MockAppService
       'version': 1,
       'goals': <dynamic>[],
     });
-    return seed.state['revision'] as int;
+    final revision = seed.state['revision'] as int;
+    // F3c-5: 예시 시나리오 하나(대본 09c · 8단계, CF 결정 2026-10-21 — 계약 "scenarios start empty"와 다름, CF가 XB에
+    // 요청). 시나리오 모음 revision은 0 그대로다.
+    _planningScenarios[profileId] = [
+      PlanningScenarioRecord.fromWire(
+        tutorialPracticeExampleScenario(
+          profileId,
+          scenarioId: _newScenarioId(const []),
+          baseProfileRevision: revision,
+          recordedAt: _historyClock(),
+        ),
+      ),
+    ];
+    return revision;
   }
 
   /// 임시 계정의 열린 가상 세션을 취소하고 그 후보를 무효로 한다(이전 revision · generation은 더 쓰지 않는다).

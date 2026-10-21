@@ -8,6 +8,11 @@
 // - 끝 · 그만두기: 흐름이 끝나면(`ended`) `endPractice(completed | dismissed)` → 원래 계정 홈. 실패는 [endError]로 보이고
 //   [retryEnd]로 다시 시도한다(성공으로 바꾸지 않는다). 같은 끝 요청은 같은 idempotency key다.
 // - 앱 시작([recover]): `recoverPractice` 한 번. 실패는 [notice]로 보인다.
+// - 계획 장면(F3c-5): 08 · 08c~08f · 09 · 09c · 09d는 탭과 함께 계획 탭 안 모드를 [plan]으로 요청한다
+//   ([planTutorialSceneModes] — 계획 쪽 진입점 `plan_tutorial_entry.dart`가 흐름을 열고 단계를 옮긴다).
+// - 3단계 뒤 남은 후보(F3c-5, CF 결정 2026-10-21 (a)): 바뀐 학생을 적용하고 나면 **임시 계정의** 남은 학생 후보(새 학생 ·
+//   확인 필요)를 스캔 화면의 폐기 경로로 정리하고 4단계 카드 아래 한 줄로 알린다. 스캔 컨트롤러의 계정이 지금 임시
+//   계정(id 같음 · `isPractice`)이 아니면 아무것도 하지 않는다.
 // 늦은 응답은 generation으로 버린다. 실제 백엔드는 지금 unsupported(XB X4 짝 라운드 전)다.
 import 'dart:async';
 
@@ -16,11 +21,13 @@ import 'package:flutter/widgets.dart';
 import '../../services/app_service.dart';
 import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
+import '../../services/scanner_service.dart' show ScannerKind;
 import '../app_section.dart';
 import '../scan/scan_session_controller.dart';
 import '../tutorial/tutorial_flow.dart';
 import '../tutorial/tutorial_script.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
+import '../widgets/plan_tutorial_entry.dart';
 
 /// 세션 진행 상태.
 enum TutorialSessionStatus { idle, starting, running, ending }
@@ -69,6 +76,13 @@ const tutorialStartFailedNotice = '튜토리얼을 시작하지 못했습니다'
 const tutorialRecoverFailedNotice = '지난 튜토리얼 임시 계정을 정리하지 못했습니다';
 const tutorialEndFailedTitle = '임시 계정을 지우지 못했습니다';
 const tutorialEndingText = '임시 계정을 정리하는 중입니다';
+const tutorialCandidatesClearedNote = '남은 후보는 튜토리얼이 정리했습니다';
+
+/// 이 단계를 마치면 임시 계정의 남은 학생 후보를 정리한다(학생 결과 적용).
+const tutorialCandidateCleanupAfterStep = '3';
+
+/// 정리했다는 한 줄을 보일 단계(정리 뒤 첫 단계).
+const tutorialCandidateNoteStep = '4';
 
 /// 오류 → 짧은 글(계약 오류 코드가 있으면 그 이름).
 String tutorialErrorText(Object error) =>
@@ -87,6 +101,9 @@ class TutorialSession extends ChangeNotifier {
 
   /// 대상 등록표 · 신호 출구 · 머리글 칩(F3c-2). 셸이 이것을 쓴다.
   final TutorialHooks hooks = TutorialHooks();
+
+  /// 계획 탭 안 모드 요청(F3c-5). 계획 화면 · 흐름 화면이 듣는다.
+  final PlanTutorialEntry plan = PlanTutorialEntry();
 
   /// 셸의 스캔 세션(카드 기다림 진행 수). 셸이 붙이고 뗀다.
   final ValueNotifier<ScanSessionController?> scanSession = ValueNotifier(null);
@@ -112,6 +129,8 @@ class TutorialSession extends ChangeNotifier {
   TutorialNavigation? _navigation;
   int _navigationId = 0;
   int _lastFlowIndex = -1;
+  TutorialFlowItem? _lastItem;
+  int _clearedCandidates = 0;
   int _generation = 0;
   bool _recovered = false;
   bool _disposed = false;
@@ -149,6 +168,15 @@ class TutorialSession extends ChangeNotifier {
       isPractice: true,
     );
   }
+
+  /// 3단계 뒤 튜토리얼이 정리한 임시 계정 학생 후보 수.
+  int get clearedCandidates => _clearedCandidates;
+
+  /// 지금 단계 카드 아래 한 줄(정리한 후보가 있을 때 4단계에만). 없으면 null.
+  String? get stepNote =>
+      _clearedCandidates > 0 && _flow?.step?.id == tutorialCandidateNoteStep
+      ? tutorialCandidatesClearedNote
+      : null;
 
   /// 대사 · 그만두기 확인 · 끝 화면의 계정 이름(실제 첫 계정).
   String get accountName => _origin?.displayName ?? TutorialCopy.sampleAccount;
@@ -238,6 +266,8 @@ class TutorialSession extends ChangeNotifier {
     _practiceEpoch += 1;
     _status = TutorialSessionStatus.running;
     _lastFlowIndex = -1;
+    _lastItem = null;
+    _clearedCandidates = 0;
     final flow = TutorialFlowController(completeHold: completeHold)
       ..addListener(_flowChanged);
     _flow = flow;
@@ -261,17 +291,56 @@ class TutorialSession extends ChangeNotifier {
     }
     if (flow.flowIndex != _lastFlowIndex) {
       _lastFlowIndex = flow.flowIndex;
+      final previous = _lastItem;
       final item = flow.currentItem;
+      _lastItem = item;
+      if (previous is TutorialStepItem &&
+          previous.stepId == tutorialCandidateCleanupAfterStep) {
+        unawaited(_clearPracticeCandidates(_generation));
+      }
       if (item is TutorialSceneItem) {
         final section = tutorialSceneSections[item.sceneId];
         if (section != null) {
           _navigate(section, openConnectPanel: item.sceneId == 'plana-02');
         }
+        final mode = planTutorialSceneModes[item.sceneId];
+        if (mode != null) plan.open(mode);
       } else if (item is TutorialStepItem && shellSection == AppSection.scan) {
         // 바탕 장면이 이미 스캔 탭을 열었다(신호는 단계 전이라 버려졌다) — 2단계 '스캔 탭 열기'.
         flow.signal(TutorialSignals.scanTabOpened);
       }
     }
+  }
+
+  /// 3단계 뒤: 임시 계정의 아직 적용 · 폐기하지 않은 학생 후보를 스캔 화면의 폐기 경로로 정리한다. 스캔 컨트롤러의 계정이
+  /// 지금 임시 계정이 아니면(진짜 계정) 아무것도 하지 않는다.
+  Future<void> _clearPracticeCandidates(int generation) async {
+    final scan = scanSession.value;
+    final practice = _practice;
+    final profile = scan?.profile;
+    if (scan == null ||
+        practice == null ||
+        profile == null ||
+        !profile.isPractice ||
+        profile.id != practice.profileId ||
+        scan.session?.kind != ScannerKind.student) {
+      return;
+    }
+    final pending = [
+      for (final candidate in scan.candidates.values)
+        if (scan.candidateResolution(candidate) == null) candidate,
+    ];
+    var cleared = 0;
+    for (final candidate in pending) {
+      await scan.discardStudentCandidate(candidate);
+      if (generation != _generation || _disposed) return;
+      // 그 사이 계정이 바뀌었으면 멈춘다.
+      if (scan.profile?.id != practice.profileId) break;
+      if (scan.candidateResolution(candidate) == false) cleared += 1;
+    }
+    if (cleared == 0) return;
+    _clearedCandidates += cleared;
+    _notify();
   }
 
   void _navigate(AppSection section, {bool openConnectPanel = false}) {
@@ -348,6 +417,7 @@ class TutorialSession extends ChangeNotifier {
     }
     hooks.signals.listener = null;
     hooks.active.value = false;
+    plan.clear();
   }
 
   /// 앱 시작 때 한 번: 남은 임시 계정을 지운다(백엔드가 미지원이면 아무것도 하지 않는다).
@@ -387,6 +457,7 @@ class TutorialSession extends ChangeNotifier {
     _generation += 1;
     _teardownFlow();
     hooks.dispose();
+    plan.dispose();
     scanSession.dispose();
     super.dispose();
   }

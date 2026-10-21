@@ -27,6 +27,7 @@ import 'plan_flow_save_step.dart';
 import 'plan_flow_student_one.dart';
 import 'plan_flow_student_step.dart';
 import 'plan_flow_tutorial_watch.dart';
+import 'plan_tutorial_entry.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import '../tutorial/tutorial_script.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
@@ -123,6 +124,10 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
   /// F3c-4: 튜토리얼 계획 신호 감시(대본 7-1 · 7-2b · 7-2c · 7-3 · 7-5). 흐름마다 하나다.
   PlanFlowTutorialWatch _tutorialWatch = PlanFlowTutorialWatch();
 
+  /// F3c-5: 튜토리얼 계획 모드 요청(대본 장면 08c~09 바탕 — 단계 옮기기 · 마키 탭 · 저장 이름). 튜토리얼이 없으면 null.
+  PlanTutorialEntry? _tutorialEntry;
+  int? _tutorialHandled;
+
   /// 3단계 화면 상태(고른 카드·거부 이유). 3단계를 처음 그릴 때 만들고 흐름 동안 유지한다.
   PlanFlowOrderEditor? _orderEditorState;
 
@@ -153,6 +158,39 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     _saveState = _newSaveState(_flow);
     _presetsStore = _newPresetsStore(_flow);
     if (widget.active) _setActive(true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final entry = PlanTutorialEntry.of(context);
+    if (identical(entry, _tutorialEntry)) return;
+    _tutorialEntry?.removeListener(_tutorialRequested);
+    _tutorialEntry = entry?..addListener(_tutorialRequested);
+    // 흐름이 열리기 전 요청(08 학생 고르기 등)은 이 흐름을 연 쪽 몫이다. 열린 뒤 요청만 따른다.
+    _tutorialHandled = entry?.request?.id;
+  }
+
+  /// 튜토리얼 장면이 계획 탭 안 모드를 요청했다(요청마다 한 번).
+  void _tutorialRequested() {
+    final request = _tutorialEntry?.request;
+    if (!mounted || request == null || request.id == _tutorialHandled) return;
+    _tutorialHandled = request.id;
+    final mode = request.mode;
+    if (mode == PlanTutorialMode.save) {
+      // 7-6: 저장 이름 칸을 대본 이름으로(사용자가 고칠 수 있다).
+      if (planTutorialScenarioName() case final name?) {
+        _saveState.scenarioName = name;
+      }
+    }
+    if (planTutorialFocusName(mode) case final name?) {
+      final id = planTutorialStudentIds([name], _flow.context.catalog.values);
+      if (id.isNotEmpty && _flow.draft.studentIds.contains(id.single)) {
+        _goalEditor.selectStudent(id.single);
+      }
+    }
+    final step = planTutorialFlowStep(mode);
+    if (step != null && step != _flow.step) _selectStep(step);
   }
 
   @override
@@ -240,6 +278,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
 
   @override
   void dispose() {
+    _tutorialEntry?.removeListener(_tutorialRequested);
     _flow.removeListener(_flowChanged);
     _saveState
       ..removeListener(_saveChanged)

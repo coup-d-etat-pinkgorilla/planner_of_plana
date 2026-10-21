@@ -4,6 +4,7 @@ import '../../services/app_service.dart';
 import '../models/planning_models.dart';
 import '../navigation/app_navigation_intent.dart';
 import '../widgets/plan_section_layout.dart';
+import '../widgets/plan_tutorial_entry.dart';
 
 export '../models/planning_models.dart' show PlanningStudentSeed;
 
@@ -33,13 +34,18 @@ class PlanningPage extends StatelessWidget {
       key: const ValueKey('planning-page'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: PlanSectionLayout(
+        // F3c-5: 튜토리얼 계획 장면 08이 대본 7명을 고른 흐름을 연다(튜토리얼이 없으면 [navigation] 그대로).
+        child: PlanTutorialNavigation(
           service: service,
-          active: active,
-          initialSeed: initialSeed,
-          initialPresets: initialPresets,
-          loadRepositoryPlan: loadRepositoryPlan,
           navigation: navigation,
+          builder: (context, navigation) => PlanSectionLayout(
+            service: service,
+            active: active,
+            initialSeed: initialSeed,
+            initialPresets: initialPresets,
+            loadRepositoryPlan: loadRepositoryPlan,
+            navigation: navigation,
+          ),
         ),
       ),
     );

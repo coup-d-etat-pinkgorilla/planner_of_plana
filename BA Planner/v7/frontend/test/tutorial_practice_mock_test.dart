@@ -173,9 +173,12 @@ void main() {
       ]);
       expect(state.inventory.entries, hasLength(10));
       expect(state.goals, isEmpty);
+      // F3c-5: 예시 시나리오 하나(대본 09c · 8단계, CF 결정 — 계약 "scenarios start empty"와 다름).
       expect(
-        (await service.listScenarios(practice.profileId)).scenarios,
-        isEmpty,
+        (await service.listScenarios(
+          practice.profileId,
+        )).scenarios.map((scenario) => scenario.name),
+        [tutorialPracticeExampleScenarioName],
       );
       final events = await service.loadRepositoryHistoryEvents(
         RepositoryHistoryEventsRequest(

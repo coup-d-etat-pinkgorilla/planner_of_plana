@@ -1,13 +1,15 @@
 // F3c-3: 튜토리얼 한 바퀴(FD-182) — Mock 임시 계정으로 처음부터 끝까지, 중간 그만두기, 설정 다시 하기(reset), 미지원 안내,
 // 남은 임시 계정 정리 실패 표시, 끝 정리 실패 · 다시 시도, 타이틀 위 시작, 1280×720 넘침 0.
-// 신호는 실제 화면 동작(연결 패널 · 스캔 시작 · 결과 적용 · 계산기 · 아이템 스캔 · 아이템 적용)으로 내고, 계획 7-x · 8 ·
-// 9 · 10은 hooks 출구로 낸다(계획 신호는 Lane B F3c-4, 부족 · 성장 추이는 계획 저장 · 이력 뒤라 이 Mock 한 바퀴에서는
-// 화면 조건이 없다 — status F3c-3 종료 기록).
+// 신호는 실제 화면 동작(연결 패널 · 스캔 시작 · 결과 적용 · 아이템 스캔 · 아이템 적용 · 계획 만들기 · 시나리오 저장 · 나란히
+// 비교)으로 낸다(F3c-5 — 계획 7-x · 8은 F3c-4 실제 신호). 끌어 놓기(7-3 순위 · 7-5 나중에)와 스킬 값 맞추기(7-2b · 7-2c)는
+// 편집기 호출로 대신하고, 4단계(임시 계정 그리드에 보유 카드가 첫 화면에 없음) · 6단계 승인 · 9단계(활성 계획이 없어
+// 부족 목록이 빔) · 10단계는 hooks 출구다(단계별 표 — status F3c-5 종료 기록).
 import 'dart:async';
 
 import 'package:ba_planner_v7/app/app.dart';
 import 'package:ba_planner_v7/services/mock_app_service.dart';
 import 'package:ba_planner_v7/services/repository_service.dart';
+import 'package:ba_planner_v7/ui/models/plan_flow_draft.dart';
 import 'package:ba_planner_v7/ui/app_shell.dart';
 import 'package:ba_planner_v7/ui/pages/title_page.dart';
 import 'package:ba_planner_v7/ui/tutorial/plana_dialogue.dart';
@@ -16,6 +18,9 @@ import 'package:ba_planner_v7/ui/tutorial/tutorial_highlight.dart';
 import 'package:ba_planner_v7/ui/tutorial/tutorial_quit_dialog.dart';
 import 'package:ba_planner_v7/ui/tutorial/tutorial_script.dart';
 import 'package:ba_planner_v7/ui/tutorial/tutorial_step_card.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_goal_step.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_order_step.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
 import 'package:ba_planner_v7/ui/tutorial_host/tutorial_overlay.dart';
 import 'package:ba_planner_v7/ui/tutorial_host/tutorial_session.dart';
 import 'package:ba_planner_v7/ui/tutorial_targets/tutorial_header_chip_slot.dart';
@@ -74,9 +79,11 @@ Future<TutorialSession> _pumpApp(
   return session;
 }
 
+/// [count] × 100ms를 10ms씩 넘긴다(움직임 줄이기로 탭 전환이 약 50ms라, 100ms 한 번에 넘기면 셸이 들어오는 탭을 켜는
+/// 중간 시점(`onIncomingReady`)을 지나친다 — 계획 탭 흐름 화면이 꺼진 채 남는다).
 Future<void> _frames(WidgetTester tester, [int count = 8]) async {
-  for (var index = 0; index < count; index++) {
-    await tester.pump(const Duration(milliseconds: 100));
+  for (var index = 0; index < count * 10; index++) {
+    await tester.pump(const Duration(milliseconds: 10));
   }
 }
 
@@ -126,6 +133,8 @@ Future<void> _waitDone(
   ) {
     await tester.pump(const Duration(milliseconds: 20));
   }
+  // 신호가 누르는 순간 났으면(루프가 돌지 않음) 완료 카드를 한 번 그린다.
+  await tester.pump();
   final scan = session.scanSession.value;
   expect(
     session.flow!.phase,
@@ -142,6 +151,50 @@ String? _stepId(TutorialSession session) => session.flow?.step?.id;
 
 AppShell _shell(WidgetTester tester) =>
     tester.widget<AppShell>(find.byType(AppShell));
+
+PlanFlowController _planFlow(WidgetTester tester) =>
+    tester.widget<PlanFlowWorkspace>(find.byType(PlanFlowWorkspace)).flow;
+
+/// 학생 [studentId]의 [step]번째 단계 id.
+String _stageId(WidgetTester tester, String studentId, [int step = 1]) =>
+    _planFlow(tester).draft.stages
+        .singleWhere(
+          (stage) => stage.studentId == studentId && stage.step == step,
+        )
+        .id;
+
+/// 스킬 넷(EX · 기본 · 강화 · 서브)을 편집기로 맞춘다(스테퍼 대신).
+Future<void> _setSkills(
+  WidgetTester tester,
+  String stageId,
+  List<int> values,
+) async {
+  final editor = tester
+      .widget<PlanFlowGoalBody>(find.byType(PlanFlowGoalBody))
+      .editor;
+  for (final (index, key) in const [
+    'ex_skill',
+    'skill1',
+    'skill2',
+    'skill3',
+  ].indexed) {
+    editor.setTarget(stageId, key, values[index]);
+    await tester.pump();
+  }
+}
+
+/// 대사 장면이 끝나고 [stepId] 단계 카드가 될 때까지 넘긴다.
+Future<void> _toStep(
+  WidgetTester tester,
+  TutorialSession session,
+  String stepId,
+) async {
+  while (session.flow!.phase == TutorialPhase.dialogue) {
+    await _finishScene(tester, session);
+  }
+  await _frames(tester, 6);
+  expect(_stepId(session), stepId);
+}
 
 void main() {
   testWidgets(
@@ -224,20 +277,24 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('scan-review-bulk-apply')));
       await _waitDone(tester, session, '적용했습니다');
-      // 남은 후보(새 학생 1 · 확인 필요 2)가 검토 대기면 스캔 탭이 고르기로 돌아가지 않는다(발견 — status). 시험은 남은
-      // 후보를 폐기해 5단계 고르기 화면으로 간다.
-      final scan = session.scanSession.value!;
-      for (final candidate in scan.candidates.values.toList()) {
-        if (scan.candidateResolution(candidate) != null) continue;
-        unawaited(scan.discardStudentCandidate(candidate));
-        await tester.pump();
-      }
+      // F3c-5: 남은 후보(새 학생 1 · 확인 필요 2)는 튜토리얼이 임시 계정에서 폐기 경로로 정리한다(CF 결정 (a)).
       await _frames(tester, 3);
+      final scan = session.scanSession.value!;
+      expect(scan.profile!.id, session.practice!.profileId);
+      expect(session.clearedCandidates, 3);
+      expect(
+        scan.candidates.values.where(
+          (candidate) => scan.candidateResolution(candidate) == null,
+        ),
+        isEmpty,
+      );
 
       // 프라나 05(바탕: 학생 탭) → 4단계: 학생 · 상세 · 계산기 · 목표 +.
       expect(session.flow!.scene!.id, 'plana-05');
       await _finishScene(tester, session);
       expect(_stepId(session), '4');
+      expect(find.byKey(const ValueKey('tutorial-card-note')), findsOneWidget);
+      expect(find.text(tutorialCandidatesClearedNote), findsOneWidget);
       // 학생 · 상세 · 계산기 · 목표 신호는 hooks 출구로(실제 화면 신호는 tutorial_targets_f3c2_test의 계산기 시험이 본다 —
       // 임시 계정 그리드는 전체 카탈로그라 첫 화면에 보유 학생 카드가 없다).
       for (final signal in const [
@@ -286,31 +343,143 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('scan-item-apply')));
       await _waitDone(tester, session, '적용했습니다');
 
-      // 7-1 ~ 8: 바탕은 계획 탭, 완료 신호는 hooks 출구(Lane B F3c-4가 계획 신호 5개를 붙인다).
-      const planSteps = {
-        '7-1': (TutorialSignals.planStudentsConfirmed, '학생을 골랐습니다'),
-        '7-2': (TutorialSignals.planAllMaxApplied, 'MAX로 맞췄습니다'),
-        '7-2b': (TutorialSignals.planMakiStage1Set, '1단계를 정했습니다'),
-        '7-2c': (TutorialSignals.planMakiStage2Set, '2단계를 더했습니다'),
-        '7-3': (TutorialSignals.planRanksPlaced, '순위를 정했습니다'),
-        '7-4': (TutorialSignals.planKannaAkaneLinked, '이어 붙였습니다'),
-        '7-5': (TutorialSignals.planLaterMoved, '나중으로 옮겼습니다'),
-        '7-6': (TutorialSignals.planSavedAsScenario, '시나리오로 저장했습니다'),
-        '8': (TutorialSignals.scenarioCompareOpened, '나란히 비교했습니다'),
-        '9': (TutorialSignals.inventoryTopShortageOpened, '확인했습니다'),
-        '10': (TutorialSignals.statisticsGrowthTrendViewed, '확인했습니다'),
+      // 프라나 08(바탕: 계획 만들기 1 — 계획 탭이 임시 계정을 읽고 대본 7명을 고른 흐름).
+      expect(find.byKey(const ValueKey('tutorial-card-note')), findsNothing);
+      await _toStep(tester, session, '7-1');
+      expect(_planFlow(tester).step, PlanFlowStep.students);
+      expect(_planFlow(tester).draft.studentIds.toSet(), {
+        'akane',
+        'kanna_swimsuit',
+        'maki',
+        'mika',
+        'himari_battle',
+        'shiroko_swimsuit',
+        'neru_school_uniform',
+      });
+      expect(
+        _planFlow(tester).context.repositoryState.profileId,
+        session.practice!.profileId,
+      );
+      // 7-1: '다음 · 목표 정하기'(실제).
+      await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
+      await _waitDone(tester, session, '학생을 골랐습니다');
+
+      // 프라나 08c → 7-2: 한 번에 MAX를 고르고 '고른 7명 모두 한 번에 MAX로'(실제).
+      await _toStep(tester, session, '7-2');
+      expect(_planFlow(tester).step, PlanFlowStep.goals);
+      await tester.tap(find.byKey(const ValueKey('plan-flow-goal-mode-max')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('plan-flow-goal-apply-all')));
+      await _waitDone(tester, session, 'MAX로 맞췄습니다');
+
+      // 프라나 08g(바탕: 마키 탭) → 7-2b: 1단계 M/M/1/1(편집기).
+      await _toStep(tester, session, '7-2b');
+      final goalEditor = tester
+          .widget<PlanFlowGoalBody>(find.byType(PlanFlowGoalBody))
+          .editor;
+      expect(goalEditor.studentId, 'maki');
+      await _setSkills(tester, _stageId(tester, 'maki'), [5, 10, 1, 1]);
+      await _waitDone(tester, session, '1단계를 정했습니다');
+
+      // 7-2c: '단계 추가'(실제) → 2단계 M/M/7/7(편집기).
+      expect(_stepId(session), '7-2c');
+      await tester.tap(find.byKey(const ValueKey('plan-flow-goal-add-stage')));
+      await tester.pump();
+      final makiStage2 = goalEditor.stagesOf('maki').last.id;
+      await _setSkills(tester, makiStage2, [5, 10, 7, 7]);
+      await _waitDone(tester, session, '2단계를 더했습니다');
+
+      // 프라나 08d(바탕: 계획 만들기 3) → 7-3: 순위 칸에 놓기(끌어 놓기 대신 편집기 move).
+      await _toStep(tester, session, '7-3');
+      expect(_planFlow(tester).step, PlanFlowStep.order);
+      final orderEditor = tester
+          .widget<PlanFlowOrderBody>(find.byType(PlanFlowOrderBody))
+          .editor;
+      const ranks = {
+        'kanna_swimsuit': 1,
+        'maki': 1,
+        'mika': 1,
+        'shiroko_swimsuit': 2,
+        'himari_battle': 2,
+        'akane': 3,
       };
-      for (final MapEntry(key: id, value: (signal, title))
-          in planSteps.entries) {
-        while (session.flow!.phase == TutorialPhase.dialogue) {
-          await _finishScene(tester, session);
+      for (final MapEntry(key: studentId, value: rank) in ranks.entries) {
+        final phases = _planFlow(tester).draft.phases;
+        if (phases.length < rank) {
+          orderEditor.addPhase();
+          await tester.pump();
         }
-        expect(_stepId(session), id);
-        if (id == '9') {
-          expect(_shell(tester), isNotNull);
-        }
+        expect(
+          orderEditor.move(
+            _stageId(tester, studentId),
+            phaseId: _planFlow(tester).draft.phases[rank - 1].id,
+          ),
+          isTrue,
+          reason: '$studentId · ${orderEditor.message}',
+        );
+        await tester.pump();
+      }
+      await _waitDone(tester, session, '순위를 정했습니다');
+
+      // 프라나 08e → 7-4: 칸나(수영복) 카드 아래 점을 아카네 카드로 끌어 놓기(실제 끌기).
+      await _toStep(tester, session, '7-4');
+      final kanna = _stageId(tester, 'kanna_swimsuit');
+      final akane = _stageId(tester, 'akane');
+      final dot = find.byKey(ValueKey('plan-flow-order-card-$kanna-dot'));
+      final target = find.byKey(ValueKey('plan-flow-order-card-$akane'));
+      final gesture = await tester.startGesture(tester.getCenter(dot));
+      await tester.pump(const Duration(milliseconds: 20));
+      await gesture.moveBy(const Offset(0, 24));
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(target));
+      await tester.pump();
+      await gesture.up();
+      await _waitDone(tester, session, '이어 붙였습니다');
+
+      // 프라나 08f → 7-5: 네루(교복) · 마키 2단계를 나중에 칸으로(끌어 놓기 대신 편집기 move).
+      await _toStep(tester, session, '7-5');
+      for (final stageId in [
+        _stageId(tester, 'neru_school_uniform'),
+        _stageId(tester, 'maki', 2),
+      ]) {
+        expect(
+          orderEditor.move(stageId, phaseId: planFlowDeferredLaneId),
+          isTrue,
+          reason: orderEditor.message,
+        );
+        await tester.pump();
+      }
+      await _waitDone(tester, session, '나중으로 옮겼습니다');
+
+      // 프라나 09(바탕: 계획 만들기 4) → 7-6: 이름 칸이 대본 이름, '시나리오로 저장'(실제).
+      await _toStep(tester, session, '7-6');
+      expect(_planFlow(tester).step, PlanFlowStep.save);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('plan-flow-save-name-field')),
+          matching: find.text('총력전 비나 대비'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('plan-flow-save-confirm')));
+      await _waitDone(tester, session, '시나리오로 저장했습니다');
+
+      // 프라나 09c(바탕: 시나리오 목록 — 방금 저장한 안 · 예시 안이 비교에 담겨 있음) → 8: '나란히 비교'(실제).
+      await _toStep(tester, session, '8');
+      final compare = find.byKey(const ValueKey('plan-scenario-compare-run'));
+      expect(compare, findsOneWidget);
+      await tester.tap(compare);
+      await _waitDone(tester, session, '나란히 비교했습니다');
+
+      // 9 · 10: hooks 출구(9 — 활성 계획이 없어 부족 목록이 빔, 10 — 성장 추이 점 고르기는 통계 시험 몫).
+      for (final (id, signal) in const [
+        ('9', TutorialSignals.inventoryTopShortageOpened),
+        ('10', TutorialSignals.statisticsGrowthTrendViewed),
+      ]) {
+        await _toStep(tester, session, id);
+        if (id == '9') expect(_shell(tester), isNotNull);
         hooks.signals.emit(signal);
-        await _afterComplete(tester, title);
+        await _afterComplete(tester, '확인했습니다');
       }
 
       // 프라나 11: 실제 첫 계정 이름('Main' → "'Main' 계정으로").
