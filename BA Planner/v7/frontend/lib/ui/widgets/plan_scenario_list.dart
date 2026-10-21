@@ -1999,6 +1999,12 @@ class _SearchChip extends StatelessWidget {
   );
 }
 
+/// 비교 슬롯이 얼굴을 보일 최소 폭(글자 14 · 6 · 얼굴 34 · 8 · 빼기 12 · 이름 24).
+const _compareSlotPortraitMinWidth = 98.0;
+
+/// 시나리오 행 제목 줄이 수정 시각을 보일 최소 폭(상태 칩 · 수정 시각 · 이름 몇 글자).
+const _scenarioRowUpdatedMinWidth = 360.0;
+
 /// 비교 슬롯 한 칸(A = 활성 계획, B~D = 담은 시나리오).
 class _CompareSlotButton extends StatelessWidget {
   const _CompareSlotButton({
@@ -2034,58 +2040,62 @@ class _CompareSlotButton extends StatelessWidget {
       semanticLabel: removable ? '$name 비교에서 빼기' : name,
       // A는 뺄 수 없다(눌러도 아무 일이 없다). B~D는 칸 전체가 빼기 버튼이다(오른쪽 × 표시).
       onPressed: removable ? onRemove : _noop,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 14,
-            child: Text(
-              letter,
-              maxLines: 1,
-              style: kitDisplayStyle(AppType.bodySize, color: letterColor),
-            ),
-          ),
-          const SizedBox(width: 6),
-          if (studentId != null) ...[
-            PortraitStrip(studentIds: [studentId], maxVisible: 1),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: AppType.bodySize,
-                    fontWeight: AppType.bold,
-                  ),
-                ),
-                if (caption != null)
-                  Text(
-                    caption,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: _muted.copyWith(fontSize: AppType.microPlusSize),
-                  ),
-              ],
-            ),
-          ),
-          if (removable)
+      // F3c-6: 칸이 좁으면(1280×720) 얼굴을 빼서 넘치지 않게 한다. 넓은 칸은 그대로다.
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
             SizedBox(
-              key: removeKey,
-              width: 12,
-              height: 12,
-              child: const CustomPaint(
-                painter: KitGlyphPainter(
-                  glyph: KitGlyph.close,
-                  color: AppColors.textSecondary,
-                ),
+              width: 14,
+              child: Text(
+                letter,
+                maxLines: 1,
+                style: kitDisplayStyle(AppType.bodySize, color: letterColor),
               ),
             ),
-        ],
+            const SizedBox(width: 6),
+            if (studentId != null &&
+                constraints.maxWidth >= _compareSlotPortraitMinWidth) ...[
+              PortraitStrip(studentIds: [studentId], maxVisible: 1),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: AppType.bodySize,
+                      fontWeight: AppType.bold,
+                    ),
+                  ),
+                  if (caption != null)
+                    Text(
+                      caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _muted.copyWith(fontSize: AppType.microPlusSize),
+                    ),
+                ],
+              ),
+            ),
+            if (removable)
+              SizedBox(
+                key: removeKey,
+                width: 12,
+                height: 12,
+                child: const CustomPaint(
+                  painter: KitGlyphPainter(
+                    glyph: KitGlyph.close,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -2463,37 +2473,43 @@ class PlanScenarioListRow extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      scenario.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: AppFonts.body,
-                        fontFamilyFallback: AppFonts.fallback,
-                        fontSize: AppType.bodyLargeSize,
-                        height: 1.25,
-                        fontWeight: AppType.bold,
-                        color: AppColors.text,
+              // F3c-6: 줄이 좁으면(1280×720) 수정 시각을 빼서 넘치지 않게 한다. 넓은 줄은 그대로다.
+              LayoutBuilder(
+                builder: (context, constraints) => Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        scenario.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppFonts.body,
+                          fontFamilyFallback: AppFonts.fallback,
+                          fontSize: AppType.bodyLargeSize,
+                          height: 1.25,
+                          fontWeight: AppType.bold,
+                          color: AppColors.text,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  BaChip(
-                    key: ValueKey('plan-scenario-status-${scenario.id}'),
-                    label: stale ? '저장 시점과 다름' : '현재 데이터 기준',
-                    tone: stale ? AppTones.warn : AppTones.info,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    planScenarioUpdatedLabel(scenario.updatedAt),
-                    key: ValueKey('plan-scenario-updated-${scenario.id}'),
-                    maxLines: 1,
-                    style: _muted,
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    BaChip(
+                      key: ValueKey('plan-scenario-status-${scenario.id}'),
+                      label: stale ? '저장 시점과 다름' : '현재 데이터 기준',
+                      tone: stale ? AppTones.warn : AppTones.info,
+                    ),
+                    if (constraints.maxWidth >=
+                        _scenarioRowUpdatedMinWidth) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        planScenarioUpdatedLabel(scenario.updatedAt),
+                        key: ValueKey('plan-scenario-updated-${scenario.id}'),
+                        maxLines: 1,
+                        style: _muted,
+                      ),
+                    ],
+                  ],
+                ),
               ),
               if (scenario.description.isNotEmpty) ...[
                 const SizedBox(height: 3),

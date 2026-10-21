@@ -1739,6 +1739,64 @@ const planFlowDefaultArchiveName = '이전 활성 계획';
 /// 활성 계획을 고쳐 바꿀 때(FE4-f2) 옮겨 둘 기존 활성 계획 이름의 기본값.
 const planFlowEditedArchiveName = '고치기 전 활성 계획';
 
+/// 저장된 시나리오 [scenarioId]를 활성 계획으로 바꾼다 — 계획에 적용…(FD-088)의 "활성 계획을 이걸로 바꾸기"를 화면 없이
+/// 한 번 보낸다(F3c-6: 튜토리얼이 임시 계정에서 7-6 시나리오를 활성 계획으로 옮긴다, FD-182 보충 ⑤). 저장 직전 상태
+/// 읽기([loadPlanFlowSaveSnapshot])와 요청 모양은 4단계 저장([PlanFlowSaveController])의 이걸로 바꾸기와 같다: 문서는
+/// 시나리오의 페이즈 · 목표 그대로 v2 `kind=plan`(활성 계획 id · 이름, goal_metadata는 시나리오의 것 · 없으면 기본값 —
+/// [PlanFlowDocumentBoundary.toPlanDocument]와 같다), authoring은 시나리오의 것, 기존 활성 계획이 있으면 [archiveName]
+/// 시나리오로 옮겨 둔다(FD-067). 옮겨 둔 시나리오 id(없으면 null)를 준다.
+Future<String?> planFlowReplaceActivePlanWithScenario(
+  Object? service, {
+  required String profileId,
+  required String scenarioId,
+  required String idempotencyKey,
+  String archiveName = planFlowDefaultArchiveName,
+}) async {
+  if (service is! RepositoryService ||
+      service is! RepositoryPlanService ||
+      service is! PlanningScenarioRepositoryService) {
+    throw StateError('plan_repository_unavailable');
+  }
+  final snapshot = await loadPlanFlowSaveSnapshot(
+    service,
+    fallbackState: await service.loadRepositoryState(profileId),
+  );
+  final active = snapshot.activeDocument;
+  final collection = snapshot.scenarioRevision;
+  if (active == null || collection == null) {
+    throw StateError('plan_snapshot_unavailable');
+  }
+  final scenario =
+      (await (service as PlanningScenarioRepositoryService).getScenario(
+        profileId,
+        scenarioId,
+      )).scenario;
+  final source = scenario.document;
+  final result = await (service as RepositoryPlanService).replaceRepositoryPlan(
+    profileId: profileId,
+    document: PlanningDocument(
+      id: active.id,
+      name: active.name,
+      kind: PlanningDocumentKind.plan,
+      phases: source.phases,
+      version: 2,
+      goalMetadata: {
+        for (final stage in source.stages)
+          stage.studentId:
+              source.goalMetadata[stage.studentId] ??
+              planFlowDefaultGoalMetadata,
+      },
+    ),
+    authoring: scenario.authoring,
+    expectedRevision: snapshot.revision,
+    expectedScenarioRevision: collection,
+    idempotencyKey: idempotencyKey,
+    archiveName: archiveName,
+    archiveDescription: '',
+  );
+  return result.archivedScenarioId;
+}
+
 /// 숫자 뒤 조사 "로/으로"(받침 없음·ㄹ은 "로").
 String planFlowRoParticle(int value) {
   final digit = value.abs() % 10;

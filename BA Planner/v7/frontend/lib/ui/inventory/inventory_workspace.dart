@@ -1066,10 +1066,16 @@ class InventoryWorkspace extends StatelessWidget {
         );
       }
       if (visible.isEmpty) {
-        return _Notice(
-          controller.category == null
-              ? '부족한 재화가 없습니다.'
-              : '이 종류에는 부족한 재화가 없습니다.',
+        // F3c-6: 부족 목록이 통째로 비었다(9단계 대체 문구 — 종류를 고르지 않았을 때만).
+        return TutorialTarget(
+          id: controller.category == null
+              ? TutorialTargets.inventoryShortageEmpty
+              : null,
+          child: _Notice(
+            controller.category == null
+                ? '부족한 재화가 없습니다.'
+                : '이 종류에는 부족한 재화가 없습니다.',
+          ),
         );
       }
     } else {
@@ -1094,6 +1100,8 @@ class InventoryWorkspace extends StatelessWidget {
             id: index == 0 && controller.view == InventoryView.shortage
                 ? TutorialTargets.inventoryShortageTopRow
                 : null,
+            // F3c-6: 9단계 카드가 이 행의 실제 이름을 쓴다.
+            label: view.item.displayName,
             child: InventoryRiskRow(
               key: ValueKey('inventory-row-${view.key}'),
               view: view,

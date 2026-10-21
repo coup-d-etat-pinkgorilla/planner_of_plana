@@ -3,6 +3,8 @@
 // - [TutorialTargetRegistry]: F3a 대상 키(`TutorialTargets`) → 위젯의 전역 사각형 + 모양(사선 · 둥근 사각형 + 반지름).
 //   위젯 쪽은 [TutorialTarget]으로 감싼다. 감싸개는 렌더 객체를 더하지 않는다(레이아웃 · 그림 변화 0). 감싸는 위젯 하나가
 //   없는 대상(목록 머리 + 행, 단계 버튼 4개 등)은 [TutorialTarget.group]으로 여러 조각을 한 키에 붙이고 합친 사각형을 쓴다.
+//   F3c-6: 조각마다의 사각형([TutorialTargetRegistry.rectsOf] — 카드가 피할 자리)과 대상이 보여 주는 이름
+//   ([TutorialTarget.label] — 9단계 부족 1위 행 이름)도 읽는다.
 // - [TutorialSignalBus]: F3a 신호 이름(`TutorialSignals`)을 앱 사건이 확정된 자리에서 낸다([TutorialHooksScope.emit]).
 //   듣는 쪽([TutorialSignalBus.listener])이 없으면 버린다.
 // - [TutorialHooks.active]: 튜토리얼 활성 표시. 켜지면 모든 탭 머리글 제목 옆에 `TutorialHeaderChip`이 보인다
@@ -43,6 +45,9 @@ abstract interface class TutorialTargetHandle {
 
   /// 한 키의 여러 조각 중 하나(합친 사각형).
   bool get group;
+
+  /// 대상이 보여 주는 이름(F3c-6). 없으면 null.
+  String? get label;
 }
 
 /// 키 → 지금 붙어 있는 대상 위젯. 같은 키가 두 위젯에서 동시에 등록되면(조각 등록이 아니면) 나중 등록을 쓰고, 그 프레임이
@@ -125,6 +130,32 @@ class TutorialTargetRegistry extends ChangeNotifier {
     }
     return null;
   }
+
+  /// [id] 대상의 조각마다의 사각형(보이는 것만, 전역 좌표). 조각이 아닌 대상은 [geometryOf]와 같은 하나다(F3c-6 — 카드가
+  /// 피할 자리).
+  List<Rect> rectsOf(String id) {
+    final handles = _byId[id];
+    if (handles == null) return const [];
+    if (!handles.every((handle) => handle.group)) {
+      final rect = geometryOf(id)?.rect;
+      return rect == null ? const [] : [rect];
+    }
+    return [for (final handle in handles) ?_rectOf(handle, null)];
+  }
+
+  /// [id] 대상이 보여 주는 이름(F3c-6). 등록이 없거나, 보이지 않거나, 이름이 없으면 null.
+  String? labelOf(String id) {
+    final handles = _byId[id];
+    if (handles == null) return null;
+    for (final handle in handles.reversed) {
+      final label = handle.label;
+      if (label != null && _rectOf(handle, null) != null) return label;
+    }
+    return null;
+  }
+
+  /// 등록된 대상의 이름이 바뀌었다(프레임 뒤에 알린다).
+  void labelChanged() => _scheduleNotify();
 
   static Rect? _rectOf(TutorialTargetHandle handle, RenderObject? ancestor) {
     final box = handle.renderBox;
@@ -225,6 +256,7 @@ class TutorialTarget extends StatefulWidget {
     this.shape = TutorialHighlightShape.parallelogram,
     this.radius = 0,
     this.group = false,
+    this.label,
     required this.child,
   });
 
@@ -234,6 +266,9 @@ class TutorialTarget extends StatefulWidget {
 
   /// 한 키의 여러 조각 중 하나(등록표가 사각형을 합친다, 중복 경고 없음).
   final bool group;
+
+  /// 대상이 보여 주는 이름(F3c-6 — 9단계 카드가 부족 1위 행의 실제 이름을 쓴다). 렌더 · 의미에는 쓰지 않는다.
+  final String? label;
   final Widget child;
 
   @override
@@ -262,6 +297,9 @@ class _TutorialTargetState extends State<TutorialTarget>
   bool get group => widget.group;
 
   @override
+  String? get label => widget.label;
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _sync(TutorialHooksScope.maybeOf(context)?.registry);
@@ -270,7 +308,11 @@ class _TutorialTargetState extends State<TutorialTarget>
   @override
   void didUpdateWidget(covariant TutorialTarget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.id != widget.id) _sync(_registry);
+    if (oldWidget.id != widget.id) {
+      _sync(_registry);
+    } else if (oldWidget.label != widget.label && _registeredId != null) {
+      _registry?.labelChanged();
+    }
   }
 
   void _sync(TutorialTargetRegistry? registry) {

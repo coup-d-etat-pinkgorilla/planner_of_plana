@@ -37,6 +37,7 @@ import '../models/plan_flow_order_editor.dart';
 import '../models/planning_resource_assets.dart';
 import 'plan_flow_goal_step.dart' show planFlowGoalAmount, planFlowGoalCostLine;
 import 'plan_flow_student_step.dart' show planFlowAsideLeftAt, planFlowProtoRect;
+import 'plan_tutorial_entry.dart' show planTutorialEnsureOrderSlots;
 import '../tutorial/tutorial_script.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
 
@@ -699,7 +700,10 @@ class _PlanFlowOrderBodyState extends State<PlanFlowOrderBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.editor.ensurePlaced();
+      if (!mounted) return;
+      widget.editor.ensurePlaced();
+      // F3c-6: 튜토리얼이면 칸 3개로 시작한다(아니면 아무것도 하지 않는다).
+      planTutorialEnsureOrderSlots(context, widget.editor);
     });
   }
 
@@ -1012,7 +1016,9 @@ class _OrderBoardState extends State<_OrderBoard> {
               key: ValueKey('plan-flow-order-lane-${lane.phase.id}'),
               rect: lane.tile,
               child: TutorialTarget(
-                id: lane.deferred ? null : TutorialTargets.planOrderRankColumns,
+                id: lane.deferred
+                    ? TutorialTargets.planOrderLaterLane
+                    : TutorialTargets.planOrderRankColumns,
                 group: true,
                 child: _Lane(
                   flow: flow,
@@ -1288,14 +1294,19 @@ class _Lane extends StatelessWidget {
                   Positioned.fromRect(
                     key: ValueKey('plan-flow-order-card-$id'),
                     rect: card.shift(-origin),
+                    // F3c-6: 모든 카드 = 단계 카드가 피할 자리(조각).
                     child: TutorialTarget(
-                      id: _tutorialCardKey(stage),
-                      child: _OrderCard(
-                        flow: flow,
-                        editor: editor,
-                        stage: stage,
-                        status: statuses[id],
-                        selected: id == selectedStageId,
+                      id: TutorialTargets.planOrderCards,
+                      group: true,
+                      child: TutorialTarget(
+                        id: _tutorialCardKey(stage),
+                        child: _OrderCard(
+                          flow: flow,
+                          editor: editor,
+                          stage: stage,
+                          status: statuses[id],
+                          selected: id == selectedStageId,
+                        ),
                       ),
                     ),
                   ),

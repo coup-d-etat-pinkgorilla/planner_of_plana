@@ -7,7 +7,9 @@
 // 5. 기다리는 단계(강조 없음)는 직전 자리에 그대로 둔다 — 부르는 쪽이 직전 [TutorialCardPlacement]를 다시 쓴다.
 // 6. 플래너가 뒤로 가는 단계는 카드 대신 진행 창 한 줄이다(이 함수를 부르지 않는다).
 // 7. 붙일 쪽이 방금 한 동작의 결과 자리이거나 다른 버튼을 덮으면([avoid]) 다음 후보(반대쪽 → 아래 → 위)로
-//    옮기고, 꼭지는 강조한 곳 쪽에 둔다. 모든 후보가 막히면 1~2 규칙의 자리를 쓴다.
+//    옮기고, 꼭지는 강조한 곳 쪽에 둔다. F3c-6: 네 후보가 모두 막히면 화면 안에서 대상 · [avoid]와 겹치지 않는 가장
+//    가까운 빈자리, 그런 자리가 없으면 [avoid]와 가장 적게 겹치는 자리([_nearestFree])로 옮긴다(대상과는 겹치지 않음).
+//    그것도 없으면 1~2 규칙의 자리를 쓴다. [avoid]가 비어 있으면 F3a 그대로다.
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -100,6 +102,10 @@ TutorialCardPlacement placeTutorialCard({
   for (final (placement, fits) in candidates) {
     if (fits && !blocked(placement.rect)) return placement;
   }
+  if (avoid.isNotEmpty) {
+    final free = _nearestFree(target, card, bounds, gap, avoid);
+    if (free != null) return free;
+  }
   for (final (placement, fits) in candidates) {
     if (fits) return placement;
   }
@@ -145,6 +151,111 @@ TutorialCardPlacement _verticalPlacement(
     nubSide: below ? TutorialNubSide.top : TutorialNubSide.bottom,
     nubOffset: _clampNub(target.center.dx - rect.left, card.width),
   );
+}
+
+/// 피할 자리 둘레 여유(강조 테두리 · 빛, 카드 그림자).
+const _avoidMargin = 8.0;
+
+/// 규칙 7 빈자리: 대상 · 피할 자리의 변에 붙는 자리와 대상 가운데에 맞춘 자리 중 화면 안에서 대상(+[gap])과 겹치지
+/// 않는 자리를, 피할 자리와 겹친 넓이가 작은 순(0이면 빈자리) → 대상과의 거리가 짧은 순 → 가운데끼리 가까운 순 →
+/// 위 → 왼쪽으로 고른다. 꼭지는 대상 쪽 변이다. 없으면 null.
+TutorialCardPlacement? _nearestFree(
+  Rect target,
+  Size card,
+  Rect bounds,
+  double gap,
+  List<Rect> avoid,
+) {
+  if (card.width > bounds.width || card.height > bounds.height) return null;
+  final near = target.inflate(gap);
+  final keepOut = [near, for (final rect in avoid) rect.inflate(_avoidMargin)];
+  final lefts = <double>{
+    bounds.left,
+    bounds.right - card.width,
+    target.center.dx - card.width / 2,
+    for (final rect in keepOut) ...[rect.right, rect.left - card.width],
+  };
+  final tops = <double>{
+    bounds.top,
+    bounds.bottom - card.height,
+    target.center.dy - card.height / 2,
+    for (final rect in keepOut) ...[rect.bottom, rect.top - card.height],
+  };
+  Rect? best;
+  var bestCovered = double.infinity;
+  var bestDistance = double.infinity;
+  var bestCenter = double.infinity;
+  for (final top in tops) {
+    for (final left in lefts) {
+      final rect = _clampInto(
+        Rect.fromLTWH(left, top, card.width, card.height),
+        bounds,
+      );
+      if (rect.overlaps(near)) continue;
+      var covered = 0.0;
+      for (final other in keepOut.skip(1)) {
+        if (!rect.overlaps(other)) continue;
+        final shared = rect.intersect(other);
+        covered += shared.width * shared.height;
+      }
+      final distance = _gapBetween(rect, target);
+      final center = (rect.center - target.center).distance;
+      final better = switch ((
+        covered.compareTo(bestCovered),
+        distance.compareTo(bestDistance),
+        center.compareTo(bestCenter),
+      )) {
+        (< 0, _, _) => true,
+        (0, < 0, _) => true,
+        (0, 0, < 0) => true,
+        (0, 0, 0) =>
+          rect.top < best!.top ||
+              (rect.top == best.top && rect.left < best.left),
+        _ => false,
+      };
+      if (better) {
+        best = rect;
+        bestCovered = covered;
+        bestDistance = distance;
+        bestCenter = center;
+      }
+    }
+  }
+  final rect = best;
+  if (rect == null) return null;
+  final dx = rect.left >= target.right
+      ? rect.left - target.right
+      : rect.right <= target.left
+      ? target.left - rect.right
+      : -1.0;
+  final dy = rect.top >= target.bottom
+      ? rect.top - target.bottom
+      : rect.bottom <= target.top
+      ? target.top - rect.bottom
+      : -1.0;
+  if (dx >= dy) {
+    return TutorialCardPlacement(
+      rect: rect,
+      nubSide: rect.left >= target.right
+          ? TutorialNubSide.left
+          : TutorialNubSide.right,
+      nubOffset: _clampNub(target.center.dy - rect.top, card.height),
+    );
+  }
+  return TutorialCardPlacement(
+    rect: rect,
+    nubSide: rect.top >= target.bottom
+        ? TutorialNubSide.top
+        : TutorialNubSide.bottom,
+    nubOffset: _clampNub(target.center.dx - rect.left, card.width),
+  );
+}
+
+/// 두 사각형 사이 거리(겹치면 0).
+double _gapBetween(Rect a, Rect b) {
+  final dx = math.max(0.0, math.max(a.left - b.right, b.left - a.right));
+  final dy = math.max(0.0, math.max(a.top - b.bottom, b.top - a.bottom));
+  return math.sqrt(dx * dx + dy * dy);
 }
 
 /// 꼭지는 모서리 둥글기를 피해 변 안쪽(양 끝 18px 안)에 둔다.

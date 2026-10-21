@@ -138,6 +138,7 @@ class TutorialStep {
     this.inlineText,
     this.inlineAnchorKey,
     this.cardWidth = 560,
+    this.avoidKeys = const [],
   });
 
   /// 단계 id(예: `3`, `7-2b`).
@@ -183,6 +184,9 @@ class TutorialStep {
 
   /// 카드 폭(시안 기본 560, 단계마다 455~620).
   final double cardWidth;
+
+  /// 카드가 가리면 안 되는 대상 키(이 단계에서 사용자가 만질 다른 곳 — 카드 자리 규칙 7, F3c-6).
+  final List<String> avoidKeys;
 
   bool get hasWait => waitSignal != null;
 }
@@ -307,6 +311,17 @@ abstract final class TutorialTargets {
   static const inventoryShortageTopRow = 'inventory.shortage.topRow';
   static const statisticsGrowthTrendTile = 'statistics.growthTrendTile';
 
+  // 카드가 피할 자리(F3c-6, 카드 자리 규칙 7).
+  /// 단계 순서 보드의 모든 카드(조각마다 — 7-3~7-5에서 끌 수 있는 카드).
+  static const planOrderCards = 'plan.flow.order.cards';
+
+  /// 단계 순서 보드의 "나중에" 칸 타일(7-5에서 놓을 곳).
+  static const planOrderLaterLane = 'plan.flow.order.laterLane';
+
+  // 상태 자리(F3c-6).
+  /// 인벤토리 부족 목록이 비었다는 안내(종류를 고르지 않았을 때). 보이면 9단계는 대체 문구로 넘어간다.
+  static const inventoryShortageEmpty = 'inventory.shortage.empty';
+
   // 대사 밝히기(구멍).
   static const studentReviewUncertainGroup =
       'scan.studentReview.uncertainGroup';
@@ -345,6 +360,9 @@ abstract final class TutorialTargets {
     inventoryShortageTopRow,
     statisticsGrowthTrendTile,
   ];
+
+  /// 카드가 피할 자리(밝히기 대상 중 칸 보드 칸 [planOrderRankColumns]도 7-3에서 피한다).
+  static const avoidKeys = <String>[planOrderCards, planOrderLaterLane];
 
   /// 대사 밝히기 대상.
   static const revealKeys = <String>[
@@ -846,6 +864,90 @@ PlanaScene tutorialSceneForAccount(PlanaScene scene, String account) {
   );
 }
 
+/// 9단계 카드 제목의 예시 행 이름(대본 · 시안 Tutorial-09). 대본 데이터는 그대로 두고 이 이름을 자리 표시로 써서, 보일 때
+/// 실제 부족 1위 행 이름으로 바꾼다([tutorialStepForShortage], FD-182 보충 ⑤ — F3c-6).
+const tutorialTopShortageSample = '리오(무장)의 엘레프';
+
+// 워커 문구(CF 검수 — status F3c-6 종료 기록).
+/// 부족 1위 행 이름을 아직 모를 때(인벤토리를 읽는 중) 9단계 제목.
+const tutorialTopShortagePending = '맨 위 행을 눌러 보십시오.';
+
+/// 부족 목록이 비었을 때 9단계(곧 다음 단계로).
+const tutorialShortageEmptyTitle = '지금 계획에는 부족한 재화가 없습니다.';
+const tutorialShortageEmptyWhy = '부족한 재화가 생기면 이 목록 맨 위에 옵니다.';
+const tutorialShortageEmptyDone = '부족한 재화가 없습니다';
+
+/// 받침에 맞춘 목적격 조사 '을' / '를'(받침 없음 = '를'). 끝의 닫는 괄호 · 따옴표 · 공백은 건너뛰고, 한글이 아니면 '(을)를'.
+String koreanEulReul(String word) {
+  var text = word.trimRight();
+  while (text.isNotEmpty && ")]}'\"’”".contains(text[text.length - 1])) {
+    text = text.substring(0, text.length - 1).trimRight();
+  }
+  if (text.isEmpty) return '(을)를';
+  final code = text.runes.last;
+  if (code < 0xac00 || code > 0xd7a3) return '(을)를';
+  return (code - 0xac00) % 28 == 0 ? '를' : '을';
+}
+
+/// 9단계 카드(부족 1위 행 열기)를 지금 인벤토리에 맞춘다: 행 이름을 알면 예시 이름([tutorialTopShortageSample])을
+/// [topName]으로(조사 포함), 모르면 [tutorialTopShortagePending], 부족 목록이 비었으면([empty]) 대체 문구다. 다른 단계는
+/// 그대로 준다.
+TutorialStep tutorialStepForShortage(
+  TutorialStep step, {
+  String? topName,
+  bool empty = false,
+}) {
+  if (step.completeSignal != TutorialSignals.inventoryTopShortageOpened) {
+    return step;
+  }
+  final title = step.title;
+  if (empty) {
+    return _stepWith(
+      step,
+      title: tutorialShortageEmptyTitle,
+      why: tutorialShortageEmptyWhy,
+      doneTitle: tutorialShortageEmptyDone,
+    );
+  }
+  if (title == null) return step;
+  final sample =
+      "'$tutorialTopShortageSample'${koreanEulReul(tutorialTopShortageSample)}";
+  if (!title.contains(sample)) return step;
+  return _stepWith(
+    step,
+    title: topName == null
+        ? tutorialTopShortagePending
+        : title.replaceAll(sample, "'$topName'${koreanEulReul(topName)}"),
+  );
+}
+
+TutorialStep _stepWith(
+  TutorialStep step, {
+  String? title,
+  String? why,
+  String? doneTitle,
+}) => TutorialStep(
+  id: step.id,
+  number: step.number,
+  feature: step.feature,
+  title: title ?? step.title,
+  why: why ?? step.why,
+  completeSignal: step.completeSignal,
+  highlightKey: step.highlightKey,
+  checks: step.checks,
+  waitSignal: step.waitSignal,
+  waitTitle: step.waitTitle,
+  waitWhy: step.waitWhy,
+  waitProgressLabel: step.waitProgressLabel,
+  doneTitle: doneTitle ?? step.doneTitle,
+  doneWhy: step.doneWhy,
+  presentation: step.presentation,
+  inlineText: step.inlineText,
+  inlineAnchorKey: step.inlineAnchorKey,
+  cardWidth: step.cardWidth,
+  avoidKeys: step.avoidKeys,
+);
+
 /// 단계 카드(id → 단계). Tutorial-01~10 · 7-1~7-6(마키 7-2b · 7-2c 포함) 보드 문구 그대로.
 const tutorialSteps = <String, TutorialStep>{
   '1': TutorialStep(
@@ -1025,6 +1127,10 @@ const tutorialSteps = <String, TutorialStep>{
     completeSignal: TutorialSignals.planRanksPlaced,
     doneTitle: '순위를 정했습니다',
     cardWidth: 620,
+    avoidKeys: [
+      TutorialTargets.planOrderCards,
+      TutorialTargets.planOrderRankColumns,
+    ],
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기'),
       TutorialCheckItem('아카네 3순위 · 칸나와 잇기'),
@@ -1041,6 +1147,7 @@ const tutorialSteps = <String, TutorialStep>{
     completeSignal: TutorialSignals.planKannaAkaneLinked,
     doneTitle: '이어 붙였습니다',
     cardWidth: 600,
+    avoidKeys: [TutorialTargets.planOrderCards],
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기', doneAtStart: true),
       TutorialCheckItem('아카네 3순위 · 칸나와 잇기'),
@@ -1056,6 +1163,10 @@ const tutorialSteps = <String, TutorialStep>{
     highlightKey: TutorialTargets.planOrderLaterColumn,
     completeSignal: TutorialSignals.planLaterMoved,
     doneTitle: '나중으로 옮겼습니다',
+    avoidKeys: [
+      TutorialTargets.planOrderCards,
+      TutorialTargets.planOrderLaterLane,
+    ],
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기', doneAtStart: true),
       TutorialCheckItem('아카네 3순위 · 칸나와 잇기', doneAtStart: true),

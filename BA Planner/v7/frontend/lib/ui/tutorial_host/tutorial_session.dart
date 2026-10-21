@@ -13,6 +13,11 @@
 // - 3단계 뒤 남은 후보(F3c-5, CF 결정 2026-10-21 (a)): 바뀐 학생을 적용하고 나면 **임시 계정의** 남은 학생 후보(새 학생 ·
 //   확인 필요)를 스캔 화면의 폐기 경로로 정리하고 4단계 카드 아래 한 줄로 알린다. 스캔 컨트롤러의 계정이 지금 임시
 //   계정(id 같음 · `isPractice`)이 아니면 아무것도 하지 않는다.
+// - 9단계 활성 계획(F3c-6, FD-182 보충 ⑤ · 사용자 결정 2026-10-21 "프라나 10에 들어갈 때"): 프라나 10에 들어가면 **임시
+//   계정에** 7-6에서 저장한 시나리오를 계획에 적용…의 "활성 계획을 이걸로 바꾸기" 경로
+//   ([planFlowReplaceActivePlanWithScenario])로 활성 계획에 적용한 뒤 인벤토리 탭을 연다(부족 목록이 그 계획을 읽게).
+//   실패하면 짧은 안내로 알리고 인벤토리는 그대로 연다. 9단계 카드는 부족 1위 행의 실제 이름을 쓰고(덧그림), 부족 목록이
+//   비었으면([shortageEmpty]) 대체 문구로 바로 다음 단계로 간다.
 // 늦은 응답은 generation으로 버린다. 실제 백엔드는 지금 unsupported(XB X4 짝 라운드 전)다.
 import 'dart:async';
 
@@ -22,7 +27,11 @@ import '../../services/app_service.dart';
 import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart' show ScannerKind;
+import '../../services/scenario_service.dart'
+    show PlanningScenarioRepositoryService, PlanningScenarioSummary;
 import '../app_section.dart';
+import '../models/plan_flow_save.dart'
+    show planFlowReplaceActivePlanWithScenario;
 import '../scan/scan_session_controller.dart';
 import '../tutorial/tutorial_flow.dart';
 import '../tutorial/tutorial_script.dart';
@@ -69,6 +78,10 @@ const tutorialSceneSections = <String, AppSection>{
   'plana-11': AppSection.statistics,
 };
 
+/// 바로 앞이 대사 장면이 아니라 바탕 탭을 직접 여는 단계(F3c-6: 9 → 10은 장면 없이 이어지고 시안 Tutorial-10은 통계
+/// 탭 위 카드다 — 강조할 '성장 추이' 타일이 보이게).
+const tutorialStepSections = <String, AppSection>{'10': AppSection.statistics};
+
 // 워커 문구(CF 검수 — status F3c-3 종료 기록).
 const tutorialPracticeName = '튜토리얼';
 const tutorialUnsupportedNotice = '이 계산 엔진은 아직 튜토리얼을 지원하지 않습니다. 홈으로 이동합니다.';
@@ -77,6 +90,10 @@ const tutorialRecoverFailedNotice = '지난 튜토리얼 임시 계정을 정리
 const tutorialEndFailedTitle = '임시 계정을 지우지 못했습니다';
 const tutorialEndingText = '임시 계정을 정리하는 중입니다';
 const tutorialCandidatesClearedNote = '남은 후보는 튜토리얼이 정리했습니다';
+const tutorialPlanApplyFailedNotice = '시나리오를 활성 계획에 적용하지 못했습니다';
+
+/// 이 장면에 들어가면 7-6 시나리오를 임시 계정의 활성 계획으로 적용한 뒤 바탕 탭(인벤토리)을 연다(F3c-6).
+const tutorialPlanApplyScene = 'plana-10';
 
 /// 이 단계를 마치면 임시 계정의 남은 학생 후보를 정리한다(학생 결과 적용).
 const tutorialCandidateCleanupAfterStep = '3';
@@ -131,6 +148,8 @@ class TutorialSession extends ChangeNotifier {
   int _lastFlowIndex = -1;
   TutorialFlowItem? _lastItem;
   int _clearedCandidates = 0;
+  bool _planApplied = false;
+  bool _shortageEmpty = false;
   int _generation = 0;
   bool _recovered = false;
   bool _disposed = false;
@@ -171,6 +190,12 @@ class TutorialSession extends ChangeNotifier {
 
   /// 3단계 뒤 튜토리얼이 정리한 임시 계정 학생 후보 수.
   int get clearedCandidates => _clearedCandidates;
+
+  /// 프라나 10에서 7-6 시나리오를 임시 계정의 활성 계획으로 적용했다(F3c-6).
+  bool get planApplied => _planApplied;
+
+  /// 9단계에서 부족 목록이 비어 대체 문구로 넘어갔다(F3c-6).
+  bool get shortageEmpty => _shortageEmpty;
 
   /// 지금 단계 카드 아래 한 줄(정리한 후보가 있을 때 4단계에만). 없으면 null.
   String? get stepNote =>
@@ -268,9 +293,12 @@ class TutorialSession extends ChangeNotifier {
     _lastFlowIndex = -1;
     _lastItem = null;
     _clearedCandidates = 0;
+    _planApplied = false;
+    _shortageEmpty = false;
     final flow = TutorialFlowController(completeHold: completeHold)
       ..addListener(_flowChanged);
     _flow = flow;
+    hooks.registry.addListener(_registryChanged);
     hooks.signals.listener = flow.signal;
     hooks.active.value = true;
     flow.start();
@@ -300,16 +328,92 @@ class TutorialSession extends ChangeNotifier {
       }
       if (item is TutorialSceneItem) {
         final section = tutorialSceneSections[item.sceneId];
-        if (section != null) {
+        if (section != null && item.sceneId == tutorialPlanApplyScene) {
+          unawaited(_applyPlanThenNavigate(_generation, section));
+        } else if (section != null) {
           _navigate(section, openConnectPanel: item.sceneId == 'plana-02');
         }
         final mode = planTutorialSceneModes[item.sceneId];
         if (mode != null) plan.open(mode);
+      } else if (item is TutorialStepItem &&
+          tutorialStepSections.containsKey(item.stepId)) {
+        _navigate(tutorialStepSections[item.stepId]!);
       } else if (item is TutorialStepItem && shellSection == AppSection.scan) {
         // 바탕 장면이 이미 스캔 탭을 열었다(신호는 단계 전이라 버려졌다) — 2단계 '스캔 탭 열기'.
         flow.signal(TutorialSignals.scanTabOpened);
       }
+      if (item is TutorialStepItem) scheduleMicrotask(_registryChanged);
     }
+  }
+
+  /// 프라나 10: 7-6 시나리오를 임시 계정의 활성 계획으로 적용하고(계획에 적용… "이걸로 바꾸기") 바탕 탭을 연다. 실패는
+  /// 짧은 안내로 보이고 탭은 그대로 연다.
+  Future<void> _applyPlanThenNavigate(
+    int generation,
+    AppSection section,
+  ) async {
+    final practice = _practice;
+    if (practice != null) {
+      try {
+        final scenarioId = await _tutorialScenarioId(practice.profileId);
+        if (generation != _generation || _disposed) return;
+        if (scenarioId == null) throw StateError('scenario_not_found');
+        await planFlowReplaceActivePlanWithScenario(
+          service,
+          profileId: practice.profileId,
+          scenarioId: scenarioId,
+          idempotencyKey: newIdempotencyKey('tutorial-apply-plan'),
+        );
+        if (generation != _generation || _disposed) return;
+        _planApplied = true;
+      } catch (error) {
+        if (generation != _generation || _disposed) return;
+        _notice = '$tutorialPlanApplyFailedNotice: ${tutorialErrorText(error)}';
+      }
+    }
+    if (_status != TutorialSessionStatus.running) return;
+    _navigate(section);
+  }
+
+  /// 임시 계정에서 7-6에 저장한 시나리오: 대본 이름(7-6 `why`)과 같은 것 중 마지막, 없으면 가장 늦게 고친 것.
+  Future<String?> _tutorialScenarioId(String profileId) async {
+    final service = this.service;
+    if (service is! PlanningScenarioRepositoryService) return null;
+    final scenarios =
+        (await (service as PlanningScenarioRepositoryService).listScenarios(
+          profileId,
+        )).scenarios;
+    final name = planTutorialScenarioName();
+    final named = scenarios.where((scenario) => scenario.name == name);
+    if (named.isNotEmpty) return named.last.id;
+    PlanningScenarioSummary? newest;
+    for (final scenario in scenarios) {
+      if (newest == null ||
+          scenario.updatedAt.compareTo(newest.updatedAt) >= 0) {
+        newest = scenario;
+      }
+    }
+    return newest?.id;
+  }
+
+  /// 9단계에서 부족 목록이 비었다는 안내가 보이고 1위 행이 없으면 대체 문구로 단계를 끝낸다(F3c-6).
+  void _registryChanged() {
+    final flow = _flow;
+    if (flow == null || _disposed || _shortageEmpty) return;
+    final step = flow.step;
+    if (flow.phase != TutorialPhase.step ||
+        step == null ||
+        step.completeSignal != TutorialSignals.inventoryTopShortageOpened) {
+      return;
+    }
+    final registry = hooks.registry;
+    if (registry.geometryOf(TutorialTargets.inventoryShortageEmpty) == null ||
+        registry.geometryOf(TutorialTargets.inventoryShortageTopRow) != null) {
+      return;
+    }
+    _shortageEmpty = true;
+    _notify();
+    flow.signal(step.completeSignal);
   }
 
   /// 3단계 뒤: 임시 계정의 아직 적용 · 폐기하지 않은 학생 후보를 스캔 화면의 폐기 경로로 정리한다. 스캔 컨트롤러의 계정이
@@ -415,6 +519,7 @@ class TutorialSession extends ChangeNotifier {
         ..removeListener(_flowChanged)
         ..dispose();
     }
+    hooks.registry.removeListener(_registryChanged);
     hooks.signals.listener = null;
     hooks.active.value = false;
     plan.clear();

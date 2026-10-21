@@ -11981,3 +11981,149 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_195415\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-6 착수 기록 (2026-10-21 22:25, Lane A 워커)
+
+- 상태: **진행 중**. 범위 F3c-6 — Mock 튜토리얼 남은 빈틈: 9단계 활성 계획 적용 · 실제 부족 1위 행(FD-182 보충 ⑤), 7-3 순서 보드 칸 3개로 시작(보충 ⑥), 단계 카드 자리(F3c-5 발견 4), 10단계 실제 누르기(발견 2), 1~10 한 바퀴 · 1280×720.
+- 시작 SHA: `2d5c0d50ec6ec16d1af7c2b4e6f882bea13ff3f4`(브랜치 `scanner-consolidation`). `git log --oneline -3`에 `3c92f975 F3c-5:` 있음, 이 status 끝에 다른 "F3c-6 착수 기록" 없음 확인. 막힘 요약 '열림' FD 0건(FD-182 확정 · 보충 2026-10-21).
+- 착수 전 사용자 결정(AskUserQuestion 2026-10-21): 7-6에서 저장한 '총력전 비나 대비'를 활성 계획으로 적용하는 시점 = **프라나 10에 들어갈 때**(8단계 나란히 비교의 활성 계획 열은 지금처럼 두고, 09d 대사 "계획에 적용…으로 옮길 수 있습니다" 뒤에 튜토리얼이 대신 옮긴다).
+- 같은 시각 Lane B F3c-7(`app_shell.dart` · `scan_companion_dock.dart` · `window_dock_service.dart` · `empty_state_panel.dart`)과 CF 미커밋 K1(`lib/ui/kit/**` · `account_create_modal.dart` · `test/kit_promotion_k1_test.dart`)은 건드리지 않는다(읽기만).
+- 고칠 기존 파일(사본 `debug/frontend_f3c6/pre/<v7 기준 경로>`, 13개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**, 모두 LF): `frontend/lib/ui/tutorial_host/tutorial_session.dart` · `tutorial_host/tutorial_overlay.dart` · `tutorial/tutorial_script.dart`(9단계 자리 표시) · `tutorial/tutorial_card_placement.dart`(빈자리 찾기) · `tutorial_targets/tutorial_hooks.dart`(대상 이름 · 조각 사각형) · `widgets/plan_tutorial_entry.dart` · `widgets/plan_flow_order_step.dart`(칸 3개 · 카드 피할 자리 등록, 최소) · `models/plan_flow_save.dart`(시나리오 → 활성 계획 "이걸로 바꾸기" 경로, 최소) · `inventory/inventory_workspace.dart`(부족 1위 행 이름 · 빈 목록 자리, 최소) · 시험 `frontend/test/tutorial_host_f3c3_test.dart` · `test/tutorial_plan_f3c5_test.dart` · `test/goldens/f3c5_tutorial_plan_golden_test.dart` · `test/tutorial_parts_f3a_test.dart`. 실제로 고치지 않게 되는 파일은 종료 기록에 적는다(사본만 남음).
+- 새 파일(예정): `frontend/test/tutorial_f3c6_test.dart`.
+
+## F3c-6 종료 기록 (2026-10-21 23:40, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden RED 1 = `tutorial-plan-order` 예상, 그 밖 변화 0 기대 → `-UpdateGoldens` → 재비교) 남음. 시작 SHA `2d5c0d50`, 커밋 없음(git 쓰기 안 함). 실제 runtime 미실행(실제 백엔드는 지금 `unsupported`).
+- 결과: Mock 튜토리얼 1~10단계 + 끝 화면을 2560×1392 · 1280×720 두 크기에서 시험이 끝까지 간다. 7-3은 칸 3개로 시작하는 보드에서 **실제 끌어 놓기**, 9는 프라나 10에서 7-6 시나리오를 임시 계정의 활성 계획으로 적용한 뒤 **부족 1위 행 실제 누르기**(카드 제목이 그 행의 실제 이름), 10은 통계 탭 성장 추이(A6) **점 실제 누르기**(임시 계정 이력에 점 2개 이상). 7-3~7-5 카드는 보드 카드 · 순위 칸 · 나중에 칸을 피한다(카드 자리 규칙 7).
+- 착수 전 · 도중 사용자 결정(AskUserQuestion 2026-10-21): ① 활성 계획 적용 시점 = **프라나 10에 들어갈 때**(8단계 비교의 활성 계획 열은 지금처럼 빈 채로) ② 1280×720 한 바퀴에서 나온 시나리오 목록(`plan_scenario_list.dart`, 프롬프트 고칠 곳 밖) 기존 문제 2건 중 **Row 넘침만 최소 수정**, '나란히 비교' 버튼이 창 아래로 나가는 것은 발견으로(1280 한 바퀴의 8단계는 hooks 출구).
+- 기존 파일 diff(`+/−`): `tutorial_host/tutorial_session.dart` +106/−1 · `tutorial_host/tutorial_overlay.dart` +25/−2 · `tutorial/tutorial_script.dart` +111/−0 · `tutorial/tutorial_card_placement.dart` +112/−1 · `tutorial_targets/tutorial_hooks.dart` +43/−1 · `widgets/plan_tutorial_entry.dart` +22/−0 · `widgets/plan_flow_order_step.dart` +20/−9 · `models/plan_flow_save.dart` +58/−0 · `inventory/inventory_workspace.dart` +12/−4 · `widgets/plan_scenario_list.dart` +89/−73(결정 ② — 들여쓰기가 LayoutBuilder 한 단계 안으로 옮겨 줄 수가 큼, 실제 변경은 Row 2곳) · 시험 `test/tutorial_host_f3c3_test.dart` +196/−36 · `test/goldens/f3c5_tutorial_plan_golden_test.dart` +2/−0(장면 설명 주석). 새 파일: `test/tutorial_f3c6_test.dart`(490줄).
+- 고치지 않게 된 파일(사본만 남음): `test/tutorial_plan_f3c5_test.dart` · `test/tutorial_parts_f3a_test.dart`(기존 시험이 그대로 통과). `lib/services/**`(Mock 2파일 포함)는 고치지 않았다 — 예시 시나리오가 v1 문서인 것은 적용 경로가 v2 계획으로 옮겨 해결(아래).
+- 서식 · 바이트: 고친 줄만 — 사본에 `dart format`을 돌린 "고치기 전 format 차이"와 고친 뒤 차이가 같은 자리(기존 차이만, `plan_scenario_list` · `plan_flow_order_step` · `inventory_workspace` · `plan_flow_save`), 고치기 전 차이 0이던 파일은 고친 뒤도 0. 새 시험 파일은 formatter 모양. 모두 LF 유지, 끝 개행 하나, 줄 끝 공백 0, `git diff --check -- frontend` 출력 없음(rc 0). `.orig` · `.rej` 0. 도중 사고 1건: 고친 줄 반영 스크립트가 `dart format -o show`의 요약 줄("Formatted 1 file …")까지 5파일 끝에 붙였다 → 바로 지우고(바이트 확인) 그 사이 컴파일된 관련 시험 묶음 1개를 다시 돌렸다(아래 표).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집마다 · 마지막) | 중간 error 3(세션의 `scenario_service` import 빠짐) → 고침 → 마지막 **No issues found!**(일회성 시험 파일을 지운 뒤) |
+| 일회성 위치 덤프(사본 `test/f3c6_geom_tmp_test.dart` — 한 바퀴에 카드 사각형과 겹치는 키 출력, golden 호출 0건) 2회 | 단계별 카드 자리 확인(7-3 카드가 칸나(수영복) · 마키 · 히마리 · 시로코 카드, 7-4가 마키 카드, 7-5가 나중에 칸, 6은 확인 필요 칸 밖) → **삭제**(grep 0) |
+| `flutter test test/tutorial_host_f3c3_test.dart --plain-name "Mock walkthrough"`(2560 · 1280 변형) | 1회 −2(7-3 히마리 끌기가 빈자리로 옮긴 카드 아래 2순위 칸에 떨어짐 → 규칙 7을 "가장 적게 겹치는 자리"까지 넓히고 7-3이 순위 칸도 피함) → 2회 −2(09d 장면을 넘기지 않음 · 1280 놓을 곳이 카드 아래 → 시험 고침) → 3회 −2(10단계에 통계 탭이 안 열림 → 세션이 10단계 시작 때 통계 탭을 엶) → 4회 −1(1280: 시나리오 목록 Row 넘침 · '나란히 비교' 창 밖 → 사용자 결정 ②) → 측정 1회(넘침 · 창 밖 외 문제 없음 확인, 시험 원복) → **+2 All passed**(넘침 0 · hit test 경고 0 · `registered twice` 0줄) |
+| `flutter test test/tutorial_f3c6_test.dart`(마지막 한 번 더) | 1회 +10 −2(예시 시나리오가 v1 문서 → `Active document requires v2 kind=plan` — 적용 경로를 v2로 · 시험 틀의 MaterialApp 첫 프레임 경로 문제 → 틀 교체) → 2회 −1(시험 순서 기대) → **+12 All passed** |
+| 시나리오 목록 폭 측정(임시 `debugPrint`, 바로 원복 · cmp 같음) | 2560: 행 950 · 비교 칸 241/250(문턱 360 · 98 이상 → 그대로), 1280: 행 297 · 비교 칸 41/50(수정 시각 · 얼굴 뺌) |
+| 일회성 렌더(사본 `test/goldens/f3c6_render_{a..f}_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, PNG는 세션 임시 폴더, `RenderRepaintBoundary.toImage`) | `tutorial-plan-order` 그림 확인(아래) · 다른 32장면 RGBA 바이트 비교(골든 비교 시험 아님): f3c5 1 · f3c3 2 · f3a 2 · fe1g `plan-scenario` 8 · `plan-flow` 13 · f3d 6 · fe6a 1 중 **`tutorial-plan-order`만 다름(579,053px), 나머지 32장 바이트 같음** → 사본 삭제(grep 0) |
+| 관련 기존 시험 105파일(grep: 고친 lib · 앱 · 셸 · 계획 · 인벤토리 · 통계 페이지를 쓰는 시험 + `tutorial_*` · `plan_*` · `planning_*` · `inventory_*` · `statistics_*` · `widget_test`, golden 폴더 · process 6파일 제외 — `related_tests.txt` · `related_process_excluded.txt`) 3묶음 `--exclude-tags golden` | 묶음 00(36파일) **+436 All passed** · 01(34파일) 1회는 서식 사고 창에 컴파일 실패 → 다시 **+454 All passed** · 02(35파일) **+407 All passed**. `registered twice`는 F3c-2의 일부러 겹친 'dup' 시험 1줄뿐 | |
+| `git diff --check -- frontend` · 바이트 검사 | 출력 없음(rc 0), LF · 끝 개행 하나 · 줄 끝 공백 0 |
+
+로그: `debug/frontend_f3c6/logs/`(`geom-1~2` · `walk-1~8` · `walk-7-probe` · `width-probe(-2)` · `f3c6-test-1~4` · `render-a~f` · `render-d2` · `related-00~02` · `related-01-rerun`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 단계 1~10 → 동작 → 신호 → 시험(`tutorial_host_f3c3_test` "Mock walkthrough", 2560×1392 · 1280×720)
+
+| 단계 | 사용자 동작(시안 카드) | 완료 신호(나는 자리) | 시험이 쓴 것 |
+|---|---|---|---|
+| 1 | 가상 창 행 → '선택한 창 사용' | `connect.virtualWindow.connected` | **실제 누르기** |
+| 2 | 학생 전체 → 스캔 시작 → 기다림 | `scan.student.finished` | **실제 누르기** + Mock 재생 |
+| 3 | '바뀐 6명 한 번에 적용' | `scan.studentReview.applied` | **실제 누르기**(뒤 후보 정리 3 — F3c-5 그대로) |
+| 4 | 학생 · 상세 · 계산기 · 목표 + | `students.calculator.targetChanged` | **hooks 출구**(F3c-3 그대로) |
+| 5 | 아이템 2종 → 시작 → 진행 창 한 줄 | `scan.item.finished` | **실제 누르기** + Mock 큐(비 Windows 변형 — Windows 진행 창은 Lane B F3c-7) |
+| 6 | 확인 필요 2칸 승인 → 적용 | `scan.itemReview.applied` | 승인 **hooks 출구**, 적용 **실제 누르기** |
+| 7-1 · 7-2 | 다음 · 한 번에 MAX · 7명 모두 | F3c-4 감시 | **실제 누르기** |
+| 7-2b · 7-2c | 마키 M/M/1/1 · 단계 추가 · M/M/7/7 | F3c-4 감시 | 값은 **편집기 `setTarget`**, 단계 추가는 **실제 누르기** |
+| 7-3 | (보드 칸 3개로 시작) 시로코(수영복) · 히마리(무장) → 2순위, 아카네 → 3순위 | `plan.flow.ranksPlaced` | **실제 끌어 놓기 3번**(카드 → 칸의 보이는 빈 곳). 시작 칸 수 3 · 3순위 빈 칸 · 1순위에 칸나(수영복) · 마키 · 미카 확인, 끌 때마다 카드가 보드 카드를 가리지 않음(2560) |
+| 7-4 | 칸나(수영복) 점 → 아카네 | `plan.flow.kannaAkaneLinked` | **실제 끌기**, 카드가 보드 카드를 가리지 않음(2560) |
+| 7-5 | 네루(교복) · 마키 2단계 → 나중에 | `plan.flow.laterMoved` | **편집기 `move`**, 카드가 보드 카드 · 나중에 칸을 가리지 않음(2560) |
+| 7-6 | '시나리오로 저장'(이름 '총력전 비나 대비') | `plan.flow.savedAsScenario` | **실제 누르기** |
+| 8 | '나란히 비교' | `plan.scenario.compareOpened` | 2560 **실제 누르기**, 1280 **hooks 출구**(버튼이 창 아래 — 발견 2) |
+| (프라나 10) | — | — | 들어가면 임시 계정 활성 계획 = 7-6 시나리오(3페이즈, 학생 6명 — 나중에 칸의 네루(교복) · 마키 2단계 제외), 진짜 계정 활성 계획은 빈 채 |
+| 9 | 부족 1위 행 누르기 | `inventory.topShortage.opened` | **실제 누르기**(1위 행 사각형 가운데). 카드 제목 "맨 위 '<실제 이름>'<을/를> 눌러 보십시오.", '리오(무장)의 엘레프' 글자 없음, 강조 테두리 1 |
+| 10 | 통계 성장 추이 점 고르기 | `statistics.growthTrend.viewed` | 단계 시작 때 통계 탭이 열림, A6 점 ≥ 2, **마지막 점 실제 누르기** |
+| 끝 | 프라나 11 → 끝 화면 → 돌아가기 | — | **실제 누르기**(임시 계정 지움 · 첫 계정 홈 — F3c-3 그대로) |
+
+- 그 밖 시험(`tutorial_f3c6_test`, 12): 규칙 7 빈자리 · 가장 적게 겹치는 자리 · 피할 자리 없음 = F3a 그대로 · 단계별 avoidKeys 표, 9단계 문구(조사 7경우 · 대본 데이터 그대로 · 실제 이름 · 읽는 중 · 빈 목록 · 다른 단계 같은 객체), 등록표 조각 사각형 · 이름 · 이름 바뀜 알림, 시나리오 → 활성 계획(빈 활성 계획은 옮기지 않음 · 두 번째는 '이전 활성 계획'으로 옮김 · 저장소가 아니면 StateError), 세션(프라나 10 적용 · 진짜 계정 그대로 · 10단계 통계 탭, 적용 실패 안내 + 인벤토리는 그대로 엶, 9단계 1위 행 이름 카드 → 빈 목록이면 대체 문구로 다음 단계).
+
+### 9단계 규칙 · 바꾼 대본 줄
+
+- 언제 적용: 흐름이 프라나 10(`tutorialPlanApplyScene`)에 들어가면 **임시 계정에** 한 번. 세션의 임시 계정이 없으면 아무것도 하지 않는다. 적용이 끝난 뒤(성공 · 실패 모두) 바탕 탭(인벤토리)을 연다 — 인벤토리 첫 읽기가 적용 전 상태를 읽지 않게.
+- 무엇: 임시 계정 시나리오 중 대본 이름(7-6 `why` '총력전 비나 대비')과 같은 것의 마지막, 없으면(이름을 고친 경우) 가장 늦게 고친 것 → `planFlowReplaceActivePlanWithScenario`(`models/plan_flow_save.dart` 새 함수 — 계획에 적용…(FD-088)의 "활성 계획을 이걸로 바꾸기"를 화면 없이 한 번: `loadPlanFlowSaveSnapshot`으로 저장 직전 상태 · 시나리오 목록 revision, 문서 = 시나리오 페이즈 · 목표 그대로 **v2** `kind=plan`(활성 계획 id · 이름, goal_metadata 없으면 기본값 — `toPlanDocument`와 같음), authoring = 시나리오의 것, `replaceRepositoryPlan(archiveName: '이전 활성 계획')` — 기존 활성 계획이 비어 있으면 옮기지 않음).
+- 실패: 짧은 안내 **'시나리오를 활성 계획에 적용하지 못했습니다: <코드>'**(워커 문구 — CF 검수), 9단계는 부족 목록이 '저장된 계획이 없습니다'라 끝나지 않는다(그만두기로 끝).
+- 9단계 카드: 1위 행 = 인벤토리 '부족한 것' 보기의 맨 위 행(`TutorialTarget(label: 행 이름)`, 강조 대상 그대로). 카드 제목은 대본 `'리오(무장)의 엘레프'를`을 `'<실제 이름>'<조사>`로 바꿔 보인다(`tutorialStepForShortage`, 조사 `koreanEulReul` — 끝 괄호 · 따옴표 건너뜀, 한글 아니면 '(을)를').
+- 부족 0: 부족 목록이 '부족한 재화가 없습니다.'(종류 고르지 않음)이면 `inventory.shortage.empty` 자리가 등록되고, 세션이 9단계를 대체 문구로 끝낸다(완료 체크 → 약 1.2초 → 10단계).
+
+| 경우 | 제목 | 왜 | 완료 체크 |
+|---|---|---|---|
+| 1위 행 이름을 앎 | 맨 위 '<이름>'<을/를> 눌러 보십시오. | 대본 그대로 | 확인했습니다(대본) |
+| 인벤토리를 읽는 중(행 이름 모름) | **맨 위 행을 눌러 보십시오.**(워커) | 대본 그대로 | 확인했습니다 |
+| 부족 0 | **지금 계획에는 부족한 재화가 없습니다.**(워커) | **부족한 재화가 생기면 이 목록 맨 위에 옵니다.**(워커) | **부족한 재화가 없습니다**(워커) |
+
+- 바꾼 대본 줄: **대본 데이터(`tutorialSteps['9'].title`)는 그대로** 두고 그 안의 '리오(무장)의 엘레프'를 자리 표시(`tutorialTopShortageSample`)로 써서 **보일 때만** 바꾼다. 이유: F3a 부품 golden `tutorial-card-parts`가 9단계 카드를 대본 그대로 그려(시안 W-Tutorial-Card), 데이터를 바꾸면 그 장면이 바뀐다(이번 slice 기준 "그 밖 장면 변화 0"). 바뀌어 보이는 줄은 9단계 카드 제목 1줄뿐 — 프라나 10 · 11 대사에는 행 이름이 없다.
+
+### 7-3 칸 수(사용자 결정 ⑥)
+
+- `planTutorialEnsureOrderSlots`(`plan_tutorial_entry.dart`): 3단계 보드를 처음 그린 뒤(`PlanFlowOrderBody` 첫 프레임, 칸에 넣기 다음) 튜토리얼이면(세션의 계획 요청이 있음) 칸이 3개(`planTutorialOrderSlots`)가 될 때까지 빈 칸을 더한다(화면의 '+ 칸 추가'와 같은 `addPhase`, 빈 칸은 저장 때 빠짐 — FD-071). 튜토리얼이 아니면 아무것도 하지 않는다(`plan-flow-*` 13장면 바이트 같음).
+
+### 카드 자리 규칙(단계별 avoid)
+
+- 규칙 7 확장(`tutorial_card_placement.dart`): 네 후보(좌우 · 아래 · 위)가 대상이나 피할 자리에 막히면, 대상 · 피할 자리의 변에 붙는 자리와 대상 가운데에 맞춘 자리 중 화면 안에서 **대상(+34)과 겹치지 않는** 자리를 "피할 자리와 겹친 넓이(0이면 빈자리) → 대상과 거리 → 가운데끼리 거리 → 위 → 왼쪽" 순으로 고른다. 꼭지는 대상 쪽 변. 피할 자리가 없으면 F3a 그대로(시험).
+- 피할 자리 = 단계의 `TutorialStep.avoidKeys` 대상의 조각 사각형(`TutorialTargetRegistry.rectsOf`, 덧그림이 프레임마다 다시 읽음).
+
+| 단계 | avoid | 2560×1392 결과 |
+|---|---|---|
+| 7-3 | `plan.flow.order.cards`(보드 모든 카드, 새 조각 등록) · `plan.flow.order.rankColumns`(순위 칸) | 빈자리 없음 → 가장 적게 겹치는 자리: 오른쪽 아래(보조 섹션 쪽, 순위 칸 오른쪽 끝 몇 px만 겹침). 끌 때마다 다시 고름 |
+| 7-4 | `plan.flow.order.cards` | 카드 0 겹침 |
+| 7-5 | `plan.flow.order.cards` · `plan.flow.order.laterLane`(나중에 칸 타일, 새 등록) | 카드 · 나중에 칸 0 겹침 |
+| 그 밖 | 없음 | F3a 그대로(6단계: 확인 필요 2칸(Arius 2 · 3)은 카드 밖 — 위치 덤프) |
+
+- 1280×720: 보드가 화면 대부분이라 빈자리가 없어 가장 적게 겹치는 자리 — 2 · 3순위 칸 일부를 덮는다(시험은 칸의 보이는 빈 곳에 놓음). 사람 손 끌기 검수 필요(발견 3).
+
+### golden
+
+| 장면 | 변화 · 근거 |
+|---|---|
+| `tutorial-plan-order`(whole) | **바뀜**: 단계 순서 보드가 칸 3개(1순위 카드 7장 · 2순위 마키 2단계 · 3순위 빈 칸 '여기로 끌어다 놓기'), '+ 칸 추가'가 아래로, 7-3 카드가 오른쪽 아래(보조 섹션 아래 · 3순위 칸 오른쪽)로 옮겨 보드 카드를 가리지 않음(꼭지는 왼쪽 변 — 아카네 쪽). 일회성 렌더로 그림 확인 |
+| 그 밖 기존 장면 | **변화 0 기대**: 일회성 렌더 32장 바이트 같음(위 표). 튜토리얼이 꺼져 있으면 칸 수 · 카드 피하기 · 9단계 문구 · 적용이 모두 없음. 등록 감싸개는 렌더 객체 없음, 시나리오 목록 `LayoutBuilder`는 2560 폭이 문턱보다 넓어 같은 배치 |
+| 새 장면 | 0 |
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E(관련 6파일 — `related_process_excluded.txt`), almanac validate, Python, **실제 runtime**(실제 백엔드 practice · 활성 계획 적용).
+- 미실행: 사람 손 끌어 놓기(7-3은 시험 제스처, 7-5는 편집기 `move`), 4 · 6(승인) 실제 화면 동작, Windows 변형 5단계(진행 창 — Lane B F3c-7), 실제 앱 mock 눈 검수, 부족 0 경우의 실제 화면(Mock 임시 계정은 부족이 있어 시험은 틀 위젯으로), 키보드 흐름.
+
+### 검수표(사용자 · CF — Windows mock 앱 한 바퀴)
+
+| 단계 | 여는 방법 · 할 일 | 확인 |
+|---|---|---|
+| 시작 | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_FIRST_RUN=full` → 첫 실행 ① ② ③ '만들고 튜토리얼 시작'(또는 설정 '튜토리얼 다시 하기') | 타이틀 위 프라나 01 |
+| 1~6 | F3c-5 검수표 그대로(5단계 진행 창은 Lane B F3c-7 뒤) | — |
+| 7-3 (Tutorial-07c) | 프라나 08d 뒤 | 보드가 **1 · 2 · 3순위 칸 3개**로 시작(3순위 빈 칸), 카드가 칸나(수영복) · 마키 등 보드 카드를 덮지 않음 → 시로코(수영복) · 히마리(무장)를 2순위, 아카네를 3순위로 끌기 → 완료 체크 |
+| 7-4 · 7-5 | 칸나 점 → 아카네, 네루(교복) · 마키 2단계 → 나중에 | 카드가 보드 카드 · 나중에 칸을 덮지 않음 |
+| 7-6 · 8 | F3c-5 그대로 | 비교 A열(활성 계획)은 아직 빈 채 |
+| 9 (Tutorial-09) | 프라나 10 뒤 인벤토리 | 카드 제목이 맨 위 행의 **실제 이름**('리오(무장)의 엘레프' 아님), 그 행에 강조 테두리 → 누르기 → 완료. 계획 탭을 열면 활성 계획이 '총력전 비나 대비' 내용(3페이즈) |
+| 10 (Tutorial-10) | 9 뒤 | 통계 탭이 저절로 열리고 '성장 추이' 타일에 강조 테두리 → 점 하나 누르기 → 완료 → 프라나 11 → 끝 화면 |
+| 1280×720 | 창을 1280×720로 같은 한 바퀴 | 넘침(노랑 · 검정 띠) 없음. 시나리오 목록 행은 수정 시각, 비교 칸은 얼굴이 빠짐. '나란히 비교' 버튼이 창 아래라 누를 수 없음(발견 2) |
+
+### 발견 사항
+
+1. **9단계 프라나 10 적용 시점**은 사용자 결정 ①대로 — 8단계 비교의 A열(활성 계획)은 빈 채로 보이고, 09d 대사 "계획에 적용…으로 옮길 수 있습니다" 뒤에 튜토리얼이 대신 옮긴다. 화면에 "적용했다"는 알림은 없다(카드 · 대사 문구 변화 없음) — 필요하면 CF 문구 결정.
+2. **1280×720 시나리오 목록**: 레일의 '나란히 비교' 버튼이 창 아래(y≈770~820)로 나가 누를 수 없다(시나리오 목록 반응형 배치 — 튜토리얼과 무관한 기존 문제). 1280 한 바퀴의 8단계는 hooks 출구. 고치려면 시나리오 목록 S1 레일의 1280 배치 결정 필요(CF).
+3. **1280×720 카드 자리**: 보드가 화면 대부분이라 7-3~7-5 카드가 칸 일부를 덮는다(규칙 7의 "가장 적게 겹치는 자리"). 2560에서는 0 겹침(시험). 사람 손 검수 필요.
+4. **10단계 통계 탭**: 9 → 10 사이에 대사 장면이 없어 아무도 통계 탭을 열지 않았다(F3c-5까지 hooks 출구라 안 보였음) → 세션이 10단계 시작 때 통계 탭을 연다(`tutorialStepSections`, 워커 결정 — 시안 Tutorial-10은 통계 탭 위 카드). CF 확인.
+5. **예시 시나리오 문서가 v1**(`tutorialPracticeExampleScenario` — version 1): 활성 계획 저장은 v2만 받아 그대로 옮기면 `Active document requires v2 kind=plan`. 적용 경로가 v2로 옮겨(`toPlanDocument`와 같은 규칙) 해결. 7-6 이름을 고치지 않으면 7-6 시나리오(v2)를 쓴다. XB 데이터셋 정렬 때 v2로 맞추는 것 권장.
+6. **9단계 대본 데이터를 바꾸지 않은 이유**: F3a 부품 golden이 9단계 카드를 대본 그대로 그림 → 자리 표시는 예시 이름 그대로, 보일 때 바꿈(위).
+7. 시험 틀: 덧그림을 `MaterialApp` 첫 프레임 안에 두면 경로 전환 상자가 아직 배치 전이라 대상 사각형 읽기가 assert(시험 틀 문제 — 실제 앱 한 바퀴는 예외 0). `tutorial_f3c6_test`는 `MediaQuery` + `Directionality` 틀.
+8. 중복 등록 경고: 한 바퀴 시험 로그에 `registered twice` 0줄.
+
+### 사본 · commit.json
+
+- pre 사본 14개(`debug/frontend_f3c6/pre/frontend/...`, 착수 13 + 도중 `plan_scenario_list.dart` 1 — 결정 ② 직전, HEAD와 같음 확인), 모두 착수 · 고치기 전 HEAD와 같음 → `post_dir` 없음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c6/commit.json`: slice `f3c6`, modified 12, added 1, `whole` = [`frontend/test/goldens/baseline/tutorial-plan-order.png`], `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f3c6/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B F3c-7 · K1과 함께 레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden RED 1 예상(`tutorial-plan-order` — `failures/` 검토) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c6 -DryRun` → `fe_commit.ps1 -Slice f3c6`.
+- CF 결정: 발견 1(적용 알림 여부), 2(1280 시나리오 목록 레일), 4(10단계 통계 탭 자동 열기 확인), 9단계 워커 문구 3종 · 적용 실패 안내 문구.
+- XB(CF 요청): 예시 시나리오 v2 문서(발견 5).
+- 사용자: 위 검수표로 Windows mock 한 바퀴(5단계 진행 창은 F3c-7 뒤).
+
+### f3c6 commit record (2026-10-22 00:40, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261022_002754\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

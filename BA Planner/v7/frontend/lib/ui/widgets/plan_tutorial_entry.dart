@@ -8,12 +8,15 @@
 //   이름(7-6 `why`의 따옴표, [planTutorialScenarioName])으로 채운다.
 // - 09c 시나리오 목록 · 09d 나란히 비교: 7-6 저장(시나리오 보기로 이동)과 8단계(사용자의 '나란히 비교')가 연다 — 요청은
 //   기록만 한다.
+// - 08d 계획 만들기 3(F3c-6, 사용자 결정 2026-10-21 — FD-182 보충 ⑥): 순서 보드를 칸 3개(1 · 2 · 3순위)로 시작한다
+//   ([planTutorialEnsureOrderSlots]).
 // 튜토리얼이 꺼져 있으면(세션 없음 · 요청 없음) 계획 탭은 예전과 같다.
 import 'package:flutter/widgets.dart';
 
 import '../../services/app_service.dart';
 import '../app_section.dart';
 import '../models/plan_flow_draft.dart' show PlanFlowStep;
+import '../models/plan_flow_order_editor.dart' show PlanFlowOrderEditor;
 import '../navigation/app_navigation_intent.dart';
 import '../tutorial/tutorial_script.dart';
 import '../tutorial_host/tutorial_session.dart' show TutorialHostScope;
@@ -85,6 +88,25 @@ String? planTutorialScenarioName([
     return RegExp(r"'([^']+)'").firstMatch(step.why ?? '')?.group(1);
   }
   return null;
+}
+
+/// 7-3 순서 보드의 처음 칸 수(사용자 결정 2026-10-21 — FD-182 보충 ⑥, 시안 Plana-08 레일 "순서 3칸").
+const planTutorialOrderSlots = 3;
+
+/// 튜토리얼이면(세션의 계획 요청이 있음) 3단계 순서 보드를 칸 [planTutorialOrderSlots]개로 시작한다: 칸에 넣은 뒤 칸이
+/// 모자라면 빈 칸을 더한다(빈 칸은 저장할 때 빠진다, FD-071). 튜토리얼이 아니면 아무것도 하지 않는다.
+void planTutorialEnsureOrderSlots(
+  BuildContext context,
+  PlanFlowOrderEditor editor,
+) {
+  if (PlanTutorialEntry.of(context)?.request == null) return;
+  for (
+    var count = editor.draft.phases.length;
+    count < planTutorialOrderSlots;
+    count++
+  ) {
+    editor.addPhase();
+  }
 }
 
 /// 표시 이름 → 학생 id(카탈로그). 모르는 이름은 뺀다.
