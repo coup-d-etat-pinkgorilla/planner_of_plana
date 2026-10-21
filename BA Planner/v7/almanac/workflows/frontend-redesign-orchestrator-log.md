@@ -4269,3 +4269,12 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - 커밋: **F3d `f49c2a6f`**(39파일, golden +6) · **F3e `5ae8f207`**(11파일, golden 3장 갱신).
 - 남은 관찰(FE10-z 검수 항목): 1280×720에서 계획 빈 안내가 ≈ 0.3배로 줄어 제목 ≈ 6px(수정 전과 같은 크기 — 판 폭이 좁음). 학생 빈 상태 오른쪽 판이 첫 카탈로그 학생 'UNOWNED'.
 - **F3c 3단 분할**: F3c-1(Lane B — practice DTO 5메서드 · Process `unknown_method` → 미지원 해독 · Mock 수명 · 가상 대상 `tutorial:1280x720` 재생, XB 데이터셋을 Dart 상수로) · F3c-2(Lane A — 대상 키 등록표 · 신호 출구 · 머리글 칩 자리 · Empty-Backend 덮개, 꺼져 있으면 변화 0) · F3c-3(흐름 연결 — 둘 커밋 뒤). 실제 runtime 연결은 XB X4 짝 라운드.
+
+## 2026-10-21 12:00 — F3c-1 · F3c-2 커밋, F3c-3 · F3c-4 배정, XB 데이터 정렬 요청
+
+- 검토: F3c-1 11행 · F3c-2 31행 SHA 일치, 두 목록 겹침 0. 목록 밖 `frontend/lib/ui/widgets/plan_flow_goal_step.dart.orig`(편집 도구 백업, HEAD blob `1073e3b5`와 같은 바이트 — 정보 손실 0) → CF가 지움.
+- gate ① `20261021_112357` analyze · 시험 1~5 · process 103(+1 practice unknown_method) · almanac · diff PASS, golden 79 통과 · RED 1 = 새 `empty-backend` → 확인(빨강 칩 · 막 · 안내 패널 · 다시 연결; 기존 복구 배너가 막 위에 겹치고 학생 탭 영어 'Retry'가 비침 → F3c-3) → ② `-UpdateGoldens` `20261021_113829` **GREEN**(golden 80).
+- 커밋: **F3c-1 `2bfbf5f9`**(10파일) · **F3c-2 `7d2555b8`**(31파일, golden +1).
+- CF 결정: 강조 모양은 실제 위젯 모양(통계 성장 추이 = 사선), 덮개가 떠 있는 동안 기존 백엔드 배너 숨김, 완료 체크 제목 17개(F3c-3 프롬프트 표), 5단계 카드 · 아이템 시작 버튼 대상 키 추가, 계정 이름 실제 값. 오류 허용 목록은 사용자 결정대로 runtime 짝 라운드.
+- 배정: **Lane A F3c-3**(흐름 연결 — Mock 한 바퀴) · **Lane B F3c-4**(계획 신호 5 · seed id 대조 · 계획 빈 안내 1280 가독성).
+- XB 요청(backend-orchestrator-log 12:00): 아이템 칸 수 · previous_inventory · 유우카 crop.
