@@ -4278,3 +4278,11 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - CF 결정: 강조 모양은 실제 위젯 모양(통계 성장 추이 = 사선), 덮개가 떠 있는 동안 기존 백엔드 배너 숨김, 완료 체크 제목 17개(F3c-3 프롬프트 표), 5단계 카드 · 아이템 시작 버튼 대상 키 추가, 계정 이름 실제 값. 오류 허용 목록은 사용자 결정대로 runtime 짝 라운드.
 - 배정: **Lane A F3c-3**(흐름 연결 — Mock 한 바퀴) · **Lane B F3c-4**(계획 신호 5 · seed id 대조 · 계획 빈 안내 1280 가독성).
 - XB 요청(backend-orchestrator-log 12:00): 아이템 칸 수 · previous_inventory · 유우카 crop.
+
+## 2026-10-21 18:30 — F3c-3 · F3c-4 커밋, F3c-5 · K1 배정
+
+- 검토: F3c-3 22행 · F3c-4 8행 SHA 일치, 목록 밖 변경 0. F3c-3이 지시 목록 밖 `inventory_controller` · `inventory_page` · `statistics_page` · `tactical_page`를 고친 것은 임시 계정 동안 탭이 고른 계정을 찾게 한 것(F3c-1 발견 6 — 범위 안)으로 확인.
+- gate ① `20261021_175138` 시험 · process 103 · almanac · diff PASS, golden RED 3 = 예상(empty-backend 배너 숨김 · 'Retry' 사라짐, 새 `tutorial-step-scan` · `tutorial-dialogue-review`) → 확인(2단계 카드 + 강조가 '학생 전체 스캔 시작' 옆, 머리글 '튜토리얼 · 임시 계정' 칩 / 대사 띠 + 확인 필요 2명 밝히기) → ② `-UpdateGoldens` `20261021_180548` **GREEN**(golden 82).
+- 커밋: **F3c-3 `60145f40`**(24파일) · **F3c-4 `22296766`**(7파일).
+- CF 결정: F3c-3 발견 3 → (a) 3단계 완료 뒤 튜토리얼이 임시 계정의 남은 학생 후보를 정리 + 한 줄 안내. F3c-4 발견 1 → Mock seed에 예시 시나리오(대본 우선, XB에 계약 문장 요청). 발견 2 → 7-6 이름 미리 채움.
+- 배정: **Lane A F3c-5**(계획 탭 임시 계정 · 계획 장면 모드 · 이름 · 예시 seed · 남은 후보 정리 · 중복 경고 · 실제 신호로 1~10) · **Lane B K1**(키트 승격 1차 — 키트에 부품 6 + account_create_modal 1곳).
