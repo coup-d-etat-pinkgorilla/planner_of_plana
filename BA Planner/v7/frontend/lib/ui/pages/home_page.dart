@@ -19,6 +19,8 @@ import '../scan/scan_session_controller.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/diagonal_menu.dart';
 import '../widgets/animated_section_stack.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -325,6 +327,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (controller == null) return;
     final wasConnected = controller.isConnected;
     controller.connect(target);
+    TutorialHooksScope.emit(
+      context,
+      TutorialSignals.connectVirtualWindowConnected,
+    );
     // 미연결 → 연결은 교체 연출이 패널을 함께 내보낸다. 이미 연결된 상태에서 다른 창을 고르면 패널만 닫는다.
     if (wasConnected) _closePanel();
   }
@@ -531,6 +537,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     connectedTarget: controller,
                     onCancel: _closePanel,
                     onUse: _useTarget,
+                    tutorialTargets: true,
                   ),
                 ),
               ),

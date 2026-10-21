@@ -23,6 +23,8 @@ import '../studio/plan_flow_studio_layout.dart';
 import 'growth_calculator_section.dart' show growthCalculatorCompactNumber;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// [id] 섹션의 둥근 path(콘텐츠 캔버스 [size] 좌표). Studio와 같은 함수로 만든다.
 Path planFlowSectionPath(Size size, String id) =>
@@ -265,19 +267,24 @@ class PlanFlowRail extends StatelessWidget {
         children.add(
           Positioned.fromRect(
             rect: row(top, height),
-            child: _PlanFlowStepButton(
-              key: ValueKey('plan-flow-step-${target.number}'),
-              step: target,
-              state: flow.stateOf(target),
-              subtitle: planFlowStepSubtitle(
-                flow,
-                target,
-                saveLabel: saveLabel,
+            // F3c-2: 단계 목록 4줄을 한 대상의 조각으로(묶음 위젯이 따로 없다).
+            child: TutorialTarget(
+              id: TutorialTargets.planStepList,
+              group: true,
+              child: _PlanFlowStepButton(
+                key: ValueKey('plan-flow-step-${target.number}'),
+                step: target,
+                state: flow.stateOf(target),
+                subtitle: planFlowStepSubtitle(
+                  flow,
+                  target,
+                  saveLabel: saveLabel,
+                ),
+                height: height,
+                onPressed: target == step || !flow.canEnter(target)
+                    ? null
+                    : () => onSelectStep(target),
               ),
-              height: height,
-              onPressed: target == step || !flow.canEnter(target)
-                  ? null
-                  : () => onSelectStep(target),
             ),
           ),
         );
@@ -400,18 +407,24 @@ class PlanFlowRail extends StatelessWidget {
       children.add(
         Positioned.fromRect(
           rect: row(primaryTop, primaryHeight),
-          child: RailButton(
-            key: const ValueKey('plan-flow-next'),
-            variant: RailButtonVariant.primary,
-            height: primaryHeight,
-            semanticLabel: primaryLabel,
-            onPressed: primaryEnabled ? onNext : null,
-            child: _ButtonLabel(
-              label: primaryLabel,
-              fontSize: AppType.bodyLargeSize,
-              trailing: step.next == null
-                  ? Icons.check_rounded
-                  : Icons.arrow_forward_rounded,
+          child: TutorialTarget(
+            // "다음 · 목표 정하기"일 때만(7-1).
+            id: step == PlanFlowStep.students
+                ? TutorialTargets.planNextToGoals
+                : null,
+            child: RailButton(
+              key: const ValueKey('plan-flow-next'),
+              variant: RailButtonVariant.primary,
+              height: primaryHeight,
+              semanticLabel: primaryLabel,
+              onPressed: primaryEnabled ? onNext : null,
+              child: _ButtonLabel(
+                label: primaryLabel,
+                fontSize: AppType.bodyLargeSize,
+                trailing: step.next == null
+                    ? Icons.check_rounded
+                    : Icons.arrow_forward_rounded,
+              ),
             ),
           ),
         ),

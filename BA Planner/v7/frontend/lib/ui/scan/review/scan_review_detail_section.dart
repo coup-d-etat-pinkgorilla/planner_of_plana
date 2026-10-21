@@ -189,12 +189,17 @@ class _DetailSection extends StatelessWidget {
                           ScanReviewMetrics.fallbackHeight) *
                       scale,
             ),
-            _FallbackCard(
-              entry: entry,
-              evidence: fallback,
-              board: board,
-              current: current,
-              busy: busy,
+            TutorialTarget(
+              id: TutorialTargets.studentReviewFallbackCheck,
+              shape: TutorialHighlightShape.roundedRect,
+              radius: 6,
+              child: _FallbackCard(
+                entry: entry,
+                evidence: fallback,
+                board: board,
+                current: current,
+                busy: busy,
+              ),
             ),
             key: const ValueKey('scan-review-fallback'),
             minWidth: 520,

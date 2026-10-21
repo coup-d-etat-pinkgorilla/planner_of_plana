@@ -68,6 +68,8 @@ import 'inventory_history.dart';
 import 'inventory_history_charts.dart';
 import 'inventory_tiers.dart';
 import 'inventory_view_model.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 part 'inventory_analysis_sections.dart';
 part 'inventory_opa_sections.dart';
@@ -1088,12 +1090,26 @@ class InventoryWorkspace extends StatelessWidget {
         final view = visible[index];
         return _RevealOnRequest(
           request: reveal?.resourceKey == view.key ? reveal : null,
-          child: InventoryRiskRow(
-            key: ValueKey('inventory-row-${view.key}'),
-            view: view,
-            selected: view.key == selected,
-            needsReview: controller.needsReview(view.key),
-            onTap: () => controller.select(view.key),
+          child: TutorialTarget(
+            id: index == 0 && controller.view == InventoryView.shortage
+                ? TutorialTargets.inventoryShortageTopRow
+                : null,
+            child: InventoryRiskRow(
+              key: ValueKey('inventory-row-${view.key}'),
+              view: view,
+              selected: view.key == selected,
+              needsReview: controller.needsReview(view.key),
+              onTap: () {
+                controller.select(view.key);
+                // F3c-2: 부족 위험 1위 행을 열었다(9단계).
+                if (index == 0 && controller.view == InventoryView.shortage) {
+                  TutorialHooksScope.emit(
+                    context,
+                    TutorialSignals.inventoryTopShortageOpened,
+                  );
+                }
+              },
+            ),
           ),
         );
       },

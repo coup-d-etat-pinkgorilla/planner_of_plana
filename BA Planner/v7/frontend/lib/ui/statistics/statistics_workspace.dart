@@ -66,6 +66,8 @@ import 'statistics_source.dart';
 import 'statistics_supply_charts.dart';
 import 'statistics_supply_evidence.dart';
 import 'statistics_topics.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// 근거 패널 빈 상태(구간을 아직 고르지 않음).
 const statisticsEvidenceEmptyText = '구간을 고르면 근거가 보입니다.';
@@ -1566,17 +1568,24 @@ class _TileRow extends StatelessWidget {
               top: 0,
               width: math.max(0.0, slots[index].width),
               height: height,
-              child: _StatisticsTile(
-                key: ValueKey('statistics-tile-${tile.id}'),
-                tile: tile,
-                height: height,
-                history: history,
-                growth: growth,
-                supply: supply,
-                supplyEmpty: supplyEmpty,
-                singleGroup: singleGroup,
-                goals: goals,
-                loading: loading,
+              child: TutorialTarget(
+                id: tile.id == 'A6'
+                    ? TutorialTargets.statisticsGrowthTrendTile
+                    : null,
+                shape: TutorialHighlightShape.roundedRect,
+                radius: 8,
+                child: _StatisticsTile(
+                  key: ValueKey('statistics-tile-${tile.id}'),
+                  tile: tile,
+                  height: height,
+                  history: history,
+                  growth: growth,
+                  supply: supply,
+                  supplyEmpty: supplyEmpty,
+                  singleGroup: singleGroup,
+                  goals: goals,
+                  loading: loading,
+                ),
               ),
             ),
         ],

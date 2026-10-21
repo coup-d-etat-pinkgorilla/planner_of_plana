@@ -52,6 +52,8 @@ import 'plan_scenario_preview.dart'
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// 라벨 열 · 열 A~D 모션(아래 면 부착, FD-078): 80/260.
 const planCompareTableMotion = (intro: 80.0, outro: 260.0);
@@ -183,6 +185,15 @@ List<Offset> planCompareSectionPolygon(Size size, String id) {
 }
 
 /// 섹션 안 행 자리: 행 아래 경계 [bottom]에서 왼쪽 변 + [PlanCompareMetrics.rowInset], 폭 = 아랫변 − 2 × 안쪽 + 행 기울기.
+/// 섹션 path 꼭짓점의 바깥 사각형.
+Rect _polygonBounds(List<Offset> polygon) {
+  var bounds = Rect.fromPoints(polygon.first, polygon.first);
+  for (final point in polygon) {
+    bounds = bounds.expandToInclude(Rect.fromPoints(point, point));
+  }
+  return bounds;
+}
+
 Rect planCompareRowRect(List<Offset> polygon, double top, double height) {
   final face = polygon[2].dx - polygon[3].dx;
   final left =
@@ -859,6 +870,26 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
       final polygon = polygons[planCompareColumnSectionId(index)]!;
       final target = index < targets.length ? targets[index] : null;
       if (target == null) continue;
+      // F3c-2: 열 B · C 전체(섹션 path의 바깥 사각형, 대사 09d-2). 열을 덮는 위젯이 없어 그리지도 누르지도 않는 빈 자리를
+      // 둔다.
+      final columnKey = switch (index) {
+        1 => TutorialTargets.scenarioCompareColumnB,
+        2 => TutorialTargets.scenarioCompareColumnC,
+        _ => null,
+      };
+      if (columnKey != null) {
+        children.add(
+          Positioned.fromRect(
+            rect: _polygonBounds(polygon),
+            child: IgnorePointer(
+              child: TutorialTarget(
+                id: columnKey,
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+      }
       children.add(
         Positioned.fromRect(
           rect: planCompareRowRect(

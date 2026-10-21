@@ -32,10 +32,14 @@ import 'scan/scan_header_progress.dart';
 import 'scan/scan_session_controller.dart';
 import 'scan/scan_tab_page.dart';
 import 'tactical/tactical_lobby_view.dart' show TacticalLobbyHandoff;
+import 'tutorial/tutorial_script.dart' show TutorialSignals, TutorialTargets;
+import 'tutorial_targets/tutorial_header_chip_slot.dart';
+import 'tutorial_targets/tutorial_hooks.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
 import 'widgets/diagonal_header.dart';
+import 'widgets/empty_backend_overlay.dart';
 import 'widgets/lifted_path_shadow.dart';
 import 'widgets/page_header_override.dart';
 import 'widgets/recovery_banner.dart';
@@ -85,11 +89,15 @@ class AppShell extends StatefulWidget {
     required this.service,
     this.initialSection = AppSection.home,
     this.animateHomeEntrance = false,
+    this.tutorialHooks,
   });
 
   final AppService service;
   final AppSection initialSection;
   final bool animateHomeEntrance;
+
+  /// 튜토리얼 대상 등록표 · 신호 출구 · 활성 표시(F3c-2). null이면 셸이 하나 만들어 가진다(기본 꺼짐 — 보이는 변화 0).
+  final TutorialHooks? tutorialHooks;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -152,6 +160,17 @@ class _AppShellState extends State<AppShell>
   /// 다른 탭(전술대항전)에서 처리한 스캔 후보([scanCandidateKey]). 탭 점의 검토 대기에서 뺀다.
   Set<String> _scanAppliedElsewhere = const {};
 
+  /// 튜토리얼 자리(F3c-2). [AppShell.tutorialHooks]가 없으면 셸이 만든 것을 쓰고 dispose한다.
+  TutorialHooks? _ownedTutorialHooks;
+  TutorialHooks get _tutorialHooks =>
+      widget.tutorialHooks ?? (_ownedTutorialHooks ??= TutorialHooks());
+
+  /// Empty-Backend 덮개(F3c-2): 연결 전 · 끊김이 [emptyBackendGrace] 넘게 이어지면 켠다.
+  bool _emptyBackend = false;
+  Timer? _emptyBackendTimer;
+  bool _emptyBackendReconnecting = false;
+  String? _emptyBackendError;
+
   ScanSessionController _createScanSession() => ScanSessionController(
     service: widget.service,
     connectedTarget: _connectedTarget,
@@ -185,6 +204,7 @@ class _AppShellState extends State<AppShell>
     _lastConnection = widget.service.state.value.connection;
     widget.service.state.addListener(_handleConnectionChanged);
     _scanSession.addListener(_scanSessionChanged);
+    _syncEmptyBackend();
     _loadSelectedProfile();
   }
 
@@ -197,6 +217,7 @@ class _AppShellState extends State<AppShell>
     widget.service.state.addListener(_handleConnectionChanged);
     _connectedTarget.rebindService(widget.service);
     _scanSession.updateService(widget.service);
+    _syncEmptyBackend();
     _loadSelectedProfile();
   }
 
@@ -214,6 +235,8 @@ class _AppShellState extends State<AppShell>
     _studentFilter.dispose();
     _headerOverride.dispose();
     _connectedTarget.dispose();
+    _emptyBackendTimer?.cancel();
+    _ownedTutorialHooks?.dispose();
     super.dispose();
   }
 
@@ -228,7 +251,57 @@ class _AppShellState extends State<AppShell>
     } else if (connection != BackendConnection.connected) {
       _profileLoadGeneration += 1;
     }
+    _syncEmptyBackend();
   }
+
+  /// Empty-Backend 판단(F3c-2): 연결되면 바로 끄고, 연결 전 · 끊김은 [emptyBackendGrace] 동안 이어질 때만 켠다.
+  void _syncEmptyBackend() {
+    if (widget.service.state.value.connection == BackendConnection.connected) {
+      _emptyBackendTimer?.cancel();
+      _emptyBackendTimer = null;
+      if (_emptyBackend || _emptyBackendError != null) {
+        setState(() {
+          _emptyBackend = false;
+          _emptyBackendError = null;
+        });
+      }
+      return;
+    }
+    if (_emptyBackend || _emptyBackendTimer != null) return;
+    _emptyBackendTimer = Timer(emptyBackendGrace, () {
+      _emptyBackendTimer = null;
+      if (!mounted) return;
+      if (widget.service.state.value.connection ==
+          BackendConnection.connected) {
+        return;
+      }
+      setState(() => _emptyBackend = true);
+    });
+  }
+
+  /// 덮개의 "다시 연결": 설정 · 복구 배너와 같은 재연결 경로.
+  Future<void> _reconnectFromEmptyBackend() async {
+    if (_emptyBackendReconnecting) return;
+    setState(() {
+      _emptyBackendReconnecting = true;
+      _emptyBackendError = null;
+    });
+    try {
+      await widget.service.reconnect();
+      if (mounted) _recoveryCompleted();
+    } catch (error) {
+      if (mounted) setState(() => _emptyBackendError = '$error');
+    } finally {
+      if (mounted) setState(() => _emptyBackendReconnecting = false);
+    }
+  }
+
+  /// 덮개를 띄우지 않는 탭(설정 · 진단 · 스튜디오 — 덮개의 설정 링크가 여는 곳).
+  bool get _showEmptyBackend =>
+      _emptyBackend &&
+      _section != AppSection.settings &&
+      _section != AppSection.adaptiveSync &&
+      _section != AppSection.sectionTemplateStudio;
 
   Future<void> _loadSelectedProfile() async {
     final generation = ++_profileLoadGeneration;
@@ -270,6 +343,9 @@ class _AppShellState extends State<AppShell>
       }
       _section = section;
     });
+    if (section == AppSection.scan) {
+      _tutorialHooks.signals.emit(TutorialSignals.scanTabOpened);
+    }
   }
 
   /// 통계 근거의 이동 버튼(FE7-d): 대상 탭을 열고 의도를 넘기고 복귀 칩을 둔다.
@@ -325,6 +401,16 @@ class _AppShellState extends State<AppShell>
       return;
     }
     _lastScanEndKey = notice.sessionKey;
+    // F3c-2: 끝난 세션마다 한 번(아이템 차례 스캔은 큐가 끝날 때 한 번). 완료로 끝난 것만.
+    if (notice.outcome == 'completed') {
+      final signal = switch (notice.kind) {
+        ScannerKind.student => TutorialSignals.scanStudentFinished,
+        ScannerKind.inventory => TutorialSignals.scanItemFinished,
+        _ => null,
+      };
+      // 셸 자신의 context는 범위 위에 있어 묶음에 바로 낸다.
+      if (signal != null) _tutorialHooks.signals.emit(signal);
+    }
     // 스캔 탭에서는 화면이 끝과 결과를 바로 보인다(전술 로비는 전술대항전 탭 S2가 보인다, FE9-c).
     if (_section == AppSection.scan ||
         (_section == AppSection.pvp &&
@@ -411,8 +497,12 @@ class _AppShellState extends State<AppShell>
   // 모달 배경 범위(FE3-d2, 15:51 결정 4): 화면 모달이 열려 있는 동안 셸 머리 탭 줄·배너·개발 패널·스캔 독
   // ([BaModalBackdropExclude])을 의미 구조에서 뺀다. 모달을 연 화면 내용은 BaModal이 뺀다.
   @override
-  Widget build(BuildContext context) =>
-      BaModalBackdrop(child: _buildShell(context));
+  Widget build(BuildContext context) => BaModalBackdrop(
+    child: TutorialHooksScope(
+      hooks: _tutorialHooks,
+      child: Builder(builder: _buildShell),
+    ),
+  );
 
   Widget _buildShell(BuildContext context) {
     return Scaffold(
@@ -446,6 +536,7 @@ class _AppShellState extends State<AppShell>
                                 service: widget.service,
                                 profile: _selectedProfile,
                                 developmentPanelVisible: _showDevelopmentPanel,
+                                emptyBackend: _showEmptyBackend,
                                 connectedTarget: _connectedTarget,
                                 scanSession: _scanSession,
                                 scanAppliedElsewhere: _scanAppliedElsewhere,
@@ -611,13 +702,35 @@ class _AppShellState extends State<AppShell>
                   ],
                 );
 
+                final emptyBackend = _showEmptyBackend
+                    ? Positioned(
+                        left: 0,
+                        top: _pageHeaderExtent,
+                        right: showPanel ? _developmentPanelExtent : 0,
+                        bottom: 0,
+                        child: EmptyBackendOverlay(
+                          connection: widget.service.state.value.connection,
+                          reconnecting: _emptyBackendReconnecting,
+                          error: _emptyBackendError,
+                          onReconnect: _reconnectFromEmptyBackend,
+                          onOpenSettings: () => _open(AppSection.settings),
+                        ),
+                      )
+                    : null;
+
                 if (canShowPanel || !_showDevelopmentPanel) {
-                  return _hiddenWhileDocked(mainContent);
+                  if (emptyBackend == null) {
+                    return _hiddenWhileDocked(mainContent);
+                  }
+                  return Stack(
+                    children: [_hiddenWhileDocked(mainContent), emptyBackend],
+                  );
                 }
 
                 return Stack(
                   children: [
                     _hiddenWhileDocked(mainContent),
+                    ?emptyBackend,
                     Positioned.fill(
                       child: GestureDetector(
                         onTap: () =>
@@ -668,7 +781,12 @@ class _AppShellState extends State<AppShell>
                 ? const SizedBox.shrink()
                 : Positioned.fill(
                     child: BaModalBackdropExclude(
-                      child: ScanCompanionDock(state: companion),
+                      // F3c-2: 아이템 진행 창(줄어든 창 전체) — 5단계 한 줄 자리.
+                      child: TutorialTarget(
+                        id: TutorialTargets.itemRunProgressWindow,
+                        shape: TutorialHighlightShape.roundedRect,
+                        child: ScanCompanionDock(state: companion),
+                      ),
                     ),
                   ),
           ),
@@ -687,6 +805,7 @@ class _CompoundPageHeader extends StatelessWidget {
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
+    this.emptyBackend = false,
     required this.connectedTarget,
     required this.scanSession,
     required this.scanAppliedElsewhere,
@@ -704,6 +823,9 @@ class _CompoundPageHeader extends StatelessWidget {
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
+
+  /// Empty-Backend 덮개가 떠 있다(연결 칩을 빨강 "계산 엔진 연결 안 됨"으로).
+  final bool emptyBackend;
   final ConnectedTargetController connectedTarget;
   final ScanSessionController scanSession;
   final Set<String> scanAppliedElsewhere;
@@ -821,6 +943,7 @@ class _CompoundPageHeader extends StatelessWidget {
                             service: service,
                             profile: profile,
                             developmentPanelVisible: developmentPanelVisible,
+                            emptyBackend: emptyBackend,
                             connectedTarget: connectedTarget,
                             scanSession: scanSession,
                             onOpenTargetPicker: onOpenTargetPicker,
@@ -840,6 +963,12 @@ class _CompoundPageHeader extends StatelessWidget {
     );
   }
 }
+
+/// 머리글 높이(위 여백 14 + 170 — 시안 본문 y184). Empty-Backend 덮개는 이 아래를 덮는다.
+const _pageHeaderExtent = 184.0;
+
+/// 붙은 개발 패널 폭(구분선 1 + 330).
+const _developmentPanelExtent = 331.0;
 
 /// 탭 폭은 라벨이 결정한다.
 ///
@@ -1087,6 +1216,7 @@ class _AppHeader extends StatelessWidget {
     required this.service,
     required this.profile,
     required this.developmentPanelVisible,
+    this.emptyBackend = false,
     required this.connectedTarget,
     required this.scanSession,
     required this.onOpenTargetPicker,
@@ -1101,6 +1231,7 @@ class _AppHeader extends StatelessWidget {
   final AppService service;
   final RepositoryProfile? profile;
   final bool developmentPanelVisible;
+  final bool emptyBackend;
   final ConnectedTargetController connectedTarget;
   final ScanSessionController scanSession;
   final VoidCallback onOpenTargetPicker;
@@ -1144,6 +1275,8 @@ class _AppHeader extends StatelessWidget {
                               style: AppType.headline,
                             ),
                           ),
+                          // F3c-2: 튜토리얼 동안만 보이는 칩 자리(꺼져 있으면 크기 0).
+                          const TutorialHeaderChipSlot(),
                           if (pageOverride != null && backLabel != null) ...[
                             const SizedBox(width: AppSpacing.sm),
                             KitPressable(
@@ -1231,13 +1364,16 @@ class _AppHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.lg),
                 ],
-                HeaderStatusChip(
-                  backend: state.connection,
-                  connectedTarget: connectedTarget,
-                  scanSession: scanSession,
-                  onOpenTargetPicker: onOpenTargetPicker,
-                  onOpenScan: onOpenScan,
-                ),
+                if (emptyBackend)
+                  const EmptyBackendHeaderChip()
+                else
+                  HeaderStatusChip(
+                    backend: state.connection,
+                    connectedTarget: connectedTarget,
+                    scanSession: scanSession,
+                    onOpenTargetPicker: onOpenTargetPicker,
+                    onOpenScan: onOpenScan,
+                  ),
                 const SizedBox(width: AppSpacing.sm),
                 Tooltip(
                   message: '개발 상태 패널',

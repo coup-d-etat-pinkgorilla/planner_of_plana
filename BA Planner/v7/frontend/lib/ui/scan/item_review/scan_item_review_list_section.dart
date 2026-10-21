@@ -248,12 +248,15 @@ class _ListSection extends StatelessWidget {
         ),
         child: SectionScaledBox(
           scale: scale,
-          child: _ApplyButton(
-            title: '승인한 ${approved.length}칸 인벤토리에 적용',
-            subtitle: progress != null
-                ? '적용 중 · ${progress.done} / ${progress.total}종류'
-                : scanItemApplySubtitle(review: review, skipped: skipped),
-            onPressed: canApply ? () => board._apply(view) : null,
+          child: TutorialTarget(
+            id: TutorialTargets.itemReviewApplyApproved,
+            child: _ApplyButton(
+              title: '승인한 ${approved.length}칸 인벤토리에 적용',
+              subtitle: progress != null
+                  ? '적용 중 · ${progress.done} / ${progress.total}종류'
+                  : scanItemApplySubtitle(review: review, skipped: skipped),
+              onPressed: canApply ? () => board._apply(view) : null,
+            ),
           ),
         ),
       ),

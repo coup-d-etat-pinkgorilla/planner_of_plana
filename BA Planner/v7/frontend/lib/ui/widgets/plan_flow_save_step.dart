@@ -31,6 +31,8 @@ import '../studio/plan_flow_studio_layout.dart';
 import 'growth_calculator_section.dart' show growthCalculatorCompactNumber;
 import 'plan_flow_rail.dart' show planFlowSectionPolygon;
 import 'plan_flow_student_step.dart' show planFlowAsideLeftAt, planFlowProtoRect;
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 const _mutedStyle = TextStyle(
   fontFamily: AppFonts.body,
@@ -280,38 +282,44 @@ class _PlanFlowSaveBodyState extends State<PlanFlowSaveBody> {
         top: listTop,
         width: math.max(0.0, viewportRight - viewportLeft),
         height: viewportHeight,
-        child: KeyedSubtree(
-          key: const ValueKey('plan-flow-save-phases'),
-          child: phases.isEmpty
-              ? Center(
-                  child: Text(
-                    draft.deferredStageIds.isNotEmpty
-                        ? '모든 단계가 나중에 칸에 있어 만들어질 페이즈가 없습니다'
-                        : '만들어질 페이즈가 없습니다',
-                    style: _mutedStyle,
-                  ),
-                )
-              : DiagonalScrollViewport(
-                  keyPrefix: 'plan-flow-save-phase',
-                  itemCount: phases.length,
-                  itemHeight: (_) => planFlowSavePhaseRowHeight,
-                  itemGap: planFlowSavePhaseRowGap,
-                  verticalInset: 0,
-                  horizontalInset: horizontalInset,
-                  scrollbarReserve: scrollbarReserve,
-                  itemBuilder: (context, index) => _PhaseRow(
-                    key: ValueKey('plan-flow-save-phase-${phases[index].id}'),
-                    flow: flow,
-                    phase: phases[index],
-                    number: offset + index + 1,
-                    resources: planFlowSavePhaseResources(save, phases[index]),
-                    calculating: flow.calculating || save.comparing,
-                    blocked: phases[index].stageIds.any(
-                      (id) => statuses[id] == PlanFlowStageStatus.blocked,
+        child: TutorialTarget(
+          id: TutorialTargets.planSavePhases,
+          child: KeyedSubtree(
+            key: const ValueKey('plan-flow-save-phases'),
+            child: phases.isEmpty
+                ? Center(
+                    child: Text(
+                      draft.deferredStageIds.isNotEmpty
+                          ? '모든 단계가 나중에 칸에 있어 만들어질 페이즈가 없습니다'
+                          : '만들어질 페이즈가 없습니다',
+                      style: _mutedStyle,
                     ),
-                    group: _phaseGroup,
+                  )
+                : DiagonalScrollViewport(
+                    keyPrefix: 'plan-flow-save-phase',
+                    itemCount: phases.length,
+                    itemHeight: (_) => planFlowSavePhaseRowHeight,
+                    itemGap: planFlowSavePhaseRowGap,
+                    verticalInset: 0,
+                    horizontalInset: horizontalInset,
+                    scrollbarReserve: scrollbarReserve,
+                    itemBuilder: (context, index) => _PhaseRow(
+                      key: ValueKey('plan-flow-save-phase-${phases[index].id}'),
+                      flow: flow,
+                      phase: phases[index],
+                      number: offset + index + 1,
+                      resources: planFlowSavePhaseResources(
+                        save,
+                        phases[index],
+                      ),
+                      calculating: flow.calculating || save.comparing,
+                      blocked: phases[index].stageIds.any(
+                        (id) => statuses[id] == PlanFlowStageStatus.blocked,
+                      ),
+                      group: _phaseGroup,
+                    ),
                   ),
-                ),
+          ),
         ),
       ),
     );
@@ -1016,55 +1024,59 @@ class PlanFlowSaveAside extends StatelessWidget {
       children.add(
         Positioned.fromRect(
           rect: rect,
-          child: Opacity(
-            opacity: available ? 1 : 0.45,
-            child: Semantics(
-              selected: selected,
-              inMutuallyExclusiveGroup: true,
-              child: DiagonalRow(
-                key: ValueKey('plan-flow-save-target-${target.name}'),
-                variant: DiagonalRowVariant.srow,
-                mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
-                onTap: available && !save.saving
-                    ? () => save.selectTarget(target)
-                    : null,
-                padding: const EdgeInsets.only(left: 24.7, right: 14),
-                child: Row(
-                  children: [
-                    _Radio(selected: selected),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            target.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _bodyStyle.copyWith(
-                              fontSize: AppType.titleSmallSize,
-                              fontWeight: AppType.bold,
+          child: TutorialTarget(
+            id: TutorialTargets.planSaveChoice,
+            group: true,
+            child: Opacity(
+              opacity: available ? 1 : 0.45,
+              child: Semantics(
+                selected: selected,
+                inMutuallyExclusiveGroup: true,
+                child: DiagonalRow(
+                  key: ValueKey('plan-flow-save-target-${target.name}'),
+                  variant: DiagonalRowVariant.srow,
+                  mark: selected ? DiagonalRowMark.selected : DiagonalRowMark.none,
+                  onTap: available && !save.saving
+                      ? () => save.selectTarget(target)
+                      : null,
+                  padding: const EdgeInsets.only(left: 24.7, right: 14),
+                  child: Row(
+                    children: [
+                      _Radio(selected: selected),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              target.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _bodyStyle.copyWith(
+                                fontSize: AppType.titleSmallSize,
+                                fontWeight: AppType.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            planFlowSaveTargetSubtitle(
-                              target,
-                              save: save,
-                              newPhaseCount: phaseCount,
+                            const SizedBox(height: 2),
+                            Text(
+                              planFlowSaveTargetSubtitle(
+                                target,
+                                save: save,
+                                newPhaseCount: phaseCount,
+                              ),
+                              key: ValueKey(
+                                'plan-flow-save-target-${target.name}-subtitle',
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _mutedStyle,
                             ),
-                            key: ValueKey(
-                              'plan-flow-save-target-${target.name}-subtitle',
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _mutedStyle,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1208,29 +1220,34 @@ class PlanFlowSaveAside extends StatelessWidget {
     children.add(
       Positioned.fromRect(
         rect: button,
-        child: RailButton(
-          key: const ValueKey('plan-flow-save-confirm'),
-          variant: RailButtonVariant.primary,
-          height: 58,
-          semanticLabel: save.target.label,
-          onPressed: save.canSave ? onSave : null,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  save.saving ? '저장하고 있습니다' : save.target.label,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: AppType.bodyLargeSize,
-                    fontWeight: AppType.bold,
+        child: TutorialTarget(
+          id: save.target == PlanFlowSaveTarget.scenario
+              ? TutorialTargets.planSaveAsScenario
+              : null,
+          child: RailButton(
+            key: const ValueKey('plan-flow-save-confirm'),
+            variant: RailButtonVariant.primary,
+            height: 58,
+            semanticLabel: save.target.label,
+            onPressed: save.canSave ? onSave : null,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    save.saving ? '저장하고 있습니다' : save.target.label,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: AppType.bodyLargeSize,
+                      fontWeight: AppType.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.check_rounded),
-              ],
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check_rounded),
+                ],
+              ),
             ),
           ),
         ),

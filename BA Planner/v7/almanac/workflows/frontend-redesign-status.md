@@ -11495,3 +11495,191 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_090915\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-2 착수 기록 (2026-10-21 10:05, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 튜토리얼이 화면을 가리킬 수 있게 하는 자리(F3a 대상 키 등록표 · 신호 출구 · 머리글 칩 자리) + Empty-Backend 덮개(F3d 7번째). 흐름 연결은 F3c-3. 튜토리얼이 꺼져 있을 때 보이는 변화 · 동작 변화 0.
+- 시작 SHA: `df053ac930c9210a3728433b4934d66d5794710f`(브랜치 `scanner-consolidation`). `git log --oneline -3`에 `5ae8f207 f3e:` 있음, 이 status 끝에 다른 "F3c-2 착수 기록" 없음 확인. 막힘 확인: 대장 열림 FD 0건.
+- 같은 시각 Lane B F3c-1이 `lib/services/**` · `lib/ui/scan/scan_session_controller.dart`를 고치는 중(착수 시점 `repository_service.dart` 미완성으로 컴파일 오류 — 내 파일 아님). 그 파일들은 건드리지 않는다.
+- 고칠 기존 파일(사본 `debug/frontend_f3c2/pre/<v7 기준 경로>`, 24개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**): `frontend/lib/ui/app_shell.dart`(LF) · `home/connect_target_panel.dart`(LF) · `pages/home_page.dart`(CRLF) · `scan/scan_tab_sections.dart` · `scan/scan_tab_page.dart` · `scan/review/scan_review_list_section.dart` · `scan/review/scan_review_detail_section.dart` · `scan/review/scan_student_review_board.dart` · `scan/item_review/scan_item_review_list_section.dart` · `scan/item_review/scan_item_review_board.dart` · `widgets/growth_calculator_section.dart` · `pages/student_page.dart` · `widgets/plan_flow_rail.dart` · `widgets/plan_flow_student_step.dart` · `widgets/plan_flow_goal_step.dart` · `widgets/plan_flow_order_step.dart` · `widgets/plan_flow_save_step.dart` · `widgets/plan_flow_workspace.dart` · `widgets/plan_scenario_list.dart` · `widgets/plan_scenario_compare.dart` · `widgets/plan_section_layout.dart`(CRLF) · `inventory/inventory_workspace.dart` · `statistics/statistics_workspace.dart` · `pages/statistics_page.dart`(CRLF)(나머지 LF). 실제로 고치지 않게 되는 파일은 종료 기록에 적는다(사본만 남음).
+- 새 파일(예정): `frontend/lib/ui/tutorial_targets/tutorial_hooks.dart` · `tutorial_header_chip_slot.dart`, `frontend/lib/ui/widgets/empty_backend_overlay.dart`, `frontend/test/tutorial_targets_f3c2_test.dart`, `frontend/test/goldens/f3c2_empty_backend_golden_test.dart`, `debug/frontend_f3c2/commit.json` · `output.md`.
+- 고치지 않음: Lane B 파일(`lib/services/**` · `scan_session_controller.dart`), `lib/ui/tutorial/**`(F3a), `lib/ui/kit/**`, golden harness · 기존 기준 이미지, `frontend/tool/**`, backend/** · contracts/**, pubspec, 택틱 · 스캐너 소유 파일(`scan_student_review_workspace.dart` · `scan_inventory_identity_review.dart` · `scan_page.dart` · `scan_companion_dock.dart`).
+
+## F3c-2 종료 기록 (2026-10-21 12:40, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(새 golden `empty-backend` 기준 없음 → `-UpdateGoldens`) 남음. 시작 SHA `df053ac9`, 커밋 없음(git 쓰기 안 함).
+- 결과: 새 `lib/ui/tutorial_targets/`(등록표 · 감싸개 · 신호 출구 · 활성 표시 · 머리글 칩 자리)와 `lib/ui/widgets/empty_backend_overlay.dart`. F3a 강조 키 17 · 밝히기 키 전부를 실제 위젯에 붙였고(없는 키 0 — 조건부 자리는 표에), F3a 신호 25 중 20을 사건 자리에 냈다(없음 5 + 이유). 튜토리얼이 꺼져 있으면 보이는 변화 · 동작 변화 0(감싸개는 렌더 객체를 더하지 않음 — 예외 1: 비교 열 B · C 빈 자리, 아래).
+- 기존 파일 24개(diff `+numstat`): `app_shell.dart` +147/−11 · `connect_target_panel.dart` +25/−8 · `home_page.dart` +7/−0 · `scan_tab_sections.dart` +28/−7 · `scan_tab_page.dart` +19/−0 · `scan_review_list_section.dart` +31/−10 · `scan_review_detail_section.dart` +11/−6 · `scan_student_review_board.dart` +6/−0 · `scan_item_review_list_section.dart` +9/−6 · `scan_item_review_board.dart` +48/−15 · `growth_calculator_section.dart` +15/−6 · `student_page.dart` +32/−1 · `plan_flow_rail.dart` +37/−24 · `plan_flow_student_step.dart` +8/−3 · `plan_flow_goal_step.dart` +75/−38 · `plan_flow_order_step.dart` +53/−17 · `plan_flow_save_step.dart` +115/−98 · `plan_flow_workspace.dart` +10/−0 · `plan_scenario_list.dart` +28/−13 · `plan_scenario_compare.dart` +31/−0 · `plan_section_layout.dart` +4/−0 · `inventory_workspace.dart` +22/−6 · `statistics_workspace.dart` +20/−11 · `statistics_page.dart` +16/−5. 감싸기는 대부분 들여쓰기만 바뀐 줄이다(`git diff -w`로 보면 작다). `plan_flow_save_step.dart`의 −98은 저장 페이즈 목록 · 저장 위치 줄을 감싸며 들여쓴 것.
+- `app_shell.dart` 이유: 튜토리얼 자리 주입(`AppShell.tutorialHooks` 선택 인자 — 없으면 셸이 만들고 dispose), `TutorialHooksScope`로 감싸기(Builder 하나), 머리글 제목 옆 칩 자리 한 줄, Empty-Backend 판단(타이머) · 덮개 · 빨강 칩, 스캔 끝 신호 · `tab.scan.opened`, 아이템 진행 창(dock) 감싸기(`scan_companion_dock.dart`는 스캐너 소유라 바깥 자리). 덮개는 `LayoutBuilder`가 돌려주는 Stack에 넣어 기존 탭 목록 블록을 다시 들여쓰지 않았다(첫 시도 +261/−124 → +147/−11).
+- 서식: 이 slice가 고친 파일 상당수가 원래 `dart format` 결과와 다르다(예: `plan_flow_goal_step.dart` 61줄). 그래서 사본 둘(전 · 후)을 format한 차이만 실제 파일에 patch했고, 손 서식 줄(`plan_flow_order_step.dart` import · `_LinkTarget`, `plan_flow_save_step.dart` 저장 위치 줄)은 직접 맞췄다. 확인: 파일마다 "pre + (fmt(pre) → fmt(cur)) 차이 = cur" 22/24 일치, 나머지 2는 위 손 서식 줄(원래 서식이 아닌 자리)만.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(전체, 편집마다 · 마지막) | 착수 직후 Lane B 진행 중 파일(`lib/services/repository_service.dart`) 미완성으로 error 9(내 파일 0) → Lane B가 이어서 고친 뒤 **No issues found!**(info 0) |
+| `flutter test --exclude-tags golden <셸 시험 7파일>`(app_shell 첫 변경 뒤) | +59 All passed |
+| `flutter test --exclude-tags golden test/tutorial_targets_f3c2_test.dart` | 1회 컴파일 실패(Lane B 파일) → +10 → 신호 · 실제 화면 시험 추가 뒤 +15 −1(스캔 시험: 숨은 탭 finder) → +15 −1(`tab.scan.opened` 0회 — **셸 자신의 context가 범위 위**라 `emit(context)`가 닿지 않음: 셸은 묶음에 바로 내게 고침) → **+16 All passed** |
+| `flutter test --exclude-tags golden test/tutorial_targets_f3c2_test.dart test/tutorial_parts_f3a_test.dart`(마지막) | **+50 All passed** |
+| 관련 기존 시험 81파일(grep: 고친 lib 파일 · 페이지 · `BAPlannerApp(`/`AppShell(`를 쓰는 시험, golden · process 패턴 0건 확인) 3묶음 `--exclude-tags golden` | 묶음 A **+256** · B **+336** · C **+315 All passed**(실패 0) |
+| 일회성 렌더(사본 `test/goldens/f3c2_render_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, PNG는 세션 임시 폴더) | +1 통과 · 예외 0, 눈 확인(패널이 시안보다 약 20px 아래 → 정렬식 고침) 뒤 사본 삭제. 디버그용 `test/f3e_debug_tmp_test.dart`류 없음 |
+| `git diff --check -- frontend/lib/ui` · 바이트 검사(고친 · 새 파일 29개) | 출력 없음, 줄 끝 공백 0, 끝 개행 하나, 줄바꿈 유지(CRLF: `home_page` · `statistics_page` · `plan_section_layout`, 나머지 LF) |
+
+로그: `debug/frontend_f3c2/logs/`(`shell-1` · `f3c2-test-1~6` · `related-a~c` · `render-1`), 시험 목록 `debug/frontend_f3c2/related_tests.txt`(`related_00~02`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 키 표(키 → 파일 · 위젯 · 모양)
+
+강조 17(단계 카드):
+
+| 키 | 파일 · 위젯 | 모양 | 조건 · 메모 |
+|---|---|---|---|
+| `home.connect.useSelectedWindow` | `home/connect_target_panel.dart` "선택한 창 사용" `TonalButton`(`home-connect-panel-use`) | 둥근 r10 | 같은 패널이 홈 · 스캔 탭 · 전술대항전에 있어 **홈만** 붙인다(새 인자 `tutorialTargets`, `home_page.dart`가 true) |
+| `scan.student.startFullScan` | `scan/scan_tab_sections.dart` `_StartButton`(`scan-pick-start`) | 사선 | 고르기가 학생 전체일 때만 |
+| `scan.studentReview.applyChanged` | `scan/review/scan_review_list_section.dart` "n명 한 번에 적용"(`scan-review-bulk-apply`) | 둥근 r10 | — |
+| `students.calculator.levelTargetPlus` | `widgets/growth_calculator_section.dart` 레벨 행 `_SquareTonal`(`calculator-row-level-increase`) | 둥근 r8 | 레벨 행만 |
+| `scan.itemRun.progressWindow` | `app_shell.dart` `ScanCompanionDock` 자리(줄어든 창 전체) | 둥근 r0 | dock 파일은 스캐너 소유라 바깥 감싸기. dock이 없으면(Windows 아님 · 실패) 등록 없음 |
+| `scan.itemReview.applyApproved` | `scan/item_review/scan_item_review_list_section.dart` `_ApplyButton`(`scan-item-apply`) | 사선 | — |
+| `plan.flow.nextToGoals` | `widgets/plan_flow_rail.dart` primary `RailButton`(`plan-flow-next`) | 사선(레일) | 1단계일 때만("다음 · 목표 정하기") |
+| `plan.flow.goals.allMaxPreset` | `widgets/plan_flow_goal_step.dart` "고른 n명 모두 …" **줄 전체**(버튼 `plan-flow-goal-apply-all`을 담은 Align) | 사선 | 시안은 버튼이 아니라 451×50 줄에 테두리 → 장면 보드를 따름(발견 1) |
+| `plan.flow.goals.makiStage1Skills` | 같은 파일 `_cardBlocks` 스킬 칸 `_Block` | 사선 | `maki`의 첫 단계 카드만(밝히기 08g-2와 같은 키) |
+| `plan.flow.goals.makiAddStage` | 같은 파일 `_AddStageColumn`(`plan-flow-goal-add-stage`) | 사선 | 지금 학생이 `maki`일 때 |
+| `plan.flow.order.card.akane` | `widgets/plan_flow_order_step.dart` `_OrderCard`(`plan-flow-order-card-$id`) | 사선 | 단계 `(akane, 1)` |
+| `plan.flow.order.card.kannaSwimsuit` | 같음 | 사선 | `(kanna_swimsuit, 1)` |
+| `plan.flow.order.laterColumn` | 같은 파일 나중에 칸의 `_DropHint`("여기로 끌어다 놓기") | 둥근 r8 | 시안 Tutorial-07c3 테두리가 이 칸(412×164)이라 칸 타일이 아니라 놓는 자리를 따름. 칸이 비었을 때만 있음(7-5 · 08f 시점은 빈 칸) |
+| `plan.flow.save.asScenario` | `widgets/plan_flow_save_step.dart` 오른쪽 저장 `RailButton`(`plan-flow-save-confirm`) | 사선(레일) | 저장 위치가 시나리오일 때만 |
+| `plan.scenario.compareSideBySide` | `widgets/plan_scenario_list.dart` "나란히 비교"(`plan-scenario-compare-run`) | 사선(레일) | — |
+| `inventory.shortage.topRow` | `inventory/inventory_workspace.dart` 첫 `InventoryRiskRow` | 사선 | 부족 보기 · 0번 행 |
+| `statistics.growthTrendTile` | `statistics/statistics_workspace.dart` `_StatisticsTile`(`statistics-tile-A6`) | 둥근 r8 | F3a 표(둥근 사각형)를 따름 — 코드 타일은 사선 tile 모양(발견 2) |
+
+밝히기:
+
+| 키 | 파일 · 위젯 | 모양 | 메모 |
+|---|---|---|---|
+| `scan.studentReview.uncertainGroup` | `scan_review_list_section.dart` '확인 필요' 머리 + 그 행들(**조각 합침**) | 사선 | 묶음 위젯이 없어 목록 항목마다 조각으로 등록 |
+| `scan.studentReview.fallbackCheck` | `scan_review_detail_section.dart` `_FallbackCard`(`scan-review-fallback`) | 둥근 r6 | 고른 학생에 폴백 근거가 있을 때만 |
+| `plan.flow.stepList` | `plan_flow_rail.dart` 단계 버튼 4개(조각 합침) | 사선 | — |
+| `plan.flow.students.selected` | `plan_flow_student_step.dart` 오른쪽 판 Stack(`plan-flow-student-aside`) | 사선 | — |
+| `plan.flow.goals.stageCells` | `plan_flow_goal_step.dart` `_StageCards` | 사선 | — |
+| `plan.flow.goals.makiStage1Skills` | 위 강조와 같음 | — | — |
+| `plan.flow.order.rankColumns` | `plan_flow_order_step.dart` 나중에 칸을 뺀 순위 칸들(조각 합침) | 사선 | — |
+| `plan.flow.order.card.kannaSwimsuit` · `…akane` | 위와 같음 | — | — |
+| `plan.flow.order.card.neruUniform` | `_OrderCard` `(neru_uniform, 1)` | 사선 | 학생 id는 코드에 없음 — F3c-1 seed의 id와 맞는지 F3c-3 확인(발견 3) |
+| `plan.flow.order.card.makiStage2` | `_OrderCard` `(maki, 2)` | 사선 | — |
+| `plan.flow.order.laterColumn` | 위와 같음 | — | — |
+| `plan.flow.save.phases` | `plan_flow_save_step.dart` 페이즈 목록(`plan-flow-save-phases`) | 사선 | — |
+| `plan.flow.save.choice` | 같은 파일 저장 위치 줄 3개(조각 합침) | 사선 | — |
+| `plan.scenario.list.binahPlan` · `…binahAllMax` | `plan_scenario_list.dart` `PlanScenarioListRow` | 사선 | **이름으로** 고른다: '총력전 비나 대비' · '비나 대비 · 한 번에 MAX'(대본 문구) — seed 이름과 같아야 함(발견 3) |
+| `plan.scenario.compare.columnB` · `…columnC` | `plan_scenario_compare.dart` 열 1 · 2의 섹션 path 바깥 사각형 | 사선 | 열을 덮는 위젯이 없어 **그리지도 누르지도 않는 빈 자리**(`IgnorePointer` + `SizedBox.expand`)를 더했다 — 이 slice에서 렌더 객체를 더한 유일한 곳(그림 · 입력 변화 0). 2개 이상 시나리오 4열 비교에서만 |
+
+없음: 0(모든 키에 자리가 있다 — 위 조건 밖에서는 사각형 null).
+
+### 신호 표(신호 → 파일 · 자리 · 사건)
+
+| 신호 | 파일 · 자리 | 사건(확정된 때) |
+|---|---|---|
+| `connect.virtualWindow.picked` | `connect_target_panel.dart` `_plan` setState 뒤 | 목록에서 창을 눌러 골랐다(처음 읽을 때 저절로 고르는 것은 제외) |
+| `connect.virtualWindow.connected` | `home_page.dart` `_useTarget` `controller.connect` 뒤 | 홈 패널 "선택한 창 사용"으로 연결(동기). 스캔 탭 · 전술대항전 연결 경로는 내지 않음 |
+| `tab.scan.opened` | `app_shell.dart` `_open` setState 뒤 | 스캔 탭으로 옮겼다(시작 탭이 스캔이면 안 냄) |
+| `scan.studentScope.allSelected` | `scan_tab_sections.dart` 학생 칸 누름 → `pickStudent` 뒤 | 고르기가 학생 전체가 됨(이미 전체여도 누르면 냄 — 기본값이 전체라서) |
+| `scan.student.started` | `scan_tab_page.dart` `_controllerChanged` | 학생 세션이 running(시작 요청이 받아들여진 뒤), 세션 id마다 한 번 |
+| `scan.student.finished` | `app_shell.dart` `_scanSessionChanged` 중복 거르기 뒤(탭 조기 return 앞) | 학생 세션 terminal `completed`, 세션마다 한 번 |
+| `scan.studentReview.applied` | `scan_student_review_board.dart` `_applyEntries` 결과 setState 뒤 | **한 번에 적용**이 실패 없이 1명 이상 적용 |
+| `students.student.opened` | `student_page.dart` `onStudentSelected` setState 뒤 | 학생을 골랐다 |
+| `students.detail.opened` | 같은 자리 | 학생 탭은 고르면 S3 상세가 그 학생으로 열린다(따로 여는 동작이 없음) — 같은 사건에서 냄 |
+| `students.calculator.opened` | `student_page.dart` `_openCalculator` | 닫혀 있던 계산기를 열었다(학생 바꿔 다시 여는 것은 제외) |
+| `students.calculator.targetChanged` | `student_page.dart` `_calculatorChanged` | 목표 맵이 실제로 바뀌었다(기준 · 직접 입력 현재값 · 계산 결과 알림은 제외) |
+| `scan.item.finished` | `app_shell.dart` 위와 같음 | 아이템 차례 스캔 큐가 completed(partial 포함)로 끝남, 큐마다 한 번 |
+| `scan.itemReview.uncertainApproved` | `scan_item_review_board.dart` `_setApproved` · `_setDraft` 뒤 | 모든 종류의 확인 필요 칸이 승인됨으로 바뀐 순간 한 번 |
+| `scan.itemReview.applied` | 같은 파일 `_apply` 결과 setState 뒤 | 승인 칸 적용이 실패 없이 1종류 이상 |
+| `plan.flow.studentsConfirmed` | `plan_flow_workspace.dart` `_flowChanged` | 1단계 → 2단계로 실제로 넘어감 |
+| `plan.flow.allMaxApplied` | `plan_flow_goal_step.dart` "고른 n명 모두 …" 누름 → `applyCurrentModeTo` 뒤 | 고른 학생 전부의 모드가 MAX |
+| `plan.flow.makiStage1Set` | **없음** | 완료 조건이 대본 값(마키 1단계 M/M/1/1)이라 seed와 함께 판단해야 함. 사건 자리: `PlanFlowGoalEditor.setTarget → _commit`(`models/plan_flow_goal_editor.dart:243 · 549`, 고칠 곳 밖) · 화면 쪽 `plan_flow_workspace._flowChanged` |
+| `plan.flow.makiStage2Set` | **없음** | 같은 이유(2단계 M/M/7/7) + 2단계는 1단계보다 올리기 전엔 흐름에 동기화되지 않는다(`_commit` 552) |
+| `plan.flow.ranksPlaced` | **없음** | 1~3순위 학생 배치가 seed에 달림. 자리: `plan_flow_order_step.dart` 칸 놓기 `editor.move(...)`(1204 · 2241 · 2436) 성공 |
+| `plan.flow.kannaAkaneLinked` | `plan_flow_order_step.dart` `_LinkTarget` 놓기 → `editor.link` true 뒤 | 칸나(수영복) 카드 점을 아카네 카드에 이음 |
+| `plan.flow.laterMoved` | **없음** | 네루 · 마키 2단계 둘 다 나중에 칸 — seed 의존. 자리: 위 `move(phaseId: planFlowDeferredLaneId)` 성공 |
+| `plan.flow.savedAsScenario` | `plan_flow_workspace.dart` `_save` 저장 결과 뒤 | 시나리오로 저장 성공 |
+| `plan.scenario.compareOpened` | `plan_section_layout.dart` `_compareFromList` setState 뒤 | 목록에서 나란히 비교를 열었다 |
+| `inventory.topShortage.opened` | `inventory_workspace.dart` 행 누름 → `controller.select` 뒤 | 부족 보기의 1위 행을 골랐다 |
+| `statistics.growthTrend.viewed` | `statistics_page.dart` `_select` 뒤 | '성장 추이'에서 시점을 골랐다(`StatisticsGrowthTrendSelection`, 대본 "지난 스캔과의 차이를 확인") |
+
+스캔 끝 · 적용 신호는 `scan_session_controller.dart`(Lane B)가 아니라 듣는 화면 쪽(셸 · 결과 검토 보드)에서 낸다. 셸 자신의 신호는 셸 context가 `TutorialHooksScope` 위에 있어 `TutorialHooksScope.emit(context)` 대신 묶음에 바로 낸다.
+
+### 칩 자리 목록
+
+- `app_shell.dart` `_AppHeader` 제목 줄(제목 `Text` 바로 뒤, 시안 Tutorial-03 머리글처럼 간격 12) 하나 — 모든 탭(홈 · 학생 · 계획 · 인벤토리 · 전술대항전 · 통계 · 스캔 · 설정 · 진단 · 스튜디오)이 이 머리글을 쓴다(탭 페이지가 따로 그리는 머리글 없음, 계산기 · 전술대항전은 `PageHeaderOverride`로 같은 줄). 꺼짐 = `SizedBox.shrink`(크기 0), 켜짐 = F3a `TutorialHeaderChip`(key `tutorial-header-chip`).
+
+### Empty-Backend 조건 표
+
+| 연결 상태 | 덮개 | 머리글 칩 |
+|---|---|---|
+| `connected` | 없음(바로 내림, 오류 문구도 지움) | 지금 그대로(`HeaderStatusChip`) |
+| `connecting` · `disconnected`가 1.5초 미만 | 없음(시작 직후 · 재연결 깜빡임 방지) | 지금 그대로(노랑 "백엔드 연결 중" · 빨강 "백엔드 끊김") |
+| `connecting` 1.5초 이상 | 덮개 + 도는 표시 + "계산 엔진에 연결하는 중" | 빨강 "계산 엔진 연결 안 됨"(새 `EmptyBackendHeaderChip`) |
+| `disconnected` 1.5초 이상 | 덮개 + "연결되지 않았습니다 · 다시 연결을 눌러 주십시오"(도는 표시 없음) | 빨강 "계산 엔진 연결 안 됨" |
+| 다시 연결 중 | "다시 연결하는 중" + 도는 표시, 버튼 꺼짐 | 같음 |
+| 다시 연결 실패 | "다시 연결하지 못했습니다 · 〈오류〉"(빨강 글자), 버튼 켜짐 | 같음 |
+| 설정 · Adaptive-Sync · 스튜디오 탭 | 띄우지 않음(덮개의 설정 링크가 가는 곳) | 지금 그대로 |
+
+- 덮개 자리: 머리글(위 14 + 170 = 184, 시안 본문 y184) 아래 · 붙은 개발 패널(331) 왼쪽. 막은 rgba(6,10,16,.55)에 입력을 막는 `ModalBarrier`, 패널 1040×300(모서리 18, 80° 사선, 시안 위치 760,560), 작은 창은 패널만 같은 비율로 줄인다(1280×720 넘침 0 — 시험).
+- "다시 연결" = `AppService.reconnect()`(설정 · 복구 배너와 같은 경로) 성공 뒤 셸 `_recoveryCompleted`(설정과 같음). "설정 · 계산 엔진 연결 보기" = 설정 탭 열기.
+- 문구: 제목 · 두 줄 안내 · 링크 · 버튼은 시안 그대로, 아래 줄 상태 문구는 워커 문구(시안 "자동으로 다시 연결하는 중 · 3번째 시도"는 앱에 자동 재시도 · 횟수가 없어 쓰지 않음 — 발견 4).
+
+### golden 변화 0 근거 + 새 장면 기대 모습
+
+- 기존 장면 79장 변화 0 예상: (1) `TutorialTarget`은 `build`가 child를 그대로 돌려 렌더 트리가 같다(시험 "wrapper adds no render object"). (2) 머리글 칩 자리는 꺼져 있으면 크기 0이라 제목 `Flexible`의 폭이 같다(시험: 자리 크기 `Size.zero`). (3) 기존 장면은 모두 연결됨(Mock 기본)이라 덮개 · 빨강 칩이 없다. (4) 비교 열 빈 자리는 그리지 않는 `SizedBox`(그림 0). (5) `TutorialHooksScope` · `Builder`는 렌더 객체가 없다. 관련 위젯 시험 907건이 키 · 문구 · 레이아웃 그대로 통과.
+- 새 장면 `empty-backend`(`test/goldens/f3c2_empty_backend_golden_test.dart`, `GoldenMockAppService` 연결 끊김 → 학생 탭 → 1.6초): 머리글 "학생" · 오른쪽 빨강 칩 "● 계산 엔진 연결 안 됨", 머리글 아래 전체가 어둡게(기존 복구 배너 "Backend 연결 끊김 …"도 막 아래 흐리게 보임 — 발견 5), 가운데 사선 패널: 분홍 막대 + "계산 엔진을 기다리는 중입니다", 굵은 "계산 엔진이 아직 켜지지 않았습니다. 대개 5초 안에 켜집니다.", 흐린 "켜지면 이 화면이 저절로 채워집니다. 오래 걸리면 다시 연결합니다.", 아래 줄 왼쪽 "연결되지 않았습니다 · 다시 연결을 눌러 주십시오", 오른쪽 분홍 글자 링크 "설정 · 계산 엔진 연결 보기"와 분홍 "↻ 다시 연결" 버튼. 끊김이라 도는 표시 없음(애니메이션 없이 정착). 기준 PNG 없음 → 첫 gate RED 1장 예상.
+
+### F3c-3 입력(등록표 · 신호 출구 · 칩 켜기 API)
+
+- 만들기 · 주입: `final hooks = TutorialHooks();` → `AppShell(service: …, tutorialHooks: hooks)`(BAPlannerApp은 아직 인자를 넘기지 않음 — F3c-3이 `app.dart` · 첫 실행 ③ · 설정 `onRestartTutorial`과 함께 넘긴다). 셸 밖(시험)은 `TutorialHooksScope(hooks: …, child: …)`.
+- 등록표: `hooks.registry.geometryOf(TutorialTargets.x, ancestor: overlayRenderBox)` → `TutorialTargetGeometry(rect, shape, radius)` 또는 null(등록 없음 · 아직 배치 전 · 숨은 탭 · 크기 0). 조각 키는 보이는 조각의 합친 사각형. `hooks.registry`는 `ChangeNotifier` — 등록이 바뀌면 다음 프레임에 한 번 알린다(덧그림이 다시 잴 때 씀). 스크롤 · 애니메이션 중 위치 변화는 알리지 않으므로 덧그림은 프레임마다 다시 읽는다. `duplicateWarnings`로 중복 등록 확인.
+- 신호: `hooks.signals.listener = flow.signal;`(F3a `TutorialFlowController.signal`). 끝나면 `null`.
+- 칩: `hooks.active.value = true/false`.
+- 남은 신호 5(위 표 "없음")는 seed 값 · 학생 배치로 판단 — F3c-3이 F3c-1 seed와 함께 흐름 쪽 감시(예: `PlanFlowController` 듣기)로 만들거나 화면 자리에 조건을 더한다.
+- 대본 id · 이름 의존: `neru_uniform` · `kanna_swimsuit` · `akane` · `maki` 학생 id, 시나리오 이름 2개.
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 새 기준 PNG, 전체 `fe_gate.ps1`, process E2E, almanac validate, Python.
+- 미실행(시험 없음): 키 중 실제 화면 사각형을 시험으로 확인한 것은 `scan.student.startFullScan` · `scan.studentReview.applyChanged` · `…uncertainGroup` · `students.calculator.levelTargetPlus` · `plan.flow.save.asScenario` · `…save.phases` · `…save.choice` · `…stepList` · `statistics.growthTrendTile`. 나머지(홈 연결 패널 · 아이템 진행 창 · 아이템 적용 · 계획 1~3단계 · 시나리오 목록 · 비교 열 · 인벤토리 · 폴백 카드)는 analyze · 관련 시험 통과만 — 튜토리얼 seed가 들어오는 F3c-3에서 장면별 확인 필요.
+- 미실행: 신호 중 시험으로 횟수를 본 것은 `tab.scan.opened` · `scan.studentScope.allSelected` · `scan.student.started` · `scan.student.finished` · `scan.studentReview.applied` · `students.calculator.opened` · `students.calculator.targetChanged` · `plan.flow.savedAsScenario` · `statistics.growthTrend.viewed`(9). 나머지 11은 미실행.
+- 미실행: 실제 백엔드 시작 지연에서 1.5초 대기가 적당한지, 실제 앱 mock 실행 눈 검수.
+
+### 검수표(사용자 · CF)
+
+| artboard | 여는 방법 | 확인 |
+|---|---|---|
+| Empty-Backend | 시험 "empty backend …" 또는 실제 앱(`BA_PLANNER_USE_REAL_BACKEND=false`) → 개발 상태 패널에서 연결 끊김 → 1.5초 | 빨강 칩 문구 · 막 범위(머리글 아래) · 패널 위치 760,560 · 문구 · 다시 연결 → 연결됨에서 사라짐 · 설정 링크 → 설정에서는 덮개 없음 · 1280×720 |
+| 연결 중 깜빡임 | 실제 백엔드 시작 | 1.5초 안에 연결되면 덮개가 뜨지 않음 |
+| 머리글 칩(W-Tutorial-Card 머리글) | 시험 "chip slot …"(앱에서는 F3c-3 전까지 켤 길 없음) | 제목 옆 간격 12 · 탭을 바꿔도 보임 · 꺼지면 머리글 그대로 |
+| Tutorial-01~10 대상 | F3c-3 이후 | 각 장면 하늘색 테두리 자리 = 등록 사각형 |
+
+### 발견 사항
+
+1. **장면 보드와 코드 위젯이 다른 키 2**: `plan.flow.goals.allMaxPreset`(보드는 줄 전체, 코드는 작은 둥근 버튼) → 줄 전체를 감쌈. `plan.flow.order.laterColumn`(보드는 놓는 자리 둥근 사각형, 코드 칸은 사선 타일) → 놓는 자리(`_DropHint`)를 감쌈 — 칸에 카드가 들어가면 자리가 사라지므로 7-5 완료 뒤에는 null.
+2. `statistics.growthTrendTile`은 F3a 표가 둥근 사각형이지만 코드 타일은 사선 tile 모양이다 — F3a 표대로 등록(CF · 시안 확인).
+3. **seed 의존 값**: 학생 id `neru_uniform`은 코드에 없다(카탈로그 · seed에서 옴), 시나리오 이름 2개는 대본 문구로 고른다 — F3c-1 seed가 같은 id · 이름이어야 한다.
+4. Empty-Backend 시안의 "자동으로 다시 연결하는 중 · 3번째 시도": 앱 · 서비스에 자동 재연결 · 시도 횟수가 없어 지금 상태 문구로 바꿨다(워커 문구 3종 — CF 검수).
+5. 덮개가 떠 있어도 기존 복구 배너(머리글 아래 `MaterialBanner`, 재연결 · Backend 재시작 · 설정 열기)는 그대로 있고 막 아래로 흐리게 보인다(입력 막힘). 시안에는 배너가 없다 — 덮개가 뜰 때 백엔드 배너를 숨길지 CF 판단(동작 변화라 이 slice에서는 손대지 않음).
+6. 머리글 빨강 칩 문구는 덮개가 뜬 동안만 시안 "계산 엔진 연결 안 됨"이다. 덮개 전(1.5초 미만)과 설정 탭에서는 기존 칩("백엔드 끊김" · "백엔드 연결 중")이 보인다(`header_connection_chip.dart` · 그 시험은 그대로).
+7. 신호 `scan.studentScope.allSelected`는 학생 전체 칸을 누를 때마다 난다(기본 고르기가 이미 전체라 "바뀜"으로는 낼 수 없음).
+8. `connect.virtualWindow.picked`는 연결 패널이 있는 세 곳 어디서든 누르면 난다(숨은 탭은 누를 수 없음). "가상 창" 여부를 가리는 값은 `ScannerTarget`에 없다(F3c-1 가상 대상이 구분 값을 줄지 F3c-3에서 확인).
+9. 원래 서식이 `dart format` 결과와 다른 파일이 많아(위 "서식"), 고친 줄만 서식을 맞췄다 — 다음 slice도 파일 전체 format 금지.
+
+### 사본 · commit.json
+
+- pre 사본 24개(`debug/frontend_f3c2/pre/frontend/lib/ui/...`, 착수 때 WIP 0 → `post_dir` 없음), 모두 실제로 고침. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c2/commit.json`: slice `f3c2`, modified 24, added 5, `whole` = [], `optional_added` = `frontend/test/goldens/baseline/empty-backend.png`. 메시지 ASCII.
+- 인계: `debug/frontend_f3c2/output.md`.
+
+### 다음 행동
+
+- CF: Lane B F3c-1이 멈춘 뒤 `fe_gate.ps1` → golden 새 장면 `empty-backend` RED(기존 79 변화 0 예상) → `failures/` 검토 → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c2 -DryRun` → `fe_commit.ps1 -Slice f3c2`.
+- CF 판단: 발견 1 · 2(모양), 4(상태 문구), 5(배너 숨김), 6(칩 문구 범위).
+- F3c-3: 위 "F3c-3 입력" — hooks 주입, 덧그림 · 대사 밝히기 연결, 남은 신호 5, seed id · 이름 확인.
+
+### f3c2 commit record (2026-10-21 11:54, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_113829\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

@@ -59,6 +59,14 @@ import 'plan_scenario_preview.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import 'section_surface.dart';
 import 'section_template_surface.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
+
+String? _tutorialRowKey(String name) => switch (name) {
+  '총력전 비나 대비' => TutorialTargets.scenarioListBinahPlan,
+  '비나 대비 · 한 번에 MAX' => TutorialTargets.scenarioListBinahAllMax,
+  _ => null,
+};
 
 /// 섹션 모션(부착면 규칙 FD-078과 같다): S1 0/180(왼쪽), S2 80/260(아래), S3 180/0(오른쪽).
 const planScenarioMenuMotion = (intro: 0.0, outro: 180.0);
@@ -1180,7 +1188,10 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
           PlanScenarioListMetrics.compareRunTop,
           PlanScenarioListMetrics.compareRunHeight,
         ),
-        child: runButton,
+        child: TutorialTarget(
+          id: TutorialTargets.scenarioCompareSideBySide,
+          child: runButton,
+        ),
       ),
     );
     children.add(
@@ -1480,18 +1491,22 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       itemBuilder: (context, index) {
         final scenario = visible[index];
         final compared = _state.isCompared(scenario.id);
-        return PlanScenarioListRow(
-          key: ValueKey('plan-scenario-row-${scenario.id}'),
-          scenario: scenario,
-          stale: planScenarioIsStale(scenario, result.currentProfileRevision),
-          expanded: scenario.id == expandedId,
-          compared: compared,
-          onTap: enabled ? () => _state.toggleExpanded(scenario.id) : null,
-          onToggleCompare: enabled ? () => _toggleCompare(scenario.id) : null,
-          onOpen: enabled && _canOpen ? () => _open(scenario.id) : null,
-          onDuplicate: enabled ? () => _duplicate(scenario) : null,
-          onRename: enabled ? () => _openRename(scenario) : null,
-          onDelete: enabled ? () => _openDelete(scenario) : null,
+        // F3c-2: 튜토리얼 seed의 두 시나리오(대사 09c-1, 이름은 대본 그대로).
+        return TutorialTarget(
+          id: _tutorialRowKey(scenario.name),
+          child: PlanScenarioListRow(
+            key: ValueKey('plan-scenario-row-${scenario.id}'),
+            scenario: scenario,
+            stale: planScenarioIsStale(scenario, result.currentProfileRevision),
+            expanded: scenario.id == expandedId,
+            compared: compared,
+            onTap: enabled ? () => _state.toggleExpanded(scenario.id) : null,
+            onToggleCompare: enabled ? () => _toggleCompare(scenario.id) : null,
+            onOpen: enabled && _canOpen ? () => _open(scenario.id) : null,
+            onDuplicate: enabled ? () => _duplicate(scenario) : null,
+            onRename: enabled ? () => _openRename(scenario) : null,
+            onDelete: enabled ? () => _openDelete(scenario) : null,
+          ),
         );
       },
     );

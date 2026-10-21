@@ -22,6 +22,8 @@ import '../kit/kit_pressable.dart';
 import '../kit/scroll_viewport_fog.dart';
 import '../kit/titles.dart';
 import '../scan/connected_target_controller.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 import '../widgets/section_surface.dart';
 import '../widgets/section_template_surface.dart'
     show buildRoundedSectionPolygon;
@@ -44,7 +46,11 @@ class ConnectTargetPanel extends StatefulWidget {
     required this.connectedTarget,
     required this.onCancel,
     required this.onUse,
+    this.tutorialTargets = false,
   });
+
+  /// 튜토리얼 대상 키를 붙이는가(F3c-2 — 같은 패널이 홈 · 스캔 탭 · 전술대항전에 있어 홈만 붙인다).
+  final bool tutorialTargets;
 
   /// 시안 패널 rect 크기(설계 px).
   static const designSize = Size(719.5, 1018);
@@ -170,6 +176,10 @@ class _ConnectTargetPanelState extends State<ConnectTargetPanel> {
   void _plan(ScannerTarget target) {
     if (target.status == ScannerTargetStatus.closed) return;
     setState(() => _plannedId = target.id);
+    TutorialHooksScope.emit(
+      context,
+      TutorialSignals.connectVirtualWindowPicked,
+    );
   }
 
   @override
@@ -263,14 +273,21 @@ class _ConnectTargetPanelState extends State<ConnectTargetPanel> {
                 height: 56,
                 child: Opacity(
                   opacity: canUse ? 1 : 0.45,
-                  child: TonalButton(
-                    key: const ValueKey('home-connect-panel-use'),
-                    label: '선택한 창 사용',
-                    icon: Icons.link,
-                    variant: TonalButtonVariant.primary,
-                    height: 56,
-                    fontSize: AppType.bodyLargeSize,
-                    onPressed: onUse,
+                  child: TutorialTarget(
+                    id: widget.tutorialTargets
+                        ? TutorialTargets.connectUseSelectedWindow
+                        : null,
+                    shape: TutorialHighlightShape.roundedRect,
+                    radius: AppRadii.control,
+                    child: TonalButton(
+                      key: const ValueKey('home-connect-panel-use'),
+                      label: '선택한 창 사용',
+                      icon: Icons.link,
+                      variant: TonalButtonVariant.primary,
+                      height: 56,
+                      fontSize: AppType.bodyLargeSize,
+                      onPressed: onUse,
+                    ),
                   ),
                 ),
               ),

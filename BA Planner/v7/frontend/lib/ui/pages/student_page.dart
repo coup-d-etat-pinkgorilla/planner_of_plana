@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -23,6 +24,8 @@ import '../widgets/page_header_override.dart';
 import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 class StudentPage extends StatefulWidget {
   const StudentPage({
@@ -215,8 +218,11 @@ class _StudentPageState extends State<StudentPage> {
             ..addListener(_calculatorEngineChanged))
         : null;
     setState(() => _calculator = state);
+    _seenTargets = Map.of(state.targets);
     if (previous != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+    } else {
+      TutorialHooksScope.emit(context, TutorialSignals.studentCalculatorOpened);
     }
     widget.headerOverride?.set(
       PageHeaderOverride(
@@ -292,7 +298,23 @@ class _StudentPageState extends State<StudentPage> {
     }
   }
 
-  void _calculatorChanged() => _scheduleCalculation();
+  void _calculatorChanged() {
+    _emitTargetChanged();
+    _scheduleCalculation();
+  }
+
+  /// F3c-2: 계산기 목표가 실제로 바뀌었을 때만(기준 · 직접 입력 현재값 변경은 빼고).
+  Map<String, int>? _seenTargets;
+
+  void _emitTargetChanged() {
+    final state = _calculator;
+    if (state == null || mapEquals(state.targets, _seenTargets)) return;
+    _seenTargets = Map.of(state.targets);
+    TutorialHooksScope.emit(
+      context,
+      TutorialSignals.studentCalculatorTargetChanged,
+    );
+  }
 
   /// "이 목표로 계획에 추가"(FE4-g, FD-171 (a)): 선택 학생과 계산기 목표를 계획 만들기 2단계로 넘긴다.
   ///
@@ -647,6 +669,15 @@ class _StudentPageState extends State<StudentPage> {
                   onSearchChanged: (_) => setState(() {}),
                   onStudentSelected: (studentId) {
                     setState(() => _select(studentId));
+                    // F3c-2: 학생을 고르면 S3 상세가 그 학생으로 열린다(따로 여는 동작이 없다).
+                    TutorialHooksScope.emit(
+                      context,
+                      TutorialSignals.studentOpened,
+                    );
+                    TutorialHooksScope.emit(
+                      context,
+                      TutorialSignals.studentDetailOpened,
+                    );
                     _syncEditors();
                     // 계산기가 열려 있으면 고른 학생으로 다시 연다.
                     if (_calculator != null) _openCalculator();

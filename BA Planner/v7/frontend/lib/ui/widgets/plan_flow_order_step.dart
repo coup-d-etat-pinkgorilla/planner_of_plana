@@ -37,6 +37,8 @@ import '../models/plan_flow_order_editor.dart';
 import '../models/planning_resource_assets.dart';
 import 'plan_flow_goal_step.dart' show planFlowGoalAmount, planFlowGoalCostLine;
 import 'plan_flow_student_step.dart' show planFlowAsideLeftAt, planFlowProtoRect;
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// tan 10°: 80° 레일에서 세로 1당 가로 이동.
 const _railSlope = 0.17632698070846498;
@@ -1009,12 +1011,16 @@ class _OrderBoardState extends State<_OrderBoard> {
             Positioned.fromRect(
               key: ValueKey('plan-flow-order-lane-${lane.phase.id}'),
               rect: lane.tile,
-              child: _Lane(
-                flow: flow,
-                editor: editor,
-                lane: lane,
-                statuses: statuses,
-                selectedStageId: selected,
+              child: TutorialTarget(
+                id: lane.deferred ? null : TutorialTargets.planOrderRankColumns,
+                group: true,
+                child: _Lane(
+                  flow: flow,
+                  editor: editor,
+                  lane: lane,
+                  statuses: statuses,
+                  selectedStageId: selected,
+                ),
               ),
             ),
           Positioned.fill(
@@ -1267,7 +1273,14 @@ class _Lane extends StatelessWidget {
                 top: _cardTop,
                 width: planFlowOrderCardSize.width,
                 height: planFlowOrderCardSize.height,
-                child: const _DropHint(),
+                child: TutorialTarget(
+                  id: lane.deferred
+                      ? TutorialTargets.planOrderLaterColumn
+                      : null,
+                  shape: TutorialHighlightShape.roundedRect,
+                  radius: 8,
+                  child: const _DropHint(),
+                ),
               ),
             for (final id in phase.stageIds)
               if (lane.cards[id] case final card?)
@@ -1275,12 +1288,15 @@ class _Lane extends StatelessWidget {
                   Positioned.fromRect(
                     key: ValueKey('plan-flow-order-card-$id'),
                     rect: card.shift(-origin),
-                    child: _OrderCard(
-                      flow: flow,
-                      editor: editor,
-                      stage: stage,
-                      status: statuses[id],
-                      selected: id == selectedStageId,
+                    child: TutorialTarget(
+                      id: _tutorialCardKey(stage),
+                      child: _OrderCard(
+                        flow: flow,
+                        editor: editor,
+                        stage: stage,
+                        status: statuses[id],
+                        selected: id == selectedStageId,
+                      ),
                     ),
                   ),
           ],
@@ -1343,6 +1359,16 @@ class _DeferredLanePainter extends CustomPainter {
 
 const _deferredFill = Color.fromRGBO(16, 24, 35, 0.35);
 const _deferredStroke = Color.fromRGBO(158, 176, 194, 0.45);
+
+/// F3c-2: 단계 카드의 튜토리얼 대상 키(학생 · 단계 — 시안 Tutorial-07c 계열의 카드).
+String? _tutorialCardKey(PlanFlowStage stage) =>
+    switch ((stage.studentId, stage.step)) {
+      ('akane', 1) => TutorialTargets.planOrderCardAkane,
+      ('kanna_swimsuit', 1) => TutorialTargets.planOrderCardKannaSwimsuit,
+      ('neru_uniform', 1) => TutorialTargets.planOrderCardNeruUniform,
+      ('maki', 2) => TutorialTargets.planOrderCardMakiStage2,
+      _ => null,
+    };
 
 /// 빈 칸 안내(시안 "여기로 끌어다 놓기").
 class _DropHint extends StatelessWidget {
@@ -1647,10 +1673,20 @@ class _LinkTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DragTarget<PlanFlowLinkDrag>(
     onWillAcceptWithDetails: (details) => details.data.stageId != stageId,
-    onAcceptWithDetails: (details) => editor.link(
-      requiresStageId: details.data.stageId,
-      stageId: stageId,
-    ),
+    onAcceptWithDetails: (details) {
+      final linked = editor.link(
+        requiresStageId: details.data.stageId,
+        stageId: stageId,
+      );
+      // F3c-2: 칸나(수영복) 카드의 점을 아카네 카드에 이었다(7-4).
+      final draft = editor.flow.draft;
+      if (linked &&
+          draft.stageById(details.data.stageId)?.studentId ==
+              'kanna_swimsuit' &&
+          draft.stageById(stageId)?.studentId == 'akane') {
+        TutorialHooksScope.emit(context, TutorialSignals.planKannaAkaneLinked);
+      }
+    },
     builder: (context, candidates, rejected) => CustomPaint(
       foregroundPainter: candidates.isEmpty
           ? null

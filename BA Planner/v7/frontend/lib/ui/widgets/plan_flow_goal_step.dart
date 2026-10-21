@@ -43,6 +43,8 @@ import 'diagonal_media_list_item.dart'
 import 'growth_calculator_section.dart' show growthCalculatorCompactNumber;
 import 'plan_flow_student_step.dart'
     show PlanFlowStoreMessage, planFlowAsideLeftAt, planFlowProtoRect;
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// 단계 카드 시안 크기(지금 상태 카드는 폭만 [planFlowGoalCurrentCardWidth]).
 const planFlowGoalCardSize = Size(473.3, 716);
@@ -318,7 +320,14 @@ class PlanFlowGoalBody extends StatelessWidget {
         _designBox(
           planFlowProtoRect(size, _cardsLeft, _cardsTop, _cardsWidth, 716),
           const Size(_cardsWidth, 716),
-          _StageCards(flow: flow, editor: editor, studentId: studentId),
+          TutorialTarget(
+            id: TutorialTargets.planGoalStageCells,
+            child: _StageCards(
+              flow: flow,
+              editor: editor,
+              studentId: studentId,
+            ),
+          ),
         ),
         _designBox(
           planFlowProtoRect(size, 491.1, 1087.2, 1413.3, 30),
@@ -702,7 +711,12 @@ class _StageCardsState extends State<_StageCards> {
                       top: 0,
                       width: planFlowGoalAddWidth,
                       height: planFlowGoalCardSize.height,
-                      child: _AddStageColumn(onPressed: editor.addStage),
+                      child: TutorialTarget(
+                        id: studentId == 'maki'
+                            ? TutorialTargets.planMakiAddStage
+                            : null,
+                        child: _AddStageColumn(onPressed: editor.addStage),
+                      ),
                     ),
                   ],
                 ),
@@ -1099,26 +1113,35 @@ Widget _cardBlocks({
         ),
         Positioned.fromRect(
           rect: layout.skill,
-          child: _Block(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const _BlockHeader('SKILL SUMMARY'),
-                Expanded(
-                  child: Row(
-                    children: [
-                      for (final (skill, label, maximum) in skills)
-                        Expanded(
-                          child: _SkillValue(
-                            label: label,
-                            control: skill,
-                            maximum: maximum,
+          child: // F3c-2: 마키 1단계 카드의 스킬 칸(7-2b · 대사 08g-2).
+          TutorialTarget(
+            id:
+                studentId == 'maki' &&
+                    stageId != null &&
+                    editor?.stagesOf(studentId).firstOrNull?.id == stageId
+                ? TutorialTargets.planMakiStage1Skills
+                : null,
+            child: _Block(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _BlockHeader('SKILL SUMMARY'),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        for (final (skill, label, maximum) in skills)
+                          Expanded(
+                            child: _SkillValue(
+                              label: label,
+                              control: skill,
+                              maximum: maximum,
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -2473,11 +2496,11 @@ class PlanFlowGoalAside extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([flow, editor, ?presets]),
     builder: (context, _) => LayoutBuilder(
-      builder: (context, constraints) => _build(constraints.biggest),
+      builder: (context, constraints) => _build(context, constraints.biggest),
     ),
   );
 
-  Widget _build(Size size) {
+  Widget _build(BuildContext context, Size size) {
     final studentId = editor.studentId;
     final sy = size.height / 1208;
     final right = planFlowProtoRect(size, 2538, 0, 0, 0).left;
@@ -2714,23 +2737,37 @@ class PlanFlowGoalAside extends StatelessWidget {
       children.add(
         Positioned.fromRect(
           rect: all,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+          child: // F3c-2: 시안은 버튼이 아니라 줄 전체(451×50)에 테두리를 그린다.
+          TutorialTarget(
+            id: TutorialTargets.planAllMaxPreset,
+            child: Align(
               alignment: Alignment.centerLeft,
-              child: TonalButton(
-                key: const ValueKey('plan-flow-goal-apply-all'),
-                label: applicable
-                    ? '고른 ${editor.studentIds.length}명 모두 ${editor.modeLabel(mode)}로'
-                    : '고른 ${editor.studentIds.length}명 모두 같은 목표로',
-                icon: Icons.groups_rounded,
-                variant: TonalButtonVariant.ghost,
-                height: 44,
-                fontSize: AppType.bodySize,
-                onPressed: applicable
-                    ? () => editor.applyCurrentModeTo(others)
-                    : null,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: TonalButton(
+                  key: const ValueKey('plan-flow-goal-apply-all'),
+                  label: applicable
+                      ? '고른 ${editor.studentIds.length}명 모두 ${editor.modeLabel(mode)}로'
+                      : '고른 ${editor.studentIds.length}명 모두 같은 목표로',
+                  icon: Icons.groups_rounded,
+                  variant: TonalButtonVariant.ghost,
+                  height: 44,
+                  fontSize: AppType.bodySize,
+                  onPressed: applicable
+                      ? () {
+                          editor.applyCurrentModeTo(others);
+                          if (editor.studentIds.every(
+                            (id) => editor.modeOf(id) == planFlowGoalModeMax,
+                          )) {
+                            TutorialHooksScope.emit(
+                              context,
+                              TutorialSignals.planAllMaxApplied,
+                            );
+                          }
+                        }
+                      : null,
+                ),
               ),
             ),
           ),

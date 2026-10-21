@@ -42,6 +42,8 @@ import '../models/planning_growth_rules.dart';
 import '../models/planning_resource_assets.dart';
 import 'growth_calculator_bond_tile.dart';
 import 'student_section_layout.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// 시안 내용 영역(기준 viewport에서 머리말 아래).
 const growthCalculatorCanvasSize = Size(2560, 1208);
@@ -949,13 +951,20 @@ class _GoalRow extends StatelessWidget {
               ),
             ),
           ),
-          _SquareTonal(
-            key: ValueKey('$_key-increase'),
-            semanticLabel: '$label 늘리기',
-            text: '+',
-            onPressed: canIncrease
-                ? () => state.setRowTarget(row, target + 1)
+          TutorialTarget(
+            id: row == GrowthCalculatorRow.level
+                ? TutorialTargets.calculatorLevelTargetPlus
                 : null,
+            shape: TutorialHighlightShape.roundedRect,
+            radius: 8,
+            child: _SquareTonal(
+              key: ValueKey('$_key-increase'),
+              semanticLabel: '$label 늘리기',
+              text: '+',
+              onPressed: canIncrease
+                  ? () => state.setRowTarget(row, target + 1)
+                  : null,
+            ),
           ),
         ],
       );

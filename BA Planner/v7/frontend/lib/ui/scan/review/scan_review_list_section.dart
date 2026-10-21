@@ -188,8 +188,10 @@ class _ListSection extends StatelessWidget {
             verticalInset: 0,
             horizontalInset: ScanReviewMetrics.listHorizontalInset,
             scrollbarReserve: ScanReviewMetrics.listScrollbarReserve,
-            itemBuilder: (context, index) =>
-                _item(view.items[index], view.selected?.id),
+            itemBuilder: (context, index) => _tutorialPart(
+              view.items[index],
+              _item(view.items[index], view.selected?.id),
+            ),
           ),
         ),
       ),
@@ -228,6 +230,20 @@ class _ListSection extends StatelessWidget {
         ),
     ];
   }
+
+  /// F3c-2: '확인 필요' 묶음(머리 + 그 행들)을 한 대상 키의 조각으로 붙인다(묶음 위젯이 따로 없다).
+  Widget _tutorialPart(_ListItem item, Widget child) => TutorialTarget(
+    id: switch (item) {
+      _HeaderItem(category: ScanReviewCategory.needsReview) =>
+        TutorialTargets.studentReviewUncertainGroup,
+      _RowItem(:final entry)
+          when entry.category == ScanReviewCategory.needsReview =>
+        TutorialTargets.studentReviewUncertainGroup,
+      _ => null,
+    },
+    group: true,
+    child: child,
+  );
 
   Widget _item(_ListItem item, String? selectedId) => switch (item) {
     _HeaderItem() => Padding(
@@ -858,14 +874,19 @@ class _BulkRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                TonalButton(
-                  key: const ValueKey('scan-review-bulk-apply'),
-                  label: '$count명 한 번에 적용',
-                  variant: TonalButtonVariant.primary,
-                  height: 38,
-                  onPressed: canApply
-                      ? () => board._applyEntries(targets, true)
-                      : null,
+                TutorialTarget(
+                  id: TutorialTargets.studentReviewApplyChanged,
+                  shape: TutorialHighlightShape.roundedRect,
+                  radius: AppRadii.control,
+                  child: TonalButton(
+                    key: const ValueKey('scan-review-bulk-apply'),
+                    label: '$count명 한 번에 적용',
+                    variant: TonalButtonVariant.primary,
+                    height: 38,
+                    onPressed: canApply
+                        ? () => board._applyEntries(targets, true)
+                        : null,
+                  ),
                 ),
               ],
             ),

@@ -27,6 +27,8 @@ import 'plan_flow_save_step.dart';
 import 'plan_flow_student_one.dart';
 import 'plan_flow_student_step.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 const planFlowRailMotion = SectionMotionSpec(intro: 0, outro: 180);
 const planFlowBodyMotion = SectionMotionSpec(intro: 80, outro: 260);
@@ -202,7 +204,12 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     final step = _flow.step;
     final oneMode = planFlowOneMode(_flow);
     if (step != _shownStep) {
+      final previous = _shownStep;
       _shownStep = step;
+      // F3c-2: 1단계에서 "다음 · 목표 정하기"로 2단계에 들어갔다(7-1).
+      if (previous == PlanFlowStep.students && step == PlanFlowStep.goals) {
+        TutorialHooksScope.emit(context, TutorialSignals.planStudentsConfirmed);
+      }
       _modeController.value = oneMode ? 1 : 0;
       if (!_switching && widget.active) {
         _bodyController.forward(from: 0);
@@ -303,6 +310,9 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     try {
       final outcome = await _saveState.save();
       if (outcome == null || !mounted) return;
+      if (outcome.target == PlanFlowSaveTarget.scenario) {
+        TutorialHooksScope.emit(context, TutorialSignals.planSavedAsScenario);
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(outcome.message)));

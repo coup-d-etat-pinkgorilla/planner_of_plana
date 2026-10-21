@@ -86,6 +86,8 @@ import '../statistics/statistics_workspace.dart';
 import '../widgets/account_section_cluster.dart' show accountLastScanText;
 import '../widgets/empty_state_panel.dart';
 import '../widgets/student_filter_modal.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 export '../statistics/statistics_topics.dart' show StatisticsMode;
 
@@ -953,11 +955,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return _supply;
   }
 
-  void _select(StatisticsGrowthSelection? selection) => setState(() {
-    _growthSelection = selection;
-    _evidenceExpanded = false;
-    _pendingTrend = null;
-  });
+  void _select(StatisticsGrowthSelection? selection) {
+    setState(() {
+      _growthSelection = selection;
+      _evidenceExpanded = false;
+      _pendingTrend = null;
+    });
+    // F3c-2: '성장 추이'에서 한 시점을 골라 지난 스캔과의 차이를 보았다(10단계).
+    if (selection is StatisticsGrowthTrendSelection) {
+      TutorialHooksScope.emit(
+        context,
+        TutorialSignals.statisticsGrowthTrendViewed,
+      );
+    }
+  }
 
   /// 인벤토리 · 계획 주제 화면 상태(지금 읽은 자료 + [selection]).
   StatisticsSupplyView _supplyView(

@@ -35,6 +35,8 @@ import '../../models/planning_resource_assets.dart';
 import '../../studio/scan_item_review_studio_layout.dart';
 import '../../widgets/scan_inventory_identity_review.dart';
 import '../scan_header_progress.dart' show scanCandidateKey;
+import '../../tutorial/tutorial_script.dart';
+import '../../tutorial_targets/tutorial_hooks.dart';
 import 'scan_item_review_actions.dart';
 import 'scan_item_review_logic.dart';
 
@@ -556,14 +558,18 @@ class _ScanItemReviewBoardState extends State<ScanItemReviewBoard> {
   });
 
   /// 직접 고친 수량. 고치면 그 칸을 승인한다(고친 값은 사용자가 확인한 값이다). null이면 고친 값을 지운다.
-  void _setDraft(ScanItemCell cell, int? value) => setState(() {
-    if (value == null || value == cell.scanned) {
-      _drafts.remove(cell.id);
-    } else {
-      _drafts[cell.id] = value;
-    }
-    if (value != null) _approval[cell.id] = true;
-  });
+  void _setDraft(ScanItemCell cell, int? value) {
+    final before = _uncertainAllApproved();
+    setState(() {
+      if (value == null || value == cell.scanned) {
+        _drafts.remove(cell.id);
+      } else {
+        _drafts[cell.id] = value;
+      }
+      if (value != null) _approval[cell.id] = true;
+    });
+    _emitUncertainApproved(before);
+  }
 
   void _nudge(ScanItemCell cell, int delta) {
     final value = _value(cell);
@@ -571,13 +577,36 @@ class _ScanItemReviewBoardState extends State<ScanItemReviewBoard> {
     _setDraft(cell, math.max(0, value + delta));
   }
 
-  void _setApproved(ScanItemCell cell, bool approved) => setState(() {
-    if (approved == cell.approvedByDefault) {
-      _approval.remove(cell.id);
-    } else {
-      _approval[cell.id] = approved;
-    }
-  });
+  void _setApproved(ScanItemCell cell, bool approved) {
+    final before = _uncertainAllApproved();
+    setState(() {
+      if (approved == cell.approvedByDefault) {
+        _approval.remove(cell.id);
+      } else {
+        _approval[cell.id] = approved;
+      }
+    });
+    _emitUncertainApproved(before);
+  }
+
+  /// F3c-2: 확인 필요 칸(모든 종류)을 모두 승인했는가.
+  bool _uncertainAllApproved() {
+    final review = [
+      for (final cells in _view().cellsByKind.values)
+        for (final cell in cells)
+          if (cell.reviewGroup) cell,
+    ];
+    return review.isNotEmpty && review.every(_approved);
+  }
+
+  /// F3c-2: 마지막 확인 필요 칸을 승인한 순간 한 번.
+  void _emitUncertainApproved(bool before) {
+    if (before || !_uncertainAllApproved()) return;
+    TutorialHooksScope.emit(
+      context,
+      TutorialSignals.itemReviewUncertainApproved,
+    );
+  }
 
   /// [cell] 다음의 확인 필요 분류 칸(목록 순서, 끝이면 처음부터). 없으면 null.
   ScanItemCell? _nextReview(_BoardView view, ScanItemCell? cell) {
@@ -692,6 +721,10 @@ class _ScanItemReviewBoardState extends State<ScanItemReviewBoard> {
         error: run.error,
       );
     });
+    // F3c-2: 승인한 칸 적용(6단계)이 실패 없이 끝났다.
+    if (failed == null && run.appliedKeys.isNotEmpty) {
+      TutorialHooksScope.emit(context, TutorialSignals.itemReviewApplied);
+    }
   }
 
   @override

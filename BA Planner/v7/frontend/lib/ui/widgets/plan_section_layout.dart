@@ -42,6 +42,8 @@ import 'plan_scenario_detail.dart';
 import 'plan_scenario_list.dart';
 import 'plan_scenario_preview.dart' show planScenarioPreviewAmount;
 import 'section_surface.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 export 'plan_scenario_list.dart'
     show PlanScenarioListSection, PlanScenarioListRow, PlanScenarioActiveRow;
@@ -968,6 +970,8 @@ class _PlanSectionLayoutState extends State<PlanSectionLayout>
           _compareScenarioIds = List.unmodifiable(scenarioIds);
         }
       });
+      // F3c-2: 시나리오 목록에서 나란히 비교를 열었다(8단계).
+      TutorialHooksScope.emit(context, TutorialSignals.scenarioCompareOpened);
       _controllers['element-1']!.forward(from: 0);
       _scenarioListController.forward(from: 0);
     } finally {

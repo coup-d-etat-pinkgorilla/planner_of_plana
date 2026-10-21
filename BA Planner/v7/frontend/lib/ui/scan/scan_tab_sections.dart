@@ -48,6 +48,8 @@ import 'scan_header_progress.dart'
 import 'scan_pick_logic.dart';
 import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 part 'scan_run_sections.dart';
 
@@ -918,6 +920,7 @@ class _PickSection extends StatelessWidget {
         ),
       ),
       ..._studentTiles(
+        context,
         band(
           ScanMetrics.studentTileTop,
           ScanMetrics.studentTileHeight,
@@ -1004,7 +1007,12 @@ class _PickSection extends StatelessWidget {
   }
 
   /// 학생 칸 2개: 폭 비율 847.6 : 636.8, 평행사변형 변 사이 [ScanMetrics.studentTileGap].
-  List<Widget> _studentTiles(Rect band, double scale, ScanPick pick) {
+  List<Widget> _studentTiles(
+    BuildContext context,
+    Rect band,
+    double scale,
+    ScanPick pick,
+  ) {
     final controller = view.controller;
     final cut = diagonalCutDepth(band.height);
     final gap = ScanMetrics.studentTileGap * scale;
@@ -1028,7 +1036,15 @@ class _PickSection extends StatelessWidget {
             key: ValueKey('scan-pick-student-${mode.name}'),
             picked: pick.studentScanMode == mode,
             semanticLabel: full ? '전체 학생' : '지금 화면 1명',
-            onPressed: () => controller.pickStudent(mode),
+            onPressed: () {
+              controller.pickStudent(mode);
+              if (controller.pick.studentScanMode == StudentScanMode.full) {
+                TutorialHooksScope.emit(
+                  context,
+                  TutorialSignals.scanStudentAllSelected,
+                );
+              }
+            },
             child: _StudentTileBody(
               picked: pick.studentScanMode == mode,
               studentIds: ids.take(full ? 3 : 1).toList(growable: false),
@@ -1111,12 +1127,17 @@ class _PickSection extends StatelessWidget {
         height: band.height,
         child: SectionScaledBox(
           scale: scale,
-          child: _StartButton(
-            title: label.title,
-            subtitle: label.subtitle,
-            onPressed: block == ScanStartBlock.none
-                ? () => controller.startPick()
+          child: TutorialTarget(
+            id: controller.pick.studentScanMode == StudentScanMode.full
+                ? TutorialTargets.scanStudentStartFullScan
                 : null,
+            child: _StartButton(
+              title: label.title,
+              subtitle: label.subtitle,
+              onPressed: block == ScanStartBlock.none
+                  ? () => controller.startPick()
+                  : null,
+            ),
           ),
         ),
       ),

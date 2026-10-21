@@ -33,6 +33,8 @@ import '../../kit/section_morph.dart' show sectionCanvasElementPolygon;
 import '../../kit/skew_controls.dart';
 import '../../kit/titles.dart';
 import '../../studio/scan_review_studio_layout.dart';
+import '../../tutorial/tutorial_script.dart';
+import '../../tutorial_targets/tutorial_hooks.dart';
 import '../../widgets/asset_image_grid.dart';
 import '../../widgets/student_section_layout.dart' show studentGridCardPath;
 import '../scan_student_review_logic.dart';
@@ -596,6 +598,10 @@ class _ScanStudentReviewBoardState extends State<ScanStudentReviewBoard> {
         error: run.error,
       );
     });
+    // F3c-2: 한 번에 적용(3단계)이 실패 없이 끝났다.
+    if (bulk && failed == null && run.appliedIds.isNotEmpty) {
+      TutorialHooksScope.emit(context, TutorialSignals.studentReviewApplied);
+    }
   }
 
   @override

@@ -44,6 +44,8 @@ import 'scan_review_board_adapter.dart';
 import 'scan_run_logic.dart';
 import 'scan_session_controller.dart';
 import 'scan_tab_sections.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// FB-2b by_kind 한 쪽 최대 행 수와 따라갈 쪽 수(넘으면 거기까지 읽은 값으로 그린다).
 const _lastScanPageLimit = 200;
@@ -98,6 +100,9 @@ class _ScanTabPageState extends State<ScanTabPage> {
   /// 미연결일 때 저절로 붙은 패널을 취소로 접었다. 연결이 다시 끊기면 푼다.
   bool _panelDismissed = false;
   bool _wasConnected = false;
+
+  /// "학생 스캔 시작" 신호를 낸 세션(F3c-2 — 세션마다 한 번).
+  String? _startedSignalSession;
   ScanTabView? _lastView;
 
   ({ScanLastScan student, Map<InventoryScanProfile, ScanLastScan> items})?
@@ -165,6 +170,20 @@ class _ScanTabPageState extends State<ScanTabPage> {
     });
     _maybeLoadLastScans();
     _maybeLoadItemLastScans();
+    _emitStudentStarted();
+  }
+
+  /// F3c-2: 학생 스캔 세션이 실제로 돌기 시작했다(시작 요청이 받아들여진 뒤 running).
+  void _emitStudentStarted() {
+    final session = _controller.session;
+    if (session == null ||
+        session.kind != ScannerKind.student ||
+        _controller.stage != ScanSessionStage.running ||
+        _startedSignalSession == session.id) {
+      return;
+    }
+    _startedSignalSession = session.id;
+    TutorialHooksScope.emit(context, TutorialSignals.scanStudentStarted);
   }
 
   /// 진행 · 검토를 마치고 고르기로 돌아오면 마지막 스캔을 다시 읽게 표시한다(적용으로 바뀌었을 수 있다).

@@ -36,6 +36,8 @@ import 'plan_flow_rail.dart' show planFlowSectionPolygon;
 import 'plan_flow_student_one.dart';
 import 'student_filter_modal.dart';
 import 'student_section_layout.dart';
+import '../tutorial/tutorial_script.dart';
+import '../tutorial_targets/tutorial_hooks.dart';
 
 /// C 패널이 목록에서 압축 그리드로 바뀌는 고른 학생 수(FD-077 권장안).
 const planFlowCompactSelectionThreshold = 7;
@@ -959,9 +961,12 @@ class PlanFlowStudentAside extends StatelessWidget {
         ),
       ),
     );
-    return Stack(
-      key: const ValueKey('plan-flow-student-aside'),
-      children: children,
+    return TutorialTarget(
+      id: TutorialTargets.planSelectedStudents,
+      child: Stack(
+        key: const ValueKey('plan-flow-student-aside'),
+        children: children,
+      ),
     );
   }
 
