@@ -32,6 +32,7 @@ class ProcessAppService
         RepositoryPlanService,
         RepositoryPresetsService,
         RepositoryInventoryReviewService,
+        RepositoryPracticeService,
         ScannerService,
         TacticalService,
         TacticalEvidenceService,
@@ -695,6 +696,84 @@ class ProcessAppService
     await _client.send('repository.migration.import', {
       'source_profile_key': sourceProfileKey,
     }),
+  );
+
+  // ---- X4 / FD-182 임시 계정(tutorial-practice-v1) ----
+  // 지금 백엔드는 다섯 메서드에 unknown_method로 답한다(계약 fixture runtimeImplemented:false). 그 답은 연결을 끊지 않는
+  // repository 오류이고, 여기서 "튜토리얼 실행 불가(백엔드 미지원)"로 해독한다. 연결이 끊기면 다시 모름이다.
+  var _practiceSupport = TutorialPracticeSupport.unknown;
+
+  @override
+  TutorialPracticeSupport get practiceSupport => _practiceSupport;
+
+  Future<Map<String, dynamic>> _practiceSend(
+    String method,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response = await _client.send(method, payload);
+      _practiceSupport = TutorialPracticeSupport.supported;
+      return response;
+    } on BackendRemoteException catch (error) {
+      if (error.code == 'unknown_method') {
+        _practiceSupport = TutorialPracticeSupport.unsupported;
+        throw TutorialPracticeUnsupportedException(method);
+      }
+      _practiceSupport = TutorialPracticeSupport.supported;
+      rethrow;
+    }
+  }
+
+  /// create · reset은 임시 계정을 꼭 돌려준다(schema는 null도 허용하지만 성공 응답에 없으면 형식 오류).
+  PracticeSessionState _practiceWith(Map<String, dynamic> payload) {
+    final state = PracticeSessionState.fromWire(payload);
+    if (state.practice == null) {
+      throw const FormatException('Practice response without practice');
+    }
+    return state;
+  }
+
+  @override
+  Future<TutorialPracticeSupport> probePracticeSupport() async {
+    try {
+      await currentPractice();
+    } on TutorialPracticeUnsupportedException {
+      // _practiceSend가 unsupported로 바꿨다.
+    }
+    return _practiceSupport;
+  }
+
+  @override
+  Future<PracticeSessionState> createPractice(
+    PracticeCreateRequest request,
+  ) async => _practiceWith(
+    await _practiceSend('repository.practice.create', request.toWire()),
+  );
+
+  @override
+  Future<PracticeSessionState> currentPractice() async =>
+      PracticeSessionState.fromWire(
+        await _practiceSend('repository.practice.current', {}),
+      );
+
+  @override
+  Future<PracticeSessionState> resetPractice(
+    PracticeResetRequest request,
+  ) async => _practiceWith(
+    await _practiceSend('repository.practice.reset', request.toWire()),
+  );
+
+  @override
+  Future<PracticeEndResult> endPractice(PracticeEndRequest request) async =>
+      PracticeEndResult.fromWire(
+        await _practiceSend('repository.practice.end', request.toWire()),
+      );
+
+  @override
+  Future<PracticeRecoveryResult> recoverPractice(
+    PracticeRecoverRequest request,
+  ) async => PracticeRecoveryResult.fromWire(
+    await _practiceSend('repository.practice.recover', request.toWire()),
   );
 
   @override
@@ -1382,6 +1461,8 @@ class ProcessAppService
       );
       if (_client.connection.value == BackendConnection.connected) {
         unawaited(_refreshScannerReadiness());
+      } else {
+        _practiceSupport = TutorialPracticeSupport.unknown;
       }
     }
   }

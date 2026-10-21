@@ -198,6 +198,9 @@ class ScanSessionController extends ChangeNotifier {
   /// 스캔 화면에서 적용(true) · 폐기(false)한 후보(세션 · generation · id). 최근 스캔 행의 "확정"을 판단한다.
   final Map<String, bool> _resolvedCandidates = {};
 
+  /// 세션 id → 시작할 때의 profile_id(X4 임시 계정 범위, [discardProfileScope]).
+  final Map<String, String?> _sessionProfiles = {};
+
   /// FB-10a 세션 제어(진행 단계 안의 하위 상태). pause 응답의 `pauseRequested`는 수락일 뿐이고,
   /// `paused` 이벤트를 받아야 멈춘 것으로 본다.
   ScannerControlState _control = ScannerControlState.running;
@@ -731,6 +734,52 @@ class ScanSessionController extends ChangeNotifier {
     return true;
   }
 
+  /// X4 임시 계정 reset · end 뒤(계약: 프론트의 대기 후보 · 이벤트 cursor를 비운다). [profileId]로 시작한 세션의 후보
+  /// 사본 · 최근 기록 · 적용 대기 · 아이템 검토 상태를 버리고, 그 세션을 보고 있었으면 시작 전으로 돌린다. 그 계정의
+  /// 저장소 revision도 버린다(reset이 revision을 바꾼다 — 다음 시작 · 적용 전에 다시 읽는다). 그 세션의 늦은 이벤트는
+  /// 지금 세션이 아니므로 버려진다. 실제 검토 · 적용 화면 흐름은 그대로다.
+  void discardProfileScope(String profileId) {
+    final sessions = {
+      for (final entry in _sessionProfiles.entries)
+        if (entry.value == profileId) entry.key,
+    };
+    _sessionProfiles.removeWhere((key, _) => sessions.contains(key));
+    bool owned(String key) => sessions.any((id) => key.startsWith('$id#'));
+    final shown = _session;
+    final shownOwned = shown != null && sessions.contains(shown.id);
+    final closeCompanion = _companionActive && shownOwned;
+    _update(() {
+      _recent.removeWhere((item) => sessions.contains(item.sessionId));
+      _recentDetails.removeWhere((key, _) => owned(key));
+      _resolvedCandidates.removeWhere((key, _) => owned(key));
+      _approvedSubsets.removeWhere((key, _) => owned(key));
+      _unresolvedSlots.removeWhere((key, _) => owned(key));
+      _unresolvedLoading.removeWhere(owned);
+      _unresolvedErrors.removeWhere((key, _) => owned(key));
+      _identityBusy.removeWhere(owned);
+      _identitySkipped.removeWhere(owned);
+      _identityErrors.removeWhere((key, _) => owned(key));
+      _pendingApplies.removeWhere((_, apply) => apply.profileId == profileId);
+      if (sessions.contains(_lastEndedSession?.id)) _lastEndedSession = null;
+      if (shownOwned) {
+        _session = null;
+        _stage = ScanSessionStage.idle;
+        _itemQueue = null;
+        _pendingStartEvents.clear();
+        _resetProjection();
+        _control = ScannerControlState.running;
+        _pauseReason = null;
+        _sessionError = null;
+      }
+      if (_profile?.id == profileId) {
+        _repositoryRevision = null;
+        _repositoryState = null;
+      }
+    });
+    onRecentChanged?.call(List<ScannerRecentSummary>.unmodifiable(_recent));
+    if (closeCompanion) unawaited(_closeCompanion());
+  }
+
   /// commit 응답 revision을 권위값으로 받는다(_update 안에서 부른다). state를 다시 읽지 못해도 다음 순차
   /// 적용이 이 값을 expected로 쓴다(FD-144).
   void _acceptCommittedRevision(String profileId, int revision) {
@@ -828,10 +877,11 @@ class ScanSessionController extends ChangeNotifier {
       if (_disposed) return;
     }
     try {
+      final profileId = _profile?.id;
       final session = await scanner.startScannerSession(
         _kind,
         target.id,
-        profileId: _profile?.id,
+        profileId: profileId,
         studentScanMode: _studentScanMode,
         inventoryScanProfile: _kind == ScannerKind.inventory
             ? _inventoryScanProfile
@@ -840,6 +890,7 @@ class ScanSessionController extends ChangeNotifier {
       if (_disposed) return;
       _update(() {
         _session = session;
+        _sessionProfiles[session.id] = profileId;
         _recentDetails[_sessionKey(
           session.id,
           session.generation,

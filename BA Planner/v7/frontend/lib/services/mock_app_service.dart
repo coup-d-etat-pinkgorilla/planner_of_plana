@@ -15,6 +15,7 @@ import 'mock_student_bond_fixture.dart';
 import 'repository_service.dart';
 import 'mock_repository_plan.dart';
 import 'mock_repository_history.dart';
+import 'mock_tutorial_practice.dart';
 import 'planning_protocol_client.dart';
 import 'scanner_service.dart';
 import 'scenario_service.dart';
@@ -45,6 +46,7 @@ class MockAppService
         RepositoryPlanService,
         RepositoryPresetsService,
         RepositoryInventoryReviewService,
+        RepositoryPracticeService,
         ScannerService,
         TacticalService,
         TacticalEvidenceWriteService,
@@ -63,6 +65,7 @@ class MockAppService
     Map<String, RepositoryCurrentHistory>? repositoryHistories,
     this.assetPreparationScenario = MockAssetPreparationScenario.firstRun,
     this.assetPreparationStep = const Duration(milliseconds: 250),
+    this.tutorialPracticeSupported = true,
   }) : _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
        _scannerTargets = List.unmodifiable(
          scannerTargets ??
@@ -290,6 +293,8 @@ class MockAppService
       );
       _syncDiagnostics();
       assetPreparationMock.handleBackendRestart();
+      // X4: 백엔드 시작 때 남은 임시 계정을 지운다(계약 recover, 선택 · 노출 전).
+      _removeMockPractice();
       await Future<void>.delayed(const Duration(milliseconds: 300));
       await reconnect();
     } finally {
@@ -359,7 +364,8 @@ class MockAppService
   Stream<ScannerEvent> get scannerEvents => _scannerEvents.stream;
 
   @override
-  Future<List<ScannerTarget>> listScannerTargets() async => _scannerTargets;
+  Future<List<ScannerTarget>> listScannerTargets() async =>
+      _mockPracticeSelected ? const [tutorialPracticeTarget] : _scannerTargets;
 
   @override
   Future<Map<String, dynamic>> scannerReadiness() async => _scannerReadiness;
@@ -379,7 +385,29 @@ class MockAppService
         message: 'another scanner or asset preparation operation is active',
       );
     }
-    final target = _scannerTargets.where((item) => item.id == targetId);
+    // X4: 가상 대상은 고른 임시 계정으로만, 임시 계정은 가상 대상으로만 시작한다(실제 캡처 · 입력으로 넘어가지 않음).
+    final practice = _mockPracticeProfile;
+    final virtual = targetId == practiceVirtualTargetId;
+    if (virtual !=
+        (practice != null && profileId == practice.id && practice.selected)) {
+      throw _practiceError(
+        'practice_profile_required',
+        'the tutorial target needs the selected practice profile',
+      );
+    }
+    if (virtual &&
+        !tutorialPracticeReplaySupported(
+          kind,
+          studentScanMode,
+          inventoryScanProfile,
+        )) {
+      throw _practiceError(
+        'invalid_payload',
+        'no tutorial replay for this scan kind',
+      );
+    }
+    final target = (virtual ? const [tutorialPracticeTarget] : _scannerTargets)
+        .where((item) => item.id == targetId);
     if (target.isEmpty || target.single.status != ScannerTargetStatus.ready) {
       throw StateError('target_not_ready');
     }
@@ -397,7 +425,13 @@ class MockAppService
           ? inventoryScanProfile?.wireName
           : null,
     );
+    _scannerSessionProfiles[session.id] = profileId;
     _emitScannerEvent(session, ScannerEventKind.phase, {'phase': 'capturing'});
+    if (virtual) {
+      _practiceSessions[session.id] = session;
+      _startMockPracticeReplay(session, inventoryScanProfile);
+      return session;
+    }
     // 각 단계는 FB-10a 안전 지점([_mockScannerStep])을 지난다. 일시정지 요청이 있으면 그 단계 대신 멈춘다.
     _scannerTimers.add(
       Timer(
@@ -488,9 +522,12 @@ class MockAppService
       return _mockScannerControl(id);
     }
     final targetId = _scannerSessionTargets[id];
-    final ready = _scannerTargets.any(
-      (item) => item.id == targetId && item.status == ScannerTargetStatus.ready,
-    );
+    final ready = targetId == practiceVirtualTargetId
+        ? _mockPracticeSelected
+        : _scannerTargets.any(
+            (item) =>
+                item.id == targetId && item.status == ScannerTargetStatus.ready,
+          );
     if (!ready) {
       _scannerPauseReasons[id] = ScannerPauseReason.targetMinimized;
       return _mockScannerControl(id);
@@ -740,6 +777,7 @@ class MockAppService
     required int expectedRepositoryRevision,
     required String idempotencyKey,
   }) async {
+    _requireMockPracticeScope(session, profileId);
     if (session.kind != ScannerKind.tacticalLobby) {
       return _commitMockScanCurrent(
         session,
@@ -1320,6 +1358,8 @@ class MockAppService
   @override
   Future<List<StudentCatalogEntry>> listStudents() async {
     final catalog = await _loadStudentCatalog();
+    // X4: 임시 계정을 고른 동안은 대본 학생(아카네 · 칸나(수영복) …)이 보이도록 전체 카탈로그다.
+    final fullStudentCatalog = this.fullStudentCatalog || _mockPracticeSelected;
     final visibleCatalog = fullStudentCatalog
         ? catalog
         : catalog
@@ -1396,74 +1436,90 @@ class MockAppService
   };
 
   @override
-  Future<InventoryCatalogResult> listInventoryItems() async =>
-      const InventoryCatalogResult(
-        catalogRevision:
-            '0000000000000000000000000000000000000000000000000000000000000000',
-        items: [
-          InventoryCatalogEntry(
-            resourceKey: 'Item_Icon_ExpItem_0',
-            itemId: 'Item_Icon_ExpItem_0',
-            displayName: 'Basic activity report',
-            category: 'activity_report',
-            profileId: 'activity_reports',
-            orderIndex: 0,
-            zeroFillAllowed: true,
-            school: null,
-            family: 'activity_report',
-            tier: 1,
-          ),
-          InventoryCatalogEntry(
-            resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
-            itemId: 'Item_Icon_SkillBook_Gehenna_0',
-            displayName: 'Gehenna Note T1',
-            category: 'tech_notes',
-            profileId: 'tech_notes',
-            orderIndex: 0,
-            zeroFillAllowed: true,
-            school: 'Gehenna',
-            family: 'tech_notes',
-            tier: 1,
-          ),
-          InventoryCatalogEntry(
-            resourceKey: 'Item_Icon_Material_Nebra_0',
-            itemId: 'Item_Icon_Material_Nebra_0',
-            displayName: 'Nebra Disk T1',
-            category: 'oopart',
-            profileId: 'ooparts',
-            orderIndex: 0,
-            zeroFillAllowed: true,
-            school: null,
-            family: 'oopart:Nebra',
-            tier: 1,
-          ),
-          // FB-3 카탈로그 전용 재화(백엔드 `inventory_catalog._rows` 끝 두 행과 같은 키·순서). 보유량은 스캔만 바꾼다.
-          InventoryCatalogEntry(
-            resourceKey: 'credits',
-            itemId: null,
-            displayName: '크레딧',
-            category: 'credits',
-            profileId: 'currencies',
-            orderIndex: 0,
-            zeroFillAllowed: false,
-            school: null,
-            family: null,
-            tier: null,
-          ),
-          InventoryCatalogEntry(
-            resourceKey: 'Item_Icon_SecretStone',
-            itemId: 'Item_Icon_SecretStone',
-            displayName: '엘리그마',
-            category: 'eligma',
-            profileId: 'currencies',
-            orderIndex: 1,
-            zeroFillAllowed: false,
-            school: null,
-            family: null,
-            tier: null,
-          ),
-        ],
-      );
+  Future<InventoryCatalogResult>
+  listInventoryItems() async => _withMockPracticeCatalog(
+    const InventoryCatalogResult(
+      catalogRevision:
+          '0000000000000000000000000000000000000000000000000000000000000000',
+      items: [
+        InventoryCatalogEntry(
+          resourceKey: 'Item_Icon_ExpItem_0',
+          itemId: 'Item_Icon_ExpItem_0',
+          displayName: 'Basic activity report',
+          category: 'activity_report',
+          profileId: 'activity_reports',
+          orderIndex: 0,
+          zeroFillAllowed: true,
+          school: null,
+          family: 'activity_report',
+          tier: 1,
+        ),
+        InventoryCatalogEntry(
+          resourceKey: 'Item_Icon_SkillBook_Gehenna_0',
+          itemId: 'Item_Icon_SkillBook_Gehenna_0',
+          displayName: 'Gehenna Note T1',
+          category: 'tech_notes',
+          profileId: 'tech_notes',
+          orderIndex: 0,
+          zeroFillAllowed: true,
+          school: 'Gehenna',
+          family: 'tech_notes',
+          tier: 1,
+        ),
+        InventoryCatalogEntry(
+          resourceKey: 'Item_Icon_Material_Nebra_0',
+          itemId: 'Item_Icon_Material_Nebra_0',
+          displayName: 'Nebra Disk T1',
+          category: 'oopart',
+          profileId: 'ooparts',
+          orderIndex: 0,
+          zeroFillAllowed: true,
+          school: null,
+          family: 'oopart:Nebra',
+          tier: 1,
+        ),
+        // FB-3 카탈로그 전용 재화(백엔드 `inventory_catalog._rows` 끝 두 행과 같은 키·순서). 보유량은 스캔만 바꾼다.
+        InventoryCatalogEntry(
+          resourceKey: 'credits',
+          itemId: null,
+          displayName: '크레딧',
+          category: 'credits',
+          profileId: 'currencies',
+          orderIndex: 0,
+          zeroFillAllowed: false,
+          school: null,
+          family: null,
+          tier: null,
+        ),
+        InventoryCatalogEntry(
+          resourceKey: 'Item_Icon_SecretStone',
+          itemId: 'Item_Icon_SecretStone',
+          displayName: '엘리그마',
+          category: 'eligma',
+          profileId: 'currencies',
+          orderIndex: 1,
+          zeroFillAllowed: false,
+          school: null,
+          family: null,
+          tier: null,
+        ),
+      ],
+    ),
+  );
+
+  /// X4: 임시 계정을 고른 동안은 가상 스캔의 노트 · BD 60칸(백엔드 카탈로그와 같은 키 · 이름 · 학교 · 티어)을 덧붙인다.
+  InventoryCatalogResult _withMockPracticeCatalog(InventoryCatalogResult base) {
+    if (!_mockPracticeSelected) return base;
+    final known = {for (final item in base.items) item.resourceKey};
+    return InventoryCatalogResult(
+      catalogRevision: base.catalogRevision,
+      items: [
+        ...base.items,
+        for (final item in tutorialPracticeCatalogEntries())
+          if (!known.contains(item.resourceKey)) item,
+      ],
+    );
+  }
 
   /// FB-3 획득처. 기본 표는 백엔드 packaged v1과 같이 비어 있다(`resources={}`): 카탈로그에 있는 키는 정규 키 +
   /// `methods=[]` + 빈 표 revision, 모르는 키는 `resource_not_found`, 표 실패는 `resource_acquisition_failed`.
@@ -2116,8 +2172,10 @@ class MockAppService
   );
 
   @override
-  Future<List<RepositoryProfile>> listProfiles() async =>
-      List.unmodifiable(_profiles);
+  Future<List<RepositoryProfile>> listProfiles() async => List.unmodifiable(
+    // X4: 일반 계정 목록에는 임시 계정이 없다(수명은 repository.practice.*).
+    _profiles.where((profile) => !profile.isPractice),
+  );
 
   // ---- FB-2d profile delete (Python profile_delete_transaction parity) ----
   // The backend derives a stable ID from the create key and keeps a deletion
@@ -2132,7 +2190,8 @@ class MockAppService
   bool loseNextProfileDeleteResponse = false;
 
   void _requireNotDeletedProfile(String profileId) {
-    if (_mockDeleteTombstones.containsKey(profileId)) {
+    if (_mockDeleteTombstones.containsKey(profileId) ||
+        _mockPracticeDeleted.contains(profileId)) {
       throw StateError('profile_not_found');
     }
   }
@@ -2209,6 +2268,7 @@ class MockAppService
             ? expectedRevision + 1
             : profile.revision,
         selected: profile.id == profileId,
+        isPractice: profile.isPractice,
       );
     }
     _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
@@ -2235,6 +2295,7 @@ class MockAppService
       avatarStudentId: profile.avatarStudentId,
       revision: expectedRevision + 1,
       selected: profile.selected,
+      isPractice: profile.isPractice,
     );
     _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
@@ -2261,6 +2322,7 @@ class MockAppService
       avatarStudentId: avatarStudentId,
       revision: expectedRevision + 1,
       selected: profile.selected,
+      isPractice: profile.isPractice,
     );
     _syncMockRepositoryStateRevision(profileId, expectedRevision + 1);
     return expectedRevision + 1;
@@ -2289,28 +2351,17 @@ class MockAppService
       return tombstone.revision;
     }
     final index = _profiles.indexWhere((profile) => profile.id == profileId);
-    if (index < 0) throw StateError('profile_not_found');
+    // X4: 임시 계정은 일반 삭제로 지우지 않는다(repository.practice.end).
+    if (index < 0 || _profiles[index].isPractice) {
+      throw StateError('profile_not_found');
+    }
     final profile = _profiles[index];
     if (profile.revision != expectedRevision) {
       throw StateError('revision_conflict');
     }
     final wasSelected = profile.selected;
     _profiles.removeAt(index);
-    // 7경로와 같은 범위: 프로필(학생·인벤토리·목표·이력)·계획·프리셋·시나리오·전술 v1·전술 v2 FB-6 쓰기.
-    // Mock에는 전술 v2 로비·통계·로컬 공유 저장이 없다(ProcessAppService만).
-    _tacticalStates.remove(profileId);
-    _tacticalV2.remove(profileId);
-    _repositoryStates.remove(profileId);
-    _currentHistories.remove(profileId);
-    _mockInventoryReviews.remove(profileId); // FB-10b 표시는 프로필 파일 안(FB-2d 삭제 범위).
-    _repositoryPlans.remove(profileId);
-    _repositoryPlanAuthoring.remove(profileId);
-    _planIdempotency.remove(profileId);
-    _repositoryPresets.remove(profileId);
-    _presetIdempotency.remove(profileId);
-    _planningScenarios.remove(profileId);
-    _planningScenarioRevisions.remove(profileId);
-    _scenarioIdempotency.remove(profileId);
+    _dropMockProfileData(profileId);
     if (wasSelected && _profiles.isNotEmpty) {
       final first = _profiles.first;
       _profiles[0] = RepositoryProfile(
@@ -2319,6 +2370,7 @@ class MockAppService
         avatarStudentId: first.avatarStudentId,
         revision: first.revision,
         selected: true,
+        isPractice: first.isPractice,
       );
     }
     final revision = expectedRevision + 1;
@@ -2332,6 +2384,394 @@ class MockAppService
       throw TimeoutException('Mock profile delete response lost');
     }
     return revision;
+  }
+
+  /// 7경로와 같은 범위: 프로필(학생·인벤토리·목표·이력)·계획·프리셋·시나리오·전술 v1·전술 v2 FB-6 쓰기.
+  /// Mock에는 전술 v2 로비·통계·로컬 공유 저장이 없다(ProcessAppService만). 임시 계정 end · reset도 같은 범위를 지운다.
+  void _dropMockProfileData(String profileId) {
+    _tacticalStates.remove(profileId);
+    _tacticalV2.remove(profileId);
+    _repositoryStates.remove(profileId);
+    _currentHistories.remove(profileId);
+    _mockInventoryReviews.remove(profileId); // FB-10b 표시는 프로필 파일 안(FB-2d 삭제 범위).
+    _repositoryPlans.remove(profileId);
+    _repositoryPlanAuthoring.remove(profileId);
+    _planIdempotency.remove(profileId);
+    _repositoryPresets.remove(profileId);
+    _presetIdempotency.remove(profileId);
+    _planningScenarios.remove(profileId);
+    _planningScenarioRevisions.remove(profileId);
+    _scenarioIdempotency.remove(profileId);
+  }
+
+  // ---- X4 / FD-182 임시 계정(contracts/tutorial-practice-v1, F3c-1) ----
+  // 한 번에 하나. 임시 계정은 `_profiles` 안에 `isPractice`로 두되 일반 목록(listProfiles)에는 내지 않는다. revision은
+  // 임시 계정 저장소 revision이다(스캔 적용 · 저장마다 오른다). reset은 고정 seed를 더 높은 revision으로 다시 놓는다.
+  // 같은 메서드 · 같은 key 재시도는 원 응답, 다른 요청이면 idempotency_conflict(실패한 요청은 기록하지 않는다).
+
+  /// false면 practice 메서드가 지금 백엔드처럼 `unknown_method`로 답한다(화면의 "백엔드 미지원" 경로 시험용).
+  final bool tutorialPracticeSupported;
+  var _mockPracticeSupport = TutorialPracticeSupport.unknown;
+  String? _mockPracticeOrigin;
+  int _mockPracticeNumber = 0;
+  final Map<String, ({String request, Map<String, dynamic> response})>
+  _mockPracticeReceipts = {};
+
+  /// 지운 임시 계정 id. 다른 key로 다시 end하면 already_deleted다.
+  final Set<String> _mockPracticeDeleted = {};
+
+  /// 시작한 세션의 profile_id(교차 적용 거부) · 임시 계정 세션(reset · end 때 닫는다) · 그렇게 무효가 된 세션.
+  final Map<String, String?> _scannerSessionProfiles = {};
+  final Map<String, ScannerSession> _practiceSessions = {};
+  final Set<String> _invalidatedScannerSessions = {};
+
+  RepositoryProfile? get _mockPracticeProfile =>
+      _profiles.where((profile) => profile.isPractice).firstOrNull;
+
+  bool get _mockPracticeSelected => _mockPracticeProfile?.selected == true;
+
+  String? get _mockSelectedProfileId =>
+      _profiles.where((profile) => profile.selected).firstOrNull?.id;
+
+  BackendRemoteException _practiceError(String code, String message) =>
+      BackendRemoteException(code: code, message: message);
+
+  PracticeSessionState _mockPracticeState() {
+    final profile = _mockPracticeProfile;
+    return PracticeSessionState(
+      practice: profile == null
+          ? null
+          : PracticeProfile(
+              profileId: profile.id,
+              originProfileId: _mockPracticeOrigin!,
+              revision: profile.revision,
+            ),
+      selectedProfileId: _mockSelectedProfileId,
+    );
+  }
+
+  /// 지원 여부 · 영수증(같은 key 재시도는 원 응답)을 거쳐 [run]을 한다.
+  Map<String, dynamic> _mockPracticeCall(
+    String method,
+    Map<String, dynamic> request,
+    Map<String, dynamic> Function() run,
+  ) {
+    if (!tutorialPracticeSupported) {
+      _mockPracticeSupport = TutorialPracticeSupport.unsupported;
+      throw TutorialPracticeUnsupportedException(method);
+    }
+    _mockPracticeSupport = TutorialPracticeSupport.supported;
+    final key = request['idempotency_key'];
+    if (key is! String) return run();
+    final fingerprint = historyCanonicalJson(request);
+    final receiptKey = '$method\u0000$key';
+    final receipt = _mockPracticeReceipts[receiptKey];
+    if (receipt != null) {
+      if (receipt.request != fingerprint) {
+        throw _practiceError(
+          'idempotency_conflict',
+          'idempotency key was used for a different practice request',
+        );
+      }
+      return Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(receipt.response)) as Map,
+      );
+    }
+    final response = run();
+    _mockPracticeReceipts[receiptKey] = (
+      request: fingerprint,
+      response: Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(response)) as Map,
+      ),
+    );
+    return response;
+  }
+
+  /// [profileId]가 지금 임시 계정이고 revision이 맞는가. 일반 계정이면 practice_profile_required.
+  RepositoryProfile _requireMockPractice(
+    String profileId,
+    int expectedRevision,
+  ) {
+    final practice = _mockPracticeProfile;
+    if (practice == null || practice.id != profileId) {
+      if (_profiles.any((profile) => profile.id == profileId)) {
+        throw _practiceError(
+          'practice_profile_required',
+          'profile is not the practice profile',
+        );
+      }
+      throw _practiceError('profile_not_found', 'practice profile not found');
+    }
+    if (practice.revision != expectedRevision) {
+      throw _practiceError('revision_conflict', 'practice revision changed');
+    }
+    return practice;
+  }
+
+  /// 고정 seed를 [baseRevision]부터 놓는다(지난 스캔 이력 하나, 목표 · 계획 · 시나리오 0). 끝 revision을 돌려준다.
+  int _seedMockPractice(String profileId, int baseRevision) {
+    final seed = tutorialPracticeSeed(
+      profileId,
+      baseRevision: baseRevision,
+      recordedAt: _historyClock().subtract(const Duration(days: 1)),
+    );
+    _manualMockCurrentWrite = true;
+    try {
+      _repositoryStates[profileId] = seed.state;
+    } finally {
+      _manualMockCurrentWrite = false;
+    }
+    _currentHistories[profileId] = seed.history;
+    _repositoryPlans[profileId] = mockDocumentFromGoals({
+      'version': 1,
+      'goals': <dynamic>[],
+    });
+    return seed.state['revision'] as int;
+  }
+
+  /// 임시 계정의 열린 가상 세션을 취소하고 그 후보를 무효로 한다(이전 revision · generation은 더 쓰지 않는다).
+  void _closeMockPracticeSessions() {
+    for (final session in _practiceSessions.values) {
+      if (!_scannerTerminals.containsKey(session.id)) {
+        _scannerCancelRequested.add(session.id);
+        _emitTerminal(session, 'cancelled');
+      }
+      _scannerCandidates.removeWhere(
+        (key, _) => key.startsWith('${session.id}:'),
+      );
+      _invalidatedScannerSessions.add(session.id);
+    }
+    _practiceSessions.clear();
+  }
+
+  /// 임시 계정이 가진 모든 것을 지우고 원래 선택을 되돌린다(원 계정이 없으면 첫 일반 계정, 없으면 선택 없음). 원 계정의
+  /// revision은 바꾸지 않는다. 지운 id(없었으면 null).
+  String? _removeMockPractice() {
+    final practice = _mockPracticeProfile;
+    if (practice == null) return null;
+    _closeMockPracticeSessions();
+    _profiles.removeWhere((profile) => profile.id == practice.id);
+    _dropMockProfileData(practice.id);
+    _mockPracticeDeleted.add(practice.id);
+    final origin = _mockPracticeOrigin;
+    _mockPracticeOrigin = null;
+    if (practice.selected && _profiles.isNotEmpty) {
+      final restored = _profiles.any((profile) => profile.id == origin)
+          ? origin
+          : _profiles.first.id;
+      for (var index = 0; index < _profiles.length; index += 1) {
+        final profile = _profiles[index];
+        _profiles[index] = RepositoryProfile(
+          id: profile.id,
+          displayName: profile.displayName,
+          avatarStudentId: profile.avatarStudentId,
+          revision: profile.revision,
+          selected: profile.id == restored,
+          isPractice: profile.isPractice,
+        );
+      }
+    }
+    return practice.id;
+  }
+
+  @override
+  TutorialPracticeSupport get practiceSupport => _mockPracticeSupport;
+
+  @override
+  Future<TutorialPracticeSupport> probePracticeSupport() async {
+    try {
+      await currentPractice();
+    } on TutorialPracticeUnsupportedException {
+      // _mockPracticeCall이 unsupported로 바꿨다.
+    }
+    return _mockPracticeSupport;
+  }
+
+  @override
+  Future<PracticeSessionState> createPractice(
+    PracticeCreateRequest request,
+  ) async => PracticeSessionState.fromWire(
+    _mockPracticeCall('repository.practice.create', request.toWire(), () {
+      if (_mockPracticeProfile != null) {
+        throw _practiceError(
+          'practice_session_active',
+          'a practice profile is already active',
+        );
+      }
+      final origin = _profiles
+          .where(
+            (profile) =>
+                profile.id == request.originProfileId && !profile.isPractice,
+          )
+          .firstOrNull;
+      if (origin == null) {
+        throw _practiceError('profile_not_found', 'origin profile not found');
+      }
+      if (origin.revision != request.expectedOriginRevision) {
+        throw _practiceError('revision_conflict', 'origin revision changed');
+      }
+      _mockPracticeNumber += 1;
+      final id = '7e${_mockPracticeNumber.toRadixString(16).padLeft(22, '0')}';
+      final revision = _seedMockPractice(id, 0);
+      for (var index = 0; index < _profiles.length; index += 1) {
+        final profile = _profiles[index];
+        _profiles[index] = RepositoryProfile(
+          id: profile.id,
+          displayName: profile.displayName,
+          avatarStudentId: profile.avatarStudentId,
+          revision: profile.revision,
+          selected: false,
+          isPractice: profile.isPractice,
+        );
+      }
+      _profiles.add(
+        RepositoryProfile(
+          id: id,
+          displayName: '튜토리얼',
+          avatarStudentId: origin.avatarStudentId,
+          revision: revision,
+          selected: true,
+          isPractice: true,
+        ),
+      );
+      _mockPracticeOrigin = origin.id;
+      return _mockPracticeState().toWire();
+    }),
+  );
+
+  @override
+  Future<PracticeSessionState> currentPractice() async =>
+      PracticeSessionState.fromWire(
+        _mockPracticeCall(
+          'repository.practice.current',
+          const {},
+          () => _mockPracticeState().toWire(),
+        ),
+      );
+
+  @override
+  Future<PracticeSessionState> resetPractice(
+    PracticeResetRequest request,
+  ) async => PracticeSessionState.fromWire(
+    _mockPracticeCall('repository.practice.reset', request.toWire(), () {
+      final practice = _requireMockPractice(
+        request.profileId,
+        request.expectedRevision,
+      );
+      _closeMockPracticeSessions();
+      _dropMockProfileData(practice.id);
+      final revision = _seedMockPractice(practice.id, practice.revision + 1);
+      final index = _profiles.indexWhere((item) => item.id == practice.id);
+      _profiles[index] = RepositoryProfile(
+        id: practice.id,
+        displayName: practice.displayName,
+        avatarStudentId: practice.avatarStudentId,
+        revision: revision,
+        selected: practice.selected,
+        isPractice: true,
+      );
+      return _mockPracticeState().toWire();
+    }),
+  );
+
+  @override
+  Future<PracticeEndResult> endPractice(PracticeEndRequest request) async =>
+      PracticeEndResult.fromWire(
+        _mockPracticeCall('repository.practice.end', request.toWire(), () {
+          if (_mockPracticeDeleted.contains(request.profileId)) {
+            return PracticeEndResult(
+              deletedProfileId: request.profileId,
+              selectedProfileId: _mockSelectedProfileId,
+              alreadyDeleted: true,
+            ).toWire();
+          }
+          _requireMockPractice(request.profileId, request.expectedRevision);
+          final deleted = _removeMockPractice()!;
+          return PracticeEndResult(
+            deletedProfileId: deleted,
+            selectedProfileId: _mockSelectedProfileId,
+            alreadyDeleted: false,
+          ).toWire();
+        }),
+      );
+
+  @override
+  Future<PracticeRecoveryResult> recoverPractice(
+    PracticeRecoverRequest request,
+  ) async => PracticeRecoveryResult.fromWire(
+    _mockPracticeCall('repository.practice.recover', request.toWire(), () {
+      final removed = _removeMockPractice();
+      return PracticeRecoveryResult(
+        removedProfileIds: [?removed],
+        selectedProfileId: _mockSelectedProfileId,
+      ).toWire();
+    }),
+  );
+
+  /// 가상 세션 재생: 기존 이벤트 모양(progress · feedback · candidate · terminal)을 FB-10a 안전 지점마다 하나씩 낸다.
+  void _startMockPracticeReplay(
+    ScannerSession session,
+    InventoryScanProfile? inventoryScanProfile,
+  ) {
+    final steps = tutorialPracticeReplay(
+      session,
+      inventoryScanProfile: inventoryScanProfile,
+    );
+    bool closed() =>
+        _scannerTerminals.containsKey(session.id) ||
+        _scannerCancelRequested.contains(session.id);
+    for (var index = 0; index <= steps.length; index += 1) {
+      final step = index < steps.length ? steps[index] : null;
+      _scannerTimers.add(
+        Timer(
+          Duration(milliseconds: 10 * (index + 1)),
+          () => _mockScannerStep(session, () {
+            if (closed()) return;
+            switch (step) {
+              case TutorialReplayProgress():
+                _emitScannerEvent(session, ScannerEventKind.progress, {
+                  'current': step.current,
+                  'total': step.total,
+                  'message_key': step.messageKey,
+                });
+                final studentId = step.feedbackStudentId;
+                if (studentId != null) {
+                  _emitScannerEvent(session, ScannerEventKind.feedback, {
+                    'student_id': studentId,
+                    'field': 'student_id',
+                    'values': <String, dynamic>{},
+                  });
+                }
+              case TutorialReplayCandidate(:final candidate):
+                _scannerCandidates['${session.id}:${candidate.id}'] = candidate;
+                _emitScannerEvent(session, ScannerEventKind.candidate, {
+                  'candidate': _candidateWire(candidate),
+                });
+              case null:
+                _emitTerminal(session, 'completed');
+            }
+          }),
+        ),
+      );
+    }
+  }
+
+  /// 진짜 계정 ↔ 임시 계정 교차 적용 거부(계약): 임시 계정 세션은 그 임시 계정에만, 임시 계정에는 그 세션만 적용한다.
+  /// reset · end로 무효가 된 세션은 적용하지 않는다.
+  void _requireMockPracticeScope(ScannerSession session, String profileId) {
+    if (_invalidatedScannerSessions.contains(session.id)) {
+      throw StateError('session_not_found');
+    }
+    final owner = _scannerSessionProfiles[session.id];
+    bool practiceId(String? id) =>
+        id != null &&
+        (id == _mockPracticeProfile?.id || _mockPracticeDeleted.contains(id));
+    if ((practiceId(owner) || practiceId(profileId)) && owner != profileId) {
+      throw _practiceError(
+        'practice_profile_required',
+        'scan candidates cannot cross between practice and real profiles',
+      );
+    }
   }
 
   @override
@@ -2530,6 +2970,7 @@ class MockAppService
       avatarStudentId: old.avatarStudentId,
       revision: revision,
       selected: old.selected,
+      isPractice: old.isPractice,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'planning_protocol_client.dart' show BackendRemoteException;
 import 'repository_plan_service.dart';
 import 'repository_presets_service.dart';
 import 'repository_history_service.dart';
@@ -14,6 +15,7 @@ class RepositoryProfile {
     this.avatarStudentId = 'hasumi',
     required this.revision,
     required this.selected,
+    this.isPractice = false,
   });
 
   final String id;
@@ -22,13 +24,18 @@ class RepositoryProfile {
   final int revision;
   final bool selected;
 
+  /// 튜토리얼 임시 계정(X4 / FD-182 `is_practice`). 지금 백엔드 profile 응답 schema에는 이 키가 없으므로 wire에서는
+  /// 키가 없을 때(= false)만 받는다. 키를 받아들이는 것은 runtime 짝 라운드(계약 "optional boolean, absent means false").
+  final bool isPractice;
+
   factory RepositoryProfile.fromWire(Map<String, dynamic> value) {
     final id = value['profile_id'];
     final name = value['display_name'];
     final revision = value['revision'];
     final selected = value['selected'];
     final avatarStudentId = value['avatar_student_id'] ?? 'hasumi';
-    if (id is! String ||
+    if (value.containsKey('is_practice') ||
+        id is! String ||
         !RegExp(r'^[0-9a-f]{24}$').hasMatch(id) ||
         name is! String ||
         name.isEmpty ||
@@ -513,6 +520,17 @@ bool isValidRepositorySuccessPayload(
       case 'repository.migration.import':
         RepositoryV6ImportResult.fromWire(payload);
         return true;
+      case 'repository.practice.create':
+      case 'repository.practice.current':
+      case 'repository.practice.reset':
+        PracticeSessionState.fromWire(payload);
+        return true;
+      case 'repository.practice.end':
+        PracticeEndResult.fromWire(payload);
+        return true;
+      case 'repository.practice.recover':
+        PracticeRecoveryResult.fromWire(payload);
+        return true;
       default:
         return false;
     }
@@ -555,9 +573,13 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         'plan_lossy_write',
         'unknown_method',
       };
+      // practice 메서드는 계약 schema의 오류 코드 9개만이다.
+      final allowedCodes = practiceMethods.contains(method)
+          ? {for (final code in PracticeErrorCode.values) code.wireName}
+          : codes;
       return error.keys.toSet().containsAll(required) &&
           allowed.containsAll(error.keys) &&
-          codes.contains(error['code']) &&
+          allowedCodes.contains(error['code']) &&
           error['message'] is String &&
           (error['message'] as String).isNotEmpty &&
           error['retryable'] is bool &&
@@ -690,6 +712,20 @@ bool isValidRepositoryProtocolMessage(Map<String, dynamic> message) {
         return _exact(payload, {'source_profile_key'}) &&
             payload['source_profile_key'] is String &&
             (payload['source_profile_key'] as String).isNotEmpty;
+      case 'repository.practice.create':
+        PracticeCreateRequest.fromWire(payload);
+        return true;
+      case 'repository.practice.current':
+        return payload.isEmpty;
+      case 'repository.practice.reset':
+        PracticeResetRequest.fromWire(payload);
+        return true;
+      case 'repository.practice.end':
+        PracticeEndRequest.fromWire(payload);
+        return true;
+      case 'repository.practice.recover':
+        PracticeRecoverRequest.fromWire(payload);
+        return true;
       default:
         return false;
     }
@@ -769,4 +805,461 @@ abstract interface class RepositoryService {
   );
   Future<List<RepositoryV6AccountPreview>> previewV6Accounts();
   Future<RepositoryV6ImportResult> importV6Account(String sourceProfileKey);
+}
+
+// ---- X4 / FD-182 튜토리얼 임시 계정(contracts/tutorial-practice-v1, fixture `runtimeImplemented:false`) ----
+// 요청 · 응답 키는 계약 schema 그대로다(모르는 키 거부). revision은 bool · 음수를 거부하고, 문자열은 비어 있지 않아야
+// 한다. practice 쪽 profile id는 계약상 일반 계정의 24자리 hex 규칙이 아니다(길이 1 이상 문자열).
+
+/// 임시 계정 데이터 판(고정).
+const practiceDatasetVersion = 'tutorial-v1';
+
+/// 임시 계정이 고른 상태일 때만 `scanner.target.list`가 내는 가상 대상 id.
+const practiceVirtualTargetId = 'tutorial:1280x720';
+
+/// 가상 대상 제목(계약 그대로).
+const practiceVirtualTargetTitle = '가상 게임 창 · 튜토리얼';
+
+/// 계약 메서드 5개.
+const practiceMethods = {
+  'repository.practice.create',
+  'repository.practice.current',
+  'repository.practice.reset',
+  'repository.practice.end',
+  'repository.practice.recover',
+};
+
+/// practice 메서드 오류 코드(계약 schema 9개). 지금 백엔드가 내는 `unknown_method`는 여기 없다 — 그것은
+/// [TutorialPracticeSupport.unsupported]로 해독한다.
+enum PracticeErrorCode {
+  invalidPayload('invalid_payload'),
+  profileNotFound('profile_not_found'),
+  revisionConflict('revision_conflict'),
+  idempotencyConflict('idempotency_conflict'),
+  practiceProfileRequired('practice_profile_required'),
+  practiceSessionActive('practice_session_active'),
+  practiceCleanupFailed('practice_cleanup_failed'),
+  corruptData('corrupt_data'),
+  storageError('storage_error');
+
+  const PracticeErrorCode(this.wireName);
+  final String wireName;
+
+  /// 모르는 코드는 null.
+  static PracticeErrorCode? fromWire(Object? value) {
+    for (final code in values) {
+      if (code.wireName == value) return code;
+    }
+    return null;
+  }
+}
+
+/// [error]가 practice 계약 오류(`BackendRemoteException`)면 그 코드. 아니면 null.
+PracticeErrorCode? practiceErrorCodeOf(Object error) =>
+    error is BackendRemoteException
+    ? PracticeErrorCode.fromWire(error.code)
+    : null;
+
+/// 백엔드가 임시 계정 메서드를 지원하는가. 화면(F3c-3)은 [unsupported]면 튜토리얼을 시작하지 않는다.
+enum TutorialPracticeSupport {
+  /// 아직 묻지 않았거나 연결이 바뀌었다.
+  unknown,
+
+  /// 백엔드가 practice 메서드에 `unknown_method`로 답했다(지금 백엔드, 튜토리얼 실행 불가).
+  unsupported,
+
+  /// practice 메서드가 계약 응답(성공 또는 계약 오류)으로 답했다.
+  supported,
+}
+
+/// practice 메서드에 백엔드가 `unknown_method`로 답했다(백엔드 미지원).
+class TutorialPracticeUnsupportedException implements Exception {
+  TutorialPracticeUnsupportedException(this.method);
+
+  final String method;
+
+  @override
+  String toString() =>
+      'TutorialPracticeUnsupportedException: backend does not support $method';
+}
+
+bool _practiceText(Object? value) => value is String && value.isNotEmpty;
+
+void _practiceKeys(Map<String, dynamic> wire, Set<String> keys, String label) {
+  if (!_exact(wire, keys)) {
+    throw FormatException('Invalid $label keys: ${wire.keys.toList()..sort()}');
+  }
+}
+
+/// `practice` 객체: profile_id · origin_profile_id · is_practice(true) · revision · dataset_version · virtual_target_id.
+class PracticeProfile {
+  const PracticeProfile({
+    required this.profileId,
+    required this.originProfileId,
+    required this.revision,
+  });
+
+  final String profileId;
+  final String originProfileId;
+  final int revision;
+
+  bool get isPractice => true;
+  String get datasetVersion => practiceDatasetVersion;
+  String get virtualTargetId => practiceVirtualTargetId;
+
+  static const wireKeys = {
+    'profile_id',
+    'origin_profile_id',
+    'is_practice',
+    'revision',
+    'dataset_version',
+    'virtual_target_id',
+  };
+
+  factory PracticeProfile.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice');
+    if (!_practiceText(wire['profile_id']) ||
+        !_practiceText(wire['origin_profile_id']) ||
+        wire['is_practice'] != true ||
+        !_revision(wire['revision']) ||
+        wire['dataset_version'] != practiceDatasetVersion ||
+        wire['virtual_target_id'] != practiceVirtualTargetId) {
+      throw const FormatException('Invalid practice payload');
+    }
+    return PracticeProfile(
+      profileId: wire['profile_id'] as String,
+      originProfileId: wire['origin_profile_id'] as String,
+      revision: wire['revision'] as int,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'profile_id': profileId,
+    'origin_profile_id': originProfileId,
+    'is_practice': true,
+    'revision': revision,
+    'dataset_version': practiceDatasetVersion,
+    'virtual_target_id': practiceVirtualTargetId,
+  };
+}
+
+String? _practiceSelected(Map<String, dynamic> wire) {
+  final selected = wire['selected_profile_id'];
+  if (selected != null && selected is! String) {
+    throw const FormatException('Invalid practice selected_profile_id');
+  }
+  return selected as String?;
+}
+
+/// create · current · reset 응답: `practice`(없으면 null) · `selected_profile_id`(nullable).
+class PracticeSessionState {
+  const PracticeSessionState({required this.practice, this.selectedProfileId});
+
+  final PracticeProfile? practice;
+  final String? selectedProfileId;
+
+  /// 임시 계정이 있고 지금 고른 계정이다.
+  bool get practiceSelected {
+    final current = practice;
+    return current != null && current.profileId == selectedProfileId;
+  }
+
+  static const wireKeys = {'practice', 'selected_profile_id'};
+
+  factory PracticeSessionState.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice session');
+    final practice = wire['practice'];
+    return PracticeSessionState(
+      practice: practice == null
+          ? null
+          : PracticeProfile.fromWire(_wireMap(practice, 'practice')),
+      selectedProfileId: _practiceSelected(wire),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'practice': practice?.toWire(),
+    'selected_profile_id': selectedProfileId,
+  };
+}
+
+/// end 응답: 지운 임시 계정 · 되돌린 선택(없으면 null) · 이미 지워져 있었는가.
+class PracticeEndResult {
+  const PracticeEndResult({
+    required this.deletedProfileId,
+    required this.selectedProfileId,
+    required this.alreadyDeleted,
+  });
+
+  final String deletedProfileId;
+  final String? selectedProfileId;
+  final bool alreadyDeleted;
+
+  static const wireKeys = {
+    'deleted_profile_id',
+    'selected_profile_id',
+    'already_deleted',
+  };
+
+  factory PracticeEndResult.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice end');
+    if (!_practiceText(wire['deleted_profile_id']) ||
+        wire['already_deleted'] is! bool) {
+      throw const FormatException('Invalid practice end payload');
+    }
+    return PracticeEndResult(
+      deletedProfileId: wire['deleted_profile_id'] as String,
+      selectedProfileId: _practiceSelected(wire),
+      alreadyDeleted: wire['already_deleted'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'deleted_profile_id': deletedProfileId,
+    'selected_profile_id': selectedProfileId,
+    'already_deleted': alreadyDeleted,
+  };
+}
+
+/// recover 응답: 지운 고아 임시 계정(중복 없음) · 지금 선택(없으면 null).
+class PracticeRecoveryResult {
+  PracticeRecoveryResult({
+    required List<String> removedProfileIds,
+    required this.selectedProfileId,
+  }) : removedProfileIds = List.unmodifiable(removedProfileIds);
+
+  final List<String> removedProfileIds;
+  final String? selectedProfileId;
+
+  static const wireKeys = {'removed_profile_ids', 'selected_profile_id'};
+
+  factory PracticeRecoveryResult.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice recover');
+    final removed = wire['removed_profile_ids'];
+    if (removed is! List ||
+        removed.any((item) => !_practiceText(item)) ||
+        removed.toSet().length != removed.length) {
+      throw const FormatException('Invalid practice recover payload');
+    }
+    return PracticeRecoveryResult(
+      removedProfileIds: removed.cast<String>(),
+      selectedProfileId: _practiceSelected(wire),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'removed_profile_ids': removedProfileIds,
+    'selected_profile_id': selectedProfileId,
+  };
+}
+
+/// end 이유.
+enum PracticeEndReason {
+  completed,
+  dismissed;
+
+  String get wireName => name;
+
+  static PracticeEndReason fromWire(Object? value) => values.firstWhere(
+    (item) => item.name == value,
+    orElse: () => throw FormatException('Invalid practice end reason: $value'),
+  );
+}
+
+/// `repository.practice.create` 요청. 만들 때 값을 검사한다(빈 문자열 · 음수 revision 거부).
+class PracticeCreateRequest {
+  const PracticeCreateRequest._(
+    this.originProfileId,
+    this.expectedOriginRevision,
+    this.idempotencyKey,
+  );
+
+  factory PracticeCreateRequest({
+    required String originProfileId,
+    required int expectedOriginRevision,
+    required String idempotencyKey,
+  }) => PracticeCreateRequest.fromWire({
+    'origin_profile_id': originProfileId,
+    'expected_origin_revision': expectedOriginRevision,
+    'idempotency_key': idempotencyKey,
+  });
+
+  final String originProfileId;
+  final int expectedOriginRevision;
+  final String idempotencyKey;
+
+  static const wireKeys = {
+    'origin_profile_id',
+    'expected_origin_revision',
+    'idempotency_key',
+  };
+
+  factory PracticeCreateRequest.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice create');
+    if (!_practiceText(wire['origin_profile_id']) ||
+        !_revision(wire['expected_origin_revision']) ||
+        !_practiceText(wire['idempotency_key'])) {
+      throw const FormatException('Invalid practice create request');
+    }
+    return PracticeCreateRequest._(
+      wire['origin_profile_id'] as String,
+      wire['expected_origin_revision'] as int,
+      wire['idempotency_key'] as String,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'origin_profile_id': originProfileId,
+    'expected_origin_revision': expectedOriginRevision,
+    'idempotency_key': idempotencyKey,
+  };
+}
+
+/// `repository.practice.reset` 요청.
+class PracticeResetRequest {
+  const PracticeResetRequest._(
+    this.profileId,
+    this.expectedRevision,
+    this.idempotencyKey,
+  );
+
+  factory PracticeResetRequest({
+    required String profileId,
+    required int expectedRevision,
+    required String idempotencyKey,
+  }) => PracticeResetRequest.fromWire({
+    'profile_id': profileId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  });
+
+  final String profileId;
+  final int expectedRevision;
+  final String idempotencyKey;
+
+  static const wireKeys = {
+    'profile_id',
+    'expected_revision',
+    'idempotency_key',
+  };
+
+  factory PracticeResetRequest.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice reset');
+    if (!_practiceText(wire['profile_id']) ||
+        !_revision(wire['expected_revision']) ||
+        !_practiceText(wire['idempotency_key'])) {
+      throw const FormatException('Invalid practice reset request');
+    }
+    return PracticeResetRequest._(
+      wire['profile_id'] as String,
+      wire['expected_revision'] as int,
+      wire['idempotency_key'] as String,
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'profile_id': profileId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+  };
+}
+
+/// `repository.practice.end` 요청.
+class PracticeEndRequest {
+  const PracticeEndRequest._(
+    this.profileId,
+    this.expectedRevision,
+    this.idempotencyKey,
+    this.reason,
+  );
+
+  factory PracticeEndRequest({
+    required String profileId,
+    required int expectedRevision,
+    required String idempotencyKey,
+    required PracticeEndReason reason,
+  }) => PracticeEndRequest.fromWire({
+    'profile_id': profileId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+    'reason': reason.wireName,
+  });
+
+  final String profileId;
+  final int expectedRevision;
+  final String idempotencyKey;
+  final PracticeEndReason reason;
+
+  static const wireKeys = {
+    'profile_id',
+    'expected_revision',
+    'idempotency_key',
+    'reason',
+  };
+
+  factory PracticeEndRequest.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice end');
+    if (!_practiceText(wire['profile_id']) ||
+        !_revision(wire['expected_revision']) ||
+        !_practiceText(wire['idempotency_key'])) {
+      throw const FormatException('Invalid practice end request');
+    }
+    return PracticeEndRequest._(
+      wire['profile_id'] as String,
+      wire['expected_revision'] as int,
+      wire['idempotency_key'] as String,
+      PracticeEndReason.fromWire(wire['reason']),
+    );
+  }
+
+  Map<String, dynamic> toWire() => {
+    'profile_id': profileId,
+    'expected_revision': expectedRevision,
+    'idempotency_key': idempotencyKey,
+    'reason': reason.wireName,
+  };
+}
+
+/// `repository.practice.recover` 요청.
+class PracticeRecoverRequest {
+  const PracticeRecoverRequest._(this.idempotencyKey);
+
+  factory PracticeRecoverRequest({required String idempotencyKey}) =>
+      PracticeRecoverRequest.fromWire({'idempotency_key': idempotencyKey});
+
+  final String idempotencyKey;
+
+  static const wireKeys = {'idempotency_key'};
+
+  factory PracticeRecoverRequest.fromWire(Map<String, dynamic> wire) {
+    _practiceKeys(wire, wireKeys, 'practice recover');
+    if (!_practiceText(wire['idempotency_key'])) {
+      throw const FormatException('Invalid practice recover request');
+    }
+    return PracticeRecoverRequest._(wire['idempotency_key'] as String);
+  }
+
+  Map<String, dynamic> toWire() => {'idempotency_key': idempotencyKey};
+}
+
+/// 임시 계정 수명(X4 / FD-182). 한 번에 하나: create는 진짜 계정을 그대로 두고 임시 계정을 고르며, end는 임시 계정이
+/// 가진 모든 것을 지우고 원래 선택을 되돌린다. 같은 idempotency key 재시도는 원 결과다.
+///
+/// 지금 백엔드는 다섯 메서드에 `unknown_method`로 답한다 — 그때 메서드는 [TutorialPracticeUnsupportedException]을 던지고
+/// [practiceSupport]는 [TutorialPracticeSupport.unsupported]가 된다.
+abstract interface class RepositoryPracticeService {
+  /// 지금까지 알아낸 지원 여부. 처음과 연결이 끊긴 뒤는 [TutorialPracticeSupport.unknown].
+  TutorialPracticeSupport get practiceSupport;
+
+  /// `repository.practice.current {}`로 지원 여부를 알아낸다. `unknown_method`면 예외 없이 unsupported를 돌려준다.
+  /// 연결 끊김 같은 다른 실패는 그대로 던진다(값은 unknown 그대로).
+  Future<TutorialPracticeSupport> probePracticeSupport();
+
+  Future<PracticeSessionState> createPractice(PracticeCreateRequest request);
+  Future<PracticeSessionState> currentPractice();
+  Future<PracticeSessionState> resetPractice(PracticeResetRequest request);
+  Future<PracticeEndResult> endPractice(PracticeEndRequest request);
+  Future<PracticeRecoveryResult> recoverPractice(
+    PracticeRecoverRequest request,
+  );
 }

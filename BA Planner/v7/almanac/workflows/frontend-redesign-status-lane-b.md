@@ -6708,3 +6708,143 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 미검증("미실행")
 
 - golden 비교 · 생성(`empty-plan` 새 기준), `fe_gate.ps1` 전체, 고친 화면 눈 확인(일회성 렌더 이미지 안 만듦 — 측정은 probe 수치), 실제 앱(mock), process E2E, Python, Lane A 진행 중 파일을 쓰는 시험.
+
+## F3c-1 착수 기록 — 임시 계정(practice) 서비스 층 · Mock 가상 스캔 (Lane B, 2026-10-21)
+
+- 상태: **진행 중**. 시작 SHA `df053ac930c9210a3728433b4934d66d5794710f`(브랜치 `scanner-consolidation`, `git log -3`에 `5ae8f207` f3e 있음). 이 파일 끝에 다른 "F3c-1 착수 기록" 없음을 확인했다. 같은 시각 Lane A가 F3c-2(탭 · 셸 화면 파일)를 하고 있다 — `lib/ui/**`는 `scan_session_controller.dart`(4만) 밖은 건드리지 않는다.
+- 근거: `contracts/tutorial-practice-v1.md` · `.schema.json` · `fixtures/tutorial_practice_v1.json`(XB `96319b3e`, `runtimeImplemented:false`), XB 합성 데이터 `debug/xb_available_work_20261020/artifacts/tutorial-dataset-fd183.json`(읽기만), FD-182 · FD-183, F3a 대본(`tutorial_script.dart`). 막힘 요약 '열림' 0건.
+- 착수 전 사용자 결정(AskUserQuestion, 2026-10-21): ① 아이템 칸 수는 **대본 우선 재배치** — 60칸 유지, 기술 노트 index 26 · 27(수량 46 · 47 그대로)을 '확인 필요'(근거 uncertain)로 → 기본 승인 54, 2칸 승인하면 56, 수량 null 4칸은 '읽지 못함' 그대로(수량을 지어내지 않음) ② practice 오류 코드의 클라이언트 허용 목록(`planning_protocol_client.dart`)은 **고치지 않고 발견으로 기록**.
+- 고칠 기존 파일(pre 사본 `debug/frontend_f3c1/pre/frontend/...`, 전부 **기존 미커밋 변경 없음**): `frontend/lib/services/repository_service.dart`(CRLF) · `process_app_service.dart`(CRLF) · `mock_app_service.dart`(CRLF) · `app_service.dart`(LF, 필요할 때만) · `frontend/lib/ui/scan/scan_session_controller.dart`(LF).
+- 새 파일: `frontend/lib/services/mock_tutorial_practice.dart`, `frontend/test/tutorial_practice_*_test.dart`, `debug/frontend_f3c1/commit.json` · `output.md`.
+- 안 고침: `lib/ui/**`(위 하나 밖) · `lib/ui/tutorial/**` · `scanner_service.dart`(enum · 시작 시그니처 · wire 키) · `planning_protocol_client.dart` · backend · contracts · golden harness · 기준 이미지 · `frontend/tool/**` · pubspec.
+
+## F3c-1 종료 기록 — 임시 계정(practice) 서비스 층 · Mock 가상 스캔 (Lane B, 2026-10-21)
+
+- 상태: **완료(워커 몫)**. 시작 SHA `df053ac9`. 고친 기존 파일 4개(`repository_service.dart` · `process_app_service.dart` · `mock_app_service.dart` · `scan_session_controller.dart`, 전부 pre 사본 · 기존 미커밋 변경 없음), 새 파일 5개(`lib/services/mock_tutorial_practice.dart`, 시험 4). `app_service.dart`는 pre 사본만 만들고 고치지 않았다(공개 노출은 별도 인터페이스 `RepositoryPracticeService`로 충분 — `AppService`를 넓히면 기존 시험 가짜 서비스가 모두 깨진다). 의존성 · pubspec · kit · `lib/ui/**`(controller 밖) · `lib/ui/tutorial/**` · `scanner_service.dart` · `planning_protocol_client.dart` · backend · contracts · golden harness · 기준 이미지 그대로.
+- 줄바꿈: CRLF 파일(repository · process · mock)은 CRLF 수 = 줄 수, LF 파일(controller · 새 파일 5)은 CR 0. `dart format`은 사본에서 돌려 내 줄만 반영(Mock 카탈로그 상수는 내가 감싼 `_withMockPracticeCatalog(...)` 때문에 2칸 들여쓰기만 바뀜).
+- 근거: `contracts/tutorial-practice-v1.md` · schema · fixture(XB `96319b3e`, `runtimeImplemented:false`), XB 데이터셋 `tutorial-dataset-fd183.json`(39483 bytes, sha256 `61652a3b2492d3e61a5e9f0f8eee1ce8020649ac0cba33d1fe120f9e5dcfc37b`, 읽기만), FD-182, F3a 대본. 착수 전 사용자 결정 2건(착수 기록).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `dart analyze lib/services/…`(작업 중 여러 번) · `flutter analyze`(frontend 전체, 마지막) | **No issues found!**(error · warning · info 0. 중간 1회 info `unnecessary_import` → 고침) |
+| `flutter test test/tutorial_practice_contract_test.dart` | 1회차 컴파일 실패(`crypto` 패키지 없음 → SHA 대신 크기 · 내용 전부 비교로 바꿈) → **+6 All tests passed** |
+| `flutter test test/tutorial_practice_mock_test.dart` | 1회차 컴파일 실패(API 이름) → 2회차 −1(rootBundle 바인딩) → **+11 All tests passed** |
+| `flutter test test/tutorial_practice_controller_test.dart` | **+3 All tests passed** |
+| `flutter test --concurrency=1 test/tutorial_practice_process_e2e_test.dart` | **+1 All tests passed**(실제 백엔드, unknown_method → unsupported, 연결 유지) |
+| `flutter test` 바뀐 서비스 · 컨트롤러 · 셸을 쓰는 기존 시험 139개 경로(grep, golden 17 · process E2E 29 제외, 새 시험 포함) | **+1808 −11**: −10은 내 목록에 섞인 `main` 없는 helper 10개(`test/fixtures/*` · `*_fixture.dart`, "loading" 실패 — 시험 아님), −1은 실제 Python 프로세스 시험(`planning_protocol_client_test` "real Python process…")의 20초 시간 초과(병렬 부하) |
+| `flutter test --concurrency=1 test/planning_protocol_client_test.dart`(위 시간 초과 단독 재실행) | **+24 All tests passed** |
+| `dart format` 고친 파일은 사본에서 비교 → 내 줄만 반영, 새 파일 5개는 경로 하나씩 | — |
+| 새 시험 3개(format 뒤) 재실행 · E2E 재실행 | +20 · +1 All tests passed |
+
+- 같은 시각 Lane A가 F3c-2를 하고 있었다 — 위 139개에는 그 작업 트리의 `tutorial_targets_f3c2_test.dart`도 들어 있었고 통과했다.
+- 로그(로컬): `debug/frontend_f3c1/test_related1.log` · `test_contract1.log` · `test_mock1.log` · `test_mock2.log` · `test_controller1.log` · `test_e2e1.log` · `test_planning_client.log` · `test_new_final.log` · `test_e2e_final.log`. 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교, 맨 `flutter test`, 나머지 process E2E 28개, Python.
+
+### DTO 표(`repository_service.dart`, 계약 schema 그대로 — 모르는 키 거부)
+
+| 메서드 | 요청(Dart) | 성공 응답(Dart) | 오류 |
+|---|---|---|---|
+| `repository.practice.create` | `PracticeCreateRequest(originProfileId, expectedOriginRevision, idempotencyKey)` | `PracticeSessionState(practice, selectedProfileId)` — Process는 `practice == null`이면 FormatException | 계약 9개(`PracticeErrorCode`) |
+| `repository.practice.current` | `{}` | `PracticeSessionState`(practice nullable) | 〃 |
+| `repository.practice.reset` | `PracticeResetRequest(profileId, expectedRevision, idempotencyKey)` | `PracticeSessionState`(practice 필수) | 〃 |
+| `repository.practice.end` | `PracticeEndRequest(…, reason: completed · dismissed)` | `PracticeEndResult(deletedProfileId, selectedProfileId?, alreadyDeleted)` | 〃 |
+| `repository.practice.recover` | `PracticeRecoverRequest(idempotencyKey)` | `PracticeRecoveryResult(removedProfileIds 중복 없음, selectedProfileId?)` | 〃 |
+
+- `PracticeProfile`: `profile_id` · `origin_profile_id`(길이 1 이상 문자열 — 일반 계정 24 hex 규칙 아님, fixture가 `tutorial-fixture-profile`) · `is_practice: true`만 · `revision` 정수 ≥ 0(bool 거부) · `dataset_version: tutorial-v1` · `virtual_target_id: tutorial:1280x720`. 별칭(`is_tutorial`) · `seed_path` · 요청의 `is_practice` 거부.
+- 요청 DTO는 만들 때 `fromWire`를 거친다(빈 문자열 · 음수 revision은 생성자에서 FormatException).
+- `isValidRepositorySuccessPayload` · `isValidRepositoryProtocolMessage`에 다섯 메서드 요청 · 응답을 더했다. practice 메서드의 오류 코드는 계약 9개만(일반 repository 코드 · `unknown_method`는 practice 메시지로는 무효 — `unknown_method`는 아래 지원 판정으로 해독).
+- `RepositoryProfile.isPractice`(기본 false). wire에 `is_practice` 키가 있으면 **거부**(지금 백엔드 profile 응답 schema에 키가 없음 — runtime 짝 라운드에서 bool 받기로 바꿈).
+- 오류 해독: `practiceErrorCodeOf(error)` — `BackendRemoteException` 코드가 계약 9개 중 하나면 그 값, 아니면 null.
+
+### practiceSupport 규칙(`TutorialPracticeSupport`)
+
+| 값 | 언제 |
+|---|---|
+| `unknown` | 처음, Process 연결이 끊긴 뒤(`_syncConnection`) |
+| `unsupported` | practice 메서드가 `unknown_method`를 받았다 → 그 메서드는 `TutorialPracticeUnsupportedException(method)`를 던진다. 연결은 그대로(repository 오류 허용 목록에 `unknown_method` 있음) |
+| `supported` | practice 메서드가 성공하거나 계약 오류(예: `practice_session_active`)를 받았다 |
+
+- `probePracticeSupport()` = `current {}` 한 번. unsupported면 예외 없이 값을 돌려주고, 연결 끊김 등 다른 실패는 그대로 던진다(값은 unknown). 화면(F3c-3)은 `unsupported`면 튜토리얼을 막는다.
+- Mock은 `MockAppService(tutorialPracticeSupported: false)`로 같은 미지원 경로를 낸다(기본 true).
+
+### Mock 의미 표(`mock_app_service.dart` + `mock_tutorial_practice.dart`)
+
+| 동작 | Mock |
+|---|---|
+| 보관 | 임시 계정은 `_profiles` 안 `isPractice: true`(이름 '튜토리얼', 아바타 = 원 계정, id `7e` + 22 hex). `listProfiles`에는 없다. revision = 임시 계정 저장소 revision(스캔 적용 · 저장마다 오름) |
+| create | 활성 임시 계정 있으면 `practice_session_active`. 원 계정이 일반 계정이 아니면 `profile_not_found`, revision 다르면 `revision_conflict`. seed를 revision 0부터 놓고(끝 revision 2) 임시 계정을 고르고 원 계정은 고름만 풀림(revision · state · 이력 그대로) |
+| current | `{practice?, selected_profile_id}`(영수증 없음) |
+| reset | 지금 임시 계정 · revision 맞아야 함(일반 계정 id면 `practice_profile_required`). 열린 가상 세션 취소(`terminal cancelled` 바로) · 그 세션 후보 무효 · 임시 계정 데이터 전부 지우고 seed를 **지금 revision + 1부터** 다시 놓음(끝 = +3). 선택은 그대로 |
+| end | 같은 검사 → 세션 닫기 · 데이터 전부 지움(일반 삭제와 같은 범위 `_dropMockProfileData`) · 프로필 제거 · 원 선택 복원(원 계정이 없으면 첫 계정, 없으면 null). 다시 end(다른 key) = `already_deleted: true` |
+| recover | 남은 임시 계정이 있으면 end와 같이 지움 → `removed_profile_ids: [id]`, 없으면 `[]`. `restartBackend()`도 시작 때 같은 정리를 한다 |
+| 재시도 | 메서드 · key별 영수증: 같은 요청 = 원 응답(복사본), 다른 요청 = `idempotency_conflict`. 실패한 요청은 기록하지 않는다 |
+| 일반 경로 | `deleteProfile(임시 id)` = `profile_not_found`. 삭제된 임시 계정 읽기 = `profile_not_found`. rename · update · select는 `isPractice`를 유지(일반 계정을 임시로 바꾸는 길 없음) |
+| 카탈로그 | 임시 계정을 고른 동안 `listStudents` = 전체 카탈로그(대본 학생 7 + 유우카 · 히나), `listInventoryItems` = 기본 + 노트 · BD 60칸(백엔드 카탈로그와 같은 키 · 이름 · 학교 · 티어) |
+| 가상 대상 | 임시 계정을 **고른 동안만** `scanner.target.list` = `[tutorial:1280x720 · '가상 게임 창 · 튜토리얼' · ready · foreground false · 1280×720 · blue_archive]`(진짜 창 없음) |
+| 교차 거부 | 가상 대상 ↔ 고른 임시 계정만 시작(아니면 `practice_profile_required`), 시나리오 없는 시작 값(학생 1명 · 다른 아이템 종류) `invalid_payload`. 적용: 임시 계정 세션은 그 임시 계정에만, 임시 계정에는 그 세션만(`practice_profile_required`). reset · end로 무효가 된 세션 적용 = `session_not_found` |
+| 오류 모양 | practice 쪽은 `BackendRemoteException(code)`(Process와 같은 해독). 기존 Mock 오류(`StateError`)는 그대로 |
+
+### 재생 표(기존 이벤트 모양, 단계마다 FB-10a 안전 지점 · 10ms 간격)
+
+| 시작 값 | 이벤트 순서 | 후보 | 검토 · 모름 |
+|---|---|---|---|
+| student · full | `phase capturing` → (`progress n/9 scanner.student.matched` + `feedback {student_id, field: student_id, values: {}}`) × 9 → `candidate` × 9 → `terminal completed` | 9(학생마다 하나): 바뀜 6(칸나(수영복) · 아카네 · 마키 · 미카 · 히마리(무장) · 시로코(수영복), 레벨 +10) · 새 학생 1(네루(교복)) · 확인 필요 2 | 유우카: `level` uncertain + `student_stat_validation` suspicious(찍어 둔 화면 확인 대상), 히나: `level` uncertain. 나머지 `level` ok + 계산 verified |
+| inventory · tech_notes | `phase` → `progress 10/30 · 20/30 · 30/30 scanner.inventory.grid` → `candidate` 1 → `terminal` | 1(30칸) | index 26 · 27(수량 46 · 47) 확인 필요(uncertain, 대본 우선), index 28 · 29 수량 null(읽지 못함) |
+| inventory · tactical_bd | 같은 순서 | 1(30칸) | index 28 · 29 수량 null |
+
+- 두 종류 합: 기본 승인(바뀜 · 그대로) **54** + 확인 필요 **2**(승인하면 **56** = 대본 '승인한 56칸') + 읽지 못함 **4**(null 그대로, 0으로 채우지 않음). 시험이 아이템 검토 보드 규칙(`scanItemCellStateFor`)으로 센다.
+- 일시정지 → 다음 안전 지점에서 `paused`, 이어서 → `resumed` 뒤 남은 단계. 취소 → `terminal cancelled`, 남은 단계 없음. generation은 기존 Mock 카운터.
+- 분모(9 · 30)는 재생이 아는 값이라 실었다(계약 "supplied only if the fixed replay actually knows them"). 진짜 학생 전체 스캔은 분모를 모른다.
+
+### seed 표(create · reset)
+
+| 항목 | 값 |
+|---|---|
+| 학생 | 데이터셋 `previous_students` 6명(칸나(수영복) 60 · 아카네 61 · 마키 62 · 미카 63 · 히마리(무장) 64 · 시로코(수영복) 65, 나머지 값 같음). `provenance`는 옮기지 않음 |
+| 인벤토리 | 기술 노트 index 0~9(index 0~4 = 스캔과 같은 수량 20~24, 5~9 = 5 적은 20~24) — **데이터셋에 없어 Mock이 정함** |
+| 목표 · 계획 · 시나리오 · 전술 | 0 |
+| 이력 | 지난 스캔 하나(세션 `tutorial-previous-scan-v1`, 하루 전 시각): 학생 6 적용 이벤트 + 기술 노트 10칸 적용 이벤트(revision base → +1 → +2) |
+| 통계 | 임시 계정 범위 이력만(지난 스캔 + 이번 가상 스캔 적용). 진짜 계정 이력 · 요약 그대로(시험) |
+
+### 대본 ↔ 데이터 대조
+
+| 대본(F3a) | 데이터셋 | Mock | 판정 |
+|---|---|---|---|
+| 프라나 04 "달라진 학생 6명, 새 학생 1명", "2명 확인 필요" | 바뀜 6 · new 1 · review 2 | 같음(후보 9) | 일치(프롬프트 "학생 7명"은 6 + 1로 읽었다 — 후보는 9) |
+| 3단계 "'6명 한 번에 적용'" | 바뀜 6 | 바뀜 6은 근거 ok | 일치 |
+| 프라나 04 대사 4 "찍어 둔 화면" | 유우카 `fallback_capture_required` | stat suspicious만, **crop 그림 없음** | 차이(발견 3) |
+| 6단계 "확인 필요 2칸 승인" → "승인한 56칸" | 기본 56 + null 4 | 54 + 확인 필요 2 + null 4 | 사용자 결정으로 대본 우선(발견 1) |
+| 프라나 07 "지난 수량과 비교" | 이전 인벤토리 없음 | Mock이 기술 노트 10칸 정함 | 차이(발견 2) |
+| 7단계 계획 학생 7명(네루 포함) | `planning_students` 7 | 임시 계정 고른 동안 전체 카탈로그 | 일치. 단 네루는 3단계 뒤에도 "새 학생" 후보로 남는다(6명만 적용) — 계획 고르기는 카탈로그라 막히지 않음 |
+| F3a 카드 예시 "가상 스캔 중… 34 / 128" | — | 학생 n/9, 아이템 n/30 | 카드 숫자는 실제 진행값으로(시안 예시값) |
+
+### F3c-3 입력(화면이 쓸 공개 API · 신호를 낼 자리)
+
+- 서비스: `service is RepositoryPracticeService`(Process · Mock 둘 다). 첫 실행 ③ 뒤 튜토리얼 시작 전 `probePracticeSupport()` → `unsupported`면 막고 안내(백엔드 미지원), `supported`면 `createPractice(PracticeCreateRequest(originProfileId: 첫 계정 id, expectedOriginRevision: 그 revision, idempotencyKey: …))`. 그만두기 · 끝 = `endPractice(… reason: dismissed | completed)` → `selectedProfileId`로 첫 계정 홈. 앱 시작 때 `recoverPractice(…)`(재시도 경계). 다시 하기(설정 `onRestartTutorial`) = 활성 임시 계정이 있으면 `resetPractice`, 없으면 create.
+- 계정: 임시 계정은 `listProfiles`에 없다 → 화면이 `PracticeSessionState.practice`로 `RepositoryProfile(id, displayName: '튜토리얼', revision, selected: true, isPractice: true)`를 만들어 셸 · 스캔 컨트롤러에 넘긴다. 임시 계정을 고른 동안 목록의 일반 계정은 모두 `selected: false`다(셸의 "고른 계정" 판단이 목록에만 기대면 안 됨).
+- 스캔: `ScanSessionController.selectProfile(임시 계정)` → `targets` = 가상 대상 하나 → `chooseTarget(practiceVirtualTargetId)`. reset · end 직후 `controller.discardProfileScope(practice.profileId)`(후보 사본 · 최근 · 적용 대기 · 검토 상태 · 보던 세션을 버림).
+- 신호를 낼 자리(F3a 이름): `connect.virtualWindow.picked` = 가상 대상 고름, `connected` = '선택한 창 사용' 확정, `scan.studentScope.allSelected` = 학생 전체 고름, `scan.student.started` = 가상 학생 세션 시작, `scan.student.finished` = 그 세션 `terminal completed`, `scan.studentReview.applied` = 바뀐 6명 적용 성공, `scan.item.finished` = 아이템 큐(tech_notes → tactical_bd) 끝, `scan.itemReview.uncertainApproved` = 확인 필요 2칸 승인, `scan.itemReview.applied` = 56칸 적용 성공. 진행 카드 n/m = controller `progressCurrent/progressTotal`.
+- 오류 표시: `practiceErrorCodeOf(error)` → `practice_session_active`(이미 진행 중 — current/reset/end 안내) 등.
+
+### 미검증("미실행")
+
+- 실제 runtime 짝 라운드(XB X4: 실제 practice 수명 · 영속 · 고아 정리 · 교차 거부 · 가상 재생 · tactical_bd 합성 시나리오 검증) — 계약상 이번 범위 밖. Process E2E는 unknown_method 해독 1건만.
+- golden 비교(변화 0 예상 — 화면 파일 무수정, Mock 기본 동작은 임시 계정이 없을 때 그대로), `fe_gate.ps1` 전체, process E2E 나머지 28개(바뀐 Process 코드는 메서드 추가 · 연결 끊김 때 값 초기화뿐), 실제 앱(mock) 눈 확인, Python.
+- 리뷰(`reviewScannerCandidate`)의 교차 거부: 요청에 profile이 없어 Mock은 적용(commit)에서만 거부한다.
+
+### 발견 사항(CF 판단)
+
+1. **아이템 칸 수**: 대본 "확인 필요 2칸 승인 → 승인한 56칸"과 데이터셋(기본 56 + null 4)이 다르다. 사용자 결정으로 Mock은 대본 우선(기술 노트 26 · 27을 확인 필요로, 수량은 그대로). runtime 데이터셋을 바꿀지 대본 숫자를 바꿀지 XB와 조율.
+2. **seed 이전 인벤토리 없음**: 데이터셋에 `previous_inventory`가 없다(프라나 07 "지난 수량과 비교"). Mock은 기술 노트 10칸을 정했다 — XB 데이터에 넣을지.
+3. **찍어 둔 화면(crop) 없음**: 유우카 `fallback_capture_required`이지만 데이터셋 · Mock에 FB-10c 검토 그림이 없다. 프라나 04 대사 4가 밝히는 `scan.studentReview.fallbackCheck`가 빈 칸일 수 있다.
+4. **클라이언트 오류 허용 목록**: `planning_protocol_client.dart`의 repository · scanner 허용 목록에 `practice_session_active` · `practice_profile_required` · `practice_cleanup_failed` · `storage_error`가 없다 — runtime이 이 코드를 보내면 치명적 protocol 오류로 연결이 끊긴다. 사용자 결정으로 이번에는 고치지 않음 → runtime 짝 라운드에서 더해야 한다.
+5. **`RepositoryProfile` 사본이 `isPractice`를 잃는다**: `lib/ui/**`의 `repositoryProfileWithRevision` · `account_section_cluster` · `title_page` · `first_run_modal`이 새 `RepositoryProfile`을 만들 때 플래그를 넘기지 않는다(Lane A 파일). F3c-3은 플래그보다 `PracticeSessionState`를 기준으로 하거나 사본 함수에 플래그를 넘겨야 한다.
+6. **임시 계정을 고른 동안 일반 목록에 고른 계정이 없다**(계약: 일반 목록에서 뺌). 셸 · 계정 패널이 "selected 없음 → 첫 계정"으로 넘어가지 않게 F3c-3에서 다뤄야 한다.
+7. **네루(교복)는 새 학생 후보로 남는다**: 대본은 6명만 적용하므로 네루는 확정 학생이 아니다. 계획 단계는 카탈로그로 고르니 막히지 않지만 학생 탭에는 없다 — 의도인지 CF 확인.
+8. **분모**: 가상 학생 스캔은 분모 9를 싣는다(진짜 학생 전체 스캔은 모름). 계약이 허용하지만 화면이 "학생 스캔은 분모 없음"을 가정한 곳이 있으면 확인.
+9. 프롬프트의 "학생 7명"은 6 + 1로 읽었다(후보는 확인 필요 2명을 더해 9).
+
+### 다음 행동
+
+- CF: `debug/frontend_f3c1/output.md` 검토 → (Lane A 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → `fe_commit.ps1 -Slice f3c1`. 발견 1 · 2 · 3 · 4는 XB X4 짝 라운드로, 5 · 6 · 7은 F3c-3 범위로.
