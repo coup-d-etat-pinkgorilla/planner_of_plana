@@ -9,6 +9,7 @@
 //   done rgba(113,199,244,.12)/#a8e0ff, tri #c79ac9/#2a1330(hover #d9b0db). `.btn.dng/.icon`은 쓰지 않는다(FD-014).
 //   그룹은 레일을 따라 아래 버튼일수록 폭이 줄어든다(위 버튼과의 세로 거리/tan80).
 // 시안에 비활성 규칙은 없다. 키트 공통으로 불투명도 .45, 키보드 포커스는 파랑 테두리다(워커 결정).
+// K1: tonal 버튼 간격 · 굵기 · 아이콘 크기 매개변수(기본값은 시안 `.tonal` 8 · 600 · 16, 튜토리얼 그만두기 5 · 700 · 13).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -63,6 +64,7 @@ class TonalButtonColors {
 
 /// tonal 버튼(`.tonal`). [icon]은 16px 앞 아이콘이다. [leading]은 시안 svg 선 아이콘처럼 Material 아이콘이 아닌 앞 위젯이고
 /// (FE6-d, 둘 다 주면 [leading]), [semanticLabel]은 보이는 글자 대신 읽을 의미 라벨이다(시안 `aria-label`).
+/// [gap]은 앞 아이콘과 글자 사이, [fontWeight]는 글자 굵기, [iconSize]는 [icon] 크기다(K1).
 class TonalButton extends StatelessWidget {
   const TonalButton({
     super.key,
@@ -75,6 +77,9 @@ class TonalButton extends StatelessWidget {
     this.height = AppControlHeights.tonalButton,
     this.horizontalPadding = 16,
     this.fontSize = AppType.bodySize,
+    this.gap = 8,
+    this.fontWeight = AppType.semiBold,
+    this.iconSize = 16,
     this.hovered,
     this.focusNode,
   });
@@ -83,7 +88,7 @@ class TonalButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
 
-  /// 앞 위젯(글자 앞 간격 8). 색은 [TonalButtonColors.of]`(variant).foreground`를 쓴다.
+  /// 앞 위젯(글자 앞 간격 [gap]). 색은 [TonalButtonColors.of]`(variant).foreground`를 쓴다.
   final Widget? leading;
 
   /// 의미 라벨. 없으면 보이는 글자다.
@@ -92,6 +97,9 @@ class TonalButton extends StatelessWidget {
   final double height;
   final double horizontalPadding;
   final double fontSize;
+  final double gap;
+  final FontWeight fontWeight;
+  final double iconSize;
 
   /// hover 상태를 고정한다(갤러리 견본용).
   final bool? hovered;
@@ -124,10 +132,10 @@ class TonalButton extends StatelessWidget {
           children: [
             if (leading != null) ...[
               leading,
-              const SizedBox(width: 8),
+              SizedBox(width: gap),
             ] else if (icon != null) ...[
-              Icon(icon, size: 16, color: colors.foreground),
-              const SizedBox(width: 8),
+              Icon(icon, size: iconSize, color: colors.foreground),
+              SizedBox(width: gap),
             ],
             Text(
               label,
@@ -137,7 +145,7 @@ class TonalButton extends StatelessWidget {
                 fontFamilyFallback: AppFonts.fallback,
                 fontSize: fontSize,
                 height: 1.2,
-                fontWeight: AppType.semiBold,
+                fontWeight: fontWeight,
                 color: colors.foreground,
               ),
             ),

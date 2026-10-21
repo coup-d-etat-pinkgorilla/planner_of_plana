@@ -13,6 +13,7 @@ import '../../app/theme.dart';
 import '../geometry/diagonal_geometry.dart';
 import '../kit/info_popover.dart';
 import '../kit/kit_glyph.dart';
+import '../kit/panel_button.dart';
 import 'ba_triangle_background.dart';
 import 'lifted_path_shadow.dart';
 import 'section_template_surface.dart' show buildRoundedSectionPolygon;
@@ -41,22 +42,6 @@ const _cancelOutline = Color.fromRGBO(56, 81, 107, 0.72);
 const _submitOutline = Color.fromRGBO(242, 179, 239, 0.9);
 const _buttonOutlineWidth = 1.8;
 const _disabledOpacity = 0.42;
-
-const _cancelTexture = BATriangleTextureConfig(
-  baseColor: BATrianglePalette.softTitlePinkBase,
-  panelColor: BATrianglePalette.softTitlePinkPanel,
-  softColor: BATrianglePalette.softTitlePinkSoft,
-  accentColor: BATrianglePalette.softTitlePinkAccent,
-  triangleSize: 30,
-  tessellationContrast: 0.09,
-  randomSeed: 7411,
-  macroTriangleChance: 0.14,
-  macroTriangleScale: 2.1,
-  macroTriangleContrast: 0.06,
-  lightStrength: 0.22,
-  edgeVignetteStrength: 0.12,
-  fogStrength: 0.08,
-);
 
 /// 오른쪽 위로 기운 80° 평행사변형(왼쪽 위 꼭짓점이 높이/tan80°만큼 오른쪽). [radius]로 둥글린다.
 Path accountCreateParallelogram(Rect rect, double radius) {
@@ -208,21 +193,23 @@ class _AccountCreatePanelState extends State<AccountCreatePanel> {
                   ],
                 ),
               ),
-              _PathButton(
-                key: const ValueKey('account-create-close'),
+              Positioned.fromRect(
                 rect: closeRect,
-                radius: 7,
-                fill: _closeFill,
-                outline: _closeOutline,
-                outlineWidth: 1.2,
-                semanticLabel: '닫기',
-                onTap: widget.busy ? null : widget.onCancel,
-                child: const SizedBox.square(
-                  dimension: 18,
-                  child: CustomPaint(
-                    painter: KitGlyphPainter(
-                      glyph: KitGlyph.close,
-                      color: _closeIcon,
+                child: ParallelogramPanelButton(
+                  key: const ValueKey('account-create-close'),
+                  radius: 7,
+                  fill: _closeFill,
+                  outline: _closeOutline,
+                  outlineWidth: 1.2,
+                  semanticLabel: '닫기',
+                  onTap: widget.busy ? null : widget.onCancel,
+                  child: const SizedBox.square(
+                    dimension: 18,
+                    child: CustomPaint(
+                      painter: KitGlyphPainter(
+                        glyph: KitGlyph.close,
+                        color: _closeIcon,
+                      ),
                     ),
                   ),
                 ),
@@ -340,37 +327,41 @@ class _AccountCreatePanelState extends State<AccountCreatePanel> {
                     ),
                   ),
                 ),
-              _PathButton(
-                key: const ValueKey('account-create-cancel'),
+              Positioned.fromRect(
                 rect: cancelRect,
-                radius: 8,
-                texture: _cancelTexture,
-                outline: _cancelOutline,
-                outlineWidth: _buttonOutlineWidth,
-                onTap: widget.busy ? null : widget.onCancel,
-                child: const _ButtonLabel('취소'),
+                child: ParallelogramPanelButton(
+                  key: const ValueKey('account-create-cancel'),
+                  radius: 8,
+                  texture: kitPanelCancelTexture,
+                  outline: _cancelOutline,
+                  outlineWidth: _buttonOutlineWidth,
+                  onTap: widget.busy ? null : widget.onCancel,
+                  child: const _ButtonLabel('취소'),
+                ),
               ),
               ValueListenableBuilder<TextEditingValue>(
                 valueListenable: widget.nameController,
                 builder: (context, value, _) {
                   final enabled = !widget.busy && value.text.trim().isNotEmpty;
-                  return _PathButton(
-                    key: const ValueKey('account-create-submit'),
+                  return Positioned.fromRect(
                     rect: submitRect,
-                    radius: 8,
-                    texture: titlePrimaryActionTexture,
-                    outline: _submitOutline,
-                    outlineWidth: _buttonOutlineWidth,
-                    onTap: enabled ? _submit : null,
-                    child: widget.busy
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Opacity(
-                            opacity: enabled ? 1 : _disabledOpacity,
-                            child: const _ButtonLabel('만들기'),
-                          ),
+                    child: ParallelogramPanelButton(
+                      key: const ValueKey('account-create-submit'),
+                      radius: 8,
+                      texture: titlePrimaryActionTexture,
+                      outline: _submitOutline,
+                      outlineWidth: _buttonOutlineWidth,
+                      onTap: enabled ? _submit : null,
+                      child: widget.busy
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Opacity(
+                              opacity: enabled ? 1 : _disabledOpacity,
+                              child: const _ButtonLabel('만들기'),
+                            ),
+                    ),
                   );
                 },
               ),
@@ -399,86 +390,6 @@ class _ButtonLabel extends StatelessWidget {
       color: Colors.white,
     ),
   );
-}
-
-/// 평행사변형 버튼: 채움(색 또는 절차 텍스처) + 외곽선 + 누르기. 누르는 범위도 평행사변형이다.
-class _PathButton extends StatelessWidget {
-  const _PathButton({
-    super.key,
-    required this.rect,
-    required this.radius,
-    required this.outline,
-    required this.outlineWidth,
-    required this.onTap,
-    required this.child,
-    this.fill,
-    this.texture,
-    this.semanticLabel,
-  });
-
-  final Rect rect;
-  final double radius;
-  final Color? fill;
-  final BATriangleTextureConfig? texture;
-  final Color outline;
-  final double outlineWidth;
-  final String? semanticLabel;
-  final VoidCallback? onTap;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final path = accountCreateParallelogram(
-      Offset.zero & rect.size,
-      radius,
-    );
-    final texture = this.texture;
-    final button = ClipPath(
-      clipper: _PathClipper(path),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (texture != null)
-            BATriangleBackground(config: texture)
-          else
-            ColoredBox(color: fill ?? Colors.transparent),
-          Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              onTap: onTap,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: FittedBox(fit: BoxFit.scaleDown, child: child),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    return Positioned.fromRect(
-      rect: rect,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          semanticLabel == null
-              ? button
-              : Semantics(button: true, label: semanticLabel, child: button),
-          IgnorePointer(
-            child: CustomPaint(
-              painter: _OutlinePainter(
-                path,
-                color: outline,
-                strokeWidth: outlineWidth,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _PathClipper extends CustomClipper<Path> {

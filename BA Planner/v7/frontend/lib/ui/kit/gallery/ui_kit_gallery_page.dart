@@ -7,6 +7,7 @@
 // FE2-c: `ui_kit_overlays_section.dart`(W-Info-Popover 보드, 모달 스크림 프리셋, W-Layout 팝오버 줄, 프리셋 견본).
 // FE2-d: `ui_kit_data_section.dart`(W-Data KPI · 주요 재화 · 아이템 타일 · 비율 막대 행, 차트·이미지 원자 견본).
 // FE7-j: `ui_kit_frame_section.dart`(tidy2 섹션 틀 `SectionFrame` · `SectionScaledBox`).
+// K1: `ui_kit_promotion_section.dart`(키트 승격 1차 — 선 아이콘 · tonal 매개변수 · 강조 테두리 · 도는 표시 · 칩 링 · 패널 버튼).
 // 다음 FE2 slice는 이 페이지에 자기 위젯 타일을 더한다.
 import 'dart:math' as math;
 
@@ -23,6 +24,7 @@ import 'ui_kit_controls_section.dart';
 import 'ui_kit_data_section.dart';
 import 'ui_kit_frame_section.dart';
 import 'ui_kit_overlays_section.dart';
+import 'ui_kit_promotion_section.dart';
 
 /// 갤러리 페이지. 개발 패널의 "UI Kit 갤러리" 버튼이 연다.
 class UiKitGalleryPage extends StatelessWidget {
@@ -104,6 +106,15 @@ class UiKitGalleryPage extends StatelessWidget {
               ),
               SizedBox(height: 24),
               UiKitFrameSection(),
+              SizedBox(height: 48),
+              _GalleryHeading(
+                title: '키트 승격 1차',
+                caption:
+                    '튜토리얼 · 빈 상태 · 계정 추가 모달에서 올린 선 아이콘 · tonal 간격 · 강조 테두리 · 도는 표시 · 칩 링 · '
+                    '평행사변형 패널 버튼입니다. 원본 화면의 크기와 색으로 놓았습니다.',
+              ),
+              SizedBox(height: 24),
+              UiKitPromotionSection(),
               SizedBox(height: 40),
             ],
           ),

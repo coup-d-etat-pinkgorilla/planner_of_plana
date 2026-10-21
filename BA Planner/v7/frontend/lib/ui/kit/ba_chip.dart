@@ -6,6 +6,8 @@
 // 안쪽 1px 테두리(tone 기본색 @.6), × 불투명도 .8. 필터 모달 머리 칩은 시안 `.chip.pk`라 기본 모양이다.
 // 단계 태그: h24 r5 사선, 1단계 파랑 · 2단계 핑크 · 3단계 노랑. 지금 보는 단계 = 원색 채움 + #1a1f2a 글자.
 // `.chip.solid`는 시안에서 쓰지 않아 만들지 않는다(FD-014).
+// 링 변형([BaChipShape.ringed], K1 — F3a 튜토리얼 머리글 칩): r7, 안쪽 1px 링(tone 기본색 @.55), 간격 6. 원본은 링이
+// 자리를 차지해 글자까지 11(링 1 + 10)이라 좌우 여백 11로 같은 자리에 둔다. 높이는 [BaChip.height](머리글 칩 26)다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -28,7 +30,16 @@ enum BaChipShape {
   standard(radius: AppRadii.chip, padding: 10, gap: 6, borderAlpha: 0, removeAlpha: 1),
 
   /// S4 적용 필터 칩(W-Student-Search): r5, 좌우 9, 간격 5, 안쪽 1px 테두리 @.6, × @.8.
-  outlined(radius: 5, padding: 9, gap: 5, borderAlpha: 0.6, removeAlpha: 0.8);
+  outlined(radius: 5, padding: 9, gap: 5, borderAlpha: 0.6, removeAlpha: 0.8),
+
+  /// 튜토리얼 머리글 칩(F3a): r7, 링 1px @.55 + 좌우 10(= 11), 간격 6.
+  ringed(
+    radius: AppRadii.chip,
+    padding: 11,
+    gap: 6,
+    borderAlpha: 0.55,
+    removeAlpha: 1,
+  );
 
   const BaChipShape({
     required this.radius,
@@ -58,7 +69,8 @@ const baChipRemoveSize = 11.0;
 
 /// 시안 `.chip`. [tone]은 [AppTones]의 6색 중 하나다.
 ///
-/// [onRemove]가 있으면 오른쪽에 × 버튼이 붙는다(제거 칩). [leading]은 앞 아이콘 자리(12px)다.
+/// [onRemove]가 있으면 오른쪽에 × 버튼이 붙는다(제거 칩). [leading]은 앞 아이콘 자리(Material 아이콘은 12px, 선 아이콘은
+/// 자기 크기 — 머리글 칩 깃발 13)다. [height]는 칩 높이(기본 24)다.
 class BaChip extends StatelessWidget {
   const BaChip({
     super.key,
@@ -68,6 +80,7 @@ class BaChip extends StatelessWidget {
     this.onRemove,
     this.removeLabel,
     this.shape = BaChipShape.standard,
+    this.height = AppControlHeights.chip,
   });
 
   final String label;
@@ -78,13 +91,16 @@ class BaChip extends StatelessWidget {
   /// × 버튼의 접근성 이름. 없으면 "`label` 빼기".
   final String? removeLabel;
   final BaChipShape shape;
+  final double height;
 
-  /// 앞 아이콘 없는 칩의 폭(글자 폭은 [baChipTextStyle]로 잰다). 한 줄에 칩이 몇 개 들어가는지 셀 때 쓴다.
+  /// 칩의 폭(글자 폭은 [baChipTextStyle]로 잰다). 한 줄에 칩이 몇 개 들어가는지 셀 때 쓴다. [leadingWidth]는 앞 아이콘
+  /// 폭이다(0이면 앞 아이콘 없음).
   static double widthFor(
     String label, {
     required TextScaler textScaler,
     bool removable = false,
     BaChipShape shape = BaChipShape.standard,
+    double leadingWidth = 0,
   }) {
     final painter = TextPainter(
       text: TextSpan(text: label, style: baChipTextStyle),
@@ -96,6 +112,7 @@ class BaChip extends StatelessWidget {
     painter.dispose();
     return text +
         shape.padding * 2 +
+        (leadingWidth > 0 ? leadingWidth + shape.gap : 0) +
         (removable ? shape.gap + baChipRemoveSize : 0);
   }
 
@@ -104,7 +121,7 @@ class BaChip extends StatelessWidget {
     final leading = this.leading;
     final onRemove = this.onRemove;
     return Container(
-      height: AppControlHeights.chip,
+      height: height,
       padding: EdgeInsets.symmetric(horizontal: shape.padding),
       decoration: BoxDecoration(
         color: tone.background,

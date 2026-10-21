@@ -6951,3 +6951,168 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 다음 행동
 
 - CF: `debug/frontend_f3c4/output.md` 검토 → (Lane A F3c-3 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → `fe_commit.ps1 -Slice f3c4`. 발견 1 · 2는 F3c-3 · XB 정렬로.
+
+## K1 착수 기록 — 키트 승격 1차 (Lane B, 2026-10-21)
+
+- 상태: **진행 중**. 시작 SHA `2d5c0d50ec6ec16d1af7c2b4e6f882bea13ff3f4`(브랜치 `scanner-consolidation`, `git log -3`에 `3c92f975` F3c-5 있음). 이 파일 끝에 다른 "K1 착수 기록" 없음을 확인했다. 같은 시각 Lane A가 F3c-6(`lib/ui/tutorial/**` · `tutorial_host/**` · `tutorial_targets/**` · 계획 · 인벤토리 · `app_shell` · `mock_tutorial_practice` · `mock_app_service`)을 하고 있다 — 그 파일들은 건드리지 않는다. 막힘 요약 '열림' 0건.
+- 범위: 키트에 부품 6(F3a 키트 승격 후보 1~6 + F3d 발견 9 빈 상태 글리프) + `account_create_modal.dart`의 `_PathButton` · `_cancelTexture`를 키트 부품으로 바꾸기(보이는 변화 0) + 갤러리 견본. 튜토리얼 · 빈 상태 사본 교체는 K2.
+- 고칠 기존 파일(사본 `debug/frontend_k1/pre/<v7 기준 경로>`, 5개 모두 LF · 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**): `frontend/lib/ui/kit/kit_glyph.dart` · `frontend/lib/ui/kit/buttons.dart` · `frontend/lib/ui/kit/ba_chip.dart` · `frontend/lib/ui/kit/gallery/ui_kit_gallery_page.dart` · `frontend/lib/ui/widgets/account_create_modal.dart`.
+- 새 파일(예정): `frontend/lib/ui/kit/focus_ring.dart`(강조 테두리) · `frontend/lib/ui/kit/kit_spinner.dart`(작은 도는 표시) · `frontend/lib/ui/kit/panel_button.dart`(평행사변형 패널 버튼 · 취소 텍스처) · `frontend/lib/ui/kit/gallery/ui_kit_promotion_section.dart`(갤러리 견본) · `frontend/test/kit_promotion_k1_test.dart`.
+- 갤러리는 golden 장면에 없다(`test/goldens/**`에 gallery 참조 0) — 견본을 더해도 기준 이미지 변화 없음 예상.
+
+## K1 종료 기록 — 키트 승격 1차 (Lane B, 2026-10-21)
+
+- 상태: **완료(워커 몫)**. 시작 SHA `2d5c0d50`. 고친 기존 파일 5개(`frontend/lib/ui/kit/kit_glyph.dart` · `kit/buttons.dart` · `kit/ba_chip.dart` · `kit/gallery/ui_kit_gallery_page.dart` · `lib/ui/widgets/account_create_modal.dart`), 새 파일 5개(`kit/focus_ring.dart` · `kit/kit_spinner.dart` · `kit/panel_button.dart` · `kit/gallery/ui_kit_promotion_section.dart` · `frontend/test/kit_promotion_k1_test.dart`). 전부 pre 사본 · 기존 미커밋 변경 없음. `lib/ui/tutorial/**` · `empty_state_panel.dart`는 읽기만(시험이 원본으로 import), Lane A 파일 · services · golden harness · 기준 이미지 · tool · pubspec 그대로.
+- 줄바꿈 유지(바이트 검사: 10개 모두 LF · CR 0, 끝 개행 하나). `dart format`은 고친 기존 파일마다 pre · 새 사본을 각각 돌려 "pre→새 차이 = 서식 pre→서식 새 차이"를 확인(내 줄은 서식과 같음, `buttons.dart` RailButtonLook · 모달 옛 `_PathButton`의 기존 서식 차이는 그대로), 새 파일은 경로 하나씩. `git diff --check` 깨끗. `.orig` 등 백업 파일 없음.
+- 근거: F3a 종료 기록 "키트 승격 후보" 1~6, F3d 종료 기록 발견 9, CF K1 배정(2026-10-21 18:30, 재배정).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(중간 · 마지막 2회) | **No issues found!** |
+| `dart analyze test/kit_promotion_k1_test.dart`(편집마다) | No issues found! |
+| `flutter test test/kit_promotion_k1_test.dart` 4회 | 1회 +18 −2(시험 쪽 잘못 2: 칩 폭을 `widthFor` 절대값과 비교 — 글자 재기 차 2px, semantics 미활성) → 2회 −1 → 3회 −1(SemanticsHandle 해제 위치) → **4회 +20 All tests passed** |
+| `flutter test` 관련 61파일(`test/kit/*` 전부 · `account_*` · `title_page` · `first_run_f3b` · `settings_*` · `widget_test` + `kit_glyph`/`buttons`/`ba_chip`/`account_create_modal`/`TonalButton`/`BaChip`/`KitGlyph`를 쓰는 시험 grep, golden · process 0건 확인) | **+618 All tests passed** |
+| `git diff --check -- frontend/lib frontend/test` | 깨끗 |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교 · 일회성 렌더 이미지, 맨 `flutter test`, process E2E, Python. 로그(로컬): `debug/frontend_k1/test_k1_1~4.log` · `test_related_1.log` · `related.txt`.
+
+### 부품 표(후보 → 키트 이름 · API · 원본과 같은지 근거)
+
+| 후보 | 키트 | API | 같은지 근거(`kit_promotion_k1_test.dart`) |
+|---|---|---|---|
+| 1 `TutorialGlyph.check · flag` + F3d `EmptyStateGlyph` 12 | `KitGlyph` 값 12 추가(`check` · `flag` · `scanFrame` · `students` · `box` · `bars` · `swords` · `search` · `play` · `pencil` · `plus` · `arrowRight`; 빈 상태 `cross` = 기존 `close`) | `kitGlyphPath(glyph)`(공개 path), `KitGlyphPainter(strokeWidth:)`(기본 1.9 — 튜토리얼 체크는 2.8을 준다), 새 `KitGlyphIcon(glyph, size:, color:, strokeWidth:)`, `kitGlyphStroke` | 빈 상태 12 path 대조(윤곽 · 길이 · 점 · bounds) + painter 픽셀 대조 12, 튜토리얼 체크(2.8) · 깃발 픽셀 대조, 기존 `close` · `chevronDown` path 그대로 |
+| 2 `TutorialQuitButton` | `TonalButton` 매개변수 | `gap`(8) · `fontWeight`(`AppType.semiBold`) · `iconSize`(16) — 괄호 = 기본값 = 이전 | 기본값 위젯 검사(간격 8 · 아이콘 16 · w600 · 높이), 매개변수 반영, **카드 30 · 대사 띠 40 · 진행 창 26 세 크기 모두 `TutorialQuitButton`과 픽셀 같음**(앞 위젯 `KitGlyphIcon(close)`) |
+| 3 강조 테두리(`tutorialHighlightPath` · `paintTutorialRing` · `TutorialGlowBuilder`) | `focus_ring.dart` | `kitFocusRingPath` · `paintKitFocusRing` · `kitFocusRingBounds` · `KitFocusGlowBuilder` · `KitFocusRing`(감싸기) · `KitFocusRingAt`(사각형) · `KitFocusRingShape` · 값 상수 `kitFocusRing*` · `kitFocusGlow*` | path 2모양 × 3사각형 · bounds · 상수 대조, 멈춘 빛(.6) 픽셀 대조 2(사각형 · 감싸기), 숨쉬는 빛 300 · 1250ms 시점 픽셀 대조, 누르기 통과 · `active:false` |
+| 4 `TutorialSpinner` | `KitSpinner` | `size`(16) · `strokeWidth`(2.4) · `color`(#71c7f4), `KitSpinnerPainter` | 멈춤 · 375ms 회전 시점 픽셀 대조, 크기 매개변수 |
+| 5 `TutorialHeaderChip` | `BaChip` 링 변형 | `BaChipShape.ringed`(r7 · 좌우 11 · 간격 6 · 링 @.55), `BaChip(height:)`(24), `BaChip.widthFor(leadingWidth:)`(0); 앞 아이콘은 기존 `leading` | 색 대조(@.18 · 링 @.55 = 원본 `fromRGBO`), **`TutorialHeaderChip`과 픽셀 같음**, 앞 아이콘 폭 + 간격만큼 넓어짐 · `widthFor` 같은 차, 기본 높이 · 모양 그대로 |
+| 6 평행사변형 패널 버튼 · 취소 텍스처 | `panel_button.dart` | `ParallelogramPanelButton(radius, outline, outlineWidth, onTap, child, fill?, texture?, semanticLabel?)`(부모 크기를 다 씀), `kitParallelogramPath(rect, radius)`, `kitPanelCancelTexture`, `ParallelogramOutlinePainter` | path 대조(3크기 × 3반지름, `accountCreateParallelogram`), 텍스처 값 = pre `_cancelTexture`, **pre `_PathButton`을 그대로 옮긴 참조와 픽셀 같음**(닫기 채움 · 취소 텍스처 · 만들기 텍스처), 사선 밖 누르기 무시 · `onTap: null` 무시 · 의미 라벨 |
+
+- 갤러리: `ui_kit_promotion_section.dart`를 갤러리 맨 아래 "키트 승격 1차" 구역으로(선 아이콘 · tonal · 강조 테두리 + 도는 표시 · 칩 · 패널 버튼 5타일, 원본 화면 크기 · 색). 숨쉬는 빛 · 도는 표시는 갤러리 안에서만 움직임 줄이기로 멈춘 모습(기존 갤러리 시험이 `pumpAndSettle`을 쓴다). 1280×720에서 갤러리 열기 넘침 0(시험).
+
+### 옮긴 곳
+
+- `account_create_modal.dart`: 닫기 · 취소 · 만들기 세 버튼 `_PathButton(rect: …)` → `Positioned.fromRect(rect: …, child: ParallelogramPanelButton(…))`(키 · 값 그대로, 키는 키트 버튼에), `_cancelTexture` → `kitPanelCancelTexture`, 비공개 `_PathButton` 지움. 패널 · 입력 칸이 쓰는 `_PathClipper` · `_OutlinePainter` · 공개 `accountCreateParallelogram`(튜토리얼 · tutorial_host가 import)은 그대로.
+
+### golden 변화 0 근거
+
+- 기본값이 그대로다: `KitGlyphPainter` 굵기 기본 1.9 · 기존 4 path 같은 식, `TonalButton` 간격 8 · w600 · 아이콘 16, `BaChip` 높이 24 · 기존 두 모양 값 그대로. 위젯 트리 변화 없음(값만 매개변수로).
+- `account-new`(`fe8b_account_new_golden_test`): 모달 버튼은 렌더 트리가 같다(Positioned → Stack(ClipPath · 외곽선) 그대로, 사이에 Stateless 한 겹). 시험이 pre `_PathButton` 참조와 세 버튼 모양을 픽셀로 대조해 같음.
+- 갤러리는 golden 장면에 없다(`test/goldens/**` 참조 0). 새 장면 0.
+
+### K2 입력(튜토리얼 · 빈 상태 사본 교체 목록 — Lane A 작업이 멈춘 뒤)
+
+| 파일 | 지금(사본) | 바꿀 키트 | 주의 |
+|---|---|---|---|
+| `lib/ui/tutorial/tutorial_tokens.dart` | `TutorialGlyph` · `TutorialGlyphPainter` | `KitGlyph.check`(`strokeWidth: 2.8`) · `KitGlyph.flag` · `KitGlyphPainter`/`KitGlyphIcon` | 체크 기본 굵기가 키트는 1.9 — 쓰는 곳마다 2.8을 줘야 같다 |
+| 같은 파일 | `TutorialQuitButton`(+ `.band` · `.inline`) | `TonalButton(leading: KitGlyphIcon(close, 13/15/12), height 30/40/26, horizontalPadding 12/16/9, gap 5/7/4, fontWeight bold, fontSize 12.5/13.5/11.5)` | 시험이 세 크기 픽셀 같음을 확인. 공개 이름을 남길지(얇은 감싸기) K2 판단 |
+| 같은 파일 | 강조 상수(`tutorialHighlightColor` · `tutorialGlow*`) | `kitFocusRingColor` · `kitFocusGlow*` | — |
+| `lib/ui/tutorial/tutorial_highlight.dart` | `tutorialHighlightPath` · `paintTutorialRing` · `TutorialGlowBuilder` · `TutorialHighlight` · `TutorialHighlightRing` · `tutorialHighlightBounds` · `TutorialHighlightShape` | `kitFocusRingPath` · `paintKitFocusRing` · `KitFocusGlowBuilder` · `KitFocusRing` · `KitFocusRingAt` · `kitFocusRingBounds` · `KitFocusRingShape` | tutorial_host · tutorial_targets(Lane A)가 `TutorialHighlightShape`를 등록표에 쓴다 — 타입 이름 바꿈이 그쪽까지 번진다 |
+| `lib/ui/tutorial/tutorial_step_card.dart` | `TutorialSpinner` · `_SpinnerPainter` | `KitSpinner()` | 기본값이 원본과 같다 |
+| 같은 파일 | `TutorialHeaderChip` | `BaChip(label: TutorialCopy.headerChip, tone: AppTone(primary, .18, #a8e0ff), shape: ringed, height: 26, leading: KitGlyphIcon(flag, size 13))` | 원본의 `Semantics(label, excludeSemantics)`는 감싸서 남긴다 |
+| `lib/ui/tutorial/tutorial_quit_dialog.dart` | `_quitTexture`(= 취소 텍스처) · `_PanelButton` · `_PathClipper` · `_OutlinePainter` | `kitPanelCancelTexture` · `kitParallelogramPath` · `ParallelogramOutlinePainter` | **`_PanelButton`은 그대로 바꾸지 못한다**: KitPressable(키보드 포커스 시 외곽선 하늘 2.6 · autofocus) + 글자 직접(FittedBox · 3px 없음), 모달 버튼은 InkWell(발견 1) |
+| `lib/ui/widgets/empty_state_panel.dart` | `EmptyStateGlyph` · `emptyStateGlyphPath` · `EmptyStateGlyphPainter` · `EmptyStateGlyphIcon` | `KitGlyph`(이름 같음, `cross` → `close`) · `kitGlyphPath` · `KitGlyphPainter` · `KitGlyphIcon` | `EmptyStateAction.glyph` 타입이 바뀐다 — 빈 상태 6탭 호출부(F3d) 함께 |
+| `lib/ui/tutorial_host/tutorial_overlay.dart`(Lane A) | `accountCreateParallelogram` import | `kitParallelogramPath` | 선택 |
+
+### 미검증("미실행")
+
+- golden 비교(`account-new` 포함 변화 0 예상), `fe_gate.ps1`, process E2E, 실제 글꼴(Pretendard)로 그린 픽셀 대조(시험 글꼴로만 — 두 쪽이 같은 글꼴이라 대조는 성립).
+- 갤러리 견본의 사용자 시각 검수(움직이는 빛 · 회전은 갤러리에서 멈춘 모습만).
+
+### 발견 사항(CF 판단)
+
+1. **튜토리얼 그만두기 확인 버튼(`_PanelButton`)은 모달 버튼과 다른 부품이다**: KitPressable · 포커스 외곽선 하늘 2.6 · autofocus · 글자 직접 그림(3px 여백 · 줄이기 없음). ⑥ 키트 버튼은 모달 쪽(InkWell)과 같게 했다. K2에서 키트 버튼에 "포커스 외곽선" 변형을 더할지(그러면 모달도 키보드 포커스 표시가 생긴다), 튜토리얼 쪽은 path · 텍스처 · 외곽선 painter만 키트를 쓸지 결정 필요.
+2. `BaChip.widthFor`는 실제 칩 폭보다 2px 작게 나온다(링 칩 '튜토리얼 · 임시 계정', 시험 글꼴). K1 전부터 있던 계산(글자 ceil + 1)이라 고치지 않았다 — 앞 아이콘 몫은 실제 차와 같음을 시험.
+3. 워크플로 문단(2026-10-10 03:20)은 "공용 키트는 Lane A만 고친다"인데 이번은 CF 배정으로 Lane B가 키트를 고쳤다 — 규칙 문단 갱신은 CF 몫.
+4. 첫 `flutter analyze`가 `pub get`을 돌렸으나 `pubspec.lock` 변화 없음(git status 확인).
+
+### 다음 행동
+
+- CF: `debug/frontend_k1/output.md` 검토 → (Lane A F3c-6 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → `fe_commit.ps1 -Slice k1`. 그 뒤 K2(위 표) 배정, 발견 1 결정.
+
+## F3c-7 착수 기록 (2026-10-21, Lane B 워커)
+
+- 상태: **진행 중**. 시작 SHA `2d5c0d50ec6ec16d1af7c2b4e6f882bea13ff3f4`(HEAD, `git log --oneline -3`에 `3c92f975` F3c-5 있음). 이 문서 끝에 다른 F3c-7 착수 기록 없음 확인.
+- 범위: (1) Windows 대상 플랫폼에서 Mock 아이템 스캔이 진행 창(dock) 경로를 기다려 끝나지 않는 문제(F3c-5 발견 8 · F3c-3 발견 6) — 재현 시험 먼저 (2) 빈 상태 글리프 키트화(K2 일부, K1 "K2 입력" 빈 상태 행) — 공개 이름은 얇은 별칭으로 남겨 호출부 변경 0.
+- 막힘: 결정 대장 `열림` 0건. dock 관련 FD-141 (a) 확정(현행 `dockBeside`/`restore` 재사용) — 바꾸지 않는다.
+- 소유 확인: `scan_companion_dock.dart`는 스캐너 소유(FE8-g3 동결 창 대상)로 적혀 있어 **고치지 않는다**. `window_dock_service.dart`는 소유 표에 스캐너 소유로 적힌 곳 없음(lib/services, 이번 프롬프트가 허용). `scan_session_controller.dart`는 읽기만.
+- 고칠 파일 · 기존 미커밋 변경(WIP):
+
+| 파일 | 착수 때 `git status` | 사본 |
+|---|---|---|
+| `frontend/lib/services/window_dock_service.dart` | 변경 없음 | `debug/frontend_f3c7/pre/frontend/lib/services/window_dock_service.dart` |
+| `frontend/lib/ui/widgets/empty_state_panel.dart` | 변경 없음 | `debug/frontend_f3c7/pre/frontend/lib/ui/widgets/empty_state_panel.dart` |
+| `frontend/lib/ui/app_shell.dart` | 변경 없음 | 고칠 필요가 생기면 그때 사본(지금 계획은 diff 0) |
+| 새 `frontend/test/scan_dock_virtual_f3c7_test.dart` · `frontend/test/empty_state_glyph_k2_test.dart` | 새 파일 | — |
+| `almanac/workflows/frontend-redesign-status-lane-b.md` | **기존 미커밋 변경 있음**(K1 종료 기록) — whole | — |
+
+- K1 미커밋 파일(`lib/ui/kit/**` · `account_create_modal.dart` · `test/kit_promotion_k1_test.dart`)과 `debug/frontend_k1/**`는 고치지 않는다(K1 `output.md` SHA-256 `8a5df2185bd471359a6802441f19585125ab74c90f81fc2f5d889181d99965af` 착수 때 값). Lane A F3c-6 파일도 고치지 않는다.
+
+## F3c-7 종료 기록 (2026-10-21, Lane B 워커)
+
+- 상태: **완료(gate 대기)**. 고친 파일 2(`frontend/lib/services/window_dock_service.dart` +11/−0, `frontend/lib/ui/widgets/empty_state_panel.dart` +28/−173), 새 시험 2(`frontend/test/scan_dock_virtual_f3c7_test.dart` · `frontend/test/empty_state_glyph_k2_test.dart`), 이 문서. `app_shell.dart` · `scan_companion_dock.dart` · `scan_session_controller.dart` diff 0. K1 미커밋 파일 · `debug/frontend_k1/**` 편집 0(K1 `output.md` SHA-256 착수 때와 같음 `8a5df218…65af`).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter test test/scan_dock_virtual_f3c7_test.dart`(탐침 2회, 같은 파일의 임시 내용) | 1회: 설정 순서 잘못(canStart false) → 2회: Windows 변형 · 기본 dock 서비스에서 가상 대상 · Mock 대상 모두 **t=0~4900ms `starting`, t=5000ms에 `terminal`**(시간 제한 5초 뒤 진행 창 없이 진행) |
+| 같은 파일(재현 시험) — **고치기 전** | **+1 −3**: 가상 대상 · Mock 대상 2초 뒤 `Expected: terminal / Actual: starting`, 서비스 빠른 실패 시험 `MissingPluginException`. 진짜 창(`hwnd:`) 시험은 통과 |
+| 같은 파일 — **고친 뒤** | **+4 All passed** |
+| `flutter test test/empty_state_glyph_k2_test.dart` | **+5 All passed** |
+| `flutter analyze`(고친 뒤 · 서식 반영 뒤) | **No issues found!** 2회 |
+| 관련 기존 시험 52파일(`debug/frontend_f3c7/related_tests.txt`: scan_* · home_* · app_navigation_* · connected_target_* · empty_state* · widget_test · tutorial_* · kit_promotion_k1 + `EmptyState` · `window_dock_service` · `ScanSessionController` · `AppShell(` · `BAPlannerApp(` grep, golden 폴더 · process 제외, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` 0건) 3묶음 `--exclude-tags golden` | **+205 · +163 · +218 All passed**(실패 0, `overflowed` 줄 0) |
+| 마지막 `flutter test --exclude-tags golden test/scan_dock_virtual_f3c7_test.dart test/empty_state_glyph_k2_test.dart` | **+9 All passed** |
+| `dart format`(세션 임시 폴더 사본만) · 바이트 검사 · `git diff --check -- frontend` | lib 2파일 format 차이 0, 새 시험 2파일은 사본 format 결과 사용(전부 새 줄). LF 유지 · 끝 개행 하나 · 줄 끝 공백 0, `diff --check` 출력 없음(CRLF 경고만) |
+
+로그: `debug/frontend_f3c7/logs/`(`probe-1~2` · `repro-before` · `repro-after` · `k2-glyph-1` · `analyze-1~2` · `related-00~02` · `final-new`). golden 비교 · 전체 fe_gate · process E2E · Python · 일회성 렌더는 실행하지 않았다.
+
+### dock 원인 · 고친 방법
+
+- **원인**: 셸의 스캔 컨트롤러는 기본 `WindowsWindowDockService`를 쓰고, 대상 플랫폼이 Windows면(`_dockAvailable`) 아이템 큐 첫 종류에서 `dockBeside(target.id)`를 `scanItemDockTimeout`(5초)까지 기다린다. 대상이 네이티브 창이 아니어도(가상 `tutorial:1280x720`, Mock `mock-window`) 채널을 부른다. 시험 · golden(Windows 변형)에는 채널 처리기가 없어 응답이 오지 않으므로 스캔이 `starting`에 5초 머문다 → 5초보다 짧게 흘리는 golden · 한 바퀴 시험에서는 끝나지 않는다. **일반 Mock(튜토리얼 아님)도 같은 원인**이다(재현 시험 "plain Mock target").
+- **네이티브 쪽(읽기만, `windows/runner/flutter_window.cpp`)**: `DockBesideTarget`은 첫 줄 `ParseTargetHandle`(접두 `hwnd:` + 창 핸들)이 실패하면 창을 건드리기 전에 `false` → `dock_failed` 오류. 그래서 실제 Windows 앱에서 가상 · Mock 대상은 원래도 곧바로 실패해 진행 창 없이 진행했을 것이다(코드 읽기 근거, 미실행).
+- **고친 방법**(`window_dock_service.dart` +11): `WindowsWindowDockService.nativeTargetPrefix = 'hwnd:'`, `dockBeside`가 접두가 아니면 채널을 부르지 않고 `PlatformException(code: 'dock_failed')`를 바로 낸다(네이티브와 같은 답). 컨트롤러는 원래대로 잡아서 진행 창 없이 진행한다.
+- **진짜 창 동작 변화 0 근거**: (1) `hwnd:` 대상은 같은 채널 · 같은 인자로 부른다 — 재현 시험 "native window target: dock and restore are called as before"가 고치기 전 · 뒤 모두 통과(`dock {target_id: hwnd:1a2b}` → 진행 창 → 끝 카드 2초 → `restore` → 진행 창 닫힘). (2) `restore()` 바뀌지 않음. (3) 주입한 서비스(`_NoDock` · `_GoldenDock` 등) 경로는 이 클래스를 거치지 않는다 — 기존 dock 시험(`scan_item_queue_fe8g3` · `scan_page` · `scan_session_controller` · `scan_review_board_fe8g4b` · `scan_page_pause_fb10a` · `tutorial_practice_controller`) 통과. (4) 실제 백엔드 대상 id는 `hwnd:`(process E2E fixture `hwnd:102`).
+- `app_shell.dart` · `scan_companion_dock.dart`(스캐너 소유, FE8-g3 동결 창 대상) · `scan_session_controller.dart`는 고치지 않았다 — 서비스 한 곳으로 충분했다.
+
+### 글리프 별칭 표(옛 이름 → 키트)
+
+| 옛 이름(공개 그대로) | 지금 | 키트 |
+|---|---|---|
+| `enum EmptyStateGlyph`(12값, 이름 그대로) | 각 값이 `final KitGlyph kit`를 가진 별칭 enum | `KitGlyph`(같은 이름, **`cross` → `KitGlyph.close`**) |
+| `emptyStateGlyphPath(glyph)` | `kitGlyphPath(glyph.kit)` | `kitGlyphPath` |
+| `EmptyStateGlyphPainter({glyph, color})` | `paint`가 `KitGlyphPainter(glyph: glyph.kit, color: color)`에 맡김(굵기 기본 1.9), const 유지 | `KitGlyphPainter` |
+| `EmptyStateGlyphIcon(glyph, size, color)` | `KitGlyphIcon(glyph.kit, size, color)` 감싸기, const 유지 | `KitGlyphIcon` |
+
+- `typedef EmptyStateGlyph = KitGlyph`는 쓰지 않았다: K1 시험(`kit_promotion_k1_test.dart`, 고치지 않는 파일)이 `EmptyStateGlyph.values` · `EmptyStateGlyph.cross`를 쓰므로 typedef면 컴파일이 깨지고 `values`가 16개가 된다. 별칭 enum은 K1 시험 그대로 통과.
+- 빈 상태 6탭 호출부(`scan_tab_sections` · `student_page` · `inventory_workspace` · `plan_section_layout` · `statistics_page` · `tactical_page`) 변경 0. `EmptyStateAction.glyph` · `EmptyStateGuide.glyph` 타입도 그대로.
+- 같은 그림 시험(`empty_state_glyph_k2_test`): 바꾸기 전 painter를 시험 안에 그대로 옮겨 12글리프 × 쓰는 크기 3(26 primary · 17 버튼 글자색 · 13 흐림) + painter 26, 버튼(primary · normal) · 안내 블록(scanFrame · swords)을 바꾸기 전 build와 **RGBA 바이트 같음**(빈 바탕과 다름 확인 포함). path bounds · 윤곽 길이 같음, 아이콘이 `KitGlyphIcon`(strokeWidth null, 17×17)인지 확인.
+
+### golden 변화 0 근거
+
+- 새 장면 0, harness · 기준 이미지 · golden 시험 편집 0.
+- dock: golden에서 기본 서비스로 **아이템** 스캔을 시작하는 장면이 없다 — `fe8g1_scan_tab`은 `_NoDock` · `_GoldenDock` 주입, `fe8f2_header_scan_progress`는 학생 스캔(진행 창 없음), `f3c5_tutorial_plan`은 4~6단계를 hooks 출구로 넘긴다. 바뀐 분기(`hwnd:` 아닌 대상 + 기본 서비스 + 아이템)를 지나는 golden 0.
+- 빈 상태 6장(`empty-*`): 그리는 위젯 트리가 같은 `SizedBox.square` + `CustomPaint`(같은 path · 굵기 · 색)이고, 픽셀 같음 시험 통과. CF `fe_gate.ps1` golden 비교로 확정 필요.
+
+### F3c-6 입력(5단계를 실제 동작으로 바꿀 수 있는가)
+
+- **바꿀 수 있다**: Windows 변형에서도 가상 대상 아이템 큐(기술 노트 · 전술 교육 BD)가 진행 창 없이 Mock 재생 시간 안에 끝난다(재현 시험: 2초 안에 `terminal` · 큐 `completed` · 후보 있음). 셸의 `scan.item.started` · `scan.item.finished` 신호는 진행 창과 무관하게 나므로 golden · 한 바퀴 시험의 5단계를 hooks 출구 대신 실제 누르기로 돌릴 수 있다.
+- 주의: Windows 변형에서도 진행 창이 열리지 않으므로 5단계 "진행 창 한 줄"은 화면 아래 가운데 자리(F3c-3 발견 6)로 그려진다 — 지금 golden이 아이템 스캔을 실제로 돌리면 그 장면은 그림이 바뀔 수 있다(F3c-6 몫, 새 golden이면 CF 승인). 6단계 승인은 이 slice와 무관(검토 보드).
+
+### 미검증("미실행")
+
+- **실제 Windows 창 크기 동작**(진짜 게임 창 `hwnd:` 대상 dock · restore, 가상 · Mock 대상에서 창이 줄지 않음)은 실제 앱으로 실행하지 않았다 — 네이티브 코드 읽기 + 채널 시험으로만.
+- golden 비교 · 전체 `fe_gate.ps1` · process E2E · 사용자 Windows mock 튜토리얼 한 바퀴.
+
+### 발견 사항
+
+1. 실제 Windows 앱에서는 가상 · Mock 대상의 dock이 원래도 네이티브에서 곧바로 실패했을 것이다(위 근거) — "Windows에서 끝나지 않음"은 채널 응답이 없는 시험 · golden 환경의 증상이었다. 이번 수정 뒤에는 앱 · 시험 모두 채널을 부르지 않는다.
+2. **커밋 순서**: `empty_state_panel.dart`가 K1의 `KitGlyph.scanFrame` 등(미커밋 `kit_glyph.dart`)을 쓴다 → **K1 커밋 뒤 f3c7**. 두 commit.json이 모두 이 문서를 `whole`로 가지므로, K1을 먼저 커밋하면 이 F3c-7 기록까지 K1 커밋에 들어간다 — CF가 순서 · 범위 판단.
+3. `kit_glyph.dart` 머리 주석(K1)은 "빈 상태 글리프를 더했다"까지만 적혀 있다 — 별칭으로 옮긴 사실은 이 파일 주석에 있다(K1 파일 편집 금지라 그대로).
+4. 컨트롤러의 `_dockAvailable` 주석("기본 서비스면 Windows에서만 부른다")은 그대로 맞다. 대상 판정은 서비스 안에 두어 스캐너 컨트롤러를 바꾸지 않았다.
+5. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 작업용 목록 `debug/frontend_f3c7/related_part_00~02`(묶음 분할)가 남아 있다.
+
+### 다음 행동
+
+- CF: `debug/frontend_f3c7/output.md` 검토 → (Lane A F3c-6 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → K1 커밋 → `fe_commit.ps1 -Slice f3c7`. F3c-6(또는 다음 라운드)에서 5단계 실제 동작 전환 판단.
