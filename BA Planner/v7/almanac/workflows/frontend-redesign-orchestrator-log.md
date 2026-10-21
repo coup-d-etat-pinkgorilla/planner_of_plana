@@ -4261,3 +4261,11 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - CF 결정: F3b 발견 2 — 알파-1 문구로 고침(① "스캔이 게임 화면을 알아보는 데 쓸 그림을 이 PC의 게임 설치본에서 준비합니다." ② "게임 설치본에서 스캔용 그림을 준비하고 있습니다. 끝날 때까지 기다려 주십시오.") → F3e에 포함. 발견 3(건너뜀 기억) — 새 저장소 없이 알파 유지, 다시 여는 길은 설정 줄. F3d 발견 1(시나리오 수 안 읽음) · 2(배율 '—') · 6(통계 주제 무관) — 알파 그대로. F3d 발견 7(학생 빈 상태 오른쪽 판이 첫 카탈로그 학생 'UNOWNED') — FE10-z 사용자 검수 항목으로.
 - 배정: **Lane A F3e**(`f3e-worker-prompt-20261021.md`) · **Lane B F3d 수정**. F3c는 두 slice 커밋 뒤(탭 · 셸 겹침).
 - XB 회신(backend-orchestrator-log 08:10): f2-dart 짝 커밋 완료 · F2 동결 해제 · 36경로 후속 진행 가능, NP0035 수신.
+
+## 2026-10-21 09:20 — F3d · F3e 커밋, F3c 3단 분할 · 배정
+
+- 검토: F3d 수정 34행 · F3e 9행 SHA 일치, 작업 트리 frontend 변경 = 두 slice 목록. F3d 수정 원인 · 방법(판 위쪽 360 띠, 왼쪽 = 위 끝 경계 + 24, 오른쪽 = 아래 끝 경계 − 24)과 다른 다섯 탭 잘림 0 측정 확인.
+- gate ① `20261021_090032` 시험 1~5 · process 102 · almanac · diff PASS, golden RED 4 = 예상(empty-plan 수정 · settings 줄 · first-run-game/images 알파-1 문구) → 4장 확인(계획 안내가 판 안 위쪽 · 설정 머리 띠 버튼 2 · 튜토리얼 다시 하기 비활성 · 그림 다시 준비 · 스캔 문제 신고 · 자동 업데이트 자리 · 새 문구) → ② `-UpdateGoldens` `20261021_090915` **GREEN**(golden 79).
+- 커밋: **F3d `f49c2a6f`**(39파일, golden +6) · **F3e `5ae8f207`**(11파일, golden 3장 갱신).
+- 남은 관찰(FE10-z 검수 항목): 1280×720에서 계획 빈 안내가 ≈ 0.3배로 줄어 제목 ≈ 6px(수정 전과 같은 크기 — 판 폭이 좁음). 학생 빈 상태 오른쪽 판이 첫 카탈로그 학생 'UNOWNED'.
+- **F3c 3단 분할**: F3c-1(Lane B — practice DTO 5메서드 · Process `unknown_method` → 미지원 해독 · Mock 수명 · 가상 대상 `tutorial:1280x720` 재생, XB 데이터셋을 Dart 상수로) · F3c-2(Lane A — 대상 키 등록표 · 신호 출구 · 머리글 칩 자리 · Empty-Backend 덮개, 꺼져 있으면 변화 0) · F3c-3(흐름 연결 — 둘 커밋 뒤). 실제 runtime 연결은 XB X4 짝 라운드.
