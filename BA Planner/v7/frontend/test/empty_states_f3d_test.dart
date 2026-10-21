@@ -11,6 +11,7 @@ import 'package:ba_planner_v7/ui/kit/buttons.dart';
 import 'package:ba_planner_v7/ui/scan/scan_tab_page.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_section_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Finder _key(String key) => find.byKey(ValueKey(key));
@@ -238,6 +239,63 @@ void main() {
       await _open(tester, 'pvp', service: MockDesignReviewScenario());
       expect(_key('tactical-empty-guide'), findsNothing);
       expect(_key('tactical-editor-header'), findsOneWidget);
+    });
+  });
+
+  // F3c-4(FE10-z): 1280×720에서 계획 안내는 시안 폭 그대로면 ≈ 0.3배(제목 ≈ 6px)였다. 좁은 폭(예시 줄 없음)으로 그려
+  // 다른 다섯 탭 빈 안내 중 가장 작은 글자(스캔 · 전술대항전 ≈ 0.44배) 이상이고, 잘린 줄이 없다. 2560×1392는 시안 폭 그대로.
+  group('계획 안내 작은 창', () {
+    double guideScale(WidgetTester tester, String guide) =>
+        tester.getRect(_key(guide)).width /
+        tester.renderObject<RenderBox>(_key(guide)).size.width;
+
+    List<RenderParagraph> paragraphs(WidgetTester tester, String guide) {
+      final found = <RenderParagraph>[];
+      void visit(RenderObject node) {
+        if (node is RenderParagraph) found.add(node);
+        node.visitChildren(visit);
+      }
+
+      visit(tester.renderObject(_key(guide)));
+      return found;
+    }
+
+    testWidgets('1280×720 제목 배율 ≥ 다른 다섯 탭의 최소, 잘린 줄 0', (tester) async {
+      final others = <String, double>{};
+      for (final (tab, guide) in const [
+        ('scan', 'scan-empty-guide'),
+        ('students', 'student-empty-guide'),
+        ('inventory', 'inventory-empty-guide'),
+        ('statistics', 'statistics-empty-guide'),
+        ('pvp', 'tactical-empty-guide'),
+      ]) {
+        await _open(tester, tab, size: _small);
+        others[tab] = guideScale(tester, guide);
+      }
+      await _open(tester, 'plan', size: _small);
+      final scale = guideScale(tester, 'plan-empty-guide');
+      final floor = others.values.reduce((a, b) => a < b ? a : b);
+      expect(scale, greaterThanOrEqualTo(floor), reason: '$others');
+      expect(19 * scale, greaterThan(8), reason: 'title px');
+      expect(
+        paragraphs(
+          tester,
+          'plan-empty-guide',
+        ).where((p) => p.didExceedMaxLines),
+        isEmpty,
+      );
+      expect(find.text('크레딧 4.8M · 활동 보고서 (최상급) 38'), findsNothing);
+      expect(_key('plan-empty-create'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('2560×1392는 시안 폭 · 예시 줄 그대로', (tester) async {
+      await _open(tester, 'plan');
+      expect(
+        tester.renderObject<RenderBox>(_key('plan-empty-guide')).size.width,
+        closeTo(776.8 - 83.5 * 2, 0.01),
+      );
+      expect(find.text('크레딧 4.8M · 활동 보고서 (최상급) 38'), findsOneWidget);
     });
   });
 

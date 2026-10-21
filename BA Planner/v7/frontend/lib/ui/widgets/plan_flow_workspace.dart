@@ -26,6 +26,7 @@ import 'plan_flow_rail.dart';
 import 'plan_flow_save_step.dart';
 import 'plan_flow_student_one.dart';
 import 'plan_flow_student_step.dart';
+import 'plan_flow_tutorial_watch.dart';
 import 'plan_section_layout.dart' show PlanSectionMotion;
 import '../tutorial/tutorial_script.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
@@ -119,6 +120,9 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     ...widget.presets,
   ];
 
+  /// F3c-4: 튜토리얼 계획 신호 감시(대본 7-1 · 7-2b · 7-2c · 7-3 · 7-5). 흐름마다 하나다.
+  PlanFlowTutorialWatch _tutorialWatch = PlanFlowTutorialWatch();
+
   /// 3단계 화면 상태(고른 카드·거부 이유). 3단계를 처음 그릴 때 만들고 흐름 동안 유지한다.
   PlanFlowOrderEditor? _orderEditorState;
 
@@ -158,6 +162,7 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
       oldWidget.flow.removeListener(_flowChanged);
       widget.flow.addListener(_flowChanged);
       _shownStep = widget.flow.step;
+      _tutorialWatch = PlanFlowTutorialWatch();
       _oneMode = planFlowOneMode(widget.flow);
       _modeController.value = _oneMode ? 1 : 0;
       final previous = _pickerState;
@@ -203,13 +208,15 @@ class _PlanFlowWorkspaceState extends State<PlanFlowWorkspace>
     if (!mounted) return;
     final step = _flow.step;
     final oneMode = planFlowOneMode(_flow);
+    // F3c-4: 대본 값이 이루어진 순간 신호(7-1은 대본 7명을 고르고 2단계로 넘어갈 때). 튜토리얼이 꺼져 있으면 계산 0.
+    _tutorialWatch.flowChanged(
+      context,
+      _flow,
+      enteredGoals:
+          _shownStep == PlanFlowStep.students && step == PlanFlowStep.goals,
+    );
     if (step != _shownStep) {
-      final previous = _shownStep;
       _shownStep = step;
-      // F3c-2: 1단계에서 "다음 · 목표 정하기"로 2단계에 들어갔다(7-1).
-      if (previous == PlanFlowStep.students && step == PlanFlowStep.goals) {
-        TutorialHooksScope.emit(context, TutorialSignals.planStudentsConfirmed);
-      }
       _modeController.value = oneMode ? 1 : 0;
       if (!_switching && widget.active) {
         _bodyController.forward(from: 0);

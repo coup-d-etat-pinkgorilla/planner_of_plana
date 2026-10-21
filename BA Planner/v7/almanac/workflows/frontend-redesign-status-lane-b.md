@@ -6848,3 +6848,106 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 다음 행동
 
 - CF: `debug/frontend_f3c1/output.md` 검토 → (Lane A 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → `fe_commit.ps1 -Slice f3c1`. 발견 1 · 2 · 3 · 4는 XB X4 짝 라운드로, 5 · 6 · 7은 F3c-3 범위로.
+
+## F3c-4 착수 기록 — 계획 흐름 신호 · seed id 대조 · 계획 빈 안내 작은 창 (Lane B, 2026-10-21)
+
+- 상태: **진행 중**. 시작 SHA `c683f570b5422e557f2ec51d7dd512accd382332`(브랜치 `scanner-consolidation`, `git log -3`에 `7d2555b8` f3c2 있음). 이 파일 끝에 다른 "F3c-4 착수 기록" 없음을 확인했다. 같은 시각 Lane A가 F3c-3(app · main · app_shell · title_page · first_run · settings_page · account_section_cluster · `lib/ui/tutorial/**` · `lib/ui/tutorial_host/**` · scan_tab_sections 한 줄)을 하고 있다 — 그 파일들은 건드리지 않는다. 막힘 요약 '열림' 0건.
+- 착수 전 사용자 결정(AskUserQuestion, 2026-10-21): ① 7-2b · 7-2c · 7-3 · 7-5 조건은 **대본 카드 문장을 파싱**해 읽는다(숫자를 코드에 다시 쓰지 않음, 학생 이름 → id는 흐름 카탈로그 표시 이름) ② `plan_flow_order_step.dart` 카드 키 매핑의 `neru_uniform`(카탈로그에 없는 id)은 **한 줄 고쳐** `neru_school_uniform`으로(대본 · 키 이름은 그대로, 발견으로 기록) ③ F3c-2 "없음"은 실제 4개 — 다섯 번째로 **`plan.flow.studentsConfirmed`에 대본 7명 조건**을 단다(튜토리얼 켜짐일 때만 판단).
+- 고칠 기존 파일(pre 사본 `debug/frontend_f3c4/pre/frontend/...`, 전부 **기존 미커밋 변경 없음**): `lib/ui/widgets/plan_flow_workspace.dart`(LF) · `plan_flow_order_step.dart`(LF, 매핑 한 줄) · `plan_section_layout.dart`(CRLF, `_PlanEmptyGuide`만) · `test/empty_states_f3d_test.dart`(LF). 필요할 때만: `plan_flow_goal_step.dart` · `plan_flow_save_step.dart` · `models/plan_flow_goal_editor.dart` · `services/mock_tutorial_practice.dart`(LF, 사본만 미리 둠).
+- 새 파일: `frontend/lib/ui/widgets/plan_flow_tutorial_watch.dart`, `frontend/test/plan_flow_tutorial_signals_f3c4_test.dart`, `debug/frontend_f3c4/commit.json` · `output.md`.
+
+## F3c-4 종료 기록 — 계획 흐름 신호 · seed id 대조 · 계획 빈 안내 작은 창 (Lane B, 2026-10-21)
+
+- 상태: **완료(워커 몫)**. 시작 SHA `c683f570`. 고친 기존 파일 4개(`lib/ui/widgets/plan_flow_workspace.dart` · `plan_flow_order_step.dart`(한 줄) · `plan_section_layout.dart`(`_PlanEmptyGuide`만) · `test/empty_states_f3d_test.dart`), 새 파일 2개(`lib/ui/widgets/plan_flow_tutorial_watch.dart`, `test/plan_flow_tutorial_signals_f3c4_test.dart`). 전부 pre 사본 · 기존 미커밋 변경 없음. `plan_flow_goal_step.dart` · `plan_flow_save_step.dart` · `models/plan_flow_goal_editor.dart` · `services/mock_tutorial_practice.dart`는 pre 사본만 있고 **고치지 않았다**(편집기를 바꾸지 않고 흐름 초안만으로 판단 가능, seed id가 이미 대본과 같음). Lane A 파일 · `lib/ui/tutorial/**` · `lib/ui/tutorial_targets/**` · kit · services · golden harness · 기준 이미지 그대로.
+- 줄바꿈 유지(바이트 검사: `plan_section_layout.dart` CRLF 3642/3642, 나머지 LF · CR 0, 끝 개행 하나). `dart format`은 고친 파일을 사본(전 · 후)에서 돌려 내 줄이 서식과 같음을 확인(차이 0), 새 파일 2개는 경로 하나씩. `.orig` 등 백업 파일 없음.
+- 근거: F3a 신호 표(7-x) · 대본 카드, F3c-2 종료 기록 "없음" 행 · 발견 3, F3c-1 seed, FE10-z 관찰(1280 계획 안내 ≈ 0.3배). 착수 전 사용자 결정 3건(착수 기록).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `dart analyze` 고친 · 새 lib 파일(편집마다) · `flutter analyze`(frontend 전체, 마지막) | **No issues found!**(중간 info 1 `prefer_initializing_formals` → `late final`로 고침) |
+| 일시 probe(`empty_states_f3d_test.dart` 안 임시 그룹 — golden 태그 · `expectGoldenScene` 없음, 측정 뒤 지움, grep `PROBE`/`probe` 0건) 3회 | 6탭 × 2크기 안내 배율(아래 표). 1회차는 `getMaxScaleOnAxis`가 1.0만 내 사각형 폭 비율로 다시 쟀다 |
+| `flutter test test/plan_flow_tutorial_signals_f3c4_test.dart` | **+6 All tests passed** |
+| `flutter test test/empty_states_f3d_test.dart` | **+26 All tests passed**(24 + 새 2) |
+| `flutter test` 관련 36파일(`plan_*` · `planning_*`(process E2E 제외) · `tutorial_*` · `growth_calculator_view_test` · `empty_states_f3d_test` · `widget_test` + 고친 lib를 import하는 시험, golden 0건 확인) | **+559 −3**: −3은 모두 `tutorial_parts_f3a_test.dart` — 같은 시각 Lane A(F3c-3)가 고치는 중인 `lib/ui/tutorial/tutorial_script.dart`의 그만두기 문구 변경(`'메인 계정' 계정으로` → `'메인 계정'으로`)과 맞지 않는 기대값. 이 slice는 그 파일을 고치지 않았고, Lane A 차이는 7-x 카드 문장을 건드리지 않는다 |
+| `flutter test --concurrency=1 test/planning_protocol_client_test.dart`(실제 Python 프로세스 시험, 따로) | **+24 All tests passed** |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교 · 렌더 이미지, 맨 `flutter test`, process E2E, Python. 로그(로컬): `debug/frontend_f3c4/probe1~3.log` · `test_signals1.log` · `test_empty1.log` · `test_related1.log`.
+
+### 신호 표(신호 → 조건 → 자리 → 시험)
+
+| 신호 | 조건(대본에서 읽음) | 자리 | 시험 |
+|---|---|---|---|
+| `plan.flow.studentsConfirmed`(7-1) | 1 → 2단계로 막 넘어갔고, 카드 `why` "아카네 · 칸나(수영복) · … · 네루(교복)" 7명이 모두 골라져 있다. **전에는 넘어가기만 하면 냈다(F3c-2) — 이제 대본 7명 조건 + 튜토리얼 켜짐일 때만**(사용자 결정 ③) | `plan_flow_workspace._flowChanged` → `PlanFlowTutorialWatch.flowChanged(enteredGoals)` | 다 됨 → 1회, 6명 · 넘어가지 않음 → 0, 위젯: 켜짐 1회 · 꺼짐 0 |
+| `plan.flow.makiStage1Set`(7-2b) | 카드 하위 체크 "마키 1단계 M/M/1/1": 마키 1단계의 EX · 기본 · 강화 · 서브가 5 · 10 · 1 · 1(M = `planElementTargetMaximums`) | 같음(초안 `editorTargets`) | 다 됨 → 1회, M/M/M/M → 0, 위젯: 켜짐 1회(다시 저장해도 1회) · 꺼짐 0 |
+| `plan.flow.makiStage2Set`(7-2c) | "마키 2단계 M/M/7/7": 마키 2단계가 초안에 있고 5 · 10 · 7 · 7 | 같음 | 2단계 없음(동기화 전) · 7/6 → 0 |
+| `plan.flow.ranksPlaced`(7-3) | 카드 제목 "칸나(수영복) · 마키 · 미카는 1순위, 시로코(수영복) · 히마리(무장)는 2순위, 아카네는 3순위"의 각 학생 1단계가 n번째 칸(`draft.phases[n−1]`)에 있다 | 같음 | 아카네 2순위 → 0 |
+| `plan.flow.laterMoved`(7-5) | 카드 제목 따옴표 카드 '네루(교복)' · '마키 2단계'(마지막 따옴표 '나중에'는 칸 이름)가 모두 `deferredStageIds`에 있다 | 같음 | 네루가 순위 칸 · 마키 2단계 없음 → 0 |
+
+- 판단 규칙: 셸 묶음(`TutorialHooksScope`, 의존 없이 `getInheritedWidgetOfExactType`)이 있고 `hooks.active.value == true`일 때만. 꺼져 있으면 문장 파싱(`late final`)도 초안 비교도 하지 않는다. 신호마다 감시(흐름) 하나에서 한 번 — 흐름이 바뀌면(`didUpdateWidget`) 새 감시.
+- 7-2c 자리: 2단계는 앞 단계보다 올리기 전에는 흐름 초안에 없다(`PlanFlowGoalEditor._effective` · `_commit`). M/M/7/7은 1단계(1/1)보다 올린 값이라 강화 · 서브를 올린 편집에서 초안에 나타나 바로 판단된다(편집기 고침 불필요). 중간 값(7/1 등)으로 동기화돼도 값이 달라 내지 않는다.
+- 학생 이름 → id: 흐름 카탈로그(`PlanFlowContext.catalog`)의 `displayName`(대본 표기와 같다 — 아래 대조 표).
+
+### seed id 대조 표
+
+| 대본 표기 | 카탈로그 id | F3c-1 seed | 대상 키 매핑 | 판정 |
+|---|---|---|---|---|
+| 아카네 | `akane` | 지난 학생 · 바뀜 | `('akane', 1)` | 같음 |
+| 칸나(수영복) | `kanna_swimsuit` | 지난 학생 · 바뀜 | `('kanna_swimsuit', 1)` | 같음 |
+| 마키 | `maki` | 지난 학생 · 바뀜 | `('maki', 2)` · 목표 단계 `studentId == 'maki'` | 같음 |
+| 미카 | `mika` | 지난 학생 · 바뀜 | — | 같음 |
+| 히마리(무장) | `himari_battle` | 지난 학생 · 바뀜 | — | 같음 |
+| 시로코(수영복) | `shiroko_swimsuit` | 지난 학생 · 바뀜 | — | 같음 |
+| 네루(교복) | `neru_school_uniform` | 새 학생(가상 스캔 결과) | **`('neru_uniform', 1)` → `('neru_school_uniform', 1)`로 고침**(`neru_uniform`은 카탈로그에 없음, 사용자 결정 ②) | seed는 이미 같음 |
+| 시나리오 '비나 대비 · 한 번에 MAX'(8단계 `why`) | — | XB 데이터셋 `example_scenario.name`과 같음. **Mock seed는 시나리오 0**(계약 "scenarios start empty") | — | 이름 같음, seed에 없음(발견 1) |
+| 시나리오 '총력전 비나 대비'(7-6 `why`) | — | 사용자가 7-6에서 저장하는 이름. 저장 단계 기본 이름은 `새 시나리오 N`(`plan_flow_save.dart`) | — | 기본 이름 다름(발견 2) |
+
+- XB 데이터셋 `planning_students` 7명 = 위 7개 id(시험). `mock_tutorial_practice.dart`는 고칠 것이 없었다.
+
+### 계획 빈 안내 1280 전후 · 다섯 탭 기준
+
+| 탭 | 1280×720 배율(제목 px = 19 × 배율) | 2560×1392 |
+|---|---|---|
+| 스캔 | 0.444(8.43px) | 1.0 |
+| 학생 | 0.682(12.96px) | 1.0 |
+| 인벤토리 | 0.496(9.43px) | 1.0 |
+| 통계 | 0.743(14.11px) | 1.0 |
+| 전술대항전 | 0.444(8.43px) | 1.0 |
+| **계획(전)** | **0.305(5.79px)** | 0.852(16.18px) |
+| **계획(후)** | **0.620(11.78px)** | 0.852(16.18px, 사각형 `454.3,373.4–973.6,548.9` 전과 같음) |
+
+- 기준: 다섯 탭 중 가장 작은 글자(스캔 · 전술대항전 0.444 = 8.43px) 이상. 시험은 같은 실행에서 다섯 탭을 재어 계획 ≥ 최솟값 · 제목 > 8px · 잘린 줄(`didExceedMaxLines`) 0 · 넘침 0을 본다.
+- 방법: 판 안 내용 칸 폭이 시안 폭(609.8)의 0.5배보다 좁으면(`_compactBelow`) 좁은 폭 300(제목 · 설명 두 줄)으로 그리고 예시 줄(미카 카드 줄)을 뺀다. 버튼은 그대로. 사선 안쪽 계산은 그대로(기존 시험 2크기 통과). 2560은 내용 칸 519 > 304.9라 시안 폭 · 예시 줄 그대로(시험).
+
+### golden 변화 0 근거
+
+- `empty-plan`(2560×1392): 좁은 폭 조건 밖(519 ≥ 304.9) — 안내 사각형 · 내용이 전과 같다(probe 수치 · 시험). 다른 장면에는 계획 빈 안내가 없다.
+- 감시: golden 장면에는 튜토리얼이 켜져 있지 않다(`active` false · 셸 기본) → 계산 · 신호 0, 렌더 객체 추가 0.
+- 카드 키 매핑 한 줄: 등록 키만 바뀜(`TutorialTarget`은 렌더 객체를 더하지 않음, F3c-2).
+
+### F3c-3 입력(Lane A)
+
+- 다섯 신호는 이제 계획 흐름이 직접 낸다 — `hooks.signals.listener = flow.signal`과 `hooks.active.value = true`(지금 `tutorial_session.dart`가 켬)만 있으면 된다. **`active`가 꺼져 있으면 `studentsConfirmed`도 이제 내지 않는다**(전에는 무조건). 지금 Lane A 작업 트리에는 이 다섯 신호를 대신 내는 가짜 자리가 없다(grep 0) — 만들었다면 지우면 된다.
+- 7-6 시나리오 이름: 저장 단계 기본 이름이 `새 시나리오 N`이다. 대본 '총력전 비나 대비'로 미리 채우려면 F3c-3이 저장 단계 이름(`PlanFlowSaveController.scenarioName`)을 정해야 한다(발견 2).
+- 8단계 예시 시나리오 '비나 대비 · 한 번에 MAX'는 임시 계정 seed에 없다(발견 1).
+- 대본 7-x 카드 문장 모양(이름 구분 ` · `, "는 n순위", 따옴표 카드, 하위 체크 "학생 n단계 a/b/c/d")을 바꾸면 `PlanFlowTutorialScript.parse`가 `FormatException`을 내고 시험이 실패한다.
+
+### 미검증("미실행")
+
+- 실제 화면 조작으로 7-2b ~ 7-5를 끝까지(끌어 놓기 · 편집기 칸 누르기) — 시험은 초안 조건(단위)과 `setStudentStages`로 7-1 · 7-2b 연결만 본다. 순위 · 나중에 칸은 단위 시험으로만.
+- golden 비교(변화 0 예상), `fe_gate.ps1`, process E2E, Mock 튜토리얼 한 바퀴, 실제 글꼴로 1280 좁은 폭 두 줄(시험 글꼴 기준 잘린 줄 0).
+- 네루(교복)는 임시 계정에서 확정 학생이 아니다(F3c-1 발견 7) — 1단계 학생 고르기에서 보유하지 않은 학생을 고를 수 있는지는 화면에서 확인하지 않았다.
+
+### 발견 사항(CF 판단)
+
+1. **예시 시나리오 seed 없음**: 8단계 체크 "예시와 함께 비교에 담기"(처음부터 끝남)는 '비나 대비 · 한 번에 MAX'가 이미 있다고 본다. XB 데이터셋에는 있지만 계약은 "scenarios start empty"이고 F3c-1 Mock seed도 0개다. Mock에 넣으려면 `mock_app_service.dart`(이번 범위 밖) 연결이 필요 — CF · XB 결정.
+2. **7-6 시나리오 이름**: 저장 단계 기본 `새 시나리오 N` ≠ 대본 '총력전 비나 대비'. 사용자가 직접 치거나 F3c-3이 미리 채워야 한다.
+3. **`neru_uniform`**: F3c-2 카드 키 매핑이 카탈로그에 없는 id를 썼다(사용자 결정으로 한 줄 고침). 대상 키 이름 `plan.flow.order.card.neruUniform`은 그대로다.
+4. **"없음 5"는 4**: F3c-2 본문은 5라 했지만 표의 "없음" 행은 4개였다. 다섯 번째로 7-1 `studentsConfirmed`에 대본 7명 조건을 달았다(사용자 결정 ③).
+5. 대본 7-3 카드 순위(칸나 · 마키 · 미카 1, 시로코 · 히마리 2, 아카네 3)는 XB 데이터셋 `plan_instructions.first_priority`(6명 한 칸)와 다르다 — 대본을 따랐다(CF가 XB와 데이터 정렬 중).
+6. 관련 시험 −3은 Lane A 진행 중 문구 변경(`tutorial_parts_f3a_test.dart`) — F3c-3 쪽에서 시험 기대값을 맞추면 된다.
+
+### 다음 행동
+
+- CF: `debug/frontend_f3c4/output.md` 검토 → (Lane A F3c-3 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → `fe_commit.ps1 -Slice f3c4`. 발견 1 · 2는 F3c-3 · XB 정렬로.

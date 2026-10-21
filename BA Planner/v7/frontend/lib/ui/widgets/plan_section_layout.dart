@@ -1967,6 +1967,11 @@ class _PlanEmptyGuide extends StatelessWidget {
   /// 시안 타일에서 내용 칸 왼쪽(83.5)과 그 위 끝(24)의 사선 경계(63.5 × (1 − 24/360)) 사이 = 24.2.
   static const _gap = 24.0;
 
+  /// F3c-4(FE10-z): 시안 폭으로 그리면 이 배율 밑으로 줄어드는 좁은 판(1280×720 ≈ 0.3배, 제목 ≈ 6px)은 좁은 폭(제목 ·
+  /// 설명 두 줄)으로 그리고 예시 줄을 뺀다. 기준 크기(2560×1392 ≈ 0.85배)는 시안 폭 그대로다.
+  static const _compactBelow = 0.5;
+  static const _compactWidth = 300.0;
+
   final VoidCallback? onCreate;
 
   @override
@@ -1984,6 +1989,7 @@ class _PlanEmptyGuide extends StatelessWidget {
         left,
         planPhaseRightBoundary(panel, contentBottom) - _gap,
       );
+      final compact = right - left < _contentWidth * _compactBelow;
       return SizedBox.fromSize(
         size: panel,
         child: Stack(
@@ -1996,7 +2002,7 @@ class _PlanEmptyGuide extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     key: const ValueKey('plan-empty-guide'),
-                    width: _contentWidth,
+                    width: compact ? _compactWidth : _contentWidth,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2005,13 +2011,15 @@ class _PlanEmptyGuide extends StatelessWidget {
                           title: '학생을 고르고 목표를 정하면 필요한 재료가 계산됩니다.',
                           body: '계획이 하나 생기면 이 자리에 페이즈와 학생 목록이 나옵니다.',
                         ),
-                        const SizedBox(height: 22),
-                        EmptyStateExampleRow(
-                          portraitAsset: GameAssets.studentPortrait('mika'),
-                          name: '미카',
-                          change: '레벨 70 → 90',
-                          result: '크레딧 4.8M · 활동 보고서 (최상급) 38',
-                        ),
+                        if (!compact) ...[
+                          const SizedBox(height: 22),
+                          EmptyStateExampleRow(
+                            portraitAsset: GameAssets.studentPortrait('mika'),
+                            name: '미카',
+                            change: '레벨 70 → 90',
+                            result: '크레딧 4.8M · 활동 보고서 (최상급) 38',
+                          ),
+                        ],
                         const SizedBox(height: 22),
                         EmptyStateActionRow(
                           actions: [

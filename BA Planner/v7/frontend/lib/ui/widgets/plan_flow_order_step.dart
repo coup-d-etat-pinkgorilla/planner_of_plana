@@ -1365,7 +1365,7 @@ String? _tutorialCardKey(PlanFlowStage stage) =>
     switch ((stage.studentId, stage.step)) {
       ('akane', 1) => TutorialTargets.planOrderCardAkane,
       ('kanna_swimsuit', 1) => TutorialTargets.planOrderCardKannaSwimsuit,
-      ('neru_uniform', 1) => TutorialTargets.planOrderCardNeruUniform,
+      ('neru_school_uniform', 1) => TutorialTargets.planOrderCardNeruUniform,
       ('maki', 2) => TutorialTargets.planOrderCardMakiStage2,
       _ => null,
     };
