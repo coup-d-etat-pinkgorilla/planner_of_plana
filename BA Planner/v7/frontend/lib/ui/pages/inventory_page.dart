@@ -19,6 +19,7 @@ import '../inventory/inventory_controller.dart';
 import '../inventory/inventory_view_model.dart';
 import '../inventory/inventory_workspace.dart';
 import '../navigation/app_navigation_intent.dart';
+import '../tutorial_host/tutorial_session.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({
@@ -58,7 +59,10 @@ class _InventoryPageState extends State<InventoryPage> {
 
   InventoryController get _controller =>
       widget.controller ??
-      (_ownController ??= InventoryController(widget.service));
+      (_ownController ??= InventoryController(
+        widget.service,
+        practiceProfile: () => TutorialHostScope.practiceProfileOf(context),
+      ));
 
   /// 첫 로드를 시작했는가.
   bool _started = false;

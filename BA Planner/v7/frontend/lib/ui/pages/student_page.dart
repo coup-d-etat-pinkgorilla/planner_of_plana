@@ -25,6 +25,7 @@ import '../widgets/plan_element_builder.dart' show planElementCurrentTargets;
 import '../widgets/student_grid_warmup.dart';
 import '../widgets/student_section_layout.dart';
 import '../tutorial/tutorial_script.dart';
+import '../tutorial_host/tutorial_session.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
 
 class StudentPage extends StatefulWidget {
@@ -476,11 +477,14 @@ class _StudentPageState extends State<StudentPage> {
     final repository = _repository;
     if (repository == null) return;
     final profiles = await repository.listProfiles();
-    if (!mounted || profiles.isEmpty) return;
-    final profile = profiles.firstWhere(
-      (item) => item.selected,
-      orElse: () => profiles.first,
-    );
+    if (!mounted ||
+        (profiles.isEmpty &&
+            TutorialHostScope.practiceProfileOf(context) == null)) {
+      return;
+    }
+    // F3c-3: 튜토리얼 동안은 임시 계정(일반 목록에 없다), 아니면 고른 계정 · 없으면 첫 계정.
+    final profile =
+        tutorialSelectedProfile(context, profiles) ?? profiles.first;
     await _selectProfile(profile);
   }
 
@@ -766,7 +770,7 @@ class _StatusPane extends StatelessWidget {
       children: [
         Text(message),
         const SizedBox(height: AppSpacing.sm),
-        OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+        OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
       ],
     ),
   );

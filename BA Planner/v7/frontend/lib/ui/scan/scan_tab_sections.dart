@@ -1130,6 +1130,8 @@ class _PickSection extends StatelessWidget {
           child: TutorialTarget(
             id: controller.pick.studentScanMode == StudentScanMode.full
                 ? TutorialTargets.scanStudentStartFullScan
+                : controller.pick.inventoryScanProfiles.isNotEmpty
+                ? TutorialTargets.scanItemStart
                 : null,
             child: _StartButton(
               title: label.title,

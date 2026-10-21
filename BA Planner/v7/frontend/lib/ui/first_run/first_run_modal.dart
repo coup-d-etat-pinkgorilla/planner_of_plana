@@ -467,6 +467,7 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
           avatarStudentId: created.avatarStudentId,
           revision: revision,
           selected: true,
+          isPractice: created.isPractice,
         );
       }
       if (!mounted) return;

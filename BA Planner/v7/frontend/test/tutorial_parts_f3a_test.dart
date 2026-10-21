@@ -205,7 +205,12 @@ void main() {
       expect(TutorialCopy.doneButton('하늘'), '하늘로 돌아가기');
       expect(
         TutorialCopy.quitBody('메인 계정'),
-        "그만두면 임시 계정을 지우고 '메인 계정' 계정으로 돌아갑니다.",
+        // F3c-3(CF 결정): 이름이 '계정'으로 끝나면 '계정'을 한 번만.
+        "그만두면 임시 계정을 지우고 '메인 계정'으로 돌아갑니다.",
+      );
+      expect(
+        TutorialCopy.quitBody('Main'),
+        "그만두면 임시 계정을 지우고 'Main' 계정으로 돌아갑니다.",
       );
       expect(TutorialCopy.stepCounter(7), '7 / 10');
     });
@@ -390,7 +395,8 @@ void main() {
       controller.signal(TutorialSignals.scanStudentFinished);
       await tester.pump();
       expect(find.text('곧 다음 단계로 넘어갑니다.'), findsOneWidget);
-      expect(find.text('—'), findsOneWidget, reason: '2단계 완료 제목은 시안에 없다');
+      // F3c-3(CF 결정): 2단계 완료 제목.
+      expect(find.text('스캔을 마쳤습니다'), findsOneWidget);
       await tester.tap(find.byKey(TutorialStepCard.quitKey));
       expect(quits, 1);
       await tester.pump(controller.completeHold);
@@ -877,7 +883,7 @@ void main() {
         ),
       );
       expect(find.text('튜토리얼을 그만두시겠습니까?'), findsOneWidget);
-      expect(find.text("그만두면 임시 계정을 지우고 '메인 계정' 계정으로 돌아갑니다."), findsOneWidget);
+      expect(find.text("그만두면 임시 계정을 지우고 '메인 계정'으로 돌아갑니다."), findsOneWidget);
       await tester.tap(find.byKey(TutorialQuitPanel.continueKey));
       expect(continued, 1);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);

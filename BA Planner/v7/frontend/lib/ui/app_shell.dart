@@ -35,6 +35,7 @@ import 'tactical/tactical_lobby_view.dart' show TacticalLobbyHandoff;
 import 'tutorial/tutorial_script.dart' show TutorialSignals, TutorialTargets;
 import 'tutorial_targets/tutorial_header_chip_slot.dart';
 import 'tutorial_targets/tutorial_hooks.dart';
+import 'tutorial_host/tutorial_session.dart';
 import 'widgets/animated_section_stack.dart';
 import 'widgets/ba_triangle_background.dart';
 import 'widgets/development_panel.dart';
@@ -160,10 +161,22 @@ class _AppShellState extends State<AppShell>
   /// 다른 탭(전술대항전)에서 처리한 스캔 후보([scanCandidateKey]). 탭 점의 검토 대기에서 뺀다.
   Set<String> _scanAppliedElsewhere = const {};
 
-  /// 튜토리얼 자리(F3c-2). [AppShell.tutorialHooks]가 없으면 셸이 만든 것을 쓰고 dispose한다.
+  /// 튜토리얼 자리(F3c-2). [AppShell.tutorialHooks]가 없으면 앱 튜토리얼 세션의 것(F3c-3), 그것도 없으면 셸이 만든 것을
+  /// 쓰고 dispose한다.
   TutorialHooks? _ownedTutorialHooks;
   TutorialHooks get _tutorialHooks =>
-      widget.tutorialHooks ?? (_ownedTutorialHooks ??= TutorialHooks());
+      widget.tutorialHooks ??
+      _tutorialSession?.hooks ??
+      (_ownedTutorialHooks ??= TutorialHooks());
+
+  /// 앱 튜토리얼 세션(F3c-3, [TutorialHostScope]). 임시 계정 · 장면 바탕 탭 요청을 따른다.
+  TutorialSession? _tutorialSession;
+  String? _practiceId;
+  int _practiceEpoch = 0;
+  int _tutorialNavigationId = 0;
+
+  /// "아이템 스캔 시작" 신호를 낸 세션(F3c-3 — 세션마다 한 번).
+  String? _itemStartedSession;
 
   /// Empty-Backend 덮개(F3c-2): 연결 전 · 끊김이 [emptyBackendGrace] 넘게 이어지면 켠다.
   bool _emptyBackend = false;
@@ -236,8 +249,73 @@ class _AppShellState extends State<AppShell>
     _headerOverride.dispose();
     _connectedTarget.dispose();
     _emptyBackendTimer?.cancel();
+    _detachTutorialSession();
     _ownedTutorialHooks?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final session = TutorialHostScope.sessionOf(context);
+    if (identical(session, _tutorialSession)) return;
+    _detachTutorialSession();
+    _tutorialSession = session;
+    if (session == null) return;
+    session
+      ..shellAttached = true
+      ..shellSection = _section
+      ..addListener(_tutorialSessionChanged);
+    session.scanSession.value = _scanSession;
+    // 셸이 열리기 전에 정해진 임시 계정 · 바탕 탭 요청을 프레임 뒤에 따른다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _tutorialSessionChanged();
+    });
+  }
+
+  void _detachTutorialSession() {
+    final session = _tutorialSession;
+    _tutorialSession = null;
+    if (session == null || session.isDisposed) return;
+    session
+      ..removeListener(_tutorialSessionChanged)
+      ..shellAttached = false;
+    if (identical(session.scanSession.value, _scanSession)) {
+      session.scanSession.value = null;
+    }
+  }
+
+  /// F3c-3: 임시 계정이 생기거나(다시) 놓이거나 지워지면 셸 · 스캔을 그 계정으로 옮기고, 장면 바탕 탭 요청을 따른다.
+  void _tutorialSessionChanged() {
+    final session = _tutorialSession;
+    if (session == null || !mounted) return;
+    final practiceId = session.practice?.profileId;
+    if (practiceId != _practiceId || session.practiceEpoch != _practiceEpoch) {
+      final previous = _practiceId;
+      _practiceId = practiceId;
+      _practiceEpoch = session.practiceEpoch;
+      // reset · end 뒤 그 임시 계정으로 시작한 스캔 범위를 버린다(F3c-1 입력).
+      if (previous != null) _scanSession.discardProfileScope(previous);
+      _profileChanged();
+      // 탭은 계정이 바뀌면 새로 만들어진다 — 바탕 탭 요청(연결 패널 열기 등)은 새 탭이 붙은 뒤에 따른다.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _followTutorialNavigation();
+      });
+      return;
+    }
+    _followTutorialNavigation();
+  }
+
+  void _followTutorialNavigation() {
+    final navigation = _tutorialSession?.navigation;
+    if (navigation != null && navigation.id > _tutorialNavigationId) {
+      _tutorialNavigationId = navigation.id;
+      if (navigation.openConnectPanel) {
+        _openTargetPicker();
+      } else {
+        _open(navigation.section);
+      }
+    }
   }
 
   void _handleConnectionChanged() {
@@ -305,6 +383,13 @@ class _AppShellState extends State<AppShell>
 
   Future<void> _loadSelectedProfile() async {
     final generation = ++_profileLoadGeneration;
+    // F3c-3: 튜토리얼 동안은 임시 계정(일반 목록에 없다 — "고른 계정 없음"으로 넘어가지 않는다).
+    final practice = _tutorialSession?.practiceProfile;
+    if (practice != null) {
+      setState(() => _selectedProfile = practice);
+      unawaited(_scanSession.selectProfile(practice));
+      return;
+    }
     final service = widget.service;
     if (service is! RepositoryService) return;
     if (service.state.value.connection != BackendConnection.connected) return;
@@ -343,6 +428,7 @@ class _AppShellState extends State<AppShell>
       }
       _section = section;
     });
+    _tutorialSession?.shellSection = section;
     if (section == AppSection.scan) {
       _tutorialHooks.signals.emit(TutorialSignals.scanTabOpened);
     }
@@ -396,6 +482,7 @@ class _AppShellState extends State<AppShell>
 
   /// 세션이 새로 끝나면(스캔 탭 밖에서만) 완료 토스트를 띄운다. 끝은 이벤트 · 스냅숏 응답에서만 오므로 빌드 중이 아니다.
   void _scanSessionChanged() {
+    _emitItemStarted();
     final notice = ScanEndNotice.of(_scanSession);
     if (!mounted || notice == null || notice.sessionKey == _lastScanEndKey) {
       return;
@@ -425,6 +512,19 @@ class _AppShellState extends State<AppShell>
     _scanEndNoticeTimer?.cancel();
     _scanEndNoticeTimer = Timer(scanEndToastDuration, _dismissScanEndNotice);
     setState(() => _scanEndNotice = notice);
+  }
+
+  /// F3c-3: 아이템 스캔 세션이 실제로 돌기 시작했다(5단계 카드 → 진행 창 한 줄), 세션마다 한 번.
+  void _emitItemStarted() {
+    final session = _scanSession.session;
+    if (session == null ||
+        session.kind != ScannerKind.inventory ||
+        _scanSession.stage != ScanSessionStage.running ||
+        _itemStartedSession == session.id) {
+      return;
+    }
+    _itemStartedSession = session.id;
+    _tutorialHooks.signals.emit(TutorialSignals.scanItemStarted);
   }
 
   /// 아이템 진행 창이 덮는 동안(플래너 창이 줄어 있다) 셸 본문은 그리지 · 누르지 않는다. 크기 · 상태는 그대로다(FE8-g3 발견 3).
@@ -471,6 +571,7 @@ class _AppShellState extends State<AppShell>
     _scanEndNoticeTimer?.cancel();
     setState(() {
       _scanSession = _createScanSession()..addListener(_scanSessionChanged);
+      _tutorialSession?.scanSession.value = _scanSession;
       _scanEndNotice = null;
       _scanAppliedElsewhere = const {};
       _profileGeneration += 1;
@@ -551,13 +652,16 @@ class _AppShellState extends State<AppShell>
                               ),
                             ),
                           ),
-                          BaModalBackdropExclude(
-                            child: RecoveryBanner(
-                              service: widget.service,
-                              onOpenSettings: () => _open(AppSection.settings),
-                              onOpenScan: () => _open(AppSection.scan),
+                          // F3c-3(CF 결정): Empty-Backend 덮개가 떠 있는 동안 백엔드 복구 배너는 숨긴다(덮개가 같은 일을 한다).
+                          if (!_showEmptyBackend)
+                            BaModalBackdropExclude(
+                              child: RecoveryBanner(
+                                service: widget.service,
+                                onOpenSettings: () =>
+                                    _open(AppSection.settings),
+                                onOpenScan: () => _open(AppSection.scan),
+                              ),
                             ),
-                          ),
                           Expanded(
                             child: AnimatedSectionStack(
                               index: AppSection.values.indexOf(_section),
@@ -672,6 +776,12 @@ class _AppShellState extends State<AppShell>
                                       _open(AppSection.adaptiveSync),
                                   onProfileChanged: _profileChanged,
                                   onRecoveryCompleted: _recoveryCompleted,
+                                  onRestartTutorial: switch (_tutorialSession) {
+                                    final session? =>
+                                      (context, account) =>
+                                          session.start(account),
+                                    null => null,
+                                  },
                                 ),
                                 const AdaptiveSyncPage(),
                                 const SectionTemplateStudioPage(),

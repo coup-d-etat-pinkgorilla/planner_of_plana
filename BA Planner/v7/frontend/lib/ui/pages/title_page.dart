@@ -259,6 +259,7 @@ class _TitlePageState extends State<TitlePage>
           avatarStudentId: fallback.avatarStudentId,
           revision: revision,
           selected: true,
+          isPractice: fallback.isPractice,
         );
       }
       final state = selected == null

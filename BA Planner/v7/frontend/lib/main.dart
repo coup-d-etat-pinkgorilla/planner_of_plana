@@ -36,6 +36,8 @@ void main() {
       service: service,
       showTitle: true,
       firstRun: FirstRunLaunch.fromDefine(firstRun),
+      // F3c-3: 첫 실행 ③ · 설정 다시 하기의 튜토리얼과 앱 시작 때 남은 임시 계정 정리.
+      tutorial: true,
     ),
   );
 }

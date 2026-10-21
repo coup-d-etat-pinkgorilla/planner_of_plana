@@ -157,6 +157,7 @@ RepositoryProfile repositoryProfileWithRevision(
         avatarStudentId: profile.avatarStudentId,
         revision: revision,
         selected: profile.selected,
+        isPractice: profile.isPractice,
       );
 
 // FE8-b(2026-10-10): 계정 관리 목록·레일·행은 시안 `Title-Accounts.dc.html` 값이다. 길이는 기준 viewport

@@ -87,6 +87,7 @@ import '../widgets/account_section_cluster.dart' show accountLastScanText;
 import '../widgets/empty_state_panel.dart';
 import '../widgets/student_filter_modal.dart';
 import '../tutorial/tutorial_script.dart';
+import '../tutorial_host/tutorial_session.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
 
 export '../statistics/statistics_topics.dart' show StatisticsMode;
@@ -473,13 +474,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     try {
       final profiles = await repository.listProfiles();
       if (!mounted || generation != _generation) return;
-      _profile = null;
-      for (final item in profiles) {
-        if (item.selected) {
-          _profile = item;
-          break;
-        }
-      }
+      // F3c-3: 튜토리얼 동안은 임시 계정(일반 목록에 없다).
+      _profile = tutorialSelectedProfile(context, profiles);
       if (_profile == null) {
         setState(() => _loading = false);
         return;

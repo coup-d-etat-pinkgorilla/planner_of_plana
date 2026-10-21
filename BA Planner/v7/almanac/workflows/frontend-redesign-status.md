@@ -11683,3 +11683,157 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_113829\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-3 착수 기록 (2026-10-21 13:10, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 튜토리얼을 Mock에서 처음부터 끝까지 연결(주입 · 시작 · 장면 그리기 · 끝 · 그만두기 · 다시 하기 · recover), CF 결정 반영(완료 체크 제목 17 · 5단계 카드 · 계정 이름), Empty-Backend 덮개 동안 복구 배너 숨김 · 'Retry' → '다시 시도'. 실제 runtime은 `unsupported`(XB X4 짝 라운드 전).
+- 시작 SHA: `c683f570b5422e557f2ec51d7dd512accd382332`. `git log --oneline -3`에 `7d2555b8 f3c2:` 있음, 이 status 끝에 다른 "F3c-3 착수 기록" 없음 확인. 막힘 확인: 대장 열림 FD 0건.
+- 같은 시각 Lane B F3c-4(`lib/ui/widgets/plan_flow_*.dart` · `plan_section_layout.dart` · `plan_flow_goal_editor.dart` · `mock_tutorial_practice.dart`)를 건드리지 않는다.
+- **착수 전 사용자 결정(AskUserQuestion, 2026-10-21)**: 임시 계정은 `listProfiles`에 없어(F3c-1 발견 6) 학생 · 인벤토리 · 통계 · 전술대항전 · 계획 탭이 "고른 계정 없음"이 된다 → **공용 판정 함수를 두고 탭 4개(학생 · 인벤토리 · 통계 · 전술대항전)를 고친다**(프롬프트 고칠 곳 목록 밖 — 사용자 승인). `plan_section_layout.dart`(Lane B 진행 중)는 F3c-4 · 다음 라운드 몫으로 status에 남기고, 한 바퀴 시험의 계획 단계는 가짜 신호.
+- 고칠 기존 파일(사본 `debug/frontend_f3c3/pre/<v7 기준 경로>`, 16개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**): `frontend/lib/app/app.dart` · `frontend/lib/main.dart` · `frontend/lib/ui/app_shell.dart` · `pages/settings_page.dart`(CRLF) · `widgets/account_section_cluster.dart` · `first_run/first_run_modal.dart` · `pages/title_page.dart` · `tutorial/tutorial_script.dart` · `scan/scan_tab_sections.dart` · `pages/student_page.dart` · `pages/statistics_page.dart`(CRLF) · `pages/tactical_page.dart`(CRLF) · `inventory/inventory_controller.dart` · `pages/inventory_page.dart`(CRLF) · `frontend/test/student_page_test.dart` · `frontend/test/tutorial_parts_f3a_test.dart`(나머지 LF). 실제로 고치지 않게 되는 파일은 종료 기록에 적는다.
+- 새 파일(예정): `frontend/lib/ui/tutorial_host/**`(세션 · 덧그림 · 계정 판정), `frontend/test/tutorial_host_f3c3_test.dart`, `frontend/test/goldens/f3c3_tutorial_golden_test.dart`, `debug/frontend_f3c3/commit.json` · `output.md`.
+- 고치지 않음: Lane B 파일, `lib/services/**`, backend/** · contracts/**, `lib/ui/kit/**`, golden harness · 기존 기준 이미지, `frontend/tool/**`, pubspec, 택틱 · 스캐너 소유 파일(`scan_page.dart`의 'Retry'는 스캐너 소유라 그대로), `planning_protocol_client.dart` 오류 허용 목록.
+
+## F3c-3 종료 기록 (2026-10-21 16:30, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(새 golden 2 · `empty-backend` 변경 → `-UpdateGoldens`) 남음. 시작 SHA `c683f570`, 커밋 없음(git 쓰기 안 함). 실제 runtime은 미실행(지금 백엔드는 `unsupported` — XB X4 짝 라운드).
+- 결과: 새 `lib/ui/tutorial_host/`(`tutorial_session.dart` 세션 · 계정 판정, `tutorial_overlay.dart` 덧그림). `BAPlannerApp(tutorial: true)`가 세션을 가지고 `MaterialApp.builder`에서 Navigator 위에 덧그림을 얹는다(타이틀 · 셸을 함께 덮음). `main.dart`만 켠다(시험 · golden 기본 꺼짐 — 기존 장면 변화 0). Mock으로 첫 실행 → 1~10 → 끝 화면 → 첫 계정 홈까지 한 바퀴를 시험으로 돌렸다.
+- 착수 전 사용자 결정(착수 기록): 임시 계정이 일반 목록에 없어 탭 4개(학생 · 인벤토리 · 통계 · 전술대항전)에 공용 판정 `tutorialSelectedProfile`을 넣었다. 계획 탭(`plan_section_layout.dart`, Lane B)은 **아직 임시 계정을 못 찾는다**(아래 발견 1).
+- 기존 파일 diff(`+/−`): `app/app.dart` +106/−8(Stateless → Stateful, 세션 · navigatorKey · builder · 연결 뒤 recover · 타이틀 위 시작의 셸 열기) · `main.dart` +2/−0 · `app_shell.dart` +118/−8 · `settings_page.dart` +7/−2 · `account_section_cluster.dart` +1/−0 · `first_run_modal.dart` +1/−0 · `title_page.dart` +1/−0 · `tutorial/tutorial_script.dart` +64/−5 · `scan_tab_sections.dart` +2/−0 · `student_page.dart` +10/−6 · `statistics_page.dart` +3/−7 · `tactical_page.dart` +4/−8 · `inventory_controller.dart` +12/−3 · `inventory_page.dart` +5/−1, 시험 `student_page_test.dart` +1/−1 · `tutorial_parts_f3a_test.dart` +9/−3. 서식: 고친 줄만(사본 format 차이 patch — 16파일 "pre + 차이 = cur" 일치), `.orig` · `.rej` 0(patch는 세션 임시 폴더 사본에만).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집마다 · 마지막) | 중간 warning 1(`tactical_page` 남은 `!`) · 시험 info/warning 3 → 고침 → **No issues found!** |
+| `flutter test --exclude-tags golden test/tutorial_parts_f3a_test.dart test/student_page_test.dart test/tutorial_targets_f3c2_test.dart`(문구 · 키 변경 뒤) | **+58 All passed** |
+| `flutter test --exclude-tags golden test/tutorial_host_f3c3_test.dart` | 1회 +0 −8(시험 helper가 연이은 장면 01 · 02를 한 번에 넘김, 세션을 셸보다 먼저 dispose → 셸 · 덧그림이 dispose된 세션을 만짐 — 코드에 `isDisposed` 가드) → 2~9회 한 바퀴 시험 고침(타이틀 위 시작: 계정 전환과 연결 패널 요청이 같은 호출 → 패널 요청을 프레임 뒤로, 대기 루프가 완료 체크 1.2초(시험 60ms)를 지나침 → `_waitDone`, 학생 탭 카드가 화면 밖 → 4단계는 hooks 출구, 3단계 뒤 남은 후보 → 폐기) → **+8 All passed** |
+| 마지막 묶음 `tutorial_host_f3c3_test` · `tutorial_targets_f3c2_test` · `tutorial_parts_f3a_test` | **+58 All passed**, hit-test 경고 0 |
+| 관련 기존 시험 66파일(grep: 고친 파일 · 앱 · 셸 · 탭 · 첫 실행 · 튜토리얼 상수를 쓰는 시험, golden · process 패턴 0건) 3묶음 `--exclude-tags golden` | **+230 · +207 · +329 All passed**(실패 0) |
+| 일회성 렌더(사본 `test/goldens/f3c3_render_tmp_test.dart` · `f3c2_render_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, PNG는 세션 임시 폴더) 3회 | 1회: 카드 글자 노란 밑줄(덧그림에 Material 없음 → 투명 Material) · 이력 '어제 16:56'(실행 시각) → 2회: 검토 머리 '10/21'(컨트롤러 시각) → golden 서비스 · 스캔 컨트롤러 시각 고정 → 3회 확인, 사본 삭제 |
+| 바이트 검사 · `git diff --check -- frontend/lib frontend/test` | 줄바꿈 유지(CRLF: settings · statistics · tactical · inventory_page), 줄 끝 공백 0, 끝 개행 하나, 출력 없음 |
+
+로그: `debug/frontend_f3c3/logs/`(`existing-1` · `f3c3-test-1~11` · `related-a~c` · `render-1~3`), 시험 목록 `debug/frontend_f3c3/related_tests.txt`. golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 시작 · 끝 · 그만두기 · 다시 하기 · recover 흐름
+
+| 사건 | 동작 |
+|---|---|
+| 첫 실행 ③ "만들고 튜토리얼 시작" | 타이틀이 `onStartTutorial(context, 새 계정)`(BAPlannerApp이 세션 시작으로 연결) → `probePracticeSupport` → `currentPractice` → 없으면 `createPractice(새 계정 id · revision)` → 흐름 시작 · 머리글 칩 켜기 · `hooks.signals.listener = flow.signal`. 프라나 01은 **타이틀 위**, 02부터 셸(앱이 `pushReplacement(AppShell(home))`) |
+| 설정 "튜토리얼 다시 하기" | 셸이 `SettingsPage.onRestartTutorial`을 세션 시작으로 넘김. 돌아갈 계정 = 고른 계정, 튜토리얼 중이면 세션의 첫 계정. 활성 임시 계정이 있으면 `resetPractice`(같은 id, revision +1, 흐름 처음부터), 없으면 create |
+| 미지원(`unsupported` · practice 서비스 없음 · `TutorialPracticeUnsupportedException`) | 튜토리얼을 열지 않고 안내 "이 계산 엔진은 아직 튜토리얼을 지원하지 않습니다. 홈으로 이동합니다." + 홈(타이틀이면 셸을 홈으로 엶) |
+| 시작 실패(create 등 오류) | 안내 "튜토리얼을 시작하지 못했습니다: 〈오류 코드 또는 글〉" + 홈 |
+| 임시 계정 전환 | 셸이 세션의 `practiceProfile`(id · '튜토리얼' · 원 계정 아바타 · `isPractice: true`)을 고른 계정으로 쓰고 `_profileChanged`(탭 다시 만듦) 뒤 스캔 컨트롤러 `selectProfile(임시 계정)`. 전 임시 계정이 있으면 `discardProfileScope` |
+| 장면 바탕 | 대사 장면에 들어가면 `tutorialSceneSections` 탭으로(02 = 홈 + 연결 패널, 03 · 04 · 06 · 07 = 스캔, 05 = 학생, 08~09d = 계획, 10 = 인벤토리, 11 = 통계, 01 · 그만둘 때 = 그대로). 계획 모드(흐름 1~4단계 · 시나리오 목록 · 비교)는 옮기지 않는다(발견 2) |
+| 끝 화면 "〈계정〉으로 돌아가기" · 그만두기 확인 → 프라나 그만둘 때 | 흐름 `ended` → (다음 microtask) `currentPractice`로 지금 revision → `endPractice(completed | dismissed, key 하나)` → 임시 계정 지움 · 흐름 정리 · 칩 끔 · listener null → 셸이 `discardProfileScope` · 고른 계정 다시 읽기 · 홈 |
+| 끝 정리 실패 | 막는 패널 "임시 계정을 지우지 못했습니다 · 〈오류〉" + "다시 시도"(같은 key). 성공으로 바꾸지 않음(시험) |
+| 앱 시작 | 연결되면 한 번 `recoverPractice`. 미지원이면 조용히 끝, 실패면 안내 "지난 튜토리얼 임시 계정을 정리하지 못했습니다: 〈오류〉"(닫기) |
+
+### 단계 → 신호 → 대상 키 → Mock 한 바퀴 확인 결과(`tutorial_host_f3c3_test` "Mock walkthrough")
+
+| 단계 | 완료 신호(나는 자리) | 강조 대상 키 | 한 바퀴 확인 |
+|---|---|---|---|
+| 1 | `connect.virtualWindow.connected`(홈 연결 패널) | `home.connect.useSelectedWindow` | **실제 화면**: 가상 창 행 누름 → 하위 체크, '선택한 창 사용' → '연결했습니다', 강조 사각형 · 테두리 있음 |
+| 2 | `scan.student.finished`(셸) | `scan.student.startFullScan` | **실제**: 학생 전체 · 시작 → 기다림 카드 → Mock 재생 끝 → '스캔을 마쳤습니다'. '스캔 탭 열기'는 바탕 장면이 이미 열었으면 단계 시작 때 채움(새 규칙) |
+| 3 | `scan.studentReview.applied`(검토 보드) | `scan.studentReview.applyChanged` | **실제**: 6명 한 번에 적용 → '적용했습니다'. 프라나 04 대사 2 밝히기 `uncertainGroup` 사각형 있음 |
+| 4 | `students.calculator.targetChanged` | `students.calculator.levelTargetPlus` | **hooks 출구**(임시 계정 그리드는 전체 카탈로그라 첫 화면에 보유 학생 카드가 없음 — 실제 계산기 신호는 F3c-2 시험이 봄) → '목표를 바꿨습니다' |
+| 5 | `scan.item.finished`(셸), 기다림 `scan.item.started`(셸, 새) | `scan.item.start`(새, 스캔 탭 시작 버튼 — 아이템을 고른 때) | **실제**: 카드 "아이템 2종을 고르고 스캔을 시작해 주십시오" → 기술 노트 · 전술 교육 BD 고름 → 강조 → 시작 → 진행 창 한 줄(창 없으면 화면 아래) → 큐 끝 → '아이템 스캔을 마쳤습니다' |
+| 6 | `scan.itemReview.applied` | `scan.itemReview.applyApproved` | 확인 필요 2칸 승인은 **hooks 출구**, 적용은 **실제** → '적용했습니다' |
+| 7-1 ~ 7-6 · 8 | 계획 신호(Lane B F3c-4) | 계획 키(F3c-2) | **hooks 출구**(바탕은 계획 탭) → 완료 제목 8개 확인 |
+| 9 | `inventory.topShortage.opened` | `inventory.shortage.topRow` | **hooks 출구**(계획 저장 없이 부족 목록이 비어 1위 행 없음) → '확인했습니다' |
+| 10 | `statistics.growthTrend.viewed` | `statistics.growthTrendTile`(F3c-2 등록 모양 그대로) | **hooks 출구** → '확인했습니다' |
+| 프라나 11 · 끝 | 끝 화면 돌아가기 | — | 대사의 계정 표현 "'Main' 계정으로", 끝 화면 'Main으로 돌아가기' → `endPractice(completed)` → 임시 계정 없음 · 첫 계정 고름 · 칩 꺼짐 |
+
+- 3단계 뒤 남은 후보(새 학생 네루(교복) 1 · 확인 필요 2)가 검토 대기라 스캔 탭이 고르기로 돌아가지 않는다 → 시험은 남은 후보를 폐기하고 5단계로 갔다(**발견 3**).
+- 그 밖 시험: 중간 그만두기(계속하기 → 하던 단계, 그만두기 → 그만둘 때 장면 → `dismissed` · 임시 계정 없음 · 첫 계정), 설정 다시 하기(reset — 같은 id · epoch 2 · 처음부터 · 돌아갈 계정 유지), 미지원 안내 · 닫기, recover 실패 안내, 끝 실패 → 다시 시도 성공, 타이틀 위 시작(01이 타이틀 위, 01 뒤 셸 · 연결 패널), 1280×720(대사 · 카드 · 그만두기 · 끝 화면 넘침 0).
+
+### 워커 문구(CF 검수)
+
+| 자리 | 문구 |
+|---|---|
+| 미지원 안내 | 이 계산 엔진은 아직 튜토리얼을 지원하지 않습니다. 홈으로 이동합니다. |
+| 시작 실패 | 튜토리얼을 시작하지 못했습니다: 〈오류〉 |
+| 지난 임시 계정 정리 실패 | 지난 튜토리얼 임시 계정을 정리하지 못했습니다: 〈오류〉 |
+| 끝 정리 중 · 실패 | 임시 계정을 정리하는 중입니다 / 임시 계정을 지우지 못했습니다 · 〈오류〉 + 다시 시도 |
+| 임시 계정 이름(머리 · 계정 자리) | 튜토리얼 |
+| 5단계 why | 가상 창에서 기술 노트와 BD 수량을 읽어 옵니다.(제목은 CF 문구) |
+| 안내 줄 닫기 버튼 | 닫기 |
+
+### 고친 `lib/ui/tutorial/tutorial_script.dart` 줄 목록(+64/−5)
+
+- `TutorialStepPresentation.inlineLine` 주석(기다림 전 카드).
+- `TutorialStep.doneTitle` 주석.
+- `TutorialSignals.scanItemStarted = 'scan.item.started'` + `all`에 추가(26개).
+- `TutorialTargets.scanItemStart = 'scan.item.start'` + `highlightKeys`에 추가(18개).
+- `TutorialCopy.quitBody` → `accountDestination(account)` 사용, 새 `TutorialCopy.accountDestination`("'이름' 계정으로", '계정'으로 끝나면 "'이름'으로").
+- 새 함수 `tutorialSceneForAccount(scene, account)`(대본의 "'메인 계정'으로" → 실제 이름 — 프라나 11).
+- 단계 1 · 2 · 4 · 6 · 7-1 · 7-2 · 7-2b · 7-2c · 7-3 · 7-4 · 7-5 · 7-6 · 8 · 9 · 10에 `doneTitle`(CF 표 그대로, 3단계는 원래 '적용했습니다').
+- 단계 5: `title`(CF) · `why`(워커) · `highlightKey: scanItemStart` · `doneTitle: '아이템 스캔을 마쳤습니다'` · `waitSignal: scanItemStarted`.
+- 시험 `tutorial_parts_f3a_test.dart`: `quitBody` 기대 2곳("'메인 계정'으로"), 영문 이름 기대 1건 추가, 2단계 완료 제목 '—' → '스캔을 마쳤습니다'.
+
+### 그 밖 고친 곳
+
+- `scan_tab_sections.dart`: 시작 버튼 대상 키 — 학생 전체면 `scan.student.startFullScan`, 아이템을 고르면 `scan.item.start`(2줄).
+- `app_shell.dart`: 세션 붙이기 · 떼기(`TutorialHostScope`), hooks는 세션 것, 임시 계정 전환 · `discardProfileScope`, 바탕 탭 요청(계정 전환과 같은 호출이면 프레임 뒤), `scan.item.started`(아이템 세션 running, 세션마다 한 번), 지금 탭 알림, 설정 다시 하기 연결, **Empty-Backend 덮개 동안 복구 배너 숨김**(CF 결정).
+- `student_page.dart`: 영문 'Retry' → **'다시 시도'**(F3c-2 발견 — 덮개 아래 비치던 버튼). `scan_page.dart`의 'Retry'(검토 레일 예전 버튼)는 스캐너 소유라 그대로(발견 7).
+- 계정 사본이 `isPractice`를 잃지 않게: `repositoryProfileWithRevision` · 첫 실행 ③ · 타이틀 로그인 사본(F3c-1 발견 5).
+
+### golden 변화
+
+| 장면 | 변화 · 이유 |
+|---|---|
+| `empty-backend` | **바뀜**(whole): 덮개 아래 비치던 복구 배너("Backend 연결 끊김 …" · 재연결 · Backend 재시작 · 설정 열기)가 없어지고 머리글 바로 아래부터 막. 덮개 · 패널 · 칩은 그대로 |
+| 그 밖 기존 장면 | 변화 0 예상: 튜토리얼은 `BAPlannerApp(tutorial: true)`일 때만(golden 꺼짐 — builder · 덧그림 없음), `navigatorKey`는 그림에 영향 없음, 탭의 계정 판정은 임시 계정이 없으면 예전과 같음, 'Retry'는 학생 탭 오류 상태에만 |
+| 새 `tutorial-step-scan` | 셸 스캔 탭 고르기 화면, 머리글 '스캔' 옆 '튜토리얼 · 임시 계정' 칩, '학생 전체 스캔 시작' 버튼(분홍 사선) 둘레 하늘색 테두리 · 빛, 그 오른쪽에 2단계 카드('프' 얼굴 칩 · 프라나 · 2 / 10 · 진행 칸 하늘 1 분홍 1 · 그만두기, 큰 '2', "'학생 전체 스캔 시작'을 눌러 주십시오.", why, 하위 체크 ● 스캔 탭 열기 ○ 학생 전체 고르기 ○ 스캔 시작). 왼쪽 레일 게임 창 'Blue Archive · 1280×720' · 계정 '튜토리얼', 아래 종류별 마지막 스캔(학생 · 기술 노트 '어제 12:00'). 렌더 시각 이후 '스캔 탭 열기' 체크 규칙을 더해 기준 이미지에서는 첫 줄이 ✓ 완료 표시다 |
+| 새 `tutorial-dialogue-review` | 학생 결과 검토(전체 9 · 확인 필요 2 · 바뀐 학생 6 · 새 학생 1, 머리 '학생 전체 · 오늘 12:00 · 9명')가 검정 막 아래, '확인 필요 · 2명' 묶음(유우카 · 히나 행)만 밝힌 구멍 + 하늘 테두리, 아래 대사 띠 '프라나 · 싯딤의 상자' · '튜토리얼 · 학생 검토 · 대사 2 / 5' · 그만두기, 대사 "다만 2명은 읽은 값을 확신할 수 없어, '확인 필요'로 따로 모아 두었습니다." 전체, '클릭 · Space · Enter로 다음'. 그림 없음 |
+
+- 두 새 장면은 시각 고정 Mock(`historyClock` · `clockNow` · 스캔 컨트롤러 `now` = 2026-10-05 03:00 UTC)이다. '어제 12:00' · '오늘 12:00'은 KST 기준(사용자 PC) — 다른 시간대에서는 시각 글자가 다르다(발견 8).
+
+### 미검증("미실행")
+
+- 미실행: **실제 runtime**(practice 수명 · 영속 · 고아 정리 · 가상 재생 — 지금 실제 백엔드는 `unknown_method` → 미지원 안내 경로만), golden 비교 · 기준 PNG 생성, 전체 `fe_gate.ps1`, process E2E, almanac validate, Python.
+- 미실행: 실제 화면 동작으로 4 · 6(승인) · 7-x · 8 · 9 · 10단계(시험은 hooks 출구), 계획 탭이 임시 계정을 읽는지(발견 1), 대사 띠 0.3초 걷힘 뒤 다음 장면(시험은 `advanceLine` 직접), 실제 앱 mock 실행 눈 검수, 키보드(Space · Enter · Esc) 흐름.
+
+### 검수표(사용자 · CF)
+
+| artboard | 여는 방법 | 확인 |
+|---|---|---|
+| Tutorial-Plana-01(타이틀 위) | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_FIRST_RUN=full` → ① → ② → ③ 만들고 튜토리얼 시작 | 타이틀 위 대사 띠, 01 뒤 셸 홈 + 연결 패널 |
+| Tutorial-01 ~ 03 | 위에서 계속 | 가상 창 고르기 · 연결, 스캔 탭 카드 · 강조, 가상 스캔 진행 수(n/9), 검토 위 대사 밝히기, 6명 적용 |
+| Tutorial-05 · 06 | 계속(남은 후보 폐기 필요 — 발견 3) | 카드 + 아이템 시작 강조, 진행 창 한 줄, 아이템 검토 적용 |
+| Tutorial-Quit · Plana-Quit | 아무 단계에서 그만두기 | 확인 창 "'메인 계정'으로 돌아갑니다"(이름이 '…계정'이면 한 번), 그만둘 때 대사 → 첫 계정 홈 · 칩 사라짐 |
+| Tutorial-Done | 끝까지(계획 단계는 F3c-4 뒤) | 1080×480 패널 · 써 본 기능 10 · 돌아가기 |
+| 설정 다시 하기 | 설정 탭 → 튜토리얼 다시 하기 | 처음부터(임시 계정 reset) |
+| Empty-Backend | 연결 끊김 1.5초 | 복구 배너 없음 |
+| 미지원 | 실제 백엔드로 첫 실행 ③ | 안내 한 줄 · 홈 |
+
+### 발견 사항
+
+1. **계획 탭이 임시 계정을 못 찾는다**: `plan_section_layout.dart`(Lane B)는 `listProfiles()`의 고른 계정만 본다 → 튜토리얼 동안 "계정 없음". 고칠 곳 2곳(`_loadRepositoryPlan` 362 · 798 근처 `profiles.firstWhere(selected)`) → `tutorialSelectedProfile(context, profiles)`로(이 slice의 공용 함수, `lib/ui/tutorial_host/tutorial_session.dart`). F3c-4 또는 다음 라운드.
+2. **계획 장면 바탕 모드**: 대본 08 "계획 만들기 1 학생 고르기 · 비나 대비 7명", 08c~08f "계획 만들기 2 · 3", 09 "4 저장", 09c "시나리오 목록", 09d "나란히 비교"는 계획 탭 안 모드 · 미리 고른 학생이다. 이 slice는 탭만 옮긴다(계획 파일은 Lane B) — 흐름 열기 · 학생 7명 미리 넣기는 계획 쪽 진입점이 필요(F3c-4 · CF).
+3. **3단계 뒤 스캔 탭이 고르기로 안 돌아감**: 바뀐 6명만 적용하면 새 학생 1 · 확인 필요 2가 검토 대기로 남아 스캔 탭이 결과 검토에 머문다 → 5단계(아이템 2종 고르기)에 닿을 길이 화면에 없다(보류는 대기 유지, 폐기만 빠짐). 대안: (a) 3단계 완료 뒤 남은 후보를 튜토리얼이 정리(폐기) (b) 5단계 카드에 "남은 후보 정리" 안내 (c) 스캔 탭이 검토 대기여도 고르기로 갈 길. CF 결정 필요.
+4. **seed 학생 id**: Mock seed는 `neru_school_uniform`인데 F3c-2 순서 카드 키는 `neru_uniform`(`plan_flow_order_step.dart`, Lane B 파일) — F3c-4 seed 대조에서 고칠 것.
+5. **중복 등록 경고**: 계정 전환으로 탭을 다시 만드는 프레임에 새 탭이 옛 탭보다 먼저 등록돼 `registered twice` 경고가 debugPrint로 찍힌다(`statistics.growthTrendTile` · `scan.student.startFullScan`). 사각형은 새 등록을 쓰므로 동작은 맞다. 경고를 프레임 뒤에 다시 세는 개선은 `lib/ui/tutorial_targets/**`(이번 고칠 곳 밖).
+6. **5단계 진행 창 한 줄 자리**: Windows가 아니거나 진행 창(dock)이 없으면 화면 아래 가운데에 둔다(시험 환경). 실제 진행 창 안 자리는 미검수.
+7. `scan_page.dart`(스캐너 소유)의 'Retry'는 그대로 — 검토 레일 예전 버튼, 지금 화면에서 비치는지 CF 확인.
+8. golden 두 장의 시각 글자는 사용자 PC 시간대(KST) 기준이다(다른 golden과 같은 실행 환경 전제).
+9. 끝 화면 돌아가기 버튼은 시안의 평행사변형 텍스처 버튼 대신 키트 `TonalButton` primary(F3a 그만두기 확인의 텍스처 버튼은 비공개 — 키트 승격 후보 6).
+10. 시작 · 다시 하기 중 세션은 같은 요청을 겹쳐 받지 않는다(starting · ending 동안 무시).
+
+### 사본 · commit.json
+
+- pre 사본 16개(`debug/frontend_f3c3/pre/frontend/...`), 착수 때 WIP 0 → `post_dir` 없음, 모두 실제로 고침. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c3/commit.json`: slice `f3c3`, modified 16, added 4, `whole` = `frontend/test/goldens/baseline/empty-backend.png`, `optional_added` = 새 기준 2장(`tutorial-step-scan.png` · `tutorial-dialogue-review.png`). 메시지 ASCII.
+- 인계: `debug/frontend_f3c3/output.md`.
+
+### 다음 행동
+
+- CF: Lane B F3c-4가 멈춘 뒤 `fe_gate.ps1` → golden RED 3 예상(`empty-backend` 바뀜 · 새 2장 기준 없음) → `failures/` 검토 → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c3 -DryRun` → `fe_commit.ps1 -Slice f3c3`.
+- CF 결정: 발견 3(3단계 뒤 남은 후보), 2(계획 바탕 모드 진입), 워커 문구 표.
+- F3c-4 · 다음 라운드: 발견 1(계획 탭 계정 판정 2곳), 4(`neru_school_uniform`).
+- XB X4 짝 라운드: 실제 runtime 한 바퀴 · 오류 허용 목록(`planning_protocol_client.dart`).
+
+### f3c3 commit record (2026-10-21 18:21, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_180548\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

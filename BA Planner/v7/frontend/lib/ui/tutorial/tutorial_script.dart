@@ -112,7 +112,8 @@ enum TutorialStepPresentation {
   /// 단계 카드 + 강조 테두리.
   card,
 
-  /// 플래너가 뒤로 가는 단계(아이템 스캔): 카드 대신 진행 창 안 한 줄(카드 자리 규칙 6).
+  /// 플래너가 뒤로 가는 단계(아이템 스캔): 기다림([TutorialStep.waitSignal]) 동안 카드 대신 진행 창 안 한 줄(카드 자리
+  /// 규칙 6). 기다림 전에는 카드(F3c-3).
   inlineLine,
 }
 
@@ -169,7 +170,7 @@ class TutorialStep {
   /// 기다림 진행 줄 앞말(예: '가상 스캔 중…'). 수는 화면이 넣는다.
   final String? waitProgressLabel;
 
-  /// 완료 체크 제목. 시안에는 3단계('적용했습니다')만 있다 — 없으면 '—'.
+  /// 완료 체크 제목(3단계는 시안, 나머지는 CF 결정 2026-10-21). 없으면 '—'.
   final String? doneTitle;
   final String doneWhy;
   final TutorialStepPresentation presentation;
@@ -232,6 +233,9 @@ abstract final class TutorialSignals {
   static const studentCalculatorTargetChanged =
       'students.calculator.targetChanged';
   static const scanItemFinished = 'scan.item.finished';
+
+  /// F3c-3: 아이템 가상 스캔이 시작됐다(5단계 카드 → 진행 창 한 줄).
+  static const scanItemStarted = 'scan.item.started';
   static const itemReviewUncertainApproved =
       'scan.itemReview.uncertainApproved';
   static const itemReviewApplied = 'scan.itemReview.applied';
@@ -259,6 +263,7 @@ abstract final class TutorialSignals {
     studentDetailOpened,
     studentCalculatorOpened,
     studentCalculatorTargetChanged,
+    scanItemStarted,
     scanItemFinished,
     itemReviewUncertainApproved,
     itemReviewApplied,
@@ -285,6 +290,9 @@ abstract final class TutorialTargets {
   static const calculatorLevelTargetPlus =
       'students.calculator.levelTargetPlus';
   static const itemRunProgressWindow = 'scan.itemRun.progressWindow';
+
+  /// F3c-3: 스캔 탭 아이템 스캔 시작 버튼(5단계 카드 강조).
+  static const scanItemStart = 'scan.item.start';
   static const itemReviewApplyApproved = 'scan.itemReview.applyApproved';
   static const planNextToGoals = 'plan.flow.nextToGoals';
   static const planAllMaxPreset = 'plan.flow.goals.allMaxPreset';
@@ -322,6 +330,7 @@ abstract final class TutorialTargets {
     scanStudentStartFullScan,
     studentReviewApplyChanged,
     calculatorLevelTargetPlus,
+    scanItemStart,
     itemRunProgressWindow,
     itemReviewApplyApproved,
     planNextToGoals,
@@ -375,7 +384,12 @@ abstract final class TutorialCopy {
   // 그만두기 확인(Tutorial-Quit).
   static const quitTitle = '튜토리얼을 그만두시겠습니까?';
   static String quitBody(String account) =>
-      "그만두면 임시 계정을 지우고 '$account' 계정으로 돌아갑니다.";
+      '그만두면 임시 계정을 지우고 ${accountDestination(account)} 돌아갑니다.';
+
+  /// "'이름' 계정으로" — 이름이 '계정'으로 끝나면 "'이름'으로"(계정 계정 겹침 없음).
+  static String accountDestination(String account) => account.endsWith('계정')
+      ? "'$account'${koreanEuro(account)}"
+      : "'$account' 계정으로";
   static const quitNote = '튜토리얼은 설정 → 튜토리얼 다시 하기에서 처음부터 다시 할 수 있습니다.';
   static const quitContinue = '계속하기';
   static const quitConfirm = '그만두기';
@@ -806,6 +820,32 @@ const tutorialScenes = <String, PlanaScene>{
 /// 그만둘 때 장면 id.
 const tutorialQuitSceneId = 'plana-quit';
 
+/// 대본에 박힌 예시 계정 표현("'메인 계정'으로")을 실제 첫 계정 이름으로 바꾼 장면(프라나 11 — F3c-3).
+PlanaScene tutorialSceneForAccount(PlanaScene scene, String account) {
+  final sample = TutorialCopy.accountDestination(TutorialCopy.sampleAccount);
+  final actual = TutorialCopy.accountDestination(account);
+  if (sample == actual ||
+      !scene.lines.any((line) => line.text.contains(sample))) {
+    return scene;
+  }
+  return PlanaScene(
+    id: scene.id,
+    title: scene.title,
+    label: scene.label,
+    context: scene.context,
+    nextStepId: scene.nextStepId,
+    lines: [
+      for (final line in scene.lines)
+        PlanaLine(
+          line.text.replaceAll(sample, actual),
+          expression: line.expression,
+          revealKeys: line.revealKeys,
+          figureLeft: line.figureLeft,
+        ),
+    ],
+  );
+}
+
 /// 단계 카드(id → 단계). Tutorial-01~10 · 7-1~7-6(마키 7-2b · 7-2c 포함) 보드 문구 그대로.
 const tutorialSteps = <String, TutorialStep>{
   '1': TutorialStep(
@@ -816,6 +856,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '실제 게임 없이 스캔 흐름을 연습하는 창입니다.',
     highlightKey: TutorialTargets.connectUseSelectedWindow,
     completeSignal: TutorialSignals.connectVirtualWindowConnected,
+    doneTitle: '연결했습니다',
     checks: [
       TutorialCheckItem(
         '가상 게임 창 고르기',
@@ -832,6 +873,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '가상 창에서 학생 목록을 읽어 옵니다. 진짜 스캔과 순서가 같습니다.',
     highlightKey: TutorialTargets.scanStudentStartFullScan,
     completeSignal: TutorialSignals.scanStudentFinished,
+    doneTitle: '스캔을 마쳤습니다',
     checks: [
       TutorialCheckItem('스캔 탭 열기', signal: TutorialSignals.scanTabOpened),
       TutorialCheckItem(
@@ -863,6 +905,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '목표를 바꾸면 필요한 크레딧과 재화가 바로 다시 계산됩니다.',
     highlightKey: TutorialTargets.calculatorLevelTargetPlus,
     completeSignal: TutorialSignals.studentCalculatorTargetChanged,
+    doneTitle: '목표를 바꿨습니다',
     cardWidth: 600,
     checks: [
       TutorialCheckItem('학생 하나 누르기', signal: TutorialSignals.studentOpened),
@@ -878,9 +921,13 @@ const tutorialSteps = <String, TutorialStep>{
     id: '5',
     number: 5,
     feature: '아이템 가상 스캔',
-    title: null,
-    why: null,
+    // F3c-3(CF 결정): 시작 전에는 카드 + 시작 버튼 강조, 시작되면([waitSignal]) 진행 창 한 줄.
+    title: '아이템 2종을 고르고 스캔을 시작해 주십시오',
+    why: '가상 창에서 기술 노트와 BD 수량을 읽어 옵니다.',
+    highlightKey: TutorialTargets.scanItemStart,
     completeSignal: TutorialSignals.scanItemFinished,
+    doneTitle: '아이템 스캔을 마쳤습니다',
+    waitSignal: TutorialSignals.scanItemStarted,
     presentation: TutorialStepPresentation.inlineLine,
     inlineText: '끝나면 결과 검토로 넘어갑니다',
     inlineAnchorKey: TutorialTargets.itemRunProgressWindow,
@@ -893,6 +940,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '승인한 칸만 인벤토리에 들어갑니다.',
     highlightKey: TutorialTargets.itemReviewApplyApproved,
     completeSignal: TutorialSignals.itemReviewApplied,
+    doneTitle: '적용했습니다',
     checks: [
       TutorialCheckItem(
         '확인 필요 2칸 승인',
@@ -909,6 +957,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '아카네 · 칸나(수영복) · 마키 · 미카 · 히마리(무장) · 시로코(수영복) · 네루(교복)',
     highlightKey: TutorialTargets.planNextToGoals,
     completeSignal: TutorialSignals.planStudentsConfirmed,
+    doneTitle: '학생을 골랐습니다',
     checks: [
       TutorialCheckItem('학생 고르기'),
       TutorialCheckItem('목표 정하기'),
@@ -924,6 +973,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '일곱 명 모두 목표가 한 단계로 들어갑니다. 값은 칸마다 다시 고칠 수 있습니다.',
     highlightKey: TutorialTargets.planAllMaxPreset,
     completeSignal: TutorialSignals.planAllMaxApplied,
+    doneTitle: 'MAX로 맞췄습니다',
     cardWidth: 455,
     checks: [
       TutorialCheckItem('학생 고르기', doneAtStart: true),
@@ -940,6 +990,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: 'EX · 기본은 M, 강화 · 서브는 1. 이번 비나전에 필요한 만큼만 먼저 키웁니다.',
     highlightKey: TutorialTargets.planMakiStage1Skills,
     completeSignal: TutorialSignals.planMakiStage1Set,
+    doneTitle: '1단계를 정했습니다',
     cardWidth: 600,
     checks: [
       TutorialCheckItem('7명 한 번에 MAX', doneAtStart: true),
@@ -955,6 +1006,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '2단계는 1단계가 끝난 뒤에 키웁니다. 같은 학생의 단계는 저절로 이어집니다.',
     highlightKey: TutorialTargets.planMakiAddStage,
     completeSignal: TutorialSignals.planMakiStage2Set,
+    doneTitle: '2단계를 더했습니다',
     cardWidth: 600,
     checks: [
       TutorialCheckItem('7명 한 번에 MAX', doneAtStart: true),
@@ -971,6 +1023,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '칸 하나가 페이즈 하나가 됩니다. 비나전의 중심이 되는 학생부터 앞 칸에 둡니다.',
     highlightKey: TutorialTargets.planOrderCardAkane,
     completeSignal: TutorialSignals.planRanksPlaced,
+    doneTitle: '순위를 정했습니다',
     cardWidth: 620,
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기'),
@@ -986,6 +1039,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '아카네는 칸나(수영복)의 대체 학생입니다. 칸나(수영복)를 다 키운 뒤에 키우도록 잇습니다.',
     highlightKey: TutorialTargets.planOrderCardKannaSwimsuit,
     completeSignal: TutorialSignals.planKannaAkaneLinked,
+    doneTitle: '이어 붙였습니다',
     cardWidth: 600,
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기', doneAtStart: true),
@@ -1001,6 +1055,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '이번 비나전에는 급하지 않습니다. 나중에 칸은 페이즈가 되지 않습니다.',
     highlightKey: TutorialTargets.planOrderLaterColumn,
     completeSignal: TutorialSignals.planLaterMoved,
+    doneTitle: '나중으로 옮겼습니다',
     checks: [
       TutorialCheckItem('1 · 2순위에 놓기', doneAtStart: true),
       TutorialCheckItem('아카네 3순위 · 칸나와 잇기', doneAtStart: true),
@@ -1015,6 +1070,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: "활성 계획은 그대로 두고, '총력전 비나 대비'를 따로 저장해 비교합니다.",
     highlightKey: TutorialTargets.planSaveAsScenario,
     completeSignal: TutorialSignals.planSavedAsScenario,
+    doneTitle: '시나리오로 저장했습니다',
     checks: [
       TutorialCheckItem('학생 고르기', doneAtStart: true),
       TutorialCheckItem('목표 정하기', doneAtStart: true),
@@ -1030,6 +1086,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: "방금 저장한 안과 예시 '비나 대비 · 한 번에 MAX'를 활성 계획 옆에 놓고 봅니다.",
     highlightKey: TutorialTargets.scenarioCompareSideBySide,
     completeSignal: TutorialSignals.scenarioCompareOpened,
+    doneTitle: '나란히 비교했습니다',
     checks: [
       TutorialCheckItem('시나리오로 저장', doneAtStart: true),
       TutorialCheckItem('예시와 함께 비교에 담기', doneAtStart: true),
@@ -1044,6 +1101,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '계획에 비해 가장 먼저 모자라는 재화가 맨 위에 옵니다.',
     highlightKey: TutorialTargets.inventoryShortageTopRow,
     completeSignal: TutorialSignals.inventoryTopShortageOpened,
+    doneTitle: '확인했습니다',
   ),
   '10': TutorialStep(
     id: '10',
@@ -1053,6 +1111,7 @@ const tutorialSteps = <String, TutorialStep>{
     why: '스캔이 쌓일수록 무엇이 늘었는지 보입니다. 이 단계가 마지막입니다.',
     highlightKey: TutorialTargets.statisticsGrowthTrendTile,
     completeSignal: TutorialSignals.statisticsGrowthTrendViewed,
+    doneTitle: '확인했습니다',
   ),
 };
 

@@ -119,10 +119,16 @@ typedef _InventorySaveRequest = ({
 });
 
 class InventoryController extends ChangeNotifier {
-  InventoryController(this.service, {DateTime Function()? clock})
-    : _clock = clock ?? _serviceClock(service);
+  InventoryController(
+    this.service, {
+    DateTime Function()? clock,
+    this.practiceProfile,
+  }) : _clock = clock ?? _serviceClock(service);
 
   final AppService service;
+
+  /// 튜토리얼 임시 계정(일반 목록에 없다 — F3c-3). 있으면 고른 계정 대신 쓴다.
+  final RepositoryProfile? Function()? practiceProfile;
   final DateTime Function() _clock;
 
   static DateTime Function() _serviceClock(AppService service) {
@@ -539,7 +545,10 @@ class InventoryController extends ChangeNotifier {
     try {
       final profiles = await repository.listProfiles();
       if (!_current(generation)) return;
-      final selected = profiles.where((profile) => profile.selected).toList();
+      final practice = practiceProfile?.call();
+      final selected = practice != null
+          ? [practice]
+          : profiles.where((profile) => profile.selected).toList();
       if (selected.isEmpty) {
         _profile = null;
         _state = null;

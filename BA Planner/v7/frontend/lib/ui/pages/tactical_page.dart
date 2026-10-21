@@ -70,6 +70,7 @@ import '../widgets/account_section_cluster.dart'
     show repositoryProfileWithRevision;
 import '../widgets/empty_state_panel.dart';
 import '../widgets/page_header_override.dart';
+import '../tutorial_host/tutorial_session.dart';
 
 /// 목록 · 작성 섹션 안내 문구.
 const tacticalNoServiceText = '전술 기록 서비스가 제공되지 않습니다.';
@@ -511,14 +512,9 @@ class _TacticalPageState extends State<TacticalPage> {
     }
     try {
       final profiles = await repository.listProfiles();
-      RepositoryProfile? selected;
-      for (final item in profiles) {
-        if (item.selected) {
-          selected = item;
-          break;
-        }
-      }
       if (!mounted || generation != _generation) return;
+      // F3c-3: 튜토리얼 동안은 임시 계정(일반 목록에 없다).
+      final selected = tutorialSelectedProfile(context, profiles);
       if (selected == null) {
         setState(() {
           _profile = null;
@@ -549,7 +545,7 @@ class _TacticalPageState extends State<TacticalPage> {
       }
       setState(() {
         _profile = repositoryProfileWithRevision(
-          selected!,
+          selected,
           repositoryState.revision,
         );
         _repositoryState = repositoryState;

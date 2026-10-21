@@ -99,7 +99,7 @@ void main() {
     await tester.pumpWidget(_subject(service, (_) {}));
     await tester.pumpAndSettle();
     expect(find.textContaining('disconnected'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
   });
 
   // 예전 'review-required candidate is unchanged on hold and committed after approval'(학생 탭 후보 인계)은 FE8-g5b에서

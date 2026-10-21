@@ -22,6 +22,7 @@ import '../kit/buttons.dart';
 import '../kit/skew_bar.dart';
 import '../kit/skew_controls.dart' show BaSwitch;
 import '../settings/settings_sections.dart';
+import '../tutorial_host/tutorial_session.dart';
 import '../studio/settings_studio_layout.dart';
 
 // F3e 비활성 이유 · 줄 설명(시안 Settings-Help에 없는 문구는 워커 문구 — CF 검수, status F3e 종료 기록 표).
@@ -206,9 +207,13 @@ class _SettingsPageState extends State<SettingsPage> {
     widget.onRestartTutorial?.call(context, account);
   }
 
+  /// 튜토리얼 중(임시 계정은 일반 목록에 없다)이면 돌아갈 계정은 튜토리얼 세션의 첫 계정이다(F3c-3).
+  RepositoryProfile? get _tutorialAccount =>
+      _selected ?? TutorialHostScope.sessionOf(context)?.origin;
+
   void _restartTutorial() {
     final start = widget.onRestartTutorial;
-    final account = _selected;
+    final account = _tutorialAccount;
     if (start == null || account == null) return;
     start(context, account);
   }
@@ -889,7 +894,7 @@ class _SettingsPageState extends State<SettingsPage> {
   SettingsRowSpec _tutorialRow() {
     final reason = widget.onRestartTutorial == null
         ? settingsTutorialDisabledReason
-        : _selected == null
+        : _tutorialAccount == null
         ? settingsTutorialNoAccountReason
         : null;
     return _lineRow(
