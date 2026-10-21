@@ -4295,3 +4295,17 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **사용자 결정(AskUserQuestion, FD-182 보충)**: 9단계 — 7-6 저장 시나리오를 활성 계획으로도 적용, 부족 1위 실제 행 · 실제 이름. 7-3 — 튜토리얼일 때만 칸 3개로 시작.
 - F3c-5 발견 8(Windows golden 변형에서 Mock 아이템 스캔이 진행 창 dock을 기다려 끝나지 않음)은 사용자 Windows 검수를 막을 수 있어 F3c-6 우선 항목으로.
 - 배정: **Lane A F3c-6** · **Lane B K1(재배정)**.
+
+## 2026-10-21 22:15 — 프롬프트 재생성: Lane A F3c-6(재생성) · Lane B F3c-7
+
+- 상태: **K1 완료**(output 21:58, SHA 10행 일치, 미커밋 — 다음 gate에서 함께 커밋). **F3c-6 착수 0**(착수 기록 · 산출물 · 파일 변경 없음).
+- 사용자 요청으로 두 레인 프롬프트를 다시 만듦: `f3c6-worker-prompt-20261021.md`(재생성 — Windows 아이템 스캔 항목을 빼고 K1 미커밋 파일 손대지 않기 추가), 새 `f3c7-worker-prompt-20261021.md`(Lane B — Windows Mock 아이템 스캔 진행 창(dock) 원인 · 고침, 빈 상태 글리프를 K1 `KitGlyph`로 — 호출부 변경 0).
+- 다음: F3c-6 · F3c-7 끝 → gate 1회(K1 포함) → 커밋 3개(k1 · f3c6 · f3c7) → 사용자 Windows mock 튜토리얼 검수.
+
+## 2026-10-22 00:45 — K1 · F3c-7 · F3c-6 커밋, Mock 재생 순서 버그, F3c-8 · SL1 배정
+
+- 검토: K1 10행 · F3c-6 14행 · F3c-7 9행 SHA 일치, 목록 밖 변경 0, 겹침 0. F3c-7: Windows Mock 아이템 스캔이 끝나지 않던 것은 시험 · golden에 dock 채널 응답이 없어 5초 대기한 것 — 실제 앱은 네이티브가 `hwnd:` 아닌 대상을 곧바로 거부. `hwnd:` 아닌 대상은 채널을 부르지 않게(진짜 창 동작 변화 0).
+- gate ① `20261022_000106` golden RED 1 = `tutorial-plan-order` → 확인(칸 3개 · 카드가 오른쪽 아래 빈 자리, 순서 카드 가림 0) → ② `-UpdateGoldens` `20261022_001305` golden PASS 83, **시험 5 RED 1**: `tutorial_practice_mock_test` "replay honours pause…" 후보 8/9(단독 5/5 통과). 원인(CF 코드 읽기): 재개 때 미뤄 둔 단계는 10ms 간격 새 타이머로 다시 걸지만 원래 일정의 뒤 단계(terminal 포함)는 원래 타이머로 바로 실행 → 부하 아래 terminal이 먼저 나가고 남은 후보는 `closed()`로 버려짐. Mock 전용, F3c-1 이래 코드 — 이번 변경과 무관해 ③ 재비교 `20261022_002754` **GREEN** 뒤 커밋, 고침은 F3c-8.
+- 커밋: **K1 `66822cb4`**(11파일) → **F3c-7 `a4c257ab`**(4파일, K1 글리프 사용) → **F3c-6 `f239f427`**(15파일).
+- CF 결정: 9단계 "만든 계획을 활성 계획으로 적용했습니다" 한 줄(F3c-6 발견 1), 10단계 시작 때 통계 탭 열기(발견 4) 수용, 예시 시나리오 v2 정렬은 XB 요청에 더함.
+- 배정: **Lane A F3c-8** · **Lane B SL1**.
