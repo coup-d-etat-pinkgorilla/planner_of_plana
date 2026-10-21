@@ -98,8 +98,8 @@ const _secondaryTexture = BATriangleTextureConfig(
   fogStrength: 0.08,
 );
 
-/// 첫 실행 모달 컨트롤러. [locked] 동안에는 닫지 않는다(Esc는 [BaModal]이 [close]를 부른다).
-class _FirstRunModalController extends BaModalController {
+/// 첫 실행 모달 컨트롤러. [locked] 동안에는 닫지 않는다(Esc는 [BaModal]이 [close]를 부른다). 설정 탭(F3e)도 쓴다.
+class FirstRunModalController extends BaModalController {
   bool locked = false;
 
   @override
@@ -139,7 +139,7 @@ class FirstRunGate extends StatefulWidget {
 }
 
 class _FirstRunGateState extends State<FirstRunGate> {
-  final _modal = _FirstRunModalController();
+  final _modal = FirstRunModalController();
   AssetPreparationController? _preparation;
   FirstRunEntry? _entry;
   bool _deciding = false;
@@ -271,6 +271,7 @@ class FirstRunPanel extends StatefulWidget {
     this.folderPicker = const NativeFirstRunFolderPicker(),
     this.onLockChanged,
     this.initialStep,
+    this.restart = false,
   });
 
   final FirstRunEntry entry;
@@ -285,6 +286,9 @@ class FirstRunPanel extends StatefulWidget {
 
   /// 시작 단계(시험 · golden이 ③을 바로 열 때). 없으면 [entry]의 첫 단계.
   final FirstRunStep? initialStep;
+
+  /// ②에 들어갈 때 캐시가 ready여도 준비를 다시 시작한다(F3e 설정 "그림 다시 준비"). 진행 중이면 그 작업을 보인다.
+  final bool restart;
 
   @override
   State<FirstRunPanel> createState() => _FirstRunPanelState();
@@ -385,7 +389,8 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
 
   void _startIfNeeded() {
     final value = _preparation.value;
-    if (value.preparing || value.ready || !value.canStart) return;
+    if (value.preparing || !value.canStart) return;
+    if (value.ready && !widget.restart) return;
     _start();
   }
 
@@ -975,10 +980,12 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
   // --- ② 표시값 -----------------------------------------------------------
 
   _ProgressView _progressView(AssetPreparationViewState value) {
-    const preparingLead = '게임 설치본에서 화면에 쓸 그림을 만들고 있습니다. 끝날 때까지 기다려 주십시오.';
+    // F3e: 알파-1 문구(F3b 발견 2, CF 결정 — 인식 캐시만 준비). 알파-2(F5b) 시안 문구:
+    // '게임 설치본에서 화면에 쓸 그림을 만들고 있습니다. 끝날 때까지 기다려 주십시오.' · '스캔은 되지만 그 그림 자리가 비어 보입니다 — …'
+    const preparingLead = '게임 설치본에서 스캔용 그림을 준비하고 있습니다. 끝날 때까지 기다려 주십시오.';
     const preparingMuted = '처음 한 번만 오래 걸리고, 다음부터는 바로 열립니다. 기다리기 싫으면 건너뛰어도 됩니다.';
     const failedMuted =
-        '스캔은 되지만 그 그림 자리가 비어 보입니다 — 나중에 설정 → 그림 다시 준비에서 다시 시도합니다.';
+        '스캔은 되지만 그 그림이 없는 칸은 검토에서 직접 확인해야 할 수 있습니다 — 나중에 설정 → 그림 다시 준비에서 다시 시도합니다.';
     final code = value.errorCode;
     final error = code == null
         ? null
@@ -1020,7 +1027,7 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
             fraction: 1,
             color: _stageDone,
             caption: caption,
-            lead: '그림 준비를 마쳤습니다.',
+            lead: '스캔용 그림 준비를 마쳤습니다.',
             leadMuted: '다음부터는 바로 열립니다.',
             error: error,
           );
@@ -1039,8 +1046,8 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
             color: _stageDone,
             caption: caption,
             lead: failed == null
-                ? '그림 일부를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.'
-                : '그림 ${firstRunGrouped(failed)}개를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+                ? '스캔용 그림 일부를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.'
+                : '스캔용 그림 ${firstRunGrouped(failed)}개를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
             leadMuted: failedMuted,
             error: error,
           );
@@ -1051,7 +1058,7 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
             fraction: null,
             color: AppColors.accent,
             caption: caption,
-            lead: '그림 준비를 취소했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+            lead: '스캔용 그림 준비를 취소했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
             leadMuted: failedMuted,
             error: error,
           );
@@ -1064,7 +1071,7 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
             fraction: null,
             color: AppColors.accent,
             caption: caption,
-            lead: '그림을 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+            lead: '스캔용 그림을 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
             leadMuted: failedMuted,
             error: error,
           );
@@ -1077,8 +1084,8 @@ class _FirstRunPanelState extends State<FirstRunPanel> {
         suffix: '개 준비함',
         fraction: 1,
         color: _stageDone,
-        caption: '이미 준비한 그림을 씁니다',
-        lead: '그림 준비를 마쳤습니다.',
+        caption: '이미 준비한 스캔용 그림을 씁니다',
+        lead: '스캔용 그림 준비를 마쳤습니다.',
         leadMuted: '다음부터는 바로 열립니다.',
         error: error,
       );

@@ -19,6 +19,10 @@ import 'section_template.dart';
 /// - 고급 진단 `settings-diagnostics` (41,55,55,41), 깊이 94: 오른쪽 면 사다리꼴. 왼쪽 변 (1214.9,876.1)→(1123.9,1392).
 ///   Scanner 오른쪽 변과 가로 27.4px, Backend 왼쪽 변의 연장선과 −2.7px.
 /// 줄 사이는 2칸(25.2px, 분석 S1 · S5 사이 23.2와 같은 폭)이다.
+///
+/// F3e(시안 Settings-Help — 섹션 배치는 이 문서 그대로, 줄만 더함): 머리 띠 오른쪽 버튼 2(첫 실행 안내 다시 열기 · 도움말),
+/// 프로필 "튜토리얼 다시 하기", Backend 연결 "자동 업데이트", Scanner 준비 상태 "게임 설치 폴더" · "그림 다시 준비" ·
+/// "스캔 문제 신고".
 final SectionStudioDocument settingsStudioDocument = SectionStudioDocument(
   headerRows: 12,
   viewport: 'standard',
@@ -85,16 +89,16 @@ final SectionStudioDocument settingsStudioDocument = SectionStudioDocument(
   ],
 );
 
-/// 머리 띠(`SETTINGS / RECOVERY` · `프로필과 연결` · 계정 · 연결, 작업 오류 줄, 새로고침).
+/// 머리 띠(`SETTINGS / RECOVERY` · `프로필과 연결` · 계정 · 연결, 작업 오류 줄, 첫 실행 안내 · 도움말 버튼, 새로고침).
 const settingsHeaderSectionId = 'settings-header';
 
-/// 프로필(목록 · 각주, 새 프로필 · v6 가져오기 · 이름 변경).
+/// 프로필(목록 · 튜토리얼 다시 하기 · 각주, 새 프로필 · v6 가져오기 · 이름 변경).
 const settingsProfilesSectionId = 'settings-profiles';
 
-/// Backend 연결(연결 상태, 재연결 · Backend 재시작).
+/// Backend 연결(연결 상태 · 자동 업데이트, 재연결 · Backend 재시작).
 const settingsBackendSectionId = 'settings-backend';
 
-/// Scanner 준비 상태(인식 asset · 감지된 대상 · 각주, 스캔 탭 열기).
+/// Scanner 준비 상태(인식 asset · 게임 설치 폴더 · 그림 다시 준비 · 스캔 문제 신고 · 감지된 대상 · 각주, 스캔 탭 열기).
 const settingsScannerSectionId = 'settings-scanner';
 
 /// 고급 진단(process 정보 · lifecycle · 각주, 진단 복사 · Adaptive-Sync).
@@ -156,6 +160,10 @@ abstract final class SettingsMetrics {
   static const headerProgressTop = 99.0;
   static const headerProgressHeight = 4.0;
 
+  /// F3e 머리 띠 버튼 줄(시안 Settings-Help `.tonal` h36, 띠 가운데). 새로고침 왼쪽에 이 폭을 남기고 오른쪽 정렬한다
+  /// (버튼 둘 약 390 — 넘치면 줄 전체를 줄인다).
+  static const headerActionsWidth = 440.0;
+
   // --- 2×2 섹션 --------------------------------------------------------------------
 
   /// 제목 줄(PanelTitle): 위 20, 높이 40, 변에서 22, 반대쪽 여백 22.
@@ -187,6 +195,19 @@ abstract final class SettingsMetrics {
   static const targetRowHeight = 56.0;
   static const processRowHeight = 88.0;
   static const lifecycleRowHeight = 40.0;
+
+  /// F3e 줄(시안 Settings-Help): 제목 + 설명 + 오른쪽 버튼 줄 h60, 게임 설치 폴더 줄 h52.
+  static const actionRowHeight = 60.0;
+  static const folderRowHeight = 52.0;
+
+  /// F3e 줄 · 머리 띠 버튼(시안 `.tonal` h36, 글자 12.5, 좌우 14).
+  static const rowActionHeight = 36.0;
+  static const rowActionFontSize = 12.5;
+  static const rowActionPadding = 14.0;
+
+  /// 그림 다시 준비 진행 막대(버튼 왼쪽 150×6 — 분모가 없으면 빗금).
+  static const progressBarWidth = 150.0;
+  static const progressBarHeight = 6.0;
 
   /// 행 안 `전환` 버튼 높이.
   static const rowButtonHeight = 32.0;

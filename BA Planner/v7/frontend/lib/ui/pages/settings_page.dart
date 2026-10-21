@@ -1,21 +1,56 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import '../../services/app_service.dart';
+import '../../services/asset_preparation_service.dart';
 import '../../services/diagnostics_service.dart';
 import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../first_run/asset_preparation_controller.dart';
+import '../first_run/first_run_folder_picker.dart';
+import '../first_run/first_run_modal.dart';
+import '../first_run/first_run_rules.dart';
 import '../kit/ba_chip.dart';
+import '../kit/ba_modal.dart';
 import '../kit/buttons.dart';
+import '../kit/skew_bar.dart';
+import '../kit/skew_controls.dart' show BaSwitch;
 import '../settings/settings_sections.dart';
 import '../studio/settings_studio_layout.dart';
 
+// F3e 비활성 이유 · 줄 설명(시안 Settings-Help에 없는 문구는 워커 문구 — CF 검수, status F3e 종료 기록 표).
+const settingsFirstRunUnavailableReason = '이 연결에서는 첫 실행 안내를 열 수 없습니다';
+const settingsHelpDisabledReason = '설명서 주소가 아직 정해지지 않았습니다';
+const settingsTutorialDescription = '임시 계정에서 처음부터 · 끝나면 지워짐';
+const settingsTutorialDisabledReason = '튜토리얼은 아직 다시 시작할 수 없습니다';
+const settingsTutorialNoAccountReason = '지금 쓰는 계정이 없습니다';
+const settingsAutoUpdateDescription = '켜 두면 앱을 열 때 새 버전을 받습니다 · 다음 버전에 들어갑니다';
+const settingsAutoUpdateDisabledReason = '자동 업데이트는 다음 버전에 들어갑니다';
+const settingsImagesDescription = '② 이미지 준비를 다시 합니다';
+const settingsImagesUnavailableReason = '이 연결에서는 그림을 준비할 수 없습니다';
+const settingsImagesStatusFailedReason = '준비 상태를 읽지 못했습니다';
+const settingsImagesScannerBusyReason = '스캔 중에는 다시 준비할 수 없습니다';
+const settingsImagesNoFolderReason = '게임 설치 폴더를 먼저 정해 주십시오';
+const settingsImagesBusyReason = '다른 준비 작업이 끝나기를 기다리는 중입니다';
+const settingsScanReportDescription = '최근 스캔의 못 읽은 칸으로 신고 파일을 만듭니다';
+const settingsScanReportDisabledReason = '신고 기능은 아직 쓸 수 없습니다';
+
 /// 설정 탭(FE10-s, FD-179 (a)): 머리 띠 + 2×2 사선 섹션([settingsStudioDocument]). 내용 · 순서 · 문구 · 콜백은 옛 카드
 /// 화면(프로필 → Backend 연결 → Scanner 준비 상태 → 고급 진단)과 같다(동작 변화 0).
+///
+/// F3e(시안 Settings-Help, FD-182, D-ALPHA-SPLIT): 첫 실행 · 안내 줄을 더한다.
+/// - 머리 띠 "첫 실행 안내 다시 열기" → F3b [FirstRunPanel] entry full을 지금 화면 위 모달로(③은 F3b 규칙 그대로 새 계정을
+///   만든다). "도움말 · GitHub 설명서"는 주소가 정해지지 않아 꺼 둔다.
+/// - Scanner 준비 상태 "그림 다시 준비" → entry imagesOnly(ready여도 다시 시작). 줄에 지금 cache.state와 진행 중이면 진행을
+///   보인다. 준비 상태는 이 화면의 [AssetPreparationController] 하나를 줄과 모달이 함께 본다.
+/// - 프로필 "튜토리얼 다시 하기"는 [onRestartTutorial](F3c)이 없으면 꺼진다. "스캔 문제 신고"(XB X5 전) · "자동 업데이트"
+///   (XB X2 전 — 플래그 파일을 쓰지 않는다)는 자리만 둔다.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
@@ -24,6 +59,8 @@ class SettingsPage extends StatefulWidget {
     required this.onOpenDiagnostics,
     required this.onProfileChanged,
     required this.onRecoveryCompleted,
+    this.onRestartTutorial,
+    this.folderPicker = const NativeFirstRunFolderPicker(),
   });
 
   final AppService service;
@@ -31,6 +68,13 @@ class SettingsPage extends StatefulWidget {
   final VoidCallback onOpenDiagnostics;
   final VoidCallback onProfileChanged;
   final VoidCallback onRecoveryCompleted;
+
+  /// "튜토리얼 다시 하기"와 설정에서 다시 연 첫 실행 ③ 뒤에 부르는 자리(F3c가 연결한다). account는 튜토리얼이 끝나면
+  /// 돌아올 계정이다 — 줄은 지금 쓰는 계정, ③은 방금 만들고 고른 계정. null이면 "튜토리얼 다시 하기"를 끈다.
+  final FirstRunTutorialStarter? onRestartTutorial;
+
+  /// 설정에서 다시 연 첫 실행 ①의 폴더 고르기(시험은 가짜).
+  final FirstRunFolderPicker folderPicker;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -59,6 +103,12 @@ class _SettingsPageState extends State<SettingsPage> {
   int _generation = 0;
   int _recoveryGeneration = 0;
 
+  /// F3e: 첫 실행 모달(설정에서 다시 엶)과 준비 상태.
+  final _firstRunModal = FirstRunModalController();
+  AssetPreparationController? _preparation;
+  FirstRunEntry? _firstRunEntry;
+  bool _firstRunRestart = false;
+
   RepositoryProfile? get _selected {
     for (final profile in _profiles) {
       if (profile.selected) return profile;
@@ -71,6 +121,8 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     widget.service.state.addListener(_connectionChanged);
     _diagnostics?.diagnostics.addListener(_diagnosticsChanged);
+    _firstRunModal.addListener(_firstRunModalChanged);
+    _attachPreparation();
     _reload();
   }
 
@@ -86,6 +138,12 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     widget.service.state.addListener(_connectionChanged);
     _diagnostics?.diagnostics.addListener(_diagnosticsChanged);
+    _firstRunModal
+      ..locked = false
+      ..close();
+    _firstRunEntry = null;
+    _detachPreparation();
+    _attachPreparation();
     _reload();
   }
 
@@ -94,7 +152,65 @@ class _SettingsPageState extends State<SettingsPage> {
     _generation++;
     widget.service.state.removeListener(_connectionChanged);
     _diagnostics?.diagnostics.removeListener(_diagnosticsChanged);
+    _firstRunModal
+      ..removeListener(_firstRunModalChanged)
+      ..dispose();
+    _detachPreparation();
     super.dispose();
+  }
+
+  /// 준비를 지원하지 않는 서비스면 컨트롤러를 두지 않는다(그림 다시 준비 · 첫 실행 안내가 꺼진다).
+  void _attachPreparation() {
+    final service = widget.service.assetPreparation;
+    if (service == null) return;
+    _preparation = AssetPreparationController(
+      service,
+      appState: widget.service.state,
+    )..addListener(_preparationChanged);
+  }
+
+  void _detachPreparation() {
+    _preparation
+      ?..removeListener(_preparationChanged)
+      ..dispose();
+    _preparation = null;
+  }
+
+  void _preparationChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _firstRunModalChanged() {
+    if (_firstRunModal.isOpen || _firstRunEntry == null || !mounted) return;
+    setState(() => _firstRunEntry = null);
+  }
+
+  /// 첫 실행 모달을 지금 화면 위에 연다. [restart]면 ②에서 캐시가 ready여도 준비를 다시 시작한다.
+  void _openFirstRun(FirstRunEntry entry, {bool restart = false}) {
+    if (_preparation == null || _firstRunModal.isOpen) return;
+    setState(() {
+      _firstRunEntry = entry;
+      _firstRunRestart = restart;
+    });
+    _firstRunModal.open();
+  }
+
+  /// 설정에서 다시 연 ③: F3b 규칙대로 새 계정을 만들고 골랐다. 모달을 닫고 목록 · 셸을 새로 읽은 뒤 튜토리얼 시작 자리를
+  /// 부른다(없으면 설정 탭에 남는다).
+  void _firstRunAccountCreated(RepositoryProfile account) {
+    _firstRunModal
+      ..locked = false
+      ..close();
+    unawaited(_reload());
+    widget.onProfileChanged();
+    widget.onRestartTutorial?.call(context, account);
+  }
+
+  void _restartTutorial() {
+    final start = widget.onRestartTutorial;
+    final account = _selected;
+    if (start == null || account == null) return;
+    start(context, account);
   }
 
   void _diagnosticsChanged() {
@@ -124,6 +240,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _scannerError = null;
       _actionError = null;
     });
+    unawaited(_preparation?.refresh());
     final repository = _repository;
     final scanner = _scanner;
     List<RepositoryProfile>? profiles;
@@ -400,15 +517,61 @@ class _SettingsPageState extends State<SettingsPage> {
                         actionLabel: '다시 불러오기',
                         onAction: _reload,
                       ),
+                actions: [
+                  SettingsActionButton(
+                    key: const ValueKey('settings-first-run-open'),
+                    label: '첫 실행 안내 다시 열기',
+                    icon: Icons.replay,
+                    onPressed: _preparation == null
+                        ? null
+                        : () => _openFirstRun(FirstRunEntry.full),
+                    disabledReason: settingsFirstRunUnavailableReason,
+                  ),
+                  const SettingsActionButton(
+                    key: ValueKey('settings-help'),
+                    label: '도움말 · GitHub 설명서',
+                    icon: Icons.menu_book_outlined,
+                    onPressed: null,
+                    disabledReason: settingsHelpDisabledReason,
+                  ),
+                ],
               ),
             ),
             Positioned.fill(child: _profilesSection(size)),
             Positioned.fill(child: _connectionSection(size, connection)),
             Positioned.fill(child: _scannerSection(size)),
             Positioned.fill(child: _diagnosticsSection(size, diagnostics)),
+            // F3e: 설정에서 다시 여는 첫 실행 모달(F3b 타이틀 자리와 같이 내용 없는 BaModal).
+            Positioned.fill(
+              child: BaModal(
+                controller: _firstRunModal,
+                scrim: BaScrim.scan,
+                label: firstRunTitle,
+                barrierDismissible: false,
+                builder: _buildFirstRun,
+              ),
+            ),
           ],
         );
       },
+    );
+  }
+
+  /// 설정에서 다시 연 첫 실행 패널(F3b 그대로, 모달 · 준비 상태는 이 화면 것).
+  Widget _buildFirstRun(BuildContext context) {
+    final entry = _firstRunEntry;
+    final preparation = _preparation;
+    if (entry == null || preparation == null) return const SizedBox.shrink();
+    return FirstRunPanel(
+      key: ValueKey('settings-first-run-${entry.name}'),
+      entry: entry,
+      preparation: preparation,
+      repository: _repository,
+      folderPicker: widget.folderPicker,
+      restart: _firstRunRestart,
+      onClose: _firstRunModal.close,
+      onAccountCreated: _firstRunAccountCreated,
+      onLockChanged: (locked) => _firstRunModal.locked = locked,
     );
   }
 
@@ -419,10 +582,13 @@ class _SettingsPageState extends State<SettingsPage> {
     final String kind;
     if (profileError != null) {
       kind = 'error';
-      rows = [_errorRow(id, profileError)];
+      rows = [_errorRow(id, profileError), _tutorialRow()];
     } else if (_profiles.isEmpty) {
       kind = 'empty';
-      rows = [_textRow(id, '프로필이 없습니다. 새 프로필을 만들어 시작하세요.', muted: false)];
+      rows = [
+        _textRow(id, '프로필이 없습니다. 새 프로필을 만들어 시작하세요.', muted: false),
+        _tutorialRow(),
+      ];
     } else {
       kind = 'list';
       rows = [
@@ -431,6 +597,7 @@ class _SettingsPageState extends State<SettingsPage> {
             height: SettingsMetrics.profileRowHeight,
             builder: (context) => _profileRow(profile),
           ),
+        _tutorialRow(),
         _textRow(
           id,
           'v6 원본은 읽기 전용으로 유지되며 새 v7 계정으로 복사됩니다. '
@@ -558,6 +725,27 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
+        _lineRow(
+          id,
+          key: 'settings-auto-update',
+          title: '자동 업데이트',
+          description: settingsAutoUpdateDescription,
+          trailing: const [
+            BaSwitch(
+              key: ValueKey('settings-auto-update-switch'),
+              value: false,
+              onChanged: null,
+              semanticLabel: '자동 업데이트',
+            ),
+            SettingsActionButton(
+              key: ValueKey('settings-auto-update-check'),
+              label: '지금 확인',
+              icon: Icons.refresh,
+              onPressed: null,
+              disabledReason: settingsAutoUpdateDisabledReason,
+            ),
+          ],
+        ),
       ],
       actions: [
         TonalButton(
@@ -579,13 +767,15 @@ class _SettingsPageState extends State<SettingsPage> {
     const id = settingsScannerSectionId;
     final ready = _readiness?['ready'] == true;
     final scannerError = _scannerError;
+    // F3e 줄(시안 Settings-Help 스캐너 판 순서). 스캐너 서비스 오류와 상관없이 보인다.
+    final helpRows = [_gameDirRow(), _imagesRow(), _scanReportRow()];
     return SettingsSection(
       size: size,
       sectionId: id,
       title: 'Scanner 준비 상태',
       listKey: ValueKey('$id-list-${scannerError == null ? 'state' : 'error'}'),
       rows: scannerError != null
-          ? [_errorRow(id, scannerError)]
+          ? [_errorRow(id, scannerError), ...helpRows]
           : [
               SettingsRowSpec(
                 height: SettingsMetrics.lineRowHeight,
@@ -604,6 +794,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               ),
+              ...helpRows,
               _textRow(id, '감지된 대상 ${_targets.length}개', muted: false),
               for (final target in _targets.take(4))
                 SettingsRowSpec(
@@ -691,6 +882,188 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     );
   }
+
+  // --- F3e 줄 -------------------------------------------------------------
+
+  /// 시안 Settings-Help 프로필 판 "튜토리얼 다시 하기"(F3c가 [SettingsPage.onRestartTutorial]을 넘긴다).
+  SettingsRowSpec _tutorialRow() {
+    final reason = widget.onRestartTutorial == null
+        ? settingsTutorialDisabledReason
+        : _selected == null
+        ? settingsTutorialNoAccountReason
+        : null;
+    return _lineRow(
+      settingsProfilesSectionId,
+      key: 'settings-tutorial-restart',
+      title: '튜토리얼 다시 하기',
+      description: settingsTutorialDescription,
+      reason: reason,
+      trailing: [
+        SettingsActionButton(
+          key: const ValueKey('settings-tutorial-restart-button'),
+          label: '다시 하기',
+          icon: Icons.play_arrow_rounded,
+          onPressed: reason == null && !_profileAction
+              ? _restartTutorial
+              : null,
+          disabledReason: reason,
+        ),
+      ],
+    );
+  }
+
+  /// 시안 "게임 설치 폴더 · — · 찾음": 지금 폴더와 상태(F3b ① 칩 문구). 모르면 '—'.
+  SettingsRowSpec _gameDirRow() {
+    final value = _preparation?.value;
+    final dir = value?.gameDir;
+    var text = '—';
+    if (value != null && value.loaded && dir != null) {
+      final reason = dir.reason;
+      final state = dir.valid
+          ? (dir.source == AssetGameDirSource.user ? '지정함' : '찾음 · Steam')
+          : reason == null
+          ? '찾지 못함'
+          : firstRunGameDirReasonTexts[reason]!.chip;
+      text = '${dir.path ?? '—'} · $state';
+    }
+    return SettingsRowSpec(
+      height: SettingsMetrics.folderRowHeight,
+      builder: (context) => SettingsRow(
+        key: const ValueKey('settings-game-dir'),
+        sectionId: settingsScannerSectionId,
+        height: SettingsMetrics.folderRowHeight,
+        child: SettingsInfoLine(
+          title: '게임 설치 폴더',
+          value: text,
+          valueKey: const ValueKey('settings-game-dir-value'),
+        ),
+      ),
+    );
+  }
+
+  /// 시안 "그림 다시 준비": 지금 준비 상태 · 진행(번들 단위, 분모가 없으면 숨김). 준비 중이면 "진행 보기"로 같은 모달을 연다.
+  SettingsRowSpec _imagesRow() {
+    final value = _preparation?.value;
+    final preparing = value?.preparing ?? false;
+    final progress = value?.progress;
+    final enabled = value != null && (preparing || value.canStart);
+    final reason = enabled ? null : _imagesDisabledReason(value);
+    return _lineRow(
+      settingsScannerSectionId,
+      key: 'settings-images',
+      title: '그림 다시 준비',
+      description: '$settingsImagesDescription · ${_imagesStateText(value)}',
+      reason: reason,
+      progress: preparing
+          ? SizedBox(
+              key: const ValueKey('settings-images-progress'),
+              width: SettingsMetrics.progressBarWidth,
+              height: SettingsMetrics.progressBarHeight,
+              child: SkewBar(
+                fraction: progress?.fraction,
+                color: AppColors.accent,
+                height: SettingsMetrics.progressBarHeight,
+              ),
+            )
+          : null,
+      trailing: [
+        SettingsActionButton(
+          key: const ValueKey('settings-images-button'),
+          label: preparing ? '진행 보기' : '다시 준비',
+          icon: preparing ? Icons.visibility_outlined : Icons.refresh,
+          variant: TonalButtonVariant.primary,
+          onPressed: !enabled
+              ? null
+              : preparing
+              ? () => _openFirstRun(FirstRunEntry.imagesOnly)
+              : () => _openFirstRun(FirstRunEntry.imagesOnly, restart: true),
+          disabledReason: reason,
+        ),
+      ],
+    );
+  }
+
+  /// cache.state → 한국어(모르면 '—'). 준비 중이면 단계 · 번들 수.
+  String _imagesStateText(AssetPreparationViewState? value) {
+    if (value == null) return '—';
+    final progress = value.progress;
+    if (progress != null) {
+      final activity = value.cancelRequested
+          ? '취소하는 중'
+          : firstRunStageActivity[progress.stage]!;
+      return '준비 중 · $activity · '
+          '${firstRunStageCount(progress.done, progress.total)}개 번들';
+    }
+    final cache = value.cache;
+    if (!value.loaded || cache == null) return '—';
+    final failed = cache.failed;
+    return switch (cache.state) {
+      AssetCacheState.ready => '준비됨',
+      AssetCacheState.partial =>
+        failed == null || failed <= 0
+            ? '일부 준비됨'
+            : '만들지 못한 스캔용 그림 ${firstRunGrouped(failed)}개',
+      AssetCacheState.missing => '준비 안 됨',
+      AssetCacheState.stale => '게임 업데이트로 다시 준비 필요',
+      AssetCacheState.invalid => '준비한 그림 확인 실패',
+      AssetCacheState.unknown => '—',
+    };
+  }
+
+  /// 그림 다시 준비가 꺼진 이유. status를 읽는 중이면 이유 없이 꺼 둔다.
+  String? _imagesDisabledReason(AssetPreparationViewState? value) {
+    if (value == null) return settingsImagesUnavailableReason;
+    if (value.scannerBusy) return settingsImagesScannerBusyReason;
+    if (!value.loaded) {
+      return value.loading ? null : settingsImagesStatusFailedReason;
+    }
+    if (!value.folderValid) return settingsImagesNoFolderReason;
+    if (value.busy) return settingsImagesBusyReason;
+    return null;
+  }
+
+  /// 시안 "스캔 문제 신고"(F4 · XB X5 전 — 자리만).
+  SettingsRowSpec _scanReportRow() => _lineRow(
+    settingsScannerSectionId,
+    key: 'settings-scan-report',
+    title: '스캔 문제 신고',
+    description: settingsScanReportDescription,
+    reason: settingsScanReportDisabledReason,
+    trailing: const [
+      SettingsActionButton(
+        key: ValueKey('settings-scan-report-button'),
+        label: '신고하기',
+        icon: Icons.flag_outlined,
+        onPressed: null,
+        disabledReason: settingsScanReportDisabledReason,
+      ),
+    ],
+  );
+
+  /// F3e 줄(제목 · 설명 · 오른쪽 버튼). 꺼진 이유가 있으면 설명 뒤에 " · 이유"로 붙인다(시안 "… · 다음 버전에 들어갑니다").
+  SettingsRowSpec _lineRow(
+    String sectionId, {
+    required String key,
+    required String title,
+    required String description,
+    String? reason,
+    Widget? progress,
+    required List<Widget> trailing,
+  }) => SettingsRowSpec(
+    height: SettingsMetrics.actionRowHeight,
+    builder: (context) => SettingsRow(
+      key: ValueKey(key),
+      sectionId: sectionId,
+      height: SettingsMetrics.actionRowHeight,
+      child: SettingsActionLine(
+        title: title,
+        description: reason == null ? description : '$description · $reason',
+        descriptionKey: ValueKey('$key-description'),
+        progress: progress,
+        trailing: trailing,
+      ),
+    ),
+  );
 
   /// 아이콘 + 제목 + 흐린 설명 한 줄(옛 `ListTile`).
   Widget _statusLine({

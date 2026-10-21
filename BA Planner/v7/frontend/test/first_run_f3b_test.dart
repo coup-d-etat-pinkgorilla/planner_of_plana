@@ -370,6 +370,11 @@ void main() {
       expect(_enabled(tester, 'first-run-next'), isFalse);
       expect(find.text('학생 초상'), findsNothing);
       expect(find.text('엘레프'), findsNothing);
+      // F3e: 알파-1 문구(F3b 발견 2, CF 결정 — 인식 캐시만 준비).
+      expect(
+        _text(tester, 'first-run-lead-text'),
+        '게임 설치본에서 스캔용 그림을 준비하고 있습니다. 끝날 때까지 기다려 주십시오.',
+      );
 
       // icons 0/2: 분모가 있다.
       await tester.pump(_step * 2);
@@ -568,6 +573,11 @@ void main() {
         _text(tester, 'first-run-lead-text'),
         firstRunGameDirLead(AssetGameDirReason.gameDirNotFound),
       );
+      // F3e: 알파-1 ① 설명(F3b 발견 2, CF 결정).
+      expect(
+        find.text('스캔이 게임 화면을 알아보는 데 쓸 그림을 이 PC의 게임 설치본에서 준비합니다.'),
+        findsOneWidget,
+      );
       expect(_text(tester, 'first-run-hint'), '경로를 넣으면 다음으로 넘어갑니다');
       expect(_enabled(tester, 'first-run-next'), isFalse);
       expect(tester.takeException(), isNull);
@@ -649,7 +659,7 @@ void main() {
       expect(controller.value.preparing, isFalse);
       expect(
         _text(tester, 'first-run-lead-text'),
-        '그림 준비를 취소했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+        '스캔용 그림 준비를 취소했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
       );
       expect(_text(tester, 'first-run-progress-number'), '—');
       expect(
@@ -692,7 +702,7 @@ void main() {
       await tester.pump();
       expect(
         _text(tester, 'first-run-lead-text'),
-        '그림 2개를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+        '스캔용 그림 2개를 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
       );
       expect(find.textContaining('설정 → 그림 다시 준비'), findsOneWidget);
       expect(_text(tester, 'first-run-progress-suffix'), '/ 16개 준비함');
@@ -747,7 +757,7 @@ void main() {
       await tester.pump();
       expect(
         _text(tester, 'first-run-lead-text'),
-        '그림을 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
+        '스캔용 그림을 만들지 못했습니다. 그대로 다음 단계로 넘어가도 됩니다.',
       );
       expect(
         _text(tester, 'first-run-progress-caption'),

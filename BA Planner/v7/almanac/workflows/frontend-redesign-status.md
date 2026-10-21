@@ -11373,3 +11373,125 @@ A. 기록 화면 S1 "엑셀 가져오기"를 켜고 파일 고르기 → 미리�
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_074209\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3e 착수 기록 (2026-10-21 08:20, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 설정 탭 첫 실행 · 안내 줄(시안 Settings-Help — 안내 다시 열기 · 그림 다시 준비 · 튜토리얼 다시 하기 · 스캔 신고 · 도움말 · 자동 업데이트 자리) + F3b 알파-1 문구 고침(F3b 발견 2, CF 결정). F3b 발견 3(건너뜀 기억)은 CF 결정대로 바꾸지 않는다.
+- 시작 SHA: `f99b73b284cce5362fe0af52dba20c87a19db762`(브랜치 `scanner-consolidation`). `git log --oneline -3`에 `3100cbd6 f3b:` 있음, 이 status 끝에 다른 "F3e 착수 기록" 없음 확인.
+- 막힘 확인: 대장 열림 FD 0건 → 막히지 않는다.
+- 고칠 기존 파일(사본 `debug/frontend_f3e/pre/<v7 기준 경로>`, 5개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**):
+  `frontend/lib/ui/pages/settings_page.dart`(줄 · 모달 · 콜백 자리), `frontend/lib/ui/settings/settings_sections.dart`(머리 띠 버튼 자리 · 줄 부품), `frontend/lib/ui/studio/settings_studio_layout.dart`(줄 높이 · 머리 띠 버튼 치수), `frontend/lib/ui/first_run/first_run_rules.dart`(알파-1 문구), `frontend/lib/ui/first_run/first_run_modal.dart`(알파-1 문구 · 설정에서 여는 진입 최소).
+- 새 파일(예정): `frontend/test/settings_help_f3e_test.dart`, `debug/frontend_f3e/commit.json` · `output.md`.
+- 고치지 않음: Lane B F3d 파일(`plan_section_layout.dart` · `empty_state_panel.dart` · 탭 파일 · `empty_states_f3d_test.dart`), `app_shell.dart`(새 인자는 모두 선택 — 변경 0 예정), `lib/ui/tutorial/**`, `lib/services/**`, `lib/ui/kit/**`, golden harness · 기준 이미지, `frontend/tool/**`, backend/** · contracts/**, pubspec, 택틱 · 스캐너 소유 파일.
+
+## F3e 종료 기록 (2026-10-21 08:40, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden 기존 3장 변화 → `-UpdateGoldens`) 남음. 시작 SHA `f99b73b2`, 커밋 없음(git 쓰기 안 함).
+- 결과: 설정 탭에 시안 Settings-Help 줄을 더했다 — 머리 띠 버튼 2(첫 실행 안내 다시 열기 · 도움말), 프로필 "튜토리얼 다시 하기", Backend 연결 "자동 업데이트", Scanner 준비 상태 "게임 설치 폴더" · "그림 다시 준비" · "스캔 문제 신고". 설정이 `AssetPreparationController` 하나를 가지고 줄과 모달이 함께 본다. 첫 실행 모달은 F3b `FirstRunPanel`을 그대로 쓰고(entry full / imagesOnly), 설정 안에 `Positioned.fill` + 내용 없는 `BaModal`로 띄운다(F3b 타이틀 자리와 같은 방식). F3b 알파-1 문구를 CF 문구로 바꿨다.
+- 기존 파일 diff: `settings_page.dart` +376/−3, `settings_sections.dart` +175/−5, `settings_studio_layout.dart` +25/−4, `first_run_rules.dart` +4/−2, `first_run_modal.dart` +20/−13(문구 · `FirstRunModalController` 공개 · `restart` 인자), `test/first_run_f3b_test.dart` +13/−3(문구). **`app_shell.dart` 변경 0**(새 인자는 모두 선택 — F3c가 `onRestartTutorial`을 셸에서 넘긴다).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(전체, 편집마다 · 마지막) | `No issues found!`(info 0) |
+| `flutter test --exclude-tags golden test/settings_page_test.dart test/first_run_f3b_test.dart`(1회째) | +14 −7. settings 4건 = 내용 없는 `BaModal`을 Stack의 유일한 비배치 자식으로 둬서 Stack 크기가 0이 되어 버튼 탭이 빗나감 → `Positioned.fill`로 감싸 고침. F3b 3건 = 바꾼 끝 문구(시험 갱신 대상) |
+| 같은 명령(고친 뒤, 파일별) | `settings_page_test` **+11 All passed**, `first_run_f3b_test` **+18 All passed**(문구 3줄 갱신 + ① · ② 알파-1 문구 확인 2건 추가) |
+| `flutter test --exclude-tags golden test/settings_help_f3e_test.dart` | 1회째 컴파일 오류(시험 도우미 `const Semantics()`), 2회째 5건 실패(도우미 `_enabled`가 Tooltip의 Semantics를 먼저 읽음 — 시험 쪽 수정) → 3회째 **+10 All passed**, hit-test 경고 0 |
+| 관련 기존 시험 43파일(grep `SettingsPage\|settings_page.dart\|first_run\|FirstRun\|BAPlannerApp(\|TitlePage\|asset_preparation\|top-tab-settings\|settings_sections\|settings_studio_layout` + FE10-s 이웃 5파일, golden · process 패턴 0건 확인) 2묶음 `--exclude-tags golden` | 묶음 A **+218 All passed**, 묶음 B **+231 All passed**(실패 0 — F3b 때 실패하던 F3d 겹침 32건도 지금은 통과) |
+| 일회성 렌더(사본 `frontend/test/f3e_render_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, PNG는 세션 임시 폴더) | +2 통과 · 넘침 예외 0, 3장(설정 2560 · 1280, 설정 위 첫 실행 ① 2560) 눈 확인 뒤 사본 삭제 |
+| 서식: 고친 파일마다 임시 사본에 `dart format` 후 비교 | 기존 6파일 차이 0, 새 시험 파일은 직접 `dart format`(파일 하나) |
+| `git diff --check HEAD -- <고친 파일>` | 출력 없음. 줄바꿈 유지(`settings_page.dart` CRLF, 나머지 LF), 새 시험 LF · 끝 개행 하나 |
+
+로그: `debug/frontend_f3e/logs/`(`existing-1.log` · `f3e-test-1~3.log` · `related-a.log` · `related-b.log` · `render-1.log`), 시험 목록 `debug/frontend_f3e/related_tests.txt`(`related_a.txt` · `related_b.txt`). 디버그용 일회성 시험 `test/f3e_debug_tmp_test.dart`(hit-test 확인)도 실행 직후 지웠다.
+
+### 줄 → 연결/상태 → 문구(워커 문구 = CF 검수 대상)
+
+| 자리(시안 Settings-Help) | 연결 · 상태 | 문구(설명 · 비활성 이유) |
+|---|---|---|
+| 머리 띠 "첫 실행 안내 다시 열기" | 준비 서비스가 있으면 켜짐 → `FirstRunPanel(entry: full)` 설정 위 모달(스크림 scan, 스크림 누르기로 안 닫힘, Esc · 건너뛰기로 닫힘). ③은 F3b 규칙 그대로 **새 계정**을 만들고 고른다 → 모달 닫고 목록 다시 읽기 · `onProfileChanged` · `onRestartTutorial?.call(context, 새 계정)`(없으면 설정에 남음) | 꺼짐(준비 서비스 없음): "이 연결에서는 첫 실행 안내를 열 수 없습니다"(마우스 올림) |
+| 머리 띠 "도움말 · GitHub 설명서" | 늘 꺼짐(주소 없음 · url_launcher 없음) | "설명서 주소가 아직 정해지지 않았습니다"(마우스 올림) |
+| 프로필 "튜토리얼 다시 하기" / "다시 하기" | 새 nullable `onRestartTutorial`(`FirstRunTutorialStarter`) → 지금 계정으로 부름. 프로필 작업 중 꺼짐 | 설명 "임시 계정에서 처음부터 · 끝나면 지워짐"(시안). null: "… · 튜토리얼은 아직 다시 시작할 수 없습니다", 계정 없음: "… · 지금 쓰는 계정이 없습니다" |
+| Backend 연결 "자동 업데이트" / 스위치 · "지금 확인" | 자리만(XB X2 전, 플래그 파일 안 씀). 스위치 꺼짐 · 비활성, 버튼 비활성 | 설명 "켜 두면 앱을 열 때 새 버전을 받습니다 · 다음 버전에 들어갑니다"(시안 그대로 — 이유를 이미 담음), 버튼 "자동 업데이트는 다음 버전에 들어갑니다"(마우스 올림) |
+| Scanner "게임 설치 폴더" | status `game_dir` 읽기만(바꾸기는 첫 실행 안내 ①) | "경로 · 상태": 자동 "찾음 · Steam" · 지정 "지정함" · 쓸 수 없음 = F3b 이유 칩 문구(없으면 "찾지 못함"), 경로 null · status 전 '—' |
+| Scanner "그림 다시 준비" / "다시 준비" · "진행 보기" | `canStart`면 → `FirstRunPanel(entry: imagesOnly, restart: true)`(ready여도 다시 시작 — 계약상 캐시 검사 · 재사용). 준비 중이면 "진행 보기"로 같은 작업을 다시 봄(새로 시작 안 함). ②만은 이 모달이 시작한 작업이 succeeded면 스스로 닫힘(F3b 규칙) | "② 이미지 준비를 다시 합니다 · 〈상태〉"(시안 앞부분). 상태: ready "준비됨" · partial "만들지 못한 스캔용 그림 n개"(failed 모름 · 0 → "일부 준비됨") · missing "준비 안 됨" · stale "게임 업데이트로 다시 준비 필요" · invalid "준비한 그림 확인 실패" · unknown · status 전 '—' · 준비 중 "준비 중 · 〈단계 활동〉 · done / total개 번들"(total null이면 "done개 번들") + 150×6 막대(분모 없으면 빗금). 꺼짐 이유(설명 뒤 " · " + 마우스 올림): 서비스 없음 "이 연결에서는 그림을 준비할 수 없습니다" · `scanner_busy` "스캔 중에는 다시 준비할 수 없습니다" · status 실패 "준비 상태를 읽지 못했습니다" · 폴더 없음 "게임 설치 폴더를 먼저 정해 주십시오" · 다른 작업 "다른 준비 작업이 끝나기를 기다리는 중입니다" · status 읽는 중은 이유 없이 꺼짐 |
+| Scanner "스캔 문제 신고" / "신고하기" | 자리만(F4 · XB X5 전), 버튼 비활성 | 설명 "최근 스캔의 못 읽은 칸으로 신고 파일을 만듭니다 · 신고 기능은 아직 쓸 수 없습니다" |
+
+줄 순서: 프로필 = 계정 행 → 튜토리얼 다시 하기 → 각주. Backend = 연결 상태 → 자동 업데이트. Scanner = 인식 asset → 게임 설치 폴더 → 그림 다시 준비 → 스캔 문제 신고(시안 순서) → 감지된 대상 · 대상 행 · 각주(기존 줄 뒤로). 스캐너 서비스 오류 때도 새 세 줄은 보인다.
+
+### 바꾼 문구(F3b 발견 2, CF 결정 — 알파-2 시안 문구는 코드 주석으로 남김)
+
+| 자리 | 이전 | 이후 |
+|---|---|---|
+| ① 설명 둘째 줄(`firstRunArtSourceNote`) | 학생 · 아이템 그림은 이 PC의 게임 설치본에서 가져옵니다 — 플래너 배포본에는 그림이 들어 있지 않습니다. | **스캔이 게임 화면을 알아보는 데 쓸 그림을 이 PC의 게임 설치본에서 준비합니다.**(CF 문구) |
+| ② 준비 중 제목 | 게임 설치본에서 화면에 쓸 그림을 만들고 있습니다. 끝날 때까지 기다려 주십시오. | **게임 설치본에서 스캔용 그림을 준비하고 있습니다. 끝날 때까지 기다려 주십시오.**(CF 문구) |
+| ② 성공 · 이미 준비됨 제목 | 그림 준비를 마쳤습니다. | 스캔용 그림 준비를 마쳤습니다. |
+| ② 일부 실패 제목 | 그림 n개를 만들지 못했습니다. … / 그림 일부를 만들지 못했습니다. … | 스캔용 그림 n개를 만들지 못했습니다. … / 스캔용 그림 일부를 만들지 못했습니다. … |
+| ② 취소 제목 | 그림 준비를 취소했습니다. … | 스캔용 그림 준비를 취소했습니다. … |
+| ② 실패 제목 | 그림을 만들지 못했습니다. … | 스캔용 그림을 만들지 못했습니다. … |
+| ② 실패 · 취소 · 일부 설명(워커 문구) | 스캔은 되지만 그 그림 자리가 비어 보입니다 — 나중에 설정 → 그림 다시 준비에서 다시 시도합니다. | 스캔은 되지만 그 그림이 없는 칸은 검토에서 직접 확인해야 할 수 있습니다 — 나중에 설정 → 그림 다시 준비에서 다시 시도합니다.(알파-1은 화면 그림 자리가 비지 않는다 — 인식 캐시가 없으면 합성 단계가 빠지고 기존 검토 흐름으로 간다, 계약 "Scanner and publication boundary") |
+| ② 이미 준비됨 설명 줄 | 이미 준비한 그림을 씁니다 | 이미 준비한 스캔용 그림을 씁니다 |
+| 설정 줄 "그림 다시 준비" partial | (시안) 만들지 못한 그림 37개 | 만들지 못한 스캔용 그림 n개 |
+
+그대로 둔 것: ②만 제목 "게임이 업데이트되어 이미지를 다시 준비합니다" · 설명 "바뀐 그림만 다시 만듭니다. …", 단계 이름 "이미지 준비", 단계 줄 "아이템 아이콘 · 스캔용 그림 · 글꼴". 건너뜀 기억(F3b 발견 3)은 CF 결정대로 바꾸지 않았다 — 다시 여는 길은 이 설정 줄.
+
+### F3c 입력(튜토리얼 다시 하기 콜백 자리)
+
+- `SettingsPage(onRestartTutorial: FirstRunTutorialStarter?)` — 타입은 F3b `first_run_rules.dart`의 `void Function(BuildContext context, RepositoryProfile account)`. `account` = 튜토리얼이 끝나면 돌아올 계정: 줄 "다시 하기"는 지금 고른 계정, 설정에서 다시 연 첫 실행 ③은 방금 만들고 고른 계정(F3b 타이틀과 같은 의미).
+- 셸 연결: `AppShell`이 `SettingsPage(...)`에 이 인자를 넘기는 한 줄(지금은 넘기지 않음 → 줄 꺼짐 + 이유). 넘기면 이유 문구가 사라지고 버튼이 켜진다(시험 "tutorial row …"가 둘 다 확인).
+
+### golden 변화 예상(기존 장면 3장 — 새 장면 0)
+
+| 장면 | 바뀌는 이유 |
+|---|---|
+| `settings` | 머리 띠 오른쪽에 버튼 2(첫 실행 안내 다시 열기 켜짐 · 도움말 흐림)가 새로고침 앞에 생김. 프로필에 "튜토리얼 다시 하기"(흐린 "다시 하기", 설명 뒤 이유), Backend에 "자동 업데이트"(꺼진 스위치 · 흐린 "지금 확인"), Scanner에 "게임 설치 폴더 `C:/Synthetic/…/BlueArchive · 찾음 · Steam`" · "그림 다시 준비 · 준비 안 됨"(분홍 "다시 준비") · "스캔 문제 신고"(흐린 "신고하기")가 생겨 감지된 대상 · `Mock Blue Archive` 행이 아래로 밀림(목록 안, 스크롤 없이 대상 행까지 보이고 각주는 스크롤 아래). golden 시험의 `find.text('Mock Blue Archive')` 대기는 행이 늘 만들어지므로 그대로 된다 |
+| `first-run-game` | ① 설명 둘째 줄이 알파-1 CF 문구로 바뀜 |
+| `first-run-images` | ② 준비 중 제목이 알파-1 CF 문구로 바뀜 |
+| `first-run-account` · 그 밖 | 변화 0 예상(③ 문구 그대로, 설정 탭은 다른 장면에서 IndexedStack 뒤에 있어 그려지지 않음, 새 status 읽기는 화면에 안 보임) |
+
+commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-images.png`(파일 단위), `optional_added` = [].
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E(서비스 0줄 — 셸을 띄우는 process 시험 없음을 grep으로 확인), almanac validate, Python.
+- 미실행: 실제 백엔드에서 설정이 셸 시작 때 `assets.prepare.status`를 한 번 더 읽는 것(타이틀 게이트와 별개 컨트롤러 — 이벤트 스트림은 broadcast라 둘 다 받음), 실제 설치본 준비 · 운영체제 폴더 대화상자, 실제 앱 mock 실행 눈 검수(아래 검수표), 키보드 Tab 순서.
+
+### 검수표(사용자 · CF)
+
+| artboard | 여는 방법 | 확인 |
+|---|---|---|
+| Settings-Help 머리 띠 | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_MOCK_SCENARIO=design-review` → 설정 탭 | 버튼 2 자리(새로고침 앞) · 도움말 흐림 + 마우스 올림 이유 · 첫 실행 안내 → ① 모달(설정 위) → 건너뛰기로 닫힘 |
+| Settings-Help 프로필 판 | 같은 화면 | "튜토리얼 다시 하기" 줄 · 흐린 "다시 하기" · 설명 뒤 이유 |
+| Settings-Help 계산 엔진(Backend) 판 | 같은 화면 | "자동 업데이트" 줄 · 꺼진 스위치 · 흐린 "지금 확인"(시안은 스위치 켜짐 — 발견 3) |
+| Settings-Help 스캐너 판 | 같은 화면(design-review = cache missing) | 게임 설치 폴더 줄 · "그림 다시 준비 · 준비 안 됨" → 다시 준비 → ②만 모달 · 줄에 "준비 중 · …개 번들" + 막대 → 끝나면 모달 닫힘 · "준비됨". 준비 중 건너뛰기 → "진행 보기" |
+| FirstRun-1/2 알파-1 문구 | `--dart-define=BA_PLANNER_FIRST_RUN=full`(타이틀) 또는 설정 → 첫 실행 안내 | ① 설명 둘째 줄 · ② 준비 중 제목이 CF 문구 |
+| scanner_busy 꺼짐 | 시험 "images row: scanner_busy …"(Mock status 덮어쓰기) — 앱에서는 스캔 중 설정 탭 | 흐린 "다시 준비" · "스캔 중에는 다시 준비할 수 없습니다" |
+
+### 발견 사항
+
+1. **시안의 "추가" 칩**: Settings-Help 새 줄마다 분홍 "추가" 칩이 있다. 새로 더한 줄을 표시하는 시안 주석으로 보고 앱에는 그리지 않았다(CF 판단 — 그리려면 `BaChip` 한 줄).
+2. **시안 머리 · 섹션 이름과 현행 차이**: 시안은 머리 띠 "설정 · 앱 · 계정 · 연결", 섹션 "계산 엔진 연결" · "스캐너 준비", 프로필 행 "메인 계정 · 지금 쓰는 계정 · 이름 바꾸기 · 초상", 고급 진단 "로그 폴더 · 진단 파일 —" 줄을 그린다. FD-179 (a)(내용 · 문구 그대로)와 이 slice 범위(줄 추가)에 따라 현행 이름 · 행을 두었다 — 이름 맞추기 · 진단 줄은 별도 결정 후보.
+3. **자동 업데이트 스위치**: 시안은 켜짐(`.tog.on`)이지만 기능이 없어 꺼짐 · 비활성으로 그렸다(켜짐으로 그리면 켜져 있다고 읽힌다). 설명은 시안 그대로 "… · 다음 버전에 들어갑니다" — X2가 알파에 들어오면 문구를 바꿔야 한다.
+4. **비활성 이유 보이는 방법**: 줄은 설명 뒤 " · 이유"(시안 자동 업데이트 줄과 같은 말투) + 버튼 마우스 올림, 머리 띠 도움말은 줄이 없어 마우스 올림만이다.
+5. **"진행 보기"(워커 문구)**: 시안에 준비 중 상태가 없어, 준비 중에는 "다시 준비" 대신 "진행 보기"로 같은 작업의 ②만 모달을 다시 연다(취소는 모달에서).
+6. **첫 실행 다시 열기 ③**: 계정이 있어도 F3b 규칙대로 새 계정을 하나 더 만든다(건너뛰면 아무것도 안 만듦). 콜백이 없으면 F3b 타이틀은 홈으로 가지만 설정에서는 설정 탭에 남는다(설정에는 홈 열기 콜백이 없음 — 셸 변경 0 유지).
+7. **② 실패 설명 문구**: 알파-1 뜻으로 고친 문장("그 그림이 없는 칸은 검토에서 직접 확인해야 할 수 있습니다")은 워커 문구다 — CF 검수.
+8. **준비 status 두 번 읽기**: 설정 페이지가 셸 IndexedStack에서 늘 살아 있어 셸이 뜰 때 `assets.prepare.status`를 한 번 읽는다(설정 새로고침 · 재연결 때도). 부작용 없는 읽기이고 이벤트는 broadcast라 타이틀 게이트 컨트롤러와 겹쳐도 된다.
+9. 착수 뒤 작업 트리의 Lane B F3d 파일 변경은 건드리지 않았고, 관련 시험 실패 0이다.
+
+### 사본 · commit.json
+
+- pre 사본 6개(`debug/frontend_f3e/pre/frontend/lib/ui/{pages/settings_page.dart,settings/settings_sections.dart,studio/settings_studio_layout.dart,first_run/first_run_rules.dart,first_run/first_run_modal.dart}`, `debug/frontend_f3e/pre/frontend/test/first_run_f3b_test.dart`), 착수 때 WIP 0 → `post_dir` 없음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3e/commit.json`: slice `f3e`, modified 6, added 1, `whole` = 기준 이미지 3장(파일 단위), `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f3e/output.md`.
+
+### 다음 행동
+
+- CF: Lane B F3d 수정이 멈춘 뒤 `fe_gate.ps1` → golden 3장(`settings` · `first-run-game` · `first-run-images`) RED 확인 → `failures/` 검토 → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3e -DryRun` → `fe_commit.ps1 -Slice f3e`.
+- CF 판단: 발견 1(추가 칩) · 2(시안 이름 차이) · 3(스위치 · "다음 버전") · 5("진행 보기") · 7(실패 설명 문구), 워커 이유 문구 표.
+- F3c: 셸에서 `SettingsPage(onRestartTutorial: …)` 연결(위 "F3c 입력").
+
+### f3e commit record (2026-10-21 09:18, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261021_090915\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

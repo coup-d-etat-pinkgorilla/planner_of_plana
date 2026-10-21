@@ -4,6 +4,8 @@
 //   불러오는 중 막대(옛 화면 머리 줄 · 목록 맨 위 오류 카드 · 진행 막대).
 // - [SettingsSection]: 2×2 섹션 하나. 위 제목(PanelTitle), 가운데 사선 스크롤 목록(행은 [SettingsRowSpec]), 아래 버튼 줄.
 //   왼쪽 면 섹션은 레일 행(resize), 오른쪽 면 섹션은 평행사변형 행(translate)이다. 버튼은 목록 밖에 있어 늘 보인다.
+// - F3e(시안 Settings-Help): 머리 띠 오른쪽 버튼 줄([SettingsHeaderBand.actions]), 줄 부품 [SettingsActionLine] ·
+//   [SettingsInfoLine], 비활성 이유를 마우스 올림으로 보이는 [SettingsActionButton].
 // 배치는 [settingsStudioDocument] 섹션 path와 [SettingsMetrics]에서 계산한다. 창이 낮으면 세로 값만 줄이고 요소는 기준 크기로
 // 배치한 뒤 같은 비율로 줄인다(통계 · 스캔 탭과 같은 규칙). 내용 · 문구 · 콜백은 `SettingsPage`가 정한다.
 import 'dart:math' as math;
@@ -390,6 +392,135 @@ class SettingsHeaderError extends StatelessWidget {
   }
 }
 
+/// F3e 줄 · 머리 띠 버튼(시안 `.tonal` h36). 꺼져 있고 [disabledReason]이 있으면 마우스를 올리면 이유가 보인다.
+class SettingsActionButton extends StatelessWidget {
+  const SettingsActionButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.disabledReason,
+    this.variant = TonalButtonVariant.normal,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final String? disabledReason;
+  final TonalButtonVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = TonalButton(
+      label: label,
+      icon: icon,
+      variant: variant,
+      height: SettingsMetrics.rowActionHeight,
+      horizontalPadding: SettingsMetrics.rowActionPadding,
+      fontSize: SettingsMetrics.rowActionFontSize,
+      onPressed: onPressed,
+    );
+    final reason = disabledReason;
+    if (onPressed != null || reason == null) return button;
+    return Tooltip(message: reason, child: button);
+  }
+}
+
+/// F3e 줄 내용: 제목 · 흐린 설명 한 줄, 오른쪽에 [progress](선택)와 [trailing](버튼 · 스위치).
+class SettingsActionLine extends StatelessWidget {
+  const SettingsActionLine({
+    super.key,
+    required this.title,
+    required this.description,
+    this.descriptionKey,
+    this.progress,
+    this.trailing = const [],
+  });
+
+  final String title;
+  final String description;
+  final Key? descriptionKey;
+  final Widget? progress;
+  final List<Widget> trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = this.progress;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: settingsTextStyle(
+                  AppType.titleSmallSize,
+                  weight: AppType.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                key: descriptionKey,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: settingsTextStyle(
+                  AppType.bodySmallSize,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (progress != null) ...[const SizedBox(width: 12), progress],
+        for (final item in trailing) ...[const SizedBox(width: 12), item],
+      ],
+    );
+  }
+}
+
+/// F3e 정보 줄(시안 "게임 설치 폴더" — 굵은 제목 뒤에 흐린 값이 한 줄로 이어진다).
+class SettingsInfoLine extends StatelessWidget {
+  const SettingsInfoLine({
+    super.key,
+    required this.title,
+    required this.value,
+    this.valueKey,
+  });
+
+  final String title;
+  final String value;
+  final Key? valueKey;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Text(
+        title,
+        maxLines: 1,
+        style: settingsTextStyle(AppType.titleSmallSize, weight: AppType.bold),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(
+          value,
+          key: valueKey,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: settingsTextStyle(
+            AppType.bodySmallSize,
+            color: AppColors.textMuted,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 /// 아이콘만 있는 tonal 버튼(옛 `IconButton` + tooltip). 의미 라벨은 [tooltip]이다.
 class SettingsIconButton extends StatelessWidget {
   const SettingsIconButton({
@@ -434,7 +565,7 @@ class SettingsIconButton extends StatelessWidget {
   }
 }
 
-/// 머리 띠: 제목 묶음 · 작업 오류 줄 · 새로고침 · 불러오는 중 막대.
+/// 머리 띠: 제목 묶음 · 작업 오류 줄 · 버튼 줄(F3e) · 새로고침 · 불러오는 중 막대.
 class SettingsHeaderBand extends StatelessWidget {
   const SettingsHeaderBand({
     super.key,
@@ -446,6 +577,7 @@ class SettingsHeaderBand extends StatelessWidget {
     required this.refreshTooltip,
     required this.onRefresh,
     this.error,
+    this.actions = const [],
   });
 
   final Size size;
@@ -456,8 +588,12 @@ class SettingsHeaderBand extends StatelessWidget {
   final String refreshTooltip;
   final VoidCallback? onRefresh;
 
-  /// 작업 오류 줄([SettingsHeaderError]). 없으면 제목 묶음이 새로고침 앞까지 쓴다.
+  /// 작업 오류 줄([SettingsHeaderError]). 없으면 제목 묶음이 버튼 줄(없으면 새로고침) 앞까지 쓴다.
   final Widget? error;
+
+  /// 새로고침 왼쪽 버튼 줄(F3e 시안 Settings-Help: 첫 실행 안내 다시 열기 · 도움말). 폭
+  /// [SettingsMetrics.headerActionsWidth] 안에서 오른쪽 정렬한다.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -477,9 +613,13 @@ class SettingsHeaderBand extends StatelessWidget {
 
     final gap = SettingsMetrics.headerErrorGap * scale;
     final error = this.error;
+    final actionsRight = refreshLeft - gap;
+    final actionsLeft = actions.isEmpty
+        ? refreshLeft
+        : actionsRight - SettingsMetrics.headerActionsWidth * scale;
     final titleRight = error == null
-        ? refreshLeft - gap
-        : left + (refreshLeft - left) * SettingsMetrics.headerTitleFraction;
+        ? actionsLeft - gap
+        : left + (actionsLeft - left) * SettingsMetrics.headerTitleFraction;
 
     Rect text(double offset, double rowHeight) => Rect.fromLTRB(
       left,
@@ -488,6 +628,8 @@ class SettingsHeaderBand extends StatelessWidget {
       top + (offset + rowHeight) * scale,
     );
 
+    final actionHeight = SettingsMetrics.rowActionHeight * scale;
+    final actionTop = top + (height - actionHeight) / 2;
     final errorHeight = SettingsMetrics.headerErrorHeight * scale;
     final errorTop = top + (height - errorHeight) / 2;
     final progressTop = top + SettingsMetrics.headerProgressTop * scale;
@@ -559,11 +701,39 @@ class SettingsHeaderBand extends StatelessWidget {
             Rect.fromLTRB(
               titleRight + gap,
               errorTop,
-              refreshLeft - gap,
+              actionsLeft - gap,
               errorTop + errorHeight,
             ),
             scale,
             error,
+          ),
+        if (actions.isNotEmpty)
+          _placed(
+            Rect.fromLTRB(
+              actionsLeft,
+              actionTop,
+              actionsRight,
+              actionTop + actionHeight,
+            ),
+            scale,
+            Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                key: const ValueKey('settings-header-actions'),
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final (index, action) in actions.indexed) ...[
+                      if (index > 0)
+                        const SizedBox(width: SettingsMetrics.actionGap),
+                      action,
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
         _placed(
           Rect.fromLTWH(refreshLeft, refreshTop, refreshSize, refreshSize),

@@ -85,8 +85,10 @@ const firstRunUpdateTitle = '게임이 업데이트되어 이미지를 다시 �
 const firstRunUpdateInfoText =
     '바뀐 그림만 다시 만듭니다. 기다리는 동안 다른 탭은 열리지 않지만 건너뛸 수 있습니다.';
 const firstRunSkipNote = '설정에서 다시 열 수 있습니다';
-const firstRunArtSourceNote =
-    '학생 · 아이템 그림은 이 PC의 게임 설치본에서 가져옵니다 — 플래너 배포본에는 그림이 들어 있지 않습니다.';
+
+/// ① 설명 둘째 줄(F3e, F3b 발견 2 CF 문구 — 알파-1은 화면 그림을 번들로 두고 인식 캐시만 준비한다).
+// 알파-2(F5b) 시안 문구: '학생 · 아이템 그림은 이 PC의 게임 설치본에서 가져옵니다 — 플래너 배포본에는 그림이 들어 있지 않습니다.'
+const firstRunArtSourceNote = '스캔이 게임 화면을 알아보는 데 쓸 그림을 이 PC의 게임 설치본에서 준비합니다.';
 
 const firstRunStepLabels = {
   FirstRunStep.game: '게임 설치 찾기',
