@@ -13,162 +13,34 @@ import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/game_assets.dart';
 import '../kit/game_image.dart';
+import '../kit/kit_glyph.dart';
 
-/// 시안 빈 상태의 선 아이콘(viewBox 24, stroke 1.9, round). svg path를 그대로 옮겼다.
+/// 시안 빈 상태의 선 아이콘. K2(F3c-7): 그림은 키트 [KitGlyph](같은 svg path · 굵기 1.9)이고, 이 이름은 빈 상태 6탭
+/// 호출부를 그대로 두는 얇은 별칭이다. `cross`는 [KitGlyph.close]다.
 enum EmptyStateGlyph {
-  /// 스캔 틀 `M4 8V5a1 1 0 011-1h3M16 4h3…M4 12h16`
-  scanFrame,
+  scanFrame(KitGlyph.scanFrame),
+  students(KitGlyph.students),
+  box(KitGlyph.box),
+  bars(KitGlyph.bars),
+  swords(KitGlyph.swords),
+  search(KitGlyph.search),
+  play(KitGlyph.play),
+  pencil(KitGlyph.pencil),
+  plus(KitGlyph.plus),
+  arrowRight(KitGlyph.arrowRight),
+  check(KitGlyph.check),
+  cross(KitGlyph.close);
 
-  /// 학생 둘 `circle 9 8 3.2 · M3 20c.8-3.6…`
-  students,
+  const EmptyStateGlyph(this.kit);
 
-  /// 상자 `M3 7l9-4 9 4v10l-9 4-9-4z · M3 7l9 4 9-4M12 11v10`
-  box,
-
-  /// 막대 `M4 20V10M10 20V4M16 20v-8M22 20H2`
-  bars,
-
-  /// 엇갈린 칼 `M4 4l10 10M14 18l4-4M4 20l5-5M20 4L10 14M6 14l4 4`
-  swords,
-
-  /// 돋보기 `circle 11 11 6 · M20 20l-4.5-4.5`
-  search,
-
-  /// 재생 `M7 4l13 8-13 8z`
-  play,
-
-  /// 연필 `M4 20h4L19 9l-4-4L4 16z`
-  pencil,
-
-  /// 더하기 `M12 5v14M5 12h14`
-  plus,
-
-  /// 오른쪽 화살표 `M5 12h14M13 6l6 6-6 6`
-  arrowRight,
-
-  /// 체크 `M5 12.5l4.5 4.5L19 7.5`
-  check,
-
-  /// × `M6 6l12 12M18 6L6 18`
-  cross,
+  /// 그릴 키트 글리프.
+  final KitGlyph kit;
 }
 
-Path emptyStateGlyphPath(EmptyStateGlyph glyph) {
-  const r1 = Radius.circular(1);
-  return switch (glyph) {
-    EmptyStateGlyph.scanFrame =>
-      Path()
-        ..moveTo(4, 8)
-        ..lineTo(4, 5)
-        ..arcToPoint(const Offset(5, 4), radius: r1)
-        ..lineTo(8, 4)
-        ..moveTo(16, 4)
-        ..lineTo(19, 4)
-        ..arcToPoint(const Offset(20, 5), radius: r1)
-        ..lineTo(20, 8)
-        ..moveTo(20, 16)
-        ..lineTo(20, 19)
-        ..arcToPoint(const Offset(19, 20), radius: r1)
-        ..lineTo(16, 20)
-        ..moveTo(8, 20)
-        ..lineTo(5, 20)
-        ..arcToPoint(const Offset(4, 19), radius: r1)
-        ..lineTo(4, 16)
-        ..moveTo(4, 12)
-        ..lineTo(20, 12),
-    EmptyStateGlyph.students =>
-      Path()
-        ..addOval(Rect.fromCircle(center: const Offset(9, 8), radius: 3.2))
-        ..moveTo(3, 20)
-        ..cubicTo(3.8, 16.4, 6.2, 14.5, 9, 14.5)
-        ..cubicTo(11.8, 14.5, 14.2, 16.4, 15, 20)
-        ..moveTo(15.5, 5.2)
-        ..arcToPoint(const Offset(15.5, 10.8), radius: const Radius.circular(3))
-        ..moveTo(17.5, 14.8)
-        ..cubicTo(19.3, 15.4, 20.5, 17.2, 21, 20),
-    EmptyStateGlyph.box =>
-      Path()
-        ..moveTo(3, 7)
-        ..lineTo(12, 3)
-        ..lineTo(21, 7)
-        ..lineTo(21, 17)
-        ..lineTo(12, 21)
-        ..lineTo(3, 17)
-        ..close()
-        ..moveTo(3, 7)
-        ..lineTo(12, 11)
-        ..lineTo(21, 7)
-        ..moveTo(12, 11)
-        ..lineTo(12, 21),
-    EmptyStateGlyph.bars =>
-      Path()
-        ..moveTo(4, 20)
-        ..lineTo(4, 10)
-        ..moveTo(10, 20)
-        ..lineTo(10, 4)
-        ..moveTo(16, 20)
-        ..lineTo(16, 12)
-        ..moveTo(22, 20)
-        ..lineTo(2, 20),
-    EmptyStateGlyph.swords =>
-      Path()
-        ..moveTo(4, 4)
-        ..lineTo(14, 14)
-        ..moveTo(14, 18)
-        ..lineTo(18, 14)
-        ..moveTo(4, 20)
-        ..lineTo(9, 15)
-        ..moveTo(20, 4)
-        ..lineTo(10, 14)
-        ..moveTo(6, 14)
-        ..lineTo(10, 18),
-    EmptyStateGlyph.search =>
-      Path()
-        ..addOval(Rect.fromCircle(center: const Offset(11, 11), radius: 6))
-        ..moveTo(20, 20)
-        ..lineTo(15.5, 15.5),
-    EmptyStateGlyph.play =>
-      Path()
-        ..moveTo(7, 4)
-        ..lineTo(20, 12)
-        ..lineTo(7, 20)
-        ..close(),
-    EmptyStateGlyph.pencil =>
-      Path()
-        ..moveTo(4, 20)
-        ..lineTo(8, 20)
-        ..lineTo(19, 9)
-        ..lineTo(15, 5)
-        ..lineTo(4, 16)
-        ..close(),
-    EmptyStateGlyph.plus =>
-      Path()
-        ..moveTo(12, 5)
-        ..lineTo(12, 19)
-        ..moveTo(5, 12)
-        ..lineTo(19, 12),
-    EmptyStateGlyph.arrowRight =>
-      Path()
-        ..moveTo(5, 12)
-        ..lineTo(19, 12)
-        ..moveTo(13, 6)
-        ..lineTo(19, 12)
-        ..lineTo(13, 18),
-    EmptyStateGlyph.check =>
-      Path()
-        ..moveTo(5, 12.5)
-        ..lineTo(9.5, 17)
-        ..lineTo(19, 7.5),
-    EmptyStateGlyph.cross =>
-      Path()
-        ..moveTo(6, 6)
-        ..lineTo(18, 18)
-        ..moveTo(18, 6)
-        ..lineTo(6, 18),
-  };
-}
+/// [kitGlyphPath]의 별칭.
+Path emptyStateGlyphPath(EmptyStateGlyph glyph) => kitGlyphPath(glyph.kit);
 
-/// [EmptyStateGlyph]를 상자 크기에 맞춰 그린다(24 단위를 상자 폭으로 늘린다).
+/// [KitGlyphPainter]를 감싼 별칭(굵기는 키트 기본 1.9).
 class EmptyStateGlyphPainter extends CustomPainter {
   const EmptyStateGlyphPainter({required this.glyph, required this.color});
 
@@ -176,28 +48,15 @@ class EmptyStateGlyphPainter extends CustomPainter {
   final Color color;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.shortestSide / 24;
-    canvas.save();
-    canvas.scale(scale);
-    canvas.drawPath(
-      emptyStateGlyphPath(glyph),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.9
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = color,
-    );
-    canvas.restore();
-  }
+  void paint(Canvas canvas, Size size) =>
+      KitGlyphPainter(glyph: glyph.kit, color: color).paint(canvas, size);
 
   @override
   bool shouldRepaint(EmptyStateGlyphPainter oldDelegate) =>
       oldDelegate.glyph != glyph || oldDelegate.color != color;
 }
 
-/// 선 아이콘 한 개.
+/// 선 아이콘 한 개([KitGlyphIcon]을 감싼 별칭).
 class EmptyStateGlyphIcon extends StatelessWidget {
   const EmptyStateGlyphIcon(
     this.glyph, {
@@ -211,12 +70,8 @@ class EmptyStateGlyphIcon extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: size,
-    child: CustomPaint(
-      painter: EmptyStateGlyphPainter(glyph: glyph, color: color),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      KitGlyphIcon(glyph.kit, size: size, color: color);
 }
 
 /// 빈 상태 행동 버튼 하나. [onPressed]가 null이면 비활성(키트 불투명도)이고 [reason]을 옆에 12px 흐림으로 보인다.
