@@ -3700,3 +3700,19 @@ CM 23:00 X4("시드 도구를 제품 기능으로 · `is_practice` · 저장 스
 - **CM 판단/제한**: 사용자 실제 첫 이관 안내 UX 포함 여부는 앞 CM 요청의 회신 대기이며 backend 안전 수정은 승인 대기로 두지 않았다. 실제 사용자 데이터량/이관시간·완료·첫alpha/native/두번째PC 검증 주장은 없다. source export/키/게임 프로세스/Viewer·Arena/독립holdout·공용store/lock 쓰기0. NP0035 및 X4/X5 후속 상태는 앞 인계 그대로다.
 - **근거**: `debug/xb_x3_long_paths_20261023/output.md`, actual 전체/집중 log/json, native 테스트, CF 원 RED summary, 실패구현 재현, source/contract SHA와 선택 patch. 이번 소스 커밋은 아직 없으며 문서만 별도 선택 커밋할 계획이다.
 - **선택 문서 구분**: 실제 XB prospective 선택은 제품53+필수 wiki2=55경로다. selected-source-with-xb-wiki.patch/json을 사용해 제거 모듈의 source 참조도 함께 고친다. almanac/architecture/developer-tools.md의 CF M3R 변경/이전 WIP는 XB 선택에서 제외·보존하며 CF가 자신의 짝 커밋에 포함한다.
+
+## 2026-10-23 23:12 — 세션 시작(XB): CF 회신 감사·X4 격리 후속
+
+- backend/CF/CM/metadata 로그와 소유 상태, README/헌장/P0-P6/runtime-boundaries/tutorial-practice 계약을 확인했다. CF 작성 최신 회신은 20:20 X3 요청이고 그 뒤 CF 새 GREEN/전역 오류 decoder 회신은 없다. 최신 gate는 여전히 195408 RED, frontend의 user_data_migration_failed 연결도 아직 없다. X3 수정/1490 PASS와 55경로 선택은 그대로 보존하며 새 source commit0이다.
+- main backend/contracts/tool 동결을 유지하고 `debug/xb_x4_runtime_20261023/`에 X4 임시 계정 lifecycle/소유권/복구와 가상 재생을 별도 후보로 준비한다. 기존 실제 저장소·스캐너 서비스의 공통 transaction/DTO 경로를 사용하며 계약의 strict idempotency, 실계정 오염 금지, reset/end stale candidate 차단을 검증한다. 메인 반영은 현 CF 왕복 이후 별도 같은소스 라운드다.
+- 기존 봉인101/106/56파일 보존, frontend/lib·test·공용store/lock/data-extracted·실제 사용자 자료 쓰기0, push0. X2 실제 URL·X6 사용자 PC 측정·X7 신규 정답은 입력 미수신 경계를 유지한다.
+
+
+## 2026-10-23 23:51 — XB X4 격리 후보 검증·CF 회신 감사
+
+- **CF 회신 확인**: CF 작성 최신 요청은 2026-10-23 20:20 X3이며 새 GREEN/전역 시작 오류 decoder 회신은 없다. 최신 gate는 `20261023_195408` RED다. X3 수정 후 actual main1490/1755.697s PASS는 앞 세션 결과이며 이번에 다시 실행한 것이 아니다. 그 입력5170개와 선택55경로, 앞 봉인101/106/56파일 전수 SHA가 그대로다. 현재 제품53+XB wiki2는 CF M3R/global user_data_migration_failed·같은소스 GREEN→XB 커밋→CF 짝 커밋을 계속 기다린다.
+- **이번 완료(격리 후보)**: `debug/xb_x4_runtime_20261023/`에서 X4 lifecycle5/create-current-reset-end-recover, durable owner/complete-request receipt·intent 복구/OS process lease, 고정 seed·기존 repository/scenario/tactical·삭제 journal/잠금 순서, 실계정 목록/혼합 통계 분리, 가상 학생/tech_notes/tactical_bd 재생과 기존 review/partial commit/history를 구현·검증했다. reset/end는 가상 세션을 닫고 옛 session/candidate의 재사용을 거부한다. unknown owner/registry/junction은 지우지 않고 노출을 차단한다. 원래 계정은 복사하지 않으며 가상 경로의 native factory/실제 sample 학습 호출0이다.
+- **CF Mock 대조**: 이전 합성 scan session1회에 학생/아이템 공통 writer2건을 기록해 초기 및 reset revision은 base+2, 이력 event2/scan-session1로 맞췄다. 처음 54개 부분 승인→검토2개 추가 후56개, unread4개는 null/미적용 review 상태를 유지한다. tactical_bd는 명시적 합성이고 Yuuka crop도 합성이며 native 인식 정확도 근거가 아니다.
+- **최종 검증**: 격리 관련 **211/68.459s PASS, skipped0**(새 runtime24 포함), 최종 compact 계약 **9/1.611s PASS**. 실제 JSONL subprocess 스캔→저장→reset→end, startup orphan cleanup/안전 오류, 강제종료 marker/seed/삭제후 receipt 복구, junction 이탈·foreign marker 보존, pause/resume/cancel·cross-profile 거부를 포함한다. 합성 요청/응답20쌍+기존 event95와 schema40 검증 오류0. Almanac45/diff 및 별도 index의 후속 patch 적용 검사 PASS. 전체 Python/CF/native의 X4 통과를 주장하지 않는다.
+- **인계/순서**: 후보 delta12경로의 before/after SHA는 artifacts/source-plan.json, 적용 패치는 candidate.patch, 실제 trace는 runtime-trace.json, 보존/CF 감사는 verification.json이다. 현55경로가 커밋된 뒤 적용되는 별도 index63경로 투영 검사만 했으며 실제 index empty·main overlay0·제품 source commit0·push0다. CF에 다음 X4 decoder 목록(repository/scanner practice_profile_required, 전역 practice_cleanup_failed의 정확 code/message/retryable:true)을 23:35 사전 게시했다. 현 X3 gate에 X4 후보를 섞지 않는다.
+- **남은 경계**: 이번 후보를 main에 적용하는 일과 X4 전체 Python/CF 짝 gate는 현 source 왕복/동결 해제 이후다. 실제 사용자 데이터/guard·공용store/lock/data-extracted·frontend/lib/test 쓰기0. X2 실제 URL/설정 UI·첫alpha/native·두번째PC/X6 측정, X5 후속 및 X7 새 사용자 캡처/정답, NP0035의 실제 재생·라이선스/alpha 범위는 기존 미완료 상태다. 전체 alpha/P0-P6/O3/Schale 제거 완료 선언0. 원 failing/준비 실패 로그도 보존했다.
