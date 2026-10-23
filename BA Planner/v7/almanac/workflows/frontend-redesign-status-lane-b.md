@@ -7116,3 +7116,289 @@ grep 대상 기호(`SectionTemplateSurface` 계열 · `StudentRangeCondition*` �
 ### 다음 행동
 
 - CF: `debug/frontend_f3c7/output.md` 검토 → (Lane A F3c-6 정지 뒤) `fe_gate.ps1`(golden 변화 0 기대) → K1 커밋 → `fe_commit.ps1 -Slice f3c7`. F3c-6(또는 다음 라운드)에서 5단계 실제 동작 전환 판단.
+
+## SL1 착수 기록 (2026-10-22 01:01, Lane B 워커)
+
+- 진행 중: **SL1 — 1280×720 시나리오 목록 S1 레일 '나란히 비교' 창 안**(근거: `frontend-redesign-status.md` F3c-6 종료 기록 발견 2). 프롬프트 `debug/frontend_redesign_handoff/sl1-worker-prompt-20261022.md`.
+- 시작 SHA `aab0112059029e2fabdc21e49757d711ba5564ad`(`git log --oneline -4`에 F3c-6 `f239f427` 있음). 이 문서 끝에 다른 SL1 착수 기록 없음. 막힘 요약 `열림` FD 0건.
+- 고칠 파일: `frontend/lib/ui/widgets/plan_scenario_list.dart`(S1 레일), `frontend/lib/ui/studio/plan_scenario_list_studio_layout.dart`(필요할 때만 — 사본만 둠). 새 파일: `frontend/test/plan_scenario_list_sl1_test.dart`.
+- 기존 미커밋 변경(WIP): 두 파일 모두 **없음**(사본 SHA-256이 `git show HEAD:` 와 같음 — `a2d1bf06…` · `b50cb613…`). 사본: `debug/frontend_sl1/pre/frontend/lib/ui/{widgets/plan_scenario_list.dart, studio/plan_scenario_list_studio_layout.dart}`.
+- 손대지 않음: Lane A F3c-8 파일(`lib/services/mock_app_service.dart` · `mock_tutorial_practice.dart` · `lib/ui/tutorial_host/**` · `lib/ui/tutorial/**` · 튜토리얼 시험 · golden), `lib/ui/kit/**`, golden harness · 기준 이미지.
+
+## SL1 종료 기록 (2026-10-22, Lane B 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회 남음. 시작 SHA `aab01120`, 커밋 없음(git 쓰기 안 함). 산출 `debug/frontend_sl1/output.md`.
+- 결과: 1280×720 앱 셸에서 시나리오 목록 S1 레일의 모든 조작(보는 중 · 활성 계획으로 · 새 시나리오 · 프리셋 관리 · 비교 칸 A~D · '나란히 비교')과 안내 글이 창 안이다. '나란히 비교'는 y 769~819(창 밖) → **618.7~655.6**, 누르면 비교가 열린다(시나리오 하나 = A↔B, 둘 = 4열). 1600×900 · 2560×1392 자리는 바뀌지 않았다.
+- 도중 사용자 결정(AskUserQuestion 2026-10-22): 레일 수정으로 Lane A `tutorial_host_f3c3_test` 1280 한 바퀴가 hooks 출구 대신 실제로 눌러 4열 비교 화면을 열고, 그 화면의 기존 넘침으로 실패한다 → **SL1만 끝내고 발견으로**(아래 발견 1 · 2). 프롬프트 파일 범위 그대로.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `git log --oneline -4` · `git rev-parse HEAD` · `git show HEAD:<파일>`(사본 대조) | F3c-6 `f239f427` 있음, HEAD `aab01120`. 두 고칠 파일 사본 = HEAD(WIP 없음) |
+| `flutter test test/plan_scenario_list_sl1_test.dart`(측정판, 고치기 전) | +3 All passed — 측정 표 "전"(`debug/frontend_sl1/measure/before.txt`) |
+| 같은 측정판(고친 뒤) | +3 All passed — 측정 표 "후"(`measure/after.txt`) |
+| `flutter test test/plan_scenario_list_sl1_test.dart`(시험판) | 1회 −2(비교 수 `Text` 자체에 key — 찾기 고침) → 2회 −2(4열 비교 화면 넘침 — 레일 밖, 발견 1, 비교를 연 뒤 예외는 비움) → **3회 +6 All passed** |
+| `flutter analyze`(전체) | 1회 3 issues — 모두 Lane A 작업 중 임시 파일 `test/f3c8_geom_tmp_test.dart`(내 파일 아님) · 내 두 파일만 `flutter analyze <두 파일>` No issues → **마지막 전체 No issues found!**(그 임시 파일이 사라진 뒤) |
+| `flutter test` 34파일(`debug/frontend_sl1/related_tests.txt`: `plan_*` · `planning_*`(process E2E 제외) · `tidy1_followups` · `tutorial_host_f3c3` · `tutorial_plan_f3c5` · `tutorial_f3c6` · `widget_test` · 새 SL1) | **+492 −1**(json 집계). 실패 1 = `tutorial_host_f3c3_test` "Mock walkthrough … (variant: Size(1280.0, 720.0))" 마지막 `takeException` — 예외 9건 모두 4열 비교 화면(발견 1 · 2). 그 밖 33파일 전부 통과(`plan_scenario_list_test` +10, `planning_page_test` +18, `plan_scenario_compare_test` +7, `plan_home_detail_test` +9, `tidy1_followups_test` +3, `tutorial_plan_f3c5_test` +11, `tutorial_f3c6_test` +12, `widget_test` +16, `plan_scenario_list_sl1_test` +6 …) |
+| `dart format --output=show <파일>`(쓰지 않고 보기, 두 파일 하나씩) | 내가 고친 줄의 차이 3곳만 손으로 반영. 나머지 차이(747~789 LayoutBuilder 들여쓰기 · 1387 · 1446 · 1637 · 2049 빈 줄 · 2627)는 기존 줄이라 두었다 |
+| `git diff --check -- <고친 파일>` | 출력 없음. 두 파일 LF · 끝 개행 하나 |
+
+### 크기별 측정(앱 셸 `BAPlannerApp`, 계획 탭 → 시나리오 목록, 비교에 시나리오 1개; y는 창 좌표, 위~아래)
+
+S1 레일 높이 = (창 높이 − 184) × 94/96: 1280×720 **524.8**, 1600×900 701.1, 2560×1392 1182.8. 레일 위 y = 195.2 · 198.9 · 209.2.
+
+| 요소 | 1280×720 전 | 1280×720 후 | 1600×900(전 = 후) | 2560×1392(전 = 후) |
+|---|---|---|---|---|
+| 보는 중(시나리오 목록) | 291.2~349.2 | 266.0~308.8 | 294.9~352.9 | 305.2~363.2 |
+| 활성 계획으로 | 361.2~405.2 | 317.7~350.1 | 364.9~408.9 | 375.2~419.2 |
+| 새 시나리오 | 413.2~457.2 | 356.0~388.5 | 416.9~460.9 | 427.2~471.2 |
+| 프리셋 관리 | 465.2~509.2 | 394.4~426.9 | 468.9~512.9 | 479.2~523.2 |
+| 비교할 계획 n / 4 | 536.7~553.7 | 447.6~464.6 | 540.4~557.4 | 550.7~567.7 |
+| 비교 칸 A | 563.2~607.2 | 466.7~499.2 | 566.9~610.9 | 577.2~621.2 |
+| 비교 칸 B | 613.2~657.2 | 503.6~536.1 | 616.9~660.9 | 627.2~671.2 |
+| 비교 칸 C | 663.2~707.2 | 540.5~573.0 | 666.9~710.9 | 677.2~721.2 |
+| 비교 칸 D | 713.2~757.2 **창 밖** | 577.4~609.9 | 716.9~760.9 | 727.2~771.2 |
+| 나란히 비교 | 769.2~819.2 **창 밖** | **618.7~655.6** | 772.9~822.9 | 783.2~833.2(시안 783 · 50) |
+| 안내 글 | 829.2~877.2 **창 밖** | 663.0~711.0 | 832.9~864.9 | 843.2~875.2 |
+| 창 높이 | 720 | 720 | 900 | 1392 |
+
+원인: S1 레일은 모든 줄을 섹션 위에서 시안 고정 오프셋(안내 글 위 634 + 글 세 줄 48)으로 둔다. 1280×720 레일은 524.8이라 비교 칸 D부터 아래가 창 밖이었다.
+
+### 고친 방법(`plan_scenario_list.dart` +42/−13, 워커 재량 — 프롬프트 권장안 중 "작은 창에서 줄 간격 · 슬롯 높이 줄이기")
+
+- `PlanScenarioListMetrics.menuScaleFor(railHeight)` = `((railHeight − 49 − 8) / 634).clamp(0.68, 1.0)`(49 = 안내 글 세 줄 11.5×1.4×3, 8 = 레일 아래 여백). 1280×720 = **0.738**, 1600×900 · 2560×1392 = **1**.
+- `_menu`의 세로 값(제목 · 보는 중 · 메뉴 버튼 · 비교 캡션 · 칸 A~D · 나란히 비교 · 안내 글의 top, 버튼 · 칸 높이)만 그 비율을 곱한다. 폭은 줄인 y에서 레일 오른쪽 변으로 다시 잰다(기존 `row`). 글자 크기 · 제목/캡션 칸 높이는 그대로. 계획 만들기 레일(`PlanFlowRailMetrics.scaleFor`)과 같은 관례이고, 레일 안 스크롤(나란히 비교를 맨 아래에 두면 처음에 안 보임 · 좁은 레일에 스크롤바 자리 14)보다 손이 적다.
+- `_CompareSlotButton` · `_EmptyCompareSlot`에 `height`(기본 44)를 더해 줄인 칸 높이로 사선 깎임을 맞춘다. 0.68 아래로는 줄이지 않는다(칸 글자 두 줄 약 29가 들어가는 한계 — 720보다 낮은 창에서는 레일이 다시 창 밖으로 나갈 수 있지만 넘침 예외는 없음).
+- studio layout(`plan_scenario_list_studio_layout.dart`)은 고치지 않았다(사본만, HEAD와 같음). `lib/ui/kit/**` · 서비스 · golden 파일 diff 0.
+
+### 계획 탭 다른 레일(1280×720 측정만, 고치지 않음)
+
+| 레일 | 1280×720 | 1600×900 |
+|---|---|---|
+| 활성 계획 S1(`plan-home-menu`, `PlanDetailRailMenu`) | 버튼 4개(보는 중 291.2~349.2 · 시나리오 목록 361.2~405.2 · 계획 만들기 423.2~467.2 · 페이즈 편집 475.2~519.2)는 창 안. **정보 줄 `plan-home-info-3` 691.2~727.2 · `-4` 731.2~767.2가 창 밖**(표시 전용 `PlanDetailInfoRow`, 누를 것 없음) — 발견 3 | 모두 창 안(info-4 734.9~770.9) |
+| 계획 만들기 레일(`plan-flow-rail`, 1단계) | 모두 창 안 — 이미 `PlanFlowRailMetrics.scaleFor`로 줄임(스텝 높이 37.3, 다음 661.4~686.3 · 이전 689.8~711.1) | 모두 창 안 |
+
+### golden 변화 0 근거(장면별 예측: 모두 "변화 없음")
+
+- `plan-scenario-list` · `-expanded` · `-shortage` · `plan-scenario-compare` · `-compare-4` 등 계획 장면은 `goldenViewportSize` 2560×1392에서 `PlanningPage`만 띄운다 → 레일 1363 → 비율 1. 튜토리얼 계획 장면(앱 셸 2560×1392)도 레일 1182.8 → 1. 2560 외 크기 golden은 `fe8g1_scan_tab`(스캔 탭, 시나리오 목록 없음) 하나뿐.
+- 비율 1이면 `x * 1.0 == x`(IEEE 754 정확)라 모든 top · 폭 · 높이가 전과 같은 값이고, `RailButton` 높이 인자도 전과 같은 값(메뉴 44 = 기본값, 보는 중 58, 나란히 비교 50, 칸 44 = 기본값, 빈 칸 사선 `diagonalCutDepth(44)`)이다.
+- 시험 `2560×1392: 레일 자리가 시안 그대로다` · 비율 단위 시험이 이 값을 고정한다. golden 비교는 돌리지 않았다(미실행).
+
+### 미검증("미실행")
+
+- golden 비교 · 전체 `fe_gate.ps1` · process E2E(`planning_*_process_e2e` · `repository_plan_*`는 관련 시험 실행에서 뺐다).
+- 실제 Windows 앱 1280×720에서 눈으로 보기(줄인 레일의 간격, '보는 중' 캡션 칸 아래 끝 71.1과 보는 중 버튼 위 70.8 — 글자 자체는 67.5에서 끝남).
+- 시나리오 보기 모드 · 4열 비교 화면의 S1 레일(같은 `PlanDetailRailMenu` 계열)은 1280에서 측정하지 않았다.
+
+### 발견 사항
+
+1. **4열 비교 화면(FE5-e, `plan_scenario_compare.dart`)이 1280×720 · 1600×900에서 넘친다** — 열 머리의 '열기 · 계획에 적용…' 줄(1908) · 얼굴 · 부제 줄(1875) · 지표 행(1324) · 소제목 `SubHeader`(kit `titles.dart:177`, 비교 화면이 좁은 폭을 줌). SL1 시험에서 1280 7건 · 1600 4건, 한 바퀴 시험에서 9건. 레일 고치기 전에는 1280에서 버튼이 창 밖이라 이 화면에 갈 수 없어 안 보였다. 고치려면 별도 slice(2560 golden 유지 조건).
+2. **`tutorial_host_f3c3_test` 1280 한 바퀴가 RED가 된다(예상)**: 이 시험은 '나란히 비교' 바닥이 창 안이면 실제로 누르고 아니면 hooks 출구다(F3c-6). SL1 뒤에는 누르므로 4열 비교를 열고 발견 1의 예외로 마지막 `takeException`이 실패한다(+8 −1, 그 앞 단계 기대는 모두 통과). 이 시험 파일에는 Lane A F3c-8 미커밋 변경이 있어 실행은 그 작업 중 판을 썼다. CF 판단: 발견 1을 먼저 고치거나, 그때까지 1280 변형을 hooks 출구로 두기(Lane A 파일).
+3. 활성 계획 S1 정보 줄 4 · 5번째가 1280×720에서 창 밖(표시 전용). 같은 줄이기 관례를 `PlanDetailRailMenu`에 넣을지는 CF 결정.
+4. `plan_scenario_list.dart`에 기존 `dart format` 차이가 남아 있다(F3c-6 LayoutBuilder 들여쓰기 등 6곳) — 파일 전체 포맷 금지라 두었다.
+5. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 측정 기록 `debug/frontend_sl1/measure/{before,after}.txt`와 시험 목록 `related_tests.txt`를 남겼다. 측정판은 따로 파일을 만들지 않고 새 시험 파일에서 돌린 뒤 시험판으로 바꿨다(지운 파일 없음).
+
+### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scenario-List | mock 앱 창 1280×720 → 계획 탭 → 시나리오 목록 → 행 두 개 체크 | 레일 아래 '나란히 비교'와 안내 글이 창 안, 칸 A~D 글자가 잘리지 않음, 누르면 4열 비교가 열림(그 화면 넘침은 발견 1) |
+| Scenario-List | 기준 viewport 최대화 | 레일 자리 · 버튼 높이가 시안과 같음(바뀐 것 없음) |
+
+### 다음 행동
+
+- CF: `debug/frontend_sl1/output.md` 검토 → (Lane A F3c-8 정지 뒤) `fe_gate.ps1` — golden 변화 0 기대, 시험 RED 1(`tutorial_host_f3c3_test` 1280 한 바퀴, 발견 2) 예상 → 발견 1 처리 방식 결정(새 slice 또는 Lane A 시험 1280 hooks 유지) → `fe_commit.ps1 -Slice sl1`.
+
+## SL2 착수 기록 (2026-10-22 15:07, Lane B 워커)
+
+- 진행 중: **SL2 — 작은 창(1280×720 · 1600×900)에서 4열 비교 화면 넘침 0 · 비교 S1 · 활성 계획 S1 레일 조작이 창 안**(근거: 이 문서 SL1 종료 기록 발견 1 · 3, `frontend-redesign-status.md` F3c-8 종료 기록 발견 1, CF gate `20261022_143621`의 `tutorial_host_f3c3_test` 1280 한 바퀴 RED).
+- 시작 SHA `aab0112059029e2fabdc21e49757d711ba5564ad`(`git log --oneline -3`에 `aab01120 Update frontend redesign workflow …` 있음). 이 문서 끝에 다른 SL2 착수 기록 없음. 막힘 요약 `열림` FD 0건.
+- 고칠 파일: `frontend/lib/ui/widgets/plan_scenario_compare.dart`(비교 화면 · 비교 S1), `frontend/lib/ui/widgets/plan_scenario_detail.dart`(활성 계획 S1 `PlanDetailRailMenu` · `PlanDetailMenuFrame` 최소), `frontend/lib/ui/kit/titles.dart`(`SubHeader` 말줄임 최소 — 넘침 원인이 키트 `Row` 안 `Text`라서). 새 파일: `frontend/test/plan_scenario_compare_sl2_test.dart`.
+- 기존 미커밋 변경(WIP): 세 파일 모두 **없음**(사본 SHA-256 = `git show HEAD:` — `edb53960…` · `cc4d3011…` · `2d6d3fcc…`). 사본: `debug/frontend_sl2/pre/frontend/lib/ui/{widgets/plan_scenario_compare.dart, widgets/plan_scenario_detail.dart, kit/titles.dart}`.
+- 손대지 않음: SL1 파일(`plan_scenario_list.dart` · `test/plan_scenario_list_sl1_test.dart` — 미커밋 그대로) · `debug/frontend_sl1/**`, F3c-8 · K2 Lane A 파일(`lib/services/mock_app_service.dart` · `lib/ui/tutorial/**` · `tutorial_host/tutorial_overlay.dart` · `lib/ui/tutorial_targets/**` · 튜토리얼 시험), golden harness · 기준 이미지, `frontend/tool/**`.
+
+## SL2 종료 기록 (2026-10-23, Lane B 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회 남음. 시작 SHA `aab01120`, 커밋 없음(git 쓰기 안 함). 산출 `debug/frontend_sl2/output.md` · `commit.json`.
+- 결과: 1280×720 · 1600×900 앱 셸에서 4열 비교 화면(A~D)을 열면 **넘침 예외 0**(전 1280 7건 · 1600 5건). 열 머리 '열기' · '계획에 적용…'이 창 안에서 눌리고(적용 2선택 창 · 열기 → 시나리오 보기 확인), 비교 S1 조작(기준 라디오 D 포함) · 안내 문구, 활성 계획 S1 버튼 · 정보 줄 5개가 창 안이다. 2560×1392 자리 · 모양은 그대로다(아래 근거).
+- **`tutorial_host_f3c3_test.dart` 전체(F3c-8 · SL1 미커밋 포함 현재 작업 트리): +9 All passed** — 1280×720 한 바퀴(`Mock walkthrough … (variant: Size(1280.0, 720.0))`) 통과. 그 시험 파일은 고치지 않았다.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `git log --oneline -3` · `git rev-parse HEAD` · `git show HEAD:./<파일>`(사본 대조) | `aab01120` 있음. 세 고칠 파일 사본 = HEAD(WIP 없음) |
+| `flutter test test/plan_scenario_compare_sl2_test.dart`(측정판, 고치기 전) | +3 All passed — 넘침 1280 **7**(1908 ×3 · `titles.dart:177` ×2 · 1324 ×2) · 1600 **5**(1908 ×3 · `titles.dart:177` ×2) · 2560 0. `logs/measure-before.txt` |
+| 같은 측정판(고친 뒤 1회) | 1280 · 1600 · 2560 모두 넘침 0. 단 1280 비교 안내 문구 아래 720.1(창 720) → 안내 세 줄 자리를 비율 밖으로 빼서 고침(`scaleFor(…, fixed:)`). `logs/measure-after-1.txt` |
+| `flutter analyze <고친 lib 3파일>` → 마지막 `flutter analyze`(전체) | No issues found! · **No issues found!** |
+| `flutter test test/plan_scenario_compare_sl2_test.dart`(시험판) | 1회 컴파일 오류(`planCompareActiveId` import) → 2회 −1(1280 '열기' 뒤 시나리오 보기 S2 넘침 3 — 비교 화면 밖, 발견 2) → **3회 +8 All passed** |
+| 같은 파일 임시 측정 묶음(편집으로 넣고 뺌, grep `TMP` 0) | 측정 표 "후"(`logs/measure-after-2.txt`), 세 크기 예외 `null` |
+| `flutter test --exclude-tags golden` 205파일 3묶음(`related_tests.txt` = `test/` 아래 golden 폴더 · process E2E 29개(`related_process_excluded.txt`)를 뺀 전부 — `SubHeader`가 여러 화면에 있어 넓게) | 00(71) **+658 All passed** · 01(66) **+944 −1** · 02(68) **+821 −1**. 실패 2 = Python 실제 프로세스 시험(발견 4): `planning_protocol_client_test` "real Python process serves every P0 …"(묶음: 20초 시간 초과, 단독 재시도 1회: `BackendDisconnectedException` 종료 코드 1) · `tool_backend_client_process_test` "metadata JSON is decoded as UTF-8 …"(묶음 · 단독 모두 `[Errno 2]` — `%LOCALAPPDATA%\BA Planner\.v7-migration-…\repository\recognition_samples\_quarantine\…` 파일 없음). 둘 다 고친 파일을 쓰지 않는다(grep 0). 그 밖 `plan_scenario_compare_test` · `plan_home_detail_test` · `planning_page_test` · `plan_scenario_list_sl1_test` · `kit/titles_test` · `tutorial_f3c6_test` · `tutorial_f3c8_test` · `widget_test` 등 전부 통과 |
+| `flutter test test/tutorial_host_f3c3_test.dart`(단독) | **+9 All passed**(2560 · 1280 한 바퀴, 1280 레이아웃 시험 포함). `logs/f3c3-alone.*` |
+| `dart format --output=show <파일>`(쓰지 않고 보기, 하나씩) | 내가 고친 줄 차이(비교 파일 부족 재화 행 · 열 머리 부제 · 버튼 줄)만 반영. 남은 차이는 기존 줄(비교 132 · 248 · 258 · 542 · 1298 · 1661 · 1863, 상세 14곳 — 사본에도 같은 차이). 새 시험 파일은 차이 0 |
+| `git diff --check -- <고친 lib 3파일>` · 바이트 검사 | 출력 없음(rc 0). 네 파일 LF · 끝 개행 하나 · 줄 끝 공백 0. `pubspec.*` 변경 없음 |
+
+### 크기별 넘침 · 자리(앱 셸 `BAPlannerApp`, 시나리오 셋 → 4열; y는 창 좌표)
+
+| 항목 | 1280×720 전 | 1280×720 후 | 1600×900 전 | 1600×900 후 | 2560×1392(전 = 후) |
+|---|---|---|---|---|---|
+| 4열 비교 넘침 예외 | **7** | **0** | **5** | **0** | 0 |
+| 비교 S1 기준 라디오 D | 약 767~807 **창 밖**(3열로 잰 A 629 + 46×3) | 618.6~648.2 | 770.9~810.9 | 같음 | 781.2~821.2 |
+| 비교 S1 안내 문구 | 781.2~925.2 **창 밖**(폭 66) | 663.0~711.0(세 줄 말줄임) | 830.9~926.9 **창 밖**(6줄) | 830.9~878.9(세 줄 말줄임) | 841.2~889.2 |
+| 비교 S1 '보는 중' 버튼 | 291.2~349.2 | 266.2~309.2 | 294.9~352.9 | 같음 | 305.2~363.2 |
+| 열 머리 '열기' · '계획에 적용…' | 버튼 줄 넘침 15 · 70(잘림) | 아이콘 28×28 · 툴팁(예: 적용 B x 631.7~659.7, y 299.2~327.2) | 넘침 17(시나리오 열) | 시나리오 열 아이콘, A 열 글자(x 471.1~542.6) | 글자 그대로(A '열기' x 746.1~817.6, B '계획에 적용…' x 1271.2~1401.5) |
+| 활성 계획 정보 줄 4번째(`plan-home-info-3`) | 691.2~727.2 **창 밖** | 643.3~675.9 | 694.9~730.9 | 같음 | 705.2~741.2 |
+| 활성 계획 정보 줄 5번째(`plan-home-info-4`) | 731.2~767.2 **창 밖** | 679.5~712.0 | 734.9~770.9 | 같음 | 745.2~781.2 |
+| 활성 계획 '페이즈 편집' | 475.2~519.2 | 448.2~487.9 | 478.9~522.9 | 같음 | 489.2~533.2 |
+
+레일 비율: 활성 계획 1280 = (524.8 − 8)/572 = **0.904**, 비교 S1(4열) 1280 = (524.8 − 8 − 49)/632 = **0.740**, 1600 · 2560 = **1**. ('1280 전' 활성 계획 값은 SL1 종료 기록 측정.)
+
+### 고친 방법(워커 재량)
+
+- **비교 표**(`plan_scenario_compare.dart`): 넓은 열의 위젯 트리는 그대로 두고, 한 줄 내용이 칸을 넘을 때만 바꾼다. 들어가는지는 `TextPainter`로 잰다(`_textWidth` — `BaChip.widthFor`와 같은 셈).
+  - 열 머리 버튼 줄(1908): 글자 버튼 + 기준 칩이 안 들어가면 **아이콘만**(28×28, `Tooltip` · `semanticLabel`은 글자, 키 그대로). 그래도 모자라면 '비교 기준' 칩을 뺀다(기준 열은 파란 머리 · S1 기준 라디오로도 보임 — 지금 크기에서는 빠지지 않음).
+  - 부제 줄(1875): 초상 수를 부제 글자(40) · stale 칩이 들어가게 줄이고 나머지는 '…+n'(넓은 열은 4).
+  - 필요 크레딧 · 끝까지 가는 학생(1324): 값 + 끝 글자만으로 칸을 넘으면(막대 폭 0) 막대를 빼고 값을 말줄임(`_barRow`).
+  - 부족 재화 행: '목록' 글자가 안 들어가면 아이콘만. 분야별 행: 아이콘을 들어가는 만큼만 두고 나머지는 '+n종 더'(넓은 열 3개 그대로).
+  - 라벨 열 머리 '비교 항목'에 말줄임.
+- **소제목 `SubHeader`**(`kit/titles.dart:177`, 키트 최소): 넘침 원인이 키트 `Row` 안 `Text`(줄일 수 없음)라서 `Flexible` + `TextOverflow.ellipsis`만 더했다. `Row`는 `MainAxisSize.min` 그대로이고 `Flexible`은 loose라 들어가면 크기 · 그림이 같다(폭 무제한 부모에서도 flex 예외 없음 — Flutter `flex.dart:1121` 조건 확인). 비교 표 라벨 열에서 '분야별 부족 · 심…'으로 말줄임된다.
+- **S1 레일**(`plan_scenario_detail.dart` 최소): `PlanDetailMenuFrame.row(…, scale:)`와 `scaleFor(contentBottom, fixed:)`(SL1 `menuScaleFor`와 같은 식 · 하한 0.68 · 아래 여백 8). `PlanDetailRailMenu`(활성 계획 · A↔B 비교 S1)는 정보 줄 끝까지, 비교 S1(`_menu`)은 안내 문구 세 줄(49, 비율 밖)까지 들어가게 세로 값(top · 버튼 높이)만 곱한다. 제목 · 캡션 칸 높이와 폭은 그대로(폭은 줄인 y에서 다시 잼). 비교 안내 문구는 `maxLines: 3` + 말줄임.
+
+### golden 변화 0 근거
+
+- 계획 golden 장면(`plan-scenario-compare` · `-compare-4` · `plan-overall` 등)은 2560×1392에서 `PlanningPage`(레일 1363)나 앱 셸(레일 1182.8)로 그린다 → 두 레일 모두 비율 1. `x * 1.0 == x`(IEEE 754 정확)라 모든 top · 높이가 전과 같고, `RailButton` 높이 인자도 전과 같은 값(44 = 기본값, 58 · 42 · 40).
+- 2560 열 머리 · 행 칸은 모든 '들어가는지' 판정이 참이라 전과 같은 위젯(글자 버튼 · 칩 · 초상 4 · 막대 · 아이콘 3)을 만든다. 더한 것은 그림 없는 `LayoutBuilder`뿐이다. `SubHeader` · '비교 항목' · 안내 문구(2560에서 정확히 세 줄)의 말줄임은 글자가 들어가면 적용되지 않는다.
+- 시험 `2560×1392: 비교 화면 · 활성 계획 레일 자리가 전과 같다`가 고치기 전 측정값(±0.1)과 글자 버튼 · 기준 칩 · 툴팁 없음을 고정한다. golden 비교는 돌리지 않았다(미실행).
+
+### 미검증("미실행")
+
+- golden 비교 · 전체 `fe_gate.ps1` · process E2E 29개(`related_process_excluded.txt`).
+- 실제 Windows 앱에서 1280×720 · 1600×900 눈으로 보기(아이콘 버튼 · 줄인 레일 간격 · 말줄임 글자).
+- stale 열('저장 시점과 다름')이 있는 4열 비교를 1280에서 그린 것(mock에 stale이 없음 — 초상 줄이기는 코드 · 계산만).
+- 시나리오 보기 S1(`PlanScenarioDetailMenu`, 정보 5줄)의 1280 자리는 재지 않았다(이 slice 범위 밖).
+
+### 발견 사항
+
+1. **SL1 목록 S1 안내 글이 1280×720에서 세 번째 시나리오 행의 비교 체크 왼쪽을 덮는다**: 안내 글 글자 상자 x 38~189 · y 663~711, 셋째 행 체크 x 173.9~203.9 · y 676.2~706.2. 체크 가운데를 누르면 안내 글 `RenderParagraph`가 받아 담기지 않는다(오른쪽 끝은 눌림). 시나리오 셋을 담는 4열 비교는 1280에서 사용자가 실패할 수 있다. SL1 파일이라 고치지 않았고, SL2 시험은 체크 오른쪽 끝을 누른다. 고칠 곳: `plan_scenario_list.dart` 안내 글 폭(줄인 y의 레일 폭) 또는 S2 행 왼쪽 끝.
+2. **1280×720 시나리오 보기(열 머리 '열기' → `PlanDetailWorkspace`) S2가 넘친다** — 페이즈 제목 줄 `plan_scenario_detail.dart:515`(넘침 14) · 단계 행 `:1407`(3 × 2). 비교 화면 밖이고 이 slice 범위(활성 계획 S1 레일만) 밖이라 두었다. 1600에서는 0. `tutorial_host_f3c3_test` 1280 한 바퀴는 이 화면을 열지 않아 통과한다.
+3. 1600×900에서도 시나리오 열 머리는 아이콘 버튼이 된다(시나리오 열 '열기' + '계획에 적용…' + 간격 = 약 208 > 칸 약 191). 글자를 원하면 버튼 문구를 줄이는 결정(예: '적용…')이 필요하다 — CF 판단.
+4. Python 실제 프로세스 시험 2개(`planning_protocol_client_test` · `tool_backend_client_process_test`)가 이 작업 트리에서 실패한다(위 표). UI 파일을 쓰지 않고 백엔드 시작 단계(종료 코드 1, 사용자 `%LOCALAPPDATA%` 이관 폴더의 격리 파일 없음)에서 멈춘다 — 작업 트리의 backend 미커밋 변경이나 로컬 상태 탓으로 보인다. 원인은 확인하지 않았다(backend · 로컬 데이터는 만지지 않음).
+5. `plan_scenario_compare.dart` · `plan_scenario_detail.dart`에 기존 `dart format` 차이가 남아 있다(파일 전체 포맷 금지라 두었다).
+6. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 작업용 목록 `debug/frontend_sl2/related_part_00~02`와 로그 `debug/frontend_sl2/logs/`를 남겼다. 측정판은 따로 파일을 만들지 않고 새 시험 파일에서 돌린 뒤 시험판으로 바꿨다(지운 파일 없음).
+
+### 검수표
+
+| artboard | 여는 방법 | 확인 포인트 |
+|---|---|---|
+| Scenario-Compare(4열) | mock 앱 창 1280×720 → 계획 탭 → 시나리오 목록 → 시나리오 셋 체크(셋째는 체크 오른쪽, 발견 1) → 나란히 비교 | 넘침 띠 없음, 열 머리 아이콘 버튼에 마우스를 올리면 '열기' · '계획에 적용…' 툴팁, 누르면 동작, S1 기준 라디오 D · 안내 문구가 창 안 |
+| Scenario-Compare | 1600×900 같은 순서 | A 열 '열기' 글자, 시나리오 열 아이콘, 안내 문구 세 줄 |
+| Plan-Home(활성 계획) | 1280×720 계획 탭 | S1 정보 줄 5개가 창 안 |
+| 기준 viewport | 최대화 | 비교 · 활성 계획 화면이 전과 같음 |
+
+### 다음 행동
+
+- CF: `debug/frontend_sl2/output.md` 검토 → (레인 워커 정지 뒤) `fe_gate.ps1` — golden 변화 0 기대, `tutorial_host_f3c3_test` 1280 GREEN 기대, Python 프로세스 시험 2개(발견 4)는 gate 환경에서 다시 확인 → F3c-8 · SL1 · SL2 한 gate 커밋(`fe_commit.ps1 -Slice sl2`, `whole`에 이 문서). 발견 1 · 2를 다음 slice로 배정할지 결정.
+
+## M3R 착수 기록 (2026-10-23, Lane B 워커)
+
+- 진행 중: **M3R — 폐지된 7메서드(Schale bulk/single preview·apply, `metadata.merge_paths.list/save/delete`)를 부르는 개발자 도구 UI · 시험 제거 + 실제 백엔드를 띄우는 시험의 사용자 폴더 격리**(근거: `backend-orchestrator-log.md` 2026-10-23 "요청(XB→CF): M3 도구 호출 제거" · 18:45 "XB 메인 전체 검증 종료·CF 짝 gate 인계" · 20:20 "요청(CF→XB, 우선): X3 시작 이관", main45 짝 라운드).
+- 시작 SHA `73b875888be662a7d7e4a1406ab6940cecf1c92e`. 이 문서 끝에 다른 M3R 착수 기록 없음.
+- 고칠 파일: `frontend/lib/developer_tools/legacy_tool_pages.dart`(Schale 판 제거), `frontend/lib/developer_tools/tool_backend_client.dart`(선택 `environment` 인자 추가 — 시험 격리용, 사용자 승인 2026-10-23: 기존 `Platform.environment`만 넘겨서 `tool_backend_client_process_test`를 격리할 길이 없음), `frontend/test/developer_tools_app_test.dart`, `frontend/test/planning_protocol_client_test.dart` · `frontend/test/tool_backend_client_process_test.dart`(격리 줄만), `almanac/architecture/developer-tools.md`(필요 최소).
+- 기존 미커밋 변경(WIP): `almanac/architecture/developer-tools.md` **있음**(+40/−22, 다른 작업), 나머지 다섯 파일 없음. 사본: `debug/frontend_m3r/pre/<v7 기준 경로>` 6개.
+- 12개 시험 분류(실제 Python 프로세스를 띄우는 것만 격리): 실제로 띄움 = `planning_protocol_client_test`('real Python process serves every P0 planning method') · `tool_backend_client_process_test`. 나머지 10개는 가짜 `BackendProcessHandle` 또는 부르지 않는 `ToolBackendClient(backendDirectory: 'C:/not-used')`만 쓴다 — 바꾸지 않음.
+- 격리 변수: `BA_PLANNER_USER_DIR`(prompt 1순위). `BA_PLANNER_STORAGE_ROOT`만 주면 `runtime_paths.py`의 자산 · 추출 인식 자산 · 합성 캐시 경로가 여전히 `%LOCALAPPDATA%\BA Planner\v7\…`를 가리키므로(읽기만 확인) USER_DIR가 더 넓게 막는다.
+- 실제 `%LOCALAPPDATA%\BA Planner` 시작 전 목록(읽기만): `debug/frontend_m3r/logs/localappdata_before.txt` — `.v7-migration-*` 0 · `v7` 0 · `.v7-migration.guard`(2026-10-20 23:56) 있음.
+- 손대지 않음: Lane A F3c-9 파일(`lib/services/mock_tutorial_practice.dart` · `mock_app_service.dart` · `lib/ui/tutorial/**` · 튜토리얼 시험), backend/** · contracts/** · frontend/tool/** · frontend/windows/**, golden harness · 기준 이미지, pubspec.
+
+## M3R 종료 기록 (2026-10-23, Lane B 워커)
+
+- 상태: **완료(COMPLETED)** — 폐지 7메서드 프론트 호출 0, 실제 Python을 띄우는 시험 2개 격리. 커밋 없음(git 쓰기 안 함). 인계: `debug/frontend_m3r/output.md`, `debug/frontend_m3r/commit.json`.
+- 사용자 결정(2026-10-23, 이 세션): `ToolBackendClient`에 선택 `environment` 인자를 더한다(기본 빈 맵 → 앱 동작 같음). 이것 없이는 `tool_backend_client_process_test`를 격리할 수 없었다(`Platform.environment`만 넘김).
+
+### 실행한 명령과 결과
+
+| 명령(`frontend`에서) | 결과 | 로그 |
+|---|---|---|
+| `flutter analyze` | No issues found (info 포함 0) | `debug/frontend_m3r/logs/analyze.txt` |
+| `flutter test test/developer_tools_app_test.dart test/metadata_manager_dto_test.dart test/metadata_manager_page_test.dart` | +35 All tests passed | `logs/test_devtools.txt` |
+| `flutter test test/tool_backend_client_process_test.dart test/planning_protocol_client_test.dart`(실제 Python 2개 포함) | +25 All tests passed | `logs/test_process.txt` |
+| `flutter test` 나머지 격리 대상 8파일(asset_preparation_protocol_client · diagnostics_service · scanner_pause_fb10a · scanner_protocol_client · scanner_target_metadata_fb4 · student_calculation_service · tactical_fb6_dart · tactical_fb7_dart) | +111 All tests passed | `logs/test_other8.txt` |
+| `dart format --output=show <파일>`(고친 5개, 하나씩 · 쓰지 않음) → 내 줄 1곳만 손으로 맞춤 | 차이 0 | — |
+| `git diff --check`(고친 경로) | exit 0 | — |
+| `%LOCALAPPDATA%\BA Planner` 목록(읽기만) 시험 전 · 2파일 뒤 · 8파일 뒤 | 세 목록 같음, `.v7-migration-*` 0, `v7` 0 | `logs/localappdata_before.txt` · `_after.txt` · `_after2.txt` |
+| 시스템 임시 폴더 `ba_planner_m3r_*` 남은 것 | 0(시험이 지움) | — |
+
+### 제거 표
+
+| 메서드(wire) | 지운 UI · 함수 · 상태 | 지운 시험 · 가짜 응답 |
+|---|---|---|
+| `metadata.schaledb.preview` | `_loadSchalePreview`, `_bulkSchaleSyncPane`(학생별 선호 · 선물 카탈로그 · 매칭 누락 내부 탭, '미리보기 불러오기'), `_schaleStudentCard` · `_giftCard` · `_giftAffinityStrip` · `_filteredSchaleStudents`, `syncSearch`, `schaleStudents` · `schaleGifts` · `missingSchaleStudents` · `changedSchaleStudents` | 'metadata SchaleDB preview compares students and gifts visually', 가짜 응답 |
+| `metadata.schaledb.apply` | `_applySchalePreview`(확인 대화), 적용 버튼, `syncMessage` | (기존 시험 · 가짜 없음) |
+| `metadata.schaledb.single.preview` | `_loadSingleSchalePreview` · `_useSelectedForSingleImport` · `_loadSinglePreviewIntoEditor`, `_singleSchalePane`, `singleSchaleSource` · `singleSchaleStudentId`(+dispose), `singleSchalePreview` · `singleSchaleMessage` | 'single SchaleDB import previews minimal fields and gift results', 가짜 응답 |
+| `metadata.schaledb.single.apply` | `_applySingleSchalePreview`(확인 대화), 저장 버튼 | 가짜 응답 |
+| `metadata.merge_paths.list` | `_loadMergePaths` · `_selectMergeRule`, `_mergePathsPane`, `mergePathRules` · `selectedMergeRuleId` | 'SchaleDB merge paths show the primary and secondary slugs', 가짜 응답, 가짜의 `mergePaths` 필드 |
+| `metadata.merge_paths.save` | `_saveMergePaths` · `_useSelectedForMergeRule`, `mergeStudentId` · `mergePaths`(+dispose), '규칙 저장', `mergePathMessage` | 가짜 응답(같은 시험) |
+| `metadata.merge_paths.delete` | `_deleteMergePaths`(확인 대화), 삭제 버튼 | 가짜 응답 |
+| 공통 | 겉 세그먼트 'SchaleDB 가져오기'(값 1) · `_schaleSyncPane` · `schaleMode`. 남은 세그먼트 값 다시 매김: 보유 메타데이터 0 · 메타데이터 진단 2→1 · 아이템 통계 3→2(지연 로딩 조건도 같이) | 대체 시험 'metadata editor switches between its three surfaces'(세그먼트 값 [0,1,2], 'SchaleDB' 글자 0, 진단 → 통계 → 보유 전환, 부른 메서드 집합 = list · debug.list · debug.get · items.analyze) |
+
+- `legacy_tool_pages.dart` 3069 → 1885줄, `developer_tools_app_test.dart` 650 → 433줄.
+
+### 격리(항목 5)
+
+- 12개 중 실제 Python을 띄우는 시험은 2개였다: `planning_protocol_client_test` 'real Python process serves every P0 planning method through AppService'(`BackendProcessConfig.resolve(environment: {'BA_PLANNER_USER_DIR': …})`) · `tool_backend_client_process_test`(`ToolBackendClient(environment: …)`). 둘 다 시험마다 `Directory.systemTemp.createTemp('ba_planner_m3r_…')`를 만들고 `finally`에서 지운다.
+- 나머지 10개는 가짜 `BackendProcessHandle`(`_FakeProcess` · `FakeBackendProcess` 등)이나 부르지 않는 `ToolBackendClient(backendDirectory: 'C:/not-used')`만 쓴다. 바꾸지 않았다.
+- `BA_PLANNER_USER_DIR`를 고른 이유: `ensure_default_user_root`는 둘 중 하나만 있어도 이관을 건너뛴다. 하지만 `runtime_paths.py`에서 STORAGE_ROOT는 저장소만 옮기고, 자산 · 추출 인식 자산 · 합성 캐시는 USER_DIR가 있어야 옮겨진다.
+- grep(`startBackendProcess|IoBackendProcessHandle|ToolBackendClient\(|Process\.start` 시험 33파일): 격리 변수 0개인 파일은 `developer_tools_app_test` · `metadata_manager_page_test`(둘 다 `C:/not-used` 더미, 호출 없음)뿐이다.
+
+### 유지한 것
+
+- 일반 `metadata.list` · `get` · `save` · `delete` · `forms.get/save` · `server.set` · `debug.list/get` · `items.analyze` · `source.view` · `steam_bundle_revision`(M2 메타데이터 관리자 쪽, 이 slice는 손대지 않음). lib에 남은 `metadata.*` 호출은 이 12개뿐이다.
+- 숫자 `schaledb_id` 호환 필드: `lib/services/mock_app_service.dart` · `lib/ui/scan/review/*` · `lib/ui/widgets/scan_student_review_workspace.dart` · `test/scan_page_test.dart` · `test/scan_student_review_logic_test.dart` 그대로(스캐너 · Lane A 파일, 손대지 않음). 편집기 필드 목록은 백엔드가 주는 대로라 `schaledb_id` 편집 칸도 그대로다.
+- `_portrait` · `_SummaryBadge`(진단 화면이 씀), `GameImage` import.
+
+### grep 0 근거
+
+- `grep -rnE "metadata\.schaledb|schaledb\.(preview|apply|single)|merge_paths|mergePath|MergePath|_loadSchale|SchaleSync|singleSchale" lib test` → 0줄(exit 1). `lib/developer_tools` · `developer_tools_app_test`의 `schale`(대소문자 무시)는 대체 시험의 `find.textContaining('SchaleDB'), findsNothing` 1줄뿐이다. 근거 `debug/frontend_m3r/logs/grep_removed.txt`.
+
+### golden 변화 0 근거
+
+- golden harness(`test/goldens/*_golden_test.dart`)에 `DeveloperToolApp` · `developer_tools` · `MetadataEditorPage` 참조 0(grep). 개발자 도구는 `lib/main.dart` closure 밖이다(developer-tools.md). 앱 화면 파일은 고치지 않았다. golden 비교는 돌리지 않았다(미실행).
+
+### 문서
+
+- `almanac/architecture/developer-tools.md`: XB 문장 "Their obsolete Flutter controls must be removed by the paired CF slice"를 "the paired CF slice (M3R) removed … three segments"로 바꿨다. 서버 상태 문단의 "or SchaleDB import"를 지웠다. 지워진 `core/schale_merge_paths.py` · `metadata.merge_paths.*`를 설명하던 병합 경로 문단(7줄)도 지웠다.
+
+### 미검증("미실행")
+
+- 전체 `fe_gate.ps1`(golden 비교 · process E2E 29개 · almanac validate 포함), 실제 개발자 도구 창 실행 — CF 같은-소스 gate(XB main45).
+- Python 시험(XB 몫), 실제 사용자 데이터 이관 경로 자체(XB 20:20 요청 ①~④).
+
+### 발견 사항
+
+1. **`developer-tools.md` 커밋 순서**: 이 문서는 XB main45의 관련 Almanac 3페이지 중 하나다(`debug/xb_resume_20261023/artifacts/final-check.index`에 경로 있음, 아직 미커밋). M3R이 고친 81~83줄은 XB 미커밋 줄이다. XB가 사본 bytes(`debug/frontend_m3r/pre/almanac/architecture/developer-tools.md`, SHA `c214d382…`)로 먼저 커밋하면 CF `fe_commit` 3-way가 깨끗하다. 순서가 반대면 충돌한다. XB의 exact-SHA 검사에서는 이 문서가 drift로 보일 수 있다 — CF가 XB와 조율.
+2. **기존 격리 29파일은 `BA_PLANNER_STORAGE_ROOT`만 준다**: 이관은 건너뛰지만, 자산(`…\BA Planner\v7\assets\current`) · 추출 인식 자산(`…\v7\recognition-assets`, `BA_PLANNER_EXTRACTED_ASSET_DIR`를 주지 않는 시험) · 합성 캐시 경로는 여전히 실제 `%LOCALAPPDATA%` 아래를 가리킨다. 지금은 실제 `v7` 폴더가 없어 꾸린 데이터로 떨어진다. 하지만 X3 이관 뒤(사용자 PC에 `v7`이 생긴 뒤)에는 시험이 실제 사용자 자산을 읽을(쓰기 경로라면 쓸) 수 있다. 이 slice 범위(12파일) 밖이라 두었다 — USER_DIR로 옮길지 CF 판단.
+3. XB 목록과 코드는 같았다(7메서드, 더 많은 호출 · 다른 이름 없음). `lib/services/**`에는 폐지 메서드 호출이 0이었다.
+4. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 지운 파일 없음.
+
+### 다음 행동
+
+- CF: `debug/frontend_m3r/output.md` 검토. XB ①(긴 경로) 반영 · SHA 게시 뒤, 레인 워커가 멈추면 같은-소스 `fe_gate.ps1`을 돌린다(golden 변화 0, `tool_backend_client_process_test` · `planning_protocol_client_test` GREEN, gate 전후 `%LOCALAPPDATA%\BA Planner` 목록 같음 기대). 그다음 XB 소스 커밋(발견 1 순서) → `fe_commit.ps1 -Slice m3r`(whole = 이 문서).
+
+## SU1 착수 기록 (2026-10-24, Lane B 워커)
+
+- 진행 중: **SU1 — 새 전역 시작 오류 `user_data_migration_failed`를 받아들이고 사용자에게 보여 준다**(근거: `contracts/startup-user-data-v1.md` · `.schema.json`, `backend-orchestrator-log.md` 2026-10-23 "Dart 사전 알림(XB): X3 시작 실패 응답 설계" · 22:43 "XB X3 최종 검증·CF 인계", XB 짝 라운드 X3 · M3 main 제품 53경로 미커밋).
+- 시작 SHA `f60f2ceb6ebc44cf5ca777d31aafaae8789861cd`. 이 문서 끝에 다른 SU1 착수 기록 없음.
+- 고칠 파일(이유):
+  - `frontend/lib/services/planning_protocol_client.dart` — 전역 오류를 method별 허용 목록보다 먼저 strict 해독, 받으면 시작 차단 상태를 잡아 두고 `start()`(재연결 · 재시작)가 새 프로세스를 띄우지 않게 한다.
+  - `frontend/lib/services/app_service.dart` — `AppServiceState`에 선택 필드 `userDataMigrationFailure`(기본 null → Mock · 기존 생성자 변화 0).
+  - `frontend/lib/services/process_app_service.dart` — client의 시작 차단 상태를 `AppServiceState`로 옮긴다(리스너 붙이기 · 떼기).
+  - `frontend/lib/ui/widgets/empty_backend_overlay.dart` — 이 상태 전용 문구 · "앱 다시 시작 필요" 안내 · 머리글 칩 문구.
+  - `frontend/lib/ui/app_shell.dart` — 덮개를 바로 켜고(대기 시간 없음) 풀지 않음, 복구 배너 숨김, 칩(최소 diff).
+  - `frontend/lib/ui/pages/settings_page.dart` — 설정 "Backend 연결" 판 상태 줄 · 재연결/재시작 버튼 끔(최소).
+  - `frontend/test/planning_protocol_client_test.dart` — 전역 오류 해독 시험 추가(M3R 반영 상태 위).
+  - 새 파일: `frontend/lib/services/startup_user_data.dart`(계약 reason enum · strict 해독 · 상태 값 — client · state · UI가 함께 쓴다), `frontend/test/startup_user_data_su1_test.dart`.
+- 파일별 기존 미커밋 변경(WIP): `frontend/test/planning_protocol_client_test.dart` **있음 — M3R 반영(+5, 미커밋)**. 나머지 여섯 파일 없음(HEAD와 같음). 사본: `debug/frontend_su1/pre/<v7 기준 경로>` 7개(지금 작업 트리에서 뜸).
+- 줄바꿈: `planning_protocol_client.dart`는 CRLF 1080 + LF 18줄 섞임(HEAD 그대로) — 기존 줄 유지, 새 줄은 CRLF. `process_app_service.dart` · `settings_page.dart` · `planning_protocol_client_test.dart` CRLF, `app_service.dart` · `empty_backend_overlay.dart` · `app_shell.dart` LF.
+- 실제 `%LOCALAPPDATA%\BA Planner` 시작 전 목록(읽기만): `debug/frontend_su1/logs/localappdata_before.txt` — `v7` 0 · `.v7-migration-*` 0 · `.v7-migration.guard`(2026-10-20 23:56).
+- 손대지 않음: Lane A F3c-9 파일(`lib/services/mock_tutorial_practice.dart` · `mock_app_service.dart` · `lib/ui/tutorial/**` · 튜토리얼 시험), M3R의 다른 파일, backend/** · contracts/** · frontend/tool/** · frontend/windows/**, lib/ui/kit/**, golden harness · 기준 이미지, pubspec.

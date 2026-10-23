@@ -20,6 +20,7 @@
 // 서비스는 이미 있는 `duplicateScenario`·`updateScenario`·`deleteScenario`를 쓴다(이름·설명은 `getScenario`로 문서를
 // 읽어 그대로 보내고 authoring은 생략해 보존한다). 바뀌면 목록을 다시 읽는다.
 // 좌표는 시안(기준 viewport, 섹션 위 y=209.2)의 값이고, 섹션 rect는 Studio 문서를 따른다.
+// S1 레일이 안내 글까지 담기에 낮으면(1280×720) 세로 값만 같은 비율로 줄인다(SL1, F3c-6 발견 2).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -122,6 +123,20 @@ abstract final class PlanScenarioListMetrics {
   /// "나란히 비교" 버튼 안 칸이 이보다 좁으면 아이콘만 둔다(아이콘 18 + 간격 8 · 8 + "n개" 약 24 + 말줄임 자리).
   static const compareRunLabelMinWidth = 72.0;
   static const compareNoteTop = 634.0;
+
+  /// 안내 글 자리(좁은 레일의 세 줄 11.5 × 1.4 × 3)와 그 아래 레일 여백.
+  static const compareNoteAllowance = 49.0;
+  static const menuBottomInset = 8.0;
+
+  /// 비교 칸 글자 두 줄(약 29)이 들어가는 가장 작은 비율.
+  static const menuMinScale = 0.68;
+
+  /// SL1: 레일이 낮으면(1280×720 등) 세로 값(자리 · 버튼 높이)만 같은 비율로 줄인다(계획 만들기 레일과 같은 관례).
+  /// 안내 글까지 들어가면 1이다(기준 viewport · 1600×900은 그대로).
+  static double menuScaleFor(double railHeight) =>
+      ((railHeight - compareNoteAllowance - menuBottomInset) / compareNoteTop)
+          .clamp(menuMinScale, 1.0)
+          .toDouble();
 
   // S2 목록.
   static const titleTop = 18.0;
@@ -940,6 +955,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     final top = points.first.dy;
     final topRight = points[1];
     final bottomRight = points[2];
+    final scale = PlanScenarioListMetrics.menuScaleFor(bottomRight.dy - top);
     double width(double y) => math.max(
       0.0,
       _edgeX(topRight, bottomRight, y) -
@@ -948,9 +964,9 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     );
     Rect row(double offset, double height) => Rect.fromLTWH(
       PlanScenarioListMetrics.menuLeft,
-      top + offset,
-      width(top + offset),
-      height,
+      top + offset * scale,
+      width(top + offset * scale),
+      height * scale,
     );
     final result = _result;
     final enabled = widget.active && !_busy;
@@ -976,7 +992,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       ),
       Positioned(
         left: 20,
-        top: top + PlanScenarioListMetrics.menuTitleTop,
+        top: top + PlanScenarioListMetrics.menuTitleTop * scale,
         width: math.max(0.0, width(top) - 6),
         height: 32,
         child: Align(
@@ -990,7 +1006,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       ),
       Positioned(
         left: 20,
-        top: top + PlanScenarioListMetrics.menuCaptionTop,
+        top: top + PlanScenarioListMetrics.menuCaptionTop * scale,
         height: 18,
         width: math.max(0.0, width(top) - 6),
         child: const Text('보는 중', maxLines: 1, style: _captionStyle),
@@ -1003,7 +1019,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         child: RailButton(
           key: const ValueKey('plan-scenario-menu-current'),
           variant: RailButtonVariant.selectedPink,
-          height: PlanScenarioListMetrics.menuCurrentHeight,
+          height: PlanScenarioListMetrics.menuCurrentHeight * scale,
           semanticLabel: '시나리오 목록 다시 읽기',
           onPressed: enabled ? _load : null,
           child: Row(
@@ -1085,6 +1101,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
           child: RailButton(
             key: ValueKey(key),
             variant: variant,
+            height: PlanScenarioListMetrics.menuButtonHeight * scale,
             onPressed: enabled ? onPressed : null,
             child: Row(
               children: [
@@ -1111,7 +1128,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     children.add(
       Positioned(
         left: 20,
-        top: top + PlanScenarioListMetrics.compareCaptionTop,
+        top: top + PlanScenarioListMetrics.compareCaptionTop * scale,
         width: math.max(0.0, width(top) - 6),
         height: 20,
         child: Row(
@@ -1142,6 +1159,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       if (slot == 0) {
         child = _CompareSlotButton(
           key: const ValueKey('plan-scenario-compare-slot-0'),
+          height: rect.height,
           letter: letter,
           name: '활성 계획',
           caption: '기준 · 뺄 수 없습니다',
@@ -1153,6 +1171,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
         final scenario = scenariosById[id];
         child = _CompareSlotButton(
           key: ValueKey('plan-scenario-compare-slot-$slot'),
+          height: rect.height,
           letter: letter,
           name: scenario?.name ?? id,
           studentId: scenario?.studentIds.firstOrNull,
@@ -1164,6 +1183,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
       } else {
         child = _EmptyCompareSlot(
           key: ValueKey('plan-scenario-compare-slot-$slot'),
+          height: rect.height,
           letter: letter,
         );
       }
@@ -1176,7 +1196,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     final runButton = RailButton(
       key: const ValueKey('plan-scenario-compare-run'),
       variant: RailButtonVariant.tri,
-      height: PlanScenarioListMetrics.compareRunHeight,
+      height: PlanScenarioListMetrics.compareRunHeight * scale,
       onPressed: canCompare ? _runCompare : null,
       // 기준 viewport에서는 다 들어간다. 좁은 창(1280×720 등)에서는 "나란히 비교"를 말줄임하고, 글자 칸이 없으면
       // 아이콘만 둔다(tidy1, FE5-f1 발견 1).
@@ -1227,7 +1247,7 @@ class _PlanScenarioListSectionState extends State<PlanScenarioListSection> {
     children.add(
       Positioned(
         left: 22,
-        top: top + PlanScenarioListMetrics.compareNoteTop,
+        top: top + PlanScenarioListMetrics.compareNoteTop * scale,
         width: math.min(218.0, math.max(0.0, width(top) - 8)),
         child: const Text(
           '최대 4개까지 · 둘만 담으면 A↔B 상세 비교로 열립니다',
@@ -2012,6 +2032,7 @@ class _CompareSlotButton extends StatelessWidget {
     required this.letter,
     required this.name,
     required this.letterColor,
+    this.height = PlanScenarioListMetrics.compareSlotHeight,
     this.caption,
     this.studentId,
     this.removable = false,
@@ -2019,6 +2040,8 @@ class _CompareSlotButton extends StatelessWidget {
     this.onRemove,
   });
 
+  /// 칸 높이(SL1: 낮은 레일에서는 줄어든다).
+  final double height;
   final String letter;
   final String name;
   final String? caption;
@@ -2037,6 +2060,7 @@ class _CompareSlotButton extends StatelessWidget {
     final caption = this.caption;
     return RailButton(
       variant: RailButtonVariant.ghost,
+      height: height,
       semanticLabel: removable ? '$name 비교에서 빼기' : name,
       // A는 뺄 수 없다(눌러도 아무 일이 없다). B~D는 칸 전체가 빼기 버튼이다(오른쪽 × 표시).
       onPressed: removable ? onRemove : _noop,
@@ -2105,9 +2129,16 @@ void _noop() {}
 
 /// 빈 비교 슬롯(시안 투명 바탕 + "목록에서 체크해서 담기").
 class _EmptyCompareSlot extends StatelessWidget {
-  const _EmptyCompareSlot({super.key, required this.letter});
+  const _EmptyCompareSlot({
+    super.key,
+    required this.letter,
+    this.height = PlanScenarioListMetrics.compareSlotHeight,
+  });
 
   final String letter;
+
+  /// 칸 높이(SL1: 낮은 레일에서는 줄어든다).
+  final double height;
 
   @override
   Widget build(BuildContext context) => ClipPath(
@@ -2119,9 +2150,7 @@ class _EmptyCompareSlot extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(
           left: 16,
-          right:
-              diagonalCutDepth(PlanScenarioListMetrics.compareSlotHeight) +
-              12,
+          right: diagonalCutDepth(height) + 12,
         ),
         child: Row(
           children: [
