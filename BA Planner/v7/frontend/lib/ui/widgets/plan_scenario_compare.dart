@@ -78,6 +78,10 @@ abstract final class PlanCompareMetrics {
   /// 안내 문구: 마지막 라디오 아래 20(시안 781 + 40 + 20 = 841).
   static const menuNoteGap = 20.0;
 
+  /// SL2: 안내 문구 자리(세 줄 11.5 × 1.4 × 3). 레일이 이것까지 담기에 낮으면 세로 값을 줄인다.
+  static const menuNoteAllowance = 49.0;
+  static const menuNoteMaxLines = 3;
+
   // 표.
   static const headerTop = 16.0;
   static const headerHeight = 128.0;
@@ -148,6 +152,12 @@ const _muted = TextStyle(
   color: AppColors.textMuted,
 );
 
+/// "목록" · "+n종 더" 링크 글자.
+final _linkStyle = _muted.copyWith(
+  fontWeight: AppType.bold,
+  color: AppColors.textSecondary,
+);
+
 const _labelTitle = TextStyle(
   fontFamily: AppFonts.body,
   fontFamilyFallback: AppFonts.fallback,
@@ -165,6 +175,44 @@ TextStyle _value(double size, {Color color = AppColors.text}) => TextStyle(
   fontWeight: FontWeight.w800,
   color: color,
 );
+
+/// SL2: [text]를 [style]로 한 줄에 그린 폭(올림 + 1, [BaChip.widthFor]와 같은 셈). 좁은 열(1280×720 · 1600×900)에서
+/// 한 줄 내용이 들어가는지 잴 때 쓴다.
+double _textWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: DefaultTextStyle.of(context).style.merge(style),
+    ),
+    maxLines: 1,
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final width = painter.width.ceilToDouble() + 1;
+  painter.dispose();
+  return width;
+}
+
+/// [TonalButton] 글자(본문 · 굵기 semiBold).
+TextStyle _tonalLabelStyle(double fontSize) => TextStyle(
+  fontFamily: AppFonts.body,
+  fontFamilyFallback: AppFonts.fallback,
+  fontSize: fontSize,
+  height: 1.2,
+  fontWeight: AppType.semiBold,
+);
+
+/// 앞 아이콘(16 + 간격 8)이 있는 [TonalButton] 폭.
+double _tonalWidth(
+  BuildContext context,
+  String label, {
+  required double horizontalPadding,
+  required double fontSize,
+  bool icon = true,
+}) =>
+    horizontalPadding * 2 +
+    (icon ? 16 + 8 : 0) +
+    _textWidth(context, label, _tonalLabelStyle(fontSize));
 
 /// 두 점을 잇는 변 위 [y]에서의 x.
 double _edgeX(Offset top, Offset bottom, double y) {
@@ -603,6 +651,16 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
         ? '기준을 바꾸는 중입니다'
         : '기준 ${planCompareLetters[math.max(0, baseIndex)]} · ${base?.name ?? '활성 계획'}';
     final enabled = widget.active;
+    final noteTop =
+        PlanCompareMetrics.menuBaseTop +
+        PlanCompareMetrics.menuBasePitch * (math.max(1, targets.length) - 1) +
+        PlanCompareMetrics.menuBaseHeight +
+        PlanCompareMetrics.menuNoteGap;
+    // SL2: 1280×720에서는 기준 라디오 D와 안내 문구가 창 밖이었다 — 안내 문구 세 줄까지 레일에 들어가게 세로 값만 줄인다.
+    final scale = frame.scaleFor(
+      noteTop,
+      fixed: PlanCompareMetrics.menuNoteAllowance,
+    );
     Widget toggle({
       required String key,
       required int index,
@@ -613,11 +671,12 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
       rect: frame.row(
         PlanCompareMetrics.menuToggleTops[index],
         PlanCompareMetrics.menuToggleHeight,
+        scale: scale,
       ),
       child: RailButton(
         key: ValueKey(key),
         variant: RailButtonVariant.ghost,
-        height: PlanCompareMetrics.menuToggleHeight,
+        height: PlanCompareMetrics.menuToggleHeight * scale,
         semanticLabel: '$label ${value ? '켜짐' : '꺼짐'}',
         onPressed: enabled ? onPressed : null,
         child: Row(
@@ -647,17 +706,12 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
       ),
     );
 
-    final noteTop =
-        PlanCompareMetrics.menuBaseTop +
-        PlanCompareMetrics.menuBasePitch * (math.max(1, targets.length) - 1) +
-        PlanCompareMetrics.menuBaseHeight +
-        PlanCompareMetrics.menuNoteGap;
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Positioned(
           left: 20,
-          top: top + PlanCompareMetrics.menuTitleTop,
+          top: top + PlanCompareMetrics.menuTitleTop * scale,
           width: math.max(0.0, frame.width(top) - 6),
           height: 32,
           child: Align(
@@ -671,7 +725,7 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
         ),
         Positioned(
           left: 20,
-          top: top + PlanCompareMetrics.menuCaptionTop,
+          top: top + PlanCompareMetrics.menuCaptionTop * scale,
           height: 18,
           width: math.max(0.0, frame.width(top) - 6),
           child: const Text('보는 중', maxLines: 1, style: _captionStyle),
@@ -680,11 +734,12 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
           rect: frame.row(
             PlanCompareMetrics.menuCurrentTop,
             PlanCompareMetrics.menuCurrentHeight,
+            scale: scale,
           ),
           child: RailButton(
             key: const ValueKey('plan-compare-current'),
             variant: RailButtonVariant.selectedPink,
-            height: PlanCompareMetrics.menuCurrentHeight,
+            height: PlanCompareMetrics.menuCurrentHeight * scale,
             semanticLabel: '맨 위로',
             onPressed: _scrollToTop,
             child: Column(
@@ -721,10 +776,12 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
           rect: frame.row(
             PlanCompareMetrics.menuBackTop,
             PlanCompareMetrics.menuBackHeight,
+            scale: scale,
           ),
           child: RailButton(
             key: const ValueKey('plan-compare-back-to-list'),
             variant: RailButtonVariant.ghost,
+            height: PlanCompareMetrics.menuBackHeight * scale,
             onPressed: enabled ? widget.onBackToList : null,
             child: const Row(
               children: [
@@ -744,7 +801,7 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
         ),
         Positioned(
           left: 20,
-          top: top + PlanCompareMetrics.menuViewCaptionTop,
+          top: top + PlanCompareMetrics.menuViewCaptionTop * scale,
           height: 18,
           width: math.max(0.0, frame.width(top) - 6),
           child: const Text('보기', maxLines: 1, style: _captionStyle),
@@ -772,7 +829,7 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
         ),
         Positioned(
           left: 20,
-          top: top + PlanCompareMetrics.menuBaseCaptionTop,
+          top: top + PlanCompareMetrics.menuBaseCaptionTop * scale,
           height: 18,
           width: math.max(0.0, frame.width(top) - 6),
           child: const Text('기준 계획', maxLines: 1, style: _captionStyle),
@@ -783,22 +840,29 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
               PlanCompareMetrics.menuBaseTop +
                   PlanCompareMetrics.menuBasePitch * index,
               PlanCompareMetrics.menuBaseHeight,
+              scale: scale,
             ),
             child: _BaseRadio(
               key: ValueKey('plan-compare-base-${planCompareLetters[index]}'),
               letter: planCompareLetters[index],
               name: target.name,
               selected: target.id == _baseId,
+              height: PlanCompareMetrics.menuBaseHeight * scale,
               onPressed: enabled ? () => _selectBase(target.id) : null,
             ),
           ),
         Positioned(
           left: 22,
-          top: top + noteTop,
-          width: math.min(219.0, math.max(0.0, frame.width(top + noteTop))),
+          top: top + noteTop * scale,
+          width: math.min(
+            219.0,
+            math.max(0.0, frame.width(top + noteTop * scale)),
+          ),
           child: const Text(
             '두 개만 남기면 A↔B 상세 비교(학생 목표 · 재화 · 병목 탭)로 바뀝니다',
             key: ValueKey('plan-compare-note'),
+            maxLines: PlanCompareMetrics.menuNoteMaxLines,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: AppFonts.body,
               fontFamilyFallback: AppFonts.fallback,
@@ -1251,33 +1315,33 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
           style: _value(size ?? AppType.panelTitleSize, color: color),
         );
 
+    // SL2: 기준 대비 글자 폭(굵기는 가장 넓은 w800으로 잰다).
+    String? deltaText(PlanScenarioDelta? delta) =>
+        _showDelta && delta != null ? delta.label : null;
+    final deltaStyle = _value(AppType.captionSize);
+    final finishingPercent = switch (column.finishingRatio) {
+      final ratio? => '${(ratio * 100).floor()}%',
+      null => '—',
+    };
+
     final Widget content = switch (row) {
-      PlanCompareMetricRow(metric: PlanCompareMetric.credits) => Row(
-        children: [
-          value(
-            switch (column.credits) {
-              final credits? => planScenarioCredits(credits),
-              null => '—',
-            },
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SkewBar(
-              fraction: switch (column.credits) {
-                final credits? when maxCredits > 0 => credits / maxCredits,
-                int() => 0.0,
-                null => null,
-              },
-              height: 6,
-            ),
-          ),
-          const SizedBox(width: 12),
-          delta(column.creditsDelta),
-        ],
+      PlanCompareMetricRow(metric: PlanCompareMetric.credits) => _barRow(
+        value: value(switch (column.credits) {
+          final credits? => planScenarioCredits(credits),
+          null => '—',
+        }),
+        fraction: switch (column.credits) {
+          final credits? when maxCredits > 0 => credits / maxCredits,
+          int() => 0.0,
+          null => null,
+        },
+        trailing: delta(column.creditsDelta),
+        trailingText: deltaText(column.creditsDelta),
+        trailingStyle: deltaStyle,
       ),
-      PlanCompareMetricRow(metric: PlanCompareMetric.shortage) => Row(
-        children: [
-          value(
+      PlanCompareMetricRow(metric: PlanCompareMetric.shortage) => LayoutBuilder(
+        builder: (context, box) {
+          final kinds = value(
             switch (column.shortageKinds) {
               final kinds? => '$kinds종',
               null => '—',
@@ -1285,19 +1349,38 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
             color: (column.shortageKinds ?? 0) > 0
                 ? AppColors.accent
                 : AppColors.text,
-          ),
-          const SizedBox(width: 10),
-          if (column.shortages.isNotEmpty)
-            _shortageFlyout(
-              key: ValueKey('plan-compare-shortages-$id'),
-              column: column,
-              title: '부족 재화 ${column.shortages.length}종',
-              groups: column.shortageGroups,
-              child: const _LinkLabel(icon: Icons.list_rounded, label: '목록'),
-            ),
-          const Spacer(),
-          delta(column.shortageDelta),
-        ],
+          );
+          final trailing = deltaText(column.shortageDelta);
+          // SL2: 좁은 열에서 "목록" 글자까지 들어가지 않으면 아이콘만 둔다.
+          final compact =
+              _textWidth(context, kinds.data ?? '', kinds.style!) +
+                  10 +
+                  (column.shortages.isEmpty
+                      ? 0
+                      : 14 + 3 + _textWidth(context, '목록', _linkStyle)) +
+                  (trailing == null
+                      ? 0
+                      : _textWidth(context, trailing, deltaStyle)) >
+              box.maxWidth;
+          return Row(
+            children: [
+              if (compact) Flexible(child: kinds) else kinds,
+              SizedBox(width: compact ? 6 : 10),
+              if (column.shortages.isNotEmpty)
+                _shortageFlyout(
+                  key: ValueKey('plan-compare-shortages-$id'),
+                  column: column,
+                  title: '부족 재화 ${column.shortages.length}종',
+                  groups: column.shortageGroups,
+                  child: compact
+                      ? const _LinkLabel(icon: Icons.list_rounded, label: '')
+                      : const _LinkLabel(icon: Icons.list_rounded, label: '목록'),
+                ),
+              const Spacer(),
+              delta(column.shortageDelta),
+            ],
+          );
+        },
       ),
       PlanCompareMetricRow(metric: PlanCompareMetric.bottleneck) => Row(
         children: [
@@ -1321,24 +1404,15 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
             ),
         ],
       ),
-      PlanCompareMetricRow(metric: PlanCompareMetric.finishing) => Row(
-        children: [
-          value(switch ((column.finishing, column.studentTotal)) {
-            (final finishing?, final total?) => '$finishing / $total',
-            _ => '—',
-          }),
-          const SizedBox(width: 12),
-          Expanded(child: SkewBar(fraction: column.finishingRatio, height: 6)),
-          const SizedBox(width: 12),
-          Text(
-            switch (column.finishingRatio) {
-              final ratio? => '${(ratio * 100).floor()}%',
-              null => '—',
-            },
-            maxLines: 1,
-            style: _muted,
-          ),
-        ],
+      PlanCompareMetricRow(metric: PlanCompareMetric.finishing) => _barRow(
+        value: value(switch ((column.finishing, column.studentTotal)) {
+          (final finishing?, final total?) => '$finishing / $total',
+          _ => '—',
+        }),
+        fraction: column.finishingRatio,
+        trailing: Text(finishingPercent, maxLines: 1, style: _muted),
+        trailingText: finishingPercent,
+        trailingStyle: _muted,
       ),
       PlanCompareMetricRow(metric: PlanCompareMetric.scale) => Align(
         alignment: Alignment.centerLeft,
@@ -1376,7 +1450,55 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
     );
   }
 
+  /// 값 · 막대 · 끝 글자 한 줄(필요 크레딧 · 끝까지 가는 학생). SL2: 좁은 열(1280×720)에서 값과 끝 글자만으로도 칸을 넘으면
+  /// (막대 폭 0) 막대를 빼고 값을 말줄임한다. 들어가면 시안 그대로다.
+  Widget _barRow({
+    required Text value,
+    required double? fraction,
+    required Widget trailing,
+    required String? trailingText,
+    required TextStyle trailingStyle,
+  }) => LayoutBuilder(
+    builder: (context, box) {
+      final need =
+          _textWidth(context, value.data ?? '', value.style!) +
+          12 +
+          12 +
+          (trailingText == null
+              ? 0
+              : _textWidth(context, trailingText, trailingStyle));
+      if (need > box.maxWidth) {
+        return Row(
+          children: [
+            Flexible(child: value),
+            const SizedBox(width: 8),
+            trailing,
+          ],
+        );
+      }
+      return Row(
+        children: [
+          value,
+          const SizedBox(width: 12),
+          Expanded(child: SkewBar(fraction: fraction, height: 6)),
+          const SizedBox(width: 12),
+          trailing,
+        ],
+      );
+    },
+  );
+
   Widget _fieldCell(
+    PlanCompareColumn column,
+    PlanScenarioResourceField field,
+    Text Function(String text, {Color color, double? size}) value,
+  ) => LayoutBuilder(
+    builder: (context, box) => _fieldRow(context, box, column, field, value),
+  );
+
+  Widget _fieldRow(
+    BuildContext context,
+    BoxConstraints box,
     PlanCompareColumn column,
     PlanScenarioResourceField field,
     Text Function(String text, {Color color, double? size}) value,
@@ -1385,6 +1507,32 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
     final items = column.fieldShortages(field);
     final known = column.knownFields.contains(field);
     final overall = widget.onOpenOverall;
+    final kinds = value(
+      '${items.length}종',
+      color: AppColors.accent,
+      size: AppType.titleSmallSize,
+    );
+    // SL2: 좁은 열에서는 아이콘(37 + 4)을 들어가는 만큼만 두고 나머지는 "+n종 더"로 접는다. 넓은 열은 시안대로 3개.
+    final fixed =
+        _textWidth(context, kinds.data ?? '', kinds.style!) +
+        8 +
+        _tonalWidth(
+          context,
+          '전체',
+          horizontalPadding: 10,
+          fontSize: AppType.captionSize,
+          icon: false,
+        );
+    double need(int shown) =>
+        fixed +
+        41 * shown +
+        (items.length > shown
+            ? _textWidth(context, '+${items.length - shown}종 더', _linkStyle)
+            : 0);
+    var shown = math.min(3, items.length);
+    while (shown > 0 && need(shown) > box.maxWidth) {
+      shown--;
+    }
     return Row(
       children: [
         if (!known)
@@ -1396,13 +1544,9 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
             size: AppType.titleSmallSize,
           )
         else ...[
-          value(
-            '${items.length}종',
-            color: AppColors.accent,
-            size: AppType.titleSmallSize,
-          ),
+          if (need(0) > box.maxWidth) Flexible(child: kinds) else kinds,
           const SizedBox(width: 8),
-          for (final item in items.take(3)) ...[
+          for (final item in items.take(shown)) ...[
             ItemIconTile(
               iconAsset: planningResourceIconAsset(
                 category: item.category,
@@ -1414,13 +1558,13 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
             ),
             const SizedBox(width: 4),
           ],
-          if (items.length > 3)
+          if (items.length > shown)
             _shortageFlyout(
               key: ValueKey('plan-compare-more-$id-${field.name}'),
               column: column,
               title: '${column.letter} / ${field.label} 부족 ${items.length}종',
               groups: [(field, items)],
-              child: _LinkLabel(label: '+${items.length - 3}종 더'),
+              child: _LinkLabel(label: '+${items.length - shown}종 더'),
             ),
         ],
         const Spacer(),
@@ -1765,6 +1909,7 @@ class _LabelHeader extends StatelessWidget {
             Text(
               '비교 항목',
               maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: kitDisplayStyle(AppType.titleLargeSize),
             ),
             const SizedBox(height: 4),
@@ -1801,6 +1946,42 @@ class _ColumnHeader extends StatelessWidget {
   final VoidCallback? onOpen;
   final VoidCallback? onApply;
   final VoidCallback? onRemove;
+
+  /// SL2: 부제 줄 초상 수(시안 4). 좁은 열에서는 부제 글자(40) · "저장 시점과 다름" 칩이 들어가게 줄이고 나머지는
+  /// "…+n" 칩으로 접는다.
+  int _portraitCount(BuildContext context, double maxWidth, int count) {
+    final chip = target.stale
+        ? 6 +
+              BaChip.widthFor(
+                '저장 시점과 다름',
+                textScaler: MediaQuery.textScalerOf(context),
+              )
+        : 0.0;
+    double strip(int shown) =>
+        28.0 * shown +
+        4 * (shown - 1) +
+        (count > shown
+            ? 4 +
+                  16 +
+                  _textWidth(
+                    context,
+                    PortraitStrip.overflowLabel(count - shown),
+                    const TextStyle(
+                      fontFamily: AppFonts.body,
+                      fontFamilyFallback: AppFonts.fallback,
+                      fontSize: AppType.bodySmallSize,
+                      height: 1.2,
+                      fontWeight: AppType.bold,
+                    ),
+                  )
+            : 0) +
+        8;
+    var shown = math.min(4, count);
+    while (shown > 0 && strip(shown) + chip + 40 > maxWidth) {
+      shown--;
+    }
+    return shown;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1872,69 +2053,134 @@ class _ColumnHeader extends StatelessWidget {
                   ),
                   SizedBox(
                     height: 24,
-                    child: Row(
-                      children: [
-                        if (students.isNotEmpty) ...[
-                          PortraitStrip(
-                            studentIds: students,
-                            maxVisible: 4,
-                            portraitSize: const Size(28, 23),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Flexible(
-                          child: Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: _muted.copyWith(
-                              fontSize: AppType.captionPlusSize,
+                    child: LayoutBuilder(
+                      builder: (context, box) {
+                        final portraits = _portraitCount(
+                          context,
+                          box.maxWidth,
+                          students.length,
+                        );
+                        return Row(
+                          children: [
+                            if (portraits > 0) ...[
+                              PortraitStrip(
+                                studentIds: students,
+                                maxVisible: portraits,
+                                portraitSize: const Size(28, 23),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            Flexible(
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: _muted.copyWith(
+                                  fontSize: AppType.captionPlusSize,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        if (target.stale) ...[
-                          const SizedBox(width: 6),
-                          BaChip(
-                            key: ValueKey('plan-compare-stale-${target.id}'),
-                            label: '저장 시점과 다름',
-                            tone: AppTones.warn,
-                          ),
-                        ],
-                      ],
+                            if (target.stale) ...[
+                              const SizedBox(width: 6),
+                              BaChip(
+                                key: ValueKey(
+                                  'plan-compare-stale-${target.id}',
+                                ),
+                                label: '저장 시점과 다름',
+                                tone: AppTones.warn,
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     ),
                   ),
                   SizedBox(
                     height: 28,
-                    child: Row(
-                      children: [
-                        TonalButton(
-                          key: ValueKey('plan-compare-open-${target.id}'),
-                          label: '열기',
-                          icon: Icons.visibility_outlined,
-                          height: 28,
+                    child: LayoutBuilder(
+                      builder: (context, box) {
+                        // SL2: 좁은 열(1280×720 · 1600×900)에서는 버튼을 아이콘만(28×28, 툴팁 · 의미 라벨은 글자)
+                        // 남기고, 그래도 모자라면 기준 칩을 뺀다(기준 열은 파란 머리와 S1 기준 라디오로도 보인다).
+                        final scaler = MediaQuery.textScalerOf(context);
+                        final chip = isBase
+                            ? 6 + BaChip.widthFor('비교 기준', textScaler: scaler)
+                            : 0.0;
+                        double width(String label) => _tonalWidth(
+                          context,
+                          label,
                           horizontalPadding: 12,
                           fontSize: AppType.captionPlusSize,
-                          onPressed: enabled ? onOpen : null,
-                        ),
-                        if (onApply != null) ...[
-                          const SizedBox(width: 6),
-                          TonalButton(
-                            key: ValueKey('plan-compare-apply-${target.id}'),
-                            label: '계획에 적용…',
-                            icon: Icons.playlist_add_check_rounded,
-                            height: 28,
-                            horizontalPadding: 12,
-                            fontSize: AppType.captionPlusSize,
-                            onPressed: enabled ? onApply : null,
-                          ),
-                        ],
-                        const Spacer(),
-                        if (isBase)
-                          const BaChip(
-                            key: ValueKey('plan-compare-base-chip'),
-                            label: '비교 기준',
-                          ),
-                      ],
+                        );
+                        final compact =
+                            width('열기') +
+                                (onApply == null ? 0 : 6 + width('계획에 적용…')) +
+                                chip >
+                            box.maxWidth;
+                        final icons = 28.0 + (onApply == null ? 0 : 6 + 28);
+                        final showChip =
+                            isBase &&
+                            (!compact || icons + chip <= box.maxWidth);
+                        Widget button({
+                          required Key key,
+                          required String label,
+                          required IconData icon,
+                          required VoidCallback? onPressed,
+                        }) {
+                          if (!compact) {
+                            return TonalButton(
+                              key: key,
+                              label: label,
+                              icon: icon,
+                              height: 28,
+                              horizontalPadding: 12,
+                              fontSize: AppType.captionPlusSize,
+                              onPressed: enabled ? onPressed : null,
+                            );
+                          }
+                          return Tooltip(
+                            message: label,
+                            child: TonalButton(
+                              key: key,
+                              label: '',
+                              semanticLabel: label,
+                              icon: icon,
+                              height: 28,
+                              horizontalPadding: 6,
+                              gap: 0,
+                              fontSize: AppType.captionPlusSize,
+                              onPressed: enabled ? onPressed : null,
+                            ),
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            button(
+                              key: ValueKey('plan-compare-open-${target.id}'),
+                              label: '열기',
+                              icon: Icons.visibility_outlined,
+                              onPressed: onOpen,
+                            ),
+                            if (onApply != null) ...[
+                              const SizedBox(width: 6),
+                              button(
+                                key: ValueKey(
+                                  'plan-compare-apply-${target.id}',
+                                ),
+                                label: '계획에 적용…',
+                                icon: Icons.playlist_add_check_rounded,
+                                onPressed: onApply,
+                              ),
+                            ],
+                            const Spacer(),
+                            if (showChip)
+                              const BaChip(
+                                key: ValueKey('plan-compare-base-chip'),
+                                label: '비교 기준',
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -1985,12 +2231,16 @@ class _BaseRadio extends StatelessWidget {
     required this.name,
     required this.selected,
     required this.onPressed,
+    this.height = PlanCompareMetrics.menuBaseHeight,
   });
 
   final String letter;
   final String name;
   final bool selected;
   final VoidCallback? onPressed;
+
+  /// 버튼 높이(SL2: 낮은 레일에서 줄인 값).
+  final double height;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -1999,7 +2249,7 @@ class _BaseRadio extends StatelessWidget {
       variant: selected
           ? RailButtonVariant.selectedBlue
           : RailButtonVariant.ghost,
-      height: PlanCompareMetrics.menuBaseHeight,
+      height: height,
       semanticLabel: '기준 $letter · $name',
       onPressed: onPressed,
       child: Row(
@@ -2092,21 +2342,15 @@ class _LinkLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = this.icon;
+    // SL2: 글자가 비면(좁은 열) 아이콘만 둔다.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
           Icon(icon, size: 14, color: AppColors.textMuted),
-          const SizedBox(width: 3),
+          if (label.isNotEmpty) const SizedBox(width: 3),
         ],
-        Text(
-          label,
-          maxLines: 1,
-          style: _muted.copyWith(
-            fontWeight: AppType.bold,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        if (label.isNotEmpty) Text(label, maxLines: 1, style: _linkStyle),
       ],
     );
   }

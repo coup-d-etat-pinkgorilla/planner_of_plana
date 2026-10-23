@@ -81,6 +81,10 @@ abstract final class PlanDetailMetrics {
   static const menuInfoPitch = 40.0;
   static const menuInfoHeight = 36.0;
 
+  /// SL2: 레일 아래 여백과 세로 값을 줄이는 하한(시나리오 목록 S1 `PlanScenarioListMetrics`와 같은 값).
+  static const menuBottomInset = 8.0;
+  static const menuMinScale = 0.68;
+
   // S2 페이즈.
   static const phaseTitleTop = 18.0;
   static const phaseTitleHeight = 36.0;
@@ -240,13 +244,22 @@ class PlanDetailMenuFrame {
         PlanDetailMetrics.menuRightMargin,
   );
 
-  /// 섹션 위에서 [offset] 아래, 높이 [height]인 버튼 자리.
-  Rect row(double offset, double height) => Rect.fromLTWH(
+  /// 섹션 위에서 [offset] 아래, 높이 [height]인 버튼 자리. [scale]([scaleFor])은 세로 값에만 곱한다.
+  Rect row(double offset, double height, {double scale = 1}) => Rect.fromLTWH(
     PlanDetailMetrics.menuLeft,
-    top + offset,
-    width(top + offset),
-    height,
+    top + offset * scale,
+    width(top + offset * scale),
+    height * scale,
   );
+
+  /// SL2: 섹션 위에서 [contentBottom](줄이는 값) + [fixed](줄이지 않는 아래 글자 자리)까지가 레일에 들어가지 않으면
+  /// (1280×720 등) 세로 값(자리 · 버튼 높이)만 같은 비율로 줄인다(시나리오 목록 S1 · 계획 만들기 레일과 같은 관례). 들어가면
+  /// 1이다(기준 viewport · 1600×900은 그대로).
+  double scaleFor(double contentBottom, {double fixed = 0}) =>
+      ((bottomRight.dy - top - PlanDetailMetrics.menuBottomInset - fixed) /
+              contentBottom)
+          .clamp(PlanDetailMetrics.menuMinScale, 1.0)
+          .toDouble();
 }
 
 /// S1 메뉴 섹션 한 장(표면 + [builder] 내용). [PlanDetailWorkspace]가 쓰고, 활성 계획 홈에서 연 A↔B 비교 화면도
@@ -3360,12 +3373,29 @@ class PlanDetailRailMenu extends StatelessWidget {
               PlanDetailMetrics.menuActionHeight +
               26;
     final infoCaption = this.infoCaption;
+    final infoTop =
+        infoCaptionTop +
+        (PlanDetailMetrics.menuInfoTop - PlanDetailMetrics.menuInfoCaptionTop);
+    // SL2: 1280×720에서는 정보 줄 4 · 5번째가 창 밖이었다 — 내용 아래 끝이 레일에 들어가게 세로 값만 줄인다.
+    final scale = frame.scaleFor(
+      info.isNotEmpty
+          ? infoTop +
+                PlanDetailMetrics.menuInfoPitch * (info.length - 1) +
+                PlanDetailMetrics.menuInfoHeight
+          : infoCaption != null
+          ? infoCaptionTop + 18
+          : shown.isEmpty
+          ? PlanDetailMetrics.menuCurrentTop +
+                PlanDetailMetrics.menuCurrentHeight
+          : PlanDetailMetrics.menuActionTops[shown.length - 1] +
+                PlanDetailMetrics.menuActionHeight,
+    );
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Positioned(
           left: 20,
-          top: top + PlanDetailMetrics.menuTitleTop,
+          top: top + PlanDetailMetrics.menuTitleTop * scale,
           width: math.max(0.0, frame.width(top) - 6),
           height: 32,
           child: Align(
@@ -3379,7 +3409,7 @@ class PlanDetailRailMenu extends StatelessWidget {
         ),
         Positioned(
           left: 20,
-          top: top + PlanDetailMetrics.menuCaptionTop,
+          top: top + PlanDetailMetrics.menuCaptionTop * scale,
           height: 18,
           width: math.max(0.0, frame.width(top) - 6),
           child: Text(caption, maxLines: 1, style: _captionStyle),
@@ -3388,11 +3418,12 @@ class PlanDetailRailMenu extends StatelessWidget {
           rect: frame.row(
             PlanDetailMetrics.menuCurrentTop,
             PlanDetailMetrics.menuCurrentHeight,
+            scale: scale,
           ),
           child: RailButton(
             key: ValueKey('$keyPrefix-current'),
             variant: RailButtonVariant.selectedPink,
-            height: PlanDetailMetrics.menuCurrentHeight,
+            height: PlanDetailMetrics.menuCurrentHeight * scale,
             semanticLabel: currentSemanticLabel,
             onPressed: onCurrent,
             child: Column(
@@ -3429,12 +3460,14 @@ class PlanDetailRailMenu extends StatelessWidget {
             rect: frame.row(
               PlanDetailMetrics.menuActionTops[index],
               PlanDetailMetrics.menuActionHeight,
+              scale: scale,
             ),
             child: PlanScenarioDetailMenu._withTooltip(
               action.onPressed == null ? action.tooltip : null,
               RailButton(
                 key: ValueKey(action.key),
                 variant: action.variant,
+                height: PlanDetailMetrics.menuActionHeight * scale,
                 onPressed: action.onPressed,
                 child: Row(
                   children: [
@@ -3460,7 +3493,7 @@ class PlanDetailRailMenu extends StatelessWidget {
         if (infoCaption != null)
           Positioned(
             left: 20,
-            top: top + infoCaptionTop,
+            top: top + infoCaptionTop * scale,
             height: 18,
             width: math.max(0.0, frame.width(top) - 6),
             child: Text(infoCaption, maxLines: 1, style: _captionStyle),
@@ -3468,11 +3501,9 @@ class PlanDetailRailMenu extends StatelessWidget {
         for (final (index, (label, value)) in info.indexed)
           Positioned.fromRect(
             rect: frame.row(
-              infoCaptionTop +
-                  (PlanDetailMetrics.menuInfoTop -
-                      PlanDetailMetrics.menuInfoCaptionTop) +
-                  PlanDetailMetrics.menuInfoPitch * index,
+              infoTop + PlanDetailMetrics.menuInfoPitch * index,
               PlanDetailMetrics.menuInfoHeight,
+              scale: scale,
             ),
             child: PlanDetailInfoRow(
               key: ValueKey('$keyPrefix-info-$index'),

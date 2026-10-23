@@ -188,16 +188,20 @@ class SubHeader extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 4),
-      Text(
-        text,
-        maxLines: 1,
-        style: TextStyle(
-          fontFamily: AppFonts.display,
-          fontFamilyFallback: AppFonts.fallback,
-          fontSize: fontSize,
-          height: 1.2,
-          fontWeight: AppType.bold,
-          color: AppColors.text,
+      // SL2: 좁은 자리(1280×720 비교 표 라벨 열 등)에서는 말줄임한다. 들어가면 크기 · 그림은 그대로다.
+      Flexible(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: AppFonts.display,
+            fontFamilyFallback: AppFonts.fallback,
+            fontSize: fontSize,
+            height: 1.2,
+            fontWeight: AppType.bold,
+            color: AppColors.text,
+          ),
         ),
       ),
     ],
