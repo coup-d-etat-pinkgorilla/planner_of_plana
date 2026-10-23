@@ -4310,6 +4310,15 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - CF 결정: 9단계 "만든 계획을 활성 계획으로 적용했습니다" 한 줄(F3c-6 발견 1), 10단계 시작 때 통계 탭 열기(발견 4) 수용, 예시 시나리오 v2 정렬은 XB 요청에 더함.
 - 배정: **Lane A F3c-8** · **Lane B SL1**.
 
+## 2026-10-22 14:55 — F3c-8 · SL1 gate RED(예상) · SL2 · K2 배정 · F3c-8 post_dir
+
+- 검토: F3c-8 10행 · SL1 9행 SHA 일치, 목록 밖 변경 0, 겹침 0. F3c-8 재생 순서 고침(커서 하나 — 한 번에 다음 단계 하나만 예약, 일시정지면 멈춤) · 가짜 시간 재현 시험 3종 · 5단계 실제 누르기(Windows 변형 포함) · 1280 카드 배율 · 9단계 안내, golden 변화 0.
+- gate `20261022_143621` RED: 시험 5 `tutorial_host_f3c3_test` 1280 한 바퀴 1건만(그 밖 · process 103 · golden 83 · almanac · diff PASS). 원인(두 워커 예측과 같음): SL1로 1280에서 '나란히 비교'가 눌리자 4열 비교 화면(`plan_scenario_compare.dart`)이 1280에서 넘침 9 — 그동안 버튼이 창 밖이라 숨어 있던 기존 문제.
+- SL1 파일을 잠시 빼고 F3c-8만 gate하는 방법은 사용자가 거절 → 두 slice 미커밋 유지. 다음 라운드 SL2가 비교 화면 · 활성 계획 레일 작은 창을 고친 뒤 F3c-8 → SL1 → SL2 → K2 순서로 한 gate에서 커밋.
+- K2가 F3c-8 파일을 다시 고칠 수 있어 `debug/frontend_f3c8/commit.json`에 `post_dir: debug/frontend_k2/pre` 추가(K2 pre 사본 = F3c-8 끝 내용).
+- 배정: **Lane B SL2**(`sl2-worker-prompt-20261022.md`) · **Lane A K2**(`k2-worker-prompt-20261022.md` — 튜토리얼 사본 → K1 키트, 보이는 변화 0).
+
+
 ## 2026-10-23 15:32 — XB 재개: F2 동결 해제 수신·메인 후속 반영 계획
 
 - CF 2026-10-21 08:10 회신과 f2dart f8a25bd4를 확인했다. 00:31의 동결 대기는 해소됐다. 최신 CF F3c-8/SL1 gate RED는 프론트 1280 비교 화면 넘침이며 SL2/K2 수정은 CF 소유다.
@@ -4367,6 +4376,19 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **인계**: `debug/xb_resume_20261023/output.md`, runtime-parity/main-regeneration-v2/main-stdio-startup/whole-v2 및 SHA manifest. main45 보호지문과 앞 봉인101파일 보존, frontend/lib·test 편집0, 실제 게임 입력·키/원본export/Viewer·Arena/독립holdout 접근0. X6 기존 사용자 실행 절차는 유지하며 수치 N/T·native 결과를 만들지 않았다.
 - **전체 종료 뒤 관찰**: frontend/lib·test 대상 밖 3경로가 시작 기준과 달라졌다. main45는 계획 SHA 그대로이며, 이 프론트 변경은 수정/복원하지 않았다. post-test-external-frontend-changes.json에 별도 지문을 기록했다. 전체 실행 중 drift0과 종료 뒤 다른 레인 파일 변동을 구분하며 새 CF 같은소스 gate가 필요하다.
 
+
+## 2026-10-23 18:48 — XB 문서 선택 커밋·최종 봉인
+
+- 문서만 **73b875888be662a7d7e4a1406ab6940cecf1c92e** 정확6경로 선택 커밋, working bytes 보존·index empty·push0. 제품 source45 commit은 CF 같은소스 GREEN/obsolete7 UI 정리 대기로0. Almanac45/diff PASS, main1481/934.798s skip0/source5166 drift0. 최종 인계 debug/xb_resume_20261023/output.md 및 artifacts/MANIFEST.json.
+
+## 2026-10-23 20:20 — gate RED(X3 실제 사용자 폴더 이관 시도) · M3R(+시험 격리) · F3c-9 준비
+
+- 검토: F3c-8 · SL1 · SL2 · K2 SHA 일치(F3c-8의 두 파일은 K2가 다시 고침 — K2 pre 사본이 F3c-8 끝 내용과 바이트 같음, `post_dir` 정상), 목록 밖 frontend 변경은 XB X2 3경로(build_windows_release.ps1 · release_launcher).
+- XB 18:45 인계: main45 미커밋, Python 전체 1481 PASS, CF 몫 = 개발자 도구 폐지 7메서드 UI · 시험 제거 + 같은-소스 gate.
+- gate `20261023_195408` RED: golden 83 · analyze · 시험 1~4 · almanac · diff PASS, **시험 5 · process 각 1건 = X3 시작 이관이 격리 없는 시험 백엔드에서 실제 `%LOCALAPPDATA%\BA Planner` 이관을 시도 → 긴 경로 복사 실패 → 백엔드 종료**. 실제 폴더 읽기 확인: 남은 staging 0 · v7 0 · 기존 시각 변화 0. XB 요청(backend-orchestrator-log 20:20).
+- 커밋 0(GREEN 필요). 배정: **Lane B M3R**(`m3r-worker-prompt-20261023.md` — 폐지 7메서드 UI · 시험 제거 + 항목 5 시험 백엔드 12파일 격리) 지금 시작 가능. **Lane A F3c-9**(`f3c9-worker-prompt-20261023.md` — 데이터 v2 · 유우카 합성 crop)는 4 slice 커밋 뒤 시작(프롬프트에 조건).
+
+
 ## 2026-10-23 22:00 — 세션 시작(XB): X3 긴 경로·시작 실패 대응
 
 - AGENTS/README/헌장/백엔드·CF 최신 요청 및 runtime-boundaries/P0-P6를 읽었다. CF20:20의 X3 copy2 긴 staging 경로 실패를 우선 처리한다. 실제 사용자 폴더 재현/수정/삭제0, 이전 봉인 인계는 보존한다.
@@ -4400,6 +4422,11 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **근거**: `debug/xb_x3_long_paths_20261023/output.md`, actual 전체/집중 log/json, native 테스트, CF 원 RED summary, 실패구현 재현, source/contract SHA와 선택 patch. 이번 소스 커밋은 아직 없으며 문서만 별도 선택 커밋할 계획이다.
 - **선택 문서 구분**: 실제 XB prospective 선택은 제품53+필수 wiki2=55경로다. selected-source-with-xb-wiki.patch/json을 사용해 제거 모듈의 source 참조도 함께 고친다. almanac/architecture/developer-tools.md의 CF M3R 변경/이전 WIP는 XB 선택에서 제외·보존하며 CF가 자신의 짝 커밋에 포함한다.
 
+
+## 2026-10-23 22:45 — XB X3 문서 선택 커밋·인계 봉인
+
+- 문서만 **0d0e555afc053f256b2a6e3f0eb5207de20fd35a** 정확6경로 선택 커밋. working bytes 보존·index empty·push0. 새 actual main 전체 1490/1755.697s PASS(skip0/source drift0), 집중45 PASS. 제품53경로 source commit은 CF global startup decoder/strict details·M3R 및 새 같은소스 GREEN 대기로0. X3 긴 경로·제한 시작 응답 수정과 guard 유지 의미를 인계했고 실제 사용자 자료/guard 실행·삭제0. debug/xb_x3_long_paths_20261023/output.md 및 artifacts/MANIFEST.json.
+
 ## 2026-10-23 23:35 — 알림(XB→CF): 현 X3 gate 대상 불변·다음 X4 후보 사전 목록
 
 - 20:20 뒤 CF 새 회신/GREEN은 아직 없고 현 main 제품53+XB wiki2와 X3 오류 계약은 22:43 SHA 그대로다. **현 M3R/global user_data_migration_failed/같은소스 gate 요청을 유지한다.** 아래 X4는 debug 격리 후보이며 현재 gate 대상에 추가하지 않는다. main overlay/커밋0, frontend/lib·test 편집0.
@@ -4416,3 +4443,16 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **최종 검증**: 격리 관련 **211/68.459s PASS, skipped0**(새 runtime24 포함), 최종 compact 계약 **9/1.611s PASS**. 실제 JSONL subprocess 스캔→저장→reset→end, startup orphan cleanup/안전 오류, 강제종료 marker/seed/삭제후 receipt 복구, junction 이탈·foreign marker 보존, pause/resume/cancel·cross-profile 거부를 포함한다. 합성 요청/응답20쌍+기존 event95와 schema40 검증 오류0. Almanac45/diff 및 별도 index의 후속 patch 적용 검사 PASS. 전체 Python/CF/native의 X4 통과를 주장하지 않는다.
 - **인계/순서**: 후보 delta12경로의 before/after SHA는 artifacts/source-plan.json, 적용 패치는 candidate.patch, 실제 trace는 runtime-trace.json, 보존/CF 감사는 verification.json이다. 현55경로가 커밋된 뒤 적용되는 별도 index63경로 투영 검사만 했으며 실제 index empty·main overlay0·제품 source commit0·push0다. CF에 다음 X4 decoder 목록(repository/scanner practice_profile_required, 전역 practice_cleanup_failed의 정확 code/message/retryable:true)을 23:35 사전 게시했다. 현 X3 gate에 X4 후보를 섞지 않는다.
 - **남은 경계**: 이번 후보를 main에 적용하는 일과 X4 전체 Python/CF 짝 gate는 현 source 왕복/동결 해제 이후다. 실제 사용자 데이터/guard·공용store/lock/data-extracted·frontend/lib/test 쓰기0. X2 실제 URL/설정 UI·첫alpha/native·두번째PC/X6 측정, X5 후속 및 X7 새 사용자 캡처/정답, NP0035의 실제 재생·라이선스/alpha 범위는 기존 미완료 상태다. 전체 alpha/P0-P6/O3/Schale 제거 완료 선언0. 원 failing/준비 실패 로그도 보존했다.
+
+
+## 2026-10-23 23:57 — XB X4 문서 선택 커밋·인계 봉인
+
+- 문서만 **f60f2ceb6ebc44cf5ca777d31aafaae8789861cd** 정확4경로 선택 커밋. 다른 레인/이전 미커밋 문서 변경과 working bytes 보존, index empty·push0. X4 격리 delta12·관련211/68.459s PASS(skip0)·계약9 PASS·합성20쌍/95event 검증 및 후속 patch 검사 완료. 현재 main 입력5170/선택55와 앞 봉인263파일 불변, 제품 source commit/main overlay0. CF 최신20:20 요청 이후 새 GREEN/global decoder 회신이 없어 현 X3/M3R 왕복을 기다린다. `debug/xb_x4_runtime_20261023/output.md`와 artifacts/MANIFEST.json을 인계한다. 실제 사용자 자료·guard·공용store·frontend/lib/test 쓰기0.
+
+## 2026-10-24 01:05 — 같은-소스 gate GREEN · 4 slice 커밋 · SU1 배정
+
+- XB 22:43 인계: X3 긴 경로 수정(제품 53 + wiki 2), 실패 시 `user_data_migration_failed` 전역 오류(새 계약 `startup-user-data-v1`), guard 유지 정상. CF 몫: 전역 오류 해독 + M3R + 같은-소스 gate.
+- M3R 검토: SHA 22행 일치(폐지 7메서드 UI · 시험 제거, `tool_backend_client.dart` 포함, 시험 백엔드 격리).
+- gate `20261024_004309` **GREEN**(process 103 · golden 83), XB 53경로 바이트 같음, 실제 사용자 폴더 전후 같음.
+- 커밋: **F3c-8 `373c14a6`**(K2 pre `post_dir` 2파일 사용) · **SL1 `5aa5413b`** · **SL2 `f5a77b44`** · **K2 `e359dd29`**. M3R은 XB 커밋 뒤 짝 커밋(`post_dir: debug/frontend_su1/pre`).
+- 배정: **Lane B SU1**(`su1-worker-prompt-20261024.md` — 전역 시작 오류 해독 · 표시). **Lane A F3c-9** 시작 가능(4 slice 커밋됨).
