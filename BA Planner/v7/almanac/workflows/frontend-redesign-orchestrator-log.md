@@ -4366,3 +4366,36 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **차단/다음**: frontend/lib/developer_tools/legacy_tool_pages.dart와 test/developer_tools_app_test.dart의 obsolete7메서드 UI/시험 정리는 CF. **무거운 Python 종료**, CF SL2/K2 후 같은소스 fe_gate GREEN→XB coherent source commit→CF paired commit 순서. 그 전 backend/contracts/tool을 고정하며 소스 커밋0(새 문서만 선택 커밋 예정). X2 실제 channel URL/설정 UI/지금 확인·첫alpha ZIP/native/두번째PC는 후속. NP0035/Spine4.2.33·ClipName34·입 rig는 기존 확정, 실제 재생/정지 fallback·라이선스/alpha범위는 CF/CM. X7 새 캡처/사용자 라벨 미수신. 전체 alpha/P0-P6/Schale 제거 완료를 선언하지 않는다.
 - **인계**: `debug/xb_resume_20261023/output.md`, runtime-parity/main-regeneration-v2/main-stdio-startup/whole-v2 및 SHA manifest. main45 보호지문과 앞 봉인101파일 보존, frontend/lib·test 편집0, 실제 게임 입력·키/원본export/Viewer·Arena/독립holdout 접근0. X6 기존 사용자 실행 절차는 유지하며 수치 N/T·native 결과를 만들지 않았다.
 - **전체 종료 뒤 관찰**: frontend/lib·test 대상 밖 3경로가 시작 기준과 달라졌다. main45는 계획 SHA 그대로이며, 이 프론트 변경은 수정/복원하지 않았다. post-test-external-frontend-changes.json에 별도 지문을 기록했다. 전체 실행 중 drift0과 종료 뒤 다른 레인 파일 변동을 구분하며 새 CF 같은소스 gate가 필요하다.
+
+## 2026-10-23 22:00 — 세션 시작(XB): X3 긴 경로·시작 실패 대응
+
+- AGENTS/README/헌장/백엔드·CF 최신 요청 및 runtime-boundaries/P0-P6를 읽었다. CF20:20의 X3 copy2 긴 staging 경로 실패를 우선 처리한다. 실제 사용자 폴더 재현/수정/삭제0, 이전 봉인 인계는 보존한다.
+- 계획: migration 파일 I/O에 Windows extended drive/UNC 절대 경로 적용 → synthetic 긴 경로 복사·정리/잠금/원본보존 검증. 실패 시 원본으로 조용히 쓰기를 전환하거나 빈 계정을 만들지 않고, 제한된 JSONL 응답으로 오류를 노출하는 설계를 구현한다. 새 전역 시작 오류/CF Dart 목록을 먼저 게시하고 같은소스 gate를 요청한다. guard는 OS 잠금의 지속 파일이며 자동 삭제하지 않는다.
+- 범위: backend/core/user_state_migration.py·backend_process.py, developer_tools.py, tests, migration 오류 계약, 관련 wiki. CF M3R의 frontend 시험 격리/obsolete7 제거는 CF 소유다. 기존 main45 원칙 유지하되 이 CF 요청의 X3 수정만 동결 예외로 반영한다. push0·source commit0·shared store/lock 쓰기0. 새 증거 debug/xb_x3_long_paths_20261023/.
+
+## 2026-10-23 — Dart 사전 알림(XB): X3 시작 실패 응답 설계
+
+- CF20:20 요청에 따라 긴 경로 I/O를 수정한다. 실패 시 원본 경로로 조용히 전환하거나 빈 v7 계정을 만들지 않고, **ApplicationProtocol/scanner/repository를 구성하지 않은 제한된 JSONL**로 계속 응답한다. 신규 전역 code `user_data_migration_failed`, 기존 error envelope의 code/message/details만 사용하며 details는 정확히 reason(enum)/source_kept:true/restart_required:true다. 사용자에게 원본 보존·원인 해결 후 재시작을 안내하고 경로/파일명/예외 원문은 보내지 않는다. 새 method/성공 DTO 변화0.
+- **CF 영향**: planning_protocol_client.dart `_validRemoteError`에서 이 code를 method별 허용 목록에 앞선 전역 시작 오류로 허용하고 details를 검증해 달라(계약 `contracts/startup-user-data-v1.schema.json` 예정). repository/scanner/assets.prepare/planning 모두 시작 차단 오류를 받을 수 있다. Mock/일반 성공 DTO 변화0. 개발자 도구는 기존 {version:1,ok:false,error:{type,message}}를 유지하며 안전한 UserStateMigrationError 메시지로 응답한다.
+- guard 파일은 잠금 핸들의 고정 이름일 뿐 파일 존재만으로 활성 잠금을 뜻하지 않는다. 그대로 두는 것이 정상이며 실제 guard 삭제/정리를 하지 않는다. 원래 자료와 남은 알 수 없는 staging도 임의 삭제하지 않는다.
+- 사용자 첫 이관 안내 UX는 CM에 별도 보고/질의하되 백엔드 안전 동작·회귀를 막는 승인 대기로 두지 않는다. 새 Python 전체 종료와 정확 SHA 게시 전 heavy CF gate는 보류해 달라. main45 중 이 X3 요청 범위 외 추가 변경0, frontend/lib·test 편집0.
+
+
+## 2026-10-23 22:11 — XB X3 긴 경로 집중 통과·전체 Python 시작
+
+- **수정 반영/집중 PASS**: X3 delta 12경로(원 user_state_migration 시험 파일 자체는 변경0), prior45를 포함한 전체 planned 54경로. 전후 SHA/bytes `debug/xb_x3_long_paths_20261023/artifacts/x3-source-plan.json` 및 combined-source-plan.json. 최종 집중 **45/23.286s PASS, skipped0/source5170 drift0**. 새 Windows native 두 회귀가 실제 extended-path I/O로 staging>260·deep source>260·rollback cleanup·원본 보존을 검증했다. 실제 사용자 자료에는 실행하지 않았다.
+- **시작 실패 동작**: metadata load를 포함한 domain imports까지 막기 위해 pure protocol_envelope_v1 추출 및 stdio의 기본 PlanningProtocol lazy import. 기존 trusted-envelope 수용 의미는 그대로다. 제한 상태는 일반 메타데이터/저장소/스캐너를 만들지 않으며, 잘못된 metadata override를 합성으로 주어도 전역 오류 응답4종이 나온다. JSONL은 EOF까지 정상 종료code0, 단발 개발자 도구는 기존 오류 shape/exit1. user_data_migration_failed의 exact schema/doc와 복사용 4응답 examples를 게시했다. 예외 원문/절대경로 노출0.
+- **CF ①/②/③ 응답**: 긴 drive/UNC I/O 모든 migration 단계에 적용, registry/manifest 설정 변경0. 실패 시 원본 경로로 쓰기 전환/빈 프로필 생성0, 원본 보존·재시작 필요 응답. guard는 파일이 남는 것이 정상이며 OS 핸들 잠금만 활성 상태다. 삭제하지 않아도 되고 실제 guard 삭제0. CF의 시험12파일 격리/M3R와 전역 오류 decoder·details 검증을 같은 라운드에 포함해 달라. 기존 메서드/성공 DTO 변화0.
+- **무거운 Python 시작**: actual main 표준 전체 discover, 임시 BA_PLANNER_USER_DIR/public font fixture, 원래 timeout/skip/golden 유지. 종료까지 backend/contracts/tool 고정·CF heavy gate 동시 실행 보류. 기존 CF RED195408/1481 PASS와 새 결과를 구별한다. 새 GREEN 전 source commit0·push0. CM 첫 이관 안내 UX 판단은 별도 요청하며 백엔드 안전 수정은 승인 대기로 두지 않는다.
+
+
+## 2026-10-23 22:43 — XB X3 최종 검증·CF 인계
+
+- **완료/검증**: CF20:20 우선 요청 X3 긴 경로 수정 delta12(제품11+wiki1), 이전45와 합친 제품53경로의 정확 선택 patch 준비. migration I/O 전부 normalized absolute extended drive/UNC 경로로 처리, 원본 복사/양쪽 지문/atomic publish·기존 잠금/복구 차단 유지. 이전 코드의 합성 source240 재현에서 WinError3/FileNotFoundError, 원본 보존을 확인했고 새 native 회귀2가 staging>260/deep-source>260·성공/실패 정리·원본 보존을 통과했다. 실제 사용자 폴더로 이관 실행0.
+- **실패 동작**: 원본 경로로 쓰기를 전환하거나 빈 프로필을 만들지 않고 제한된 JSONL로 `user_data_migration_failed` 전역 오류만 응답한다. 일반 메타데이터·ApplicationProtocol·저장소·스캐너 초기화0, invalid metadata override에서도 응답 검증. error.details 정확 reason(enum)/source_kept:true/restart_required:true, 경로/파일명/예외 원문 노출0. 단발 개발자 도구는 기존 v1 error type/message·exit1 유지. 성공 DTO/메서드 변화0.
+- **CF ③ guard 응답**: `.v7-migration.guard`가 남아 있는 것은 정상이다. 파일 존재/시각이 활성 잠금을 뜻하지 않고 OS 핸들의 byte lock만 소유권을 정한다. 그대로 두면 되며 삭제할 필요가 없다. 실제 guard 삭제/수정0. 알 수 없는 staging과 원본 보존, 이번 호출의 검증한 UUID staging만 정리한다. UNC는 문자열 매핑 회귀이며 실제 네트워크 UNC I/O는 미검증이다.
+- **시험**: 최종 집중45/23.286s PASS(skip0), 새 실제 main 전체 **1490/1755.697s exit0, skipped0, source5170 drift0**. 임시 user-root/public-font fixture, 기존 timeout/skip/golden 완화0. **무거운 Python 종료**, CF heavy gate 가능. 이전1481 PASS와 CF195408 RED는 별도 원본으로 보존한다.
+- **CF 인계/소스 커밋 대기**: `contracts/startup-user-data-v1.schema.json`/md 및 artifacts/startup-error-examples.json의 새 전역 오류를 PlanningProtocolClient의 method 허용집합보다 먼저 수용·strict details 검증하고 M3R(폐지7 UI/시험·12파일 사용자 경로 격리)와 함께 같은소스 gate를 돌려 달라. delta 경로/SHA artifacts/x3-source-plan.json, 기존 포함53제품 projection/patch는 combined-projection.json 및 combined-selected-source.patch. 실제 index empty, source commit0·push0; 같은소스 GREEN/전역 decoder 확인→XB 선택 커밋→CF 짝 커밋 순서다. 기존 frontend WIP 편집/복원0.
+- **CM 판단/제한**: 사용자 실제 첫 이관 안내 UX 포함 여부는 앞 CM 요청의 회신 대기이며 backend 안전 수정은 승인 대기로 두지 않았다. 실제 사용자 데이터량/이관시간·완료·첫alpha/native/두번째PC 검증 주장은 없다. source export/키/게임 프로세스/Viewer·Arena/독립holdout·공용store/lock 쓰기0. NP0035 및 X4/X5 후속 상태는 앞 인계 그대로다.
+- **근거**: `debug/xb_x3_long_paths_20261023/output.md`, actual 전체/집중 log/json, native 테스트, CF 원 RED summary, 실패구현 재현, source/contract SHA와 선택 patch. 이번 소스 커밋은 아직 없으며 문서만 별도 선택 커밋할 계획이다.
+- **선택 문서 구분**: 실제 XB prospective 선택은 제품53+필수 wiki2=55경로다. selected-source-with-xb-wiki.patch/json을 사용해 제거 모듈의 source 참조도 함께 고친다. almanac/architecture/developer-tools.md의 CF M3R 변경/이전 WIP는 XB 선택에서 제외·보존하며 CF가 자신의 짝 커밋에 포함한다.
