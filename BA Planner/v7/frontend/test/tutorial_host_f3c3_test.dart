@@ -5,7 +5,9 @@
 // 9(프라나 10에서 7-6 시나리오를 활성 계획으로 적용 → 부족 1위 행 누르기) · 10(성장 추이 점 누르기)도 실제 동작이고,
 // 7-3~7-5 카드가 보드 카드 · 나중에 칸을 가리지 않는지 본다. 끌어 놓기 7-5와 스킬 값 맞추기(7-2b · 7-2c)는 편집기 호출로
 // 대신하고, 4단계(임시 계정 그리드에 보유 카드가 첫 화면에 없음) · 6단계 승인은 hooks 출구다(단계별 표 — status F3c-6
-// 종료 기록). 한 바퀴는 2560×1392와 1280×720 두 크기로 돈다.
+// 종료 기록). 한 바퀴는 2560×1392와 1280×720 두 크기로 돈다. F3c-8: 1280×720에서도 7-3~7-5 카드가 보드 카드 · 순위 칸 ·
+// 나중에 칸을 가리지 않고(카드 자리 규칙 8 — 피할 자리가 없으면 대사 띠 배율까지 줄임, 2560은 배율 1), 9단계 카드 '왜' 줄
+// 앞에 활성 계획 적용 안내 한 줄이 보인다.
 import 'dart:async';
 
 import 'package:ba_planner_v7/app/app.dart';
@@ -206,15 +208,17 @@ Future<void> _toStep(
 Rect _cardRect(WidgetTester tester) =>
     tester.getRect(find.byType(TutorialStepCard));
 
-/// 카드가 [key] 대상(조각마다)을 가리지 않는다(F3c-6 카드 자리 규칙 7).
+/// 카드가 [key] 대상(조각마다)을 가리지 않는다(F3c-6 카드 자리 규칙 7, F3c-8 규칙 8 — 1280×720도). 기준 viewport의
+/// 카드는 줄이지 않는다.
 void _expectCardAvoids(
   WidgetTester tester,
   TutorialSession session,
   String key,
 ) {
-  // 1280×720은 보드가 화면 대부분이라 빈자리가 없다 — 가장 적게 겹치는 자리(규칙 7)라 기준 viewport에서만 본다.
-  if (_walkthroughSizes.currentValue != const Size(2560, 1392)) return;
   final card = _cardRect(tester);
+  if (_walkthroughSizes.currentValue == const Size(2560, 1392)) {
+    expect(card.width, session.flow!.step!.cardWidth);
+  }
   final rects = session.hooks.registry.rectsOf(key);
   expect(rects, isNotEmpty, reason: key);
   for (final rect in rects) {
@@ -483,7 +487,8 @@ void main() {
       await _setSkills(tester, makiStage2, [5, 10, 7, 7]);
       await _waitDone(tester, session, '2단계를 더했습니다');
 
-      // 프라나 08d(바탕: 계획 만들기 3) → 7-3: 보드는 칸 3개로 시작(사용자 결정 ⑥), 카드는 보드 카드를 가리지 않는다.
+      // 프라나 08d(바탕: 계획 만들기 3) → 7-3: 보드는 칸 3개로 시작(사용자 결정 ⑥), 카드는 보드 카드 · 순위 칸을 가리지
+      // 않는다(F3c-8: 두 크기 모두).
       // 시로코(수영복) · 히마리(무장) → 2순위, 아카네 → 3순위(실제 끌어 놓기 — 칸나(수영복) · 마키 · 미카는 이미 1순위).
       await _toStep(tester, session, '7-3');
       expect(_planFlow(tester).step, PlanFlowStep.order);
@@ -497,6 +502,7 @@ void main() {
         expect(lanes[0].stageIds, contains(_stageId(tester, studentId)));
       }
       _expectCardAvoids(tester, session, TutorialTargets.planOrderCards);
+      _expectCardAvoids(tester, session, TutorialTargets.planOrderRankColumns);
       for (final (studentId, rank) in const [
         ('shiroko_swimsuit', 2),
         ('himari_battle', 2),
@@ -515,6 +521,11 @@ void main() {
         if (session.flow!.phase == TutorialPhase.step) {
           await _frames(tester, 2);
           _expectCardAvoids(tester, session, TutorialTargets.planOrderCards);
+          _expectCardAvoids(
+            tester,
+            session,
+            TutorialTargets.planOrderRankColumns,
+          );
         }
       }
       await _waitDone(tester, session, '순위를 정했습니다');
@@ -617,6 +628,11 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining(tutorialTopShortageSample), findsNothing);
+      // F3c-8: '왜' 줄 앞에 활성 계획 적용 안내 한 줄.
+      expect(
+        find.text('$tutorialPlanAppliedLine\n${tutorialSteps['9']!.why}'),
+        findsOneWidget,
+      );
       expect(find.byType(TutorialHighlightRing), findsOneWidget);
       await tester.tapAt(top!.rect.center);
       await _waitDone(tester, session, '확인했습니다');

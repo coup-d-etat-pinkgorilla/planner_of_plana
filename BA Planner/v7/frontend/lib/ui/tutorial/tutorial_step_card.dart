@@ -11,10 +11,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../app/theme.dart';
 import '../widgets/lifted_path_shadow.dart';
 import '../geometry/diagonal_geometry.dart';
+import 'plana_dialogue.dart' show planaScaleFor;
 import 'tutorial_card_placement.dart';
 import 'tutorial_flow.dart';
 import 'tutorial_script.dart';
@@ -839,7 +841,8 @@ class TutorialCardNub extends StatelessWidget {
 }
 
 /// 화면 위 카드 층: 카드 크기를 잰 뒤 [target] 둘레에 자리 규칙대로 놓고 꼭지를 얹는다.
-/// [target]이 null이면(기다림 · 강조 없음) 직전 자리를 그대로 쓴다(규칙 5). 처음부터 null이면 [bounds] 오른쪽 아래.
+/// [target]이 null이면(기다림 · 강조 없음) 직전 자리 · 배율을 그대로 쓴다(규칙 5). 처음부터 null이면 [bounds] 오른쪽 아래.
+/// F3c-8: [avoid]를 피할 자리가 없으면 카드를 대사 띠 배율([planaScaleFor])까지 줄인다(규칙 8, 기준 viewport는 늘 1).
 /// 이 층은 카드 밖의 누르기를 받지 않는다(화면을 어둡게 하지 않고 자유 조작 허용).
 class TutorialCardLayer extends StatefulWidget {
   const TutorialCardLayer({
@@ -876,7 +879,10 @@ class _TutorialCardLayerState extends State<TutorialCardLayer> {
       memory: _memory,
     ),
     children: [
-      LayoutId(id: TutorialCardLayer.cardSlot, child: widget.card),
+      LayoutId(
+        id: TutorialCardLayer.cardSlot,
+        child: _CardScale(memory: _memory, child: widget.card),
+      ),
       LayoutId(
         id: TutorialCardLayer.nubSlot,
         child: const IgnorePointer(child: TutorialCardNub()),
@@ -885,9 +891,67 @@ class _TutorialCardLayerState extends State<TutorialCardLayer> {
   );
 }
 
-/// 직전 카드 자리(기다림 단계용). 배치 중에만 쓰고 다시 그리기를 부르지 않는다.
+/// 직전 카드 자리(기다림 단계용)와 지금 카드 배율. 배치 중에만 쓰고 다시 그리기를 부르지 않는다(배치가 바뀌면 층이
+/// 다시 칠하므로 카드도 새 배율로 칠해진다).
 class _PlacementMemory {
   TutorialCardPlacement? last;
+  double scale = 1;
+}
+
+/// 카드를 [_PlacementMemory.scale]로 줄여 왼쪽 위 기준으로 칠한다(F3c-8 규칙 8). 크기 · 배치는 원래 크기 그대로라
+/// 층이 카드 크기를 잰 뒤 배율을 고를 수 있다. 누르기 · 위치 계산도 같은 배율을 따른다. 배율 1이면 그대로 칠한다.
+class _CardScale extends SingleChildRenderObjectWidget {
+  const _CardScale({required this.memory, required super.child});
+
+  final _PlacementMemory memory;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderCardScale(memory);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderCardScale renderObject) {
+    renderObject.memory = memory;
+  }
+}
+
+class _RenderCardScale extends RenderProxyBox {
+  _RenderCardScale(this.memory);
+
+  _PlacementMemory memory;
+
+  Matrix4 get _transform =>
+      Matrix4.diagonal3Values(memory.scale, memory.scale, 1);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      result.addWithPaintTransform(
+        transform: _transform,
+        position: position,
+        hitTest: (result, position) =>
+            super.hitTestChildren(result, position: position),
+      );
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (memory.scale == 1) {
+      layer = null;
+      super.paint(context, offset);
+      return;
+    }
+    layer = context.pushTransform(
+      needsCompositing,
+      offset,
+      _transform,
+      super.paint,
+      oldLayer: layer is TransformLayer ? layer! as TransformLayer : null,
+    );
+  }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    transform.multiply(_transform);
+  }
 }
 
 class _CardLayerDelegate extends MultiChildLayoutDelegate {
@@ -906,20 +970,26 @@ class _CardLayerDelegate extends MultiChildLayoutDelegate {
   @override
   void performLayout(Size size) {
     final area = bounds ?? tutorialCardBounds(size);
-    final cardSize = layoutChild(
+    final natural = layoutChild(
       TutorialCardLayer.cardSlot,
       BoxConstraints.loose(Size(area.width, area.height)),
     );
     final target = this.target;
     final TutorialCardPlacement placement;
+    final Size cardSize;
     if (target != null) {
-      placement = placeTutorialCard(
+      final chosen = placeTutorialCardScaled(
         target: target,
-        card: cardSize,
+        card: natural,
         bounds: area,
         avoid: avoid,
+        minScale: planaScaleFor(size),
       );
+      memory.scale = chosen.scale;
+      placement = chosen.placement;
+      cardSize = natural * chosen.scale;
     } else {
+      cardSize = natural * memory.scale;
       final last = memory.last;
       final topLeft =
           last?.rect.topLeft ??
@@ -939,7 +1009,7 @@ class _CardLayerDelegate extends MultiChildLayoutDelegate {
       TutorialCardLayer.nubSlot,
       BoxConstraints.tight(const Size.square(nub)),
     );
-    final nubCenter = _nubCenter(placement, cardSize);
+    final nubCenter = _nubCenter(placement, cardSize, memory.scale);
     if (nubCenter == null) {
       // 꼭지 없음: 화면 밖으로 치운다.
       positionChild(TutorialCardLayer.nubSlot, const Offset(-1000, -1000));
@@ -952,12 +1022,16 @@ class _CardLayerDelegate extends MultiChildLayoutDelegate {
   }
 
   /// 꼭지 가운데: 기운 변 위의 점.
-  static Offset? _nubCenter(TutorialCardPlacement placement, Size card) {
+  static Offset? _nubCenter(
+    TutorialCardPlacement placement,
+    Size card,
+    double scale,
+  ) {
     final rect = placement.rect;
     final offset = placement.nubOffset;
-    double leftEdgeX(double y) => tutorialCardLean * (1 - y / card.height);
-    double rightEdgeX(double y) =>
-        card.width - tutorialCardLean * (y / card.height);
+    final lean = tutorialCardLean * scale;
+    double leftEdgeX(double y) => lean * (1 - y / card.height);
+    double rightEdgeX(double y) => card.width - lean * (y / card.height);
     return switch (placement.nubSide) {
       null => null,
       TutorialNubSide.left => rect.topLeft + Offset(leftEdgeX(offset), offset),

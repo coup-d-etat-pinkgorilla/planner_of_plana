@@ -10,6 +10,8 @@
 //    옮기고, 꼭지는 강조한 곳 쪽에 둔다. F3c-6: 네 후보가 모두 막히면 화면 안에서 대상 · [avoid]와 겹치지 않는 가장
 //    가까운 빈자리, 그런 자리가 없으면 [avoid]와 가장 적게 겹치는 자리([_nearestFree])로 옮긴다(대상과는 겹치지 않음).
 //    그것도 없으면 1~2 규칙의 자리를 쓴다. [avoid]가 비어 있으면 F3a 그대로다.
+// 8. F3c-8: 배율 1 자리가 [avoid]와 겹치면 카드를 0.05씩 하한(대사 띠와 같은 배율)까지 줄여 겹침 0인 가장 큰 배율을
+//    고른다([placeTutorialCardScaled]). 기준 viewport(하한 1)와 [avoid]가 없는 단계는 늘 배율 1이다.
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -111,6 +113,49 @@ TutorialCardPlacement placeTutorialCard({
   }
   // 어디에도 다 들어가지 않으면 아래 · 위 중 여유가 큰 쪽(안으로 밀어 넣음).
   return roomBelow >= roomAbove ? below : above;
+}
+
+/// 규칙 8: [placeTutorialCard]의 자리가 [avoid]와 겹치면 카드를 0.05씩 [minScale]까지 줄여 가며 겹침 0인 가장 큰
+/// 배율과 그 자리를 고른다. 끝까지 겹치면 가장 적게 겹치는 배율(같으면 큰 쪽)이다. [minScale]이 1 이상이거나 배율 1
+/// 자리가 겹치지 않으면 배율 1(규칙 1~4 · 7 그대로).
+({TutorialCardPlacement placement, double scale}) placeTutorialCardScaled({
+  required Rect target,
+  required Size card,
+  required Rect bounds,
+  double minScale = 1,
+  double gap = tutorialCardGap,
+  List<Rect> avoid = const [],
+}) {
+  TutorialCardPlacement place(double scale) => placeTutorialCard(
+    target: target,
+    card: card * scale,
+    bounds: bounds,
+    gap: gap,
+    avoid: avoid,
+  );
+  var best = (placement: place(1), scale: 1.0);
+  var bestCovered = tutorialCardCovered(best.placement.rect, avoid);
+  for (var step = 19; bestCovered > 0 && step / 20 >= minScale; step--) {
+    final scale = step / 20;
+    final placement = place(scale);
+    final covered = tutorialCardCovered(placement.rect, avoid);
+    if (covered < bestCovered) {
+      best = (placement: placement, scale: scale);
+      bestCovered = covered;
+    }
+  }
+  return best;
+}
+
+/// 카드 사각형 [card]가 [avoid]와 겹친 넓이 합(0이면 하나도 덮지 않음).
+double tutorialCardCovered(Rect card, List<Rect> avoid) {
+  var covered = 0.0;
+  for (final other in avoid) {
+    if (!card.overlaps(other)) continue;
+    final shared = card.intersect(other);
+    covered += shared.width * shared.height;
+  }
+  return covered;
 }
 
 TutorialCardPlacement _sidePlacement(

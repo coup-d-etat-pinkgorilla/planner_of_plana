@@ -12127,3 +12127,231 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261022_002754\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-8 착수 기록 (2026-10-22, Lane A 워커)
+
+- 상태: **진행 중**. 범위: ① Mock 재생 순서 버그(CF gate `20261022_001305` — 재개 뒤 원래 타이머가 미룬 단계보다 먼저 terminal) ② 5단계 실제 동작(F3c-7 입력) ③ 1280×720 카드 자리(F3c-6 발견 3) ④ 9단계 활성 계획 적용 안내(F3c-6 발견 1, CF 결정).
+- 시작 SHA: `aab0112059029e2fabdc21e49757d711ba5564ad`(브랜치 `scanner-consolidation`). `git log --oneline -4`에 `f239f427 F3c-6:` 있음, 이 status · status-lane-b 끝에 다른 "F3c-8 착수 기록" 없음 확인. 막힘 요약 '열림' FD 0건. Lane B SL1 파일(`plan_scenario_list.dart` · 시나리오 목록 레이아웃 · 그 시험)은 건드리지 않는다.
+- 고칠(수 있는) 기존 파일 — 사본 `debug/frontend_f3c8/pre/<v7 기준 경로>`, 12개 모두 착수 때 HEAD와 같음 = **기존 미커밋 변경(WIP) 없음**: `frontend/lib/services/mock_app_service.dart`(CRLF, ① 재생 · 재개 경로만) · `services/mock_tutorial_practice.dart`(필요 최소) · `ui/tutorial/tutorial_card_placement.dart`(③) · `ui/tutorial/tutorial_script.dart`(④) · `ui/tutorial/tutorial_step_card.dart`(③) · `ui/tutorial_host/tutorial_overlay.dart`(③ · ④) · `ui/tutorial_host/tutorial_session.dart`(④) · 시험 `frontend/test/tutorial_host_f3c3_test.dart` · `test/tutorial_f3c6_test.dart` · `test/tutorial_practice_mock_test.dart` · `test/goldens/f3c5_tutorial_plan_golden_test.dart` · `test/goldens/f3c3_tutorial_golden_test.dart`(나머지 LF). 새 시험 파일 예정 `frontend/test/tutorial_f3c8_test.dart`. 실제로 고치지 않게 되는 파일은 종료 기록에 적는다(사본만 남음).
+
+## F3c-8 종료 기록 (2026-10-22, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden 변화 0 기대) 남음. 시작 SHA `aab01120`, 커밋 없음(git 쓰기 안 함). 실제 runtime 미실행.
+- 결과: ① Mock 스캔 재생이 커서 하나로 바뀌어 일시정지 · 재개가 끼어도 단계 순서(끝이 마지막)가 그대로다 — 가짜 시간 재현 시험이 고치기 전 실패(후보 8/9 · 0/1), 고친 뒤 3회 통과. ② golden `tutorial-plan-order`의 5단계가 실제 누르기(6단계 '적용'도 실제 — 아래)이고 **기준 이미지와 바이트 같음**, Windows 변형 5단계 실제 누르기 시험 새로. ③ 카드 자리 규칙 8: 1280×720 7-3~7-5 카드가 만져야 할 대상(보드 카드 · 순위 칸 · 나중에 칸)과 **겹침 0**(2560도 0, 배율 1 그대로). ④ 9단계 카드 '왜' 줄 앞 '만든 계획을 활성 계획으로 적용했습니다.'.
+- 기존 파일 diff(`+/−`): `lib/services/mock_app_service.dart` +109/−101(CRLF — 두 재생 · 안전 지점 · 재개만, 닫는 함수 안으로 들여쓰기가 옮겨 줄 수가 큼) · `ui/tutorial/tutorial_card_placement.dart` +45/−0 · `ui/tutorial/tutorial_script.dart` +23/−2 · `ui/tutorial/tutorial_step_card.dart` +85/−11 · `ui/tutorial_host/tutorial_overlay.dart` +3/−1 · 시험 `test/tutorial_host_f3c3_test.dart` +21/−5 · `test/goldens/f3c5_tutorial_plan_golden_test.dart` +23/−14. 새 파일: `test/tutorial_f3c8_test.dart`(410줄, 10시험).
+- 고치지 않게 된 파일(사본만 남음): `services/mock_tutorial_practice.dart` · `ui/tutorial_host/tutorial_session.dart`(적용 여부는 기존 `planApplied`를 덧그림이 읽음) · `test/tutorial_f3c6_test.dart` · `test/tutorial_practice_mock_test.dart`(고친 코드로 그대로 통과) · `test/goldens/f3c3_tutorial_golden_test.dart`(5단계를 지나지 않음 — 아래 golden).
+- 서식 · 바이트: 고친 줄만 — 사본과 고친 파일에 `dart format -o show`를 돌린 "format 차이"를 비교해 새 차이 0(mock 서비스는 고친 블록이 옛 80자 넘는 줄을 대신해 기존 차이 272 → 269), 나머지는 고치기 전 · 뒤 모두 0. 새 시험 파일은 formatter 모양. mock 서비스 CRLF · 나머지 LF 유지, 끝 개행 하나, 줄 끝 공백 0, `git diff --check -- frontend` 출력 없음(rc 0, CRLF 경고만). `.orig` · `.rej` 0. 일회성 파일(`test/f3c8_geom_tmp_test.dart` · `test/f3c8_walk_tmp_test.dart` · `test/goldens/f3c8_render_tmp_test.dart` · `test/goldens/f3c8_cmp_*_tmp_test.dart` 5개)은 실행 뒤 지웠다(grep 0).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter test test/tutorial_f3c8_test.dart`(재생 시험만 있던 판) — **고치기 전** | **−2**: 임시 계정 학생 재생 후보 `Expected 9 / Actual 8`(끝 → 재개, 미룬 후보 버려짐), 일반 Mock `Expected 1 / Actual 0`. 시작 직후 일시정지 시험은 통과 |
+| 같은 파일 마지막 판을 고치기 전 서비스로(사본을 잠시 제자리에 두고 실행 → 바로 고친 판으로 되돌림, cmp 같음) | **−2**(같은 두 시험, 8/9 · 0/1) — `replay-before-final` |
+| 같은 파일 — **고친 뒤** 3회(재생 3시험) → 마지막 판(10시험) 3회 | **+3 ×3**, 마지막 **+10 ×3 All passed** |
+| `flutter test test/tutorial_practice_mock_test.dart` 3회(CF gate에서 흔들린 "replay honours pause…" 포함, 실시간) | **+11 ×3 All passed** |
+| `flutter test` 일시정지 · 스캔 시험 4파일(`scan_item_queue_fe8g3` · `scan_page_pause_fb10a` · `scan_run_view_fe8g2` · `scanner_pause_fb10a`) | **+64 All passed** |
+| 일회성 위치 덤프(`test/f3c8_geom_tmp_test.dart`, Windows 변형, golden 호출 0) | 1280 7-3: 카드 620×220(배율 1)이 2 · 3순위 칸에 HIT, 보드 카드 폭 177px(보드는 시안 크기를 약 0.45로 맞춤) → 규칙 8로 결정. Windows 5단계 실제 누르기 끝까지 감, 한 줄 `0,670–1280,696`(1280) · `0,1342–2560,1368`(2560) → 삭제 |
+| `flutter test test/tutorial_host_f3c3_test.dart --plain-name "Mock walkthrough"` | 2560 **통과**, 1280 **실패 1**: 끝의 `takeException`에 넘침 9건 — 모두 `plan_scenario_compare.dart:1324 · 1875 · 1908`(비교 표 머리). 원인: **Lane B SL1의 미커밋 `plan_scenario_list.dart`** 로 1280에서 '나란히 비교'가 창 안에 들어와 시험이 실제로 눌러 비교 표가 1280에서 열림(F3c-6까지는 hooks 출구라 열리지 않았음). 그 앞의 모든 기대(1280 카드 겹침 0 · 9단계 한 줄)는 통과 — 발견 1 |
+| 위 시험 사본(`test/f3c8_walk_tmp_test.dart` — 8단계는 2560일 때만 누르기, 1280은 F3c-6처럼 hooks) | **+2 All passed**(넘침 0 · `registered twice` 0) → 카드 덤프 · 순위 칸 덤프 2회(아래 표) → 삭제 |
+| 일회성 렌더(`test/goldens/f3c8_render_tmp_test.dart` · `f3c8_cmp_*_tmp_test.dart` 5개 — `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건, `RenderRepaintBoundary.toImage` RGBA를 기준 PNG 디코드와 비교, golden 비교 시험 아님) | ① 옛 흐름(4 · 5 · 6 hooks) + 고친 lib = 기준과 **0px** ② 5만 실제 = **942px**(머리글 '스캔' 옆 분홍 검토 대기 점 · '설정' 밀림 — 6을 hooks로 넘겨 아이템 검토가 남음) ③ 5 실제 + 6 승인 hooks · '적용' 실제 = **0px** → ③ 채택. 관련 12장면(`tutorial-card-parts` · `plana-dialogue` · `tutorial-step-scan` · `tutorial-dialogue-review` · `tutorial-plan-order` · `header-scan-progress` · `scan-pick-students` · `scan-pick-items` · `scan-student-run` · `scan-item-run` · `scan-review-students` · `scan-review-items`) **모두 0px** → 사본 삭제(grep 0) |
+| `flutter analyze`(편집마다 · 마지막 전체) | 중간 경고 1(새 시험의 쓰지 않는 import) → 고침 → 마지막 **No issues found!** |
+| 관련 기존 시험 130파일(grep: 고친 lib 5파일 · `MockAppService` · `TutorialHost` · `BAPlannerApp(`을 쓰는 시험 + `tutorial_*` · `scan_*` · `scanner_*` · `mock_*` · `home_*` · `widget_test`, golden 폴더 · process E2E 7 · Lane B 새 시험 `plan_scenario_list_sl1_test` 제외 — `related_tests.txt` · `related_process_excluded.txt`) 3묶음 `--exclude-tags golden` | 묶음 00(45) **+522 All passed** · 01(40) **+714 All passed** · 02(45) **+570 −1**(위 1280 한 바퀴 — Lane B WIP, 같은 원인 넘침 9). `registered twice`는 F3c-2의 일부러 겹친 'dup' 시험 1줄뿐 |
+| `git diff --check -- frontend` · 바이트 검사 | 출력 없음(rc 0), 줄바꿈 유지 · 끝 개행 하나 · 줄 끝 공백 0 |
+
+로그: `debug/frontend_f3c8/logs/`(`replay-before` · `replay-before-final` · `replay-after-1~3` · `practice-mock-1~3` · `pause-tests` · `f3c8-test-1~3` · `geom-1` · `walk-1` · `walk-2-step8-hooks` · `walk-3-card-dump` · `walk-4-rank-dump` · `render-1~2` · `render-cmp-1` · `analyze-1` · `related-00~02`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### ① 재생 순서 — 원인 · 고친 방법 · 재현 시험
+
+- 원인(CF 진단과 같음): 재생이 처음에 모든 단계 타이머를 `10ms × (i+1)`로 한꺼번에 걸었다. 일시정지 중 발화한 단계는 `_scannerDeferredSteps`에 쌓이고, 재개 때 **재개 시각 + 10ms × k** 새 타이머로 다시 걸리지만, 아직 발화하지 않은 원래 타이머(끝 terminal 포함)는 원래 시각에 그대로 실행된다 → 재개가 원래 끝 시각 근처면 끝이 미룬 후보보다 먼저 나가고, 미룬 후보는 `closed()`(일반 Mock은 `_scannerTerminals` 확인)로 버려진다. 같은 시각이면 먼저 만든 원래 타이머가 이긴다. 일반 Mock 스캔(튜토리얼 아님)도 같은 미룸 경로였다.
+- 고친 방법(`mock_app_service.dart`, 재생 · 재개 경로만): 세션별 `_MockScannerReplay`(단계 목록 + 커서). `_startMockScannerReplay`가 첫 단계만 10ms 뒤로 예약하고, 안전 지점 `_mockScannerStep`이 진행 중이면 커서 단계를 한 뒤 **다음 하나만** 예약, 일시정지 요청 · 일시정지면 커서를 그대로 두고 예약을 멈춘다(요청 뒤 첫 안전 지점에서 `paused` 한 번 — 기존 그대로). `resumeScannerSession`은 `resumed`를 낸 뒤 커서에서 다시 예약. 취소 요청이 있는 멈춘 세션은 재생을 지우고 끝은 cancel이 낸다(기존 그대로). 끝(`_emitTerminal`)은 재생을 지운다. 단계 내용(이벤트 모양 · 후보 · 실패 시나리오)과 간격(10ms)은 그대로, 가짜 시간에서 각 단계 시각도 같다(12장면 렌더 0px).
+- 재현 시험(`tutorial_f3c8_test.dart`, testWidgets 가짜 시간): (a) 임시 계정 학생 재생 — 175ms에 일시정지(후보 8개 뒤) → 182ms 재개(원래 끝 190ms 앞) → 후보 9 · 순서 '진행 1~9 → 후보 1~9(id `tutorial-<세대>-1~9`)' · 끝 하나가 마지막 · `resumed`가 9번째 후보 바로 앞. (b) 일반 Mock — 15ms 일시정지 → 22ms 재개(원래 끝 30ms 앞) → 후보 1 · 끝 마지막. (c) 시작 직후 일시정지 → 200ms 동안 `phase · paused`뿐 → 재개 뒤 `resumed · progress 1 …`.
+
+### ② 5단계 실제 동작
+
+| 시험 · 장면 | 전 | 지금 |
+|---|---|---|
+| golden `tutorial-plan-order`(Windows 변형) | 4 · 5 · 6 hooks 출구 | 4 hooks · **5 실제 누르기**(기술 노트 · 전술 교육 BD 고르기 → 스캔 시작 → 끝) · 6 승인 hooks + **'적용' 실제 누르기**(한 바퀴 시험과 같음) |
+| 한 바퀴(`tutorial_host_f3c3_test`, Android 기본) | 5 실제 누르기(F3c-5부터) | 그대로 |
+| **새** Windows 변형 5단계(`tutorial_f3c8_test`) | — | 1~3 실제 · 4 hooks · 5 실제 누르기, 기다림 카드 → 진행 창 한 줄 → 끝 → 프라나 07 |
+| golden `tutorial-step-scan` · `tutorial-dialogue-review` | 2단계 · 프라나 04 | 5단계를 지나지 않아 그대로(시험 파일 변경 없음) |
+
+- 진행 창 한 줄 자리(F3c-3 발견 6): Windows 변형도 가상 대상은 진행 창(dock)이 없으므로 **화면 아래 가운데**(아래 24px, 가로 가운데) — 새 시험이 확인(2560: 아래 1368, 가운데 x 1280). 이 자리를 담는 golden 장면은 없다(새 장면 0).
+- 6단계 '적용'까지 실제로 한 이유: 5만 실제로 하고 6을 hooks로 넘기면 아이템 검토가 남아 7-3 장면 머리글 '스캔' 옆에 검토 대기 점이 생겨 장면이 942px 바뀐다(실제 앱 흐름에는 없는 상태). '적용'을 누르면 기준 이미지와 바이트 같음.
+
+### ③ 1280×720 카드 자리 — 규칙 8 · 겹침 수치
+
+- 근거: 1280에서 계획 보드는 시안 크기 상자를 같은 비율로 맞춰 약 0.45로 그려지는데(`plan_flow_order_step.dart`의 `_designBox`), 단계 카드는 620×220 그대로라 보드 오른쪽 빈 곳(약 357px)에 들어가지 않았다.
+- 규칙 8(`placeTutorialCardScaled`, 워커 결정): 배율 1 자리(규칙 1~4 · 7)가 단계의 피할 자리와 겹치면 카드를 0.05씩 하한까지 줄여 **겹침 0인 가장 큰 배율**을 고른다. 끝까지 겹치면 가장 적게 겹치는 배율. 하한 = 대사 띠와 같은 `planaScaleFor(화면)`(2560×1392 = 1 → 기준 viewport는 늘 배율 1, 1280×720 = 0.5). 피할 자리가 없는 단계는 늘 1.
+- 그리기: `TutorialCardLayer`가 카드를 원래 크기로 잰 뒤 배율을 고르고, 카드는 왼쪽 위 기준으로 줄여 칠한다(누르기 · 위치 계산도 같은 배율, 배율 1이면 변환 없이 칠함). 꼭지는 줄인 카드 변 위(크기 14 그대로). 기다림 단계는 직전 자리 · 배율 그대로(규칙 5).
+- 늘 같은 배율(대사 띠처럼)이 아니라 필요할 때만 줄인 이유: 넓은 창 · 빈자리가 있는 단계는 원래 크기(가독성), 좁은 창에서도 필요한 만큼만 줄인다.
+
+| 크기 | 단계 | 카드 사각형 | 배율 | 피할 자리 | 겹침 |
+|---|---|---|---|---|---|
+| 2560×1392 | 7-3 시작 | 1924–2544 × 1054–1274 | 1.00 | 보드 카드 8 · 순위 칸 3 | 0 · 0 |
+| 2560×1392 | 7-3 끌기 뒤 2회 | 506–1126 × 1117–1337 | 1.00 | 같음 | 0 · 0 |
+| 2560×1392 | 7-4 | 1046–1646 × 489–709 | 1.00 | 보드 카드 8 | 0 |
+| 2560×1392 | 7-5 | 912–1472 × 964–1184 | 1.00 | 보드 카드 8 · 나중에 칸 1 | 0 · 0 |
+| 1280×720 | 7-3 시작 | 895–1267 × 579–711 | 0.60 | 보드 카드 8 · 순위 칸 3 | 0 · 0 |
+| 1280×720 | 7-3 끌기 뒤 2회 | 908–1280 × 588–720 | 0.60 | 같음 | 0 · 0 |
+| 1280×720 | 7-4 | 441–1041 × 499–719 | 1.00 | 보드 카드 8 | 0 |
+| 1280×720 | 7-5 | 824–1272 × 452–628 | 0.80 | 보드 카드 8 · 나중에 칸 1 | 0 · 0 |
+
+- 시험: 한 바퀴 `_expectCardAvoids`가 이제 **두 크기 모두**(7-3 보드 카드 · 순위 칸 — 시작과 끌 때마다, 7-4 보드 카드, 7-5 보드 카드 · 나중에 칸), 2560은 카드 폭 = 단계 `cardWidth`(줄이지 않음)도 확인. `tutorial_f3c8_test`에 규칙 8 단위 시험 3개 + 위젯 시험 1개(1280 줄인 카드 341px · 보드와 겹침 0 · 줄인 카드의 그만두기 누르기 · 꼭지 위치, 피할 자리 없으면 620px).
+
+### ④ 9단계 문구
+
+| 경우 | '왜' 줄 |
+|---|---|
+| 프라나 10에서 적용 성공(`planApplied`) | **만든 계획을 활성 계획으로 적용했습니다.**(CF 문구 그대로) + 줄바꿈 + 원래 '왜'(1위 행 이름 · 읽는 중 · 부족 0 대체 문구 모두) |
+| 적용 실패 · 임시 계정 없음 | 원래 '왜' 그대로(실패는 기존 짧은 안내) |
+
+- 넣은 곳: `tutorialStepForShortage(…, planApplied:)`가 보일 때만 바꾼다(대본 데이터 그대로 → F3a 부품 golden 그대로). 덧그림이 세션의 기존 `planApplied`를 넘긴다(`tutorial_session.dart` 변경 없음). '왜' 글은 2줄까지라 두 줄(안내 · 원래 '왜')이 그대로 보인다.
+
+### golden
+
+| 장면 | 변화 · 근거 |
+|---|---|
+| `tutorial-plan-order` | **변화 0**: 흐름이 바뀌었지만(5 실제 · 6 적용 실제) 일회성 렌더가 기준 PNG와 바이트 같음 |
+| 그 밖 관련 11장면(위 목록) | **변화 0**: 일회성 렌더 바이트 같음(재생 커서 · 카드 배율 1 경로 · 9단계 문구는 이 장면들에 없음) |
+| 새 장면 | 0. `whole` = [] |
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E 7파일(`related_process_excluded.txt` — 재생 코드는 Mock 전용이라 process 경로는 바뀌지 않음), almanac validate, Python, **실제 runtime**.
+- 미실행: 사람 손 1280×720 한 바퀴(줄인 카드 글자 크기 — 0.6이면 할 일 약 9.3px), 실제 Windows 앱의 5단계(진행 창 없이 한 줄), 1280 8단계 실제 누르기 뒤 비교 표(발견 1), 키보드 흐름.
+
+### 검수표(사용자 · CF — Windows mock 앱 한 바퀴)
+
+| 단계 | 여는 방법 · 할 일 | 확인 |
+|---|---|---|
+| 시작 | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false --dart-define=BA_PLANNER_FIRST_RUN=full` → 첫 실행 ① ② ③ '만들고 튜토리얼 시작'(또는 설정 '튜토리얼 다시 하기') | 타이틀 위 프라나 01 |
+| 2 (학생 스캔) | 스캔 중 머리글 일시정지 → 잠시 뒤 재개 | 재개 뒤 후보 9명이 모두 나오고 끝 · '바뀐 6명' 검토로 감(끝이 먼저 나와 후보가 빠지지 않음) |
+| 5 (Tutorial-05) | 기술 노트 · 전술 교육 BD 고르기 → 스캔 시작 | 진행 창 없이 화면 아래 가운데 한 줄 → 끝 체크 → 프라나 07 |
+| 7-3~7-5 (2560) | 최대화 창 | 카드가 보드 카드 · 순위 칸 · 나중에 칸을 덮지 않음, 크기 그대로 |
+| 7-3~7-5 (1280×720) | 창을 1280×720로 같은 한 바퀴 | 카드가 줄어(7-3 약 0.6 · 7-5 약 0.8) 보드 오른쪽에 놓이고 칸을 덮지 않음, 글자 읽을 만한지 · 그만두기 누르기 |
+| 9 (Tutorial-09) | 프라나 10 뒤 인벤토리 | 카드 '왜' 줄 앞 '만든 계획을 활성 계획으로 적용했습니다.' |
+| 일반 스캔 | 튜토리얼 밖 스캔 탭 Mock 학생 스캔 → 일시정지 → 재개 | 후보 1 · 끝(순서 그대로) |
+
+### 발견 사항
+
+1. **Lane B SL1과의 상호작용(CF)**: SL1 미커밋 `plan_scenario_list.dart`로 1280×720에서 '나란히 비교'가 창 안에 들어오면, 한 바퀴 시험 8단계가 실제로 눌러 비교 표를 연다 → **비교 표가 1280에서 넘침 9건**(`plan_scenario_compare.dart:1324 · 1875 · 1908`, 활성 계획 열 머리 Row 등 — Lane A · B 둘 다 고칠 곳 밖의 기존 문제, 지금까지 1280에서 열린 적이 없어 안 보였음). SL1이 이대로 커밋되면 `tutorial_host_f3c3_test` 1280 변형은 이 넘침으로 실패한다. 비교 표 1280 배치를 고치거나(새 slice) 시험의 8단계 조건을 정하는 것은 CF 결정. 이 slice의 다른 기대는 SL1 WIP 아래에서도 통과(넘침만 실패).
+2. 1280에서 줄인 카드(7-3 0.6 · 7-5 0.8)의 글자는 작다(할 일 15.5 → 약 9.3px). 보드도 약 0.45로 그려져 화면 안 비율은 맞다. 사람 눈 검수 필요 — 더 크게 하려면 보조 섹션 쪽 배치 결정이 필요.
+3. 7-4 1280은 배율 1로 빈자리가 있었다(7-4는 순위 칸이 피할 자리가 아님 — F3c-6 단계표 그대로).
+4. 재생 커서로 실시간 Mock 재생은 각 단계가 앞 단계 뒤 10ms라, 부하가 크면 전체 재생이 조금 길어질 수 있다(순서는 늘 같음). 관련 시험 모두 통과.
+5. 편집 도구 백업 파일 0. 작업 목록 `debug/frontend_f3c8/related_raw.txt` · `related_all.txt` · `related_part_00~02`가 남아 있다.
+
+### 사본 · commit.json
+
+- pre 사본 12개(`debug/frontend_f3c8/pre/frontend/...`) 모두 착수 때 HEAD와 같음 → `post_dir` 없음. 실제로 고친 것은 7개(위), 5개는 사본만. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c8/commit.json`: slice `f3c8`, modified 7, added 1, `whole` = [], `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f3c8/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B SL1과 함께 레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden 변화 0 기대. 단 SL1이 지금 내용으로 들어가면 시험 단계에서 `tutorial_host_f3c3_test` 1280 변형이 비교 표 넘침으로 RED(발견 1) — 비교 표 1280 처리 결정 뒤 gate → `fe_commit.ps1 -Slice f3c8 -DryRun` → `fe_commit.ps1 -Slice f3c8`.
+- CF 결정: 발견 1(비교 표 1280 넘침 · 8단계 1280 조건), 발견 2(1280 카드 글자 크기), 6단계 '적용' 실제 누르기를 golden 흐름에 넣은 것 확인.
+- 사용자: 위 검수표로 Windows mock 한 바퀴(1280 포함).
+
+## K2 착수 기록 (2026-10-22, Lane A 워커)
+
+- 상태: **진행 중**. 범위: K1 종료 기록(status-lane-b) "K2 입력" 표의 튜토리얼 행 — 튜토리얼 안 사본 부품을 K1 키트로 바꾼다, **보이는 변화 0**. 빈 상태 행은 F3c-7이 이미 했다(이번 범위 밖).
+- 시작 SHA: `aab0112059029e2fabdc21e49757d711ba5564ad`(브랜치 `scanner-consolidation`, `git log --oneline -3`에 `aab01120` 있음). 이 status · status-lane-b 끝에 다른 "K2 착수 기록" 없음 확인. 대장 "slice별 막힘 요약" K2 행 없음 · `열림` 0건 → 막히지 않는다.
+- 공개 이름 정책: 옛 튜토리얼 이름은 얇은 별칭으로 남긴다 — 클래스 · enum은 `typedef`(위젯 트리 · `find.byType` 그대로), 함수 · painter · 버튼은 키트에 맡기는 한 줄 감싸기. 튜토리얼 밖 호출부(`TutorialHighlightShape`를 쓰는 app_shell · 스캔 검토 · 통계 · 계획 등, 빈 상태 6탭) · tutorial_targets · K1 시험은 고치지 않는다.
+- 고칠 파일 · 착수 때 기존 미커밋 변경(WIP) · 사본(`debug/frontend_k2/pre/<v7 기준 경로>`, **지금 작업 트리에서** 뜸, 6개 모두 LF · 끝 개행 하나):
+
+| 파일 | 착수 때 `git status` | 고칠 것 |
+|---|---|---|
+| `frontend/lib/ui/tutorial/tutorial_tokens.dart` | 변경 없음 | 글리프 · 그만두기 버튼 · 강조 상수 → 키트 별칭 |
+| `frontend/lib/ui/tutorial/tutorial_highlight.dart` | 변경 없음 | 강조 path · 그리기 · 빛 · 위젯 · 모양 → `KitFocusRing*` 별칭 |
+| `frontend/lib/ui/tutorial/tutorial_step_card.dart` | **기존 미커밋 변경 있음 — F3c-8 반영**(+85/−11) | 도는 표시 → `KitSpinner`, 머리글 칩 → `BaChip` ringed(Semantics 유지), 체크 · 깃발 → `KitGlyphIcon` |
+| `frontend/lib/ui/tutorial/tutorial_quit_dialog.dart` | 변경 없음 | 텍스처 · path · 외곽선 painter → 키트(`_PanelButton`은 남김) |
+| `frontend/lib/ui/tutorial/plana_dialogue.dart` | 변경 없음 | 빛 숨쉬기 · 테두리 그리기 호출 → 키트 이름(튜토리얼 안 사용처) |
+| `frontend/lib/ui/tutorial_host/tutorial_overlay.dart` | **기존 미커밋 변경 있음 — F3c-8 반영**(+3/−1) | `accountCreateParallelogram` → `kitParallelogramPath`(이 한 행만) |
+| 새 `frontend/test/kit_promotion_k2_test.dart` | 새 파일 | 같은 그림 시험 |
+
+- 고치지 않는다: Lane B SL1 · SL2 파일, `lib/ui/kit/**`, `empty_state_panel.dart` · 빈 상태 호출부, `lib/ui/tutorial_targets/**`(typedef로 변경 0 예정), `lib/services/**`, golden harness · 기준 이미지 · golden 시험, `frontend/tool/**`, `debug/frontend_f3c8/**`(F3c-8 `output.md` SHA-256 착수 때 `774b4fb4…f714`).
+
+## K2 종료 기록 (2026-10-23, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden 변화 0 기대) 남음. 시작 SHA `aab01120`, 끝날 때 HEAD 그대로, 커밋 없음(git 쓰기 안 함). 실제 runtime 미실행.
+- 결과: K1 "K2 입력" 표의 튜토리얼 행 전부를 키트로 바꿨다. 옛 공개 이름은 얇은 별칭으로 남아 **튜토리얼 밖 · tutorial_targets · K1 시험 변경 0**. 같은 그림 시험 16개 통과, 튜토리얼 golden 5장면 일회성 렌더가 기준 PNG와 **0px 차이**.
+- K2 몫 diff(pre 사본 → 지금, `git diff --no-index --numstat`): `tutorial_tokens.dart` +50/−98 · `tutorial_highlight.dart` +23/−198 · `tutorial_step_card.dart` +29/−116 · `tutorial_quit_dialog.dart` +11/−51 · `plana_dialogue.dart` +3/−3 · `tutorial_overlay.dart` +3/−3. 새 `test/kit_promotion_k2_test.dart`(1357줄, 시험 16). `tutorial_targets/**` · `lib/ui/kit/**` · 빈 상태 · services · golden 시험 · harness · 기준 이미지 diff 0.
+- 서식 · 바이트: 고친 6파일 모두 사본 · 지금 파일에 `dart format -o show`(세션 임시 폴더 사본)를 돌린 "format 차이"가 0 → 0(고친 줄이 서식과 같음). 새 시험은 경로 하나로 `dart format`. 7파일 LF · CR 0 · 끝 개행 하나 · 줄 끝 공백 0, `git diff --check`(고친 경로) 출력 없음(CRLF 경고만). `.orig` · `.rej` · `~` 0.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze lib/ui/tutorial lib/ui/tutorial_host lib/ui/tutorial_targets`(첫 편집 뒤) | 오류 1(`Semantics`가 const 생성자 아님 — 머리글 칩) → 고침 |
+| `flutter analyze`(전체, 중간 · 마지막 2회) | **No issues found!** 2회(`pubspec.lock` 변화 없음) |
+| `dart analyze test/kit_promotion_k2_test.dart` | No issues found! |
+| `flutter test test/kit_promotion_k2_test.dart` 6회 | 1회 **+16**(그러나 hover 대조가 실제 hover를 그리지 않았음 — 발견 1) → 2 · 3회 −1(새 "hover가 그림을 바꿈" 확인이 잡음) → 4회 +16(hover 때 강조 모드 traditional + 한 장 더) → 5회 · 마지막 **+16 All passed** |
+| 관련 기존 시험 73파일(`debug/frontend_k2/related_tests.txt` — 고친 6파일 · `TutorialHost` · `BAPlannerApp(` · `AppShell(` · 옛 튜토리얼 이름 · 키트 강조/도는 표시/패널 버튼을 쓰는 시험 + `tutorial_*` · `kit_*` · `test/kit/*` · `first_run_*` · `widget_test`, golden 폴더 · fixtures 제외, process E2E 1 제외 — `related_excluded.txt`) 3묶음 `--exclude-tags golden` | 00 **+221 −1** · 01 **+174 −1** · 02 **+294 All passed**. 두 −1은 시험 실패가 아니다: `test/kit/kit_test_utils.dart`(시험 도우미, `main` 없음 — 내 목록 실수), `test/plan_scenario_compare_sl2_test.dart`(**Lane B SL2 진행 중 WIP** — `planCompareActiveId` 미정의로 컴파일 실패, 이 slice와 무관). 넘침(`overflowed`) 0줄. 요구한 시험 모두 포함: `tutorial_parts_f3a` · `tutorial_host_f3c3`(2560 · 1280 한 바퀴 포함 통과) · `tutorial_f3c6` · `tutorial_f3c8` · `tutorial_targets_f3c2` · `tutorial_plan_f3c5` · `kit_promotion_k1` · `first_run_*` · `widget_test` |
+| 일회성 렌더(`test/goldens/k2_render_{f3a,f3c3,f3c5}_tmp_test.dart` — 원본 golden 시험 사본에서 `@Tags` · `library;`를 빼고 `expectGoldenScene`을 바이트 대조 함수로 바꿈, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep **0건** 확인, golden 비교 시험 아님) | **+5**: `tutorial-card-parts` · `plana-dialogue` · `tutorial-step-scan` · `tutorial-dialogue-review` · `tutorial-plan-order` 모두 2560×1392 **diff=0px** → 사본 3개 바로 삭제(`test/goldens`에 `k2_` 0, `failures/` 새 파일 0) |
+
+로그: `debug/frontend_k2/logs/`(`k2-test-1~5` · `k2-test-final` · `related-00~02` · `render-1` · `fmt_new_test.txt`). 전체 fe_gate · golden 비교 · process E2E · Python은 실행하지 않았다.
+
+### 교체 표(사본 → 키트 · 같은 그림 근거)
+
+같은 그림 시험(`kit_promotion_k2_test.dart`)은 K2 직전 사본(F3c-8 반영 작업 트리)을 시험 안 `_Pre*`에 그대로 옮겨(값은 그때 상수 그대로) 새 부품과 같은 자리에 그리고 RGBA 바이트 · 위젯 크기를 대조한다(빈 그림과 다름 확인 포함).
+
+| 파일 · 사본 | 지금 | 근거 |
+|---|---|---|
+| `tutorial_tokens` `TutorialGlyph` · `TutorialGlyphPainter` | 별칭 enum(`kit` · `strokeWidth`: 체크 `KitGlyph.check` 2.8 · 깃발 `KitGlyph.flag` 1.9), painter는 `KitGlyphPainter`에 맡김. 새 상수 `tutorialCheckStroke = 2.8` | 2글리프 × 크기 13 · 24 · 40 × 굵기(기본 · 1.5) 픽셀 · 크기 같음 |
+| 단계 카드 체크(하위 체크 13 · 완료 24) · 머리글 깃발 13 | `KitGlyphIcon(…, strokeWidth: tutorialCheckStroke)` · `KitGlyphIcon(KitGlyph.flag, 13)` | 13 · 24 픽셀 같음 + **굵기 2.8을 빼면 다르게 그려짐**을 시험이 확인(check 2.8 주의) |
+| `TutorialQuitButton`(+ `.band` · `.inline`) | 같은 공개 생성자, `TonalButton(leading: KitGlyphIcon(close, 13/15/12), height 30/40/26, horizontalPadding 12/16/9, gap 5/7/4, fontWeight bold, fontSize 12.5/13.5/11.5)` | 세 크기 × (보통 · hover) + 비활성 픽셀 · 크기 같음, hover가 실제로 그림을 바꿈 확인, 누르기 · 키 그대로 |
+| 강조 상수 `tutorialHighlightColor` · `tutorialHighlightStroke` · `tutorialGlow*` | `kitFocusRingColor` · `kitFocusRingStroke` · `kitFocusGlow*`의 별칭 const | 값 대조 9개 |
+| `tutorial_highlight` path · 그리기 · bounds · 간격 | `tutorialHighlightPath` · `paintTutorialRing` · `tutorialHighlightBounds` = 한 줄 감싸기, `tutorialHighlightOffset` = 별칭 const | path 3사각형 × 반지름 3 × 2모양 대조(윤곽 · 길이 · 17점 · bounds), bounds 2모양 같음 |
+| `TutorialHighlightShape` · `TutorialGlowBuilder` · `TutorialHighlight` · `TutorialHighlightRing` | `typedef` → `KitFocusRingShape` · `KitFocusGlowBuilder` · `KitFocusRing` · `KitFocusRingAt` | 멈춘 빛 픽셀 같음(사각형 사선 · 둥근, 감싸기 사선 · 둥근, 프라나 밝히기 테두리), 숨쉬는 빛 0 · 300 · 1250ms 같음, 별칭 = 키트 타입 |
+| `TutorialSpinner` · `_SpinnerPainter` | `typedef TutorialSpinner = KitSpinner`, 카드는 `KitSpinner()` | 멈춤 · 125 · 375 · 820ms 회전 픽셀 같음 |
+| `TutorialHeaderChip` | 같은 클래스, `Semantics(label, excludeSemantics)`로 `BaChip(ringed, height 26, tone AppTone(primary, .18, #a8e0ff), leading 깃발 13)` 감쌈 | 픽셀 · 크기 같음, 바탕 @.18 · 링 @.55, 의미 라벨 하나 · 자식 노드 0 |
+| `tutorial_quit_dialog` `_quitTexture` · `accountCreateParallelogram` · `_OutlinePainter` | `kitPanelCancelTexture` · `kitParallelogramPath` · `ParallelogramOutlinePainter(radius: 8)` | path 980×290 r18 · 170×56 r8 대조, 텍스처 같음, **패널 전체 픽셀 · 크기 같음**(키보드 포커스 '계속하기' 하늘 2.6 외곽선 상태 포함, 외곽선이 실제로 보임 확인) |
+| `plana_dialogue` 빛 · 밝히기 테두리 | `KitFocusGlowBuilder` · `paintKitFocusRing`(import `tutorial_highlight` → `kit/focus_ring`) | 밝히기 테두리 픽셀 같음 + golden `plana-dialogue` 0px |
+| `tutorial_overlay` 완료 패널 path(1 마지막 행) | `kitParallelogramPath`(import `panel_button.dart show kitParallelogramPath`, `account_create_modal`은 `accountCreatePanelFill`만) | path 1080×480 r18 대조 |
+
+### 남긴 별칭 · 바꾸지 않은 부품과 이유
+
+- 별칭(공개 이름 그대로): `TutorialGlyph`(별칭 enum — K1 시험이 `TutorialGlyph.check`로 옛 굵기 규칙을 쓰고, typedef면 값이 16개가 된다 · F3c-7 선례) · `TutorialGlyphPainter` · `TutorialQuitButton`(세 크기 미리 정한 값, 카드 · 대사 띠 · 진행 창이 씀) · `tutorialHighlight*` · `tutorialGlow*` · `paintTutorialRing` · typedef 5개(`TutorialHighlightShape` · `TutorialGlowBuilder` · `TutorialHighlight` · `TutorialHighlightRing` · `TutorialSpinner`). typedef라 `find.byType(TutorialHighlightRing / TutorialSpinner)` 시험과 tutorial_hooks · app_shell · 스캔 검토 · 통계 · 계산기 · 계획 순서 등록표가 그대로 돈다.
+- **사용처 변경 줄 0**: `tutorial_targets/**` · `tutorial_host/tutorial_overlay.dart`(parallelogram 행 말고) · 튜토리얼 밖 호출부 · `test/fixtures/tutorial_f3a_fixture.dart` · K1 시험은 고치지 않았다.
+- 바꾸지 않은 부품: **`_PanelButton`**(그만두기 확인 버튼) — K1 표 주의대로 키트 `ParallelogramPanelButton`과 다른 부품이다(KitPressable 키보드 포커스 외곽선 하늘 2.6 · autofocus · 글자 직접 그림 · 3px 여백/줄이기 없음, 키트는 InkWell). 바꾸면 포커스 표시가 사라지거나 키트에 변형이 필요해 `lib/ui/kit/**`를 고쳐야 한다. 대신 path · 텍스처 · 외곽선 painter는 키트를 쓴다. **`_PathClipper`**(패널 · 버튼 자르기)도 남김 — 키트의 자르개는 비공개(`_ParallelogramClipper`)라 쓸 수 없다(키트 고치지 않음).
+- 키트로 바꾸면 그림이 달라지는 부품: 없음.
+
+### golden 변화 0 근거
+
+| 장면 | 근거 |
+|---|---|
+| `tutorial-card-parts` · `plana-dialogue` · `tutorial-step-scan` · `tutorial-dialogue-review` · `tutorial-plan-order` | 일회성 렌더 RGBA가 기준 PNG 디코드와 **0px 차이**(위 표). SL1 · SL2 WIP 작업 트리 위에서 찍었다 |
+| `account-new` · `first-run-*` · `empty-*` 등 | 이 slice가 고친 파일을 그리지 않는다(`account_create_modal` · `first_run_modal` · `empty_state_panel` 변경 0) |
+| 새 장면 | 0. `whole` = [] |
+
+### 미검증("미실행")
+
+- 미실행: golden 비교(`fe_gate.ps1`) · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E(`test/tutorial_practice_process_e2e_test.dart` — 프로세스 경로, 이 slice는 그리기만 바꿈), almanac validate, Python, **실제 runtime**(Windows 앱 · 실제 글꼴 Pretendard로 그린 픽셀 — 시험은 시험 글꼴, golden 5장면 렌더는 golden 글꼴).
+- 미실행: 사람 손 키보드 흐름(그만두기 확인 Tab · Esc), 화면 읽기 프로그램.
+
+### 발견 사항
+
+1. **hover 대조 함정(시험 쪽)**: 시험 기본 플랫폼은 터치 강조 모드라 `KitPressable`의 hover(`onShowHoverHighlight`)가 그려지지 않는다 — 마우스만 올리면 hover 대조가 늘 "같음"으로 통과한다. K2 시험은 hover 때 `FocusHighlightStrategy.alwaysTraditional` + 한 장 더 그리기로 고치고 "hover가 그림을 바꿈"을 따로 확인한다. K1 시험에는 hover 대조가 없어 영향 없음.
+2. `TonalButton`의 글자는 `overflow` 없음, 옛 그만두기 버튼 · 머리글 칩은 `ellipsis`였다 — 둘 다 `Row(mainAxisSize.min)`의 비유연 자식이라 폭 제한을 받지 않아 말줄임이 일어날 수 없다(그림 같음). 좁은 자리에서 넘치면 둘 다 넘침 예외로 같다.
+3. `kitParallelogramPath`(`diagonalRoundedPolygon` arc)와 `accountCreateParallelogram`(`buildRoundedSectionPolygon`)은 다른 함수지만 튜토리얼이 쓰는 3크기에서 path가 같다(시험). 공개 `accountCreateParallelogram`은 이제 계정 모달 · 첫 실행 모달 · K1 시험만 쓴다.
+4. F3c-8 `debug/frontend_f3c8/commit.json`에 `"post_dir": "debug/frontend_k2/pre"`가 들어 있다(CF가 넣은 것으로 보임, 이 워커는 고치지 않음) — K2 pre 사본이 F3c-8 끝 내용이라는 뜻과 맞다. F3c-8 `output.md` SHA-256 착수 때와 같음(`774b4fb4…`).
+5. 관련 시험 목록에 도우미 `test/kit/kit_test_utils.dart`가 섞여 −1(로드 실패)로 보였다 — 시험 실패 아님. Lane B `plan_scenario_compare_sl2_test.dart`는 SL2 WIP로 컴파일 실패(이 slice 무관 — CF 확인 필요).
+6. F3c-8 종료 기록 발견 1(1280 한 바퀴 비교 표 넘침)은 이번 실행에서 재현되지 않았다 — `tutorial_host_f3c3_test` 통과(SL2 WIP 반영 작업 트리).
+7. 작업 목록 `debug/frontend_k2/related_raw.txt`(빈 파일 — 중단된 첫 수집) · `related_part_00~02`가 남아 있다. 편집 도구 백업 파일 0.
+
+### 사본 · commit.json
+
+- pre 사본 6개(`debug/frontend_k2/pre/frontend/...`) — **작업 트리에서** 떴다. `tutorial_step_card.dart` · `tutorial_overlay.dart`는 F3c-8 반영 내용(HEAD와 다름), 나머지 4개는 HEAD와 같음. F3c-8 → K2 순서로 커밋하면 K2 몫만 들어간다.
+- `debug/frontend_k2/commit.json`: slice `k2`, modified 6, added 1, `whole` = [], `optional_added` = [], `status` true(이 문서는 `modified`에 넣지 않음). 메시지 ASCII.
+- 인계: `debug/frontend_k2/output.md`.
+
+### 다음 행동
+
+- CF: F3c-8 → SL1 → SL2 커밋 뒤(레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden 변화 0 기대 → `fe_commit.ps1 -Slice k2 -DryRun` → `fe_commit.ps1 -Slice k2`.
+- CF 판단: 발견 1(키트 시험의 hover 대조 방식 — 다른 키트 시험에 같은 함정이 있는지), `_PanelButton` 키트화 여부(키트에 포커스 외곽선 변형을 더할지 — K1 발견 1 그대로 열림).
+
+### f3c8 commit record (2026-10-24 00:59, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_004309\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: frontend/lib/ui/tutorial/tutorial_step_card.dart, frontend/lib/ui/tutorial_host/tutorial_overlay.dart

@@ -6,9 +6,11 @@
 //   '튜토리얼 · 임시 계정'. 왼쪽 레일은 4단계 진행(1 · 2 완료, 3 지금).
 //   F3c-6: 튜토리얼 보드는 칸 3개(1 · 2 · 3순위, 3순위는 빈 칸)로 시작하고(사용자 결정 ⑥), 카드는 보드 카드 · 순위 칸을
 //   피한 자리(카드 자리 규칙 7 — 빈자리가 없으면 가장 적게 겹치는 자리)에 놓인다.
-// 1~3단계는 실제 화면 동작(가상 창 연결 · 학생 스캔 · 적용), 4~6단계는 hooks 출구(Windows 변형의 아이템 스캔은 진행
-// 창 경로를 기다린다), 7-1 · 7-2 · 7-2c 추가는 실제 누르기, 스킬 값은 편집기로 간다. 서비스는 시각을 고정한 Mock. 공용 도구는
-// golden_harness.dart의 공개 함수만 쓴다(harness는 고치지 않는다).
+// 1~3단계는 실제 화면 동작(가상 창 연결 · 학생 스캔 · 적용), 4단계는 hooks 출구, 5단계는 실제 누르기(F3c-8 — 아이템
+// 2종 고르기 → 시작 → 끝, Windows 변형도 가상 대상은 진행 창 없이 끝난다: F3c-7), 6단계는 승인 hooks 출구 · '적용' 실제
+// 누르기(한 바퀴 시험과 같음 — 적용하지 않으면 머리글 '스캔' 옆 검토 대기 점이 남는다), 7-1 · 7-2 · 7-2c 추가는 실제 누르기,
+// 스킬 값은 편집기로 간다. 서비스는 시각을 고정한 Mock. 공용 도구는 golden_harness.dart의 공개 함수만 쓴다(harness는 고치지
+// 않는다).
 //
 // PNG 생성(사용자 PC, Windows):  .\frontend\tool\fe_gate.ps1 -UpdateGoldens
 // 비교:                          .\frontend\tool\fe_gate.ps1
@@ -153,17 +155,24 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('scan-review-bulk-apply')));
     await _waitDone(tester, session);
 
-    // 4 · 5 · 6: hooks 출구(golden 변형은 Windows라 아이템 스캔이 진행 창(dock) 경로를 기다린다 — 실제 동작은
-    // walkthrough 시험이 본다. 7-3 장면에는 아이템 수량이 보이지 않는다).
-    for (final (id, signal) in const [
-      ('4', TutorialSignals.studentCalculatorTargetChanged),
-      ('5', TutorialSignals.scanItemFinished),
-      ('6', TutorialSignals.itemReviewApplied),
-    ]) {
-      await _toStep(tester, session, id);
-      hooks.signals.emit(signal);
-      await _waitDone(tester, session);
-    }
+    // 4: hooks 출구(학생 · 상세 · 계산기 · 목표 — 실제 동작은 walkthrough 시험 몫).
+    await _toStep(tester, session, '4');
+    hooks.signals.emit(TutorialSignals.studentCalculatorTargetChanged);
+    await _waitDone(tester, session);
+    // 5: 기술 노트 · 전술 교육 BD 고르기 → 스캔 시작 → 가상 아이템 스캔 끝(실제 누르기).
+    await _toStep(tester, session, '5');
+    await tester.tap(find.byKey(const ValueKey('scan-pick-item-tech_notes')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('scan-pick-item-tactical_bd')));
+    await _frames(tester, 2);
+    await tester.tap(find.byKey(const ValueKey('scan-pick-start')));
+    await _waitDone(tester, session);
+    // 6: 확인 필요 2칸 승인은 hooks 출구, '적용'은 실제 누르기.
+    await _toStep(tester, session, '6');
+    hooks.signals.emit(TutorialSignals.itemReviewUncertainApproved);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('scan-item-apply')));
+    await _waitDone(tester, session);
 
     // 7-1 · 7-2 · 7-2b · 7-2c(계획 만들기 1 · 2).
     await _toStep(tester, session, '7-1');

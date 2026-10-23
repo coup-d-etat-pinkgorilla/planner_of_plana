@@ -5,7 +5,8 @@
 // - 단계(`step` · `stepComplete`): [TutorialCardLayer] + 강조 테두리(등록된 실제 위젯 모양). 대상이 화면에 없으면 강조
 //   생략(F3a 발견 8). 5단계는 기다림(아이템 스캔 시작) 뒤 진행 창 한 줄([TutorialInlineStepLine]).
 //   F3c-6: 카드는 단계의 [TutorialStep.avoidKeys] 대상(조각마다)을 피한다(카드 자리 규칙 7). 9단계 카드는 부족 1위 행의
-//   실제 이름 · 빈 목록 대체 문구로 바꿔 보인다([tutorialStepForShortage]).
+//   실제 이름 · 빈 목록 대체 문구로 바꿔 보인다([tutorialStepForShortage]). F3c-8: 프라나 10에서 활성 계획을 적용했으면
+//   9단계 카드 '왜' 줄 앞에 적용 안내 한 줄.
 // - 그만두기 확인 · 끝 화면(시안 Tutorial-Done) · 정리 실패(다시 시도) · 짧은 안내.
 // 사각형은 프레임마다 다시 읽는다(프레임 뒤 비교 — 바뀌면 다시 그린다). 튜토리얼이 꺼져 있으면 아무것도 그리지 않는다.
 import 'package:flutter/foundation.dart';
@@ -251,6 +252,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       raw,
       topName: _registry.labelOf(TutorialTargets.inventoryShortageTopRow),
       empty: _session.shortageEmpty,
+      planApplied: _session.planApplied,
     );
     final waiting = flow.cardMode == TutorialCardMode.waiting;
     if (step.presentation == TutorialStepPresentation.inlineLine && waiting) {

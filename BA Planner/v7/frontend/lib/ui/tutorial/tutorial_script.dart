@@ -877,6 +877,10 @@ const tutorialShortageEmptyTitle = '지금 계획에는 부족한 재화가 없�
 const tutorialShortageEmptyWhy = '부족한 재화가 생기면 이 목록 맨 위에 옵니다.';
 const tutorialShortageEmptyDone = '부족한 재화가 없습니다';
 
+/// 9단계 카드 '왜' 줄 앞 한 줄: 튜토리얼이 7-6 시나리오를 임시 계정의 활성 계획으로 적용했다(F3c-6 발견 1, CF 결정
+/// 2026-10-22 — 문구 그대로).
+const tutorialPlanAppliedLine = '만든 계획을 활성 계획으로 적용했습니다.';
+
 /// 받침에 맞춘 목적격 조사 '을' / '를'(받침 없음 = '를'). 끝의 닫는 괄호 · 따옴표 · 공백은 건너뛰고, 한글이 아니면 '(을)를'.
 String koreanEulReul(String word) {
   var text = word.trimRight();
@@ -890,16 +894,33 @@ String koreanEulReul(String word) {
 }
 
 /// 9단계 카드(부족 1위 행 열기)를 지금 인벤토리에 맞춘다: 행 이름을 알면 예시 이름([tutorialTopShortageSample])을
-/// [topName]으로(조사 포함), 모르면 [tutorialTopShortagePending], 부족 목록이 비었으면([empty]) 대체 문구다. 다른 단계는
-/// 그대로 준다.
+/// [topName]으로(조사 포함), 모르면 [tutorialTopShortagePending], 부족 목록이 비었으면([empty]) 대체 문구다.
+/// [planApplied]면(F3c-8) '왜' 줄 앞에 [tutorialPlanAppliedLine] 한 줄을 더한다. 다른 단계는 그대로 준다.
 TutorialStep tutorialStepForShortage(
   TutorialStep step, {
   String? topName,
   bool empty = false,
+  bool planApplied = false,
 }) {
   if (step.completeSignal != TutorialSignals.inventoryTopShortageOpened) {
     return step;
   }
+  final shown = _shortageStep(step, topName: topName, empty: empty);
+  if (!planApplied) return shown;
+  final why = shown.why;
+  return _stepWith(
+    shown,
+    why: why == null
+        ? tutorialPlanAppliedLine
+        : '$tutorialPlanAppliedLine\n$why',
+  );
+}
+
+TutorialStep _shortageStep(
+  TutorialStep step, {
+  String? topName,
+  required bool empty,
+}) {
   final title = step.title;
   if (empty) {
     return _stepWith(
