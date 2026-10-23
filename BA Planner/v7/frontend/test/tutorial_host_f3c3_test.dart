@@ -365,6 +365,24 @@ void main() {
         hooks.registry.geometryOf(TutorialTargets.studentReviewUncertainGroup),
         isNotNull,
       );
+      // F3c-9: 대사 4가 유우카 폴백 확인 칸을 밝힌다 — v2 합성 crop이 그 칸에 그려진다.
+      while (session.flow!.lineIndex < 3) {
+        session.flow!.advanceLine();
+        await tester.pump();
+      }
+      await _frames(tester, 3);
+      expect(
+        session.flow!.revealKeys,
+        contains(TutorialTargets.studentReviewFallbackCheck),
+      );
+      expect(
+        hooks.registry.geometryOf(TutorialTargets.studentReviewFallbackCheck),
+        isNotNull,
+      );
+      expect(
+        find.byKey(const ValueKey('scan-review-fallback-crop')),
+        findsOneWidget,
+      );
       await _finishScene(tester, session);
 
       // 3단계: 6명 한 번에 적용.

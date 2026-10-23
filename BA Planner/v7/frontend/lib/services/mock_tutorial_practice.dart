@@ -1,25 +1,31 @@
 // X4 / FD-182 튜토리얼 임시 계정 Mock 데이터 · 가상 스캔 재생(F3c-1, contracts/tutorial-practice-v1).
 //
-// 출처: XB 합성 데이터 `debug/xb_available_work_20261020/artifacts/tutorial-dataset-fd183.json`
-// (dataset_version `tutorial-v1`, 39483 bytes, sha256 61652a3b2492d3e61a5e9f0f8eee1ce8020649ac0cba33d1fe120f9e5dcfc37b)를
-// 아래 Dart 상수로 옮겨 적었다. 런타임에 JSON을 읽지 않고, 설치 폴더 에셋도 읽지 않는다.
+// 출처(F3c-9): XB 합성 데이터 v2 `debug/xb_resume_20261023/artifacts/tutorial-dataset-v2.json`
+// (dataset_version `tutorial-v1`, content_revision 2, 42239 bytes,
+// sha256 ec7be3e59d8b979cb4145fe4ece5cb7d5b5eb3fa7168842b010e5ea825a71dd3)를 아래 Dart 상수로 옮겨 적었다. 런타임에 JSON을
+// 읽지 않고, 설치 폴더 에셋도 읽지 않는다. 옛 출처(F3c-1, v1): `debug/xb_available_work_20261020/artifacts/
+// tutorial-dataset-fd183.json`(39483 bytes, sha256 61652a3b2492d3e61a5e9f0f8eee1ce8020649ac0cba33d1fe120f9e5dcfc37b).
 //
-// 데이터셋과 다른 곳(대본 F3a `tutorial_script.dart` 우선, status "F3c-1 종료 기록" 발견 사항):
-// - 기술 노트 index 26 · 27(수량 46 · 47)은 수량은 그대로 두고 '확인 필요'(근거 uncertain)로 낸다 — 대본 "확인 필요 2칸
-//   승인" → "승인한 56칸 적용"(사용자 결정 2026-10-21). 기본 승인 54, 수량 null 4칸은 '읽지 못함'.
-// - seed 이전 인벤토리는 데이터셋에 없어 Mock이 정했다: 기술 노트 index 0~4는 스캔과 같은 수량, 5~9는 5 적은 수량.
-// - 데이터셋 `provenance`는 옮기지 않는다(스캔 후보 payload에는 없는 키).
+// v2가 대본에 맞춘 것(F3c-1 · F3c-5 · F3c-6 발견 → XB 2026-10-23 정렬, Mock 값은 그대로):
+// - 기술 노트 index 26 · 27(수량 46 · 47)은 `review_required`(근거 uncertain) — 대본 "확인 필요 2칸 승인" → "승인한
+//   56칸 적용". 기본 승인 54, 수량 null 4칸은 '읽지 못함'.
+// - seed 이전 인벤토리 `previous_inventory`: 기술 노트 index 0~4는 스캔과 같은 수량, 5~9는 5 적은 수량.
+// - 예시 시나리오 3페이즈(네루(교복) 2순위) · 계약 seed 문장(예시 시나리오 하나).
+// - 유우카 `weapon_level_fallback` 근거 · 합성 crop(`yuuka-fallback-evidence.json`, [tutorialPracticeFallbackEvidence]).
+//
+// v2와 다른 곳(대본 F3a `tutorial_script.dart` 우선): 마키 강화 · 서브([tutorialPracticeScriptStudentOverrides]).
+// - 데이터셋 `provenance` · `synthetic`은 옮기지 않는다(스캔 후보 payload에는 없는 키).
 // - 학생 근거 · 진행 문구 키는 기존 scanner wire 모양(`level` 근거, `student_stat_validation`, `scanner.student.matched` ·
 //   `scanner.inventory.grid`)을 쓴다. 분모는 재생이 아는 값(학생 9 · 종류별 30)만 싣는다.
 import 'app_service.dart';
 import 'repository_service.dart';
 import 'scanner_service.dart';
 
-/// 옮겨 적은 데이터셋 경로 · SHA-256(시험이 기록을 확인한다).
+/// 옮겨 적은 데이터셋 경로 · SHA-256(시험이 기록을 확인한다). F3c-9: v2(옛 v1 경로는 머리말).
 const tutorialPracticeDatasetPath =
-    'debug/xb_available_work_20261020/artifacts/tutorial-dataset-fd183.json';
+    'debug/xb_resume_20261023/artifacts/tutorial-dataset-v2.json';
 const tutorialPracticeDatasetSha256 =
-    '61652a3b2492d3e61a5e9f0f8eee1ce8020649ac0cba33d1fe120f9e5dcfc37b';
+    'ec7be3e59d8b979cb4145fe4ece5cb7d5b5eb3fa7168842b010e5ea825a71dd3';
 
 /// 지난 스캔 세션 id(데이터셋 `previous_scan.session_id`).
 const tutorialPracticePreviousScanSessionId = 'tutorial-previous-scan-v1';
@@ -68,7 +74,8 @@ class TutorialPracticeStudentExample {
   final bool fallbackCaptureRequired;
 }
 
-/// 대본 우선으로 '확인 필요'로 내는 기술 노트 칸(index 26 · 27, 수량은 데이터셋 그대로).
+/// 대본 "확인 필요 2칸 승인"의 기술 노트 칸(index 26 · 27, 수량은 데이터셋 그대로). F3c-1은 대본 우선으로 따로
+/// 표시했고, v2부터 데이터셋도 이 두 칸을 `review_required`로 낸다.
 const tutorialPracticeScriptReviewKeys = {
   'Item_Icon_SkillBook_Arius_2',
   'Item_Icon_SkillBook_Arius_3',
@@ -148,7 +155,7 @@ bool tutorialPracticeReplaySupported(
   ScannerKind.tacticalLobby => false,
 };
 
-/// seed 이전 인벤토리(Mock이 정한 값 — 위 머리말).
+/// seed 이전 인벤토리(v2 `previous_inventory`와 같은 값 — 위 머리말).
 List<Map<String, dynamic>> tutorialPracticePreviousInventory() => [
   for (final item in tutorialPracticeTechNotes.take(10))
     {
@@ -264,18 +271,20 @@ const tutorialPracticeExampleMaxTargets = <String, int>{
   'stat_heal': 25,
 };
 
-/// 예시 시나리오 페이즈(대본 우선, CF 결정 2026-10-21 · 사용자 결정 2026-10-21): 데이터셋은 한 페이즈 '한 번에'에 7명이지만,
-/// 대본 09c "마키 씨도 한 번에 MAX로 키우고, 네루(교복) 씨도 2순위 페이즈에 넣은 안"을 따라 7-3 순위(칸나(수영복) · 마키 ·
-/// 미카 1순위, 시로코(수영복) · 히마리(무장) 2순위, 아카네 3순위)에 네루(교복)를 2순위로 더했다. 잇기 · 나중에 칸은 없다.
+/// 예시 시나리오 페이즈(대본 09c "마키 씨도 한 번에 MAX로 키우고, 네루(교복) 씨도 2순위 페이즈에 넣은 안" — CF 결정 ·
+/// 사용자 결정 2026-10-21): 7-3 순위(칸나(수영복) · 마키 · 미카 1순위, 시로코(수영복) · 히마리(무장) 2순위, 아카네
+/// 3순위)에 네루(교복)를 2순위로 더했다. 잇기 · 나중에 칸은 없다. v1 데이터셋은 한 페이즈 '한 번에'에 7명이었고, v2
+/// `example_scenario`가 이 3페이즈(페이즈 id · 이름 · 단계 id · 목표)와 같다.
 const tutorialPracticeExamplePhases = <(String, List<String>)>[
   ('1순위', ['kanna_swimsuit', 'maki', 'mika']),
   ('2순위', ['shiroko_swimsuit', 'himari_battle', 'neru_school_uniform']),
   ('3순위', ['akane']),
 ];
 
-/// 임시 계정 seed의 예시 시나리오 기록(`PlanningScenarioRecord` wire). 계약(`contracts/tutorial-practice-v1`)은
-/// "scenarios start empty"인데 대본 8단계 체크 '예시와 함께 비교에 담기'(처음부터 끝남) · 09c "예시 시나리오를 하나 더
-/// 준비해 두었습니다"가 이 시나리오를 전제한다(F3c-4 발견 1) — 차이는 CF가 XB에 요청한다.
+/// 임시 계정 seed의 예시 시나리오 기록(`PlanningScenarioRecord` wire). 대본 8단계 체크 '예시와 함께 비교에 담기'(처음부터
+/// 끝남) · 09c "예시 시나리오를 하나 더 준비해 두었습니다"가 이 시나리오를 전제한다(F3c-4 발견 1). 계약
+/// (`contracts/tutorial-practice-v1`)은 XB 정정(2026-10-23)부터 "scenarios start with one fixed example"이다. 문서는 v2
+/// 데이터셋처럼 version 1(활성 계획 적용은 F3c-6이 v2로 옮긴다).
 Map<String, dynamic> tutorialPracticeExampleScenario(
   String profileId, {
   required String scenarioId,
@@ -391,6 +400,7 @@ ScannerCandidate _studentCandidate(
             : 'verified',
       },
     ),
+    if (example.fallbackCaptureRequired) tutorialPracticeFallbackEvidence,
   ],
   reviewRequired: example.reviewRequired,
   approved: false,
@@ -462,7 +472,8 @@ List<TutorialReplayStep> tutorialPracticeReplay(
 
 /// 데이터셋과 다른 학생 값(대본 우선, 사용자 결정 2026-10-21 F3c-5): 대본 7-2b "마키 1단계 M/M/1/1"은 강화 · 서브 목표 1을
 /// 요구하는데 목표는 지금 값보다 낮게 둘 수 없다(`PlanFlowGoalEditor.setTarget`). 데이터셋의 마키 강화 · 서브 4를 지난
-/// 스캔 · 가상 스캔 둘 다 1로 둔다(레벨 · EX · 기본은 그대로 — '바뀐 학생'은 그대로). CF가 XB에 데이터셋 정렬을 요청한다.
+/// 스캔 · 가상 스캔 둘 다 1로 둔다(레벨 · EX · 기본은 그대로 — '바뀐 학생'은 그대로). v2도 마키 강화 · 서브는 4이고
+/// `plan_instructions.maki_stage1`만 1이다(F3c-9 발견) — 대본 우선으로 이 덮어쓰기를 유지한다.
 const tutorialPracticeScriptStudentOverrides = <String, Map<String, int>>{
   'maki': {'skill2': 1, 'skill3': 1},
 };
@@ -832,6 +843,8 @@ const tutorialPracticeTechNotes = <TutorialPracticeItem>[
     InventoryScanProfile.techNotes,
     26,
     '46',
+    reviewRequired: true,
+    suggestedApproval: false,
   ),
   TutorialPracticeItem(
     'Item_Icon_SkillBook_Arius_3',
@@ -839,6 +852,8 @@ const tutorialPracticeTechNotes = <TutorialPracticeItem>[
     InventoryScanProfile.techNotes,
     27,
     '47',
+    reviewRequired: true,
+    suggestedApproval: false,
   ),
   TutorialPracticeItem(
     'Item_Icon_SkillBook_Shanhaijing_0',
@@ -1077,3 +1092,165 @@ const tutorialPracticeTacticalBd = <TutorialPracticeItem>[
     suggestedApproval: false,
   ),
 ];
+
+/// 유우카 폴백 확인 근거(v2 `debug/xb_resume_20261023/artifacts/yuuka-fallback-evidence.json`, 10647 bytes,
+/// sha256 bf1477855f44edf8a123ca498a90baa289153de2198b8a5f668b42de548327ee — 기존 FieldEvidence 모양 그대로). 검토 보드는
+/// `weapon_level_fallback` 근거의 `details.crop_png_base64`를 폴백 확인 칸(`scan.studentReview.fallbackCheck`)에 그린다
+/// (FB-10c · FD-145 — 실제 스캐너와 같은 길). 가상 스캔에서 `fallback_capture_required` 학생(유우카)에게만 싣는다.
+const tutorialPracticeFallbackEvidence = ScannerFieldEvidence(
+  field: 'weapon_level_fallback',
+  status: 'ok',
+  source: 'tutorial-synthetic-v1',
+  confidence: 1.0,
+  note:
+      'Synthetic tutorial UI crop; not a native recognition or inverse calculation result.',
+  details: {
+    'crop_png_base64': tutorialPracticeYuukaCropPngBase64,
+    'crop_source': 'basic_info',
+    'crop_width': 512,
+    'crop_height': 168,
+  },
+);
+
+/// 유우카 폴백 crop PNG(512×168, 7720 bytes, base64 10296자). **합성 UI 그림 — 게임 캡처 아님**: XB가 만든 튜토리얼용
+/// 그림이며 실제 계정 · 인식 · 역산 결과가 아니다(그림 안 글자 "SYNTHETIC TUTORIAL - YUUKA - NOT A GAME CAPTURE").
+/// 출처 `debug/xb_resume_20261023/artifacts/yuuka-synthetic-basic-info.png`
+/// (sha256 40ed07701aeeedbbe845f37615ff9d3e1fb56f23c35ddc873634f0c8aa449e78) = 위 근거 JSON의 `crop_png_base64`와 같은
+/// 바이트. pubspec 자산 폴더에 맞는 곳이 없어 Dart 상수로 둔다(pubspec 변경 없음).
+const tutorialPracticeYuukaCropPngBase64 =
+    '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'
+    'AEDY6T/p5AIC0GaQuQAAAABJRU5ErkJggg==';

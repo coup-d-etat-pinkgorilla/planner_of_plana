@@ -276,9 +276,10 @@ void main() {
       ...?tutorialPracticeScriptStudentOverrides[studentId],
     };
 
-    // SHA-256은 주석 · output.md에 둔다(crypto 의존성 없음). 여기서는 크기와 내용 전부를 본다.
+    // SHA-256은 주석 · output.md에 둔다(crypto 의존성 없음). 여기서는 크기와 내용 전부를 본다. F3c-9: v2(42239 bytes —
+    // 옛 v1은 39483). v2 항목별 대조는 tutorial_data_v2_f3c9_test.
     final raw = File(_datasetPath).readAsBytesSync();
-    expect(raw, hasLength(39483));
+    expect(raw, hasLength(42239));
     expect(tutorialPracticeDatasetSha256, hasLength(64));
     final dataset = jsonDecode(utf8.decode(raw)) as Map<String, dynamic>;
     expect(dataset['dataset_version'], practiceDatasetVersion);
@@ -346,7 +347,7 @@ void main() {
         );
       }
     }
-    // 대본 우선 칸은 수량을 읽은 기술 노트 index 26 · 27이다.
+    // 대본 "확인 필요 2칸"은 수량을 읽은 기술 노트 index 26 · 27이다(v2부터 데이터셋 review 칸과 같다 — 위 비교).
     expect(
       [
         for (final item in tutorialPracticeTechNotes)

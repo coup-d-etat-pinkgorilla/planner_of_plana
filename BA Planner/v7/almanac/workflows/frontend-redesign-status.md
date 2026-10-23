@@ -12360,3 +12360,94 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_004309\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-9 착수 기록 (2026-10-24 01:35, Lane A 워커)
+
+- 상태: **진행 중**. 범위 F3c-9 — XB 데이터 정렬 결과(`debug/xb_resume_20261023/artifacts/tutorial-dataset-v2.json`, SHA `ec7be3e5…71dd3`, content_revision 2)와 유우카 합성 crop(`yuuka-fallback-evidence.json` · `yuuka-synthetic-basic-info.png`)을 Mock에 반영.
+- 시작 SHA `4370270cfeeee84c066b6d426919927a33a77925`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 "F3c-9 착수 기록" 없음. `git log --oneline -10`에 F3c-8 `373c14a6` · SL1 `5aa5413b` · SL2 `f5a77b44` · K2 `e359dd29` 모두 있음, `git status --short -- frontend`에 그 slice 파일 없음(미커밋은 M3R · SU1 · XB 파일뿐). 대장 "slice별 막힘 요약" F3c-9 행 없음 · `열림` 0건 → 막히지 않는다.
+- 고칠 파일 · 착수 때 기존 미커밋 변경(WIP) · 사본(`debug/frontend_f3c9/pre/<v7 기준 경로>`, 지금 작업 트리에서 뜸, 모두 LF · 끝 개행 하나):
+
+| 파일 | 착수 때 `git status` | 고칠 것 |
+|---|---|---|
+| `frontend/lib/services/mock_tutorial_practice.dart` | 변경 없음 | v2 대조 결과 반영 · 출처 주석 · 상수(경로 · SHA) v2 · 유우카 후보에 합성 crop 근거 |
+| `frontend/test/tutorial_practice_contract_test.dart` | 변경 없음 | **프롬프트 목록 밖 — 워커 결정**: `tutorialPracticeDatasetPath`를 읽어 v1 크기(39483)를 고정한 시험이라 상수를 v2로 바꾸면 반드시 깨진다. 크기 · 칸 비교만 v2로 최소 수정 |
+| `frontend/test/tutorial_host_f3c3_test.dart` | 변경 없음 | 한 바퀴 프라나 04 대사 4 — `scan.studentReview.fallbackCheck` 사각형 · crop 그림 |
+| 새 `frontend/test/tutorial_data_v2_f3c9_test.dart` | 새 파일 | v2 대조 · 유우카 crop 표시 · 1280×720 넘침 0 |
+
+- 고치지 않는다: Lane B M3R · SU1 파일, XB 파일(backend/** · contracts/** · frontend/tool/** · frontend/windows/**), 스캐너 소유 검토 보드(`lib/ui/scan/review/**` 읽기만), lib/ui/kit/**, golden harness · 기준 이미지, pubspec · 자산 폴더, 택틱 파일, `mock_app_service.dart` · `lib/ui/tutorial/**`(필요 없을 것으로 봄 — 바뀌면 이 기록에 덧붙임).
+
+## F3c-9 종료 기록 (2026-10-24 01:50, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1`(golden RED 1 예상 `tutorial-dialogue-review`) 남음. 시작 SHA `4370270c`, 끝날 때 HEAD 그대로, git 쓰기 · 파일 삭제 없음(일회성 렌더 사본 3개만 프롬프트대로 만든 뒤 바로 지움). 실제 runtime 미실행.
+- 결과: v2와 Mock을 항목별로 대조했다 — 차이 2건 중 기술 노트 26 · 27 표시는 v2에 맞췄고(동작 변화 없음), 마키 강화 · 서브는 대본 우선으로 두었다(발견 1). 유우카 가상 스캔 후보에 v2 `weapon_level_fallback` 근거 · 합성 crop을 실어 검토 보드 폴백 확인 칸에 그림이 그려지고, 프라나 04 대사 4 밝히기 대상에 사각형이 생겼다(F3c-1 발견 3 해소).
+- diff(pre 사본 → 지금, `git diff --no-index --numstat`): `mock_tutorial_practice.dart` +197/−20(그중 base64 상수 136줄), `tutorial_practice_contract_test.dart` +4/−3, `tutorial_host_f3c3_test.dart` +18/−0. 새 `test/tutorial_data_v2_f3c9_test.dart`(427줄, 시험 9). `mock_app_service.dart` · `lib/ui/tutorial/**` · 검토 보드 · pubspec · 자산 diff 0(필요 없었다 — 기존 후보 wire가 `details`를 그대로 옮긴다).
+- `tutorial_practice_contract_test.dart`는 프롬프트 고칠 곳 목록 밖이다(워커 결정, 착수 기록): `tutorialPracticeDatasetPath`로 v1 크기 39483을 고정해, 상수를 v2로 바꾸면 반드시 깨진다 → 크기 42239 · 주석만.
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(고친 뒤 · 시험 추가 뒤 · 끝) | 3회 모두 No issues found |
+| `flutter test --exclude-tags golden test/tutorial_data_v2_f3c9_test.dart` | 1회 −1(레코드 안 Map은 깊은 비교가 안 됨 → 목록으로) → 2회 **+9 All passed** |
+| `flutter test --exclude-tags golden` 관련 34파일(`tutorial_*` 10 · `scan_*` 17 · `mock_*` 4 · `widget_test` · `plan_flow_tutorial_signals_f3c4_test` · `kit_promotion_k2_test`, process E2E 제외) | **+344 All passed**, `[E]` 0, `overflowed by` 0, `registered twice` 1줄(`tutorial_targets_f3c2_test`의 일부러 두 번 등록하는 시험). 한 바퀴는 2560×1392 · 1280×720 두 변형 모두 통과 |
+| 일회성 렌더(`test/goldens/f3c9_render_{f3c3,f3c5,line4}_tmp_test.dart` — 원본 golden 시험 사본에서 `@Tags` · `library;`를 빼고 `expectGoldenScene`을 RGBA 대조 함수로 바꿈, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep **0건**, golden 비교 시험 아님) | +3 · +1 All passed → 사본 바로 삭제(`test/goldens`에 `f3c9` 0, `failures/` 새 파일 0) |
+| `dart format -o none --set-exit-if-changed`(고친 기존 3파일 · pre 사본) | 모두 0(고친 줄이 서식과 같음). 새 시험만 경로 하나로 `dart format` |
+| 바이트 검사 · `git diff --check -- <고친 4경로>` | 4파일 LF · CR 0 · 끝 개행 하나 · 줄 끝 공백 0, 출력 없음(CRLF 경고만). `.orig` · `.rej` · `~` 0 |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교, 맨 `flutter test`, Python, process E2E(`tutorial_practice_process_e2e_test` 등 — Mock 상수를 쓰지 않고, M3R 발견 2대로 격리 경로가 완전하지 않다).
+
+### v2 대조 표(항목 → v2 값 → Mock 전 · 후)
+
+| 항목 | v2 값 | Mock 전 | Mock 후 |
+|---|---|---|---|
+| 출처 · 상수 | `tutorial-dataset-v2.json` 42239 bytes, sha `ec7be3e5…71dd3`, content_revision 2, dataset_version `tutorial-v1` | v1 `tutorial-dataset-fd183.json` 39483 · `61652a3b…c37b` | v2 경로 · SHA(옛 v1 경로 · SHA는 머리말 주석) |
+| 계획 학생 | 7(칸나(수영복) · 아카네 · 마키 · 미카 · 히마리(무장) · 시로코(수영복) · 네루(교복)) | 예시 시나리오 학생 7 | 같음 |
+| 지난 스캔 학생 | 6, 레벨 60~65 · 나머지 3/10/3/4/4/4 | 같음, 단 마키 강화 · 서브 1 | 같음(마키 1 유지 — 발견 1) |
+| 가상 스캔 학생 | 바뀜 6 · 새 1(네루) · 확인 필요 2(유우카 fallback · 히나) | 같음(마키 1) | 같음 |
+| 아이템 60칸 | 기본 승인 54, 기술 노트 26 · 27(46 · 47) `review_required: true` · `suggested_approval: false` → 56, null 4 | 26 · 27 `reviewRequired: false` · `suggestedApproval: true` + 대본 우선 키로 uncertain | **26 · 27 `reviewRequired: true` · `suggestedApproval: false`**(uncertain · 후보 review_required 그대로 → 화면 · 동작 변화 0), 54 + 2 = 56, null 4 |
+| 지난 인벤토리 | 기술 노트 10칸: 0~4 = 20~24(같음), 5~9 = 20~24(재생 25~29 − 5) | Mock 규칙(같은 값) | 같음(시험이 v2 행과 그대로 대조) |
+| 3순위 대본 | 1순위 칸나 · 마키 · 미카, 2순위 시로코 · 히마리, 3순위 아카네, 나중에 네루 · 마키 2단계 | 예시 시나리오 페이즈 | 같음 |
+| 예시 시나리오 | `tutorial-binah-max` '비나 대비 · 한 번에 MAX', 3페이즈(1순위 3 · 2순위 3(네루 포함) · 3순위 1), 단계 id `tutorial-max-<id>`, 목표 '한 번에 MAX' 19키, 문서 version 1 | 같음 | 같음(문서 전체 깊은 비교) |
+| 마키 값 | 지난 · 가상 강화 · 서브 4, `maki_stage1` 5/10/1/1 · `maki_stage2` 5/10/7/7 | 1(대본 7-2b) | 1 유지(대본 우선, 발견 1) |
+| 계약 seed 문장 | "scenarios start with one fixed example" | 주석: 계약 "start empty"와 다름 | 주석을 정정된 계약 문장으로 |
+| 유우카 근거 | `weapon_level_fallback` ok · `tutorial-synthetic-v1` · 1.0 · details crop 4키 | 없음 | v2 JSON과 같은 `tutorialPracticeFallbackEvidence` |
+
+### crop 실은 경로 · 표시 확인
+
+- 경로: `tutorialPracticeYuukaCropPngBase64`(Dart 상수, 10296자 = PNG 7720 bytes, sha `40ed0770…49e78`, 512×168 — "합성 UI 그림 — 게임 캡처 아님" 주석) → `tutorialPracticeFallbackEvidence.details.crop_png_base64` → `_studentCandidate`가 `fallbackCaptureRequired` 학생(유우카)에게만 덧붙임 → Mock `_candidateWire`가 `details` 그대로 → `ScanReviewEntry.fallbackEvidence` → `_FallbackCard`의 `Image.memory`(`scan-review-fallback-crop`). 실제 스캐너와 같은 길(파일 경로 없음) — 검토 보드 무수정.
+- 확인: 새 시험에서 근거 = v2 JSON, 바이트 = PNG 파일, IHDR 512×168, Mock wire를 지나도 details 같음, 검토 보드 2560 · 1280×720에서 crop 그림(바이트 같음) · '전용무기 숫자 부분' · 밝히기 대상이 화면 안 · 예외 0, 히나는 폴백 칸 없음. 한 바퀴(2560 · 1280)에서 프라나 04 대사 4가 `scan.studentReview.fallbackCheck`를 밝히고 사각형 · crop 있음. 일회성 렌더(2560) 대사 4: 폴백 칸 `(1827.5, 1012.7)–(2520, 1156.7)`에 하늘 테두리, 대사 띠 이름표는 칸 왼쪽으로 비켜 남(`debug/frontend_f3c9/render/f3c9-review-line4.png`).
+
+### golden 변화(장면별 이유)
+
+| 장면 | 결과 · 이유 |
+|---|---|
+| `tutorial-dialogue-review` | **바뀜(whole)**: 2560×1392 차이 37383px, 범위 `(1814,1015)–(2353,1186)` = 오른쪽 아래 폴백 캡처 카드(합성 crop · 확정할 값 · 재검증 · 화면 확인)가 검정 막 아래에 새로 보인다. 유우카(첫 확인 필요 행)가 고른 학생이라 상세에 폴백 근거가 생긴 결과. 렌더 `debug/frontend_f3c9/render/tutorial-dialogue-review.png` |
+| `tutorial-step-scan` · `tutorial-plan-order` | 일회성 렌더 RGBA 0px 차이 |
+| 그 밖 | Mock 학생 재생(임시 계정) 밖 장면은 이 상수를 쓰지 않는다 — 변화 0 예상(렌더 안 함). 새 장면 0 |
+
+### 미검증("미실행")
+
+- 실제 runtime(XB X4 practice 수명 · 가상 재생 — `runtimeImplemented=false`), process E2E, `fe_gate.ps1` 전체 · golden 비교, Windows 실제 앱(mock)에서 대사 4 눈 확인, Python.
+
+### 발견 사항
+
+1. **마키 값은 v2도 대본과 다르다**: v2 지난 · 가상 스캔 마키 강화 · 서브 4, `plan_instructions.maki_stage1`은 1 — 목표를 지금 값보다 낮게 둘 수 없어(`PlanFlowGoalEditor.setTarget`) 대본 7-2b M/M/1/1이 안 된다. 대본 우선으로 Mock 덮어쓰기(1) 유지. XB 데이터셋을 1로 맞추거나 대본 목표를 바꿀지 CF · XB 조율.
+2. **예시 시나리오 문서는 v2도 version 1**(F3c-6 발견 5의 v2 권장은 반영 안 됨) — Mock은 v2 데이터와 같게 version 1 그대로, 활성 계획 적용은 F3c-6 경로가 v2로 옮긴다. 바꿀 필요 없음(정보).
+3. **crop 글자 크기**: 512×168 그림이 폴백 칸 256×144에 `BoxFit.contain`으로 절반 배율이라 2560에서 그림 안 글자는 거의 읽을 수 없다(띠 제목만 보임). 실제 스캐너 crop도 같은 칸 — 화면 칸 크기는 스캐너 소유, 그림 크기는 XB. CF 눈 검수.
+4. **시험이 미추적 파일을 읽는다**: v2 JSON · 근거 JSON · PNG(`debug/xb_resume_20261023/`)는 git에 없다(v1 `debug/xb_available_work_20261020/`도 미추적 — 기존 관례). 없는 checkout에서는 `tutorial_practice_contract_test` · `plan_flow_tutorial_signals_f3c4_test` · 새 시험이 실패한다. XB 산출물 커밋 여부 CF 판단.
+5. 편집 도구 백업 파일 0. 지운 파일은 일회성 렌더 사본 3개뿐(프롬프트 허용).
+
+### 사본 · commit.json
+
+- pre 사본 3개(`debug/frontend_f3c9/pre/frontend/...`), 모두 착수 때 HEAD와 같음 → `post_dir` 없음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c9/commit.json`: slice `f3c9`, modified 3, added 1, `whole` = [`frontend/test/goldens/baseline/tutorial-dialogue-review.png`], `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f3c9/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B SU1 등 레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden RED 1 예상(`tutorial-dialogue-review` — `failures/` 검토, 폴백 카드만 달라야 함) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c9 -DryRun` → `fe_commit.ps1 -Slice f3c9`. 발견 1 · 3 · 4 판단.
+
+### f3c9 commit record (2026-10-24 02:13, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_020017\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
