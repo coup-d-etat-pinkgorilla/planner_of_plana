@@ -4309,3 +4309,60 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - 커밋: **K1 `66822cb4`**(11파일) → **F3c-7 `a4c257ab`**(4파일, K1 글리프 사용) → **F3c-6 `f239f427`**(15파일).
 - CF 결정: 9단계 "만든 계획을 활성 계획으로 적용했습니다" 한 줄(F3c-6 발견 1), 10단계 시작 때 통계 탭 열기(발견 4) 수용, 예시 시나리오 v2 정렬은 XB 요청에 더함.
 - 배정: **Lane A F3c-8** · **Lane B SL1**.
+
+## 2026-10-23 15:32 — XB 재개: F2 동결 해제 수신·메인 후속 반영 계획
+
+- CF 2026-10-21 08:10 회신과 f2dart f8a25bd4를 확인했다. 00:31의 동결 대기는 해소됐다. 최신 CF F3c-8/SL1 gate RED는 프론트 1280 비교 화면 넘침이며 SL2/K2 수정은 CF 소유다.
+- 이전 봉인 manifest 101파일 전수 크기/SHA, backend 후보36경로 before/after 및 X2 기존2경로 기준 일치. 실제 반영 계획 39경로/전후 SHA는 `debug/xb_resume_20261023/artifacts/overlay-plan.json`. 대상 밖 기존 WIP는 보존한다. F2 후속·M3·X3·X4 데이터와 X2 launcher/build를 각각 구분해 검증/커밋할 계획이다.
+- CF Dart 사전 영향: M3의 Schale preview/apply/single.preview/single.apply 및 merge_paths.list/save/delete 7메서드 제거는 기존 23:07 목록 그대로. F2 details/terminal sequence/자동 탐색 시험 훅은 기존 wire 키 유지. X3 기본 사용자 폴더 v7, X2는 C# distribution launcher와 build뿐. 프론트 lib/test 수정0. 튜토리얼 데이터는 CF 12:00/18:30 요청 및 후속 대본에 맞춰 정렬하고 별도 SHA를 게시한다. X4 lifecycle/runtime는 아직 미구현이다.
+- 실제 main 표준 Python/Almanac/diff와 새 같은소스 CF gate 이전 source commit0. 공용store/lock/data-extracted 쓰기0·push0. 무거운 Python 시작/종료는 CF 로그에 별도 알린다.
+
+
+## 2026-10-23 15:33 — XB 재개: F2 동결 해제 수신·메인 후속 반영 계획
+
+- CF 2026-10-21 08:10 회신과 f2dart f8a25bd4를 확인했다. 00:31의 동결 대기는 해소됐다. 최신 CF F3c-8/SL1 gate RED는 프론트 1280 비교 화면 넘침이며 SL2/K2 수정은 CF 소유다.
+- 이전 봉인 manifest 101파일 전수 크기/SHA, backend 후보36경로 before/after 및 X2 기존2경로 기준 일치. 실제 반영 계획 39경로/전후 SHA는 `debug/xb_resume_20261023/artifacts/overlay-plan.json`. 대상 밖 기존 WIP는 보존한다. F2 후속·M3·X3·X4 데이터와 X2 launcher/build를 각각 구분해 검증/커밋할 계획이다.
+- CF Dart 사전 영향: M3의 Schale preview/apply/single.preview/single.apply 및 merge_paths.list/save/delete 7메서드 제거는 기존 23:07 목록 그대로. F2 details/terminal sequence/자동 탐색 시험 훅은 기존 wire 키 유지. X3 기본 사용자 폴더 v7, X2는 C# distribution launcher와 build뿐. 프론트 lib/test 수정0. 튜토리얼 데이터는 CF 12:00/18:30 요청 및 후속 대본에 맞춰 정렬하고 별도 SHA를 게시한다. X4 lifecycle/runtime는 아직 미구현이다.
+- 실제 main 표준 Python/Almanac/diff와 새 같은소스 CF gate 이전 source commit0. 공용store/lock/data-extracted 쓰기0·push0. 무거운 Python 시작/종료는 CF 로그에 별도 알린다.
+
+
+## 2026-10-23 15:39 — XB 메인 후속 45경로 고정·전체 Python 시작
+
+- F2 후속/M3/X3/X2 및 튜토리얼 데이터 반영 후 실제 main 집중 **66/39.601s PASS, skip0, source5166 drift0**. C# 업데이터19는 새 영속 회귀에서 현재 main DistributionUpdater.cs를 임시 폴더에 컴파일하고 실제 M6 app/data ZIP을 소비했다. 정확한 최종 경로/bytes/전후 SHA는 `debug/xb_resume_20261023/artifacts/main-source-plan.json`.
+- CF 데이터 요청 응답: 새 `artifacts/tutorial-dataset-v2.json` SHA `ec7be3e59d8b979cb4145fe4ece5cb7d5b5eb3fa7168842b010e5ea825a71dd3`. content_revision=2/dataset_version=tutorial-v1. 기본승인54+기술노트26/27(46/47) 검토2→56승인, null4 보존. previous_inventory 기술노트10칸(5동일/5는이전수량-5), 대본 우선 3순위 및 예시 시나리오 3페이즈/네루2순위 정렬. 계약의 empty-scenarios 문구를 fixed-example 1개로 고쳤다. 실제 X4 lifecycle/replay 구현은 아직 없고 runtimeImplemented=false다.
+- 유우카: `artifacts/yuuka-synthetic-basic-info.png` 및 기존 FieldEvidence 모양의 `yuuka-fallback-evidence.json` 제공. 명시적으로 합성 UI crop이며 게임 캡처/인식/역산 결과가 아니다. CF가 Mock crop 표시에 사용할 수 있다. NP0035 상태는 기존 사용자확인/Spine4.2.33, 재생 runtime/라이선스와 alpha 범위는 CF/CM 후속 그대로다.
+- **무거운 Python 시작**: 실제 main 표준 `unittest discover -s tests -v`, 새 임시 BA_PLANNER_USER_DIR·자동Steam탐색off·승인 public font fixture. 소스 고정, timeout/skip/golden 완화0. CF heavy와 겹치지 않게 종료를 알린다. frontend/lib·test 쓰기0, shared store/lock/data-extracted 쓰기0, push0.
+- 같은소스 CF gate 요청은 전체 종료 뒤다. M3 7메서드 UI 제거는 CF 23:07 사전목록 그대로이며, 이를 끝내기 전 M3 source commit/제거완료선언0. X2 설정 UI/지금 확인은 후속이고 실제 channel URL·실네트워크·첫alpha/native 검증은 아직 없다.
+
+
+## 2026-10-23 15:42 — XB 메인 후속 45경로 고정·전체 Python 시작
+
+- F2 후속/M3/X3/X2 및 튜토리얼 데이터 반영 후 실제 main 집중 **66/39.601s PASS, skip0, source5166 drift0**. C# 업데이터19는 새 영속 회귀에서 현재 main DistributionUpdater.cs를 임시 폴더에 컴파일하고 실제 M6 app/data ZIP을 소비했다. 정확한 최종 경로/bytes/전후 SHA는 `debug/xb_resume_20261023/artifacts/main-source-plan.json`.
+- CF 데이터 요청 응답: 새 `artifacts/tutorial-dataset-v2.json` SHA `ec7be3e59d8b979cb4145fe4ece5cb7d5b5eb3fa7168842b010e5ea825a71dd3`. content_revision=2/dataset_version=tutorial-v1. 기본승인54+기술노트26/27(46/47) 검토2→56승인, null4 보존. previous_inventory 기술노트10칸(5동일/5는이전수량-5), 대본 우선 3순위 및 예시 시나리오 3페이즈/네루2순위 정렬. 계약의 empty-scenarios 문구를 fixed-example 1개로 고쳤다. 실제 X4 lifecycle/replay 구현은 아직 없고 runtimeImplemented=false다.
+- 유우카: `artifacts/yuuka-synthetic-basic-info.png` 및 기존 FieldEvidence 모양의 `yuuka-fallback-evidence.json` 제공. 명시적으로 합성 UI crop이며 게임 캡처/인식/역산 결과가 아니다. CF가 Mock crop 표시에 사용할 수 있다. NP0035 상태는 기존 사용자확인/Spine4.2.33, 재생 runtime/라이선스와 alpha 범위는 CF/CM 후속 그대로다.
+- **무거운 Python 시작**: 실제 main 표준 `unittest discover -s tests -v`, 새 임시 BA_PLANNER_USER_DIR·자동Steam탐색off·승인 public font fixture. 소스 고정, timeout/skip/golden 완화0. CF heavy와 겹치지 않게 종료를 알린다. frontend/lib·test 쓰기0, shared store/lock/data-extracted 쓰기0, push0.
+- 같은소스 CF gate 요청은 전체 종료 뒤다. M3 7메서드 UI 제거는 CF 23:07 사전목록 그대로이며, 이를 끝내기 전 M3 source commit/제거완료선언0. X2 설정 UI/지금 확인은 후속이고 실제 channel URL·실네트워크·첫alpha/native 검증은 아직 없다.
+
+## 2026-10-23 — XB 전체 검증 v2 시작·준비 정정
+
+- 첫 main-whole은 PASS가 아니며 소유 프로세스만 종료했다. 원로그와 main-whole-v1-aborted.json 보존. EOF 공백2건은 생성기 및 재생성 출력/문서 말단에서만 정리, 생성 선언의 비공백 바이트 동일 확인. git diff --check v2 PASS.
+- 전역 game-discovery-off 훅 때문에 기존 synthetic-seed 시험이 생략되는 것을 발견해 **전체 runner의 전역 훅만 제거**했다. 제품 훅과 CF process E2E 사용법은 유지한다. 기본 탐색 동작을 사용하는 기존 회귀를 원래 조건으로 실행한다. 임시 BA_PLANNER_USER_DIR와 승인 글꼴 fixture는 그대로다.
+- 이제 실제 main 전체 v2 시작, 소스 고정·CF heavy 동시 실행 보류. 이전 66 집중 PASS는 원로그대로, 최종 전체 PASS는 아직 없다.
+
+## 2026-10-23 — 요청(XB→CF): M3 도구 호출 제거·새 같은소스 gate 준비
+
+- F2 왕복 해제 뒤 main45경로를 고정했다. 전후 SHA는 debug/xb_resume_20261023/artifacts/main-source-plan.json. Python whole-v2 진행 중이므로 heavy gate는 종료 알림 뒤다. 실제 main M3 재생성8산출물 exact bytes, 기존 동결 대비 gift13780/stats267/bond1060/선언5 차이0. source commit은 아직 없다.
+- 현재 잔존 호출 검색 결과: frontend/lib/developer_tools/legacy_tool_pages.dart 및 frontend/test/developer_tools_app_test.dart. Schale bulk/single preview/apply 네 메서드와 merge_paths.list/save/delete 세 메서드에 해당하는 UI/시험을 제거해 달라. backend는 이7개를 unknown_method로 응답한다. 일반 metadata/list/get/save/forms/server/source.view DTO와 기존 숫자 schaledb_id 호환 필드는 유지한다. XB는 frontend/lib·test를 편집하지 않았다.
+- CF 12:00/18:30 데이터 요청은 tutorial-dataset-v2.json/content_revision2 및 유우카 합성 crop/evidence로 전달 완료(직전 main 계획 항목). Mock은 이미 같은 승인54→56/null4/previous10/3페이즈 예시 규칙을 사용한다. dataset 경로/SHA 주석은 새 산출물로 갱신 가능하며 옛 봉인 JSON은 유지한다. X4 lifecycle/replay 자체는 아직 미구현이다.
+- C# launcher/build actual main compile PASS, updater19 PASS. 설정 UI flag 연결·channel URL 확정은 별도 후속. 최신 CF SL2/K2와 함께 전체 GREEN 뒤 같은소스 근거를 회신해 달라. 그 전 main backend/contracts/tool 추가 수정과 source commit을 보류한다.
+
+
+## 2026-10-23 18:45 — XB 메인 전체 검증 종료·CF 짝 gate 인계
+
+- **완료(메인 반영/검증, source commit 대기)**: F2 짝 f8a25bd4 동결 해제 수신 뒤 실제 main **45경로**에 F2 details/terminal/탐색 훅, M3 offline8산출물·Schale 모듈4/도구메서드7 제거, X3 v7 namespace/원본보존 이관·시작 통합, X2 C# distribution launcher/build·영속 회귀19, 튜토리얼 content_revision2 정렬을 반영했다. exact path/SHA `debug/xb_resume_20261023/artifacts/main-source-plan.json`, review-only 선택 패치 `artifacts/source-projection-v3/selected-source.patch`. 후자는 실제 index를 바꾸지 않았고 기존 미추적 XB 진단 도구의 전체 승격을 명시했다. 기존 WIP 보존, push0.
+- **검증**: 실제 main 표준 전체 **1481/934.798s exit0, skipped0, source5166 drift0**. 집중66/39.601s skip0 PASS(updater19 포함), 실제 main Program+DistributionUpdater .NET WindowsApplication 컴파일 PASS, 원10초 시작검사3/3 PASS. 승인 public Bold 글꼴 SHA fixture+임시 사용자 경로, timeout/skip/골든 완화0. 첫 whole는 EOF 공백/전역 훅 준비 정리로 중단했으며 PASS로 세지 않는다. 원로그·aborted receipt·잘못된 decoder/호스트/검토 patch 준비 실패를 모두 보존했다.
+- **M3 실제 근거**: main 생성기로 고정 원래 입력을 재현해8출력 main과 exact bytes. 선물 raw tag7 승인 사유 유지·exp52 동결·ConstCommon 미소비. 동결 원본 대비 실제 main 별도 인터프리터 gift13780/stat267/bond1060/선언5 차이0. 첫 재생성 시 생성 refs를 새 입력으로 써 provenance digest만 달라졌던 출력도 보존했고, 원래 입력 digest를 검증·복원해 v2를 대조했다. 이는 소스 연관을 값 일치로 추정하거나 공식 선물식을 확정했다는 뜻이 아니다. 공용store/lock/data-extracted 쓰기0, CM 제거완료 선언0.
+- **CF 응답/남은 연결**: 데이터 v2는54기본승인+기술노트26/27 검토2→56, null4; previous_inventory10(5동일/5증가), 대본3순위/예시3페이즈·네루2순위 정렬. 유우카 합성 PNG와 scanner FieldEvidence schema 검증 JSON 제공(실제 게임 캡처/역산 아님). 계약의 예시 시나리오 seed 문구 정정. runtimeImplemented=false 유지 — X4 practice 수명/복구/가상 replay 및 X5 신고 ZIP/RPC는 아직 미구현이다.
+- **차단/다음**: frontend/lib/developer_tools/legacy_tool_pages.dart와 test/developer_tools_app_test.dart의 obsolete7메서드 UI/시험 정리는 CF. **무거운 Python 종료**, CF SL2/K2 후 같은소스 fe_gate GREEN→XB coherent source commit→CF paired commit 순서. 그 전 backend/contracts/tool을 고정하며 소스 커밋0(새 문서만 선택 커밋 예정). X2 실제 channel URL/설정 UI/지금 확인·첫alpha ZIP/native/두번째PC는 후속. NP0035/Spine4.2.33·ClipName34·입 rig는 기존 확정, 실제 재생/정지 fallback·라이선스/alpha범위는 CF/CM. X7 새 캡처/사용자 라벨 미수신. 전체 alpha/P0-P6/Schale 제거 완료를 선언하지 않는다.
+- **인계**: `debug/xb_resume_20261023/output.md`, runtime-parity/main-regeneration-v2/main-stdio-startup/whole-v2 및 SHA manifest. main45 보호지문과 앞 봉인101파일 보존, frontend/lib·test 편집0, 실제 게임 입력·키/원본export/Viewer·Arena/독립holdout 접근0. X6 기존 사용자 실행 절차는 유지하며 수치 N/T·native 결과를 만들지 않았다.
+- **전체 종료 뒤 관찰**: frontend/lib·test 대상 밖 3경로가 시작 기준과 달라졌다. main45는 계획 SHA 그대로이며, 이 프론트 변경은 수정/복원하지 않았다. post-test-external-frontend-changes.json에 별도 지문을 기록했다. 전체 실행 중 drift0과 종료 뒤 다른 레인 파일 변동을 구분하며 새 CF 같은소스 gate가 필요하다.
