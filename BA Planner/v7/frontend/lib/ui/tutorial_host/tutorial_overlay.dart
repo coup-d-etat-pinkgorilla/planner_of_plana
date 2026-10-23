@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../kit/buttons.dart';
+import '../kit/panel_button.dart' show kitParallelogramPath;
 import '../kit/titles.dart';
 import '../scan/scan_session_controller.dart';
 import '../tutorial/plana_dialogue.dart';
@@ -24,8 +25,7 @@ import '../tutorial/tutorial_quit_dialog.dart';
 import '../tutorial/tutorial_script.dart';
 import '../tutorial/tutorial_step_card.dart';
 import '../tutorial_targets/tutorial_hooks.dart';
-import '../widgets/account_create_modal.dart'
-    show accountCreateParallelogram, accountCreatePanelFill;
+import '../widgets/account_create_modal.dart' show accountCreatePanelFill;
 import '../widgets/lifted_path_shadow.dart';
 import 'tutorial_session.dart';
 
@@ -347,7 +347,7 @@ class _DoneOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final features = tutorialDoneFeatures;
-    final path = accountCreateParallelogram(Offset.zero & _doneSize, 18);
+    final path = kitParallelogramPath(Offset.zero & _doneSize, 18);
     return Stack(
       fit: StackFit.expand,
       children: [

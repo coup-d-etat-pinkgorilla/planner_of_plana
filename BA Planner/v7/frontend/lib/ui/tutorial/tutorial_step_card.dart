@@ -14,6 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../app/theme.dart';
+import '../kit/ba_chip.dart';
+import '../kit/kit_glyph.dart';
+import '../kit/kit_spinner.dart';
 import '../widgets/lifted_path_shadow.dart';
 import '../geometry/diagonal_geometry.dart';
 import 'plana_dialogue.dart' show planaScaleFor;
@@ -105,50 +108,27 @@ class TutorialFaceChip extends StatelessWidget {
   }
 }
 
-/// 머리글 제목 옆 '튜토리얼 · 임시 계정' 칩(26px, 깃발 아이콘).
+/// 머리글 제목 옆 '튜토리얼 · 임시 계정' 칩(26px, 깃발 아이콘). K2: 키트 [BaChip] 링 변형(바탕 @.18 · 링 @.55)을
+/// 의미 라벨 하나로 감싼다.
 class TutorialHeaderChip extends StatelessWidget {
   const TutorialHeaderChip({super.key});
 
-  static const _fill = Color.fromRGBO(113, 199, 244, 0.18);
-  static const _ring = Color.fromRGBO(113, 199, 244, 0.55);
+  static const _tone = AppTone(
+    base: AppColors.primary,
+    backgroundAlpha: 0.18,
+    foreground: tutorialInfoText,
+  );
 
   @override
   Widget build(BuildContext context) => Semantics(
     label: TutorialCopy.headerChip,
     excludeSemantics: true,
-    child: Container(
+    child: const BaChip(
+      label: TutorialCopy.headerChip,
+      tone: _tone,
+      shape: BaChipShape.ringed,
       height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: _fill,
-        borderRadius: const BorderRadius.all(Radius.circular(AppRadii.chip)),
-        border: Border.all(color: _ring, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox.square(
-            dimension: 13,
-            child: CustomPaint(
-              painter: TutorialGlyphPainter(
-                glyph: TutorialGlyph.flag,
-                color: tutorialInfoText,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            TutorialCopy.headerChip,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tutorialText(
-              AppType.bodySmallSize,
-              color: tutorialInfoText,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
+      leading: KitGlyphIcon(KitGlyph.flag, size: 13, color: tutorialInfoText),
     ),
   );
 }
@@ -509,14 +489,11 @@ class _CheckLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = state == TutorialCheckState.current;
     final Widget marker = switch (state) {
-      TutorialCheckState.done => const SizedBox.square(
-        dimension: 13,
-        child: CustomPaint(
-          painter: TutorialGlyphPainter(
-            glyph: TutorialGlyph.check,
-            color: tutorialCheckColor,
-          ),
-        ),
+      TutorialCheckState.done => const KitGlyphIcon(
+        KitGlyph.check,
+        size: 13,
+        color: tutorialCheckColor,
+        strokeWidth: tutorialCheckStroke,
       ),
       TutorialCheckState.current => Container(
         width: 9,
@@ -588,7 +565,7 @@ class _WaitRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          const TutorialSpinner(),
+          const KitSpinner(),
           const SizedBox(width: 10),
           Flexible(
             child: Text(
@@ -644,70 +621,9 @@ class _SkewProgressBar extends StatelessWidget {
   );
 }
 
-/// 도는 표시(16px, 테두리 2.4 하늘색 · 오른쪽 비움, 1초 한 바퀴). 움직임 줄이기면 멈춘다.
-class TutorialSpinner extends StatefulWidget {
-  const TutorialSpinner({super.key});
-
-  @override
-  State<TutorialSpinner> createState() => _TutorialSpinnerState();
-}
-
-class _TutorialSpinnerState extends State<TutorialSpinner>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 1),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (tutorialReduceMotion(context)) {
-      _controller.stop();
-    } else if (!_controller.isAnimating) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RotationTransition(
-    turns: _controller,
-    child: const SizedBox.square(
-      dimension: 16,
-      child: CustomPaint(painter: _SpinnerPainter()),
-    ),
-  );
-}
-
-class _SpinnerPainter extends CustomPainter {
-  const _SpinnerPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 2.4;
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    // CSS: 테두리 4변 중 오른쪽만 투명 → 원의 3/4.
-    canvas.drawArc(
-      rect,
-      math.pi * 3 / 4,
-      math.pi * 3 / 2,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = AppColors.primary,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SpinnerPainter oldDelegate) => false;
-}
+/// 도는 표시(16px, 테두리 2.4 하늘색 · 오른쪽 비움, 1초 한 바퀴). 움직임 줄이기면 멈춘다. K2: 키트 [KitSpinner](기본값이
+/// 같다)의 별칭이다.
+typedef TutorialSpinner = KitSpinner;
 
 class _DoneBody extends StatelessWidget {
   const _DoneBody({required this.step});
@@ -725,14 +641,11 @@ class _DoneBody extends StatelessWidget {
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
         alignment: Alignment.center,
-        child: const SizedBox.square(
-          dimension: 24,
-          child: CustomPaint(
-            painter: TutorialGlyphPainter(
-              glyph: TutorialGlyph.check,
-              color: tutorialCheckColor,
-            ),
-          ),
+        child: const KitGlyphIcon(
+          KitGlyph.check,
+          size: 24,
+          color: tutorialCheckColor,
+          strokeWidth: tutorialCheckStroke,
         ),
       ),
       const SizedBox(width: 14),

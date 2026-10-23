@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
-import 'tutorial_highlight.dart';
+import '../kit/focus_ring.dart';
 import 'tutorial_script.dart';
 import 'tutorial_tokens.dart';
 
@@ -339,7 +339,7 @@ class PlanaDialogueOverlayState extends State<PlanaDialogueOverlay>
                     children: [
                       Positioned.fill(
                         child: IgnorePointer(
-                          child: TutorialGlowBuilder(
+                          child: KitFocusGlowBuilder(
                             builder: (context, glow) => CustomPaint(
                               key: PlanaDialogueOverlay.dimKey,
                               painter: _DimPainter(
@@ -414,7 +414,7 @@ class _DimPainter extends CustomPainter {
       Paint()..color = planaDimColor,
     );
     for (final rect in reveals) {
-      paintTutorialRing(
+      paintKitFocusRing(
         canvas,
         Path()..addRRect(
           RRect.fromRectAndRadius(

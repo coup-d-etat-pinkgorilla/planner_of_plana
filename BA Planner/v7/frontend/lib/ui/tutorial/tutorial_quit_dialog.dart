@@ -5,6 +5,9 @@
 // '그만두기'(#ffb3bb 글자, 테두리 rgba(56,81,107,.72)) · '계속하기'(기본 버튼, 분홍 테두리). Esc · 스크림 = 계속하기.
 // 기준 viewport에서 (790, 550)에 놓이고, 창이 패널보다 작으면 비율을 유지한 채 줄어든다(계정 추가 모달 선례).
 // 임시 계정 삭제 · 메인 계정 전환은 F3c 몫이다 — 이 패널은 콜백만 부른다.
+// K2: 평행사변형 path · '그만두기' 텍스처 · 외곽선 그리기는 키트(`panel_button.dart`)를 쓴다. 버튼([_PanelButton])은
+// 키보드 포커스 외곽선(하늘 2.6) · autofocus · 글자 직접 그리기가 있어 키트 [ParallelogramPanelButton](InkWell · 줄이기 ·
+// 3px 여백)과 다른 부품이라 그대로 둔다(K1 발견 1).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,7 +15,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import '../kit/kit_pressable.dart';
-import '../widgets/account_create_modal.dart' show accountCreateParallelogram;
+import '../kit/panel_button.dart';
 import '../widgets/ba_triangle_background.dart';
 import '../widgets/lifted_path_shadow.dart';
 import 'tutorial_script.dart';
@@ -34,23 +37,6 @@ const _panelFill = Color.fromRGBO(29, 42, 58, 0.98);
 const _quitOutline = Color.fromRGBO(56, 81, 107, 0.72);
 const _continueOutline = Color.fromRGBO(242, 179, 239, 0.9);
 const _quitLabel = Color(0xffffb3bb);
-
-// 계정 추가 모달 '취소' 버튼 텍스처와 같은 값(그쪽은 비공개라 옮겨 둔다 — 키트 승격 후보).
-const _quitTexture = BATriangleTextureConfig(
-  baseColor: BATrianglePalette.softTitlePinkBase,
-  panelColor: BATrianglePalette.softTitlePinkPanel,
-  softColor: BATrianglePalette.softTitlePinkSoft,
-  accentColor: BATrianglePalette.softTitlePinkAccent,
-  triangleSize: 30,
-  tessellationContrast: 0.09,
-  randomSeed: 7411,
-  macroTriangleChance: 0.14,
-  macroTriangleScale: 2.1,
-  macroTriangleContrast: 0.06,
-  lightStrength: 0.22,
-  edgeVignetteStrength: 0.12,
-  fogStrength: 0.08,
-);
 
 /// 그만두기 확인 패널.
 class TutorialQuitPanel extends StatelessWidget {
@@ -74,7 +60,7 @@ class TutorialQuitPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = tutorialQuitPanelSize;
-    final panelPath = accountCreateParallelogram(Offset.zero & size, 18);
+    final panelPath = kitParallelogramPath(Offset.zero & size, 18);
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: SizedBox.fromSize(
@@ -159,7 +145,7 @@ class TutorialQuitPanel extends StatelessWidget {
               _PanelButton(
                 key: quitKey,
                 rect: const Rect.fromLTWH(541.8, 206, 170, 56),
-                texture: _quitTexture,
+                texture: kitPanelCancelTexture,
                 outline: _quitOutline,
                 label: TutorialCopy.quitConfirm,
                 labelColor: _quitLabel,
@@ -247,9 +233,11 @@ class _PanelButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool autofocus;
 
+  static const _radius = 8.0;
+
   @override
   Widget build(BuildContext context) {
-    final path = accountCreateParallelogram(Offset.zero & rect.size, 8);
+    final path = kitParallelogramPath(Offset.zero & rect.size, _radius);
     return Positioned.fromRect(
       rect: rect,
       child: KitPressable(
@@ -273,8 +261,8 @@ class _PanelButton extends StatelessWidget {
             ),
             IgnorePointer(
               child: CustomPaint(
-                painter: _OutlinePainter(
-                  path,
+                painter: ParallelogramOutlinePainter(
+                  radius: _radius,
                   color: state.focused ? AppColors.primary : outline,
                   strokeWidth: state.focused ? 2.6 : 1.8,
                 ),
@@ -297,32 +285,4 @@ class _PathClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(_PathClipper oldClipper) => oldClipper.path != path;
-}
-
-class _OutlinePainter extends CustomPainter {
-  const _OutlinePainter(
-    this.path, {
-    required this.color,
-    required this.strokeWidth,
-  });
-
-  final Path path;
-  final Color color;
-  final double strokeWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) => canvas.drawPath(
-    path,
-    Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = strokeWidth
-      ..color = color,
-  );
-
-  @override
-  bool shouldRepaint(_OutlinePainter oldDelegate) =>
-      oldDelegate.path != path ||
-      oldDelegate.color != color ||
-      oldDelegate.strokeWidth != strokeWidth;
 }
