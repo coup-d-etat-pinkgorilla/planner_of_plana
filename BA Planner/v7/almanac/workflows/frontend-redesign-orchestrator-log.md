@@ -4456,3 +4456,11 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - gate `20261024_004309` **GREEN**(process 103 · golden 83), XB 53경로 바이트 같음, 실제 사용자 폴더 전후 같음.
 - 커밋: **F3c-8 `373c14a6`**(K2 pre `post_dir` 2파일 사용) · **SL1 `5aa5413b`** · **SL2 `f5a77b44`** · **K2 `e359dd29`**. M3R은 XB 커밋 뒤 짝 커밋(`post_dir: debug/frontend_su1/pre`).
 - 배정: **Lane B SU1**(`su1-worker-prompt-20261024.md` — 전역 시작 오류 해독 · 표시). **Lane A F3c-9** 시작 가능(4 slice 커밋됨).
+
+## 2026-10-24 02:15 — SU1 · F3c-9 검토, gate GREEN, F3c-9 커밋, M3R · SU1 XB 대기
+
+- 검토: SU1 11행 · F3c-9 8행 SHA 일치. M3R의 `planning_protocol_client_test.dart`는 SU1이 다시 고침 — SU1 pre 사본이 M3R 끝 내용과 바이트 같음(`post_dir` 정상). 목록 밖 frontend 변경은 XB X2 3경로뿐.
+- gate `20261024_014856` RED 1 = 예상 `tutorial-dialogue-review`(유우카 합성 crop이 오른쪽 아래 폴백 칸에, 막 아래) → 확인 → `-UpdateGoldens` `20261024_020017` **GREEN**(process 144 · golden 83). XB 53경로 바이트 같음, 실제 사용자 폴더 전후 같음.
+- 커밋 **F3c-9 `50f05afe`**. M3R · SU1은 XB 소스 커밋 뒤.
+- CF 결정: SU1 발견 2 — 원인 해결 뒤 'Backend 재시작'은 허용(재연결은 막음, 다음 slice). F3c-9 발견 4(시험이 미추적 debug 산출물을 읽음) · 1(마키 값) → XB 요청. 발견 3(crop 글자 작음) — 사용자 검수 항목.
+- 다음: XB 커밋 → M3R · SU1 커밋 → SU2(재시작 허용 · Mock 토글) · 시험 fixture 경로 이전. **사용자 Windows mock 튜토리얼 한 바퀴 검수 시점.**
