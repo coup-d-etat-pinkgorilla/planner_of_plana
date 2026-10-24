@@ -3,7 +3,8 @@
 // - 어둡게: 검정 64% 한 겹 · 흐림 없음. 대사 중에는 뒤 화면을 누를 수 없고, 클릭은 모두 '다음 대사'다
 //   (Space · Enter도 같다). 단계 카드의 "어둡게 덮지 않음"(FD-182)과는 다른 층이다.
 // - 밝히기: [revealRects]마다 어둠에 둥근 구멍(r14) + 하늘색 테두리(강조 테두리와 같은 빛). 대상이 대사 띠
-//   높이까지 내려오면 대사 띠를 반대쪽까지만 그리고 끝을 12% 흐리게 한다(04b · 08f).
+//   높이까지 내려오면 대사 띠를 반대쪽까지만 그리고 끝을 12% 흐리게 한다(04b · 08f). F3c-10: [reveals]는 등록된 실제
+//   모양(사선 = 평행사변형, 사선 판 = 섹션 외곽)의 구멍이고, 여러 곳은 모양의 합 하나로 뚫고 그 외곽에 테두리를 한 번 그린다.
 // - 이름표: 분홍 사선 띠 + '프라나'(경기천년제목 34) + 소속 '싯딤의 상자'(하늘색 18). 아래 가는 구분선.
 // - 대사: 27px · 두 줄 이내 · 한 글자씩(약 초당 40자). 나오는 중에 누르면 대사 전체가 바로 나온다.
 //   움직임 줄이기 설정이면 처음부터 전체. 다 나오면 '클릭 · Space · Enter로 다음' + ▼ 깜빡임.
@@ -113,6 +114,44 @@ Path planaDimPath(Size size, List<Rect> revealRects) {
   return path;
 }
 
+/// 밝힐 곳 하나(F3c-10): 사각형([rect] — 대사 띠 · 그림 자리 계산)과 구멍 모양([outline] — 등록된 실제 모양). 모양이 없으면
+/// 둥근 사각형(r14, F3a 그대로)이다.
+@immutable
+class PlanaReveal {
+  const PlanaReveal(this.rect, {this.outline});
+
+  final Rect rect;
+  final Path? outline;
+
+  Path get path =>
+      outline ??
+      (Path()..addRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(planaRevealRadius)),
+      ));
+}
+
+/// 밝힐 곳들의 구멍 경로(F3c-10): 하나면 그 모양 그대로, 여럿이면 모양의 합(겹친 곳이 다시 어두워지거나 테두리가 가르지
+/// 않는다). 없으면 null.
+Path? planaRevealHoles(List<PlanaReveal> reveals) {
+  if (reveals.isEmpty) return null;
+  if (reveals.length == 1) return reveals.single.path;
+  var union = reveals.first.path;
+  for (final reveal in reveals.skip(1)) {
+    union = Path.combine(PathOperation.union, union, reveal.path);
+  }
+  return union;
+}
+
+/// 어둠 + 모양 있는 구멍 path(evenodd, F3c-10).
+Path planaDimPathFor(Size size, List<PlanaReveal> reveals) {
+  final path = Path()
+    ..fillType = PathFillType.evenOdd
+    ..addRect(Offset.zero & size);
+  final holes = planaRevealHoles(reveals);
+  if (holes != null) path.addPath(holes, Offset.zero);
+  return path;
+}
+
 /// 프라나 대사 장면 한 겹. 화면 전체를 덮고 뒤 입력을 막는다.
 class PlanaDialogueOverlay extends StatefulWidget {
   const PlanaDialogueOverlay({
@@ -122,6 +161,7 @@ class PlanaDialogueOverlay extends StatefulWidget {
     required this.onNext,
     this.onQuit,
     this.revealRects = const [],
+    this.reveals = const [],
     this.figure,
     this.figureLeft,
     this.charactersPerSecond = 40,
@@ -134,8 +174,11 @@ class PlanaDialogueOverlay extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback? onQuit;
 
-  /// 밝힐 곳(이 위젯 좌표). F3c가 [PlanaLine.revealKeys]의 위젯 자리를 넣는다.
+  /// 밝힐 곳(이 위젯 좌표) — 둥근 사각형 구멍(F3a).
   final List<Rect> revealRects;
+
+  /// 모양 있는 밝힐 곳(이 위젯 좌표, F3c-10). 튜토리얼 덧그림이 [PlanaLine.revealKeys]의 등록된 실제 모양을 넣는다.
+  final List<PlanaReveal> reveals;
 
   /// 서 있는 그림. null이면 그림 없이 대사 띠만.
   final ImageProvider? figure;
@@ -307,7 +350,11 @@ class PlanaDialogueOverlayState extends State<PlanaDialogueOverlay>
     builder: (context, constraints) {
       final screen = constraints.biggest;
       final scale = planaScaleFor(screen);
-      final reveals = widget.revealRects;
+      final shaped = [
+        for (final rect in widget.revealRects) PlanaReveal(rect),
+        ...widget.reveals,
+      ];
+      final reveals = [for (final reveal in shaped) reveal.rect];
       final span = planaBandSpan(screen, reveals);
       final figure = widget.figure;
       final figureX = planaFigureX(
@@ -342,10 +389,7 @@ class PlanaDialogueOverlayState extends State<PlanaDialogueOverlay>
                           child: KitFocusGlowBuilder(
                             builder: (context, glow) => CustomPaint(
                               key: PlanaDialogueOverlay.dimKey,
-                              painter: _DimPainter(
-                                reveals: reveals,
-                                glow: glow,
-                              ),
+                              painter: _DimPainter(reveals: shaped, glow: glow),
                             ),
                           ),
                         ),
@@ -404,27 +448,18 @@ class _DimPainter extends CustomPainter {
   _DimPainter({required this.reveals, required this.glow})
     : super(repaint: glow);
 
-  final List<Rect> reveals;
+  final List<PlanaReveal> reveals;
   final Animation<double> glow;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawPath(
-      planaDimPath(size, reveals),
+      planaDimPathFor(size, reveals),
       Paint()..color = planaDimColor,
     );
-    for (final rect in reveals) {
-      paintKitFocusRing(
-        canvas,
-        Path()..addRRect(
-          RRect.fromRectAndRadius(
-            rect,
-            const Radius.circular(planaRevealRadius),
-          ),
-        ),
-        glow.value,
-      );
-    }
+    // 구멍들의 합 외곽에 한 번 그린다(겹친 구멍 사이를 테두리가 가르지 않는다).
+    final holes = planaRevealHoles(reveals);
+    if (holes != null) paintKitFocusRing(canvas, holes, glow.value);
   }
 
   @override
@@ -432,12 +467,15 @@ class _DimPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DimPainter oldDelegate) =>
-      oldDelegate.glow != glow || !_sameRects(oldDelegate.reveals, reveals);
+      oldDelegate.glow != glow || !_sameReveals(oldDelegate.reveals, reveals);
 
-  static bool _sameRects(List<Rect> a, List<Rect> b) {
+  static bool _sameReveals(List<PlanaReveal> a, List<PlanaReveal> b) {
     if (a.length != b.length) return false;
     for (var index = 0; index < a.length; index++) {
-      if (a[index] != b[index]) return false;
+      if (a[index].rect != b[index].rect ||
+          !identical(a[index].outline, b[index].outline)) {
+        return false;
+      }
     }
     return true;
   }

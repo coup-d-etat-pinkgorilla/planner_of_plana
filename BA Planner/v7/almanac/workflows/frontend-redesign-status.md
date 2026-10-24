@@ -12451,3 +12451,142 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_020017\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-10 착수 기록 (2026-10-24 14:30, Lane A 워커)
+
+- 상태: **진행 중** — F3c-10(사용자 Windows mock 튜토리얼 검수 5건, 오케스트레이터 로그 2026-10-24 13:20). 시작 SHA `c71d4760`(su1). 막는 '열림' FD 0(대장 막힘 요약 "현재 열림 0건").
+- 고칠 파일(예정): `frontend/lib/ui/tutorial/tutorial_script.dart` · `tutorial_flow.dart` · `plana_dialogue.dart` · `tutorial_highlight.dart` · `tutorial_step_card.dart` · `tutorial_card_placement.dart`, `frontend/lib/ui/tutorial_host/tutorial_overlay.dart` · `tutorial_session.dart`, `frontend/lib/ui/tutorial_targets/tutorial_hooks.dart`, `frontend/lib/ui/widgets/growth_calculator_section.dart` · `plan_flow_goal_step.dart` · `plan_scenario_compare.dart`, 시험 `frontend/test/tutorial_host_f3c3_test.dart` · `test/fixtures/tutorial_f3a_fixture.dart` · `test/tutorial_parts_f3a_test.dart` · `test/goldens/f3c5_tutorial_plan_golden_test.dart`, 새 시험 `frontend/test/tutorial_f3c10_test.dart`(+ golden 새 장면 최대 1).
+- 기존 미커밋 변경(WIP): 위 파일 모두 **없음**(착수 때 HEAD와 바이트 같음). 작업트리의 다른 미커밋 변경은 Lane B SU2 파일(`services/*` · `settings_page` · `development_panel` · `empty_backend_overlay`) — 건드리지 않는다.
+- pre 사본: `debug/frontend_f3c10/pre/frontend/...` 16개(위 목록, 고치지 않게 되면 사본만 남김).
+
+## F3c-10 종료 기록 (2026-10-24 16:30, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden RED 2 예상: 바뀐 `tutorial-dialogue-review` + 새 `tutorial-compare-reveal`) 남음. 시작 SHA `c71d4760`, 커밋 없음(git 쓰기 안 함).
+- 기존 파일 diff(+/−, 모두 LF 유지): `ui/tutorial/tutorial_script.dart` +149/−4 · `tutorial_flow.dart` +27/−6 · `plana_dialogue.dart` +62/−24 · `tutorial_highlight.dart` +79/−0 · `tutorial_step_card.dart` +2/−1 · `ui/tutorial_host/tutorial_overlay.dart` +69/−15 · `tutorial_session.dart` +27/−0 · `ui/tutorial_targets/tutorial_hooks.dart` +81/−21 · `ui/widgets/growth_calculator_section.dart` +202/−5 · `plan_flow_goal_step.dart` +42/−17 · `plan_scenario_compare.dart` +9/−2 · 시험 `test/tutorial_f3c6_test.dart` +11/−2 · `test/tutorial_host_f3c3_test.dart` +6/−1. 새 파일: `test/tutorial_f3c10_test.dart`(884줄, 9시험 · 변형 포함 11) · `test/goldens/f3c10_tutorial_compare_golden_test.dart`(230줄, 새 장면 1).
+- 사본만 남은 파일(고치지 않음): `tutorial_card_placement.dart` · `test/fixtures/tutorial_f3a_fixture.dart` · `test/tutorial_parts_f3a_test.dart` · `test/goldens/f3c5_tutorial_plan_golden_test.dart`. 착수 뒤 `test/tutorial_f3c6_test.dart` 사본을 더함(HEAD와 같음).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(편집마다 · 마지막) | 중간 오류 1(`mapEquals` import) → 고침 → 마지막 **No issues found!** |
+| `flutter test test/tutorial_f3c10_test.dart`(덤프 판 4회 → 마지막 판 3회) | 덤프로 위치 확인(아래 표) → 마지막 판 1회차 −2(시험 쪽: 조각 간격 · `-increase` 키가 '+' 단추 키와 겹침) · 2회차 −1(튜토리얼을 켜기 전 결과를 기록하지 않음 → 코드 고침: 결과는 늘 기록, 표시 · 알림만 켜짐일 때) → 3회차 **+11 All passed** |
+| 관련 기존 시험 141파일(grep: 고친 lib 파일 · `MockAppService` · `BAPlannerApp(` · `AppShell(` · `TutorialHost`를 쓰는 시험 + `tutorial_*` · `plan_*` · `planning_*` · `growth_calculator_*` · `student_*` · `kit_promotion_*` · `widget_test`; process E2E 7 · Lane B WIP `startup_user_data_su1/su2_test` 제외 — `debug/frontend_f3c10/related_run.txt` · `related_process_excluded.txt`) 3묶음 `--exclude-tags golden` | 00 **+611 All passed** · 01 **+758 All passed** · 02 **+612 −1**(`tutorial_f3c6_test` "7-3 · 7-4 · 7-5만 피할 자리를 가진다" — 4 · 7-2c가 피할 자리를 새로 가짐 → 시험 기대 갱신). `registered twice`는 F3c-2의 일부러 겹친 'dup' 1줄뿐 |
+| `flutter test test/tutorial_f3c6_test.dart test/tutorial_f3c10_test.dart test/tutorial_host_f3c3_test.dart test/plan_flow_goal_step_test.dart`(갱신 · 단계 카드 외곽 등록 뒤) | **+55 All passed**(한 바퀴 2560 · 1280 포함) |
+| 일회성 렌더(`test/goldens/f3c10_render_*_tmp_test.dart` 4개 — `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0, `RenderRepaintBoundary.toImage` RGBA를 기준 PNG와 비교, golden 비교 시험 아님) | `tutorial-card-parts` **0px** · `plana-dialogue` **0px** · `tutorial-step-scan` **0px** · `tutorial-plan-order` **0px** · `tutorial-dialogue-review` **112,379px**(예상 — 아래) · `tutorial-compare-reveal` 기준 없음(새) — 두 번 렌더 **바이트 같음** → 사본 4개 삭제(grep 0). 렌더 PNG: `debug/frontend_f3c10/render/` |
+| `dart format -o show`(고친 파일마다, 사본과 비교) | 새 형식 차이 0(고친 줄만 반영; `growth_calculator_section.dart`의 재화 목록 블록은 기존 들여쓰기 차이 덩어리 안 — 사본에도 같은 덩어리) |
+| `git diff --check -- frontend/lib/ui frontend/test` · 바이트 검사 | 출력 없음(rc 0), LF 유지 · 끝 개행 하나 · 줄 끝 공백 0, `pubspec.*` 변경 0 |
+
+로그: `debug/frontend_f3c10/logs/`(`dump-1~4` · `f3c10-test-1~3` · `related-00~02` · `rerun-1` · `render-1~2`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 5건 — 원인 · 고친 방법 · 시험
+
+| # | 원인(재현) | 고친 방법 | 시험(`tutorial_f3c10_test` 등, 1280 · 2560) |
+|---|---|---|---|
+| 1 | 4단계 강조 대상이 '+'(30×30) 하나뿐이고 계산 결과 변화는 표시 · 요약 없음. 카드는 '+' 왼쪽(2560: 199–799 × 224–429)에 붙어 레벨 행 목표 값을 덮었다 | (a) **두 겹 강조**: 단계 `sectionKey` = `students.calculator.section`(계산기 S2 섹션을 **실제 섹션 외곽 경로**로 등록) → 가늘고 옅은 보조 테두리(`TutorialPathRing(secondary)`, 1.6px · 불투명 .6 · 빛 ×.45) + '+' 주 테두리 그대로. 이유: 다음에 누를 곳은 하나로 남기고 섹션은 "여기 결과가 바뀐다"만 알림(섹션 밝히기는 단계 카드 층이 어둡게 덮지 않는 FD-182와 맞지 않음). 카드 `avoidKeys` = `students.calculator.changeArea`(목표 목록 · 크레딧 타일 · 재화 목록 조각) → 2560 오른쪽 1889–2489 × 435–640(겹침 0), 1280 오른쪽 0.75배 830–1280 × 386–540('+' · 크레딧 · 재화 목록 겹침 0). (b) 튜토리얼이 켜져 있을 때 목표가 바뀌고 새 결과가 오면 직전 결과와 견주어 **늘어난 재화 행에 K1 강조 테두리 + '+n' 칩, 크레딧 타일 '+n'** 5초(`growthCalculatorIncreaseHold`), 튜토리얼에 `TutorialCalculatorChange` 알림 → 완료 카드 '왜' 줄 = 요약(계산 전 '—'). 실제 계산기가 화면에 있으면 완료 체크를 `completeHold × 3`(1.2 → 3.6초, 계산기 없이 신호만 오면 그대로) | `step 4: section + "+" highlighted…`(섹션 보조 테두리 = 섹션 외곽 · 사각 모서리 밖, '+' 주 테두리, 카드 겹침, '—' → 실제 값, 행 강조 · 카드가 행을 가리지 않음, 3배 유지), `tutorial off: …`(꺼짐: 늘어난 표시 · 알림 0 / 켜짐: 표시 · 5초 뒤 걷힘), `calculator change text…`, `extendCompleteHold…` |
+| 2 | 대본 줄 | 프라나 08 대사 4의 '씨'만 지움(다른 대사 그대로) | `plana-08 line 4 drops '씨'…` |
+| 3 | 7-2 강조가 처음부터 '고른 7명 모두 한 번에 MAX로'인데 모두 직접 입력이라 버튼이 꺼져 있음 | 단계의 앞 하위 단계(`TutorialStepLead`): ① 프리셋 바 '한 번에 MAX'(새 대상 `plan.flow.goals.studentMaxPreset`) 강조 + 카드 할 일 · 왜 교체 → 고르면 신호 `plan.flow.studentMaxPresetPicked` → ② 원래 할 일 · '고른 7명 모두' 강조, 완료 신호 `plan.flow.allMaxApplied` 그대로(② 끝). 프라나 08c 대사 3 고침 | `7-2: the lead … first`(흐름 단위), `plan walk: …`(① 강조 사각형 = 세그먼트, 버튼 꺼짐 · 눌러도 그대로, ① 뒤 ② 강조 · 켜짐, 카드가 두 대상을 가리지 않음), 한 바퀴 시험 7-2 단언 추가 |
+| 4 | 재현: **대사 띠가 아니라 단계 카드**. 7-2c '단계 추가'를 누르면 2단계 카드가 그 자리에 생기고 '단계 추가'가 오른쪽으로 밀려, 카드가 여유 큰 왼쪽(2560: 861–1461 × 595–815)으로 옮겨 2단계 카드(1136–1604 × 351–1058)를 덮음. 1280도 같음(68–668 vs 541–751). 08g 대사 2 밝히기(1단계 스킬 칸 2560 860–1193 × 569–671, 1280 416–566 × 356–402)는 대사 띠(위 1030 · 539)와 겹치지 않음 | 7-2c `avoidKeys` = 새 `plan.flow.goals.makiStageCards`(마키 단계 카드 조각마다 등록) → 2560 오른쪽 1717–2317 × 595–815, 1280 오른쪽 0.75배 820–1270 × 335–500 — 겹침 0 | `plan walk: …`(추가 전 · 뒤 카드 ↔ 마키 단계 카드 조각 · 2단계 카드 · '단계 추가' 겹침 0, 08g 밝히기 ↔ 대사 띠 겹침 0) |
+| 5 | 밝히기 구멍 = 등록 사각형 + 둥근 r14, 여러 곳은 evenodd(겹친 곳이 다시 어두워짐) + 사각형마다 테두리. 비교 열 B · C의 바깥 사각형이 서로 179px 겹쳐(2560: B 966–1592, C 1413–2040) 겹친 띠가 다시 어둡고 세로 테두리가 열을 갈랐다 | 등록표가 조각마다 모양(`geometriesOf`)과 실제 외곽(`TutorialTarget.outline`)을 준다. 밝히기 = 조각별 경로(`ringPath` — 외곽이 있으면 그것, 없으면 K1 `kitFocusRingPath`)의 **합**(`Path.combine(union)`), 테두리는 합의 외곽에 한 번. 강조 테두리도 조각 여럿 · 외곽 있음이면 경로 합(`TutorialPathRing`), 하나 · 외곽 없음이면 F3a `TutorialHighlightRing` 그대로. 비교 열 B · C는 섹션 path를 외곽으로, 목표 단계 칸(사다리꼴 군집)은 군집 외곽을 등록 | `registry: fragments keep…`, `reveal holes are the union…`(겹친 곳 밝음 · 바깥 모서리 어두움 · 사각형 하나는 F3a 구멍과 같음), `plan walk: …`(09d 열 안 밝음, B · C 사이 틈 어두움 — 사각형 구멍이면 밝았던 곳, 바깥 사각형 모서리 어두움) |
+
+### 4단계 재화 요약 예시(실제 값)
+
+| 서비스 | '+' 한 번 뒤 완료 카드 '왜' 줄 |
+|---|---|
+| 계산 전(디바운스 250ms 동안) | 레벨 목표 +1 → 크레딧 — · 재화 — |
+| **Mock 기본**(`MockAppService.calculateStudent` = 목표와 상관없는 고정 예시) | 레벨 목표 +1 → 늘어난 재화가 없습니다(늘어난 행 강조 없음 — 발견 1) |
+| 시험 계산(레벨 1마다 크레딧 1,000 · 최상급 활동 보고서 1) | 레벨 목표 +1 → 크레딧 +1,000 · 최상급 활동 보고서 +1(크레딧 타일 '+1,000', 보고서 행 '+1' 칩 + 테두리) |
+| 실제 백엔드(FB-11a) | 실제 계산 차이(미실행) — 재화 셋 이상이면 앞 2개 + '외 n종' |
+
+### 7-2 하위 단계 · 신호
+
+| 하위 단계 | 카드 할 일(워커 문구 — CF 검수) | 왜 | 강조 대상 | 끝 신호 |
+|---|---|---|---|---|
+| ① | 먼저 지금 학생의 '한 번에 MAX'를 눌러 주십시오. | 처음에는 모두 직접 입력이라 아래 버튼이 꺼져 있습니다. 한 명에 프리셋을 넣으면 켜집니다. | `plan.flow.goals.studentMaxPreset`(프리셋 바 세그먼트, 사선) | **`plan.flow.studentMaxPresetPicked`**(새 — 세그먼트로 지금 학생 모드가 MAX가 됐을 때, 계획 흐름 `_PresetBar`) |
+| ② | '고른 7명 모두 한 번에 MAX로'를 눌러 주십시오.(대본 그대로) | 대본 그대로 | `plan.flow.goals.allMaxPreset` | `plan.flow.allMaxApplied`(단계 완료, 그대로) |
+
+- 하위 체크 줄(학생 고르기 ✓ · 목표 정하기 ● · 단계 순서 · 저장)은 바꾸지 않았다: 7-1~7-6 공통의 계획 만들기 4단계 목록이고 ① · ② 모두 '목표 정하기' 줄 안이다. 대본 데이터(`tutorialSteps['7-2']`)도 그대로 두고 보일 때만 바꾼다(`tutorialStepForLead`) — F3a 부품 golden `tutorial-card-parts`의 7-2 카드가 바뀌지 않게(렌더 0px).
+- ①을 건너뛰고 ② 신호가 와도(예: 이미 MAX인 학생) 단계는 끝난다.
+
+### 모양 점검 표(키 → 등록 모양 → 전 · 후)
+
+밝히기(대사 구멍):
+
+| 키 | 등록 모양(실제 위젯) | 전 | 후 |
+|---|---|---|---|
+| `scan.studentReview.uncertainGroup` | 조각(머리 + 행) · 사선(레일 위 행) | 합친 바깥 사각형 + r14 | 조각별 평행사변형(+5) 합 — 레일 따라 한 덩어리 외곽(`tutorial-dialogue-review`) |
+| `scan.studentReview.fallbackCheck` | 둥근 사각형 r6(crop 칸) | 사각형 r14 | 둥근 사각형 +5 · r11 |
+| `plan.flow.stepList` | 조각 4(레일 단계 버튼) · 사선 | 합친 사각형 r14 | 조각별 평행사변형 합 |
+| `plan.flow.students.selected` | 사선(레일 행 묶음 판) | 사각형 r14 | 평행사변형 |
+| `plan.flow.goals.stageCells` | **사다리꼴 군집**(지금 상태 카드 왼쪽 사선 · 단계 자리 오른쪽 세로) | 사각형 r14 | 군집 외곽 경로 등록(`_StageViewportClipper` 경로) |
+| `plan.flow.goals.makiStage1Skills` | 사선 블록 | 사각형 r14 | 평행사변형 |
+| `plan.flow.order.rankColumns` | 조각(칸 타일) · 사선 | 합친 사각형 r14 | 조각별 평행사변형 합 |
+| `plan.flow.order.card.*`(칸나 · 아카네 · 네루 · 마키 2단계) | 사선 카드 | 사각형 r14(여럿이면 evenodd) | 평행사변형 합 |
+| `plan.flow.order.laterColumn` | 둥근 사각형 r8 | 사각형 r14 | 둥근 사각형 +5 · r13 |
+| `plan.flow.save.phases` | 사선(레일 목록) | 사각형 r14 | 평행사변형 |
+| `plan.flow.save.choice` | 조각(DiagonalRow) · 사선 | 합친 사각형 r14 | 조각별 평행사변형 합 |
+| `plan.scenario.list.binahPlan` · `binahAllMax` | 사선 행 | 사각형 r14 둘(evenodd) | 평행사변형 합 |
+| `plan.scenario.compare.columnB` · `columnC` | **사선 판 섹션**(바깥 사각형끼리 겹침) | 사각형 r14 둘 — 겹친 띠 다시 어두움 · 세로 테두리 | 섹션 path 외곽 등록, 두 외곽의 합(`tutorial-compare-reveal`) |
+
+강조(단계 카드 테두리): 하나 · 외곽 없음인 키(`home.connect.useSelectedWindow` 둥근 · `scan.student.startFullScan` · `scan.item.start` 사선 · `scan.studentReview.applyChanged` 둥근 · `students.calculator.levelTargetPlus` 둥근 8 · `scan.itemRun.progressWindow` 둥근 · `scan.itemReview.applyApproved` · `plan.flow.nextToGoals` · `plan.flow.goals.studentMaxPreset`(새) · `allMaxPreset` · `makiStage1Skills` · `makiAddStage` · `order.card.akane` · `kannaSwimsuit` · `save.asScenario` · `compareSideBySide` · `inventory.shortage.topRow` 사선, `order.laterColumn` · `statistics.growthTrendTile` 둥근 8)는 **전 · 후 같음**(K1 경로 그대로 — `tutorial-step-scan` · `tutorial-plan-order` 렌더 0px). 새 보조 강조 `students.calculator.section`은 섹션 외곽 경로. 조각 강조 키는 지금 없음(있으면 조각별 합).
+
+### 사진 속 C열 오른쪽 분홍 사선
+
+- **비교 화면 본문의 사선 스크롤바 썸**(`plan_scenario_compare.dart` `_body` → `DiagonalScrollbar(keyPrefix: 'plan-compare-body')`, 썸 8px `AppColors.scrollThumb` #e5a0ea). 본문 영역 오른쪽 끝 = 마지막 열(C) 오른쪽 변이라 C열 사선을 따라 그려지고, C열이 밝혀져 어둠 위로 보였다. 강조 잔상이 아니다. 새 장면 렌더에도 같은 자리에 있다(그대로 둠).
+
+### 바꾼 대본 줄(`tutorial_script.dart`)
+
+- 프라나 08 대사 4: "… 아카네 씨, 칸나(수영복) 씨, 마키 씨, 미카 씨, 히마리(무장) 씨, 시로코(수영복) 씨, 네루(교복) 씨입니다." → "비나전에 쓸 일곱 명을 골라 주십시오. 아카네, 칸나(수영복), 마키, 미카, 히마리(무장), 시로코(수영복), 네루(교복)입니다."(다른 대사의 '씨' 그대로 — CF · 사용자 결정 대기)
+- 프라나 08c 대사 3: "고른 일곱 명에게 '한 번에 MAX' 프리셋을 한꺼번에 넣어 주십시오." → "먼저 지금 학생에게 '한 번에 MAX' 프리셋을 넣은 뒤, 고른 일곱 명 모두에게 똑같이 넣어 주십시오."(워커 문구 — CF 검수)
+- 7-2 앞 하위 단계 카드 문구(위 표), 4단계 완료 카드 '왜' 줄 = 요약(대본 데이터 '곧 다음 단계로 넘어갑니다.'는 그대로, 계산기 없이 신호만 오면 그대로 보임). 완료 카드 '왜' 줄 최대 1 → 2줄(`tutorial_step_card.dart`).
+
+### golden
+
+| 장면 | 변화 · 이유 |
+|---|---|
+| `tutorial-dialogue-review` | **바뀜(whole)** — 프라나 04 대사 2 밝히기(확인 필요 묶음 = 머리 + 행 2)가 둥근 사각형에서 조각별 사선 경로의 합(레일 따라 기운 한 덩어리)으로. 렌더 112,379px 차이(구멍 · 테두리 자리) |
+| `tutorial-card-parts` · `plana-dialogue` · `tutorial-step-scan` · `tutorial-plan-order` | 변화 0(렌더 0px — 대본 데이터 · 부품 사각형 구멍 · 하나짜리 강조 그대로, 7-2 흐름은 ① → ② 순서로 같은 두 번 누르기) |
+| **새** `tutorial-compare-reveal` | 프라나 09d 대사 2 / 3: 나란히 비교(A 활성 계획 · B '총력전 비나 대비' · C '비나 대비 · 한 번에 MAX') 위 검정 64%, **열 B · C만 사선 판 모양 그대로 밝고 B · C 사이 틈은 어둡다**, 하늘색 테두리가 두 판 합의 외곽을 한 번 따라감(세로선 · 사각형 없음), C 오른쪽 변 분홍 스크롤바 썸, 아래 대사 띠 '튜토리얼 · 비교 · 대사 2 / 3'. 시나리오 시각은 `GoldenMockAppService` 고정, 두 번 렌더 바이트 같음. 4 · 5 · 6 · 7-3~7-5는 hooks 출구라 B 열 값은 실제 한 바퀴와 다를 수 있다(B: 페이즈 2 · 단계 8) |
+| 그 밖 | 튜토리얼 밖 화면은 그리기 변화 0(대상 감싸개 · 투명 대상 자리만 — 계산기 바뀌는 자리 3 · 비교 열 외곽 · 단계 칸 외곽은 렌더 객체가 없거나 그리지 않음; 늘어난 표시는 튜토리얼 켜짐일 때만). 관련 장면은 렌더하지 않음 |
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E 7파일(`related_process_excluded.txt`), almanac validate, Python, 실제 백엔드 계산으로 4단계 요약, Windows 실제 앱(mock) 눈 확인, 사람 손 1280×720 한 바퀴, 키보드 흐름.
+- 4단계 요약 · 행 강조는 Mock 기본 계산으로는 '늘어난 재화가 없습니다'만 보인다(발견 1) — 늘어나는 값은 시험 계산으로만 확인.
+
+### 검수표(사용자 · CF — Windows mock 앱)
+
+| 곳 | 여는 방법 | 확인 |
+|---|---|---|
+| 4단계 | 튜토리얼 → 프라나 05 뒤 학생 탭 → '성장 계산기' | 섹션 전체 옅은 하늘색 외곽 + '+' 진한 테두리, 카드가 목표 목록 · 크레딧 · 재화 목록을 가리지 않음. '+' 뒤 완료 카드 '레벨 목표 +1 → …'가 약 3.6초(Mock은 '늘어난 재화가 없습니다') |
+| 08 대사 4 | 계획 장면 | '씨' 없는 학생 이름 나열 |
+| 7-2 | 프라나 08c 뒤 | 먼저 '한 번에 MAX' 세그먼트 강조 + 카드 '먼저 지금 학생의…' → 누르면 '고른 7명 모두' 강조로 바뀜(이제 켜짐) |
+| 7-2c | '단계 추가' 누르기 | 카드가 오른쪽으로 가 마키 2단계 카드를 가리지 않음(1280 · 2560) |
+| 09d | 나란히 비교 뒤 대사 2 | B · C 열이 사선 모양대로 밝고 사이가 어둡다, 사각형 테두리 없음 |
+| 그 밖 밝히기 | 프라나 04 · 08 · 08c · 08d~08f · 09 · 09c | 구멍이 대상 모양(사선 · 군집 외곽) — 둥근 사각형 대신 |
+
+### 발견 사항
+
+1. **Mock 계산이 목표를 보지 않는다**: `MockAppService.calculateStudent`는 목표와 상관없는 고정 예시(`mock_student_calculation_fixture.dart`)라 Windows mock 4단계에서 늘어나는 재화가 없다('늘어난 재화가 없습니다'). 사용자 피드백 ①-(b)를 mock에서 보이려면 Mock 계산이 목표(예: 레벨)에 따라 달라져야 한다 — `mock_app_service.dart`는 Lane B SU2 작업 중이라 손대지 않음. CF 결정(Lane B · 다음 slice).
+2. 사용자 원문과 시안이 다른 곳: Tutorial-04 시안은 '+'(40×40)만 강조하고 카드를 아래 가운데(930,1000)에 둔다 — 사용자 원문 우선으로 섹션 보조 강조 · 카드는 바뀌는 자리를 피함.
+3. 7-2b 카드(2560 1227–1827 × 510–730)는 1단계 카드 오른쪽 끝과 가깝다 — 이번 범위 밖(보고 없음), 그대로.
+4. 09d 대사 띠는 전체 폭(B · C가 띠 높이까지 내려오지만 합집합 왼쪽이 띠 최소 폭 1100보다 작음 — F3a 규칙 그대로), 열 아래쪽은 띠에 덮인다(사진과 같음).
+5. 지운 파일: 일회성 렌더 사본 4개(프롬프트 허용)와, 관련 시험 목록을 다시 나누려고 방금 만든 `debug/frontend_f3c10/related_part_0*` 분할 파일 한 번(같은 이름으로 다시 만듦). 편집 도구 백업 파일 0.
+6. Lane B WIP(`services/*` · `settings_page` · `development_panel` · `empty_backend_overlay` · `startup_user_data_su1/su2_test`) 아래에서 시험을 돌렸다 — 그 파일들은 읽기만. 작업트리의 미추적 `frontend/assets/item_icons/...`도 이 slice 것이 아니다.
+
+### 사본 · commit.json
+
+- pre 사본 17개(`debug/frontend_f3c10/pre/frontend/...`) 모두 착수 때 HEAD와 같음. 이 status 문서는 `status=true`로 `modified`에 넣지 않았다.
+- `debug/frontend_f3c10/commit.json`: slice `f3c10`, modified 13, added 2, `whole` = [`frontend/test/goldens/baseline/tutorial-dialogue-review.png`], `optional_added` = [`frontend/test/goldens/baseline/tutorial-compare-reveal.png`]. 메시지 ASCII.
+- 인계: `debug/frontend_f3c10/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B SU2 등 레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden RED 2 예상(`tutorial-dialogue-review` 바뀜 · 새 `tutorial-compare-reveal`) — `failures/` 검토(밝히기 구멍 · 테두리만 달라야 함) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c10 -DryRun` → `fe_commit.ps1 -Slice f3c10`.
+- CF 결정: 발견 1(Mock 계산이 목표 반영), 워커 문구 3곳(7-2 ① 할 일 · 왜, 08c 대사 3, 4단계 요약 형식 · '늘어난 재화가 없습니다'), 다른 대사 '씨'.
+- 사용자: 위 검수표로 Windows mock 한 바퀴(1280 포함).
+
+### f3c10 commit record (2026-10-24 17:11, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_165443\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

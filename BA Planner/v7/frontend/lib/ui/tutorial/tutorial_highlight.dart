@@ -7,6 +7,8 @@
 // - [TutorialHighlightRing]: 대상 사각형(부모 Stack 좌표)을 받아 그린다.
 // K2: 그림은 키트 `focus_ring.dart`(K1 승격)이고, 이 파일의 이름은 tutorial_host · tutorial_targets · 다른 탭의 등록표를
 // 그대로 두는 얇은 별칭이다(클래스 · enum은 typedef라 위젯 트리 · `find.byType`도 같다).
+// F3c-10: [TutorialPathRing] — 사각형 하나로 그릴 수 없는 대상(조각 여러 개의 합 · 사선 판 섹션 외곽)을 경로 그대로 강조하고,
+// 보조 강조(섹션 전체)는 같은 경로 그리기를 가늘고 옅게 쓴다.
 import 'package:flutter/material.dart';
 
 import '../kit/focus_ring.dart';
@@ -45,3 +47,80 @@ Rect tutorialHighlightBounds(
   Rect target, {
   TutorialHighlightShape shape = TutorialHighlightShape.parallelogram,
 }) => kitFocusRingBounds(target, shape: shape);
+
+/// 보조 강조(F3c-10 — 대상이 들어 있는 섹션 전체): 강조 테두리와 같은 색 · 숨쉬기지만 가늘고 옅다(다음에 누를 곳은 주
+/// 강조 하나로 남는다).
+const tutorialSectionRingStroke = 1.6;
+const tutorialSectionRingOpacity = 0.6;
+const tutorialSectionGlowScale = 0.45;
+
+/// 경로 [path](부모 Stack 좌표)를 따라 강조 테두리를 그린다(F3c-10 — 조각 여러 개의 합 · 등록된 실제 외곽). [secondary]면
+/// 보조 강조다. 부모 Stack을 채우고 누르기를 받지 않는다.
+class TutorialPathRing extends StatelessWidget {
+  const TutorialPathRing({
+    super.key,
+    required this.path,
+    this.secondary = false,
+  });
+
+  final Path path;
+  final bool secondary;
+
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+    child: IgnorePointer(
+      child: KitFocusGlowBuilder(
+        builder: (context, glow) => CustomPaint(
+          painter: _PathRingPainter(path, glow, secondary: secondary),
+        ),
+      ),
+    ),
+  );
+}
+
+class _PathRingPainter extends CustomPainter {
+  _PathRingPainter(this.path, this.glow, {required this.secondary})
+    : super(repaint: glow);
+
+  final Path path;
+  final Animation<double> glow;
+  final bool secondary;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!secondary) {
+      paintKitFocusRing(canvas, path, glow.value);
+      return;
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = kitFocusGlowStroke
+        ..strokeJoin = StrokeJoin.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, kitFocusGlowBlur)
+        ..color = kitFocusRingColor.withValues(
+          alpha: glow.value * tutorialSectionGlowScale,
+        ),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = tutorialSectionRingStroke
+        ..strokeJoin = StrokeJoin.round
+        ..color = kitFocusRingColor.withValues(
+          alpha: tutorialSectionRingOpacity,
+        ),
+    );
+  }
+
+  @override
+  bool? hitTest(Offset position) => false;
+
+  @override
+  bool shouldRepaint(_PathRingPainter oldDelegate) =>
+      oldDelegate.glow != glow ||
+      oldDelegate.path != path ||
+      oldDelegate.secondary != secondary;
+}

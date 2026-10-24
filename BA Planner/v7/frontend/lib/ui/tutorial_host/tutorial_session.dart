@@ -18,6 +18,8 @@
 //   ([planFlowReplaceActivePlanWithScenario])로 활성 계획에 적용한 뒤 인벤토리 탭을 연다(부족 목록이 그 계획을 읽게).
 //   실패하면 짧은 안내로 알리고 인벤토리는 그대로 연다. 9단계 카드는 부족 1위 행의 실제 이름을 쓰고(덧그림), 부족 목록이
 //   비었으면([shortageEmpty]) 대체 문구로 바로 다음 단계로 간다.
+// - 4단계 완료(F3c-10): 실제 성장 계산기가 화면에 있으면 완료 체크를 [tutorialCalculatorHoldFactor]배 보인다(늘어난 재화
+//   요약 · 행 강조를 읽을 시간). 4단계에 들어갈 때 계산기 변화 알림([TutorialHooks.calculatorChange])을 비운다.
 // 늦은 응답은 generation으로 버린다. 실제 백엔드는 지금 unsupported(XB X4 짝 라운드 전)다.
 import 'dart:async';
 
@@ -101,6 +103,11 @@ const tutorialCandidateCleanupAfterStep = '3';
 /// 정리했다는 한 줄을 보일 단계(정리 뒤 첫 단계).
 const tutorialCandidateNoteStep = '4';
 
+/// 4단계(계산기 목표 바꾸기) 완료 체크를 보이는 시간 배수(F3c-10): 실제 계산기가 화면에 있으면 늘어난 재화 요약 · 행
+/// 강조를 읽을 수 있게 완료 체크를 [TutorialSession.completeHold]의 이 배수만큼 보인다(기본 1.2초 → 3.6초). 계산기 없이
+/// 신호만 온 경우(시험 hooks 출구)는 그대로다.
+const tutorialCalculatorHoldFactor = 3;
+
 /// 오류 → 짧은 글(계약 오류 코드가 있으면 그 이름).
 String tutorialErrorText(Object error) =>
     practiceErrorCodeOf(error)?.wireName ?? '$error';
@@ -147,6 +154,7 @@ class TutorialSession extends ChangeNotifier {
   int _navigationId = 0;
   int _lastFlowIndex = -1;
   TutorialFlowItem? _lastItem;
+  TutorialPhase? _lastPhase;
   int _clearedCandidates = 0;
   bool _planApplied = false;
   bool _shortageEmpty = false;
@@ -292,9 +300,11 @@ class TutorialSession extends ChangeNotifier {
     _status = TutorialSessionStatus.running;
     _lastFlowIndex = -1;
     _lastItem = null;
+    _lastPhase = null;
     _clearedCandidates = 0;
     _planApplied = false;
     _shortageEmpty = false;
+    hooks.calculatorChange.value = null;
     final flow = TutorialFlowController(completeHold: completeHold)
       ..addListener(_flowChanged);
     _flow = flow;
@@ -317,11 +327,27 @@ class TutorialSession extends ChangeNotifier {
       }
       return;
     }
+    final enteredComplete =
+        flow.phase == TutorialPhase.stepComplete &&
+        _lastPhase != TutorialPhase.stepComplete;
+    _lastPhase = flow.phase;
+    if (enteredComplete &&
+        flow.step?.completeSignal ==
+            TutorialSignals.studentCalculatorTargetChanged &&
+        hooks.registry.contains(TutorialTargets.calculatorSection)) {
+      flow.extendCompleteHold(completeHold * tutorialCalculatorHoldFactor);
+    }
     if (flow.flowIndex != _lastFlowIndex) {
       _lastFlowIndex = flow.flowIndex;
       final previous = _lastItem;
       final item = flow.currentItem;
       _lastItem = item;
+      if (item is TutorialStepItem &&
+          tutorialSteps[item.stepId]?.completeSignal ==
+              TutorialSignals.studentCalculatorTargetChanged) {
+        // 이 단계의 요약은 이 단계에서 바꾼 목표만 쓴다.
+        hooks.calculatorChange.value = null;
+      }
       if (previous is TutorialStepItem &&
           previous.stepId == tutorialCandidateCleanupAfterStep) {
         unawaited(_clearPracticeCandidates(_generation));
@@ -522,6 +548,7 @@ class TutorialSession extends ChangeNotifier {
     hooks.registry.removeListener(_registryChanged);
     hooks.signals.listener = null;
     hooks.active.value = false;
+    hooks.calculatorChange.value = null;
     plan.clear();
   }
 

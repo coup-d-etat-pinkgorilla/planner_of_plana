@@ -187,7 +187,14 @@ void main() {
       );
     });
 
-    test('7-3 · 7-4 · 7-5만 피할 자리를 가진다', () {
+    // F3c-10: 4(계산기의 바뀌는 자리) · 7-2c(마키 단계 카드)도 피할 자리를 가진다.
+    test('4 · 7-2c · 7-3 · 7-4 · 7-5만 피할 자리를 가진다', () {
+      expect(tutorialSteps['4']!.avoidKeys, [
+        TutorialTargets.calculatorChangeArea,
+      ]);
+      expect(tutorialSteps['7-2c']!.avoidKeys, [
+        TutorialTargets.planMakiStageCards,
+      ]);
       expect(tutorialSteps['7-3']!.avoidKeys, [
         TutorialTargets.planOrderCards,
         TutorialTargets.planOrderRankColumns,
@@ -198,7 +205,9 @@ void main() {
         TutorialTargets.planOrderLaterLane,
       ]);
       for (final step in tutorialSteps.values) {
-        if (const {'7-3', '7-4', '7-5'}.contains(step.id)) continue;
+        if (const {'4', '7-2c', '7-3', '7-4', '7-5'}.contains(step.id)) {
+          continue;
+        }
         expect(step.avoidKeys, isEmpty, reason: step.id);
       }
     });

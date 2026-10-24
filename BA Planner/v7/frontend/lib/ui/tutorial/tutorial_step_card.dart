@@ -661,9 +661,10 @@ class _DoneBody extends StatelessWidget {
               style: tutorialText(AppType.titleSize, height: 1.3),
             ),
             const SizedBox(height: 5),
+            // F3c-10: 4단계는 늘어난 재화 요약이라 두 줄까지.
             Text(
               step.doneWhy,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: tutorialText(
                 AppType.bodySize,

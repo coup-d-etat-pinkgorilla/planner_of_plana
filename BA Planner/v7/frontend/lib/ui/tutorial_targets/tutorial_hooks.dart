@@ -4,7 +4,8 @@
 //   위젯 쪽은 [TutorialTarget]으로 감싼다. 감싸개는 렌더 객체를 더하지 않는다(레이아웃 · 그림 변화 0). 감싸는 위젯 하나가
 //   없는 대상(목록 머리 + 행, 단계 버튼 4개 등)은 [TutorialTarget.group]으로 여러 조각을 한 키에 붙이고 합친 사각형을 쓴다.
 //   F3c-6: 조각마다의 사각형([TutorialTargetRegistry.rectsOf] — 카드가 피할 자리)과 대상이 보여 주는 이름
-//   ([TutorialTarget.label] — 9단계 부족 1위 행 이름)도 읽는다.
+//   ([TutorialTarget.label] — 9단계 부족 1위 행 이름)도 읽는다. F3c-10: 조각마다의 모양([TutorialTargetRegistry.geometriesOf])과
+//   실제 외곽 경로([TutorialTarget.outline])를 읽어 밝히기 · 강조가 사각형이 아니라 등록된 모양의 합을 따른다.
 // - [TutorialSignalBus]: F3a 신호 이름(`TutorialSignals`)을 앱 사건이 확정된 자리에서 낸다([TutorialHooksScope.emit]).
 //   듣는 쪽([TutorialSignalBus.listener])이 없으면 버린다.
 // - [TutorialHooks.active]: 튜토리얼 활성 표시. 켜지면 모든 탭 머리글 제목 옆에 `TutorialHeaderChip`이 보인다
@@ -14,7 +15,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-import '../tutorial/tutorial_highlight.dart' show TutorialHighlightShape;
+import '../tutorial/tutorial_highlight.dart'
+    show TutorialHighlightShape, tutorialHighlightPath;
+import '../tutorial/tutorial_script.dart' show TutorialCalculatorChange;
 
 export '../tutorial/tutorial_highlight.dart' show TutorialHighlightShape;
 
@@ -25,6 +28,7 @@ class TutorialTargetGeometry {
     required this.rect,
     required this.shape,
     required this.radius,
+    this.outline,
   });
 
   final Rect rect;
@@ -33,8 +37,31 @@ class TutorialTargetGeometry {
   /// 둥근 사각형의 반지름(사선 모양은 0).
   final double radius;
 
+  /// 등록한 실제 외곽 경로(F3c-10 — 섹션 · 비교 열처럼 사선 판 모양을 그대로 쓰는 대상). 있으면 [rect]는 이 경로의
+  /// 바깥 사각형이다.
+  final Path? outline;
+
+  /// 밝히기 구멍 · 강조 테두리가 따를 경로(F3c-10): 등록한 외곽 경로, 없으면 K1 테두리 경로(사선 = 80° 평행사변형,
+  /// 둥근 사각형 = 반지름 + 5)다.
+  Path get ringPath =>
+      outline ??
+      tutorialHighlightPath(rect, shape: shape, targetRadius: radius);
+
   @override
-  String toString() => 'TutorialTargetGeometry($rect, ${shape.name}, $radius)';
+  String toString() =>
+      'TutorialTargetGeometry($rect, ${shape.name}, $radius'
+      '${outline == null ? '' : ', outline'})';
+}
+
+/// 여러 조각 경로의 합(F3c-10 — 사각형 합이 아니라 조각별 실제 모양의 합). 하나면 그 경로 그대로다.
+Path? tutorialUnionPath(Iterable<Path> paths) {
+  Path? union;
+  for (final path in paths) {
+    union = union == null
+        ? path
+        : Path.combine(PathOperation.union, union, path);
+  }
+  return union;
 }
 
 /// 등록된 대상 위젯(감싸개 State).
@@ -48,6 +75,9 @@ abstract interface class TutorialTargetHandle {
 
   /// 대상이 보여 주는 이름(F3c-6). 없으면 null.
   String? get label;
+
+  /// 실제 외곽 경로(위젯 좌표, F3c-10). 없으면 null.
+  Path Function(Size size)? get outline;
 }
 
 /// 키 → 지금 붙어 있는 대상 위젯. 같은 키가 두 위젯에서 동시에 등록되면(조각 등록이 아니면) 나중 등록을 쓰고, 그 프레임이
@@ -108,7 +138,7 @@ class TutorialTargetRegistry extends ChangeNotifier {
     if (handles.every((handle) => handle.group)) {
       Rect? union;
       for (final handle in handles) {
-        final rect = _rectOf(handle, ancestor);
+        final rect = _geometryOf(handle, ancestor)?.rect;
         if (rect == null) continue;
         union = union == null ? rect : union.expandToInclude(rect);
       }
@@ -120,28 +150,32 @@ class TutorialTargetRegistry extends ChangeNotifier {
       );
     }
     for (final handle in handles.reversed) {
-      final rect = _rectOf(handle, ancestor);
-      if (rect == null) continue;
-      return TutorialTargetGeometry(
-        rect: rect,
-        shape: handle.shape,
-        radius: handle.radius,
-      );
+      final geometry = _geometryOf(handle, ancestor);
+      if (geometry != null) return geometry;
     }
     return null;
   }
 
-  /// [id] 대상의 조각마다의 사각형(보이는 것만, 전역 좌표). 조각이 아닌 대상은 [geometryOf]와 같은 하나다(F3c-6 — 카드가
-  /// 피할 자리).
-  List<Rect> rectsOf(String id) {
+  /// [id] 대상의 조각마다의 자리와 모양(보이는 것만, F3c-10 — 밝히기 · 강조가 조각별 실제 모양의 합을 그린다). 조각이
+  /// 아닌 대상은 [geometryOf]와 같은 하나다.
+  List<TutorialTargetGeometry> geometriesOf(
+    String id, {
+    RenderObject? ancestor,
+  }) {
     final handles = _byId[id];
     if (handles == null) return const [];
     if (!handles.every((handle) => handle.group)) {
-      final rect = geometryOf(id)?.rect;
-      return rect == null ? const [] : [rect];
+      final geometry = geometryOf(id, ancestor: ancestor);
+      return geometry == null ? const [] : [geometry];
     }
-    return [for (final handle in handles) ?_rectOf(handle, null)];
+    return [for (final handle in handles) ?_geometryOf(handle, ancestor)];
   }
+
+  /// [id] 대상의 조각마다의 사각형(보이는 것만, 전역 좌표). 조각이 아닌 대상은 [geometryOf]와 같은 하나다(F3c-6 — 카드가
+  /// 피할 자리).
+  List<Rect> rectsOf(String id) => [
+    for (final geometry in geometriesOf(id)) geometry.rect,
+  ];
 
   /// [id] 대상이 보여 주는 이름(F3c-6). 등록이 없거나, 보이지 않거나, 이름이 없으면 null.
   String? labelOf(String id) {
@@ -157,15 +191,28 @@ class TutorialTargetRegistry extends ChangeNotifier {
   /// 등록된 대상의 이름이 바뀌었다(프레임 뒤에 알린다).
   void labelChanged() => _scheduleNotify();
 
-  static Rect? _rectOf(TutorialTargetHandle handle, RenderObject? ancestor) {
+  static Rect? _rectOf(TutorialTargetHandle handle, RenderObject? ancestor) =>
+      _geometryOf(handle, ancestor)?.rect;
+
+  /// 조각 하나의 자리. 외곽 경로가 있으면 사각형은 그 경로의 바깥 사각형이다.
+  static TutorialTargetGeometry? _geometryOf(
+    TutorialTargetHandle handle,
+    RenderObject? ancestor,
+  ) {
     final box = handle.renderBox;
     if (box == null || !box.attached || !box.hasSize || box.size.isEmpty) {
       return null;
     }
     if (_hiddenOffstage(box)) return null;
-    return MatrixUtils.transformRect(
-      box.getTransformTo(ancestor),
-      Offset.zero & box.size,
+    final transform = box.getTransformTo(ancestor);
+    final outline = handle.outline?.call(box.size).transform(transform.storage);
+    return TutorialTargetGeometry(
+      rect:
+          outline?.getBounds() ??
+          MatrixUtils.transformRect(transform, Offset.zero & box.size),
+      shape: handle.shape,
+      radius: handle.radius,
+      outline: outline,
     );
   }
 
@@ -212,9 +259,14 @@ class TutorialHooks {
   /// 튜토리얼 활성 표시(머리글 칩). 기본 꺼짐.
   final ValueNotifier<bool> active = ValueNotifier(false);
 
+  /// 성장 계산기가 튜토리얼 동안 목표를 바꾼 결과를 알린다(F3c-10 — 4단계 완료 카드 요약). 기본 null.
+  final ValueNotifier<TutorialCalculatorChange?> calculatorChange =
+      ValueNotifier(null);
+
   void dispose() {
     registry.dispose();
     active.dispose();
+    calculatorChange.dispose();
     signals.listener = null;
   }
 }
@@ -257,12 +309,17 @@ class TutorialTarget extends StatefulWidget {
     this.radius = 0,
     this.group = false,
     this.label,
+    this.outline,
     required this.child,
   });
 
   final String? id;
   final TutorialHighlightShape shape;
   final double radius;
+
+  /// 대상의 실제 외곽 경로(이 위젯 좌표, F3c-10). 사선 판 섹션처럼 [shape]로 그릴 수 없는 모양이면 준다. 밝히기 구멍 ·
+  /// 강조 테두리가 이 경로를 따른다.
+  final Path Function(Size size)? outline;
 
   /// 한 키의 여러 조각 중 하나(등록표가 사각형을 합친다, 중복 경고 없음).
   final bool group;
@@ -298,6 +355,9 @@ class _TutorialTargetState extends State<TutorialTarget>
 
   @override
   String? get label => widget.label;
+
+  @override
+  Path Function(Size size)? get outline => widget.outline;
 
   @override
   void didChangeDependencies() {

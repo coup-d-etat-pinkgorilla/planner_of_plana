@@ -935,19 +935,26 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
       final target = index < targets.length ? targets[index] : null;
       if (target == null) continue;
       // F3c-2: 열 B · C 전체(섹션 path의 바깥 사각형, 대사 09d-2). 열을 덮는 위젯이 없어 그리지도 누르지도 않는 빈 자리를
-      // 둔다.
+      // 둔다. F3c-10: 모양은 섹션 path 그대로(외곽 경로 등록).
       final columnKey = switch (index) {
         1 => TutorialTargets.scenarioCompareColumnB,
         2 => TutorialTargets.scenarioCompareColumnC,
         _ => null,
       };
       if (columnKey != null) {
+        final bounds = _polygonBounds(polygon);
+        final sectionId = planCompareColumnSectionId(index);
         children.add(
           Positioned.fromRect(
-            rect: _polygonBounds(polygon),
+            rect: bounds,
             child: IgnorePointer(
               child: TutorialTarget(
                 id: columnKey,
+                // F3c-10: 밝히기 구멍 · 테두리는 열의 실제 사선 판 외곽(사각형이 아니다).
+                outline: (_) => buildSectionCanvasElementPath(
+                  size,
+                  planCompareSection(sectionId),
+                ).shift(-bounds.topLeft),
                 child: const SizedBox.expand(),
               ),
             ),

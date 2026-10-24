@@ -480,11 +480,16 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('plan-flow-next')));
       await _waitDone(tester, session, '학생을 골랐습니다');
 
-      // 프라나 08c → 7-2: 한 번에 MAX를 고르고 '고른 7명 모두 한 번에 MAX로'(실제).
+      // 프라나 08c → 7-2: 한 번에 MAX를 고르고 '고른 7명 모두 한 번에 MAX로'(실제). F3c-10: 두 하위 단계 — ① 지금 학생의
+      // '한 번에 MAX' 강조 → ② '고른 7명 모두' 강조.
       await _toStep(tester, session, '7-2');
       expect(_planFlow(tester).step, PlanFlowStep.goals);
+      expect(session.flow!.highlightKey, TutorialTargets.planStudentMaxPreset);
+      expect(find.byType(TutorialHighlightRing), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('plan-flow-goal-mode-max')));
       await tester.pump();
+      expect(session.flow!.highlightKey, TutorialTargets.planAllMaxPreset);
+      expect(session.flow!.phase, TutorialPhase.step);
       await tester.tap(find.byKey(const ValueKey('plan-flow-goal-apply-all')));
       await _waitDone(tester, session, 'MAX로 맞췄습니다');
 

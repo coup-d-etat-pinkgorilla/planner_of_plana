@@ -4,7 +4,8 @@
 // - 장면: 대사를 하나씩 넘긴다([advanceLine]). 마지막 대사 뒤(대사 띠가 0.3초 걷힌 뒤) 다음 칸으로 간다.
 // - 단계: "단계 완료" 신호를 받으면 완료 체크를 [completeHold](약 1.2초) 보인 뒤 다음 칸으로 간다. 하위 체크 줄의
 //   신호는 그 줄만 체크한다. 기다림 신호(가상 스캔 시작)는 카드를 기다림 상태로 바꾼다. 다른 신호는 무시한다
-//   (사용자는 다른 곳도 자유롭게 누른다).
+//   (사용자는 다른 곳도 자유롭게 누른다). F3c-10: 앞 하위 단계([TutorialStep.lead])가 있으면 그 신호를 받기 전까지
+//   강조 대상이 앞 하위 단계의 것이다([leadActive]).
 // - 그만두기: 어디서든 [requestQuit] → 확인 창 → [confirmQuit]이면 '프라나 그만둘 때' 장면 → 끝(그만둠),
 //   [cancelQuit]이면 하던 곳으로 돌아간다.
 // - 끝 화면: 프라나 11 뒤 [TutorialPhase.doneScreen]. [finish]로 끝(마침).
@@ -78,6 +79,7 @@ class TutorialFlowController extends ChangeNotifier {
   int _lineIndex = 0;
   final Set<int> _checkedLines = {};
   bool _waiting = false;
+  bool _leadDone = false;
   Timer? _completeTimer;
   TutorialOutcome? _outcome;
   bool _disposed = false;
@@ -149,9 +151,16 @@ class TutorialFlowController extends ChangeNotifier {
     return states;
   }
 
-  /// 강조 테두리 대상 키(기다림 · 완료 · 대사 중에는 없음).
-  String? get highlightKey =>
-      _phase == TutorialPhase.step && !_waiting ? step?.highlightKey : null;
+  /// 앞 하위 단계([TutorialStep.lead], F3c-10)를 아직 하지 않았다.
+  bool get leadActive =>
+      _phase == TutorialPhase.step && step?.lead != null && !_leadDone;
+
+  /// 강조 테두리 대상 키(기다림 · 완료 · 대사 중에는 없음). 앞 하위 단계 동안은 그 대상이다.
+  String? get highlightKey {
+    if (_phase != TutorialPhase.step || _waiting) return null;
+    final step = this.step;
+    return leadActive ? step?.lead?.highlightKey : step?.highlightKey;
+  }
 
   /// 지금 대사의 밝힐 대상 키.
   List<String> get revealKeys =>
@@ -195,6 +204,10 @@ class TutorialFlowController extends ChangeNotifier {
       return;
     }
     var changed = false;
+    if (step.lead?.signal == name && !_leadDone) {
+      _leadDone = true;
+      changed = true;
+    }
     for (var index = 0; index < step.checks.length; index++) {
       if (step.checks[index].signal == name && _checkedLines.add(index)) {
         changed = true;
@@ -261,9 +274,16 @@ class TutorialFlowController extends ChangeNotifier {
     _notify();
   }
 
-  void _scheduleAdvance() {
+  /// 완료 체크를 지금부터 [hold] 동안 보인다(F3c-10 — 4단계가 늘어난 재화를 보일 시간). 완료 체크 중이 아니면 아무것도
+  /// 하지 않는다.
+  void extendCompleteHold(Duration hold) {
+    if (_phase != TutorialPhase.stepComplete) return;
+    _scheduleAdvance(hold);
+  }
+
+  void _scheduleAdvance([Duration? hold]) {
     _completeTimer?.cancel();
-    _completeTimer = Timer(completeHold, () {
+    _completeTimer = Timer(hold ?? completeHold, () {
       _completeTimer = null;
       if (_disposed || _phase != TutorialPhase.stepComplete) return;
       _goTo(_flowIndex + 1);
@@ -277,6 +297,7 @@ class TutorialFlowController extends ChangeNotifier {
     _lineIndex = 0;
     _checkedLines.clear();
     _waiting = false;
+    _leadDone = false;
     final item = currentItem;
     switch (item) {
       case TutorialSceneItem():

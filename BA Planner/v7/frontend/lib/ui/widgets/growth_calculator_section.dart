@@ -11,9 +11,13 @@
 // - 아래: "이 목표로 계획에 추가"(FE4-g, FD-171 (a): 계획 만들기 2단계로 넘김). "인벤토리 · 부족 위험에서 보기"는
 //   숨긴다(FD-173 (c)). 연결(인벤토리 행 이동 의도)은 [GrowthCalculatorModeData.onOpenInventory]로 준비만 했다(tidy1).
 // - 계산 상태: 기다리는 동안 직전 결과를 흐리게, 실패하면 오류 문구와 직전 결과를 보인다.
+// - 튜토리얼(F3c-10): 섹션 전체 · 결과 자리를 대상으로 등록하고, 튜토리얼이 켜져 있을 때 목표를 바꾸면 직전 결과보다 늘어난
+//   크레딧 · 재화 행을 잠깐 강조('+n')하고 튜토리얼에 요약을 알린다. 튜토리얼이 꺼져 있으면 그리기 · 동작 변화 없음.
 // 목표는 저장하지 않고, 학생 탭 인연 게이지의 활성 계획 목표(FD-049)와 섞지 않는다.
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -25,6 +29,7 @@ import '../kit/ba_chip.dart';
 import '../kit/buttons.dart';
 import '../kit/diagonal_row.dart';
 import '../kit/diagonal_scroll_viewport.dart';
+import '../kit/focus_ring.dart';
 import '../kit/game_assets.dart';
 import '../kit/hatch.dart';
 import '../kit/info_popover.dart';
@@ -67,6 +72,9 @@ const growthCalculatorActionHeight = 64.0;
 
 /// 계산을 기다리는 동안 직전 결과의 불투명도.
 const growthCalculatorPendingOpacity = 0.55;
+
+/// 튜토리얼 동안 목표를 바꾼 뒤 늘어난 재화 행을 강조하는 시간(F3c-10).
+const growthCalculatorIncreaseHold = Duration(seconds: 5);
 
 /// 목표 행에서 바뀐 값의 색(시안 `#f2b3ef`), 그대로인 값은 흰색.
 const growthCalculatorChangedColor = AppColors.accent;
@@ -471,13 +479,145 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
   /// 인연 타일에서 고른 안. 고르기는 고정·강조만 바꾼다(FD-165). null이면 기본 안이다.
   GrowthCalculatorBondOption? _bondOption;
 
+  // F3c-10: 튜토리얼 동안 목표를 바꾸면 늘어난 재화를 잠깐 강조하고 튜토리얼에 알린다(튜토리얼이 꺼져 있으면 아무것도
+  // 하지 않는다).
+  TutorialHooks? _hooks;
+  GrowthCalculatorResult? _seenResult;
+  Map<String, int>? _seenTargets;
+  Map<String, int> _increases = const {};
+  int? _creditIncrease;
+  Timer? _increaseTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _listen(widget);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _hooks = TutorialHooksScope.maybeOf(context);
+  }
+
   @override
   void didUpdateWidget(GrowthCalculatorSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state.studentId != widget.state.studentId) {
       _bondOption = null;
     }
+    if (!identical(oldWidget.state, widget.state) ||
+        !identical(oldWidget.engine, widget.engine)) {
+      _unlisten(oldWidget);
+      _listen(widget);
+      _seenResult = null;
+      _seenTargets = null;
+      _clearIncreases();
+    }
   }
+
+  @override
+  void dispose() {
+    _unlisten(widget);
+    _increaseTimer?.cancel();
+    super.dispose();
+  }
+
+  void _listen(GrowthCalculatorSection section) {
+    section.state.addListener(_trackChange);
+    section.engine?.addListener(_trackChange);
+  }
+
+  void _unlisten(GrowthCalculatorSection section) {
+    section.state.removeListener(_trackChange);
+    section.engine?.removeListener(_trackChange);
+  }
+
+  void _clearIncreases() {
+    _increaseTimer?.cancel();
+    _increaseTimer = null;
+    _increases = const {};
+    _creditIncrease = null;
+  }
+
+  /// 목표가 바뀐 뒤 새 결과가 오면 직전 결과와 견준 늘어난 재화를 강조하고 알린다. 다시 계산하는 동안은 목표 변화만
+  /// 먼저 알린다(값은 '—').
+  void _trackChange() {
+    final hooks = _hooks;
+    if (hooks == null || !mounted) return;
+    final active = hooks.active.value;
+    final state = widget.state;
+    final status = widget.engine?.status;
+    final result = status is GrowthCalculatorReady ? status.result : null;
+    final from = _seenTargets;
+    if (result != null && !identical(result, _seenResult)) {
+      final previous = _seenResult;
+      _seenResult = result;
+      _seenTargets = Map.of(state.targets);
+      if (active &&
+          previous != null &&
+          from != null &&
+          !mapEquals(from, state.targets)) {
+        _showIncreases(hooks, from, state.targets, previous, result);
+      }
+      return;
+    }
+    if (active && from != null && !mapEquals(from, state.targets)) {
+      hooks.calculatorChange.value = TutorialCalculatorChange(
+        targets: _targetChanges(from, state.targets),
+      );
+    }
+  }
+
+  void _showIncreases(
+    TutorialHooks hooks,
+    Map<String, int> from,
+    Map<String, int> to,
+    GrowthCalculatorResult before,
+    GrowthCalculatorResult after,
+  ) {
+    final previous = {
+      for (final row in before.resources) row.resourceKey: row.amount,
+    };
+    final increases = <String, int>{
+      for (final row in after.resources)
+        if (row.amount - (previous[row.resourceKey] ?? 0) > 0)
+          row.resourceKey: row.amount - (previous[row.resourceKey] ?? 0),
+    };
+    final credits = math.max(0, after.credits - before.credits);
+    setState(() {
+      _clearIncreases();
+      _increases = increases;
+      _creditIncrease = credits > 0 ? credits : null;
+      _increaseTimer = Timer(growthCalculatorIncreaseHold, () {
+        if (mounted) setState(_clearIncreases);
+      });
+    });
+    hooks.calculatorChange.value = TutorialCalculatorChange(
+      targets: _targetChanges(from, to),
+      credits: credits,
+      resources: [
+        for (final row in after.resources)
+          if (increases[row.resourceKey] case final amount?)
+            (name: row.displayName, amount: amount),
+      ],
+    );
+  }
+
+  /// 바뀐 목표 글: 값 하나인 행은 '레벨 목표 +1', 여러 값인 행은 '전용무기 목표 ★1 · Lv.30 → ★2 · Lv.40'.
+  List<String> _targetChanges(Map<String, int> from, Map<String, int> to) => [
+    for (final row in GrowthCalculatorRow.values)
+      if (row.keys.any((key) => from[key] != to[key]))
+        if (row.keys.length == 1)
+          '${growthCalculatorRowLabel(row, widget.student)} 목표 '
+              '${_signed((to[row.primaryKey] ?? 0) - (from[row.primaryKey] ?? 0))}'
+        else
+          '${growthCalculatorRowLabel(row, widget.student)} 목표 '
+              '${growthCalculatorRowText(row, from, target: true)} → '
+              '${growthCalculatorRowText(row, to, target: true)}',
+  ];
+
+  static String _signed(int value) => value < 0 ? '−${-value}' : '+$value';
 
   @override
   Widget build(BuildContext context) {
@@ -488,7 +628,7 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
         final layout = GrowthCalculatorLayout.of(widget.canvasSize);
         final state = widget.state;
         final status = engine?.status;
-        return ClipPath(
+        final section = ClipPath(
           clipper: _SectionClipper(widget.canvasSize),
           child: KitOverlayBounds(
             child: Stack(
@@ -548,6 +688,12 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
             ),
           ),
         );
+        // F3c-10: 섹션 전체(4단계 보조 강조 — 실제 섹션 외곽).
+        return TutorialTarget(
+          id: TutorialTargets.calculatorSection,
+          outline: (_) => studentSectionPath(widget.canvasSize, 'element-2'),
+          child: section,
+        );
       },
     );
   }
@@ -589,9 +735,26 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
     }
     final empty = emptyText;
     return [
+      // F3c-10: 목표 목록 · 크레딧 타일 · 성장 재화 목록 자리(4단계 카드가 바뀐 목표 · 늘어난 재화를 가리지 않게). 그리지도
+      // 누르지도 않는다.
+      for (final rect in [
+        layout.goalViewport,
+        layout.creditTile,
+        layout.resourceViewport,
+      ])
+        Positioned.fromRect(
+          rect: rect,
+          child: const IgnorePointer(
+            child: TutorialTarget(
+              id: TutorialTargets.calculatorChangeArea,
+              group: true,
+              child: SizedBox.expand(),
+            ),
+          ),
+        ),
       Positioned.fromRect(
         rect: layout.creditTile,
-        child: faded(_CreditTile(result: result)),
+        child: faded(_CreditTile(result: result, increase: _creditIncrease)),
       ),
       Positioned.fromRect(
         rect: layout.bondTile,
@@ -656,7 +819,10 @@ class _GrowthCalculatorSectionState extends State<GrowthCalculatorSection> {
                       : 30,
                   itemGap: growthCalculatorResourceRowGap,
                   itemBuilder: (context, index) => index < shown.length
-                      ? _ResourceRow(row: shown[index])
+                      ? _ResourceRow(
+                          row: shown[index],
+                          increase: _increases[shown[index].resourceKey],
+                        )
                       : _MoreRow(
                           hidden: hidden,
                           expanded: _expanded,
@@ -1509,9 +1675,12 @@ class _NeedTitle extends StatelessWidget {
 }
 
 class _CreditTile extends StatelessWidget {
-  const _CreditTile({required this.result});
+  const _CreditTile({required this.result, this.increase});
 
   final GrowthCalculatorResult? result;
+
+  /// 튜토리얼 동안 목표를 바꿔 늘어난 크레딧(F3c-10). 없으면 null.
+  final int? increase;
 
   @override
   Widget build(BuildContext context) {
@@ -1578,6 +1747,17 @@ class _CreditTile extends StatelessWidget {
           color: AppColors.textMuted,
         ),
       ),
+      if (increase case final increase?)
+        Text(
+          '+${growthCalculatorNumber(increase)}',
+          key: const ValueKey('calculator-credits-increase'),
+          maxLines: 1,
+          style: _bodyStyle(
+            AppType.bodySmallSize,
+            color: AppColors.primary,
+            weight: AppType.bold,
+          ),
+        ),
       const SizedBox(height: 4),
       Text(
         result == null ? '—' : growthCalculatorNumber(result.credits),
@@ -1748,12 +1928,21 @@ class _ResourceHeader extends StatelessWidget {
 }
 
 class _ResourceRow extends StatelessWidget {
-  const _ResourceRow({required this.row});
+  const _ResourceRow({required this.row, this.increase});
 
   final GrowthCalculatorResourceRow row;
 
+  /// 튜토리얼 동안 목표를 바꿔 늘어난 수(F3c-10). 있으면 행을 강조 테두리로 감싸고 '+n'을 보인다.
+  final int? increase;
+
   @override
   Widget build(BuildContext context) {
+    final increase = this.increase;
+    final body = _body(increase);
+    return increase == null ? body : KitFocusRing(child: body);
+  }
+
+  Widget _body(int? increase) {
     final holding = row.holding;
     final Widget chip;
     final Widget owned;
@@ -1818,6 +2007,14 @@ class _ResourceRow extends StatelessWidget {
               ),
             ),
           ),
+          if (increase != null) ...[
+            const SizedBox(width: 8),
+            BaChip(
+              key: ValueKey('calculator-resource-${row.resourceKey}-increase'),
+              label: '+${growthCalculatorNumber(increase)}',
+              tone: AppTones.info,
+            ),
+          ],
           const SizedBox(width: 14),
           SizedBox(
             width: 70,

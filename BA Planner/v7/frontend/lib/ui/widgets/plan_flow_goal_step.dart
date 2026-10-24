@@ -322,6 +322,8 @@ class PlanFlowGoalBody extends StatelessWidget {
           const Size(_cardsWidth, 716),
           TutorialTarget(
             id: TutorialTargets.planGoalStageCells,
+            // F3c-10: 사다리꼴 군집(지금 상태 카드의 왼쪽 사선 · 단계 자리 오른쪽 세로 변) 외곽.
+            outline: const _StageViewportClipper().getClip,
             child: _StageCards(
               flow: flow,
               editor: editor,
@@ -517,13 +519,21 @@ class _PresetBar extends StatelessWidget {
     );
   }
 
-  Widget _segment(String key, String mode, String label) {
+  Widget _segment(
+    String key,
+    String mode,
+    String label, {
+    VoidCallback? onPicked,
+  }) {
     final selected = editor.modeOf(studentId) == mode;
     return SkewSegmented<String>(
       key: ValueKey(key),
       segments: [SkewSegment(value: mode, label: label)],
       selected: selected ? mode : null,
-      onChanged: (value) => editor.applyMode(value),
+      onChanged: (value) {
+        editor.applyMode(value);
+        if (editor.modeOf(studentId) == mode) onPicked?.call();
+      },
       height: 32,
       fontSize: AppType.bodySmallSize,
       horizontalPadding: 14,
@@ -549,10 +559,18 @@ class _PresetBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
               ],
-              _segment(
-                'plan-flow-goal-mode-max',
-                planFlowGoalModeMax,
-                '한 번에 MAX',
+              // F3c-10: 지금 학생의 '한 번에 MAX'(7-2 ① 강조 · 고르면 신호).
+              TutorialTarget(
+                id: TutorialTargets.planStudentMaxPreset,
+                child: _segment(
+                  'plan-flow-goal-mode-max',
+                  planFlowGoalModeMax,
+                  '한 번에 MAX',
+                  onPicked: () => TutorialHooksScope.emit(
+                    context,
+                    TutorialSignals.planStudentMaxPresetPicked,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               _segment(
@@ -693,17 +711,24 @@ class _StageCardsState extends State<_StageCards> {
                         top: 0,
                         width: planFlowGoalCardSize.width,
                         height: planFlowGoalCardSize.height,
-                        child: _StageCard(
-                          key: ValueKey('plan-flow-goal-card-${stage.id}'),
-                          editor: editor,
-                          studentId: studentId,
-                          index: index,
-                          stage: stage,
-                          stageCount: stages.length,
-                          selected: stage.id == selectedId,
-                          cost: calculation?.stageCosts[stage.id],
-                          calculating: widget.flow.calculating,
-                          canCalculate: widget.flow.canCalculate,
+                        // F3c-10: 마키 단계 카드(조각마다 — 7-2c 카드가 2단계 카드를 가리지 않게).
+                        child: TutorialTarget(
+                          id: studentId == 'maki'
+                              ? TutorialTargets.planMakiStageCards
+                              : null,
+                          group: true,
+                          child: _StageCard(
+                            key: ValueKey('plan-flow-goal-card-${stage.id}'),
+                            editor: editor,
+                            studentId: studentId,
+                            index: index,
+                            stage: stage,
+                            stageCount: stages.length,
+                            selected: stage.id == selectedId,
+                            cost: calculation?.stageCosts[stage.id],
+                            calculating: widget.flow.calculating,
+                            canCalculate: widget.flow.canCalculate,
+                          ),
                         ),
                       ),
                     Positioned(

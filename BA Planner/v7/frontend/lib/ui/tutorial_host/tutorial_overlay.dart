@@ -7,6 +7,9 @@
 //   F3c-6: 카드는 단계의 [TutorialStep.avoidKeys] 대상(조각마다)을 피한다(카드 자리 규칙 7). 9단계 카드는 부족 1위 행의
 //   실제 이름 · 빈 목록 대체 문구로 바꿔 보인다([tutorialStepForShortage]). F3c-8: 프라나 10에서 활성 계획을 적용했으면
 //   9단계 카드 '왜' 줄 앞에 적용 안내 한 줄.
+// - F3c-10: 밝히기 구멍 · 강조 테두리는 등록된 실제 모양(조각별 K1 경로 · 등록 외곽 경로)의 합을 따른다(사각형 합 금지).
+//   단계에 섹션 키가 있으면(4단계 성장 계산기) 섹션 전체를 보조 강조하고, 앞 하위 단계(7-2 ①) 동안은 카드 할 일 · 강조가
+//   그 하위 단계의 것이다. 4단계 완료 카드 '왜' 줄은 계산기가 알린 실제 변화 요약이다.
 // - 그만두기 확인 · 끝 화면(시안 Tutorial-Done) · 정리 실패(다시 시도) · 짧은 안내.
 // 사각형은 프레임마다 다시 읽는다(프레임 뒤 비교 — 바뀌면 다시 그린다). 튜토리얼이 꺼져 있으면 아무것도 그리지 않는다.
 import 'package:flutter/foundation.dart';
@@ -71,6 +74,7 @@ class TutorialOverlay extends StatefulWidget {
   static const endRetryKey = ValueKey('tutorial-end-retry');
   static const endingKey = ValueKey('tutorial-ending');
   static const inlineKey = ValueKey('tutorial-inline-line');
+  static const sectionRingKey = ValueKey('tutorial-section-ring');
 
   @override
   State<TutorialOverlay> createState() => _TutorialOverlayState();
@@ -91,6 +95,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     _session.addListener(_sessionChanged);
     _session.scanSession.addListener(_scanChanged);
     _registry.addListener(_changed);
+    _session.hooks.calculatorChange.addListener(_changed);
     _sessionChanged();
     _scanChanged();
   }
@@ -101,6 +106,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       _session.removeListener(_sessionChanged);
       _session.scanSession.removeListener(_scanChanged);
       _registry.removeListener(_changed);
+      _session.hooks.calculatorChange.removeListener(_changed);
     }
     _flow?.removeListener(_changed);
     _scan?.removeListener(_scanProgress);
@@ -150,6 +156,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     final step = flow.step;
     return [
       ?flow.highlightKey,
+      ?_sectionKey,
       ...flow.revealKeys,
       if (step != null &&
           step.presentation == TutorialStepPresentation.inlineLine &&
@@ -158,8 +165,23 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     ];
   }
 
+  /// 지금 보조 강조할 섹션 키(F3c-10, 진행 · 완료 체크 동안).
+  String? get _sectionKey {
+    final flow = _flow;
+    if (flow == null ||
+        (flow.phase != TutorialPhase.step &&
+            flow.phase != TutorialPhase.stepComplete)) {
+      return null;
+    }
+    return flow.step?.sectionKey;
+  }
+
+  // 조각마다의 사각형(F3c-10 — 묶음 안 조각만 움직여도 다시 그린다).
   List<Object?> _signature() => [
-    for (final key in _keys) _registry.geometryOf(key)?.rect,
+    for (final key in _keys) ...[
+      key,
+      for (final geometry in _registry.geometriesOf(key)) geometry.rect,
+    ],
     ..._avoidRects(),
     _registry.labelOf(TutorialTargets.inventoryShortageTopRow),
   ];
@@ -179,6 +201,38 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
 
   TutorialTargetGeometry? _geometry(String? key) =>
       key == null ? null : _registry.geometryOf(key);
+
+  /// [keys] 대상의 조각마다 실제 모양(F3c-10 — 밝히기 구멍).
+  List<PlanaReveal> _reveals(List<String> keys) => [
+    for (final key in keys)
+      for (final geometry in _registry.geometriesOf(key))
+        PlanaReveal(geometry.rect, outline: geometry.ringPath),
+  ];
+
+  /// [key] 대상의 강조 테두리(F3c-10): 조각 하나 · 등록 외곽 없음이면 F3a 그대로 [TutorialHighlightRing], 아니면 조각별
+  /// 모양의 합을 따르는 [TutorialPathRing]. 대상이 화면에 없으면 null.
+  Widget? _ring(String? key, {bool secondary = false}) {
+    if (key == null) return null;
+    final geometries = _registry.geometriesOf(key);
+    if (geometries.isEmpty) return null;
+    final single = geometries.length == 1 ? geometries.single : null;
+    if (single != null && single.outline == null && !secondary) {
+      return TutorialHighlightRing(
+        target: single.rect,
+        shape: single.shape,
+        targetRadius: single.radius,
+      );
+    }
+    final path = tutorialUnionPath([
+      for (final geometry in geometries) geometry.ringPath,
+    ]);
+    if (path == null) return null;
+    return TutorialPathRing(
+      key: secondary ? TutorialOverlay.sectionRingKey : null,
+      path: path,
+      secondary: secondary,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,9 +275,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
             onQuit: flow.phase == TutorialPhase.dialogue
                 ? flow.requestQuit
                 : null,
-            revealRects: [
-              for (final key in flow.revealKeys) ?_geometry(key)?.rect,
-            ],
+            reveals: _reveals(flow.revealKeys),
           ),
         ];
       case TutorialPhase.step || TutorialPhase.stepComplete:
@@ -248,11 +300,17 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
   List<Widget> _stepLayer(TutorialFlowController flow, Size size) {
     final raw = flow.step;
     if (raw == null) return const [];
-    final step = tutorialStepForShortage(
-      raw,
-      topName: _registry.labelOf(TutorialTargets.inventoryShortageTopRow),
-      empty: _session.shortageEmpty,
-      planApplied: _session.planApplied,
+    final step = tutorialStepForCalculator(
+      tutorialStepForLead(
+        tutorialStepForShortage(
+          raw,
+          topName: _registry.labelOf(TutorialTargets.inventoryShortageTopRow),
+          empty: _session.shortageEmpty,
+          planApplied: _session.planApplied,
+        ),
+        leadActive: flow.leadActive,
+      ),
+      _session.hooks.calculatorChange.value,
     );
     final waiting = flow.cardMode == TutorialCardMode.waiting;
     if (step.presentation == TutorialStepPresentation.inlineLine && waiting) {
@@ -290,12 +348,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     final done = waiting ? scan?.progressCurrent : null;
     final total = waiting ? scan?.progressTotal : null;
     return [
-      if (target != null)
-        TutorialHighlightRing(
-          target: target.rect,
-          shape: target.shape,
-          targetRadius: target.radius,
-        ),
+      ?_ring(_sectionKey, secondary: true),
+      ?_ring(flow.highlightKey),
       Positioned.fill(
         child: TutorialCardLayer(
           target: target?.rect,

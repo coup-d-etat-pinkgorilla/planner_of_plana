@@ -107,6 +107,22 @@ class TutorialCheckItem {
   final bool doneAtStart;
 }
 
+/// 단계 안 앞 하위 단계(F3c-10 — 7-2 ①): [signal]을 받기 전에는 카드의 할 일 · 왜 · 강조가 이것이다. 받으면 단계 본래의
+/// 할 일 · 강조(②)로 바뀐다. 단계 완료 신호는 ② 끝에서 그대로다.
+class TutorialStepLead {
+  const TutorialStepLead({
+    required this.title,
+    required this.why,
+    required this.highlightKey,
+    required this.signal,
+  });
+
+  final String title;
+  final String why;
+  final String highlightKey;
+  final String signal;
+}
+
 /// 단계 카드를 보여 주는 방식.
 enum TutorialStepPresentation {
   /// 단계 카드 + 강조 테두리.
@@ -139,6 +155,8 @@ class TutorialStep {
     this.inlineAnchorKey,
     this.cardWidth = 560,
     this.avoidKeys = const [],
+    this.lead,
+    this.sectionKey,
   });
 
   /// 단계 id(예: `3`, `7-2b`).
@@ -187,6 +205,12 @@ class TutorialStep {
 
   /// 카드가 가리면 안 되는 대상 키(이 단계에서 사용자가 만질 다른 곳 — 카드 자리 규칙 7, F3c-6).
   final List<String> avoidKeys;
+
+  /// 앞 하위 단계(F3c-10). 없으면 처음부터 [title] · [highlightKey]다.
+  final TutorialStepLead? lead;
+
+  /// 대상이 들어 있는 섹션 전체(보조 강조 — F3c-10 4단계 성장 계산기). 진행 · 완료 체크 동안 그린다.
+  final String? sectionKey;
 
   bool get hasWait => waitSignal != null;
 }
@@ -244,6 +268,9 @@ abstract final class TutorialSignals {
       'scan.itemReview.uncertainApproved';
   static const itemReviewApplied = 'scan.itemReview.applied';
   static const planStudentsConfirmed = 'plan.flow.studentsConfirmed';
+
+  /// F3c-10: 계획 만들기 2에서 지금 학생의 '한 번에 MAX' 프리셋을 골랐다(7-2 ① 끝).
+  static const planStudentMaxPresetPicked = 'plan.flow.studentMaxPresetPicked';
   static const planAllMaxApplied = 'plan.flow.allMaxApplied';
   static const planMakiStage1Set = 'plan.flow.makiStage1Set';
   static const planMakiStage2Set = 'plan.flow.makiStage2Set';
@@ -272,6 +299,7 @@ abstract final class TutorialSignals {
     itemReviewUncertainApproved,
     itemReviewApplied,
     planStudentsConfirmed,
+    planStudentMaxPresetPicked,
     planAllMaxApplied,
     planMakiStage1Set,
     planMakiStage2Set,
@@ -299,6 +327,9 @@ abstract final class TutorialTargets {
   static const scanItemStart = 'scan.item.start';
   static const itemReviewApplyApproved = 'scan.itemReview.applyApproved';
   static const planNextToGoals = 'plan.flow.nextToGoals';
+
+  /// F3c-10: 계획 만들기 2 프리셋 바의 '한 번에 MAX'(지금 학생 — 7-2 ①).
+  static const planStudentMaxPreset = 'plan.flow.goals.studentMaxPreset';
   static const planAllMaxPreset = 'plan.flow.goals.allMaxPreset';
   static const planMakiStage1Skills = 'plan.flow.goals.makiStage1Skills';
   static const planMakiAddStage = 'plan.flow.goals.makiAddStage';
@@ -311,7 +342,16 @@ abstract final class TutorialTargets {
   static const inventoryShortageTopRow = 'inventory.shortage.topRow';
   static const statisticsGrowthTrendTile = 'statistics.growthTrendTile';
 
+  /// F3c-10: 성장 계산기 섹션 전체(4단계 보조 강조 — 실제 섹션 외곽 경로로 등록).
+  static const calculatorSection = 'students.calculator.section';
+
   // 카드가 피할 자리(F3c-6, 카드 자리 규칙 7).
+  /// F3c-10: 성장 계산기에서 4단계 동안 바뀌는 것이 보이는 자리(조각마다 — 목표 목록 · 크레딧 타일 · 성장 재화 목록).
+  static const calculatorChangeArea = 'students.calculator.changeArea';
+
+  /// F3c-10: 마키 단계 카드 전체(조각마다 — 7-2c에서 '단계 추가' 뒤 생긴 2단계 카드를 카드가 가리지 않게).
+  static const planMakiStageCards = 'plan.flow.goals.makiStageCards';
+
   /// 단계 순서 보드의 모든 카드(조각마다 — 7-3~7-5에서 끌 수 있는 카드).
   static const planOrderCards = 'plan.flow.order.cards';
 
@@ -345,10 +385,12 @@ abstract final class TutorialTargets {
     scanStudentStartFullScan,
     studentReviewApplyChanged,
     calculatorLevelTargetPlus,
+    calculatorSection,
     scanItemStart,
     itemRunProgressWindow,
     itemReviewApplyApproved,
     planNextToGoals,
+    planStudentMaxPreset,
     planAllMaxPreset,
     planMakiStage1Skills,
     planMakiAddStage,
@@ -362,7 +404,12 @@ abstract final class TutorialTargets {
   ];
 
   /// 카드가 피할 자리(밝히기 대상 중 칸 보드 칸 [planOrderRankColumns]도 7-3에서 피한다).
-  static const avoidKeys = <String>[planOrderCards, planOrderLaterLane];
+  static const avoidKeys = <String>[
+    planOrderCards,
+    planOrderLaterLane,
+    calculatorChangeArea,
+    planMakiStageCards,
+  ];
 
   /// 대사 밝히기 대상.
   static const revealKeys = <String>[
@@ -599,7 +646,7 @@ const tutorialScenes = <String, PlanaScene>{
         figureLeft: 1000,
       ),
       PlanaLine(
-        '비나전에 쓸 일곱 명을 골라 주십시오. 아카네 씨, 칸나(수영복) 씨, 마키 씨, 미카 씨, 히마리(무장) 씨, 시로코(수영복) 씨, 네루(교복) 씨입니다.',
+        '비나전에 쓸 일곱 명을 골라 주십시오. 아카네, 칸나(수영복), 마키, 미카, 히마리(무장), 시로코(수영복), 네루(교복)입니다.',
         expression: _n,
         revealKeys: [TutorialTargets.planSelectedStudents],
         figureLeft: 1250,
@@ -620,7 +667,10 @@ const tutorialScenes = <String, PlanaScene>{
         revealKeys: [TutorialTargets.planGoalStageCells],
         figureLeft: 1950,
       ),
-      PlanaLine("고른 일곱 명에게 '한 번에 MAX' 프리셋을 한꺼번에 넣어 주십시오.", expression: _n),
+      PlanaLine(
+        "먼저 지금 학생에게 '한 번에 MAX' 프리셋을 넣은 뒤, 고른 일곱 명 모두에게 똑같이 넣어 주십시오.",
+        expression: _n,
+      ),
     ],
   ),
   'plana-08g': PlanaScene(
@@ -942,11 +992,92 @@ TutorialStep _shortageStep(
   );
 }
 
+/// 앞 하위 단계가 아직이면([leadActive], F3c-10) 카드의 할 일 · 왜를 [TutorialStep.lead]의 것으로 바꿔 보인다. 대본
+/// 데이터는 그대로다(F3a 부품 golden이 7-2 카드를 대본 그대로 그린다).
+TutorialStep tutorialStepForLead(
+  TutorialStep step, {
+  required bool leadActive,
+}) {
+  final lead = step.lead;
+  if (lead == null || !leadActive) return step;
+  return _stepWith(step, title: lead.title, why: lead.why);
+}
+
+/// 4단계 계산기 목표 한 번 바꾼 결과(F3c-10). 성장 계산기가 계산 결과로 채운다. 아직 계산 중이면 [credits] ·
+/// [resources]가 null이다(카드는 '—').
+class TutorialCalculatorChange {
+  const TutorialCalculatorChange({
+    required this.targets,
+    this.credits,
+    this.resources,
+  });
+
+  /// 바뀐 목표 글(예: '레벨 목표 +1').
+  final List<String> targets;
+
+  /// 늘어난 크레딧. 모르면 null.
+  final int? credits;
+
+  /// 늘어난 성장 재화(이름 · 늘어난 수, 결과 순서). 모르면 null.
+  final List<({String name, int amount})>? resources;
+
+  bool get calculated => credits != null && resources != null;
+}
+
+/// 4단계 완료 카드 '왜' 줄에 보일 재화 수(나머지는 '외 n종').
+const tutorialCalculatorChangeShown = 2;
+
+/// 4단계 완료 카드 '왜' 줄(F3c-10): '레벨 목표 +1 → 크레딧 +12,400 · 활동 보고서 (최상급) +3 외 2종'. 계산 전 · 모르는
+/// 값은 '—', 늘어난 것이 없으면 '늘어난 재화가 없습니다'.
+String tutorialCalculatorChangeText(TutorialCalculatorChange change) {
+  final target = change.targets.isEmpty ? '목표' : change.targets.join(' · ');
+  final credits = change.credits;
+  final resources = change.resources;
+  final parts = <String>[
+    if (credits == null)
+      '크레딧 —'
+    else if (credits > 0)
+      '크레딧 +${_thousands(credits)}',
+    if (resources == null)
+      '재화 —'
+    else
+      for (final resource in resources.take(tutorialCalculatorChangeShown))
+        '${resource.name} +${_thousands(resource.amount)}',
+  ];
+  if (parts.isEmpty) return '$target → 늘어난 재화가 없습니다';
+  final rest = (resources?.length ?? 0) - tutorialCalculatorChangeShown;
+  return '$target → ${parts.join(' · ')}${rest > 0 ? ' 외 $rest종' : ''}';
+}
+
+String _thousands(int value) {
+  final digits = value.abs().toString();
+  final buffer = StringBuffer(value < 0 ? '-' : '');
+  for (var index = 0; index < digits.length; index++) {
+    if (index > 0 && (digits.length - index) % 3 == 0) buffer.write(',');
+    buffer.write(digits[index]);
+  }
+  return buffer.toString();
+}
+
+/// 계산기 목표를 바꾸는 단계(4단계)의 완료 카드 '왜' 줄을 [change] 요약으로 바꿔 보인다(F3c-10). [change]가 없으면
+/// (계산기가 화면에 없음 · 신호만 옴) 그대로다.
+TutorialStep tutorialStepForCalculator(
+  TutorialStep step,
+  TutorialCalculatorChange? change,
+) {
+  if (step.completeSignal != TutorialSignals.studentCalculatorTargetChanged ||
+      change == null) {
+    return step;
+  }
+  return _stepWith(step, doneWhy: tutorialCalculatorChangeText(change));
+}
+
 TutorialStep _stepWith(
   TutorialStep step, {
   String? title,
   String? why,
   String? doneTitle,
+  String? doneWhy,
 }) => TutorialStep(
   id: step.id,
   number: step.number,
@@ -961,12 +1092,14 @@ TutorialStep _stepWith(
   waitWhy: step.waitWhy,
   waitProgressLabel: step.waitProgressLabel,
   doneTitle: doneTitle ?? step.doneTitle,
-  doneWhy: step.doneWhy,
+  doneWhy: doneWhy ?? step.doneWhy,
   presentation: step.presentation,
   inlineText: step.inlineText,
   inlineAnchorKey: step.inlineAnchorKey,
   cardWidth: step.cardWidth,
   avoidKeys: step.avoidKeys,
+  lead: step.lead,
+  sectionKey: step.sectionKey,
 );
 
 /// 단계 카드(id → 단계). Tutorial-01~10 · 7-1~7-6(마키 7-2b · 7-2c 포함) 보드 문구 그대로.
@@ -1030,6 +1163,9 @@ const tutorialSteps = <String, TutorialStep>{
     completeSignal: TutorialSignals.studentCalculatorTargetChanged,
     doneTitle: '목표를 바꿨습니다',
     cardWidth: 600,
+    // F3c-10: 계산기 섹션 전체도 보조 강조하고, 카드는 늘어난 재화가 보이는 자리를 가리지 않는다.
+    sectionKey: TutorialTargets.calculatorSection,
+    avoidKeys: [TutorialTargets.calculatorChangeArea],
     checks: [
       TutorialCheckItem('학생 하나 누르기', signal: TutorialSignals.studentOpened),
       TutorialCheckItem('상세 보기', signal: TutorialSignals.studentDetailOpened),
@@ -1098,6 +1234,13 @@ const tutorialSteps = <String, TutorialStep>{
     completeSignal: TutorialSignals.planAllMaxApplied,
     doneTitle: 'MAX로 맞췄습니다',
     cardWidth: 455,
+    // F3c-10: 처음에는 모두 '직접 입력'이라 위 버튼이 꺼져 있다 — 지금 학생의 '한 번에 MAX'를 먼저(①) 누르게 한다.
+    lead: TutorialStepLead(
+      title: "먼저 지금 학생의 '한 번에 MAX'를 눌러 주십시오.",
+      why: '처음에는 모두 직접 입력이라 아래 버튼이 꺼져 있습니다. 한 명에 프리셋을 넣으면 켜집니다.',
+      highlightKey: TutorialTargets.planStudentMaxPreset,
+      signal: TutorialSignals.planStudentMaxPresetPicked,
+    ),
     checks: [
       TutorialCheckItem('학생 고르기', doneAtStart: true),
       TutorialCheckItem('목표 정하기'),
@@ -1131,6 +1274,8 @@ const tutorialSteps = <String, TutorialStep>{
     completeSignal: TutorialSignals.planMakiStage2Set,
     doneTitle: '2단계를 더했습니다',
     cardWidth: 600,
+    // F3c-10: '단계 추가' 뒤 카드가 왼쪽(새 2단계 카드 위)으로 옮겨 가지 않게.
+    avoidKeys: [TutorialTargets.planMakiStageCards],
     checks: [
       TutorialCheckItem('7명 한 번에 MAX', doneAtStart: true),
       TutorialCheckItem('마키 1단계 M/M/1/1', doneAtStart: true),
