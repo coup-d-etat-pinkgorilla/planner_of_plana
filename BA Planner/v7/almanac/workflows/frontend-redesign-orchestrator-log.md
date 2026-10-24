@@ -4465,6 +4465,7 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - CF 결정: SU1 발견 2 — 원인 해결 뒤 'Backend 재시작'은 허용(재연결은 막음, 다음 slice). F3c-9 발견 4(시험이 미추적 debug 산출물을 읽음) · 1(마키 값) → XB 요청. 발견 3(crop 글자 작음) — 사용자 검수 항목.
 - 다음: XB 커밋 → M3R · SU1 커밋 → SU2(재시작 허용 · Mock 토글) · 시험 fixture 경로 이전. **사용자 Windows mock 튜토리얼 한 바퀴 검수 시점.**
 
+
 ## 2026-10-24 12:40 — XB source55 커밋 완료·CF 짝 커밋 인계
 
 - **완료/커밋**: 사용자 지시와 CF02:15 회신을 받아 **b0912dc4f477d562c73f2ed92e31e435da600c4e** 정확55경로(제품53+XB wiki2)를 선택 커밋했다. F2 후속·M3 offline 재생성/폐지 도구·X3 원본보존 긴 경로 이관/전역 시작 오류·X2 C# 배포 런처/build·튜토리얼 데이터v2가 대상이다. X4 격리 후보12와 CF frontend/lib/test·developer-tools wiki·기존 scanner WIP는 포함하지 않았다. CM의 Schale 제거 완료 판정은 별도다.
@@ -4472,3 +4473,24 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **CF 인계/동결**: 이제 **M3R → SU1 짝 커밋**을 진행하고 해시/동결 해제를 이 로그로 회신해 달라. 현 backend/contracts/tool은 그 회신까지 추가 수정하지 않는다. 현 GREEN과 다른 X4 후보를 섞지 않으며 해당 runtime은 main 미반영이다. 기존 실제 사용자 자료/guard·공용store/lock/data-extracted·frontend/lib/test 쓰기0.
 - **CF02:15 후속 수신**: 시험의 미추적 debug 입력(튜토리얼v1/v2 JSON·유우카 PNG/evidence·SU1 startup-error-examples)을 추적 fixture로 옮길 과제와 마키 skill1/skill3=1 정렬은 다음 독립 라운드로 기록했다. 현 GREEN 바이트는 바꾸지 않았다. SU2의 원인 해결 뒤 명시적 Backend 재시작 허용에는 이견이 없다. 새 process도 이관 실패 시 원본을 보존한 제한 응답을 계속한다. 단순 재연결 차단은 유지하는 CF 정책으로 이해했다.
 - **미완료 경계**: CF 짝 커밋/동결 해제, fixture/마키 후속, X4 실제 main 전체/새 CF gate, X5 보고/실제alpha/native/두번째PC·X6 측정/X7 새 정답·NP0035 실제 재생/라이선스는 남는다. 전체 P0-P6/alpha/O3/Schale 제거 완료 선언0. 이전 봉인 패키지는 수정하지 않았다.
+
+## 2026-10-24 12:50 — XB `b0912dc4` 뒤 M3R · SU1 짝 커밋
+
+- XB 55경로 커밋 확인(제품 53 작업 트리 깨끗, index 비어 있음). **M3R `309d3695`** · **SU1 `c71d4760`** 커밋(gate `20261024_020017`). XB 동결 해제 회신.
+- M3R의 `almanac/architecture/developer-tools.md`는 다른 미커밋 변경과 같은 줄 충돌 → M3R에서 빼고 HEAD + M3R 문단으로 푼 사본(`debug/frontend_m3r/doc_resolved/…`)을 `m3rdoc` slice(snapshot)로 다음 gate 뒤 커밋.
+- 다음: XB fixture 이전 · 마키 정렬 → CF 시험 경로 이전(Lane A). CF SU2(Lane B). 사용자 Windows mock 튜토리얼 검수.
+
+## 2026-10-24 13:20 — 사용자 튜토리얼 검수 피드백(Windows mock) · F3c-10 배정
+
+- 사용자 확인: 프라나 그림이 보이지 않는 것은 지금 정상(F3a 그림 없음 상태 — F3f · 알파-1 그림 출처 CM 대기)으로 답함. 정지 그림 대신 경로(XB 정지 렌더 + CM 출처)를 XB · CM에 요청할지 사용자에게 물음.
+- **사용자 피드백 5건(원문 요지)**: ① 학생 탭에서 '+'를 누르라는 4단계에서 학생 재화 계산기가 강조되지 않아 직관적이지 않다 — 계산기 강조 + 어떤 재화가 올라갔는지("이걸 눌러서 이렇게 올라갔다") 보여 주기 ② "비나전에 쓸 일곱 명을 골라 주십시오. …" 문장에서 'a 씨, b 씨'의 '씨'를 이 문장에서 제거 ③ 7-2 '고른 7명 모두 한 번에 MAX'가 강조되지만 학생이 처음엔 모두 직접 입력이라 버튼이 비활성 — 한 학생의 '한 번에 MAX'를 먼저 강조해야 한다 ④ 마키 2단계 설정 때 팝업이 마키 2단계 위젯을 가린다 ⑤ 사선 · 사다리꼴 버튼 군집 · 섹션을 직사각형으로 강조하는 문제(09d 시나리오 비교, 사용자 화면 `debug/frontend_f3c10/user-feedback-09d-compare.webp` — B · C열 밝히기가 직사각형으로 열 모양과 어긋남, C열 오른쪽 분홍 사선).
+- 배정: **Lane A F3c-10**(`f3c10-worker-prompt-20261024.md` — 5건). Lane B SU2 그대로(겹침 없음 — F3c-10은 mock_app_service 손대지 않음).
+- CF 질문(사용자): 다른 대사의 '씨'도 지울지(지금은 ② 문장만).
+
+## 2026-10-24 17:15 — SU2 · F3c-10 · M3R 문서 커밋, MC1 배정
+
+- 검토: SU2 12행 · F3c-10 18행 SHA 일치(표에 설명 칸 없음 — 검사식 넓힘), 목록 밖 변경 0, 겹침 0.
+- gate `20261024_164007` RED 2 = 예상(`tutorial-dialogue-review` 밝히기가 사선 행 따라 평행사변형, 새 `tutorial-compare-reveal`) → 확인(09d B · C열이 사선 판 모양 그대로 따로 밝음, 사이 틈 어두움, 사각형 없음. C열 오른쪽 분홍 사선 = 열의 사선 스크롤바 썸 — 강조 잔상 아님) → `-UpdateGoldens` `20261024_165443` **GREEN**(golden 84, process 154). 실제 사용자 폴더 전후 같음.
+- 커밋: **SU2 `9bab1702`**(이관 실패 뒤 'Backend 재시작' 허용 · Mock 토글) · **F3c-10 `e271edd2`**(사용자 피드백 5건) · **M3R 문서 `fd833e96`**(HEAD + M3R 문단 — 다른 미커밋 변경은 작업 트리에 그대로).
+- 남은 사용자 피드백 틈: Mock 계산이 목표를 보지 않아 4단계 요약이 mock에서 '늘어난 재화가 없습니다' → **Lane B MC1**(`mc1-worker-prompt-20261024.md`). Lane A 대기(XB fixture 이전 뒤 시험 경로 이전).
+- 사용자 질문 대기: 다른 대사의 '씨' 처리.
