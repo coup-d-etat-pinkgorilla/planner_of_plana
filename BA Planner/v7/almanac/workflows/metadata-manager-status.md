@@ -125,3 +125,9 @@ M0~M6의 단계 정의와 완료 조건은 메타데이터 관리자 워크플�
 - **CM 판단/제한**: 사용자 실제 첫 이관 안내 UX 포함 여부는 앞 CM 요청의 회신 대기이며 backend 안전 수정은 승인 대기로 두지 않았다. 실제 사용자 데이터량/이관시간·완료·첫alpha/native/두번째PC 검증 주장은 없다. source export/키/게임 프로세스/Viewer·Arena/독립holdout·공용store/lock 쓰기0. NP0035 및 X4/X5 후속 상태는 앞 인계 그대로다.
 - **근거**: `debug/xb_x3_long_paths_20261023/output.md`, actual 전체/집중 log/json, native 테스트, CF 원 RED summary, 실패구현 재현, source/contract SHA와 선택 patch. 이번 소스 커밋은 아직 없으며 문서만 별도 선택 커밋할 계획이다.
 - **선택 문서 구분**: 실제 XB prospective 선택은 제품53+필수 wiki2=55경로다. selected-source-with-xb-wiki.patch/json을 사용해 제거 모듈의 source 참조도 함께 고친다. almanac/architecture/developer-tools.md의 CF M3R 변경/이전 WIP는 XB 선택에서 제외·보존하며 CF가 자신의 짝 커밋에 포함한다.
+
+## 2026-10-24 23:43 — XB M3 판정용 묶음 근거·잔존 경로 명시
+
+- CM17:40 요청의 묶음 보고를 `debug/xb_m3_removal_bundle_20261024/output.md`에 모았다. XB b0912dc4 + CF M3R309d3695 뒤, 독립 원본→actual main gift13780/stat267/bond1060/선언5 diff0, generator8 exact bytes, metadata 계산 입력122 SHA 불변·기존 봉인207파일 검증. 재계산을 새로 실행했다고 쓰지 않으며 원 actual-main receipt를 명시했다.
+- 삭제4모듈/폐지7메서드와 현재 active source 참조0을 같은 output에 정리했다. 기존 schaledb_id 호환 DTO는 유지한다. **잔존 발견**: `backend/tools/sync_student_stats_from_schaledb.py`는 runtime/UI 참조0이지만 직접 실행 가능한 옛 Schale 네트워크 CLI가 남아 있다. 따라서 저장소 전체 네트워크 코드 제거 완료는 주장하지 않는다. X4 same-source 동결을 지켜 main 수정0이며 별도 폐기 후보→동결 해제 뒤 검증·제거로 처리한다. CM은 이 잔존 범위까지 보고 최종 판정한다.
+- 본 감사는 제품/store/lock/frontend 쓰기0·원 봉인 변경0·push0. X4 actual main 전체는 별도 진행 중이며 아직 PASS 선언0이다.

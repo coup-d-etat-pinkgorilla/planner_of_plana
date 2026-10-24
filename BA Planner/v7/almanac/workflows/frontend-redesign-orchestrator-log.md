@@ -4494,3 +4494,38 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - 커밋: **SU2 `9bab1702`**(이관 실패 뒤 'Backend 재시작' 허용 · Mock 토글) · **F3c-10 `e271edd2`**(사용자 피드백 5건) · **M3R 문서 `fd833e96`**(HEAD + M3R 문단 — 다른 미커밋 변경은 작업 트리에 그대로).
 - 남은 사용자 피드백 틈: Mock 계산이 목표를 보지 않아 4단계 요약이 mock에서 '늘어난 재화가 없습니다' → **Lane B MC1**(`mc1-worker-prompt-20261024.md`). Lane A 대기(XB fixture 이전 뒤 시험 경로 이전).
 - 사용자 질문 대기: 다른 대사의 '씨' 처리.
+
+## 2026-10-24 23:38 — 알림·요청(XB→CF): 추적 fixture/마키 v3·X4 main 적용, 전체 Python 시작
+
+- CF12:50 동결 해제와 CM17:40 순서를 받아 X4 격리 후보를 main에 반영했다. 집중 **46/25.108s PASS, skip0**, 실제 main source drift0. 일반 idle backend까지 lease를 점유하던 후보를 고쳐 임시 상태가 있을 때만 잠그며, 합성 이전 스캔은 하루 전 시각이다. 지금부터 실제 main 표준 Python 전체를 실행한다. **heavy fe_gate는 XB 전체 종료 알림 뒤**, frontend 변경은 CF 소유다. backend/contracts/tool은 이 소스로 동결한다. 새 같은소스 CF GREEN 전 제품 커밋0.
+- **fixture 이전**: 아래는 추적 경로에 준비한 새 파일이다(아직 제품 커밋 전). v1/v2·Yuuka·startup 예시는 원 debug 산출물과 exact bytes. `dataset-v3.json`이 현재 helper/runtime이며 content_revision3, dataset_version은 tutorial-v1 유지. CF 시험/Mock 출처를 이 경로로 옮겨 달라. 마키는 실제 대본/Mock과 같은 **skill2(강화)/skill3(서브)=1**, skill1=4 유지다(CM 문장의 skill1/skill3 표기는 실제 DTO와 구분). v2 대비 그 네 값(이전/재생 각각 두 값)+revision만 바뀐다. CF Mock의 기존 덮어쓰기는 결과가 동일하다.
+
+| 경로(v7 기준) | bytes | SHA-256 |
+|---|---:|---|
+| `contracts/fixtures/startup_user_data_v1_examples.json` | 3478 | `ed4b9d48eebf97249e06135ec526e76164488521ea5cf11bd7cadef738ee9e52` |
+| `contracts/fixtures/tutorial_practice/dataset-v1.json` | 39483 | `61652a3b2492d3e61a5e9f0f8eee1ce8020649ac0cba33d1fe120f9e5dcfc37b` |
+| `contracts/fixtures/tutorial_practice/dataset-v2.json` | 42239 | `ec7be3e59d8b979cb4145fe4ece5cb7d5b5eb3fa7168842b010e5ea825a71dd3` |
+| `contracts/fixtures/tutorial_practice/dataset-v3.json` | 42239 | `3d9bd7b1970dd501e214ba62a97b7325d23d038e8a329e10bb42d54525082721` |
+| `contracts/fixtures/tutorial_practice/README.md` | 1285 | `ed29d7d9b973ae075d73759ec4a1fcbca504a9e02236b1024905ea7958fdbcbd` |
+| `contracts/fixtures/tutorial_practice/yuuka-fallback-evidence.json` | 10647 | `bf1477855f44edf8a123ca498a90baa289153de2198b8a5f668b42de548327ee` |
+| `contracts/fixtures/tutorial_practice/yuuka-synthetic-basic-info.png` | 7720 | `40ed07701aeeedbbe845f37615ff9d3e1fb56f23c35ddc873634f0c8aa449e78` |
+
+- **X4 strict decode**: `repository.practice.*` 5메서드가 public backend process에서 실제 동작한다. 일반 profile read의 선택 `is_practice`(부재=false); repository/scanner 오류에 `practice_profile_required`. **전역 `practice_cleanup_failed`를 method별 허용 목록보다 먼저 해독**: error는 정확 `code,message,retryable:true`(details 없음), 안전 message·상관 id/method 보존. X3 `user_data_migration_failed` strict details는 그대로다. 계약 `contracts/startup-practice-v1.schema.json`, 설명 `startup-practice-v1.md`, `tutorial-practice-v1.md`.
+- `frontend/test/tutorial_practice_process_e2e_test.dart`의 “unknown_method로 미지원” 가정은 이제 바뀐다. 실제 임시 root로 create/current→가상 학생/tech_notes/tactical_bd→기존 review/commit→reset/end→process 재시작 orphan cleanup를 확인해 달라. 실계정 목록/통계와 native target 분리, reset/end 뒤 옛 session 거부, 원래 계정 bytes 보존이 수용 기준이다. 과거 contract fixture `runtimeImplemented:false`는 역사적 문서 그대로 유지한다. 가상 target/event/scan_kind wire는 바뀌지 않는다.
+- CF SU2 restart 정책 이견 없음. 실제로 이관이 발생했는지 알리는 성공 결과는 현 X3 계약에 아직 없다. CM 첫 안내 문장2개를 시작 직후 보일 수 있으나, “이번 실행에서 이관됨” 조건은 별도 additive 알림 계약이 필요하다. 이번 X4 동결에 섞지 않고 후속으로 명세화한다. developer-tools.md의 이전 미커밋 변경은 XB 이번 slice 소유 아님. activity_reports/도 이번 XB 변경0.
+- 근거 `debug/xb_fixture_x4_main_20261024/artifacts/source-plan.json`(제품/arch 23경로), `tracked-fixtures.json`, `main-focused-v1.json`. 실제 전체 결과·최종 output/SHA는 종료 뒤 게시한다. native/alpha/P0-P6/O3/Schale 제거 완료 주장은 없다.
+
+## 2026-10-25 00:11 — 알림·요청(XB→CF): main1519 PASS·무거운 시험 종료·X4 같은소스 gate
+
+- **완료(실제 main 반영·Python 검증)**: fixture/마키 v3 + X4 lifecycle/replay/소유·복구를 제품22+XB architecture1=**23경로**에 반영했다. 새 actual main 표준 전체 **1519/1639.389s PASS, skip0, 실행 중 source5196 drift0**. 집중46/25.108s PASS. 초기+reset revision base+2/이력2건·이전 스캔 하루전, idle backend lease 점유0. 실제 계정/native/sample 분리·동일 요청 멱등·충돌/비정상종료 정리·junction/foreign marker 보존 회귀 포함. native/알파 통과 주장은 없다.
+- **계약/fixture**: 추적 v1/v2/Yuuka/startup 예시5개 exact bytes, 현재v3는 Maki skill2/3=1(이전/재생)·content_revision3만 변경, skill1=4 유지. 현재 main 합성 trace **20쌍/95event**, schema40 검증 오류0. 23경로 working/blob SHA와 선택 패치는 artifacts/source-plan.json·projection.json·selected-source.patch. 실제 index empty·제품 source commit0·push0, 같은소스 CF GREEN 뒤 최신 HEAD로 private index를 다시 구성한다.
+- **CF 요청/무거운 검증 종료**: actual main 전체와 후속 X8 집중 회귀 모두 종료했으므로 **새 fe_gate 실행 가능**. 23:38 CF 사전 목록(추적 fixture/v3·전역 practice_cleanup_failed exact code/message/retryable:true·repository/scanner practice_profile_required·기존 unknown_method process시험 갱신)을 포함해 같은소스 GREEN을 회신해 달라. backend/contracts/tool은 고정한다. 전체 종료 뒤 CF frontend 변경을 관찰해 SHA로 따로 기록·보존했고 XB 편집/복원0, backend/contracts 입력은 불변이다.
+- **진행(X8 격리)**: main 동결을 지키며 `debug/xb_x8_unlock_candidate_20261024/`에 1.5초 취소가능 대기→전체1회 재캡처→동일 학생 확인→나중 값 재판독·weapon_locked/5성 no-system 보수 처리·계산 검토를 준비했다. 신규13 포함 관련 **54/46.204s PASS, skip0**. 승인 Steam 카드+생성 잠금 합성6변형(폰 pixels0), 재캡처6회/대기합9초는 합성 회귀이며 실기 측정 아님. 새 threshold4는 registry에만 추가, 기존값/골든 변경0. 기존 crop 시험 fixture를 새 초기 캡처 경계에 맞췄고 원 실패 로그는 보존했다. 아직 main 적용/제품 커밋0이며 기존 C6 미추적 adapter 의존을 자동 승격하지 않는다.
+- **M3/X6**: CM 판정용 독립 동결 diff0+삭제4/폐지7 묶음은 `debug/xb_m3_removal_bundle_20261024/output.md`. runtime/UI 미참조의 옛 네트워크 CLI1도 명시했고 `debug/xb_m3_legacy_cli_retire_20261024/output.md`에 정확1경로 폐기 후보를 준비했다(main 삭제0). `debug/xb_x6_first_login_20261024/output.md`는 새 PC/Steam 재설치 첫 로그인 학생전체1회·진단 재캡처/검토수·실측 결과표를 보강했다. 기존 봉인440파일 SHA 불변.
+- **차단/다음**: CF strict decoder/fixture 경로·새 same-source GREEN→XB23 선택 커밋→CF 짝 커밋/동결 해제→X8 main/전수·짝 검증→X5→X6 사용자 실측→FD183 정지 렌더 순서. X2 실제 배포 URL/설정·실기/첫 ZIP, X7 새 라벨·NP0035 재생/라이선스(알파2)는 후속이다. 전체 alpha/P0-P6/O3/Schale 제거 완료 선언0. 공용store/ba-data.lock/data-extracted·frontend/lib/test 쓰기0. 근거 `debug/xb_fixture_x4_main_20261024/output.md` 및 각 artifacts/.
+
+## 2026-10-25 00:16 — 알림(XB→CF): CM 알파1 일정 수신·현 검증 소스 고정
+
+- CM10-25 00:15의 사용자 목표 **10-26 알파1 ZIP**과 일정 결정을 수신했다. 이후 우선순위는 X4 짝 gate→X8→X5→X2 사용자 런처 실기→X6→첫 ZIP(`--allow-bundled-ui-assets`)이다. M5 제품 러너/M6 게시 자동화는 알파1 뒤~첫 패치 전, M4/탭/Spine은 알파2이며 이번 착수0이다. 프라나 정지 그림은 주말 내 준비가 안 되면 빈 자리 출시 가능 결정을 따른다.
+- fixture/마키는 이 결정 수신 전에 XB 반영·실제1519 전수 검증이 끝났으므로 현23경로 바이트를 되돌리지 않는다. **CF 시험 경로 정리만 남았다면 그것을 추가 알파 차단으로 요구하지 않는다.** X4 strict 오류 해독/실제 runtime E2E와 같은소스 GREEN은 필수다. 새 기능을 현재 고정 소스에 더 넣지 않는다.
+- M3 잔존 CLI 폐기는 후보만 유지해 알파 차단보다 뒤로 둔다. X8 main19경로 후보에는 기존 C6/threshold/crop시험/Almanac WIP4의 선택 투영 경계가 있음을 명시했다. 기존 WIP 전체를 자동 커밋하지 않는다. X6 실측·N/T/최종 수용·실제 ZIP 결과는 만들지 않았다.
