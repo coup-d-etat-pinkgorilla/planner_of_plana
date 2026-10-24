@@ -5623,3 +5623,23 @@ P3 완료는 현재 작업 트리의 다음 파일과 실행 결과를 P4의 불
 - CM10-25 00:15의 사용자 목표 **10-26 알파1 ZIP**과 일정 결정을 수신했다. 이후 우선순위는 X4 짝 gate→X8→X5→X2 사용자 런처 실기→X6→첫 ZIP(`--allow-bundled-ui-assets`)이다. M5 제품 러너/M6 게시 자동화는 알파1 뒤~첫 패치 전, M4/탭/Spine은 알파2이며 이번 착수0이다. 프라나 정지 그림은 주말 내 준비가 안 되면 빈 자리 출시 가능 결정을 따른다.
 - fixture/마키는 이 결정 수신 전에 XB 반영·실제1519 전수 검증이 끝났으므로 현23경로 바이트를 되돌리지 않는다. **CF 시험 경로 정리만 남았다면 그것을 추가 알파 차단으로 요구하지 않는다.** X4 strict 오류 해독/실제 runtime E2E와 같은소스 GREEN은 필수다. 새 기능을 현재 고정 소스에 더 넣지 않는다.
 - M3 잔존 CLI 폐기는 후보만 유지해 알파 차단보다 뒤로 둔다. X8 main19경로 후보에는 기존 C6/threshold/crop시험/Almanac WIP4의 선택 투영 경계가 있음을 명시했다. 기존 WIP 전체를 자동 커밋하지 않는다. X6 실측·N/T/최종 수용·실제 ZIP 결과는 만들지 않았다.
+
+
+## 2026-10-25 00:21 — XB 문서5 선택 커밋·X4 CF gate 대기
+
+- 문서만 **da3cc19ae86ea89199767bf0a71b724c2ab590a1** 정확5경로/이번XB16항목 선택 커밋. 제품23경로 및 다른 레인/WIP 포함0, working bytes 보존·actual index empty·push0. actual main1519/1639.389s PASS(skip0), X8격리54/46.204s PASS, Almanac45/diff/private cached diff PASS. 새 CF 같은소스 GREEN 미수신으로 **제품 source commit0·backend/contracts/tool 고정 유지**다. CF 시험 fixture 경로 정리만으로 추가 알파 차단을 만들지 않으며 X4 strict decoder/runtime gate는 필요하다. 10-26 alpha 우선순위/X8 WIP 투영·X5·X2사용자실기·X6/ZIP은 앞 보고대로 미완료다. 인계 debug/xb_fixture_x4_main_20261024/output.md 및 각 artifacts/MANIFEST.json.
+
+
+## 2026-10-25 03:25 — XB X8 독립 투영·X5 신고 후보 검증 완료, X4 동결 유지
+
+- **완료(격리 구현·검증)**: CF10:00 X4D/F4 진행을 수신하고 main 고정을 유지했다. X8을 public adapter subclass+factory로 분리해 C6 미추적 adapter/기존 crop 시험/대규모 threshold·wiki WIP 자동 승격을 없앴다. 현재 작업본 관련 **56/23.347s PASS**, HEAD-only core112의 원 시험/데이터와 최소 X8 **40/23.864s PASS**, skip0. 뒤 프레임의 성장값·장비·answer specimen 동일 소유, 취소/다른 폼/캡처 실패·지속잠금 검토를 검증했다. 정확19경로(HEAD 최소 투영2) 후보·binary patch/working/blob SHA는 `debug/xb_alpha_blockers_20261025/output.md`와 artifacts/source-plan-final.json. 원 X8 봉인은 보존했다.
+- **X5 완료(격리 후보)**: 종료 학생/인벤토리의 폴백 셀·미확정 셀·실패 슬롯 집계와 선택 대상 신고 ZIP, `scanner.report.summary`/`scanner.report.export`, 기존 골든 CLI의 `--report-zip`를 구현했다. 계정명/창 제목/전체 화면/임의 note·경로/audit/정상 인벤토리 항목 제외, 수치 stat 진단 보존, 이미지 선택/이미 삭제된 ROI/0후보 실패/튜토리얼 범위 차단을 검증했다. 관련 **73/15.823s PASS**, HEAD core+고정 X4 최소 투영 **22/2.382s PASS**, skip0. 합성 학생 ROI/무이미지/인벤토리 ZIP3건 실제 생성·정확 replay3 PASS 및 RPC6 schema 검증. N/T 미측정=null, 실기/인식 정답 채점 아님. 정확7경로(HEAD 최소 투영3), 인계 `debug/xb_x5_report_candidate_20261025/output.md` 및 후보 `contracts/scan-report-v1.md`.
+- **보존·커밋 경계**: 고정 backend/contracts4154입력 SHA 불변, 기존10봉인 **561파일** bytes/SHA 확인, main X4 23경로 불변. 실제 index empty·제품 반영/제품 커밋/원 골든/threshold 기존값 변경/공용store·lock·data-extracted·frontend/lib/test 쓰기·push0. X5 schema는 의미 동일 확인 후 새 node만 추가하도록 정리했다. actual main1519/1639.389s PASS는 이전 실측이며 이번에 전수를 재실행했다고 쓰지 않는다. 현재 리뷰 인덱스는 커밋용이 아니며 채택 시 최신 HEAD로 다시 구성한다.
+- **CF/CM 인계·MASTER_REQUIRED**: 새 CF X4 same-source GREEN/짝 커밋·동결 해제 회신은 아직 없다. 우선 X4 strict decoder/runtime gate→XB23 선택 커밋→CF 짝/해제, 이어 X8 main 전수·짝 gate→X5 main 전수/CF 띠·버튼·체크박스 연결. X5 후보 API를 현재 X4 고정 소스에 있는 것으로 호출하지 않는다. X2 런처 사용자 실행/실제 URL, X6 첫 로그인·두번째PC 및 N/T/최종 판정·첫 ZIP은 사용자/CM 단계다. 알파1/P0-P6/Schale 전체 제거/NP0035·X7·라이선스 완료 선언0. 신고 재생은 명시적 ROI mode이며 무이미지는 진단 전용, export-time 관측 baseline은 독립 정답이 아니다.
+
+
+## 2026-10-25 03:29 — XB X5 1440 셀 보완·최종74/23 검증
+
+- X5 최종 검토에서 1440의 468x380 인벤토리 셀을 자르거나 줄이지 않고 넣도록 ROI 상한을512x512로 보완했다. 전체 화면/알려진 창의1/4미만·512KiB/crop·128crop·8MiB ZIP/16MiB 확장 상한은 유지했다. 2560x1440 보존 source_size 우선·원 픽셀·기존 count reader 회귀 추가. 최종 작업본 **74/15.698s PASS**, HEAD+고정X4 최소투영 **23/2.271s PASS**, skip0·source drift0. 앞03:25의73/22는 이 보완 전 기록이다.
+- 정확 X8 **19** / X5 **7**경로와 HEAD 최소 투영2/3의 최종 리뷰는 각 `artifacts/source-plan-final-v2.json` / `selected-source-final-v2.patch`다. 이전 v1패치/실패 로그는 보존한다. ZIP3과 정확 재생 결과는 동일하며 이미지 없는 묶음은 진단 전용이다. X8 최종56/40 결과·main4154 SHA·기존561봉인 보존 불변. 현재 문서만 선택 커밋을 준비하며 제품 코드·실제 index·고정 소스 반영0이다.
+- MASTER_REQUIRED: CF X4 새 GREEN/짝 커밋·해제 후 최신 HEAD로 X4→X8→X5를 각각 적용·검증·선택 커밋한다. CF 현재 X4D/F4를 방해하지 않고 새 API의 현재 main 사용 가능 선언0. 사용자 런처 실기/X6 측정·N/T/첫 ZIP 및 전체 alpha 완료는 미완료다. 이번 실행의 backend/contracts 전수 재실행0이며 이전1519 PASS의 동일 입력을 재확인했다.
