@@ -332,8 +332,19 @@ class _AppShellState extends State<AppShell>
     _syncEmptyBackend();
   }
 
+  /// SU1: 사용자 데이터 이관 실패로 막힌 시작(풀리지 않는다 — 앱을 다시 시작해야 한다).
+  UserDataMigrationFailure? get _userDataFailure =>
+      widget.service.state.value.userDataMigrationFailure;
+
   /// Empty-Backend 판단(F3c-2): 연결되면 바로 끄고, 연결 전 · 끊김은 [emptyBackendGrace] 동안 이어질 때만 켠다.
+  /// SU1: 이관 실패면 연결 상태와 상관없이 바로 켜고 끄지 않는다.
   void _syncEmptyBackend() {
+    if (_userDataFailure != null) {
+      _emptyBackendTimer?.cancel();
+      _emptyBackendTimer = null;
+      setState(() => _emptyBackend = true);
+      return;
+    }
     if (widget.service.state.value.connection == BackendConnection.connected) {
       _emptyBackendTimer?.cancel();
       _emptyBackendTimer = null;
@@ -653,7 +664,8 @@ class _AppShellState extends State<AppShell>
                             ),
                           ),
                           // F3c-3(CF 결정): Empty-Backend 덮개가 떠 있는 동안 백엔드 복구 배너는 숨긴다(덮개가 같은 일을 한다).
-                          if (!_showEmptyBackend)
+                          // SU1: 이관 실패 동안에도 숨긴다(재연결 · 재시작으로 풀리지 않는다).
+                          if (!_showEmptyBackend && _userDataFailure == null)
                             BaModalBackdropExclude(
                               child: RecoveryBanner(
                                 service: widget.service,
@@ -822,6 +834,7 @@ class _AppShellState extends State<AppShell>
                           connection: widget.service.state.value.connection,
                           reconnecting: _emptyBackendReconnecting,
                           error: _emptyBackendError,
+                          userDataFailure: _userDataFailure,
                           onReconnect: _reconnectFromEmptyBackend,
                           onOpenSettings: () => _open(AppSection.settings),
                         ),
@@ -1474,8 +1487,10 @@ class _AppHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.lg),
                 ],
-                if (emptyBackend)
-                  const EmptyBackendHeaderChip()
+                if (emptyBackend || state.userDataMigrationFailure != null)
+                  EmptyBackendHeaderChip(
+                    userDataBlocked: state.userDataMigrationFailure != null,
+                  )
                 else
                   HeaderStatusChip(
                     backend: state.connection,

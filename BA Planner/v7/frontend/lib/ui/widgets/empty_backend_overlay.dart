@@ -4,6 +4,9 @@
 // 칩을 [EmptyBackendHeaderChip](빨강 "계산 엔진 연결 안 됨")으로 바꾼다. 시작 직후 잠깐 연결 중인 것은 띄우지 않는다.
 // "다시 연결"은 기존 재연결 경로(`AppService.reconnect`, 설정 · 복구 배너와 같음)다. 시안의 "자동으로 다시 연결하는 중 ·
 // 3번째 시도"는 앱에 자동 재시도 · 시도 횟수가 없어 지금 연결 상태 문구로 바꿨다.
+// SU1: 사용자 데이터 이관 실패(contracts/startup-user-data-v1)도 같은 자리에 띄운다 — 대기 시간 없이 바로, 풀리지 않는다.
+// 문구는 워커 문구(reason별 한 줄 + 공통 안내, 경로 · 파일명 · 예외 원문 없음). "다시 연결" 대신 "앱 다시 시작 필요" 안내만
+// 둔다(앱 재시작 기능이 없다).
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -36,6 +39,36 @@ const emptyBackendNote = '켜지면 이 화면이 저절로 채워집니다. 오
 const emptyBackendSettingsLink = '설정 · 계산 엔진 연결 보기';
 const emptyBackendReconnect = '다시 연결';
 
+/// SU1 사용자 데이터 이관 실패 문구(워커 문구).
+const userDataBlockedTitle = '사용자 데이터를 옮기지 못했습니다';
+const userDataBlockedNote =
+    '기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 앱을 다시 시작해 주십시오.';
+const userDataBlockedStatus = '다시 연결로는 풀리지 않습니다 · 앱을 다시 시작해야 합니다';
+const userDataRestartRequired = '앱 다시 시작 필요';
+
+/// 계약 reason → 한 줄(경로 · 파일명 없음).
+String userDataMigrationReasonText(UserDataMigrationReason reason) =>
+    switch (reason) {
+      UserDataMigrationReason.userDataBusy =>
+        '다른 프로그램(다른 BA Planner 창 등)이 사용자 데이터를 쓰고 있습니다.',
+      UserDataMigrationReason.userDataLinkNotMigrated =>
+        '사용자 데이터 폴더에 바로 가기(연결) 항목이 있어 옮기지 않았습니다.',
+      UserDataMigrationReason.userDataFolderInvalid =>
+        '기존 사용자 데이터 폴더의 구성이 올바르지 않습니다.',
+      UserDataMigrationReason.v7UserRootInvalid =>
+        '새 사용자 데이터 폴더를 만들거나 쓸 수 없습니다.',
+      UserDataMigrationReason.v7DestinationUnrecognised =>
+        '새 사용자 데이터 자리에 알아볼 수 없는 자료가 이미 있습니다.',
+      UserDataMigrationReason.legacyRepositoryRecoveryRequired =>
+        '기존 사용자 데이터에 끝나지 않은 저장이 있어 먼저 복구해야 합니다.',
+      UserDataMigrationReason.userDataChangedDuringMigration =>
+        '옮기는 동안 기존 사용자 데이터가 바뀌었습니다.',
+      UserDataMigrationReason.userDataIoError =>
+        '사용자 데이터를 읽거나 쓰지 못했습니다(디스크 · 권한 오류).',
+      UserDataMigrationReason.userDataMigrationFailed =>
+        '알 수 없는 이유로 사용자 데이터를 옮기지 못했습니다.',
+    };
+
 /// 아래 줄 상태 문구(워커 문구 — 시안 "자동으로 다시 연결하는 중 · 3번째 시도"의 자리).
 String emptyBackendStatusText(BackendConnection connection, bool reconnecting) {
   if (reconnecting) return '다시 연결하는 중';
@@ -53,6 +86,7 @@ class EmptyBackendOverlay extends StatelessWidget {
     required this.onReconnect,
     required this.onOpenSettings,
     this.error,
+    this.userDataFailure,
   });
 
   final BackendConnection connection;
@@ -63,11 +97,15 @@ class EmptyBackendOverlay extends StatelessWidget {
   /// 마지막 다시 연결 실패 문구.
   final String? error;
 
+  /// SU1: 있으면 이관 실패 문구 · "앱 다시 시작 필요" 안내(다시 연결 버튼 없음).
+  final UserDataMigrationFailure? userDataFailure;
+
   static const overlayKey = ValueKey('empty-backend-overlay');
   static const panelKey = ValueKey('empty-backend-panel');
   static const reconnectKey = ValueKey('empty-backend-reconnect');
   static const settingsKey = ValueKey('empty-backend-settings');
   static const statusKey = ValueKey('empty-backend-status');
+  static const restartRequiredKey = ValueKey('empty-backend-restart-required');
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -87,6 +125,7 @@ class EmptyBackendOverlay extends StatelessWidget {
               onReconnect: onReconnect,
               onOpenSettings: onOpenSettings,
               error: error,
+              userDataFailure: userDataFailure,
             ),
           ),
         ),
@@ -102,6 +141,7 @@ class _Panel extends StatelessWidget {
     required this.onReconnect,
     required this.onOpenSettings,
     required this.error,
+    required this.userDataFailure,
   });
 
   final BackendConnection connection;
@@ -109,11 +149,16 @@ class _Panel extends StatelessWidget {
   final VoidCallback onReconnect;
   final VoidCallback onOpenSettings;
   final String? error;
+  final UserDataMigrationFailure? userDataFailure;
 
   @override
   Widget build(BuildContext context) {
     final error = this.error;
-    final spinning = reconnecting || connection == BackendConnection.connecting;
+    final failure = userDataFailure;
+    final title = failure == null ? emptyBackendTitle : userDataBlockedTitle;
+    final spinning =
+        failure == null &&
+        (reconnecting || connection == BackendConnection.connecting);
     final cut = diagonalCutDepth(emptyBackendPanelSize.height);
     final path = buildRoundedSectionPolygon([
       Offset(cut, 0),
@@ -126,7 +171,7 @@ class _Panel extends StatelessWidget {
       size: emptyBackendPanelSize,
       child: Semantics(
         container: true,
-        label: emptyBackendTitle,
+        label: title,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -143,7 +188,7 @@ class _Panel extends StatelessWidget {
                   const SizedBox(width: 12),
                   Flexible(
                     child: Text(
-                      emptyBackendTitle,
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: kitDisplayStyle(24),
@@ -153,7 +198,7 @@ class _Panel extends StatelessWidget {
               ),
             ),
             // 안내(시안 72,92, 폭 860): 굵은 17 + 흐린 13.5, 사이 8.
-            const Positioned(
+            Positioned(
               left: 72,
               top: 92,
               width: 860,
@@ -161,10 +206,12 @@ class _Panel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    emptyBackendLead,
+                    failure == null
+                        ? emptyBackendLead
+                        : userDataMigrationReasonText(failure.reason),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: AppFonts.body,
                       fontFamilyFallback: AppFonts.fallback,
                       fontSize: 17,
@@ -173,12 +220,12 @@ class _Panel extends StatelessWidget {
                       color: AppColors.text,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    emptyBackendNote,
+                    failure == null ? emptyBackendNote : userDataBlockedNote,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: AppFonts.body,
                       fontFamilyFallback: AppFonts.fallback,
                       fontSize: 13.5,
@@ -209,7 +256,9 @@ class _Panel extends StatelessWidget {
                   ],
                   Expanded(
                     child: Text(
-                      error == null
+                      failure != null
+                          ? userDataBlockedStatus
+                          : error == null
                           ? emptyBackendStatusText(connection, reconnecting)
                           : '다시 연결하지 못했습니다 · $error',
                       key: EmptyBackendOverlay.statusKey,
@@ -219,7 +268,7 @@ class _Panel extends StatelessWidget {
                         fontFamily: AppFonts.body,
                         fontFamilyFallback: AppFonts.fallback,
                         fontSize: 13,
-                        color: error == null
+                        color: error == null && failure == null
                             ? AppColors.textMuted
                             : AppTones.danger.foreground,
                       ),
@@ -246,16 +295,19 @@ class _Panel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  TonalButton(
-                    key: EmptyBackendOverlay.reconnectKey,
-                    label: emptyBackendReconnect,
-                    icon: Icons.sync,
-                    variant: TonalButtonVariant.primary,
-                    height: 46,
-                    horizontalPadding: 20,
-                    fontSize: 14,
-                    onPressed: reconnecting ? null : onReconnect,
-                  ),
+                  if (failure != null)
+                    const _RestartRequiredNotice()
+                  else
+                    TonalButton(
+                      key: EmptyBackendOverlay.reconnectKey,
+                      label: emptyBackendReconnect,
+                      icon: Icons.sync,
+                      variant: TonalButtonVariant.primary,
+                      height: 46,
+                      horizontalPadding: 20,
+                      fontSize: 14,
+                      onPressed: reconnecting ? null : onReconnect,
+                    ),
                 ],
               ),
             ),
@@ -264,6 +316,42 @@ class _Panel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// SU1: "다시 연결" 자리의 안내(누를 수 없다 — 앱 재시작 기능이 없다).
+class _RestartRequiredNotice extends StatelessWidget {
+  const _RestartRequiredNotice();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: EmptyBackendOverlay.restartRequiredKey,
+    height: 46,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    decoration: BoxDecoration(
+      color: AppColors.danger.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: AppColors.danger.withValues(alpha: 0.65)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.restart_alt, size: 18, color: AppTones.danger.foreground),
+        const SizedBox(width: 8),
+        Text(
+          userDataRestartRequired,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: AppFonts.body,
+            fontFamilyFallback: AppFonts.fallback,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppTones.danger.foreground,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _PanelPainter extends CustomPainter {
@@ -280,16 +368,20 @@ class _PanelPainter extends CustomPainter {
 }
 
 /// 덮개가 떠 있는 동안 머리글 연결 칩(시안 `.conn` 빨강: 채움 .14 · 안쪽 1px .65 · 글자 #ffa0a8 · 점 #ff7e8a).
+/// SU1: 사용자 데이터 이관 실패면 [userDataLabel].
 class EmptyBackendHeaderChip extends StatelessWidget {
-  const EmptyBackendHeaderChip({super.key});
+  const EmptyBackendHeaderChip({super.key, this.userDataBlocked = false});
+
+  final bool userDataBlocked;
 
   static const label = '계산 엔진 연결 안 됨';
+  static const userDataLabel = '사용자 데이터 이관 실패';
   static const chipKey = ValueKey('empty-backend-header-chip');
   static const _foreground = Color(0xffffa0a8);
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: label,
+    label: userDataBlocked ? userDataLabel : label,
     child: ExcludeSemantics(
       child: Container(
         key: chipKey,
@@ -312,7 +404,7 @@ class EmptyBackendHeaderChip extends StatelessWidget {
             ),
             const SizedBox(width: 7),
             Text(
-              label,
+              userDataBlocked ? userDataLabel : label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               softWrap: false,

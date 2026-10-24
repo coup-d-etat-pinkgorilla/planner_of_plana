@@ -24,6 +24,8 @@ import '../kit/skew_controls.dart' show BaSwitch;
 import '../settings/settings_sections.dart';
 import '../tutorial_host/tutorial_session.dart';
 import '../studio/settings_studio_layout.dart';
+import '../widgets/empty_backend_overlay.dart'
+    show EmptyBackendHeaderChip, userDataMigrationReasonText;
 
 // F3e 비활성 이유 · 줄 설명(시안 Settings-Help에 없는 문구는 워커 문구 — CF 검수, status F3e 종료 기록 표).
 const settingsFirstRunUnavailableReason = '이 연결에서는 첫 실행 안내를 열 수 없습니다';
@@ -699,6 +701,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _connectionSection(Size size, BackendConnection connection) {
     const id = settingsBackendSectionId;
+    // SU1: 사용자 데이터 이관 실패면 재연결 · 재시작을 끈다(풀리지 않는다 — 앱을 다시 시작해야 한다).
+    final failure = widget.service.state.value.userDataMigrationFailure;
+    final recoveryDisabled = _recoveryAction || failure != null;
     return SettingsSection(
       size: size,
       sectionId: id,
@@ -712,18 +717,25 @@ class _SettingsPageState extends State<SettingsPage> {
             sectionId: id,
             height: SettingsMetrics.statusRowHeight,
             child: _statusLine(
-              icon: connection == BackendConnection.connected
+              icon: failure != null
+                  ? Icons.error_outline
+                  : connection == BackendConnection.connected
                   ? Icons.check_circle_outline
                   : connection == BackendConnection.connecting
                   ? Icons.sync
                   : Icons.cloud_off_outlined,
-              ok: connection == BackendConnection.connected,
-              title: switch (connection) {
-                BackendConnection.connected => '연결됨',
-                BackendConnection.connecting => '연결 중',
-                BackendConnection.disconnected => '연결 끊김',
-              },
-              subtitle: _recoveryAction
+              ok: failure == null && connection == BackendConnection.connected,
+              title: failure != null
+                  ? EmptyBackendHeaderChip.userDataLabel
+                  : switch (connection) {
+                      BackendConnection.connected => '연결됨',
+                      BackendConnection.connecting => '연결 중',
+                      BackendConnection.disconnected => '연결 끊김',
+                    },
+              subtitle: failure != null
+                  ? '${userDataMigrationReasonText(failure.reason)} '
+                        '기존 데이터는 그대로이며, 원인을 해결한 뒤 앱을 다시 시작해야 합니다.'
+                  : _recoveryAction
                   ? '복구 작업이 진행 중입니다. 중복 실행은 차단됩니다.'
                   : '재연결과 재시작은 저장되지 않은 draft나 scan 후보를 자동 확정하지 않습니다.',
               subtitleLines: 2,
@@ -757,12 +769,12 @@ class _SettingsPageState extends State<SettingsPage> {
           label: '재연결',
           icon: Icons.link,
           variant: TonalButtonVariant.ghost,
-          onPressed: _recoveryAction ? null : () => _recover(false),
+          onPressed: recoveryDisabled ? null : () => _recover(false),
         ),
         TonalButton(
           label: 'Backend 재시작',
           icon: Icons.restart_alt,
-          onPressed: _recoveryAction ? null : () => _recover(true),
+          onPressed: recoveryDisabled ? null : () => _recover(true),
         ),
       ],
     );

@@ -887,6 +887,73 @@ void main() {
     expect((await edge).methods, isEmpty);
     await service.dispose();
   });
+
+  // SU1(contracts/startup-user-data-v1): 전역 시작 오류는 method별 허용 목록보다 먼저, 모든 method에서 받는다.
+  for (final method in const [
+    'planning.student.get',
+    'planning.plan.validate',
+    'planning.inventory.acquisition.get',
+    'planning.not.listed',
+    'repository.profile.list',
+    'repository.scenario.list',
+    'scanner.session.start',
+    'assets.prepare.start',
+    'tactical.state.get',
+    'tactical.v2.record.list',
+  ]) {
+    test('global user_data_migration_failed is accepted for $method', () async {
+      final process = FakeBackendProcess();
+      final client = PlanningProtocolClient(() async => process);
+      await client.start();
+      final result = client.send(method, const {});
+
+      process.respond(_decode(process.writes.single), {
+        'error': {
+          'code': 'user_data_migration_failed',
+          'message': '사용자 자료 이관을 완료하지 못했습니다.',
+          'details': {
+            'reason': 'user_data_io_error',
+            'source_kept': true,
+            'restart_required': true,
+          },
+        },
+      });
+
+      await expectLater(
+        result,
+        throwsA(
+          isA<BackendRemoteException>().having(
+            (error) => error.code,
+            'code',
+            'user_data_migration_failed',
+          ),
+        ),
+      );
+      expect(client.connection.value, BackendConnection.connected);
+      expect(client.startupFailure.value?.reason.wire, 'user_data_io_error');
+      await client.dispose();
+    });
+  }
+
+  test('global startup error with loose details stays fatal', () async {
+    final process = FakeBackendProcess();
+    final client = PlanningProtocolClient(() async => process);
+    await client.start();
+    final result = client.send('scanner.target.list', const {});
+
+    process.respond(_decode(process.writes.single), {
+      'error': {
+        'code': 'user_data_migration_failed',
+        'message': '사용자 자료 이관을 완료하지 못했습니다.',
+        'details': {'reason': 'user_data_io_error', 'source_kept': true},
+      },
+    });
+
+    await expectLater(result, throwsA(isA<BackendProtocolException>()));
+    expect(client.connection.value, BackendConnection.disconnected);
+    expect(client.startupFailure.value, isNull);
+    await client.dispose();
+  });
 }
 
 Map<String, dynamic> _decode(String line) {

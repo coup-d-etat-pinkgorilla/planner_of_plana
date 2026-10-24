@@ -86,6 +86,11 @@ class PlanningProtocolClient {
       StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, _PendingRequest> _pending = {};
 
+  /// SU1: 받은 전역 시작 오류(`user_data_migration_failed`). 한 번 잡히면 풀지 않고, [start]가 새 프로세스를 띄우지 않는다.
+  final ValueNotifier<UserDataMigrationFailure?> startupFailure = ValueNotifier(
+    null,
+  );
+
   BackendProcessHandle? _process;
   Future<void>? _starting;
   StreamSubscription<String>? _stdoutSubscription;
@@ -223,6 +228,15 @@ class PlanningProtocolClient {
   Future<void> start() async {
     if (_disposed) {
       throw StateError('PlanningProtocolClient is disposed');
+    }
+    final blocked = startupFailure.value;
+    if (blocked != null) {
+      // restart_required: 재연결 · 재시작으로 이관을 다시 시도하지 않는다(앱을 다시 시작해야 한다).
+      throw BackendRemoteException(
+        code: userDataMigrationFailedCode,
+        message: blocked.message,
+        details: blocked.toWireDetails(),
+      );
     }
     if (_process != null) {
       return;
@@ -411,6 +425,7 @@ class PlanningProtocolClient {
     await stop();
     connection.removeListener(_syncDiagnosticsConnection);
     connection.dispose();
+    startupFailure.dispose();
     diagnostics.dispose();
     await _protocolErrors.close();
     await _events.close();
@@ -479,6 +494,13 @@ class PlanningProtocolClient {
         );
         _fatalProtocolError('Invalid error response for $id', generation);
         return;
+      }
+      final blocked = wireError['code'] == userDataMigrationFailedCode
+          ? UserDataMigrationFailure.fromWireError(wireError)
+          : null;
+      if (blocked != null && startupFailure.value == null) {
+        _recordLifecycle('user data migration failed: ${blocked.reason.wire}');
+        startupFailure.value = blocked;
       }
       pending.completer.completeError(
         BackendRemoteException(
@@ -641,6 +663,12 @@ class PlanningProtocolClient {
     const requiredKeys = {'code', 'message'};
     const allowedKeys = {'code', 'message', 'details', 'retryable'};
     final code = error['code'];
+    // SU1: 전역 시작 오류는 method별 허용 목록보다 먼저, 모든 method에서 받는다(키 · details 정확히).
+    if (code == userDataMigrationFailedCode) {
+      return UserDataMigrationFailure.fromWireError(error) == null
+          ? null
+          : error;
+    }
     final allowedCodes = method.startsWith('repository.')
         ? _methodErrorCodes['repository']!
         : method.startsWith('scanner.')

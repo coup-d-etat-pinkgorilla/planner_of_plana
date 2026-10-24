@@ -58,6 +58,7 @@ class ProcessAppService
     _scannerSubscription = _scanner.scannerEvents.listen(_handleScannerEvent);
     _assetPreparation = AssetPreparationProtocolClient(_client);
     _client.connection.addListener(_syncConnection);
+    _client.startupFailure.addListener(_syncStartupFailure);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -1444,6 +1445,7 @@ class ProcessAppService
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _client.connection.removeListener(_syncConnection);
+    _client.startupFailure.removeListener(_syncStartupFailure);
     await _scannerSubscription.cancel();
     await _scanner.dispose();
     await _assetPreparation.dispose();
@@ -1465,6 +1467,13 @@ class ProcessAppService
         _practiceSupport = TutorialPracticeSupport.unknown;
       }
     }
+  }
+
+  /// SU1: client가 잡은 시작 차단 오류를 상태로 옮긴다(풀리지 않는다).
+  void _syncStartupFailure() {
+    final failure = _client.startupFailure.value;
+    if (_disposed || failure == null) return;
+    _state.value = _state.value.copyWith(userDataMigrationFailure: failure);
   }
 
   Future<void> _refreshScannerReadiness() async {

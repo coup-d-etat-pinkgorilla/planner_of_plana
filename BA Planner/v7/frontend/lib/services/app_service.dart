@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import 'startup_user_data.dart';
 import 'student_calculation_service.dart';
+export 'startup_user_data.dart';
 export 'student_calculation_service.dart';
 
 enum BackendConnection { connected, disconnected, connecting }
@@ -804,6 +806,7 @@ class AppServiceState {
     required this.scanAvailable,
     required this.useLongNames,
     required this.hasMissingMetadata,
+    this.userDataMigrationFailure,
   });
 
   final BackendConnection connection;
@@ -816,6 +819,9 @@ class AppServiceState {
   final bool useLongNames;
   final bool hasMissingMetadata;
 
+  /// SU1: 사용자 데이터 이관 실패로 막힌 시작(null = 막히지 않음). copyWith로 풀 수 없다 — 앱을 다시 시작해야 한다.
+  final UserDataMigrationFailure? userDataMigrationFailure;
+
   AppServiceState copyWith({
     BackendConnection? connection,
     ScanPhase? scanPhase,
@@ -826,6 +832,7 @@ class AppServiceState {
     bool? scanAvailable,
     bool? useLongNames,
     bool? hasMissingMetadata,
+    UserDataMigrationFailure? userDataMigrationFailure,
   }) {
     return AppServiceState(
       connection: connection ?? this.connection,
@@ -837,6 +844,8 @@ class AppServiceState {
       scanAvailable: scanAvailable ?? this.scanAvailable,
       useLongNames: useLongNames ?? this.useLongNames,
       hasMissingMetadata: hasMissingMetadata ?? this.hasMissingMetadata,
+      userDataMigrationFailure:
+          userDataMigrationFailure ?? this.userDataMigrationFailure,
     );
   }
 }
