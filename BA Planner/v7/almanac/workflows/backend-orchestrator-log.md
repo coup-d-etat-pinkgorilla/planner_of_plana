@@ -3790,3 +3790,8 @@ CM 23:00 X4("시드 도구를 제품 기능으로 · `is_practice` · 저장 스
 - X5 최종 검토에서 1440의 468x380 인벤토리 셀을 자르거나 줄이지 않고 넣도록 ROI 상한을512x512로 보완했다. 전체 화면/알려진 창의1/4미만·512KiB/crop·128crop·8MiB ZIP/16MiB 확장 상한은 유지했다. 2560x1440 보존 source_size 우선·원 픽셀·기존 count reader 회귀 추가. 최종 작업본 **74/15.698s PASS**, HEAD+고정X4 최소투영 **23/2.271s PASS**, skip0·source drift0. 앞03:25의73/22는 이 보완 전 기록이다.
 - 정확 X8 **19** / X5 **7**경로와 HEAD 최소 투영2/3의 최종 리뷰는 각 `artifacts/source-plan-final-v2.json` / `selected-source-final-v2.patch`다. 이전 v1패치/실패 로그는 보존한다. ZIP3과 정확 재생 결과는 동일하며 이미지 없는 묶음은 진단 전용이다. X8 최종56/40 결과·main4154 SHA·기존561봉인 보존 불변. 현재 문서만 선택 커밋을 준비하며 제품 코드·실제 index·고정 소스 반영0이다.
 - MASTER_REQUIRED: CF X4 새 GREEN/짝 커밋·해제 후 최신 HEAD로 X4→X8→X5를 각각 적용·검증·선택 커밋한다. CF 현재 X4D/F4를 방해하지 않고 새 API의 현재 main 사용 가능 선언0. 사용자 런처 실기/X6 측정·N/T/첫 ZIP 및 전체 alpha 완료는 미완료다. 이번 실행의 backend/contracts 전수 재실행0이며 이전1519 PASS의 동일 입력을 재확인했다.
+
+
+## 2026-10-25 03:31 — XB 보고: 문서4 선택 커밋 결과
+
+- 문서만 **fbb6f724e2d709c910f201c4c36c5e979ce9394d** 정확4경로/이번XB12절 선택 커밋 완료. 다른 레인 절/제품 코드 포함0, working bytes 보존·actual index empty·push0. X8 격리56/40, X5 최종74/23 PASS(skip0), Almanac45/working 및 private cached diff PASS. main4154·원561봉인 불변, CF X4 같은소스 GREEN·짝/해제 대기 유지. 인계 `debug/xb_alpha_blockers_20261025/output.md` 및 `debug/xb_x5_report_candidate_20261025/output.md`. 제품/알파 완료 선언0.
