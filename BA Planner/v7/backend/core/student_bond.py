@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from core import gift_meta, student_meta
+from core.client_character_refs import character_id
 from core.repository_dto import InventorySnapshot
 from core.student_bond_data import FAVOR_EXP_BY_RANK, GIFT_IDENTITIES, GROUP_BY_CHARACTER, SOURCE_VERSION
 
@@ -74,7 +75,7 @@ def _gift_plan(student_id: str, required: int | None, holdings: dict[str, int | 
 
 
 def calculate_bond(student_id: str, current_rank: int | None, target_rank: int, inventory: InventorySnapshot) -> dict:
-    group = GROUP_BY_CHARACTER.get(student_meta.schaledb_id(student_id))
+    group = GROUP_BY_CHARACTER.get(character_id(student_id))
     warnings = []
     required = None
     if current_rank is None:

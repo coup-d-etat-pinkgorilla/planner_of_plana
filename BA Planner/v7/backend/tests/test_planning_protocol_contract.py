@@ -73,6 +73,7 @@ class PlanningProtocolContractTests(unittest.TestCase):
             "repository-history-scan-latest-v1.schema.json", "repository-inventory-review-v1.schema.json",
             "scan-commit-history-context-v1.schema.json",
             "planning-protocol-v1.schema.json", "protocol-error-v1.schema.json",
+            "startup-user-data-v1.schema.json",
             "repository-protocol-v1.schema.json", "scanner-protocol-v1.schema.json",
             "scenario-protocol-v1.schema.json",
             "student-scan-diagnostic-v1.schema.json",
@@ -103,6 +104,21 @@ class PlanningProtocolContractTests(unittest.TestCase):
                 else:
                     with self.assertRaises(ValidationError):
                         self.validator.validate(case["message"])
+
+    def test_global_startup_error_is_strict_and_available_before_method_dispatch(self) -> None:
+        from copy import deepcopy
+        from core.user_state_migration import MigrationBlockedProtocol
+        for method in ('planning.student.get','repository.profile.list','scanner.target.list','assets.prepare.status'):
+            response=MigrationBlockedProtocol(OSError('not exposed')).handle({
+                'protocol':1,'id':'startup','type':'request','method':method,'payload':{}})
+            self.validator.validate(response)
+            for change in ('source_kept','extra_path','missing_reason'):
+                invalid=deepcopy(response)
+                details=invalid['payload']['error']['details']
+                if change=='source_kept':details['source_kept']=False
+                elif change=='extra_path':details['path']='private path'
+                else:details.pop('reason')
+                with self.assertRaises(ValidationError):self.validator.validate(invalid)
 
     def test_shared_fixture_request_response_correlation(self) -> None:
         for case in self.fixture["correlations"]:

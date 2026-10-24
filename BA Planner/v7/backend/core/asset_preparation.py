@@ -270,8 +270,9 @@ class AssetPreparationService:
             self._job.update(stage=stage, done=done, total=total)
             self._emit('progress')
 
-    def _emit(self, kind):
-        self._job['sequence'] += 1
+    def _emit(self, kind, *, advance=True):
+        if advance:
+            self._job['sequence'] += 1
         self._sink({'protocol': 1, 'type': 'event', 'method': 'assets.prepare.event',
                     'payload': {'event_kind': kind, **deepcopy(self._job)}})
 
@@ -306,16 +307,19 @@ class AssetPreparationService:
             state, reasons = ('cancelled', ['cancelled']) if self._cancel.is_set() else ('failed', ['asset_extract_failed'])
         finally:
             with self._lock:
-                self._job.update(state=state, stage='complete', reason_codes=reasons, **counts)
                 result = deepcopy(self._job)
-                result['sequence'] += 1
+                result.update(state=state, stage='complete', reason_codes=reasons,
+                              sequence=result['sequence'] + 1, **counts)
                 try:
                     _atomic_json(self.last_path, result)
                 except OSError:
-                    self._job['reason_codes'].append('result_not_saved')
+                    result['reason_codes'].append('result_not_saved')
+                # Publish one complete terminal record, with its final cursor and
+                # persistence outcome, to snapshots before releasing ownership.
+                self._job = result
                 # Ownership ends only after the extractor and its staging cleanup return.
                 self.gate.release(token)
-                self._emit('terminal')
+                self._emit('terminal', advance=False)
 
     def wait(self, timeout=5):
         if self._future:

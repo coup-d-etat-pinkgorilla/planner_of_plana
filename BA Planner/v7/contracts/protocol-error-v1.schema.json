@@ -4,6 +4,9 @@
   "title": "BA Planner protocol v1 structured error response",
   "oneOf": [
     {
+      "$ref": "startup-user-data-v1.schema.json"
+    },
+    {
       "$ref": "#/$defs/unknownMethod"
     },
     {

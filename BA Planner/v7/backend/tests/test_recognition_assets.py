@@ -19,6 +19,19 @@ ASSETS = PACKAGED_RECOGNITION_ASSET_DIR
 
 
 class RecognitionAssetTests(unittest.TestCase):
+    def test_verification_reloads_paths_and_rejects_escape_after_a_good_pass(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'recognition'
+            root.mkdir()
+            (Path(temporary) / 'outside').write_bytes(b'outside')
+            manifest = root / 'manifest.json'
+            manifest.write_text(json.dumps({'version':1,'assets':[]}), encoding='utf-8')
+            catalog = RecognitionAssetCatalog(root)
+            self.assertTrue(catalog.verify()['ready'])
+            manifest.write_text(json.dumps({'version':1,'assets':[{'path':'../outside'}]}), encoding='utf-8')
+            with self.assertRaisesRegex(ScannerError, 'escapes recognition root'):
+                catalog.verify()
+
     def test_production_manifest_hashes_and_runtime_resolution(self) -> None:
         catalog = RecognitionAssetCatalog(ASSETS)
         status = catalog.verify()

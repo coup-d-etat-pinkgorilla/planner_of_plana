@@ -1,6 +1,7 @@
 """Synthetic F2 service/transport/cache tests: no actual installed assets."""
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -259,6 +260,77 @@ serve(protocol=ApplicationProtocolV1(storage_root=root/'process-repo',preparatio
         fixture=json.loads((contracts/'fixtures/asset_preparation_v1.json').read_text(encoding='utf-8'))
         for case in fixture['cases']:
             with self.subTest(case=case['id']):self.assertEqual(validator.is_valid(case['message']),case['valid'])
+
+    def test_unavailable_runtime_error_satisfies_preparation_contract(self):
+        from jsonschema import Draft202012Validator
+        contracts = Path(__file__).resolve().parents[2] / 'contracts'
+        validator = Draft202012Validator(json.loads(
+            (contracts / 'asset-preparation-v1.schema.json').read_text(encoding='utf-8')))
+        protocol = ApplicationProtocolV1(storage_root=self.root / 'no-preparation')
+        response = protocol.handle(request('assets.prepare.status'))
+        self.assertEqual(response['payload']['error']['details'], {})
+        validator.validate(response)
+
+    def test_terminal_snapshot_is_published_after_persistence_with_final_cursor(self):
+        import core.asset_preparation as preparation
+        original_write = preparation._atomic_json
+        writing, releasing = [], []
+        original_release = self.gate.release
+        def write(path, value):
+            if path == self.service.last_path:
+                writing.append(self.service.snapshot(value['job_id'], value['generation'])['job'])
+            original_write(path, value)
+        def release(token):
+            if self.service._job:
+                releasing.append(self.service.snapshot(token, self.service._generation)['job'])
+            original_release(token)
+        with patch.object(preparation, '_atomic_json', side_effect=write), \
+                patch.object(self.gate, 'release', side_effect=release):
+            cursor = self.service.start()
+            self.service.wait()
+        self.assertEqual(writing[0]['state'], 'running')
+        final = self.service.snapshot(**cursor)['job']
+        self.assertEqual(releasing[-1], final)
+        event = dict(self.events[-1]['payload'])
+        event.pop('event_kind')
+        self.assertEqual(event, final)
+        self.assertEqual(self.service._last_result(), final)
+
+    def test_terminal_persistence_failure_is_in_snapshot_and_event_before_gate_release(self):
+        import core.asset_preparation as preparation
+        original_write = preparation._atomic_json
+        released = []
+        original_release = self.gate.release
+        def write(path, value):
+            if path == self.service.last_path:
+                raise OSError('synthetic disk failure')
+            original_write(path, value)
+        def release(token):
+            released.append(self.service.snapshot(token, self.service._generation)['job'])
+            original_release(token)
+        with patch.object(preparation, '_atomic_json', side_effect=write), \
+                patch.object(self.gate, 'release', side_effect=release):
+            cursor = self.service.start()
+            self.service.wait()
+        final = self.service.snapshot(**cursor)['job']
+        self.assertIn('result_not_saved', final['reason_codes'])
+        self.assertEqual(released[-1], final)
+        self.assertEqual(self.events[-1]['payload']['sequence'], final['sequence'])
+        self.assertEqual(self.events[-1]['payload']['reason_codes'], final['reason_codes'])
+
+    def test_discovery_opt_out_does_not_probe_steam_but_keeps_explicit_folders(self):
+        with patch.dict(os.environ, {'BA_PLANNER_DISABLE_GAME_DISCOVERY': '1'}), \
+                patch.object(extractor, '_steam_dir') as probe:
+            self.assertIsNone(extractor.find_game_dir())
+            probe.assert_not_called()
+            service = AssetPreparationService(storage_root=self.root/'isolated-process-repo',
+                cache_root=self.root/'isolated-cache', rarity_path=self.rarity, gate=OperationGate())
+            try:
+                self.assertFalse(service.status()['game_dir']['valid'])
+                self.assertTrue(service.set_game_dir(str(self.game))['game_dir']['valid'])
+                self.assertFalse(service.set_game_dir(None)['game_dir']['valid'])
+            finally:
+                service.close()
 
     def test_extractor_cancellation_cleans_staging_without_replacing_old_target(self):
         # Only the control flow is exercised; Unity data parsing is replaced with synthetic writers.

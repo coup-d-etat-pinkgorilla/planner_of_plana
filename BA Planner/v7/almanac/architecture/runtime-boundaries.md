@@ -24,6 +24,9 @@ sources:
   - id: backend-process
     type: file
     path: backend/core/backend_process.py
+  - id: user-data-migration
+    type: file
+    path: backend/core/user_state_migration.py
 ---
 
 # Target Runtime Boundaries
@@ -41,8 +44,8 @@ Qt signal이나 QML model을 backend DTO에 넣지 않습니다. 현재 첫 slic
 서버 가용성, 애용품 상태, provider reference와 선물 affinity를 versioned catalog의
 서로 다른 영역에 둡니다. `core.student_meta`는 기존 계산·scanner 호출자를 위한
 호환 lookup façade이며 generated Python 선언은 더 이상 runtime source가 아닙니다.
-SchaleDB 네트워크와 원본 DTO는 provider가, slug/ID 및 allowlist 변환은 adapter가
-소유합니다. 자세한 계약은 [Canonical Metadata Boundary](canonical-metadata)를 따릅니다.
+승인된 client-store 원천 재생성은 오프라인 도구가, 계산용 명시 CharacterId 바인딩은
+별도 sidecar가 소유합니다. 자세한 계약은 [Canonical Metadata Boundary](canonical-metadata)를 따릅니다.
 
 Inventory의 `resource_key`만 version 간 stable identity입니다. `order_index`는 현재
 catalog revision에 속하는 scan/display ordinal이고 실제 화면에서 관측한 위치는
@@ -55,6 +58,18 @@ persistence를 소유하고 Flutter는 immutable typed repository state만 소�
 실행은 mock을 유지하고 compile-time define으로만 실제 `ProcessAppService`를 선택합니다.
 process 진단은 stderr로 분리하며 Flutter는 Python 모듈이나 repository 파일을 직접 읽지
 않습니다. [@frontend-process-service] [@backend-process]
+
+기본 사용자 데이터는 `%LOCALAPPDATA%/BA Planner/v7/`에 둡니다. 시작 시 기존 기본
+경로를 양쪽 잠금과 지문 검증 아래 원본 보존 복사로 이관합니다. 명시한 사용자/storage
+경로는 자동 이관하지 않습니다. 복구 중 journal이나 알 수 없는 목적지가 있으면
+자동 덮어쓰기를 거부합니다. [@backend-paths] [@backend-process]
+
+Windows 이관 I/O는 drive/UNC의 절대 extended-length 경로를 사용하며, 상대 manifest
+키는 유지합니다. 실패하면 원본으로 쓰기를 전환하거나 빈 저장소를 노출하지 않고
+`user_data_migration_failed` 전역 응답만 제공하는 제한된 JSONL 상태로 시작합니다.
+이 상태는 일반 메타데이터·저장소·스캐너를 로드하지 않습니다. 원인을 해결한 뒤
+앱을 재시작해야 하며 경로/파일명/예외 원문은 응답에 담지 않습니다. 지속 guard
+파일은 OS 잠금의 고정 이름으로 남겨 둡니다. [@user-data-migration] [@backend-process]
 
 표시용 asset은 Flutter package에 포함하고 scanner template/region은 Python backend의
 인식 contract로 별도 배포합니다. 표시용 v6 원본은 `frontend/assets/` 아래 역할별 경로를

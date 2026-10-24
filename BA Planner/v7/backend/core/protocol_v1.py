@@ -4,6 +4,7 @@ from dataclasses import asdict, fields
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping, Sequence
 import traceback
+from core.protocol_envelope_v1 import trusted_request
 
 from core import student_meta
 from core.planning import (
@@ -289,19 +290,7 @@ class PlanningProtocolV1:
 
     @staticmethod
     def _trusted_request(message: object) -> dict[str, Any] | None:
-        if not isinstance(message, dict) or set(message) != _ENVELOPE_KEYS:
-            return None
-        if message.get("protocol") != PROTOCOL_VERSION:
-            return None
-        if message.get("type") != "request":
-            return None
-        if not isinstance(message.get("id"), str) or not message["id"]:
-            return None
-        if not isinstance(message.get("method"), str) or not message["method"]:
-            return None
-        if not isinstance(message.get("payload"), dict):
-            return None
-        return message
+        return trusted_request(message)
 
     def _student_get(self, request: dict[str, Any]) -> dict[str, Any]:
         payload = request["payload"]

@@ -36,16 +36,18 @@ No network, installed client, shared-store write or lock update is performed by
 ## App first, then compatible data
 
 The launcher reads `latest-app.json` first and validates its app entry. If
-`app.appVersion` differs from the installed version, offer/install the app ZIP
-first, subject to explicit user confirmation and version/downgrade policy. Never
+`app.appVersion` is newer than the installed version, automatically install the app ZIP
+first, subject to the user's automatic-update setting and version/downgrade policy. Never
 apply a data ZIP to make up for a missing or invalid app descriptor. After the
 new app starts, check `latest-data.json`. If app versions already match, only
 consider a data entry with that **same appVersion** and a different
 `dataSnapshotSha256`; a missing data endpoint or a data entry for another app
 version means no compatible data update. Comparing the game version alone misses
 rebuilds under the same pin. An app mismatch is not permission for a silent
-downgrade. `minLauncher`, hashes, staging/rollback and user confirmation still
-apply. The updater itself is a separate implementation.
+downgrade. `minLauncher`, hashes and staging/rollback still apply. This follows
+the user's 2026-10-19 automatic-update decision. An explicit check bypasses the
+automatic-update opt-out once, at the next safe launcher invocation; GUI wiring
+for that request is a separate paired slice.
 
 Both descriptor URLs must remain reachable independently. Publish the current
 app descriptor even when only data is released. If both URLs are assets of the

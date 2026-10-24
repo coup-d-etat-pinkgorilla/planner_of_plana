@@ -15,8 +15,6 @@ from core.canonical_metadata import (
     write_catalog,
 )
 from core.runtime_paths import PACKAGED_METADATA_CATALOG_PATH
-from core.schaledb_metadata_adapter import adapt_student, local_id_for_path, path_for_local_id
-from core.schaledb_provider import SchaleDBProvider
 
 
 class CanonicalMetadataTests(unittest.TestCase):
@@ -132,39 +130,6 @@ class CanonicalMetadataTests(unittest.TestCase):
         self.assertEqual(1, len(restored.forms["sample"]))
 
 
-class SchaleDBBoundaryTests(unittest.TestCase):
-    def test_provider_only_fetches_raw_documents(self) -> None:
-        calls: list[str] = []
-
-        def fetcher(url: str) -> dict[str, object]:
-            calls.append(url)
-            return {"url": url}
-
-        students, items = SchaleDBProvider(fetcher).snapshot()
-        self.assertIn("students.min.json", str(students["url"]))
-        self.assertIn("items.min.json", str(items["url"]))
-        self.assertEqual(2, len(calls))
-
-    def test_adapter_allowlists_minimal_student_fields(self) -> None:
-        adapted = adapt_student({
-            "Id": 100,
-            "FavorItemTags": ["aV"],
-            "FavorItemUniqueTags": ["Bf"],
-            "FavorStatType": ["DefensePower"],
-            "FavorStatValue": [[1, 2, 3]],
-        })
-        self.assertEqual(
-            {"schaledb_id", "favor_item_tags", "favor_item_unique_tags"},
-            set(adapted),
-        )
-
-    def test_adapter_owns_slug_mapping(self) -> None:
-        rules = {"hoshino_battle": ("hoshino_battle_tank", "hoshino_battle_dealer")}
-        self.assertEqual("hoshino_battle_tank", path_for_local_id("hoshino_battle", rules))
-        self.assertEqual(
-            "hoshino_battle",
-            local_id_for_path("hoshino_battle_dealer", ["hoshino_battle"], rules),
-        )
 
 
 if __name__ == "__main__":

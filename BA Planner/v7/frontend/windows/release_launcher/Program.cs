@@ -110,6 +110,17 @@ internal static class Program
                 "ba_planner_v7.exe"
             );
 
+            if (!File.Exists(syncScript))
+            {
+                executablePath = Path.Combine(rootDirectory, "app", "ba_planner_v7.exe");
+                if (IsDistributionAppRunning(executablePath)) return;
+                string userOverride = Environment.GetEnvironmentVariable("BA_PLANNER_USER_DIR");
+                string userRoot = String.IsNullOrEmpty(userOverride)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BA Planner", "v7")
+                    : userOverride;
+                DistributionUpdater.TryUpdate(rootDirectory, Path.Combine(userRoot, "update"));
+            }
+
             if (File.Exists(syncScript))
             {
                 SyncResult result;
@@ -142,8 +153,9 @@ internal static class Program
             if (!File.Exists(executablePath))
             {
                 MessageBox.Show(
-                    "실행에 필요한 release 폴더가 없습니다.\n"
-                        + "frontend\\tool\\build_windows_release.ps1을 실행해 주세요.",
+                    File.Exists(syncScript)
+                        ? "실행에 필요한 release 폴더가 없습니다.\nfrontend\\tool\\build_windows_release.ps1을 실행해 주세요."
+                        : "실행에 필요한 app 폴더가 없습니다.\n받은 압축 파일을 새 폴더에 모두 풀고 다시 실행해 주세요.",
                     "BA Planner v7",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
@@ -160,6 +172,24 @@ internal static class Program
                 }
             );
         }
+    }
+
+    private static bool IsDistributionAppRunning(string executablePath)
+    {
+        foreach (Process process in Process.GetProcessesByName("ba_planner_v7"))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (String.Equals(Path.GetFullPath(process.MainModule.FileName),
+                        Path.GetFullPath(executablePath), StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                catch (Win32Exception) { return true; }
+                catch (InvalidOperationException) { }
+            }
+        }
+        return false;
     }
 
     internal static SyncResult RunSync(string syncScript)

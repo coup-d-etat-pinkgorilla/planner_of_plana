@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from core import student_meta
-from core.schale_merge_paths import SCHALE_MERGE_PATHS
+from core.client_character_refs import character_id
 from core.student_stats_types import StudentStatCatalogV1, StudentStatFormulaV1, StudentStatRecordV1
 
 
@@ -45,14 +45,7 @@ def student_stat_record(
     base_student_id, parsed_form = student_meta.split_form_ref(student_id)
     requested_form = parsed_form if form_index is None else form_index
     normalized_form = student_meta.normalize_form_index(base_student_id, requested_form)
-    merge_paths = SCHALE_MERGE_PATHS.get(base_student_id, ())
-    if merge_paths:
-        path_index = min(normalized_form - 1, len(merge_paths) - 1)
-        schaledb_id = selected.paths.get(merge_paths[path_index].casefold())
-    else:
-        schaledb_id = student_meta.schaledb_id(base_student_id)
-        if schaledb_id is None:
-            schaledb_id = selected.paths.get(base_student_id.casefold())
+    schaledb_id = character_id(base_student_id, normalized_form)
     if schaledb_id is None or schaledb_id not in selected.students:
         raise KeyError(f"student stat data not found: {base_student_id}#{normalized_form}")
     return selected.students[schaledb_id]

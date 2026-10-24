@@ -1,0 +1,531 @@
+{
+  "decision": "D-M3-EXP / CM2026-10-20 14:50 user2026-10-20 14:41",
+  "gifts": {
+    "5000": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "cca16814d2aac8d2814f5856f6570f7de594a001634e4b766ad4449aed86f6c2",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5001": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "5729ce2a9c6bac657a99c813c84eb73524f1ede106e4f79fa18f5bf3508cb86e",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5002": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "c56cb84870455bc322c6f80b38ba2092a153c219805f7039f343fce521846766",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5003": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "efbbcc11d96158c8a0fd702df8a38eab2674a9debe5de270ac15103cbb7361b7",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5004": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "d0ef949a259d3e1b7ff6b4f7b6cc1ed7be1487b0ec825ec6f419af44bafe8596",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5005": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "9fab583b185e57466528c6c822422f3db0804e7ece572f8141ff6a1ea5da58b5",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5006": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b9cbac750750773cd42369cbe18364c40a8126e3424a9081ebc273543ecc373d",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5007": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "e862fbf9819e1fb673420d5eae5ad6d770fdb48150b937c50f2d1ff6eec14381",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5008": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "e7cd37621e88f2a16a90d65f80bfb201289545cafb154bdebcf735c10e59c737",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5009": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "9c57972c5fef5c4eb6bc9cb6e79959230071609d11529252e13e284fed3ddd4c",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5010": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b88eff7676b4f96630e3c7c0f301e0f132972d624709c87992eef20d1d90e17b",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5011": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "7b5d5f5f95287b9f0ca8552466197f6290e41006d2c037a68810ba39b2b21a25",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5012": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "7fd3ba9c86020ff7499ad7df53d02a7bfe410fa6d15ebdf6dea27ef9d97514e6",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5013": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "386e7133c76ca2075867b4078a2d761a9d49e43d64e74017891b1c9ddf716a1f",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5014": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "a683faabc1c5c149e4cbaf9eb507f019f293e467628da91c2c1173af66cd3a32",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5015": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "8dffa59b87cb111962f750d96bfefbba17ecd08149c2a98a569c60d1fd5d00dc",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5016": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "f6db43d34ebf688376fe43c1b23a0c0b4b0c386bf6f27eafefc932334e951029",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5017": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "e2f67146f7b161cf1fd3f78a493318c6fbe1c8b67c306cf5bddd191a09490c6f",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5018": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "38920e1b5e5af13ed425bda3c3e8200ac8bc5265e6d47b49980152a17292cdb3",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5019": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "6ea733b6d039ae1d295f356b080a925905105279132373443f6ac58e81b821f8",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5020": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "206db0248eaf49188a155d97237e6f51fce48c31837d79f64ae44f3ba46e634f",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5021": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "48d4a88104dfb485be62cccd4be232b78ffedacf62c5ada17ba6f26c8035af74",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5022": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "735b74d000c184a6dec4702c3696ca43e294af3a5e6aa74c5fd93a5064f8b27b",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5023": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b6957986686ca34169176974c476fe421f3cf9ec0837739dcd1ed7aa3cac9d72",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5024": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "556d049d14d78e26129db8a7d19c24ce0c1d9a058d2890fe84fcb652035f03a5",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5025": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "58d5b73698f6d9a998d710eb230168d8fd956b003fdbe69e10b383cb167f289f",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5026": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "8e5eb426a8f1555fc43daf15a7732cbf10104286d218f6b404a0058bc2515e47",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5027": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "70af634669247138cd6ef578677426443eaa8211c0c89a133fbb83017db416fc",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5028": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "90557fabb516886c1a2d437d562973eec0aed81eede2225154e0a1c472ad6d08",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5029": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "27ab144099af54cbbd8944b01250a99b00ebc5ac5c2695d816897e0d43953d7f",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5030": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "0710cb036b15a9fcd12c045f2860e4ef08c801f5e6cd567b31f6fe65a211c30b",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5031": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "fc27b785dce8222290c4098202f6027d8b85d7b07de1e6e4f92bb0ede46ce9b4",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5032": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "3388dc2facc3b731dbacd47d7a7d198a70f662dd91f0b1d69bf382eaed3185fc",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5033": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "28f673f5178bf6786ab24f4a06fd72cb174bf1fee4dcdd5c2c7f3330faeb512c",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5034": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "f9e4ed42957954f10442928642452c349c76754798862e35e0f8c26936927f97",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5100": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "de94e16562e6d4c4b448ff0a28a02d410c62d25dc767bf6dbb1e84cd9777c759",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5101": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "11c46a0c249de5d0700ca7c7e471ddc075cdd39ebbb7fa079857ba3824ef742d",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5102": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "0458d1881c2b1d04098976f2cc74f2addbdc0190c456430f82c71904d9b60263",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5103": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "7d8275220dce76481dce5bc01503850b25071d7c945c334febd2d95bd70f2ead",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5104": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "5290f381a11569e488cc090d8c0acbc9e9857e5c574ee16fd0223f30b09342f8",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5105": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b60f171a84a9da926bf1821a8980f7f0e618438ad05137f53469c503b5c484c4",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5106": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "bcb5ca12c3f308af9f9806b8d351bbf10a27af9576f8faefd0bbed53d8575839",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5107": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "974c7c11cef9badaf3cfbac2900af2d70822612eb65074708deb4e5cb65a8b7c",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5108": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b40c7e30e707c660ed516f657001fa8dc8482c9811566b778283a4881eddf0a6",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5109": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "0a33d37672432daf6e2f8e7524b16e3a0fed908dc6a85ccafd011b66d2957094",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5110": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "a1c38455c20e9d8b1a39c9ed830a599869cd03c7ce564a4af718ace54dc635a7",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5111": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "309237048c0b9e7efd6282691a9cc7ebd52faee53588334e23398d0b5a3a049e",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5112": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "bc361322918d701b4cc315b2a80304df181268f1cd1f10524e1aa113f1071be8",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5996": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "b5159fdf26669f3fb0ac3658dcb3ba938e23bb504d94f5405fe983cc31d90334",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5997": {
+      "exp_value": 60,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "e68c9008a5559d60254a96dc7013bcef5f1c9527164dbe6d37e25385e41b2c31",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5998": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "e3a3a4a325fbd430500f66ec55fa2116fef4beb4afb3b56bb68abbf2773e5af3",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    },
+    "5999": {
+      "exp_value": 20,
+      "provenance": {
+        "kind": "schaledb-frozen-2026-10",
+        "rowSha": "2eab720e624002544306f36026aad55035435cd72397f6396dbaa504ad59a142",
+        "table": "GIFT_ITEMS.exp_value",
+        "tool": "xb-m3-exp-freeze-v1",
+        "versionId": "frozen-2026-10-20"
+      }
+    }
+  },
+  "replacement": "replace through reviewed source migration after R-M3-2 formula decision",
+  "schemaVersion": 1,
+  "scope": "only exp_value; approved frozen input, not official client formula evidence",
+  "source": "schaledb-frozen-2026-10",
+  "sourceFile": "backend/core/gift_meta_data.py",
+  "sourceFileSha256": "3b223e20070574988da9af3607fa9e5db91dc5daf894274795d421e3d8024b98"
+}

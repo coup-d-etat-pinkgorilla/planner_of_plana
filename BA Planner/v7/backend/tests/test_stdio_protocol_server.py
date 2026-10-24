@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import sys
 import unittest
 from dataclasses import asdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from core.planning_calc import PlanCostSummary
 from core.protocol_v1 import PlanningProtocolV1
@@ -170,6 +172,8 @@ class StdioServerTests(unittest.TestCase):
 
     def test_real_module_process_round_trip(self) -> None:
         backend = Path(__file__).parents[1]
+        state = TemporaryDirectory(prefix='ba-stdio-test-')
+        self.addCleanup(state.cleanup)
         process = subprocess.Popen(
             [sys.executable, "-m", "core.backend_process"],
             cwd=backend,
@@ -178,7 +182,9 @@ class StdioServerTests(unittest.TestCase):
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
+            env={**os.environ, 'BA_PLANNER_USER_DIR': state.name},
         )
+        self.addCleanup(lambda: process.kill() if process.poll() is None else None)
         message = request("subprocess", "planning.student.get", {"student_id": "ayane"})
         stdout, stderr = process.communicate(json.dumps(message) + "\n", timeout=10)
         self.assertEqual(process.returncode, 0, stderr)

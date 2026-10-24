@@ -132,3 +132,10 @@ their existing default behavior; the app backend uses explicit preparation.
 
 XB edits no frontend files. Runtime may be committed only after the same-source
 CF paired gate; synthetic tests do not establish real-client/native acceptance.
+# Test discovery control
+
+`BA_PLANNER_DISABLE_GAME_DISCOVERY=1` disables automatic Steam-library discovery
+for process tests. It does not invalidate an explicitly selected user folder.
+Tests that use an isolated repository and this flag can query status or clear a
+folder override without inspecting an installed game. The default runtime keeps
+automatic discovery enabled.

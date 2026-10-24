@@ -74,10 +74,11 @@ class RecognitionAssetCatalog:
         manifest = self.load()
         missing: list[str] = []
         corrupt: list[str] = []
+        root = self.root.resolve()
         for raw in manifest["assets"]:
             if not isinstance(raw, dict) or not isinstance(raw.get("path"), str):
                 raise ScannerError("asset_manifest_invalid", "asset entry must contain a path")
-            path = self.resolve(raw["path"])
+            path = self._resolve_from_root(root, raw["path"])
             if not path.is_file():
                 if raw.get("required") is True:
                     missing.append(raw["path"])
@@ -97,9 +98,15 @@ class RecognitionAssetCatalog:
         }
 
     def resolve(self, relative: str) -> Path:
-        path = (self.root / relative).resolve()
+        return self._resolve_from_root(self.root.resolve(), relative)
+
+    @staticmethod
+    def _resolve_from_root(root: Path, relative: str) -> Path:
+        # Resolve the root once per verification pass; every member still gets
+        # its own physical path check and fresh byte/hash verification.
+        path = (root / relative).resolve()
         try:
-            path.relative_to(self.root.resolve())
+            path.relative_to(root)
         except ValueError as exc:
             raise ScannerError("asset_manifest_invalid", "asset path escapes recognition root") from exc
         return path

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -64,11 +65,15 @@ class ScannerStdioTransportTests(unittest.TestCase):
 
     def test_real_process_serves_asset_readiness_and_windows_target_list(self) -> None:
         backend = Path(__file__).parents[1]
+        state = TemporaryDirectory(prefix='ba-scanner-stdio-test-')
+        self.addCleanup(state.cleanup)
         process = subprocess.Popen(
             [sys.executable, "-m", "core.backend_process"], cwd=backend,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, encoding="utf-8",
+            env={**os.environ, 'BA_PLANNER_USER_DIR': state.name},
         )
+        self.addCleanup(lambda: process.kill() if process.poll() is None else None)
         requests = [
             request("assets", "scanner.recognition.status", {}),
             request("targets", "scanner.target.list", {}),

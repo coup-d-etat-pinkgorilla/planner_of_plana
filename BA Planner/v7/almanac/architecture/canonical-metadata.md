@@ -1,6 +1,6 @@
 ---
 title: "Canonical Metadata Boundary"
-summary: "BA Planner owns a versioned student metadata catalog while SchaleDB remains an isolated provider and adapter."
+summary: "Versioned canonical metadata, approved client-store regeneration and explicit client character bindings."
 topics: [architecture, data]
 sources:
   - id: canonical-loader
@@ -9,12 +9,12 @@ sources:
   - id: canonical-catalog
     type: file
     path: backend/data/metadata/v1/student_catalog.json
-  - id: schaledb-provider
+  - id: store-generator
     type: file
-    path: backend/core/schaledb_provider.py
-  - id: schaledb-adapter
+    path: backend/tools/metadata_store_regenerate.py
+  - id: client-character-refs
     type: file
-    path: backend/core/schaledb_metadata_adapter.py
+    path: backend/core/client_character_refs.py
   - id: compatibility-api
     type: file
     path: backend/core/student_meta.py
@@ -43,12 +43,17 @@ reconstructs those legacy lookup fields at the compatibility edge so existing
 planning, scanner and protocol consumers do not depend on catalog layout.
 [@compatibility-api]
 
-`core.schaledb_provider` owns HTTP endpoints, request headers and raw document
-retrieval only. `core.schaledb_metadata_adapter` owns source URL parsing, slug
-normalization, exceptional and multi-path identity mapping, source validation and
-the explicit minimal import allowlist. Neither module writes the canonical
-catalog. The standalone metadata tool coordinates preview and confirmed writes.
-[@schaledb-provider] [@schaledb-adapter]
+The read-only store generator accepts a lock/catalog-bound reviewed crosswalk,
+approved client extracts, frozen gift experience values and explicit secondary
+form bindings. It writes a new staging bundle only. Manual/KR fields and archived
+provider references remain preserved; matching numeric values do not create new
+source associations. Provisional ConstCommon is not consumed. The removed Schale
+network/adapter/merge modules and seven tool methods are no longer runtime paths.
+[@store-generator]
+
+Student stats and bond calculations resolve explicit client character IDs through
+`client-character-refs.json`. The legacy numeric `schaledb_id` field remains at
+the compatibility edge; it does not authorize network import. [@client-character-refs]
 
 Student statistics, equipment statistics and gift item definitions remain
 separate bounded catalogs. They may reference a canonical student ID or an
@@ -56,5 +61,6 @@ external provider ID, but they are not folded into the student static record.
 
 The bootstrap exporter `backend/tools/export_canonical_metadata.py` exists to
 reproduce the first canonical snapshot from the legacy generated declaration.
-After the migration snapshot, normal changes must go through canonical catalog
-writers rather than regenerate from the legacy Python file.
+Its `--from-store --bundle-output` mode regenerates canonical/generated data from
+approved store sources without writing the shared store or replacing main data.
+Normal editor changes still go through canonical catalog writers.

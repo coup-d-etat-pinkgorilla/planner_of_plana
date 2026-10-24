@@ -56,8 +56,10 @@ class ApplicationProtocolV1:
             if trusted is None:
                 return None
             if self.preparation is None:
-                return ScannerProtocolV1._error(trusted['id'], trusted['method'],
-                                                'asset_prepare_unavailable', 'asset preparation runtime is not available')
+                return AssetPreparationProtocolV1._response(trusted, {'error': {
+                    'code': 'asset_prepare_unavailable',
+                    'message': 'asset preparation runtime is not available', 'details': {},
+                }})
             return self.preparation.handle(trusted)
         if isinstance(message, dict) and message.get("method") in SCANNER_METHODS:
             trusted = PlanningProtocolV1._trusted_request(message)

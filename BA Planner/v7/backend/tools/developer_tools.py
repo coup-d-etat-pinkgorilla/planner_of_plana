@@ -20,7 +20,6 @@ V7_DIR = BACKEND_DIR.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from core import schaledb_metadata_adapter, schaledb_provider
 from core.canonical_metadata import load_catalog, write_catalog
 from core.runtime_paths import resolve_metadata_catalog_path
 from core.student_meta_types import StudentFormMeta
@@ -28,10 +27,7 @@ from core.student_meta_types import StudentFormMeta
 PROTOCOL_VERSION = 1
 CANONICAL_METADATA_PATH = resolve_metadata_catalog_path()
 GIFT_METADATA_PATH = BACKEND_DIR / "core" / "gift_meta_data.py"
-SCHALE_MERGE_PATHS_PATH = BACKEND_DIR / "core" / "schale_merge_paths.py"
 EXTRACTION_METADATA_DIR = V7_DIR / "debug" / "student_template_extractor"
-SCHALE_STUDENTS_URL = schaledb_provider.SCHALEDB_STUDENTS_URL
-SCHALE_ITEMS_URL = schaledb_provider.SCHALEDB_ITEMS_URL
 UNIVERSAL_GIFT_TAGS = frozenset({"BC", "Bc", "ew"})
 
 # This process is consumed by Dart as a UTF-8 JSON transport. Windows otherwise
@@ -144,30 +140,10 @@ def _metadata_module():
     return importlib.reload(student_meta)
 
 
-def _merge_paths_module():
-    from core import schale_merge_paths
-    return importlib.reload(schale_merge_paths)
 
 
-def _get_schale_merge_paths() -> dict[str, tuple[str, ...]]:
-    return {
-        str(student_id): tuple(str(path) for path in paths)
-        for student_id, paths in _merge_paths_module().SCHALE_MERGE_PATHS.items()
-    }
 
 
-def _write_schale_merge_paths(merge_paths: dict[str, tuple[str, ...]]) -> None:
-    rendered = "SCHALE_MERGE_PATHS: dict[str, tuple[str, ...]] = " + pprint.pformat(
-        merge_paths,
-        width=100,
-        sort_dicts=False,
-    )
-    source = SCHALE_MERGE_PATHS_PATH.read_text(encoding="utf-8")
-    _atomic_text_write(
-        SCHALE_MERGE_PATHS_PATH,
-        _replace_assignment(source, "SCHALE_MERGE_PATHS", rendered),
-    )
-    importlib.invalidate_caches()
 
 
 def _write_metadata_assignment(name: str, rendered: str) -> None:
@@ -495,65 +471,10 @@ def metadata_server_set(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def metadata_merge_paths_list(_params: dict[str, Any]) -> dict[str, Any]:
-    module = _metadata_module()
-    rows = [
-        {
-            "student_id": student_id,
-            "display_name": str(module.STUDENTS.get(student_id, {}).get("display_name") or student_id),
-            "template_name": str(module.STUDENTS.get(student_id, {}).get("template_name") or ""),
-            "paths": list(paths),
-            "path_count": len(paths),
-        }
-        for student_id, paths in sorted(_get_schale_merge_paths().items())
-    ]
-    return {"rows": rows, "rule_count": len(rows)}
 
 
-def metadata_merge_paths_save(params: dict[str, Any]) -> dict[str, Any]:
-    student_id = str(params.get("student_id") or "").strip()
-    raw_paths = params.get("paths")
-    if not student_id:
-        raise ValueError("student_id is required")
-    if not isinstance(raw_paths, list):
-        raise ValueError("paths must be an array")
-    module = _metadata_module()
-    if student_id not in module.STUDENTS:
-        raise KeyError(f"student not found: {student_id}")
-    paths = tuple(dict.fromkeys(_parse_schale_student_source(path) for path in raw_paths))
-    if len(paths) < 2:
-        raise ValueError("at least two distinct SchaleDB slugs are required")
-
-    merge_paths = _get_schale_merge_paths()
-    for other_id, other_paths in merge_paths.items():
-        if other_id == student_id:
-            continue
-        used = {_normalized_schale_path(path) for path in other_paths}
-        duplicate = next((path for path in paths if _normalized_schale_path(path) in used), None)
-        if duplicate is not None:
-            raise ValueError(f"SchaleDB slug '{duplicate}' is already used by {other_id}")
-    merge_paths[student_id] = paths
-    normalized = {key: merge_paths[key] for key in sorted(merge_paths)}
-    _write_schale_merge_paths(normalized)
-    return {
-        "student_id": student_id,
-        "paths": list(paths),
-        "path_count": len(paths),
-    }
 
 
-def metadata_merge_paths_delete(params: dict[str, Any]) -> dict[str, Any]:
-    student_id = str(params.get("student_id") or "").strip()
-    if not student_id:
-        raise ValueError("student_id is required")
-    merge_paths = _get_schale_merge_paths()
-    removed = merge_paths.pop(student_id, None)
-    if removed is not None:
-        _write_schale_merge_paths({key: merge_paths[key] for key in sorted(merge_paths)})
-    return {
-        "student_id": student_id,
-        "deleted": removed is not None,
-    }
 
 
 def _read_json_object(path: Path, label: str) -> dict[str, Any]:
@@ -803,31 +724,16 @@ def metadata_items_analyze(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _fetch_schaledb_json(url: str) -> dict[str, Any]:
-    return schaledb_provider.fetch_json(url)
 
 
-def _normalized_schale_path(value: object) -> str:
-    return schaledb_metadata_adapter.normalized_path(value)
 
 
-def _schale_path_for_local_id(student_id: str) -> str:
-    return schaledb_metadata_adapter.path_for_local_id(student_id, _get_schale_merge_paths())
 
 
-def _local_id_for_schale_path(path_name: str, student_ids: Any) -> str | None:
-    return schaledb_metadata_adapter.local_id_for_path(
-        path_name, student_ids, _get_schale_merge_paths()
-    )
 
 
-def _parse_schale_student_source(source: object) -> str:
-    return schaledb_metadata_adapter.parse_student_source(source)
 
 
-def _minimal_schale_gifts(raw_items: dict[str, Any]) -> list[dict[str, Any]]:
-    gift_asset_dir = V7_DIR / "frontend" / "assets" / "item_icons" / "presents"
-    return schaledb_metadata_adapter.adapt_gifts(raw_items, gift_asset_dir)
 
 
 def _student_gift_affinities(incoming: dict[str, Any], gifts: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -863,165 +769,18 @@ def _student_gift_affinities(incoming: dict[str, Any], gifts: list[dict[str, Any
     return special_gifts, preferred_gifts
 
 
-def _minimal_schale_snapshot() -> dict[str, Any]:
-    module = _metadata_module()
-    raw_students, raw_items = schaledb_provider.SchaleDBProvider(_fetch_schaledb_json).snapshot()
-    path_lookup = schaledb_metadata_adapter.student_index(raw_students)
-
-    students: list[dict[str, Any]] = []
-    missing: list[str] = []
-    for student_id, current in module.STUDENTS.items():
-        raw = path_lookup.get(_normalized_schale_path(_schale_path_for_local_id(student_id)))
-        if raw is None:
-            missing.append(student_id)
-            continue
-        incoming = schaledb_metadata_adapter.adapt_student(raw)
-        changed_fields = [name for name, value in incoming.items() if current.get(name) != value]
-        students.append({
-            "student_id": student_id,
-            "display_name": str(current.get("display_name") or student_id),
-            "template_name": str(current.get("template_name") or f"{student_id}.png"),
-            "jp_only": student_id in module.JP_ONLY_STUDENT_IDS,
-            "current": {name: _json_value(current.get(name)) for name in incoming},
-            "incoming": incoming,
-            "changed_fields": changed_fields,
-        })
-
-    gifts = _minimal_schale_gifts(raw_items)
-    students.sort(key=lambda row: (row["display_name"].casefold(), row["student_id"]))
-    for student in students:
-        special_gifts, preferred_gifts = _student_gift_affinities(student["incoming"], gifts)
-        student["special_gifts"] = special_gifts
-        student["preferred_gifts"] = preferred_gifts
-    return {"students": students, "gifts": gifts, "missing_student_ids": sorted(missing)}
 
 
-def metadata_schaledb_preview(_params: dict[str, Any]) -> dict[str, Any]:
-    snapshot = _minimal_schale_snapshot()
-    return {
-        **snapshot,
-        "student_count": len(snapshot["students"]),
-        "changed_student_count": sum(bool(row["changed_fields"]) for row in snapshot["students"]),
-        "gift_count": len(snapshot["gifts"]),
-        "persisted_fields": [
-            "student.Id",
-            "student.FavorItemTags",
-            "student.FavorItemUniqueTags",
-            "gift.Id",
-            "gift.Category",
-            "gift.Tags",
-            "gift.ExpValue",
-        ],
-    }
 
 
-def _single_schale_snapshot(params: dict[str, Any]) -> dict[str, Any]:
-    module = _metadata_module()
-    preferred_id = str(params.get("student_id") or "").strip()
-    source = str(params.get("source") or "").strip()
-    if not source and preferred_id:
-        source = _schale_path_for_local_id(preferred_id)
-    slug = _parse_schale_student_source(source)
-    raw_students, raw_items = schaledb_provider.SchaleDBProvider(_fetch_schaledb_json).snapshot()
-    path_lookup = schaledb_metadata_adapter.student_index(raw_students)
-    raw = path_lookup.get(_normalized_schale_path(slug))
-    if raw is None:
-        raw = path_lookup.get(_normalized_schale_path(_schale_path_for_local_id(slug)))
-    if raw is None:
-        raise KeyError(f"SchaleDB student not found: {slug}")
-    resolved_slug = str(raw.get("PathName") or slug).strip().lower()
-
-    matched_local_id = _local_id_for_schale_path(resolved_slug, module.STUDENTS)
-    local_id = preferred_id or matched_local_id or re.sub(r"[^a-z0-9]+", "_", resolved_slug).strip("_")
-    if not re.fullmatch(r"[a-z0-9_]+", local_id):
-        raise ValueError("student_id must contain only lowercase letters, digits, and underscores")
-    current = dict(module.STUDENTS.get(local_id, {}))
-    incoming = schaledb_metadata_adapter.adapt_student(raw)
-    gifts = _minimal_schale_gifts(raw_items)
-    special_gifts, preferred_gifts = _student_gift_affinities(incoming, gifts)
-    return {
-        "source_slug": resolved_slug,
-        "student_id": local_id,
-        "exists": local_id in module.STUDENTS,
-        "matched_local_id": matched_local_id,
-        "display_name": str(current.get("display_name") or local_id),
-        "template_name": str(current.get("template_name") or f"{local_id}.png"),
-        "current": {name: _json_value(current.get(name)) for name in incoming},
-        "incoming": incoming,
-        "changed_fields": [name for name, value in incoming.items() if current.get(name) != value],
-        "special_gifts": special_gifts,
-        "preferred_gifts": preferred_gifts,
-        "gifts": gifts,
-    }
 
 
-def metadata_schaledb_single_preview(params: dict[str, Any]) -> dict[str, Any]:
-    snapshot = _single_schale_snapshot(params)
-    return {
-        **snapshot,
-        "gift_count": len(snapshot["gifts"]),
-        "persisted_fields": [
-            "student.Id",
-            "student.FavorItemTags",
-            "student.FavorItemUniqueTags",
-            "gift.Id",
-            "gift.Category",
-            "gift.Tags",
-            "gift.ExpValue",
-        ],
-    }
 
 
-def metadata_schaledb_single_apply(params: dict[str, Any]) -> dict[str, Any]:
-    snapshot = _single_schale_snapshot(params)
-    if not snapshot["exists"]:
-        raise ValueError("new students must be loaded into the editor and completed before saving")
-    module = _metadata_module()
-    students = {key: dict(value) for key, value in module.STUDENTS.items()}
-    students[snapshot["student_id"]].update(snapshot["incoming"])
-    _write_students_and_jp_only(students, set(module.JP_ONLY_STUDENT_IDS))
-    _write_gift_metadata(snapshot["gifts"])
-    return {
-        "student_id": snapshot["student_id"],
-        "updated_fields": snapshot["changed_fields"],
-        "gift_count": len(snapshot["gifts"]),
-    }
 
 
-def _write_gift_metadata(gifts: list[dict[str, Any]]) -> None:
-    gift_rows = {
-        int(gift["id"]): {
-            "id": int(gift["id"]),
-            "category": str(gift["category"]),
-            "tags": [str(tag) for tag in gift["tags"]],
-            "exp_value": int(gift["exp_value"]),
-        }
-        for gift in gifts
-    }
-    source = GIFT_METADATA_PATH.read_text(encoding="utf-8")
-    rendered = "GIFT_ITEMS: dict[int, GiftMeta] = " + pprint.pformat(
-        gift_rows, width=100, sort_dicts=False
-    )
-    _atomic_text_write(GIFT_METADATA_PATH, _replace_assignment(source, "GIFT_ITEMS", rendered))
 
 
-def metadata_schaledb_apply(_params: dict[str, Any]) -> dict[str, Any]:
-    snapshot = _minimal_schale_snapshot()
-    module = _metadata_module()
-    students = {key: dict(value) for key, value in module.STUDENTS.items()}
-    updated = 0
-    for row in snapshot["students"]:
-        if not row["changed_fields"]:
-            continue
-        students[row["student_id"]].update(row["incoming"])
-        updated += 1
-    _write_students_and_jp_only(students, set(module.JP_ONLY_STUDENT_IDS))
-    _write_gift_metadata(snapshot["gifts"])
-    return {
-        "updated_students": updated,
-        "gift_count": len(snapshot["gifts"]),
-        "missing_student_ids": snapshot["missing_student_ids"],
-    }
 
 
 def metadata_delete(params: dict[str, Any]) -> dict[str, Any]:
@@ -1233,14 +992,7 @@ METHODS = {
     "metadata.debug.list": metadata_debug_list,
     "metadata.debug.get": metadata_debug_get,
     "metadata.server.set": metadata_server_set,
-    "metadata.merge_paths.list": metadata_merge_paths_list,
-    "metadata.merge_paths.save": metadata_merge_paths_save,
-    "metadata.merge_paths.delete": metadata_merge_paths_delete,
     "metadata.items.analyze": metadata_items_analyze,
-    "metadata.schaledb.preview": metadata_schaledb_preview,
-    "metadata.schaledb.apply": metadata_schaledb_apply,
-    "metadata.schaledb.single.preview": metadata_schaledb_single_preview,
-    "metadata.schaledb.single.apply": metadata_schaledb_single_apply,
     "template.preview": template_preview,
     "template.save": template_save,
     "inspector.inspect": inspector_inspect,
@@ -1263,10 +1015,21 @@ def dispatch(request: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
+    global CANONICAL_METADATA_PATH
     try:
         request = json.loads(sys.stdin.read())
         if not isinstance(request, dict):
             raise ValueError("request must be an object")
+        from core.user_state_migration import (
+            ensure_default_user_root, UserStateMigrationError,
+            migration_failure_details, MIGRATION_BLOCKED_MESSAGE,
+        )
+        try:
+            ensure_default_user_root()
+        except (OSError, UserStateMigrationError) as error:
+            reason = migration_failure_details(error)['reason']
+            raise UserStateMigrationError(MIGRATION_BLOCKED_MESSAGE + ' (' + reason + ')') from None
+        CANONICAL_METADATA_PATH = resolve_metadata_catalog_path()
         response = dispatch(request)
     except Exception as exc:
         response = {

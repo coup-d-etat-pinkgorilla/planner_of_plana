@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from core.runtime_paths import PLANNING_DATA_DIR
 from core.equipment_items import EQUIPMENT_SERIES_BY_KEY
 from core.planning import GrowthPlan, StudentGoal
-from core.schale_skill_material_map import is_skill_book_label
+from core.skill_material_labels import is_skill_book_label
 from core import student_meta
 from core.planning_growth_rules import (
     EQUIPMENT_TIER_MAX_LEVEL, TARGET_TO_GOAL, WEAPON_STAR_MAX_LEVEL,

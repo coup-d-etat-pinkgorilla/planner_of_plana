@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baplanner.local/contracts/startup-user-data-v1.schema.json",
+  "title": "User data migration blocked before application startup",
+  "type": "object",
+  "required": ["protocol", "id", "type", "method", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "protocol": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "type": {"const": "response"},
+    "method": {"type": "string", "minLength": 1},
+    "payload": {
+      "type": "object", "required": ["error"], "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "object", "required": ["code", "message", "details"], "additionalProperties": false,
+          "properties": {
+            "code": {"const": "user_data_migration_failed"},
+            "message": {"type": "string", "minLength": 1},
+            "details": {
+              "type": "object", "required": ["reason", "source_kept", "restart_required"], "additionalProperties": false,
+              "properties": {
+                "reason": {"enum": ["user_data_busy", "user_data_link_not_migrated", "user_data_folder_invalid", "v7_user_root_invalid", "v7_destination_unrecognised", "legacy_repository_recovery_required", "user_data_changed_during_migration", "user_data_io_error", "user_data_migration_failed"]},
+                "source_kept": {"const": true},
+                "restart_required": {"const": true}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

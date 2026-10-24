@@ -24,8 +24,8 @@ def _external_asset_dir() -> Path:
 
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        return Path(local_app_data) / "BA Planner" / "assets" / "current"
-    return V7_DIR / "assets" / "current"
+        return Path(local_app_data) / "BA Planner" / "v7" / "assets" / "current"
+    return Path.home() / ".ba-planner" / "v7" / "assets" / "current"
 
 
 DEFAULT_ASSET_DIR = _external_asset_dir()
@@ -68,8 +68,8 @@ def resolve_extracted_asset_root() -> Path:
         return Path(user_override).expanduser() / "recognition-assets"
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        return Path(local_app_data) / "BA Planner" / "recognition-assets"
-    return Path.home() / ".ba-planner" / "recognition-assets"
+        return Path(local_app_data) / "BA Planner" / "v7" / "recognition-assets"
+    return Path.home() / ".ba-planner" / "v7" / "recognition-assets"
 
 
 def resolve_synth_cache_root() -> Path:
@@ -86,8 +86,8 @@ def resolve_repository_root() -> Path:
         return Path(user_override).expanduser() / "repository"
     local_app_data = os.environ.get("LOCALAPPDATA")
     if local_app_data:
-        return Path(local_app_data) / "BA Planner" / "repository"
-    return Path.home() / ".ba-planner" / "repository"
+        return Path(local_app_data) / "BA Planner" / "v7" / "repository"
+    return Path.home() / ".ba-planner" / "v7" / "repository"
 
 
 def resolve_v6_root() -> Path:

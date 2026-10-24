@@ -57,6 +57,8 @@ def _vdf_values(text: str, key: str) -> list[str]:
 
 def find_game_dir(steam_dir: Path | None = None) -> Path | None:
     """The Steam client's install folder from libraryfolders.vdf, or None (the UI then asks for a folder)."""
+    if steam_dir is None and os.environ.get('BA_PLANNER_DISABLE_GAME_DISCOVERY') == '1':
+        return None
     if steam_dir is None:
         steam_dir = _steam_dir()
     if steam_dir is None:

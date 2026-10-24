@@ -8,6 +8,7 @@ $frontendDirectory = Split-Path -Parent $PSScriptRoot
 $projectDirectory = Split-Path -Parent $frontendDirectory
 $syncScript = Join-Path $PSScriptRoot "sync_windows_release.ps1"
 $launcherSource = Join-Path $frontendDirectory "windows\release_launcher\Program.cs"
+$updaterSource = Join-Path $frontendDirectory "windows\release_launcher\DistributionUpdater.cs"
 $launcherDestination = Join-Path $projectDirectory "BA Planner v7.exe"
 $temporaryLauncher = Join-Path $projectDirectory ".BA Planner v7.launcher.tmp.exe"
 
@@ -27,8 +28,8 @@ if (Test-Path -LiteralPath $temporaryLauncher) {
 
 try {
     Add-Type `
-        -Path $launcherSource `
-        -ReferencedAssemblies "System.Windows.Forms" `
+        -Path @($launcherSource, $updaterSource) `
+        -ReferencedAssemblies @("System.Windows.Forms", "System.Core", "System.Web.Extensions", "System.IO.Compression", "System.IO.Compression.FileSystem") `
         -OutputAssembly $temporaryLauncher `
         -OutputType WindowsApplication
 

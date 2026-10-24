@@ -25,8 +25,33 @@ def main() -> int:
     parser.add_argument('--catalog', type=Path, default=PACKAGED_METADATA_CATALOG_PATH)
     parser.add_argument('--crosswalk', type=Path)
     parser.add_argument('--preview', type=Path)
+    parser.add_argument('--bundle-output', type=Path,
+                        help='new staging directory for reviewed canonical/generated/stat outputs')
+    parser.add_argument('--frozen-gift-exp', type=Path)
+    parser.add_argument('--gift-source', type=Path, default=BACKEND_DIR / 'core/gift_meta_data.py')
+    parser.add_argument('--form-bindings', type=Path,
+                        default=BACKEND_DIR / 'data/metadata/v1/client-character-refs.json')
     args = parser.parse_args()
     if args.from_store:
+        if args.bundle_output is not None:
+            if args.crosswalk is None or args.frozen_gift_exp is None or args.preview is not None:
+                parser.error('--bundle-output requires --crosswalk/--frozen-gift-exp and excludes --preview')
+            import json
+            from core.client_data_store import ClientDataStore
+            from core.canonical_metadata import load_catalog
+            from tools.metadata_store_regenerate import load_frozen_gifts, regenerate, write_bundle
+            reader = ClientDataStore(args.lock, args.store_root)
+            mapping = json.loads(args.crosswalk.read_text(encoding='utf-8'))
+            frozen = json.loads(args.frozen_gift_exp.read_text(encoding='utf-8'))
+            gifts = load_frozen_gifts(args.gift_source, frozen)
+            forms = json.loads(args.form_bindings.read_text(encoding='utf-8')) if args.form_bindings.is_file() else None
+            result = regenerate(load_catalog(args.catalog), reader, mapping, frozen, gifts, forms)
+            manifest = write_bundle(result, args.bundle_output,
+                forbidden_roots=(reader.root, BACKEND_DIR, args.catalog, args.lock,
+                                 args.crosswalk, args.frozen_gift_exp, args.gift_source, args.form_bindings))
+            print(json.dumps({'state': 'staged-only', 'files': manifest,
+                              'raw_gift_tag_changes': result['raw_gift_tag_changes']}, ensure_ascii=False))
+            return 0
         if args.preview is None:
             parser.error('--from-store requires --preview; catalog apply is not implemented')
         import json
@@ -41,8 +66,8 @@ def main() -> int:
         destination.write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         print('store preview only; Schale removal comparison: blocked')
         return 0
-    if args.preview or args.crosswalk:
-        parser.error('--preview/--crosswalk require --from-store')
+    if args.preview or args.crosswalk or args.bundle_output or args.frozen_gift_exp:
+        parser.error('--preview/--crosswalk/--bundle-output/--frozen-gift-exp require --from-store')
     catalog = CanonicalMetadataCatalog.from_legacy(
         students=student_meta_data.STUDENTS,
         forms=student_meta_data.MULTI_FORM_STUDENTS,

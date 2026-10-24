@@ -5,7 +5,6 @@ import sys
 import traceback
 from typing import TextIO
 
-from core.protocol_v1 import PlanningProtocolV1
 from core.jsonl_multiplexer import JsonlMultiplexer
 
 
@@ -16,9 +15,12 @@ def serve(
     *,
     protocol: object | None = None,
 ) -> None:
-    handler = protocol or PlanningProtocolV1(
-        diagnostic=lambda message: print(message, file=stderr, end="", flush=True)
-    )
+    if protocol is None:
+        from core.protocol_v1 import PlanningProtocolV1
+        protocol = PlanningProtocolV1(
+            diagnostic=lambda message: print(message, file=stderr, end="", flush=True)
+        )
+    handler = protocol
     output = JsonlMultiplexer(stdout)
     bind_event_sink = getattr(handler, "bind_event_sink", None)
     if callable(bind_event_sink):

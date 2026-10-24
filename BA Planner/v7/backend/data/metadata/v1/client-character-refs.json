@@ -1,0 +1,808 @@
+{
+  "provenance": {
+    "crosswalk_sha256": "1a4ea77f20991a7d586117f07c530e443593a29c15f8bd69017f96b0817b87b4",
+    "form_bindings_sha256": "c281f587d308b41d6dc6f689a0f8415f3395669ed735c50e7064fad7cbdf15f3",
+    "primary": "explicit approved crosswalk",
+    "secondary_forms": "retained explicit local bindings, verified present in the pinned stat catalog"
+  },
+  "schemaVersion": 1,
+  "students": {
+    "airi": [
+      23000
+    ],
+    "airi_band": [
+      16015
+    ],
+    "akane": [
+      13000
+    ],
+    "akane_bunny_girl": [
+      20019
+    ],
+    "akane_school_uniform": [
+      20057
+    ],
+    "akari": [
+      13002
+    ],
+    "akari_new_year": [
+      20034
+    ],
+    "ako": [
+      20008
+    ],
+    "ako_dress": [
+      10087
+    ],
+    "aoba": [
+      16017
+    ],
+    "aris": [
+      10015
+    ],
+    "aris_battle": [
+      10134
+    ],
+    "aris_maid": [
+      10066
+    ],
+    "aru": [
+      10000
+    ],
+    "aru_dress": [
+      10089
+    ],
+    "aru_new_year": [
+      10031
+    ],
+    "asuna": [
+      16001
+    ],
+    "asuna_bunny_girl": [
+      10028
+    ],
+    "asuna_school_uniform": [
+      10112
+    ],
+    "atsuko": [
+      10042
+    ],
+    "atsuko_swimsuit": [
+      26013
+    ],
+    "ayane": [
+      23005
+    ],
+    "ayane_swimsuit": [
+      26007
+    ],
+    "azusa": [
+      10019
+    ],
+    "azusa_swimsuit": [
+      10021
+    ],
+    "cherino": [
+      10017
+    ],
+    "cherino_hot_springs": [
+      20009
+    ],
+    "chiaki": [
+      10107
+    ],
+    "chihiro": [
+      20013
+    ],
+    "chinatsu": [
+      26000
+    ],
+    "chinatsu_hot_springs": [
+      10030
+    ],
+    "chise": [
+      13001
+    ],
+    "chise_swimsuit": [
+      10047
+    ],
+    "eimi": [
+      10001
+    ],
+    "eimi_battle": [
+      10136
+    ],
+    "eimi_swimsuit": [
+      20032
+    ],
+    "eri": [
+      10125
+    ],
+    "erika": [
+      20058
+    ],
+    "fubuki": [
+      16008
+    ],
+    "fubuki_swimsuit": [
+      20037
+    ],
+    "fuuka": [
+      23001
+    ],
+    "fuuka_new_year": [
+      20022
+    ],
+    "fuyu": [
+      10128
+    ],
+    "hanae": [
+      23002
+    ],
+    "hanae_christmas": [
+      20021
+    ],
+    "hanako": [
+      23007
+    ],
+    "hanako_swimsuit": [
+      10074
+    ],
+    "hare": [
+      23003
+    ],
+    "hare_camping": [
+      10085
+    ],
+    "haruka": [
+      16000
+    ],
+    "haruka_dress": [
+      10141
+    ],
+    "haruka_new_year": [
+      20025
+    ],
+    "haruna": [
+      10002
+    ],
+    "haruna_new_year": [
+      10057
+    ],
+    "haruna_sportswear": [
+      20030
+    ],
+    "hasumi": [
+      13003
+    ],
+    "hasumi_sportswear": [
+      16011
+    ],
+    "hasumi_swimsuit": [
+      10124
+    ],
+    "hatsune_miku": [
+      20007
+    ],
+    "hibiki": [
+      20000
+    ],
+    "hibiki_cheerleader": [
+      16010
+    ],
+    "hifumi": [
+      10003
+    ],
+    "hifumi_swimsuit": [
+      20005
+    ],
+    "hikari": [
+      10117
+    ],
+    "himari": [
+      20020
+    ],
+    "himari_battle": [
+      20054
+    ],
+    "hina": [
+      10004
+    ],
+    "hina_dress": [
+      10086
+    ],
+    "hina_swimsuit": [
+      10022
+    ],
+    "hinata": [
+      10036
+    ],
+    "hinata_swimsuit": [
+      20028
+    ],
+    "hiyori": [
+      20017
+    ],
+    "hiyori_swimsuit": [
+      10102
+    ],
+    "hoshino": [
+      10005
+    ],
+    "hoshino_battle": [
+      10098,
+      10099
+    ],
+    "hoshino_swimsuit": [
+      10045
+    ],
+    "ibuki": [
+      16014
+    ],
+    "ichika": [
+      10077
+    ],
+    "ichika_swimsuit": [
+      26015
+    ],
+    "iori": [
+      10006
+    ],
+    "iori_swimsuit": [
+      10023
+    ],
+    "iroha": [
+      20016
+    ],
+    "izumi": [
+      10009
+    ],
+    "izumi_new_year": [
+      20043
+    ],
+    "izumi_swimsuit": [
+      16006
+    ],
+    "izuna": [
+      10014
+    ],
+    "izuna_swimsuit": [
+      10046
+    ],
+    "junko": [
+      13007
+    ],
+    "junko_new_year": [
+      16012
+    ],
+    "juri": [
+      26002
+    ],
+    "juri_part_timer": [
+      10114
+    ],
+    "kaede": [
+      20015
+    ],
+    "kaho": [
+      10065
+    ],
+    "kanna": [
+      20023
+    ],
+    "kanna_swimsuit": [
+      10096
+    ],
+    "kanoe": [
+      10126
+    ],
+    "karin": [
+      20001
+    ],
+    "karin_bunny_girl": [
+      10027
+    ],
+    "karin_school_uniform": [
+      26014
+    ],
+    "kasumi": [
+      10078
+    ],
+    "kayoko": [
+      13005
+    ],
+    "kayoko_dress": [
+      10088
+    ],
+    "kayoko_new_year": [
+      10064
+    ],
+    "kazusa": [
+      10049
+    ],
+    "kazusa_band": [
+      10091
+    ],
+    "kei": [
+      10135
+    ],
+    "kikyou": [
+      10083
+    ],
+    "kikyou_swimsuit": [
+      20047
+    ],
+    "kirara": [
+      10093
+    ],
+    "kirino": [
+      13012
+    ],
+    "kirino_swimsuit": [
+      26012
+    ],
+    "kisaki": [
+      20039
+    ],
+    "kisaki_swimsuit": [
+      10145
+    ],
+    "koharu": [
+      10020
+    ],
+    "koharu_swimsuit": [
+      16013
+    ],
+    "kokona": [
+      10050
+    ],
+    "konoka": [
+      10137
+    ],
+    "kotama": [
+      26001
+    ],
+    "kotama_camping": [
+      10084
+    ],
+    "kotori": [
+      16002
+    ],
+    "kotori_cheerleader": [
+      10076
+    ],
+    "koyuki": [
+      10063
+    ],
+    "koyuki_pajama": [
+      20056
+    ],
+    "kurumi": [
+      10140
+    ],
+    "maki": [
+      10007
+    ],
+    "maki_camping": [
+      20042
+    ],
+    "makoto": [
+      20033
+    ],
+    "mari": [
+      23008
+    ],
+    "mari_idol": [
+      10105
+    ],
+    "mari_sportswear": [
+      10054
+    ],
+    "marina": [
+      10037
+    ],
+    "marina_qipao": [
+      10103
+    ],
+    "mashiro": [
+      20003
+    ],
+    "mashiro_swimsuit": [
+      20004
+    ],
+    "megu": [
+      10060
+    ],
+    "meru": [
+      10075
+    ],
+    "michiru": [
+      16009
+    ],
+    "michiru_dress": [
+      20053
+    ],
+    "midori": [
+      10016
+    ],
+    "midori_maid": [
+      10095
+    ],
+    "mika": [
+      10059
+    ],
+    "mika_swimsuit": [
+      10122
+    ],
+    "mimori": [
+      10034
+    ],
+    "mimori_swimsuit": [
+      20029
+    ],
+    "mina": [
+      10070
+    ],
+    "mine": [
+      10058
+    ],
+    "mine_idol": [
+      16016
+    ],
+    "minori": [
+      20026
+    ],
+    "misaka_mikoto": [
+      10079
+    ],
+    "misaki": [
+      10041
+    ],
+    "misaki_swimsuit": [
+      20049
+    ],
+    "miyako": [
+      10038
+    ],
+    "miyako_swimsuit": [
+      10071
+    ],
+    "miyo": [
+      10127
+    ],
+    "miyu": [
+      10039
+    ],
+    "miyu_swimsuit": [
+      26010
+    ],
+    "moe": [
+      20018
+    ],
+    "moe_swimsuit": [
+      10097
+    ],
+    "momiji": [
+      13013
+    ],
+    "momoi": [
+      13011
+    ],
+    "momoi_maid": [
+      10094
+    ],
+    "mutsuki": [
+      13006
+    ],
+    "mutsuki_dress": [
+      20059
+    ],
+    "mutsuki_new_year": [
+      10032
+    ],
+    "nagisa": [
+      20024
+    ],
+    "nagisa_swimsuit": [
+      20048
+    ],
+    "nagusa": [
+      10119
+    ],
+    "nagusa_swimsuit": [
+      10142
+    ],
+    "natsu": [
+      10029
+    ],
+    "natsu_band": [
+      10120
+    ],
+    "neru": [
+      10008
+    ],
+    "neru_bunny_girl": [
+      10026
+    ],
+    "neru_school_uniform": [
+      10111
+    ],
+    "niko": [
+      10139
+    ],
+    "niya": [
+      20046
+    ],
+    "noa": [
+      10052
+    ],
+    "noa_pajama": [
+      10109
+    ],
+    "nodoka": [
+      26006
+    ],
+    "nodoka_hot_springs": [
+      20010
+    ],
+    "nonomi": [
+      13004
+    ],
+    "nonomi_swimsuit": [
+      10044
+    ],
+    "nozomi": [
+      10118
+    ],
+    "otogi": [
+      16020
+    ],
+    "pina": [
+      16004
+    ],
+    "pina_guide": [
+      20045
+    ],
+    "rabu": [
+      16018
+    ],
+    "rei": [
+      10115
+    ],
+    "reijo": [
+      10104
+    ],
+    "reisa": [
+      10068
+    ],
+    "reisa_magical": [
+      20051
+    ],
+    "rena": [
+      10138
+    ],
+    "renge": [
+      10082
+    ],
+    "renge_swimsuit": [
+      13014
+    ],
+    "rio": [
+      20041
+    ],
+    "rio_battle": [
+      10133
+    ],
+    "ritsu": [
+      20050
+    ],
+    "rumi": [
+      10069
+    ],
+    "saki": [
+      20014
+    ],
+    "saki_swimsuit": [
+      10072
+    ],
+    "sakurako": [
+      10061
+    ],
+    "sakurako_idol": [
+      10106
+    ],
+    "saori": [
+      10048
+    ],
+    "saori_dress": [
+      10116
+    ],
+    "saori_swimsuit": [
+      10101
+    ],
+    "saten_ruiko": [
+      26011
+    ],
+    "satsuki": [
+      20040
+    ],
+    "saya": [
+      20002
+    ],
+    "saya_casual": [
+      20006
+    ],
+    "seia": [
+      10110
+    ],
+    "seia_swimsuit": [
+      10123
+    ],
+    "sena": [
+      20012
+    ],
+    "sena_casual": [
+      10113
+    ],
+    "serika": [
+      13008
+    ],
+    "serika_new_year": [
+      20011
+    ],
+    "serika_swimsuit": [
+      20036
+    ],
+    "serina": [
+      26003
+    ],
+    "serina_christmas": [
+      10056
+    ],
+    "shigure": [
+      10055
+    ],
+    "shigure_hot_springs": [
+      20031
+    ],
+    "shimiko": [
+      26004
+    ],
+    "shiroko": [
+      10010
+    ],
+    "shiroko_riding": [
+      10024
+    ],
+    "shiroko_swimsuit": [
+      20027
+    ],
+    "shiroko_terror": [
+      10100
+    ],
+    "shizuko": [
+      23006
+    ],
+    "shizuko_swimsuit": [
+      26008
+    ],
+    "shoukouhou_misaki": [
+      10080
+    ],
+    "shun": [
+      10011
+    ],
+    "shun_kid": [
+      10025
+    ],
+    "shun_swimsuit": [
+      10143,
+      10143
+    ],
+    "subaru": [
+      10130
+    ],
+    "sumire": [
+      10012
+    ],
+    "sumire_part_timer": [
+      20044
+    ],
+    "suzumi": [
+      16003
+    ],
+    "suzumi_magical": [
+      10129
+    ],
+    "takane": [
+      10131
+    ],
+    "toki": [
+      10062
+    ],
+    "toki_battle": [
+      16019
+    ],
+    "toki_bunny_girl": [
+      10067
+    ],
+    "tomoe": [
+      16007
+    ],
+    "tomoe_qipao": [
+      20038
+    ],
+    "tsubaki": [
+      13009
+    ],
+    "tsubaki_guide": [
+      20035
+    ],
+    "tsukuyo": [
+      10040
+    ],
+    "tsukuyo_dress": [
+      10132
+    ],
+    "tsurugi": [
+      10013
+    ],
+    "tsurugi_swimsuit": [
+      16005
+    ],
+    "ui": [
+      10035
+    ],
+    "ui_swimsuit": [
+      10073
+    ],
+    "umika": [
+      10090
+    ],
+    "utaha": [
+      23004
+    ],
+    "utaha_cheerleader": [
+      10051
+    ],
+    "wakamo": [
+      10033
+    ],
+    "wakamo_swimsuit": [
+      10043
+    ],
+    "yakumo": [
+      20052
+    ],
+    "yoshimi": [
+      26005
+    ],
+    "yoshimi_band": [
+      10092
+    ],
+    "yukari": [
+      10081
+    ],
+    "yukari_swimsuit": [
+      10121
+    ],
+    "yuuka": [
+      13010
+    ],
+    "yuuka_pajama": [
+      10108
+    ],
+    "yuuka_sportswear": [
+      10053
+    ],
+    "yuzu": [
+      10018
+    ],
+    "yuzu_battle": [
+      20055
+    ],
+    "yuzu_maid": [
+      26009
+    ]
+  }
+}

@@ -83,9 +83,19 @@ practice_profile_required. No fallback to real capture/input is permitted.
   must refuse cross-profile commit/review, including a real candidate applied to
   practice or a practice candidate applied to real. No training of real samples.
 - Seed contains a small previous student/inventory state and one synthetic
-  history baseline. Goals/plans/scenarios start empty. Replayed students contain
+  history baseline. Goals and active plans start empty; scenarios start with one
+  fixed example, `비나 대비 · 한 번에 MAX`, following the approved tutorial script:
+  Kanna (swimsuit)/Maki/Mika priority 1, Shiroko (swimsuit)/Himari (battle)/Neru
+  (school uniform) priority 2, Akane priority 3. The learner's plan starts with
+  Kanna/Maki/Mika, Shiroko/Himari, Akane in three priority slots. Replayed students contain
   changed/new/review examples; tech notes and tactical BD contain review/unknown
   slots. Missing quantities stay null; no fake0 or runtime installed asset read.
+  Content revision 2 preserves `dataset_version:tutorial-v1`: of 60 inventory
+  slots, 54 start approved, two tech-note slots (index 26/27, quantities 46/47)
+  require approval to reach 56, and four unread quantities remain null. Previous
+  inventory contains the first ten tech-note slots: five unchanged, five with a
+  quantity five below the replay. Content is synthetic and carries no native
+  recognition accuracy claim.
 - Existing committed student_full_ring_1280 and tech_notes golden candidate
   fixtures are the starting evidence. **There is currently no tactical_bd golden
   fixture in this suite.** A separately labeled synthetic tutorial scenario must
