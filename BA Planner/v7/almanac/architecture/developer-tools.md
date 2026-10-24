@@ -55,31 +55,18 @@ asset locations. The detail DTO serializes generated metadata and multi-form dat
 for display only. Flutter composes these values with bundled portrait and eleph
 images; no diagnostic action can write a generated declaration.
 
-Single-student SchaleDB import shares the bulk import's minimal snapshot helpers
-and source-field allowlist. Source parsing accepts a student URL or slug, resolves
-the existing local ID through the same path exceptions, and returns a preview DTO
-before any write. Direct apply is limited to existing students; new identities are
-editor drafts until the local required fields are completed. Both paths keep gift
-catalog persistence separate from student metadata and exclude bond-stat fields.
-
-SchaleDB HTTP access lives in `core/schaledb_provider.py`. Raw field normalization,
-slug exceptions, merge-path matching and the three-field student allowlist live in
-`core/schaledb_metadata_adapter.py`. The developer tool only orchestrates preview,
-confirmation and canonical persistence; it does not interpret SchaleDB source DTOs.
+SchaleDB bulk/single preview/apply and merge-path list/save/delete are retired
+backend methods. They return unknown_method. The paired CF slice (M3R) removed
+their Flutter surface, so the editor now has three segments: owned metadata,
+diagnostics and item statistics. Regular canonical metadata/form/server editing
+and read-only source views keep their DTOs. Approved client-store regeneration is
+an offline staging CLI, separate from GUI mutation. The explicit client character
+binding and preserved manual/KR fields are described in the canonical metadata page.
 
 Server state is an independent canonical-data mutation. `metadata.server.set`
 validates the student, changes only `JP_ONLY_STUDENT_IDS`, and returns the previous
 and next server plus KR asset warnings. The UI confirms this action separately from
-base metadata save or SchaleDB import, then refreshes both editor and diagnostic
-state.
-
-Multi-slug identity rules live separately in `core/schale_merge_paths.py` and are
-managed through `metadata.merge_paths.list/save/delete`. A rule owns at least two
-distinct SchaleDB paths; no path may belong to two local students. The first path
-is the scalar-field source while all paths participate in reverse local-ID matching.
-The Flutter view renders the local portrait with explicit primary/secondary path
-chips. These rules merge source identities only and do not import form combat or
-student/bond-stat data.
+base metadata save, then refreshes both editor and diagnostic state.
 
 Item statistics are exposed by the read-only `metadata.items.analyze` method. With
 no path override it resolves the selected v7 repository profile; explicit v7
