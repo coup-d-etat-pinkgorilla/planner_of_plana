@@ -86,7 +86,8 @@ class PlanningProtocolClient {
       StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, _PendingRequest> _pending = {};
 
-  /// SU1: 받은 전역 시작 오류(`user_data_migration_failed`). 한 번 잡히면 풀지 않고, [start]가 새 프로세스를 띄우지 않는다.
+  /// SU1: 받은 전역 시작 오류(`user_data_migration_failed`). 잡혀 있으면 [start](재연결)가 새 프로세스를 띄우지 않는다.
+  /// SU2: 명시적 [restart]만 비우고 새 프로세스로 다시 시도한다(새 프로세스도 실패하면 다시 잡힌다).
   final ValueNotifier<UserDataMigrationFailure?> startupFailure = ValueNotifier(
     null,
   );
@@ -231,7 +232,7 @@ class PlanningProtocolClient {
     }
     final blocked = startupFailure.value;
     if (blocked != null) {
-      // restart_required: 재연결 · 재시작으로 이관을 다시 시도하지 않는다(앱을 다시 시작해야 한다).
+      // restart_required: 재연결로는 이관을 다시 시도하지 않는다(SU2: [restart] · 앱 재시작만).
       throw BackendRemoteException(
         code: userDataMigrationFailedCode,
         message: blocked.message,
@@ -369,6 +370,11 @@ class PlanningProtocolClient {
   Future<void> restart() async {
     _recordLifecycle('restart requested');
     await stop();
+    // SU2(XB 2026-10-24 12:40): 원인을 해결한 뒤의 명시적 재시작은 새 프로세스로 이관을 다시 시도한다.
+    if (!_disposed && startupFailure.value != null) {
+      _recordLifecycle('user data migration retry requested');
+      startupFailure.value = null;
+    }
     await start();
   }
 

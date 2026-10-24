@@ -2,7 +2,7 @@
 //
 // 백엔드는 모든 신뢰된 요청에 같은 `user_data_migration_failed`를 돌려준다(method별 오류 집합보다 먼저).
 // details는 정확히 `reason`(아래 enum) · `source_kept: true` · `restart_required: true`다. 모르는 키 · 다른 값 · 누락은
-// 해독하지 않는다(프로토콜 오류). 재연결로는 풀리지 않고 원인을 해결한 뒤 앱을 다시 시작해야 한다.
+// 해독하지 않는다(프로토콜 오류). 재연결로는 풀리지 않는다 — 원인을 해결한 뒤 'Backend 재시작'(SU2) · 앱 재시작으로 다시 시도한다.
 import 'package:flutter/foundation.dart';
 
 const userDataMigrationFailedCode = 'user_data_migration_failed';
@@ -31,7 +31,7 @@ enum UserDataMigrationReason {
   }
 }
 
-/// 받은 시작 차단 오류. 한 번 잡히면 이 앱 실행 동안 풀리지 않는다(`restart_required`).
+/// 받은 시작 차단 오류(`restart_required`). 재연결로는 풀리지 않고 Backend 재시작만 비운다(SU2).
 @immutable
 class UserDataMigrationFailure {
   const UserDataMigrationFailure({required this.reason, required this.message});

@@ -819,7 +819,8 @@ class AppServiceState {
   final bool useLongNames;
   final bool hasMissingMetadata;
 
-  /// SU1: 사용자 데이터 이관 실패로 막힌 시작(null = 막히지 않음). copyWith로 풀 수 없다 — 앱을 다시 시작해야 한다.
+  /// SU1: 사용자 데이터 이관 실패로 막힌 시작(null = 막히지 않음). SU2: Backend 재시작만
+  /// `copyWith(clearUserDataMigrationFailure: true)`로 비운다(재연결로는 풀리지 않는다).
   final UserDataMigrationFailure? userDataMigrationFailure;
 
   AppServiceState copyWith({
@@ -833,6 +834,7 @@ class AppServiceState {
     bool? useLongNames,
     bool? hasMissingMetadata,
     UserDataMigrationFailure? userDataMigrationFailure,
+    bool clearUserDataMigrationFailure = false,
   }) {
     return AppServiceState(
       connection: connection ?? this.connection,
@@ -844,8 +846,9 @@ class AppServiceState {
       scanAvailable: scanAvailable ?? this.scanAvailable,
       useLongNames: useLongNames ?? this.useLongNames,
       hasMissingMetadata: hasMissingMetadata ?? this.hasMissingMetadata,
-      userDataMigrationFailure:
-          userDataMigrationFailure ?? this.userDataMigrationFailure,
+      userDataMigrationFailure: clearUserDataMigrationFailure
+          ? null
+          : userDataMigrationFailure ?? this.userDataMigrationFailure,
     );
   }
 }
@@ -955,4 +958,7 @@ abstract interface class MockScenarioController {
   void setLongNames(bool value);
 
   void setMissingMetadata(bool value);
+
+  /// SU2: 사용자 데이터 이관 실패를 흉내 낸다(null = 끄기 — 원인이 풀리고 정상 연결로 돌아간다).
+  void setUserDataMigrationFailure(UserDataMigrationReason? reason);
 }

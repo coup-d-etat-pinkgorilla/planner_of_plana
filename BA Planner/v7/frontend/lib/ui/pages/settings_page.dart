@@ -701,7 +701,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _connectionSection(Size size, BackendConnection connection) {
     const id = settingsBackendSectionId;
-    // SU1: 사용자 데이터 이관 실패면 재연결 · 재시작을 끈다(풀리지 않는다 — 앱을 다시 시작해야 한다).
+    // SU1: 사용자 데이터 이관 실패면 재연결을 끈다(풀리지 않는다).
+    // SU2: 'Backend 재시작'은 켠다 — 원인을 해결한 뒤 새 프로세스로 다시 시도한다(또 실패하면 같은 상태).
     final failure = widget.service.state.value.userDataMigrationFailure;
     final recoveryDisabled = _recoveryAction || failure != null;
     return SettingsSection(
@@ -734,7 +735,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
               subtitle: failure != null
                   ? '${userDataMigrationReasonText(failure.reason)} '
-                        '기존 데이터는 그대로이며, 원인을 해결한 뒤 앱을 다시 시작해야 합니다.'
+                        "기존 데이터는 그대로이며, 원인을 해결한 뒤 'Backend 재시작'으로 다시 시도합니다."
                   : _recoveryAction
                   ? '복구 작업이 진행 중입니다. 중복 실행은 차단됩니다.'
                   : '재연결과 재시작은 저장되지 않은 draft나 scan 후보를 자동 확정하지 않습니다.',
@@ -774,7 +775,7 @@ class _SettingsPageState extends State<SettingsPage> {
         TonalButton(
           label: 'Backend 재시작',
           icon: Icons.restart_alt,
-          onPressed: recoveryDisabled ? null : () => _recover(true),
+          onPressed: _recoveryAction ? null : () => _recover(true),
         ),
       ],
     );

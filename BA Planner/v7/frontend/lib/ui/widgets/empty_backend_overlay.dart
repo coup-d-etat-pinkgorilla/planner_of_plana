@@ -5,8 +5,8 @@
 // "다시 연결"은 기존 재연결 경로(`AppService.reconnect`, 설정 · 복구 배너와 같음)다. 시안의 "자동으로 다시 연결하는 중 ·
 // 3번째 시도"는 앱에 자동 재시도 · 시도 횟수가 없어 지금 연결 상태 문구로 바꿨다.
 // SU1: 사용자 데이터 이관 실패(contracts/startup-user-data-v1)도 같은 자리에 띄운다 — 대기 시간 없이 바로, 풀리지 않는다.
-// 문구는 워커 문구(reason별 한 줄 + 공통 안내, 경로 · 파일명 · 예외 원문 없음). "다시 연결" 대신 "앱 다시 시작 필요" 안내만
-// 둔다(앱 재시작 기능이 없다).
+// 문구는 워커 문구(reason별 한 줄 + 공통 안내, 경로 · 파일명 · 예외 원문 없음). "다시 연결" 대신 "재시작 필요" 안내만
+// 둔다. SU2: 원인을 해결한 뒤 설정의 'Backend 재시작'(또는 앱 재시작)으로 다시 시도한다 — 덮개 자체에는 재시작 동작이 없다.
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -42,9 +42,9 @@ const emptyBackendReconnect = '다시 연결';
 /// SU1 사용자 데이터 이관 실패 문구(워커 문구).
 const userDataBlockedTitle = '사용자 데이터를 옮기지 못했습니다';
 const userDataBlockedNote =
-    '기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 앱을 다시 시작해 주십시오.';
-const userDataBlockedStatus = '다시 연결로는 풀리지 않습니다 · 앱을 다시 시작해야 합니다';
-const userDataRestartRequired = '앱 다시 시작 필요';
+    "기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 설정에서 'Backend 재시작'을 눌러 주십시오(앱을 다시 시작해도 됩니다).";
+const userDataBlockedStatus = '다시 연결로는 풀리지 않습니다 · Backend 재시작 필요';
+const userDataRestartRequired = '재시작 필요';
 
 /// 계약 reason → 한 줄(경로 · 파일명 없음).
 String userDataMigrationReasonText(UserDataMigrationReason reason) =>
@@ -318,7 +318,7 @@ class _Panel extends StatelessWidget {
   }
 }
 
-/// SU1: "다시 연결" 자리의 안내(누를 수 없다 — 앱 재시작 기능이 없다).
+/// SU1: "다시 연결" 자리의 안내(누를 수 없다 — SU2: 재시작은 설정의 'Backend 재시작'에서 한다).
 class _RestartRequiredNotice extends StatelessWidget {
   const _RestartRequiredNotice();
 

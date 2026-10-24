@@ -1,5 +1,5 @@
 // SU1(contracts/startup-user-data-v1): 사용자 데이터 이관 실패 전역 시작 오류.
-// XB 예시 4종 응답 해독(strict 거부 포함), ProcessAppService 상태 전이(재연결 · 재시작 무효), 셸 덮개 · 머리글 칩 ·
+// XB 예시 4종 응답 해독(strict 거부 포함), ProcessAppService 상태 전이(재연결 무효 — 재시작은 SU2 시험), 셸 덮개 · 머리글 칩 ·
 // 설정 연결 판 표시, 1280×720 · 2560×1392 넘침 0. 실제 이관 실패 process 시험은 하지 않는다(실제 사용자 폴더 필요 — 금지).
 import 'dart:convert';
 import 'dart:io';
@@ -285,7 +285,7 @@ void main() {
       expect(client.startupFailure.value, isNull);
     });
 
-    test('startup probe failure blocks start, reconnect and restart', () async {
+    test('startup probe failure blocks start (reconnect)', () async {
       var starts = 0;
       final process = FakeBackendProcess();
       final client = PlanningProtocolClient(() async {
@@ -315,10 +315,6 @@ void main() {
           ),
         ),
       );
-      await expectLater(
-        client.restart(),
-        throwsA(isA<BackendRemoteException>()),
-      );
       expect(starts, 1);
       expect(client.startupFailure.value, _busy);
     });
@@ -326,7 +322,7 @@ void main() {
 
   group('process service state', () {
     test(
-      'failure reaches AppServiceState and reconnect/restart stay blocked',
+      'failure reaches AppServiceState and reconnect stays blocked',
       () async {
         var starts = 0;
         final process = FakeBackendProcess();
@@ -355,10 +351,6 @@ void main() {
 
         await expectLater(
           service.reconnect(),
-          throwsA(isA<BackendRemoteException>()),
-        );
-        await expectLater(
-          service.restartBackend(),
           throwsA(isA<BackendRemoteException>()),
         );
         expect(starts, 1);
@@ -438,14 +430,21 @@ void main() {
           ),
           findsOneWidget,
         );
-        for (final label in ['재연결', 'Backend 재시작']) {
-          expect(
-            tester
-                .widget<TonalButton>(find.widgetWithText(TonalButton, label))
-                .onPressed,
-            isNull,
-          );
-        }
+        // SU2: 재연결은 꺼지고 'Backend 재시작'만 켜진다.
+        expect(
+          tester
+              .widget<TonalButton>(find.widgetWithText(TonalButton, '재연결'))
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<TonalButton>(
+                find.widgetWithText(TonalButton, 'Backend 재시작'),
+              )
+              .onPressed,
+          isNotNull,
+        );
         expect(tester.takeException(), isNull);
 
         await tester.tap(find.byKey(const ValueKey('top-tab-home')));

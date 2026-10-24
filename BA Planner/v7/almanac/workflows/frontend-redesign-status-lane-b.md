@@ -7510,3 +7510,110 @@ S1 레일 높이 = (창 높이 − 184) × 94/96: 1280×720 **524.8**, 1600×900
 ### 다음 행동
 
 - CF: `debug/frontend_su1/output.md` 검토, 발견 2 결정. XB 53경로와 같은-소스 `fe_gate.ps1`(golden 변화 0, `planning_protocol_client_test` · `startup_user_data_su1_test` GREEN, process E2E 29 포함, 전후 `%LOCALAPPDATA%\BA Planner` 목록 같음 기대) → XB 소스 커밋 → `fe_commit.ps1 -Slice m3r`(post_dir = `debug/frontend_su1/pre`) → `fe_commit.ps1 -Slice su1`(whole = 이 문서).
+
+## SU2 착수 기록 (2026-10-24, Lane B 워커)
+
+- 진행 중: **SU2 — `user_data_migration_failed` 상태에서 설정의 명시적 'Backend 재시작'으로 다시 시도(단순 재연결은 계속 막음) + 개발 상태 패널 Mock 토글**(근거: `contracts/startup-user-data-v1.md` "After resolving the cause, restart the backend/app", `backend-orchestrator-log.md` 2026-10-24 12:40 XB "SU2의 원인 해결 뒤 명시적 Backend 재시작 허용에는 이견이 없다 · 새 process도 이관 실패 시 원본을 보존한 제한 응답", 12:50 CF 회신, SU1 종료 기록 발견 2 · 3).
+- 시작 SHA `c71d47608193b1add1f00729e9e5836f6faa525f`(`su1:` 커밋 있음). 이 문서 끝에 다른 SU2 착수 기록 없음. Lane A 대기 중.
+- 고칠 파일(이유):
+  - `frontend/lib/services/planning_protocol_client.dart` — `restart()`가 `startupFailure`를 비우고 새 프로세스를 띄운다. `start()`(재연결)는 계속 막는다.
+  - `frontend/lib/services/startup_user_data.dart` — 설명 주석만("재연결로는 풀리지 않고 Backend 재시작 · 앱 재시작으로 다시 시도").
+  - `frontend/lib/services/app_service.dart` — `copyWith`에 실패를 비우는 선택 인자, `MockScenarioController.setUserDataMigrationFailure`.
+  - `frontend/lib/services/process_app_service.dart` — client 실패가 비워지면 상태도 비운다.
+  - `frontend/lib/services/mock_app_service.dart` — 토글 구현 · Mock 재연결/재시작이 실패 상태를 흉내(최소).
+  - `frontend/lib/ui/widgets/development_panel.dart` — "사용자 데이터 이관 실패" reason 고르기(Mock에서만).
+  - `frontend/lib/ui/widgets/empty_backend_overlay.dart` — 안내 · 상태 · 안내 칸 문구.
+  - `frontend/lib/ui/pages/settings_page.dart` — 이 상태에서 'Backend 재시작'만 켜고 문구 바꿈(최소).
+  - `frontend/test/startup_user_data_su1_test.dart` — 재시작 차단을 기대하던 단언을 새 정책으로.
+  - 새 파일: `frontend/test/startup_user_data_su2_test.dart`.
+- 파일별 기존 미커밋 변경(WIP): 위 9파일 모두 **없음**(HEAD와 같음). 사본: `debug/frontend_su2/pre/<v7 기준 경로>` 9개.
+- 줄바꿈: `planning_protocol_client.dart` CRLF 1108 + LF 18 섞임(HEAD 그대로) — 새 줄은 CRLF. `process_app_service.dart` · `mock_app_service.dart` · `settings_page.dart` CRLF, `startup_user_data.dart` · `app_service.dart` · `development_panel.dart` · `empty_backend_overlay.dart` · `startup_user_data_su1_test.dart` LF.
+- 실제 `%LOCALAPPDATA%\BA Planner` 시작 전 목록(읽기만): `debug/frontend_su2/logs/localappdata_before.txt` — `v7` 0 · `.v7-migration-*` 0 · `.v7-migration.guard`(2026-10-20 23:56).
+- 손대지 않음: `lib/ui/app_shell.dart`(범위 밖 — 덮개에 재시작 동작이 없어 고칠 필요 없음), backend/** · contracts/** · frontend/tool/**, lib/ui/kit/**, 튜토리얼 파일, golden harness · 기준 이미지, pubspec, 택틱 · 스캐너 소유 파일, `almanac/architecture/developer-tools.md`.
+
+## SU2 종료 기록 (2026-10-24, Lane B 워커)
+
+- 상태: **완료(COMPLETED)** — `user_data_migration_failed` 상태에서 단순 재연결은 계속 막고, 설정의 명시적 'Backend 재시작'만 실패를 비우고 새 프로세스로 다시 시도한다(새 프로세스도 실패하면 같은 상태로 돌아온다). 개발 상태 패널(Mock 전용)에서 이 상태를 reason별로 켜고 끈다. 커밋 없음(git 쓰기 안 함). 인계: `debug/frontend_su2/output.md`, `debug/frontend_su2/commit.json`.
+- HEAD는 작업 내내 `c71d47608`. 이 slice 10파일에는 다른 작업자의 변경이 섞이지 않았다(pre 사본 대비 diff가 내 편집뿐, 중간 해시 확인).
+
+### 실행한 명령과 결과
+
+| 명령(`frontend`에서) | 결과 | 로그(`debug/frontend_su2/logs/`) |
+|---|---|---|
+| `flutter analyze` | No issues found(info 포함 0) | `analyze.txt` |
+| `flutter test test/startup_user_data_su2_test.dart` | +10 All tests passed | `test_su2.txt` |
+| `flutter test test/startup_user_data_su1_test.dart test/startup_user_data_su2_test.dart` | +40 All tests passed | `test_su1_su2.txt` |
+| `flutter test --concurrency=1 test/planning_protocol_client_test.dart`(실제 Python P0 1개, 임시 `BA_PLANNER_USER_DIR` — M3R 격리) | +35 All tests passed | `test_protocol.txt` |
+| `flutter test --concurrency=4` 영향 86파일(grep: `app_shell` · `settings_page` · `empty_backend_overlay` · `development_panel` · `process_app_service` · `planning_protocol_client` · `app/app.dart` · `planning_protocol_client_test` · `startup_user_data` import + 이름 `planning_*` · `repository_*` · `scanner_*` · `home_*` · `settings_*` · `empty_*` · `startup_*` · `widget_test` · `tutorial_targets_f3c2`, golden 폴더 · `_process_e2e` · protocol 시험 제외) | +1270 All tests passed, exit 0 | `test_affected.txt`, 목록 `run_nonprocess.txt` |
+| `dart format --output=show <파일>`(고친 9개 하나씩, 쓰지 않음) | 내 줄 차이 0(남은 차이는 기존 줄). 새 `startup_user_data_su2_test.dart`만 `dart format <파일>` | — |
+| `git diff --check -- <고친 9경로>` | exit 0. 새 파일 끝 개행 하나 · 줄 끝 공백 0 | — |
+| `ls -la "%LOCALAPPDATA%\BA Planner"`(읽기만) 시작 전 · protocol 뒤 · 86파일 뒤 | 세 목록 같음(`diff` 0), `v7` 0, `.v7-migration-*` 0 | `localappdata_before.txt` · `_after1.txt` · `_after2.txt` |
+
+### 상태 전이
+
+| 지금 | 사건 | 결과 |
+|---|---|---|
+| 막힘(`startupFailure` 있음) | `reconnect()`(설정 '재연결' · 덮개 · 개발 패널 '백엔드 재연결') | 그대로 막힘: `start()`가 새 프로세스 없이 같은 `BackendRemoteException(user_data_migration_failed)`. starter 호출 수 그대로. 설정 '재연결' 버튼은 꺼져 있다 |
+| 막힘 | `restartBackend()` → `client.restart()`(설정 'Backend 재시작' · 개발 패널 'Python 백엔드 재시작') | `stop()` 뒤 `startupFailure = null`(lifecycle `user data migration retry requested`), 상태의 실패도 비움(`copyWith(clearUserDataMigrationFailure: true)`), 새 프로세스 시작 → 연결 중 |
+| 재시도 중 | 새 프로세스 probe 성공 | 연결됨, 실패 null, 덮개 · 빨강 칩 사라짐, 설정 버튼 둘 다 켜짐 |
+| 재시도 중 | 새 프로세스 probe가 또 이관 실패(같거나 다른 reason) | 새 실패가 다시 잡힘(원본 보존 · `restart_required` 그대로), 연결 끊김, 재시작 호출은 같은 오류로 실패, 다시 재연결 막힘 |
+| 실패 없음 | `restart()` | 기존 동작 그대로(retry 기록 없음) |
+
+- 덮개에는 재시작 동작이 없다(안내 칸 "재시작 필요"는 누를 수 없음) — `app_shell.dart`는 고치지 않았다. 덮개의 설정 링크로 설정을 열어 'Backend 재시작'을 누른다.
+- 재시도 중 짧은 동안(실패가 비워지고 결과 전) 셸은 일반 Empty-Backend 덮개(연결 중)를 보인다 — 실패가 다시 오면 즉시 이관 실패 덮개로 바뀐다.
+
+### 문구(워커 문구)
+
+| 자리 | SU1 | SU2 |
+|---|---|---|
+| 덮개 안내(13.5, 2줄 · ellipsis, 폭 860 안 2줄로 들어감 — 시험) | 기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 앱을 다시 시작해 주십시오. | 기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 설정에서 'Backend 재시작'을 눌러 주십시오(앱을 다시 시작해도 됩니다). |
+| 덮개 상태 줄(13, 1줄 · ellipsis, 1280×720 폭 486.5 안 — 시험) | 다시 연결로는 풀리지 않습니다 · 앱을 다시 시작해야 합니다 | 다시 연결로는 풀리지 않습니다 · Backend 재시작 필요 |
+| 덮개 안내 칸 | 앱 다시 시작 필요 | 재시작 필요 |
+| 설정 연결 판 부제(2줄 · ellipsis) | `<reason 한 줄>` 기존 데이터는 그대로이며, 원인을 해결한 뒤 앱을 다시 시작해야 합니다. | `<reason 한 줄>` 기존 데이터는 그대로이며, 원인을 해결한 뒤 'Backend 재시작'으로 다시 시도합니다. |
+| 설정 버튼 | 재연결 · Backend 재시작 둘 다 끔 | 재연결 끔 · **Backend 재시작 켬**(복구 작업 중에만 끔) |
+| reason 한 줄 · 제목 · 칩 | 그대로 | 그대로 |
+
+- 처음 고른 상태 줄("… · 'Backend 재시작'이 필요합니다")은 1280×720에서 507px로 넘쳐(폭 486.5) 줄였다.
+
+### Mock 토글 사용법
+
+- Mock 모드(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`)에서 머리글 오른쪽 개발 보드 아이콘(툴팁 "개발 상태 패널") → "백엔드 연결" 아래 **"사용자 데이터 이관 실패"** 고르기.
+  - reason(계약 wire 이름 9개) 고르기 → 시작 probe가 실패한 것처럼 연결 끊김 + 실패: 덮개 바로 · 빨강 칩 · 설정 판 상태. Mock '재연결'은 같은 `BackendRemoteException`, Mock '재시작'은 실패를 비우고 300ms 뒤 **다시 실패**(토글 = 원인이 그대로).
+  - "없음" 고르기 → 원인 해결: 실패를 비우고 연결됨으로 돌아간다(이미 없음이면 아무것도 바꾸지 않음).
+- 코드: `MockScenarioController.setUserDataMigrationFailure(UserDataMigrationReason?)`(구현은 `MockAppService`뿐). 백엔드 안내 문구 `mockUserDataMigrationFailureMessage`.
+- 실제 백엔드(`ProcessAppService`)에서는 패널이 기존대로 "실제 백엔드 서비스가 사용 중입니다…" 안내만 보이고 이 고르기는 없다(시험).
+- 판 폭 331에서 가장 긴 reason(`legacy_repository_recovery_required`)도 ellipsis로 넘침 0(`isExpanded` — 새 고르기에만, 기존 고르기 셋은 그대로).
+
+### 시험(새 `test/startup_user_data_su2_test.dart`, 10개)
+
+- client: 실패 → 재연결 막힘(프로세스 1) → 재시작 → 비움 · 연결 중 → 성공(프로세스 2, retry 기록) / 재시작 → 다시 실패(다른 reason이 잡힘, 재연결 막힘) / 실패 없는 재시작은 기존 동작.
+- process service: 재연결 막힘 · 재시작이 상태를 비우고 성공 / 재시작이 다시 실패하면 상태 복원.
+- Mock 토글: 켜기(상태 · 오류 details) · 재연결 · 재시작 다시 실패 · lifecycle · 끄기 · 끄기 중복 무변화.
+- 개발 패널: 고르기로 켜기 · 끄기 · 넘침 0 / 실제 백엔드는 고르기 숨김.
+- 셸 1280×720: 셸 안 패널 토글 → 덮개 · 문구가 줄 안에 들어감 · 설정 버튼 · 재시작 다시 실패 · 토글 끄기 → 덮개 · 칩 사라짐 / 원인 해결 뒤 재시작(시험 전용 가짜 `_ResolvedRestartService`) → 덮개 사라짐 · 버튼 둘 다 켜짐. 모두 `takeException` null.
+- SU1 시험 바꾼 곳: client · process service 시험에서 재시작 차단 단언을 빼고 이름을 "reconnect"로(재시작은 SU2 시험), 셸 시험의 설정 버튼 단언을 "재연결 끔 · Backend 재시작 켬"으로. 지운 시험 0.
+
+### 실제 사용자 폴더 전후 같음 근거
+
+- 위 표의 세 목록 `diff` 0. 실제 Python을 띄운 시험은 `planning_protocol_client_test`(임시 `BA_PLANNER_USER_DIR`)뿐. SU2 시험은 가짜 프로세스만 쓴다. 이관 실패를 실제로 만들지 않았다.
+
+### golden 변화 0 근거
+
+- 실패 없는 상태에서 덮개 · 칩 · 설정 판 · 개발 패널 밖 화면은 값이 같다: 덮개 문구는 실패 분기 상수만 바뀜, 설정 'Backend 재시작'의 `onPressed`는 실패 없을 때 `_recoveryAction ? null : …`로 기존과 같은 식. 개발 패널에 고르기가 하나 늘었지만 golden 장면 중 개발 패널을 그리는 것은 없다(`test/goldens/*` grep: `DevelopmentPanel` · `developer_board` 0; `f3c2_empty_backend` · `fe10s_settings`는 실패 없는 상태). golden harness · 기준 이미지 손대지 않음, 새 장면 0. golden 비교는 돌리지 않았다(미실행 — CF gate).
+
+### 미검증("미실행")
+
+- 실제 이관 실패 · 재시작 process E2E — 실제 사용자 폴더가 필요(금지). 가짜 프로세스로만.
+- 기존 process E2E 29파일(`*_process_e2e_test.dart`, M3R 발견 2 — 자산 경로가 실제 `%LOCALAPPDATA%` 아래), 전체 `fe_gate.ps1`, golden 비교, Python 시험, 실제 앱 창 눈 확인.
+
+### 발견 사항
+
+1. **동시 작업**: prompt는 "Lane A 대기"였지만 이 세션 도중(16:00~16:05) 다른 작업자가 `lib/ui/tutorial/**` · `lib/ui/tutorial_host/**` · `lib/ui/tutorial_targets/tutorial_hooks.dart` · `lib/ui/widgets/growth_calculator_section.dart`를 고치고 있었다(orchestrator log 13:20 F3c-10 배정으로 보임). 그 사이 컴파일 오류로 SU2 · SU1 시험이 두 번 로드 실패 → 그 파일들은 건드리지 않고 `flutter analyze`가 깨끗해질 때까지 기다린 뒤 다시 돌렸다. 위 영향 86파일 결과(+1270)는 **16:05 무렵 그 작업자의 미커밋 변경이 함께 들어간 작업 트리** 위의 결과다. CF gate는 그 slice와 순서를 맞춰 달라.
+2. **기존 Mock 잠재 결함(고치지 않음)**: `MockAppService.reconnect()` · `restartBackend()`는 `_flight ??= _mock…()`인데 `failNextReconnect` · `failNextRestart` 분기가 첫 `await` 전에 throw한다 → `finally`의 `_flight = null`이 `??=` 대입보다 먼저 돌아, 실패한 future가 flight에 남고 다음 호출도 같은 실패를 돌려준다. SU2 경로는 flight 밖에서 거절해 피했다(내 첫 구현이 같은 함정에 걸려 시험에서 드러남). 범위 밖이라 그대로 — 고치려면 두 분기 앞에 `await Future<void>.value();` 하나씩.
+3. 개발 패널의 새 고르기 제목("사용자 데이터 이관 실패")이 머리글 칩 글자와 같다 — 시험은 칩을 key로 찾는다. 헷갈리면 제목만 바꾸면 된다(CF 판단).
+4. 86파일 실행 로그에 `plan_scenario_detail.dart:515`(14px) · `:1407`(3px ×2) RenderFlex 넘침 메시지(`plan_scenario_compare_sl2_test` "SL2 앱 셸 1280×720" 도중) — SU1 발견 4와 같음, 시험 통과, 이 slice와 무관.
+5. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 지운 파일 없음.
+
+### 다음 행동
+
+- CF: `debug/frontend_su2/output.md` 검토(발견 1 · 2 · 3). 레인 워커(F3c-10 포함)가 모두 멈춘 뒤 같은-소스 `fe_gate.ps1`(golden 변화 0, `startup_user_data_su1/su2` · `planning_protocol_client_test` GREEN, 전후 `%LOCALAPPDATA%\BA Planner` 목록 같음 기대) → `fe_commit.ps1 -Slice su2`(post_dir 기본, whole = 이 문서).

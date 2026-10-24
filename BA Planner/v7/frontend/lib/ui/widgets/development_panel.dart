@@ -63,6 +63,20 @@ class DevelopmentPanel extends StatelessWidget {
                   onChanged: controller.setConnection,
                 ),
                 const SizedBox(height: AppSpacing.md),
+                // SU2: 사용자 데이터 이관 실패 흉내(없음 = 끄기). 실제 백엔드에서는 이 판 전체가 보이지 않는다.
+                _EnumField<UserDataMigrationReason?>(
+                  key: ValueKey(
+                    'dev-user-data-migration-failure-'
+                    '${state.userDataMigrationFailure?.reason.wire}',
+                  ),
+                  label: '사용자 데이터 이관 실패',
+                  value: state.userDataMigrationFailure?.reason,
+                  values: const [null, ...UserDataMigrationReason.values],
+                  itemLabel: (value) => value?.wire ?? '없음',
+                  onChanged: controller.setUserDataMigrationFailure,
+                  allowNull: true,
+                ),
+                const SizedBox(height: AppSpacing.md),
                 _EnumField<ScanPhase>(
                   label: '스캔 상태',
                   value: state.scanPhase,
@@ -184,11 +198,13 @@ class _ProductionNotice extends StatelessWidget {
 
 class _EnumField<T> extends StatelessWidget {
   const _EnumField({
+    super.key,
     required this.label,
     required this.value,
     required this.values,
     required this.itemLabel,
     required this.onChanged,
+    this.allowNull = false,
   });
 
   final String label;
@@ -197,17 +213,30 @@ class _EnumField<T> extends StatelessWidget {
   final String Function(T) itemLabel;
   final ValueChanged<T> onChanged;
 
+  /// SU2: null도 고를 수 있는 값(끄기)이면 true — 긴 항목은 판 폭 안에서 줄인다.
+  final bool allowNull;
+
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
       initialValue: value,
+      isExpanded: allowNull,
       decoration: InputDecoration(labelText: label, isDense: true),
       items: [
         for (final item in values)
-          DropdownMenuItem(value: item, child: Text(itemLabel(item))),
+          DropdownMenuItem(
+            value: item,
+            child: allowNull
+                ? Text(
+                    itemLabel(item),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Text(itemLabel(item)),
+          ),
       ],
       onChanged: (value) {
-        if (value != null) onChanged(value);
+        if (value != null || allowNull) onChanged(value as T);
       },
     );
   }

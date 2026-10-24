@@ -1469,11 +1469,14 @@ class ProcessAppService
     }
   }
 
-  /// SU1: client가 잡은 시작 차단 오류를 상태로 옮긴다(풀리지 않는다).
+  /// SU1: client가 잡은 시작 차단 오류를 상태로 옮긴다. SU2: Backend 재시작이 비우면 상태도 비운다.
   void _syncStartupFailure() {
+    if (_disposed) return;
     final failure = _client.startupFailure.value;
-    if (_disposed || failure == null) return;
-    _state.value = _state.value.copyWith(userDataMigrationFailure: failure);
+    _state.value = _state.value.copyWith(
+      userDataMigrationFailure: failure,
+      clearUserDataMigrationFailure: failure == null,
+    );
   }
 
   Future<void> _refreshScannerReadiness() async {

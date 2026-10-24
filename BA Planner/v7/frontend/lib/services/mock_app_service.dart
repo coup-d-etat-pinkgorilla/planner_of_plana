@@ -31,6 +31,10 @@ enum MockScannerScenario { completed, failed, reviewRequired, inventoryUnknown }
 const mockEmptyResourceAcquisitionRevision =
     'd1d01c1803e0005ad126df3ba58dcda51a9f3d08582a32ef1ac7f21c938f85e6';
 
+/// SU2: 개발 상태 패널이 흉내 내는 이관 실패의 백엔드 안내 문구(화면은 reason별 앱 문구를 쓴다).
+const mockUserDataMigrationFailureMessage =
+    'Mock: 사용자 자료 이관을 완료하지 못했습니다. 기존 자료는 보존되어 있습니다.';
+
 class MockAppService
     implements
         AppService,
@@ -249,7 +253,15 @@ class MockAppService
       assetPreparationMock.assetPrepareSnapshot(job);
 
   @override
-  Future<void> reconnect() => _reconnectFlight ??= _mockReconnect();
+  Future<void> reconnect() {
+    // SU2: 이관 실패는 재연결로 풀리지 않는다(실제 client와 같은 오류). flight 밖에서 거절해 실패 future가 남지 않게 한다.
+    final blocked = _state.value.userDataMigrationFailure;
+    if (blocked != null) {
+      _recordLifecycle('reconnect blocked: user data migration failed');
+      return Future.error(_userDataMigrationError(blocked));
+    }
+    return _reconnectFlight ??= _mockReconnect();
+  }
 
   Future<void> _mockReconnect() async {
     try {
@@ -285,8 +297,11 @@ class MockAppService
         _recordLifecycle('restart failed');
         throw StateError('mock restart failed');
       }
+      // SU2: 재시작은 이관 실패를 비우고 다시 시도한다. 토글이 켜져 있으면(원인 그대로) 새 프로세스도 다시 실패한다.
+      final blocked = _state.value.userDataMigrationFailure;
       _state.value = _state.value.copyWith(
         connection: BackendConnection.disconnected,
+        clearUserDataMigrationFailure: true,
       );
       _diagnostics.value = _diagnostics.value.copyWith(
         processGeneration: _diagnostics.value.processGeneration + 1,
@@ -296,6 +311,11 @@ class MockAppService
       // X4: 백엔드 시작 때 남은 임시 계정을 지운다(계약 recover, 선택 · 노출 전).
       _removeMockPractice();
       await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (blocked != null) {
+        _state.value = _state.value.copyWith(userDataMigrationFailure: blocked);
+        _recordLifecycle('user data migration failed: ${blocked.reason.wire}');
+        throw _userDataMigrationError(blocked);
+      }
       await reconnect();
     } finally {
       _restartFlight = null;
@@ -3827,6 +3847,36 @@ class MockAppService
   void setMissingMetadata(bool value) {
     _state.value = _state.value.copyWith(hasMissingMetadata: value);
   }
+
+  /// SU2: 켜면 시작 probe가 이관 실패로 끝난 것처럼 연결 끊김 + 실패, 끄면(원인 해결) 실패를 비우고 연결됨으로 돌아간다.
+  @override
+  void setUserDataMigrationFailure(UserDataMigrationReason? reason) {
+    if (reason == null && _state.value.userDataMigrationFailure == null) return;
+    _state.value = reason == null
+        ? _state.value.copyWith(
+            connection: BackendConnection.connected,
+            clearUserDataMigrationFailure: true,
+          )
+        : _state.value.copyWith(
+            connection: BackendConnection.disconnected,
+            userDataMigrationFailure: UserDataMigrationFailure(
+              reason: reason,
+              message: mockUserDataMigrationFailureMessage,
+            ),
+          );
+    _recordLifecycle(
+      'scenario user_data_migration_failed=${reason?.wire ?? 'off'}',
+    );
+    _syncDiagnostics();
+  }
+
+  BackendRemoteException _userDataMigrationError(
+    UserDataMigrationFailure failure,
+  ) => BackendRemoteException(
+    code: userDataMigrationFailedCode,
+    message: failure.message,
+    details: failure.toWireDetails(),
+  );
 }
 
 class _MockFrozenScanCommit {
