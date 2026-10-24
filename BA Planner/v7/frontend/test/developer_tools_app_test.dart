@@ -8,13 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 class _MetadataClient implements ToolBackend {
   List<dynamic>? savedForms;
   String server = 'KR';
-  List<String> mergePaths = ['hoshino_tank', 'hoshino_dealer'];
+  final calls = <String>[];
 
   @override
   Future<Map<String, dynamic>> call(
     String method, [
     Map<String, dynamic> params = const {},
   ]) async {
+    calls.add(method);
     if (method == 'metadata.list') {
       return {
         'fields': [
@@ -136,34 +137,6 @@ class _MetadataClient implements ToolBackend {
         'warnings': <String>[],
       };
     }
-    if (method == 'metadata.merge_paths.list') {
-      return {
-        'rows': [
-          {
-            'student_id': 'hoshino',
-            'display_name': '호시노',
-            'template_name': 'hoshino.png',
-            'paths': mergePaths,
-            'path_count': mergePaths.length,
-          },
-        ],
-        'rule_count': 1,
-      };
-    }
-    if (method == 'metadata.merge_paths.save') {
-      mergePaths = (params['paths'] as List)
-          .map((value) => value.toString())
-          .toList();
-      return {
-        'student_id': params['student_id'],
-        'paths': mergePaths,
-        'path_count': mergePaths.length,
-      };
-    }
-    if (method == 'metadata.merge_paths.delete') {
-      mergePaths = [];
-      return {'student_id': params['student_id'], 'deleted': true};
-    }
     if (method == 'metadata.items.analyze') {
       return {
         'source_label': 'v7 선택 계정 · 테스트',
@@ -221,124 +194,6 @@ class _MetadataClient implements ToolBackend {
         ],
       };
     }
-    if (method == 'metadata.schaledb.single.preview') {
-      return {
-        'source_slug': 'hoshino',
-        'student_id': 'hoshino',
-        'exists': true,
-        'matched_local_id': 'hoshino',
-        'display_name': '호시노',
-        'template_name': 'hoshino.png',
-        'current': {
-          'schaledb_id': 1,
-          'favor_item_tags': <String>[],
-          'favor_item_unique_tags': <String>[],
-        },
-        'incoming': {
-          'schaledb_id': 10045,
-          'favor_item_tags': ['aV'],
-          'favor_item_unique_tags': ['Bf'],
-        },
-        'changed_fields': [
-          'schaledb_id',
-          'favor_item_tags',
-          'favor_item_unique_tags',
-        ],
-        'special_gifts': [
-          {
-            'id': 5001,
-            'name': 'Special Gift',
-            'icon_asset': null,
-            'exp_value': 20,
-            'match_count': 2,
-            'multiplier': 3,
-            'points': 60,
-          },
-        ],
-        'preferred_gifts': [
-          {
-            'id': 5000,
-            'name': 'Wavecat Pillow',
-            'icon_asset': null,
-            'exp_value': 20,
-            'match_count': 1,
-            'multiplier': 2,
-            'points': 40,
-          },
-        ],
-        'gifts': const <dynamic>[],
-        'gift_count': 52,
-        'persisted_fields': const <String>[],
-      };
-    }
-    if (method == 'metadata.schaledb.single.apply') {
-      return {
-        'student_id': 'hoshino',
-        'updated_fields': ['schaledb_id'],
-        'gift_count': 52,
-      };
-    }
-    if (method == 'metadata.schaledb.preview') {
-      return {
-        'students': [
-          {
-            'student_id': 'hoshino',
-            'display_name': '호시노',
-            'template_name': 'hoshino.png',
-            'jp_only': false,
-            'current': {
-              'schaledb_id': null,
-              'favor_item_tags': [],
-              'favor_item_unique_tags': [],
-            },
-            'incoming': {
-              'schaledb_id': 10045,
-              'favor_item_tags': ['aV'],
-              'favor_item_unique_tags': ['Bf', 'de'],
-            },
-            'changed_fields': [
-              'schaledb_id',
-              'favor_item_tags',
-              'favor_item_unique_tags',
-            ],
-            'special_gifts': [
-              {
-                'id': 5001,
-                'name': 'Special Gift',
-                'icon_asset': null,
-                'exp_value': 20,
-                'match_count': 2,
-                'multiplier': 3,
-                'points': 60,
-              },
-            ],
-            'preferred_gifts': [
-              {
-                'id': 5000,
-                'name': 'Wavecat Pillow',
-                'icon_asset': null,
-                'exp_value': 20,
-                'match_count': 1,
-                'multiplier': 2,
-                'points': 40,
-              },
-            ],
-          },
-        ],
-        'gifts': [
-          {
-            'id': 5000,
-            'category': 'Favor',
-            'tags': ['aV'],
-            'exp_value': 20,
-            'name': 'Wavecat Pillow',
-            'icon_asset': null,
-          },
-        ],
-        'missing_student_ids': <String>[],
-        'changed_student_count': 1,
-      };
-    }
     throw StateError('Unexpected method: $method');
   }
 }
@@ -388,40 +243,46 @@ void main() {
     });
   }
 
-  testWidgets(
-    'metadata SchaleDB preview compares students and gifts visually',
-    (tester) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets('metadata editor switches between its three surfaces', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final metadataClient = _MetadataClient();
 
-      await tester.pumpWidget(
-        DeveloperToolApp(
-          tool: DeveloperTool.metadata,
-          client: _MetadataClient(),
-        ),
-      );
-      await tester.pump();
-      await tester.tap(find.text('SchaleDB 가져오기'));
-      await tester.pump();
-      await tester.tap(find.text('미리보기 불러오기'));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      DeveloperToolApp(tool: DeveloperTool.metadata, client: metadataClient),
+    );
+    await tester.pump();
 
-      expect(find.text('학생별 선호'), findsOneWidget);
-      expect(find.text('호시노'), findsOneWidget);
-      expect(find.text('특별 선호'), findsOneWidget);
-      expect(find.text('일반 선호'), findsOneWidget);
-      expect(find.byTooltip('Special Gift · 60pt (×3)'), findsOneWidget);
-      expect(find.byTooltip('Wavecat Pillow · 40pt (×2)'), findsOneWidget);
-      expect(find.text('aV'), findsNothing);
-      await tester.tap(find.text('선물 카탈로그'));
-      await tester.pumpAndSettle();
-      expect(find.text('Wavecat Pillow'), findsOneWidget);
-      expect(find.text('선호 계산용 · 기본 20pt'), findsOneWidget);
-      expect(find.text('ID 5000'), findsOneWidget);
-    },
-  );
+    final segments = tester.widget<SegmentedButton<int>>(
+      find.byType(SegmentedButton<int>),
+    );
+    expect(segments.segments.map((segment) => segment.value), [0, 1, 2]);
+    expect(find.text('보유 메타데이터'), findsOneWidget);
+    expect(find.textContaining('SchaleDB'), findsNothing);
+
+    await tester.tap(find.text('메타데이터 진단'));
+    await tester.pumpAndSettle();
+    expect(find.text('학생·ID·학교·속성 검색'), findsOneWidget);
+
+    await tester.tap(find.text('아이템 통계'));
+    await tester.pumpAndSettle();
+    expect(find.text('v7 선택 계정 · 테스트'), findsOneWidget);
+
+    await tester.tap(find.text('보유 메타데이터'));
+    await tester.pumpAndSettle();
+    expect(find.text('저장'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(metadataClient.calls.toSet(), {
+      'metadata.list',
+      'metadata.debug.list',
+      'metadata.debug.get',
+      'metadata.items.analyze',
+    });
+  });
 
   testWidgets('metadata editor duplicates drafts and saves multi-form JSON', (
     tester,
@@ -495,84 +356,6 @@ void main() {
       expect(find.text('Abydos'), findsWidgets);
     },
   );
-
-  testWidgets(
-    'single SchaleDB import previews minimal fields and gift results',
-    (tester) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        DeveloperToolApp(
-          tool: DeveloperTool.metadata,
-          client: _MetadataClient(),
-        ),
-      );
-      await tester.pump();
-      await tester.tap(find.text('SchaleDB 가져오기'));
-      await tester.pump();
-      await tester.tap(find.text('단일 학생'));
-      await tester.pump();
-      final sourceField = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.labelText == 'SchaleDB URL / slug',
-      );
-      await tester.enterText(
-        sourceField,
-        'https://schaledb.com/student/hoshino',
-      );
-      await tester.tap(find.text('미리보기'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('기존 학생'), findsOneWidget);
-      expect(find.text('SchaleDB ID 변경'), findsOneWidget);
-      expect(find.byTooltip('Special Gift · 60pt (×3)'), findsOneWidget);
-      expect(find.byTooltip('Wavecat Pillow · 40pt (×2)'), findsOneWidget);
-      expect(find.text('선물 52개'), findsOneWidget);
-      expect(find.text('최소 7개 필드 저장'), findsOneWidget);
-    },
-  );
-
-  testWidgets('SchaleDB merge paths show the primary and secondary slugs', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1200, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final metadataClient = _MetadataClient();
-
-    await tester.pumpWidget(
-      DeveloperToolApp(tool: DeveloperTool.metadata, client: metadataClient),
-    );
-    await tester.pump();
-    await tester.tap(find.text('SchaleDB 가져오기'));
-    await tester.pump();
-    await tester.tap(find.text('병합 경로'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('기준 · hoshino_tank'), findsOneWidget);
-    expect(find.text('보조 1 · hoshino_dealer'), findsOneWidget);
-    await tester.tap(find.text('호시노').last);
-    await tester.pump();
-    final pathField = find.byWidgetPredicate(
-      (widget) =>
-          widget is TextField &&
-          widget.decoration?.labelText == 'SchaleDB slug 또는 URL',
-    );
-    await tester.enterText(
-      pathField,
-      'hoshino_tank\nhoshino_dealer\nhoshino_extra',
-    );
-    await tester.tap(find.text('규칙 저장'));
-    await tester.pumpAndSettle();
-
-    expect(metadataClient.mergePaths, hasLength(3));
-    expect(find.text('보조 2 · hoshino_extra'), findsOneWidget);
-  });
 
   testWidgets('item statistics separates unknown zero and planned shortage', (
     tester,

@@ -563,8 +563,12 @@ void main() {
       final backendDirectory = Directory(
         '${Directory.current.parent.path}${Platform.pathSeparator}backend',
       );
+      final userDir = await Directory.systemTemp.createTemp(
+        'ba_planner_m3r_p0_user_',
+      );
       final config = BackendProcessConfig.resolve(
         backendDirectory: backendDirectory.path,
+        environment: {'BA_PLANNER_USER_DIR': userDir.path},
       );
       final service = ProcessAppService(
         PlanningProtocolClient(
@@ -603,6 +607,7 @@ void main() {
         expect(totals.containsKey('star_materials'), isTrue);
       } finally {
         await service.dispose();
+        await userDir.delete(recursive: true);
       }
     },
     timeout: const Timeout(Duration(seconds: 20)),

@@ -30,6 +30,7 @@ class ToolBackendClient implements ToolBackend, ToolEnvelopeTransport {
   factory ToolBackendClient({
     String? backendDirectory,
     String? pythonExecutable,
+    Map<String, String> environment = const {},
   }) {
     final resolvedBackend = _resolveBackendDirectory(backendDirectory);
     return ToolBackendClient._(
@@ -38,16 +39,21 @@ class ToolBackendClient implements ToolBackend, ToolEnvelopeTransport {
         pythonExecutable,
         resolvedBackend,
       ),
+      environment: Map.unmodifiable(environment),
     );
   }
 
   const ToolBackendClient._({
     required this.backendDirectory,
     required this.pythonExecutable,
+    required this.environment,
   });
 
   final String backendDirectory;
   final String pythonExecutable;
+
+  /// Python 도구 프로세스에 더 얹는 환경 변수(시험이 `BA_PLANNER_USER_DIR`로 사용자 폴더를 격리할 때). 앱은 비워 둔다.
+  final Map<String, String> environment;
 
   static String _resolveBackendDirectory(String? explicit) {
     if (explicit?.trim().isNotEmpty == true) return explicit!.trim();
@@ -95,6 +101,7 @@ class ToolBackendClient implements ToolBackend, ToolEnvelopeTransport {
       workingDirectory: backendDirectory,
       environment: {
         ...Platform.environment,
+        ...environment,
         'PYTHONUTF8': '1',
         'PYTHONIOENCODING': 'utf-8',
       },

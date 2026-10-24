@@ -7402,3 +7402,111 @@ S1 레일 높이 = (창 높이 − 184) × 94/96: 1280×720 **524.8**, 1600×900
 - 줄바꿈: `planning_protocol_client.dart`는 CRLF 1080 + LF 18줄 섞임(HEAD 그대로) — 기존 줄 유지, 새 줄은 CRLF. `process_app_service.dart` · `settings_page.dart` · `planning_protocol_client_test.dart` CRLF, `app_service.dart` · `empty_backend_overlay.dart` · `app_shell.dart` LF.
 - 실제 `%LOCALAPPDATA%\BA Planner` 시작 전 목록(읽기만): `debug/frontend_su1/logs/localappdata_before.txt` — `v7` 0 · `.v7-migration-*` 0 · `.v7-migration.guard`(2026-10-20 23:56).
 - 손대지 않음: Lane A F3c-9 파일(`lib/services/mock_tutorial_practice.dart` · `mock_app_service.dart` · `lib/ui/tutorial/**` · 튜토리얼 시험), M3R의 다른 파일, backend/** · contracts/** · frontend/tool/** · frontend/windows/**, lib/ui/kit/**, golden harness · 기준 이미지, pubspec.
+
+## SU1 종료 기록 (2026-10-24, Lane B 워커)
+
+- 상태: **완료(COMPLETED)** — 전역 시작 오류 `user_data_migration_failed`를 모든 method에서 strict 해독하고, 받으면 앱이 "사용자 데이터 이관 실패 — 원본 그대로, 원인 해결 뒤 재시작" 상태가 된다. 커밋 없음(git 쓰기 안 함). 인계: `debug/frontend_su1/output.md`, `debug/frontend_su1/commit.json`.
+- 작업 중 HEAD가 `f60f2ceb6` → `4370270cf`로 움직였다(F3c-8 · sl1 · sl2 · K2 · 문서 커밋). 그 커밋들은 이 slice의 코드 9파일을 건드리지 않았다(`git diff --stat f60f2ceb6 HEAD -- <9파일>` = 0). 이 문서만 커밋에 들어갔다(whole).
+
+### 실행한 명령과 결과
+
+| 명령(`frontend`에서) | 결과 | 로그 |
+|---|---|---|
+| `flutter analyze` | No issues found (info 포함 0) | `debug/frontend_su1/logs/analyze.txt` |
+| `flutter test test/startup_user_data_su1_test.dart` | +30 All tests passed(XB 예시 파일 대조 시험 실행됨 · skip 0) | `logs/test_su1.txt` |
+| `flutter test --concurrency=1 test/planning_protocol_client_test.dart`(실제 Python P0 1개 포함, `BA_PLANNER_USER_DIR` 격리 — M3R) | +35 All tests passed | `logs/test_protocol.txt` |
+| `flutter test --concurrency=4` 영향 시험 84파일(grep: `app_shell` · `settings_page` · `empty_backend_overlay` · `process_app_service` · `planning_protocol_client` · `app/app.dart` · `planning_protocol_client_test` import + 이름 `planning_*` · `repository_*` · `scanner_*` · `home_*` · `settings_*` · `empty_*` · `widget_test` · `tutorial_targets_f3c2`, golden 폴더 · `_process_e2e` 제외) | +1253 All tests passed, exit 0 | `logs/test_affected.txt`, 목록 `logs/run_nonprocess.txt` |
+| `dart format --output=show <파일>`(고친 7개 하나씩 · 쓰지 않음) → 내 줄 2곳만 손으로 맞춤. 새 2파일은 `dart format <파일>` | 내 줄 차이 0(남은 차이는 기존 줄) | — |
+| `git diff --check`(고친 경로) | exit 0 | — |
+| `%LOCALAPPDATA%\BA Planner` 목록(읽기만) 시험 전 · protocol 뒤 · 84파일 뒤 | 세 목록 같음, `v7` 0, `.v7-migration-*` 0 | `logs/localappdata_before.txt` · `_after1.txt` · `_after2.txt` |
+
+### 해독 규칙
+
+| 대상 | 받는 값 | 거부(→ 기존처럼 치명 프로토콜 오류, 연결 끊음) |
+|---|---|---|
+| 순서 | `error.code == user_data_migration_failed`면 method별 허용 목록보다 **먼저** 판정(planning · repository · scanner · assets.prepare · tactical · 목록에 없는 method 모두) | — |
+| `payload` | 키 정확히 `error` 하나(기존 검사) | 다른 키 |
+| `error` 키 | 정확히 `code` · `message` · `details` | `retryable` 등 다른 키, 누락 |
+| `message` | 빈 문자열 아님 | 빈 값 · 문자열 아님 |
+| `details` 키 | 정확히 `reason` · `source_kept` · `restart_required` | 추가 키(예 `path`) · 누락 · Map 아님 |
+| `details.reason` | 계약 enum 9개(`user_data_busy` · `user_data_link_not_migrated` · `user_data_folder_invalid` · `v7_user_root_invalid` · `v7_destination_unrecognised` · `legacy_repository_recovery_required` · `user_data_changed_during_migration` · `user_data_io_error` · `user_data_migration_failed`) | 그 밖의 문자열 · 문자열 아님 |
+| `source_kept` · `restart_required` | bool `true`만 | `false` · `'true'` · `1` |
+| 다른 코드 | 기존 method별 집합 그대로 | 기존 그대로 |
+
+받으면 `BackendRemoteException(code, message, details, retryable=false)`로 그 요청만 실패시키고(기존 오류와 같은 모양), client가 첫 실패를 `startupFailure`에 잡는다. 성공 DTO · 기존 오류 집합 변화 0.
+
+### 상태 전이
+
+| 지금 | 사건 | 다음 |
+|---|---|---|
+| 정상(실패 없음) | 시작 probe(`repository.profile.list`) 응답이 전역 오류 | `start()` 실패, 연결 끊김, `startupFailure` = 첫 실패, `AppServiceState.userDataMigrationFailure` 같음, lifecycle `user data migration failed: <reason>`(경로 없음) |
+| 정상, 연결됨(probe 없이 띄운 경우) | 아무 요청이 전역 오류 | 그 요청만 실패, 연결 유지, 상태 차단 |
+| 차단 | 다른 reason 응답이 또 옴 | 첫 실패 유지 |
+| 차단 | `reconnect()` · `restartBackend()`(설정 · 복구 배너 경로) | `start()`가 새 프로세스를 띄우지 않고 같은 `BackendRemoteException` — 차단 유지(starter 호출 1회 그대로) |
+| 차단 | 연결이 다른 길로 connected가 됨(Mock 시험) | 덮개 · 칩 유지(풀지 않음) |
+| 차단 | 앱 종료 후 다시 실행 | 새 client — 차단 없음(이관 다시 시도) |
+
+### 문구(워커 문구, `~습니다` 체, 경로 · 파일명 · 예외 원문 없음)
+
+| reason | 한 줄 |
+|---|---|
+| `user_data_busy` | 다른 프로그램(다른 BA Planner 창 등)이 사용자 데이터를 쓰고 있습니다. |
+| `user_data_link_not_migrated` | 사용자 데이터 폴더에 바로 가기(연결) 항목이 있어 옮기지 않았습니다. |
+| `user_data_folder_invalid` | 기존 사용자 데이터 폴더의 구성이 올바르지 않습니다. |
+| `v7_user_root_invalid` | 새 사용자 데이터 폴더를 만들거나 쓸 수 없습니다. |
+| `v7_destination_unrecognised` | 새 사용자 데이터 자리에 알아볼 수 없는 자료가 이미 있습니다. |
+| `legacy_repository_recovery_required` | 기존 사용자 데이터에 끝나지 않은 저장이 있어 먼저 복구해야 합니다. |
+| `user_data_changed_during_migration` | 옮기는 동안 기존 사용자 데이터가 바뀌었습니다. |
+| `user_data_io_error` | 사용자 데이터를 읽거나 쓰지 못했습니다(디스크 · 권한 오류). |
+| `user_data_migration_failed` | 알 수 없는 이유로 사용자 데이터를 옮기지 못했습니다. |
+| 공통 | 제목 "사용자 데이터를 옮기지 못했습니다" · 안내 "기존 사용자 데이터는 그대로 남아 있습니다. 원인을 해결한 뒤 앱을 다시 시작해 주십시오." · 상태 줄 "다시 연결로는 풀리지 않습니다 · 앱을 다시 시작해야 합니다" · 안내 칸 "앱 다시 시작 필요" · 머리글 칩 "사용자 데이터 이관 실패" |
+
+### 표시 자리
+
+- 셸 본문: Empty-Backend 덮개와 같은 자리 · 같은 패널(1040×300, 머리글 184 아래). 이 상태면 대기 시간(`emptyBackendGrace`) 없이 바로 켜고 끄지 않는다. 도는 표시 없음. "다시 연결" 버튼 대신 누를 수 없는 "앱 다시 시작 필요" 안내 칸(`EmptyBackendOverlay.restartRequiredKey`) — 앱 재시작 기능이 없어 안내만. 설정 링크는 그대로.
+- 머리글 칩: 이 상태면 탭과 상관없이(설정 탭 포함) 빨강 `EmptyBackendHeaderChip(userDataBlocked: true)` "사용자 데이터 이관 실패".
+- 복구 배너: 이 상태 동안 숨김(재연결 · 재시작을 권하지 않는다).
+- 설정 "Backend 연결" 판: 상태 줄 제목 "사용자 데이터 이관 실패" + reason 줄 + "기존 데이터는 그대로이며, 원인을 해결한 뒤 앱을 다시 시작해야 합니다."(2줄 · ellipsis), "재연결" · "Backend 재시작" 버튼 끔.
+- diff 크기(사본 대비): `planning_protocol_client.dart` +28/−0, `app_service.dart` +9/−0, `process_app_service.dart` +9/−0, `empty_backend_overlay.dart` +116/−24, `app_shell.dart` +18/−3, `settings_page.dart` +22/−10, `planning_protocol_client_test.dart` +67/−0. 새 `lib/services/startup_user_data.dart`(81줄 — reason enum · strict 해독; client · 상태 · UI가 함께 쓴다, `app_service.dart`가 export), `test/startup_user_data_su1_test.dart`(497줄).
+
+### Mock
+
+- 개발 상태 패널 관례(`DevelopmentPanel` → `MockAppService.setConnection` 등)는 있지만 새 토글은 `mock_app_service.dart`(Lane A F3c-9 파일)를 고쳐야 해서 하지 않았다. 대신 `AppServiceState.userDataMigrationFailure`가 선택 필드라 `MockAppService(initialState: …)`로 이 상태를 바로 띄울 수 있고, 시험 전용 가짜 `_BlockableMockService`(Mock 상태를 비추고 `block()`으로 실패를 얹는다)로 전이를 시험했다.
+
+### 예시 4종 결과
+
+| 예시(method) | 해독 | 연결 | 상태 |
+|---|---|---|---|
+| `planning.student.get` | `BackendRemoteException(user_data_migration_failed)`, details 3키 같음, retryable false | 유지 | `user_data_busy` 잡힘 |
+| `repository.profile.list` | 같음 | 유지 | 같음 |
+| `scanner.target.list` | 같음 | 유지 | 같음 |
+| `assets.prepare.status` | 같음 | 유지 | 같음 |
+
+- 시험의 내장 사본이 `debug/xb_x3_long_paths_20261023/artifacts/startup-error-examples.json`의 네 응답과 같음을 읽어서 확인(파일 없는 checkout에서는 skip). 예시 파일은 읽기만.
+- strict 거부 17가지(위 표의 거부 열) 모두 null, client 경로에서는 `details.path` 추가 · `restart_required` 누락이 치명 오류 + 차단 안 잡힘.
+
+### 실제 사용자 폴더 전후 같음 근거
+
+- `ls -la "%LOCALAPPDATA%\BA Planner"` 세 번(시작 전, protocol 시험 뒤, 84파일 뒤) — `diff` 차이 0. 새로 실제 Python을 띄운 시험은 `planning_protocol_client_test`(M3R의 임시 `BA_PLANNER_USER_DIR`)뿐.
+
+### golden 변화 0 근거
+
+- 정상 상태(실패 없음)에서 덮개 · 칩 · 설정 판의 위젯 트리 · 값이 같다: 덮개는 `const Positioned`를 non-const로 바꾸고 `TextStyle`을 const로 옮겼을 뿐 같은 문구 · 스타일, 칩은 `userDataBlocked` 기본 false로 같은 label, 설정 상태 줄은 `failure == null`일 때 기존 식과 같은 값. golden harness · 기준 이미지 손대지 않음, 새 장면 0. golden 비교는 돌리지 않았다(미실행 — CF gate). `tutorial_targets_f3c2_test`(Empty-Backend 정상 문구 · 대기 · 다시 연결)는 +1253 안에서 통과.
+
+### 미검증("미실행")
+
+- 실제 이관 실패 process E2E — 실제 이관 실패를 만들려면 실제 사용자 폴더가 필요(금지). Python 쪽 응답은 XB 예시 4종 · schema로만 맞췄다.
+- 기존 process E2E 29파일(`*_process_e2e_test.dart`) — `BA_PLANNER_STORAGE_ROOT`만 주어 자산 경로가 실제 `%LOCALAPPDATA%\BA Planner\v7\…`를 가리킨다(M3R 발견 2). "모두 격리된 사용자 폴더" 조건을 못 채워 돌리지 않았다 — CF 같은-소스 gate.
+- 전체 `fe_gate.ps1`, golden 비교, Python 시험, 실제 앱 창에서 덮개 보기.
+
+### 발견 사항
+
+1. **계약 · 예시 차이 없음**: 예시 4종이 schema와 맞는다(code const · details 3키 · reason enum 안 · message 비어 있지 않음 · `retryable` 없음).
+2. **결정(CF 확인 요청)**: 계약은 "restart the backend/app"이라 하지만 prompt("재연결로는 풀리지 않음")를 따라 **Backend 재시작도 막았다**(차단이 잡힌 client의 `start()`는 새 프로세스를 띄우지 않는다). 원인을 해결한 뒤 설정의 "Backend 재시작"으로 풀어도 되게 할지는 CF 판단 — 바꾸려면 `PlanningProtocolClient.restart()`에서 `startupFailure`를 비우는 한 곳.
+3. 개발 상태 패널 토글은 `mock_app_service.dart`(Lane A) 때문에 미룸 — Lane A 동결이 풀리면 `setUserDataMigrationFailure` 하나로 붙일 수 있다.
+4. 84파일 실행 로그에 `plan_scenario_detail.dart:515`(14px) · `:1407`(3px) RenderFlex 넘침 메시지 3건(`plan_scenario_compare_sl2_test` "SL2 앱 셸 1280×720" 도중). 시험은 통과했고 이 slice와 무관한 파일(sl2, 이미 커밋 `f5a77b44e`) — 고치지 않음.
+5. 편집 도구 백업 파일(`.orig` · `.rej` · `~`) 0. 지운 파일 없음.
+
+### 다음 행동
+
+- CF: `debug/frontend_su1/output.md` 검토, 발견 2 결정. XB 53경로와 같은-소스 `fe_gate.ps1`(golden 변화 0, `planning_protocol_client_test` · `startup_user_data_su1_test` GREEN, process E2E 29 포함, 전후 `%LOCALAPPDATA%\BA Planner` 목록 같음 기대) → XB 소스 커밋 → `fe_commit.ps1 -Slice m3r`(post_dir = `debug/frontend_su1/pre`) → `fe_commit.ps1 -Slice su1`(whole = 이 문서).
