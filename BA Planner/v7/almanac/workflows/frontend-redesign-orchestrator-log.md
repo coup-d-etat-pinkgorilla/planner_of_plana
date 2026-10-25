@@ -4495,6 +4495,26 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - 남은 사용자 피드백 틈: Mock 계산이 목표를 보지 않아 4단계 요약이 mock에서 '늘어난 재화가 없습니다' → **Lane B MC1**(`mc1-worker-prompt-20261024.md`). Lane A 대기(XB fixture 이전 뒤 시험 경로 이전).
 - 사용자 질문 대기: 다른 대사의 '씨' 처리.
 
+## 2026-10-24 17:40 — 회신(CM→CF): 프라나 그림 출처(F3f) · 첫 이관 안내 · '씨' · 진행 수용
+- **프라나 그림, 알파-1 결정**: 정지 그림 1장. XB가 설치본 추출 에셋에서 정지 프레임 1장을 렌더해(FD-183 추출 경로 재사용, Spine 런타임 동봉 없음) 다른 UI 그림과 같이 **번들**(D-ALPHA-SPLIT 그대로). 움직이는 프라나(Spine 재생)는 라이선스·버전 확인 뒤 알파-2. 사용자 확정 대기 없이 진행 — 사용자가 "정지 그림도 싫다"고 하면 되돌린다. XB에 백엔드 로그 17:40로 요청 순서 ⑤.
+- **첫 이관 안내(XB 22:11 요청)**: 포함. 문장 2개(원본 보존 복사 / 실패 시 원본 그대로·재시작 재시도), ETA·용량 표시 없음, 승인 대화 없음. 위치는 체크리스트 ③ 또는 시작 직후 — CF 선택.
+- **'씨'**: 튜토리얼 대사 전체에서 학생 이름 뒤 '씨' 제거(사용자 ② 피드백의 취지가 호칭 자체). 선생님→학생 호칭이라 '씨'가 어색하다. 다른 NPC/프라나 자기 호칭은 그대로.
+- 수용: 10-20~24 커밋 전부(F3a~F3c-10, SL1/SL2, K1/K2, SU1/SU2, M3R, m3rdoc). gate 운용·golden 갱신 근거 확인 방식 좋다.
+- 남은 CF 순서(CM): MC1(Mock 계산 목표 반영) → F3f 프라나 정지 그림 연결(XB 렌더 뒤) → F2 화면 연결(체크리스트 ②, 진행 문구 번들 단위) → X4 runtime 짝 gate(가상 스캔 실제 연결) → F1 체크리스트 ①③ 마무리 → F4(자동 갱신 설정 UI, X1-b latest-app/data 기준). F5b는 알파-2.
+
+## 2026-10-24 18:15 — 요청(CM→CF): 튜토리얼 대사의 수치를 데이터에서 읽게 (사용자 승인)
+- `tutorial_script.dart` 09d 등 대사에 박힌 수치("크레딧이 32M가량 적고", "첫 병목도 P1에서 P2로", 04의 "달라진 학생은 6명, 새 학생은 1명", 07의 칸 수 등)는 튜토리얼 데이터 v2(`tutorial-dataset-v2.json`)·Mock 계산 결과에서 치환자로 넣는다. 데이터가 바뀌어도 대사가 거짓이 되지 않게. 형식은 CF 선택(예: `{deltaCredits}`·`{firstBottleneckPhase}`), 값은 MC1이 만드는 계산 결과에서. 작은 slice(F3c-11)로.
+- 같은 slice에서 '씨' 전체 제거(17:40 결정, 08g~09d에 12곳 남음).
+- 참고: CM이 현재 대사를 텍스트로 뽑은 사본 — 사용자에게 전달됨(코드 밖 문서이므로 저장소에 넣지 않음).
+
+## 2026-10-24 23:45 — CM 결정 수신 · F3c-11 배정
+
+- CM 17:40 결정 확인: ① 프라나 알파-1 = XB 정지 렌더 1장 번들(Spine 재생 알파-2) ② 첫 이관 안내 포함(문장 2, 승인 대화 없음, 자리 CF 선택) ③ 튜토리얼 대사 '씨' 전체 제거. CM 18:15 요청: 대사 결과 수치를 데이터에서(F3c-11).
+- CF 결정(첫 이관 안내 자리): **시작 직후**(체크리스트 ③은 계정 없는 새 설치에만 떠서 이관 대상 사용자가 못 봄). 실제로 이관이 일어난 실행에만 띄우려면 백엔드의 이관 결과 알림이 필요 → XB에 확인 예정.
+- 배정: **Lane A F3c-11**(`f3c11-worker-prompt-20261024.md` — 결과 수치 치환자 · 대체 문장, '씨' 전체 제거). 지시 수(순위 · 마키 단계 · 일곱 명 · n/10)는 그대로. Lane B MC1 진행 중(겹침 없음).
+- CM 미회신: untracked `item_icons/activity_reports/` 처리, `developer-tools.md` 미커밋 변경 주인.
+
+
 ## 2026-10-24 23:38 — 알림·요청(XB→CF): 추적 fixture/마키 v3·X4 main 적용, 전체 Python 시작
 
 - CF12:50 동결 해제와 CM17:40 순서를 받아 X4 격리 후보를 main에 반영했다. 집중 **46/25.108s PASS, skip0**, 실제 main source drift0. 일반 idle backend까지 lease를 점유하던 후보를 고쳐 임시 상태가 있을 때만 잠그며, 합성 이전 스캔은 하루 전 시각이다. 지금부터 실제 main 표준 Python 전체를 실행한다. **heavy fe_gate는 XB 전체 종료 알림 뒤**, frontend 변경은 CF 소유다. backend/contracts/tool은 이 소스로 동결한다. 새 같은소스 CF GREEN 전 제품 커밋0.
@@ -4515,6 +4535,10 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - CF SU2 restart 정책 이견 없음. 실제로 이관이 발생했는지 알리는 성공 결과는 현 X3 계약에 아직 없다. CM 첫 안내 문장2개를 시작 직후 보일 수 있으나, “이번 실행에서 이관됨” 조건은 별도 additive 알림 계약이 필요하다. 이번 X4 동결에 섞지 않고 후속으로 명세화한다. developer-tools.md의 이전 미커밋 변경은 XB 이번 slice 소유 아님. activity_reports/도 이번 XB 변경0.
 - 근거 `debug/xb_fixture_x4_main_20261024/artifacts/source-plan.json`(제품/arch 23경로), `tracked-fixtures.json`, `main-focused-v1.json`. 실제 전체 결과·최종 output/SHA는 종료 뒤 게시한다. native/alpha/P0-P6/O3/Schale 제거 완료 주장은 없다.
 
+## 2026-10-25 00:15 — 알림(CM→CF): 알파-1 목표 = 이번 주말(10-26)
+- 사용자 목표: 알파-1 zip을 10-26까지. CF 알파-1 차단만: MC1 → F3c-11(수치 치환·'씨') → F2 화면 연결(체크리스트 ②) → X4 runtime 짝 gate → F3f 프라나 정지 그림(XB 렌더가 주말 안에 안 오면 빈 자리 그대로 출시) → F1 ①③ → **F4 자동 갱신 설정 UI**(X1-b latest-app/latest-data 기준, X2 런처 실기와 짝). F5b·개발자 도구 탭 UI는 알파-2.
+
+
 ## 2026-10-25 00:11 — 알림·요청(XB→CF): main1519 PASS·무거운 시험 종료·X4 같은소스 gate
 
 - **완료(실제 main 반영·Python 검증)**: fixture/마키 v3 + X4 lifecycle/replay/소유·복구를 제품22+XB architecture1=**23경로**에 반영했다. 새 actual main 표준 전체 **1519/1639.389s PASS, skip0, 실행 중 source5196 drift0**. 집중46/25.108s PASS. 초기+reset revision base+2/이력2건·이전 스캔 하루전, idle backend lease 점유0. 실제 계정/native/sample 분리·동일 요청 멱등·충돌/비정상종료 정리·junction/foreign marker 보존 회귀 포함. native/알파 통과 주장은 없다.
@@ -4524,11 +4548,23 @@ completion, crash recovery proof or permission to connect unavailable methods.
 - **M3/X6**: CM 판정용 독립 동결 diff0+삭제4/폐지7 묶음은 `debug/xb_m3_removal_bundle_20261024/output.md`. runtime/UI 미참조의 옛 네트워크 CLI1도 명시했고 `debug/xb_m3_legacy_cli_retire_20261024/output.md`에 정확1경로 폐기 후보를 준비했다(main 삭제0). `debug/xb_x6_first_login_20261024/output.md`는 새 PC/Steam 재설치 첫 로그인 학생전체1회·진단 재캡처/검토수·실측 결과표를 보강했다. 기존 봉인440파일 SHA 불변.
 - **차단/다음**: CF strict decoder/fixture 경로·새 same-source GREEN→XB23 선택 커밋→CF 짝 커밋/동결 해제→X8 main/전수·짝 검증→X5→X6 사용자 실측→FD183 정지 렌더 순서. X2 실제 배포 URL/설정·실기/첫 ZIP, X7 새 라벨·NP0035 재생/라이선스(알파2)는 후속이다. 전체 alpha/P0-P6/O3/Schale 제거 완료 선언0. 공용store/ba-data.lock/data-extracted·frontend/lib/test 쓰기0. 근거 `debug/xb_fixture_x4_main_20261024/output.md` 및 각 artifacts/.
 
+
 ## 2026-10-25 00:16 — 알림(XB→CF): CM 알파1 일정 수신·현 검증 소스 고정
 
 - CM10-25 00:15의 사용자 목표 **10-26 알파1 ZIP**과 일정 결정을 수신했다. 이후 우선순위는 X4 짝 gate→X8→X5→X2 사용자 런처 실기→X6→첫 ZIP(`--allow-bundled-ui-assets`)이다. M5 제품 러너/M6 게시 자동화는 알파1 뒤~첫 패치 전, M4/탭/Spine은 알파2이며 이번 착수0이다. 프라나 정지 그림은 주말 내 준비가 안 되면 빈 자리 출시 가능 결정을 따른다.
 - fixture/마키는 이 결정 수신 전에 XB 반영·실제1519 전수 검증이 끝났으므로 현23경로 바이트를 되돌리지 않는다. **CF 시험 경로 정리만 남았다면 그것을 추가 알파 차단으로 요구하지 않는다.** X4 strict 오류 해독/실제 runtime E2E와 같은소스 GREEN은 필수다. 새 기능을 현재 고정 소스에 더 넣지 않는다.
 - M3 잔존 CLI 폐기는 후보만 유지해 알파 차단보다 뒤로 둔다. X8 main19경로 후보에는 기존 C6/threshold/crop시험/Almanac WIP4의 선택 투영 경계가 있음을 명시했다. 기존 WIP 전체를 자동 커밋하지 않는다. X6 실측·N/T/최종 수용·실제 ZIP 결과는 만들지 않았다.
+
+
+## 2026-10-25 00:21 — 알림(XB→CF): 문서만 da3cc19·X4 소스는 새 GREEN 대기
+
+- 문서만 **da3cc19ae86ea89199767bf0a71b724c2ab590a1** 정확5경로/이번XB16항목 선택 커밋. 제품23경로 및 다른 레인/WIP 포함0, working bytes 보존·actual index empty·push0. actual main1519/1639.389s PASS(skip0), X8격리54/46.204s PASS, Almanac45/diff/private cached diff PASS. 새 CF 같은소스 GREEN 미수신으로 **제품 source commit0·backend/contracts/tool 고정 유지**다. CF 시험 fixture 경로 정리만으로 추가 알파 차단을 만들지 않으며 X4 strict decoder/runtime gate는 필요하다. 10-26 alpha 우선순위/X8 WIP 투영·X5·X2사용자실기·X6/ZIP은 앞 보고대로 미완료다. 인계 debug/xb_fixture_x4_main_20261024/output.md 및 각 artifacts/MANIFEST.json.
+
+## 2026-10-25 10:00 — MC1 · F3c-11 끝(미커밋), X4D · F4 배정
+
+- MC1 5행 · F3c-11 14행 SHA 일치, 목록 밖 변경 0, 겹침 0. 둘 다 미커밋 — 작업 트리의 XB X4 23경로 때문에 기존 `tutorial_practice_process_e2e_test`(unknown_method → unsupported 가정)가 실패할 것이므로 X4D 뒤 한 gate로 모아 커밋(MC1 · F3c-11 · X4D · F4, XB X4 같은-소스).
+- 배정: **Lane B X4D**(`x4d-worker-prompt-20261025.md` — Lane B로 확정, 머리말 갱신) · **Lane A F4**(`f4-worker-prompt-20261025.md` — 자동 갱신 설정 줄: 런처와 같은 `preferencesRoot` 규칙, `auto_update_disabled.flag` 스위치, `check_now.flag` '지금 확인', 버전 표시, 개발 실행이면 비활성, 시험은 임시 폴더만).
+- 남은 CF 알파-1: F2 화면 연결 · F1 ①③(F3b로 화면은 있음 — 실제 백엔드에서 남은 것 확인), F3f(XB 렌더 대기 — 없으면 빈 자리).
 
 
 ## 2026-10-25 03:25 — 알림(XB→CF): X8 독립 투영·X5 신고 후보 검증 완료, X4 동결 유지
@@ -4549,3 +4585,15 @@ completion, crash recovery proof or permission to connect unavailable methods.
 ## 2026-10-25 03:31 — 알림(XB→CF): 문서4 선택 커밋 결과
 
 - 문서만 **fbb6f724e2d709c910f201c4c36c5e979ce9394d** 정확4경로/이번XB12절 선택 커밋 완료. 다른 레인 절/제품 코드 포함0, working bytes 보존·actual index empty·push0. X8 격리56/40, X5 최종74/23 PASS(skip0), Almanac45/working 및 private cached diff PASS. main4154·원561봉인 불변, CF X4 같은소스 GREEN·짝/해제 대기 유지. 인계 `debug/xb_alpha_blockers_20261025/output.md` 및 `debug/xb_x5_report_candidate_20261025/output.md`. 제품/알파 완료 선언0.
+
+## 2026-10-25 12:45 — 알림(CM→CF): 주말 라운드 계획
+- X4D gate 뒤 XB가 X8(해금 연출)+X5(스캔 신고 백엔드)를 한 번에 main에 올린다 → CF는 **같은-소스 gate 1회**로 받고, X5의 띠·버튼·"신고 zip 만들기"는 최소 UI(설정 또는 스캔 결과 화면 버튼 1개 + 집계 한 줄)로 같은 slice에. 디자인 다듬기는 알파-1 뒤.
+- F3f 프라나: 주말 안에 XB 렌더가 없으면 빈 자리로 출시(결정). F2 화면 연결·F1 ①③은 X4D와 병렬 가능하면 Lane A F4 뒤 바로.
+- 첫 이관 안내 문장 2개는 조건 없이 시작 직후(CF 09:30 판단 수용).
+
+## 2026-10-25 13:55 — X4 같은-소스 gate GREEN · MC1 · F3c-11 · F4 커밋, X4D XB 대기
+
+- 검토: MC1 5행 · F3c-11 14행 · X4D 16행 · F4 7행 SHA 일치, 목록 밖 0, 겹침 0. XB X4 23경로 projection 일치.
+- gate `20261025_132321` RED 2 = 예상(settings — 자동 업데이트 줄 개발 실행 비활성 문구 / tutorial-compare-reveal — 09d 대사가 데이터 값 대체 문장 "필요한 크레딧은 예시 안과 같고 병목은 두 안 모두 없습니다", '씨' 없음 · 조사 맞음) → `-UpdateGoldens` `20261025_133747` **GREEN**(process 202 · golden 84). 실제 사용자 폴더 전후 같음.
+- 커밋: **MC1 `d0f42270`** · **F3c-11 `fd2bfa76`** · **F4 `9cbf14cf`**. X4D는 XB 커밋 뒤.
+- 발견 처리: X4D-1(retryable:false 불일치) → XB 결정 요청(권장 a). X4D-2(`tutorialErrorText`가 코드 이름을 그대로 보임) · X4D-3(시작 정리 실패에 SU1 같은 덮개 없음) → 다음 CF slice(X4E). F4-1(워크플로 F4 행 옛 뜻) → CF 문서 정리. F4-2('지금 확인'은 런처로 시작할 때만 · 오프라인이면 조용히 사라짐 — 계약대로) → 안내 문구 정리 후보.
