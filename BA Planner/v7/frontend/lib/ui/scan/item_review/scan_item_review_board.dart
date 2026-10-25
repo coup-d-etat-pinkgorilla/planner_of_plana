@@ -730,6 +730,20 @@ class _ScanItemReviewBoardState extends State<ScanItemReviewBoard> {
   @override
   Widget build(BuildContext context) {
     final view = _view();
+    // F3c-11: 6단계 카드가 이 보드의 칸 수를 쓴다(주 버튼과 같은 범위 · 승인 규칙). 확인 필요 칸은 승인할 수 있는 칸만 센다.
+    TutorialHooksScope.factsOf(context)?.reportItemReview(
+      TutorialItemReviewCounts(
+        approvedAfterReview: view.scopeCells
+            .where(
+              (cell) =>
+                  _approved(cell) || (cell.reviewGroup && _approvable(cell)),
+            )
+            .length,
+        reviewCells: view.scopeCells
+            .where((cell) => cell.reviewGroup && _approvable(cell))
+            .length,
+      ),
+    );
     return Semantics(
       container: true,
       label: '아이템 스캔 결과 검토',

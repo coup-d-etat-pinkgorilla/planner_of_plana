@@ -413,11 +413,11 @@ void main() {
             mainAxisSize: MainAxisSize.min,
             children: [
               TutorialStepCard(
-                step: tutorialSteps['3']!,
+                step: tutorialF3aStep('3'),
                 mode: TutorialCardMode.complete,
               ),
               TutorialStepCard(
-                step: tutorialSteps['3']!,
+                step: tutorialF3aStep('3'),
                 face: tutorialFakeImage,
               ),
             ],
@@ -554,7 +554,7 @@ void main() {
             Positioned.fill(
               child: TutorialCardLayer(
                 target: target,
-                card: TutorialStepCard(step: tutorialSteps['3']!),
+                card: TutorialStepCard(step: tutorialF3aStep('3')),
               ),
             ),
           ],

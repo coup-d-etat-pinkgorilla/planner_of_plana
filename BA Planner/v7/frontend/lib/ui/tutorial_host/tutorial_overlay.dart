@@ -10,6 +10,9 @@
 // - F3c-10: 밝히기 구멍 · 강조 테두리는 등록된 실제 모양(조각별 K1 경로 · 등록 외곽 경로)의 합을 따른다(사각형 합 금지).
 //   단계에 섹션 키가 있으면(4단계 성장 계산기) 섹션 전체를 보조 강조하고, 앞 하위 단계(7-2 ①) 동안은 카드 할 일 · 강조가
 //   그 하위 단계의 것이다. 4단계 완료 카드 '왜' 줄은 계산기가 알린 실제 변화 요약이다.
+// - F3c-11: 대사 · 카드의 결과 수 치환자는 화면이 알린 값([TutorialHooks.facts])으로 채운다. 대사는 그 줄이 처음 보일 때의
+//   값으로 고정하고(늦게 온 값으로 이미 나온 줄을 바꾸지 않는다), 카드는 그 단계에서 처음 알게 된 값으로 고정한다
+//   ([TutorialValueHold]).
 // - 그만두기 확인 · 끝 화면(시안 Tutorial-Done) · 정리 실패(다시 시도) · 짧은 안내.
 // 사각형은 프레임마다 다시 읽는다(프레임 뒤 비교 — 바뀌면 다시 그린다). 튜토리얼이 꺼져 있으면 아무것도 그리지 않는다.
 import 'package:flutter/foundation.dart';
@@ -85,6 +88,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
   ScanSessionController? _scan;
   List<Object?> _shown = const [];
   bool _watching = false;
+  final _values = TutorialValueHold();
 
   TutorialSession get _session => widget.session;
   TutorialTargetRegistry get _registry => _session.hooks.registry;
@@ -96,6 +100,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     _session.scanSession.addListener(_scanChanged);
     _registry.addListener(_changed);
     _session.hooks.calculatorChange.addListener(_changed);
+    _session.hooks.facts.addListener(_changed);
     _sessionChanged();
     _scanChanged();
   }
@@ -107,6 +112,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       _session.scanSession.removeListener(_scanChanged);
       _registry.removeListener(_changed);
       _session.hooks.calculatorChange.removeListener(_changed);
+      _session.hooks.facts.removeListener(_changed);
     }
     _flow?.removeListener(_changed);
     _scan?.removeListener(_scanProgress);
@@ -269,7 +275,16 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         return [
           PlanaDialogueOverlay(
             key: ValueKey('tutorial-dialogue-${scene.id}'),
-            scene: tutorialSceneForAccount(scene, session.accountName),
+            scene: tutorialSceneForAccount(
+              _values.scene(
+                scene,
+                flowIndex: flow.flowIndex,
+                quit: flow.phase == TutorialPhase.quitDialogue,
+                lineIndex: flow.lineIndex,
+                values: session.hooks.facts.values,
+              ),
+              session.accountName,
+            ),
             lineIndex: flow.lineIndex,
             onNext: flow.advanceLine,
             onQuit: flow.phase == TutorialPhase.dialogue
@@ -303,7 +318,13 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
     final step = tutorialStepForCalculator(
       tutorialStepForLead(
         tutorialStepForShortage(
-          raw,
+          tutorialStepForValues(
+            raw,
+            _values.step(
+              flowIndex: flow.flowIndex,
+              values: _session.hooks.facts.values,
+            ),
+          ),
           topName: _registry.labelOf(TutorialTargets.inventoryShortageTopRow),
           empty: _session.shortageEmpty,
           planApplied: _session.planApplied,
@@ -368,6 +389,57 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
         ),
       ),
     ];
+  }
+}
+
+/// F3c-11 값 고정 규칙: 대사는 그 줄이 처음 보일 때의 값으로 그 줄을 고정한다(늦게 온 값으로 이미 나온 줄 · 지금 줄을
+/// 바꾸지 않는다 — 한 글자씩 나오는 중에 글이 바뀌지 않게). 카드는 그 단계에서 처음 알게 된 값으로 묶음마다 고정한다(모르면
+/// 대체 문구, 알게 되면 한 번만 바뀐다 — 적용 중 · 완료 체크 동안 수가 흔들리지 않게). 흐름 칸이 바뀌면 새로 잡는다.
+class TutorialValueHold {
+  String? _sceneKey;
+  final Map<int, String> _lines = {};
+  int? _stepIndex;
+  TutorialScriptValues _stepValues = const TutorialScriptValues();
+
+  /// [scene]의 치환자 대사를 채운다. [lineIndex]까지의 줄은 처음 채운 글 그대로다.
+  PlanaScene scene(
+    PlanaScene scene, {
+    required int flowIndex,
+    required bool quit,
+    required int lineIndex,
+    required TutorialScriptValues values,
+  }) {
+    final key = '$flowIndex:$quit:${scene.id}';
+    if (key != _sceneKey) {
+      _sceneKey = key;
+      _lines.clear();
+    }
+    return tutorialSceneWithTexts(scene, [
+      for (final (index, line) in scene.lines.indexed)
+        index <= lineIndex
+            ? _lines.putIfAbsent(
+                index,
+                () => tutorialScriptText(line.text, values),
+              )
+            : tutorialScriptText(line.text, values),
+    ]);
+  }
+
+  /// 흐름 칸 [flowIndex] 단계 카드에 쓸 값: 묶음마다 처음 알게 된 값.
+  TutorialScriptValues step({
+    required int flowIndex,
+    required TutorialScriptValues values,
+  }) {
+    if (_stepIndex != flowIndex) {
+      _stepIndex = flowIndex;
+      _stepValues = const TutorialScriptValues();
+    }
+    final held = _stepValues;
+    return _stepValues = TutorialScriptValues(
+      studentReview: held.studentReview ?? values.studentReview,
+      itemReview: held.itemReview ?? values.itemReview,
+      compare: held.compare ?? values.compare,
+    );
   }
 }
 

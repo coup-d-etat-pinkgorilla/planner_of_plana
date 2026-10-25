@@ -4,6 +4,7 @@
 // - [TutorialCardPartsBoard]: 시안 W-Tutorial-Card의 상태들(진행 · 하위 체크 · 기다림 · 완료 체크) + 강조 테두리 3종
 //   (버튼 · 행 · 타일) + 머리글 칩 + 진행 창 한 줄 + 카드 자리(꼭지) 예. 기준 viewport 2560×1392 좌표.
 // - [PlanaDialogueBoard]: 가짜 화면 위 대사 띠(프라나 04 대사 2 / 5) + 밝히기 구멍 1개, 서 있는 그림 없음(시안 ③).
+// - F3c-11: 대본의 결과 수 치환자는 시안 예시 값([tutorialF3aSampleValues])으로 채워 그린다(그림은 F3c-10과 같음).
 // 움직임은 [tutorialStillHost]로 멈춘다(움직임 줄이기 = golden 정착).
 import 'dart:typed_data';
 
@@ -26,6 +27,29 @@ final tutorialFakeImageBytes = Uint8List.fromList(const [
 
 /// 가짜 그림(얼굴 칩 · 서 있는 그림 자리).
 final tutorialFakeImage = MemoryImage(tutorialFakeImageBytes);
+
+/// 시안 · F3c-10까지 대본에 박혀 있던 예시 값(바뀐 6 · 새 1 · 확인 필요 2 · 한 번에 적용 6, 승인 56 · 확인 필요 2칸,
+/// 크레딧 32M 적음 · 첫 병목 P1 → P2).
+const tutorialF3aSampleValues = TutorialScriptValues(
+  studentReview: TutorialStudentReviewCounts(
+    changed: 6,
+    newStudents: 1,
+    uncertain: 2,
+    applicable: 6,
+  ),
+  itemReview: TutorialItemReviewCounts(approvedAfterReview: 56, reviewCells: 2),
+  compare: TutorialCompareValues(
+    madeCredits: 100000000,
+    exampleCredits: 132000000,
+    creditGap: '32M',
+    madeBottleneckPhase: 2,
+    exampleBottleneckPhase: 1,
+  ),
+);
+
+/// [tutorialSteps]의 단계를 예시 값으로 채운 것.
+TutorialStep tutorialF3aStep(String id) =>
+    tutorialStepForValues(tutorialSteps[id]!, tutorialF3aSampleValues);
 
 /// 움직임 줄이기를 켠 자리(애니메이션 정지 → golden 정착).
 Widget tutorialStillHost(Widget child) => Builder(
@@ -107,7 +131,7 @@ class TutorialCardPartsBoard extends StatelessWidget {
         Positioned(
           left: 60,
           top: 172,
-          child: TutorialStepCard(step: tutorialSteps['3']!, onQuit: () {}),
+          child: TutorialStepCard(step: tutorialF3aStep('3'), onQuit: () {}),
         ),
         Positioned(
           left: 60,
@@ -133,7 +157,7 @@ class TutorialCardPartsBoard extends StatelessWidget {
           left: 60,
           top: 898,
           child: TutorialStepCard(
-            step: tutorialSteps['3']!,
+            step: tutorialF3aStep('3'),
             mode: TutorialCardMode.complete,
             face: tutorialFakeImage,
             onQuit: () {},
@@ -248,7 +272,10 @@ class PlanaDialogueBoard extends StatelessWidget {
       Positioned.fill(child: FakeAppScreen(onButton: onBackButton)),
       Positioned.fill(
         child: PlanaDialogueOverlay(
-          scene: tutorialScenes[sceneId]!,
+          scene: tutorialSceneForValues(
+            tutorialScenes[sceneId]!,
+            tutorialF3aSampleValues,
+          ),
           lineIndex: lineIndex,
           revealRects: revealRects,
           figure: figure,

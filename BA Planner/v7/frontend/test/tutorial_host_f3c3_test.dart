@@ -28,6 +28,8 @@ import 'package:ba_planner_v7/ui/tutorial/tutorial_step_card.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_goal_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_order_step.dart';
 import 'package:ba_planner_v7/ui/widgets/plan_flow_workspace.dart';
+import 'package:ba_planner_v7/ui/widgets/plan_scenario_list.dart'
+    show planScenarioCredits;
 import 'package:ba_planner_v7/ui/widgets/plan_tutorial_entry.dart';
 import 'package:ba_planner_v7/ui/tutorial_host/tutorial_overlay.dart';
 import 'package:ba_planner_v7/ui/tutorial_host/tutorial_session.dart';
@@ -156,6 +158,31 @@ Future<void> _waitDone(
 }
 
 String? _stepId(TutorialSession session) => session.flow?.step?.id;
+
+/// 지금 대사 장면(덧그림이 채운 글 — F3c-11).
+List<PlanaLine> _shownLines(WidgetTester tester) => tester
+    .widget<PlanaDialogueOverlay>(find.byType(PlanaDialogueOverlay))
+    .scene
+    .lines;
+
+/// 키가 [prefix]로 시작하고 [suffix]로 끝나는 글(왼쪽부터).
+List<String> _textsByKey(WidgetTester tester, String prefix, String suffix) {
+  final found = find.byWidgetPredicate((widget) {
+    final key = widget.key;
+    return widget is Text &&
+        key is ValueKey<String> &&
+        key.value.startsWith(prefix) &&
+        key.value.endsWith(suffix);
+  });
+  final elements = found.evaluate().toList()
+    ..sort(
+      (a, b) => tester
+          .getTopLeft(find.byWidget(a.widget))
+          .dx
+          .compareTo(tester.getTopLeft(find.byWidget(b.widget)).dx),
+    );
+  return [for (final element in elements) (element.widget as Text).data!];
+}
 
 AppShell _shell(WidgetTester tester) =>
     tester.widget<AppShell>(find.byType(AppShell));
@@ -355,6 +382,34 @@ void main() {
 
       // 프라나 04(바탕: 학생 결과 검토) — 대사 2가 확인 필요 묶음을 밝힌다.
       expect(session.flow!.scene!.id, 'plana-04');
+      // F3c-11: 대사 1 · 2 · 5의 수 = 검토 보드 분류 버튼 · 일괄 행이 그린 수(치환자 없음).
+      int reviewCount(String filter) => int.parse(
+        tester
+            .widget<Text>(find.byKey(ValueKey('scan-review-count-$filter')))
+            .data!,
+      );
+      final reviewCounts = TutorialStudentReviewCounts(
+        changed: reviewCount('changed'),
+        newStudents: reviewCount('newStudent'),
+        uncertain: reviewCount('needsReview'),
+        applicable: reviewCount('changed'),
+      );
+      expect(hooks.facts.values.studentReview, reviewCounts);
+      expect(find.text('${reviewCounts.applicable}명 한 번에 적용'), findsOneWidget);
+      final reviewValues = TutorialScriptValues(studentReview: reviewCounts);
+      for (final (index, template) in const [
+        (0, tutorialLineReviewCounts),
+        (1, tutorialLineReviewUncertain),
+        (4, tutorialLineReviewApply),
+      ]) {
+        final text = _shownLines(tester)[index].text;
+        expect(text, tutorialScriptText(template, reviewValues));
+        expect(text, isNot(contains('{')));
+      }
+      expect(
+        _shownLines(tester)[0].text,
+        contains('달라진 학생은 ${reviewCounts.changed}명'),
+      );
       session.flow!.advanceLine();
       await _frames(tester, 3);
       expect(
@@ -385,8 +440,12 @@ void main() {
       );
       await _finishScene(tester, session);
 
-      // 3단계: 6명 한 번에 적용.
+      // 3단계: 6명 한 번에 적용(F3c-11: 카드의 수 = 일괄 행 버튼의 수).
       expect(_stepId(session), '3');
+      expect(
+        find.text("'${reviewCounts.applicable}명 한 번에 적용'을 눌러 주십시오."),
+        findsOneWidget,
+      );
       expect(
         hooks.registry.geometryOf(TutorialTargets.studentReviewApplyChanged),
         isNotNull,
@@ -454,6 +513,27 @@ void main() {
 
       // 6단계: 승인한 칸 적용(확인 필요 2칸 승인은 hooks 출구 — 칸 고르기 · 승인 순서는 아이템 검토 시험 몫).
       expect(_stepId(session), '6');
+      // F3c-11: 카드의 수 = 주 버튼의 지금 수 + 승인할 수 있는 확인 필요 칸(v2: 기본 승인 54 + 확인 필요 2 = 56).
+      final items = hooks.facts.values.itemReview!;
+      final approvedNow = int.parse(
+        RegExp(r'\d+')
+            .firstMatch(
+              tester
+                  .widget<Text>(
+                    find.byKey(const ValueKey('scan-item-apply-title')),
+                  )
+                  .data!,
+            )!
+            .group(0)!,
+      );
+      expect(items.reviewCells, 2);
+      expect(items.approvedAfterReview, approvedNow + items.reviewCells);
+      expect(items.approvedAfterReview, 56);
+      expect(
+        find.text("'승인한 ${items.approvedAfterReview}칸 인벤토리에 적용'을 눌러 주십시오."),
+        findsOneWidget,
+      );
+      expect(find.text('확인 필요 ${items.reviewCells}칸 승인'), findsOneWidget);
       hooks.signals.emit(TutorialSignals.itemReviewUncertainApproved);
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('scan-item-apply')));
@@ -611,6 +691,38 @@ void main() {
       }
       await _waitDone(tester, session, '나란히 비교했습니다');
       expect(session.flow!.scene!.id, 'plana-09d');
+      // F3c-11: 대사 2의 크레딧 차 · 첫 병목 = 나란히 비교 표 열 B · C(같은 계산 결과 · 같은 단위).
+      session.flow!.advanceLine();
+      await _frames(tester, 2);
+      final compared = hooks.facts.values.compare!;
+      expect(compared.madeCredits, isNotNull);
+      expect(compared.exampleCredits, isNotNull);
+      final credits = _textsByKey(tester, 'plan-compare-value-', '-credits');
+      expect(credits, hasLength(3));
+      expect(credits[1], planScenarioCredits(compared.madeCredits!));
+      expect(credits[2], planScenarioCredits(compared.exampleCredits!));
+      final bottlenecks = _textsByKey(
+        tester,
+        'plan-compare-value-',
+        '-bottleneck',
+      );
+      String phaseText(int? phase) => switch (phase) {
+        null => '—',
+        0 => '없음',
+        final value => 'P$value',
+      };
+      expect(bottlenecks[1], phaseText(compared.madeBottleneckPhase));
+      expect(bottlenecks[2], phaseText(compared.exampleBottleneckPhase));
+      final compareLine = _shownLines(tester)[1].text;
+      expect(
+        compareLine,
+        tutorialScriptText(
+          tutorialLineCompareResult,
+          TutorialScriptValues(compare: compared),
+        ),
+      );
+      expect(compareLine, isNot(contains('{')));
+      expect(compareLine, isNot(contains('씨')));
       await _finishScene(tester, session);
 
       // 프라나 10(바탕: 인벤토리): 들어갈 때 7-6 시나리오를 임시 계정의 활성 계획으로 적용(사용자 결정 ⑤ — 계획에 적용…

@@ -566,6 +566,24 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
     );
   }
 
+  /// 튜토리얼 대사(프라나 09d)에 건넬 열 B(방금 만든 안) · 열 C(예시 안) 값. 두 열이 없으면 null.
+  TutorialCompareValues? _tutorialCompareValues(PlanCompareTable? table) {
+    final made = table?.columns.elementAtOrNull(1);
+    final example = table?.columns.elementAtOrNull(2);
+    if (made == null || example == null) return null;
+    final madeCredits = made.credits;
+    final exampleCredits = example.credits;
+    return TutorialCompareValues(
+      madeCredits: madeCredits,
+      exampleCredits: exampleCredits,
+      creditGap: madeCredits == null || exampleCredits == null
+          ? null
+          : planScenarioCredits((madeCredits - exampleCredits).abs()),
+      madeBottleneckPhase: made.firstBottleneckPhase,
+      exampleBottleneckPhase: example.firstBottleneckPhase,
+    );
+  }
+
   void _openApply(PlanCompareTarget target) {
     if (!widget.active || widget.onApply == null) return;
     if (target.scenario == null || target.collectionRevision == null) return;
@@ -603,6 +621,10 @@ class _PlanScenarioCompareViewState extends State<PlanScenarioCompareView> {
             (status == PlanComparePairStatus.failed
                 ? null
                 : _tableFor(_shownBaseId));
+        // F3c-11: 프라나 09d 대사가 이 표의 열 B · C 값을 쓴다(화면과 같은 계산 결과 · 같은 크레딧 단위).
+        TutorialHooksScope.factsOf(
+          context,
+        )?.reportCompare(_tutorialCompareValues(table));
         return SizedBox.fromSize(
           key: const ValueKey('plan-compare-view'),
           size: size,

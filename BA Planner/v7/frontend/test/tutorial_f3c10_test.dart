@@ -271,7 +271,7 @@ Future<void> _setSkills(
 
 void main() {
   group('script · flow', () {
-    test("plana-08 line 4 drops '씨' in that sentence only", () {
+    test("plana-08 line 4 drops '씨' (F3c-11: every line does)", () {
       final line = tutorialScenes['plana-08']!.lines[3];
       expect(
         line.text,
@@ -279,9 +279,9 @@ void main() {
         '네루(교복)입니다.',
       );
       expect(line.revealKeys, [TutorialTargets.planSelectedStudents]);
-      // 다른 대사의 '씨'는 그대로(사용자 결정 대기).
-      expect(tutorialScenes['plana-08d']!.lines[1].text, contains('칸나(수영복) 씨'));
-      expect(tutorialScenes['plana-09d']!.lines[1].text, contains('마키 씨'));
+      // F3c-11(CM 2026-10-24 17:40): 다른 대사의 '씨'도 모두 지웠다.
+      expect(tutorialScenes['plana-08d']!.lines[1].text, isNot(contains('씨')));
+      expect(tutorialScenes['plana-09d']!.lines[1].text, isNot(contains('씨')));
     });
 
     test('7-2: the lead (one student MAX) comes first, then the all-MAX '

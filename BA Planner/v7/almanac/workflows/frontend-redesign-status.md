@@ -12590,3 +12590,275 @@ commit.json `whole` = `settings.png` · `first-run-game.png` · `first-run-image
 
 - gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261024_165443\summary.txt (result         : GREEN)
 - method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none
+
+## F3c-11 착수 기록 (2026-10-25 00:40, Lane A 워커)
+
+- 상태: **진행 중** — F3c-11(대사 · 카드 결과 수치를 실제 값으로 — CM 2026-10-24 18:15 사용자 승인, 학생 이름 뒤 '씨' 전체 제거 — CM 17:40). 시작 SHA `1901f9c85c86906ad3aca46e9a86fff3f255bf16`(브랜치 `scanner-consolidation`, `git log --oneline -5`에 F3c-10 `e271edd2` 있음). 이 status 끝에 다른 "F3c-11 착수 기록" 없음. 대장 막힘 요약 "현재 `열림` 0건" → 막히지 않는다.
+- 고칠 파일 · 착수 때 기존 미커밋 변경(WIP) · 사본(`debug/frontend_f3c11/pre/<v7 기준 경로>`, 9개, 모두 LF · 끝 개행 하나 — 착수 때 `git status --short -- frontend/lib frontend/test` 출력 없음 = 모두 WIP 없음):
+
+| 파일 | WIP | 고칠 것 |
+|---|---|---|
+| `frontend/lib/ui/tutorial/tutorial_script.dart` | 없음 | 결과 수치 치환자 · 대체 문장 · '씨' 제거 · 값 묶음 타입 |
+| `frontend/lib/ui/tutorial_host/tutorial_overlay.dart` | 없음 | 장면 · 카드에 값 채우기, 값 고정 |
+| `frontend/lib/ui/tutorial_host/tutorial_session.dart` | 없음 | 시작 때 값 비우기 |
+| `frontend/lib/ui/tutorial_targets/tutorial_hooks.dart` | 없음 | **프롬프트 목록 밖(워커 결정)**: 화면이 그린 수를 튜토리얼에 알리는 자리(F3c-10 `calculatorChange` 선례) |
+| `frontend/lib/ui/scan/review/scan_student_review_board.dart` | 없음 | 검토 수 알림 최소(읽기 전용 — 분류 버튼 · 일괄 행과 같은 값) |
+| `frontend/lib/ui/scan/item_review/scan_item_review_board.dart` | 없음 | 칸 수 알림 최소(읽기 전용 — 주 버튼과 같은 범위 · 승인 규칙) |
+| `frontend/lib/ui/widgets/plan_scenario_compare.dart` | 없음 | 열 B · C 값 알림 최소(읽기 전용 — 화면 표와 같은 계산 결과) |
+| `frontend/test/fixtures/tutorial_f3a_fixture.dart` | 없음 | 부품 보드가 대본 원본(치환자)을 예시 값으로 채워 그리게(그림 변화 0 목표) |
+| `frontend/test/tutorial_f3c10_test.dart` | 없음 | '씨' 그대로 기대 → 제거 기대 |
+| 새 `frontend/test/tutorial_script_values_f3c11_test.dart` | 새 파일 | 치환 · 대체 · 0/반대 · '씨' 0 · 조사 · 1280 넘침 |
+
+- 고치지 않는다: Lane B MC1 파일(`mock_app_service.dart` · `mock_student_calculation_fixture.dart` · `test/mock_calculation_mc1_test.dart`), `lib/services/**`(`mock_tutorial_practice.dart` 읽기만), `lib/ui/kit/**`, 스캐너 소유 위젯, backend/** · contracts/**, golden harness · 기준 이미지, frontend/tool/**, pubspec, 택틱 파일, `almanac/architecture/developer-tools.md`. 목록이 바뀌면 종료 기록에 적는다.
+
+## F3c-11 종료 기록 (2026-10-25 01:55, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)**. CF 몫 `fe_gate.ps1` 1회가 남았다(golden RED 1 예상: `tutorial-compare-reveal`). 시작 SHA `1901f9c8`, 끝날 때 HEAD 그대로. git 쓰기는 하지 않았고, 지운 파일은 일회성 렌더 사본 5개 · 시험 묶음 분할 파일 3개뿐이다(발견 6).
+- 결과: 대본의 결과 수 7자리(프라나 04 대사 1 · 2 · 5, 09d 대사 2, 3단계 할 일, 6단계 할 일 · 하위 체크)를 치환자 줄로 바꿨다. 화면이 실제로 그린 값으로 채운다(학생 · 아이템 검토 보드, 나란히 비교 표 → `TutorialHooks.facts`). 학생 이름 뒤 '씨' 24곳을 모두 지웠다.
+- 착수 기록 목록 변경: `frontend/test/tutorial_parts_f3a_test.dart`와 `frontend/test/tutorial_host_f3c3_test.dart`를 더했다(사본 있음, 둘 다 WIP 없음). 앞 파일은 3단계 카드를 대본 원본(치환자)으로 그리던 곳 3곳을 예시 값으로 채운 단계로 바꿨다. 뒤 파일은 한 바퀴에 실제 값 단언을 넣었다.
+- diff(사본 → 지금, `git diff --numstat`): `tutorial_script.dart` +333/−22, `tutorial_overlay.dart` +74/−2, `tutorial_session.dart` +2/−0, `tutorial_hooks.dart` +70/−1, `scan_student_review_board.dart` +9/−0, `scan_item_review_board.dart` +14/−0, `plan_scenario_compare.dart` +22/−0, `test/fixtures/tutorial_f3a_fixture.dart` +30/−3, `test/tutorial_f3c10_test.dart` +4/−4, `test/tutorial_host_f3c3_test.dart` +113/−1, `test/tutorial_parts_f3a_test.dart` +3/−3. 새 파일 `test/tutorial_script_values_f3c11_test.dart`(634줄, 시험 18 · 변형 포함 26).
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(대본 단독 1회 · 구현 뒤 · 시험 뒤 · 끝) | 모두 **No issues found!**(pubspec · lock 변경 0) |
+| `flutter test --exclude-tags golden test/tutorial_script_values_f3c11_test.dart` | 1회차 **+26 All passed** |
+| 관련 기존 시험 123파일(`debug/frontend_f3c11/related_run.txt` — grep: `tutorial` · 검토 보드 · 비교 뷰 · `BAPlannerApp(` · `AppShell(` · `TutorialHost` · 스캔 탭 · 계획 화면 · `MockAppService(` 사용 + `tutorial_*` · `plan_*` · `scan_*` · `widget_test` · `kit_promotion_*`). process 패턴(fe_gate와 같은 식) 9파일 제외(`related_excluded.txt`, Lane B MC1 시험은 아직 없음). 3묶음 `--exclude-tags golden` | 00 **+547** · 01 **+573** · 02 **+646** All passed(한 바퀴 2560 · 1280 포함). `[E]` 0. `overflowed by` 3줄은 `plan_scenario_compare_sl2_test` 안 `plan_scenario_detail.dart` Row이고, F3c-10 로그에도 같은 3줄이 있다(이번 변경과 무관, 시험 통과). `registered twice` 1줄은 F3c-2가 일부러 겹친 'dup' |
+| 일회성 렌더 사본 4개 + 도우미 1개(`test/goldens/f3c11_render_*_tmp_test.dart` · `f3c11_render_helper_tmp.dart` — `@Tags` · `library;` 제거, `expectGoldenScene` → RGBA 대조, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep **0건**) | +6 All passed. `tutorial-card-parts` **0px** · `plana-dialogue` **0px** · `tutorial-step-scan` **0px** · `tutorial-dialogue-review` **0px** · `tutorial-plan-order` **0px** · `tutorial-compare-reveal` **15,982px**(범위 `(305,1179)–(1582,1206)` = 대사 글 한 줄만) → 사본 5개 바로 삭제(`test/goldens`에 `f3c11` 0, `failures/`에 새 파일 0). 렌더 `debug/frontend_f3c11/render/` |
+| `dart format -o show`(고친 파일마다, 사본과 대조) | 새로 생긴 서식 차이는 고친 줄 안 4덩어리뿐이라 손으로 반영했다. 끝에 고친 기존 파일 10개 모두 `--set-exit-if-changed` 0. `plan_scenario_compare.dart`는 사본에도 있던 기존 차이 45줄이 그대로 남았다(고친 줄은 서식과 같음). 새 시험만 파일째 format |
+| `git diff --check -- frontend/lib frontend/test` · 바이트 검사 | 출력 없음(rc 0). 모두 LF · 끝 개행 하나 · 줄 끝 공백 0 |
+
+- 실행하지 않음: `fe_gate.ps1`, `-UpdateGoldens`, golden 비교, 맨 `flutter test`, process E2E, Python.
+
+### 치환 표(장면 · 줄 → 치환자 → 값 출처 → 대체 · 0 · 반대 문장)
+
+| 자리 | 치환자 줄(상수) | 값 출처(화면이 그린 값) | 값을 알 때 | 모를 때 | 0 · 반대 |
+|---|---|---|---|---|---|
+| 프라나 04 대사 1 | `tutorialLineReviewCounts` `{changedStudents}` · `{newStudents}` | 학생 검토 보드 분류 버튼 '바뀐 학생' · '새 학생'(`view.counts`) | "…달라진 학생은 n명, 새 학생은 m명입니다." | "…지난 기록과 달라진 학생과 새 학생을 나눠 두었습니다." | 새 0: "…n명이고, 새 학생은 없습니다." · 바뀜 0: "…없고, 새 학생은 m명입니다." · 둘 다 0: "…달라진 학생도, 새 학생도 없습니다." |
+| 프라나 04 대사 2 | `tutorialLineReviewUncertain` `{uncertainStudents}` | 같은 보드 '확인 필요' | "다만 n명은 읽은 값을 확신할 수 없어, …" | "다만 읽은 값을 확신할 수 없는 학생은 '확인 필요'로 따로 모아 두었습니다." | 0: "이번에는 읽은 값을 확신할 수 없는 학생이 없어, '확인 필요'는 비어 있습니다." |
+| 프라나 04 대사 5 | `tutorialLineReviewApply` `{applyStudents}` | 같은 보드 일괄 행 'n명 한 번에 적용'(`view.bulkTargets`) | "…계산이 화면과 맞는 n명만 먼저 한 번에 적용하겠습니다." | "…계산이 화면과 맞는 학생만 먼저 …" | 0: "…다만 이번에는 계산이 화면과 맞아 바로 적용할 학생이 없습니다." |
+| 3단계 할 일 | `tutorialStepApplyStudentsTitle` | 위 일괄 행 n | "'n명 한 번에 적용'을 눌러 주십시오." | "'한 번에 적용'을 눌러 주십시오." | 0: "지금은 한 번에 적용할 학생이 없습니다." |
+| 6단계 할 일 | `tutorialStepApplyCellsTitle` `{approvedCells}` | 아이템 검토 보드, 주 버튼과 같은 범위(`scopeCells`) · 같은 승인 규칙: 지금 승인 칸 ∪ 승인할 수 있는 확인 필요 칸(값 있음 · 미식별 아님) | "'승인한 n칸 인벤토리에 적용'을 눌러 주십시오." | "'인벤토리에 적용'을 눌러 주십시오." | 0: "지금은 인벤토리에 적용할 칸이 없습니다." |
+| 6단계 하위 체크 | `tutorialStepReviewCellsCheck` `{reviewCells}` | 같은 보드, 승인할 수 있는 확인 필요 칸 | "확인 필요 n칸 승인" | "확인 필요 칸 승인" | 0: "확인 필요 칸 없음" |
+| 프라나 09d 대사 2 | `tutorialLineCompareResult` `{creditGap}` · `{bottleneckFrom}` · `{bottleneckTo}` | 나란히 비교 표(`PlanCompareTable` — 화면과 같은 객체) 열 B(방금 만든 안) · 열 C(예시 안)의 `credits` · `firstBottleneckPhase`. 차이는 화면과 같은 `planScenarioCredits`(M · K) | B가 적음 · 병목 늦음: "…미룬 쪽이, 필요한 크레딧이 32M가량 적고 첫 병목도 P1에서 P2로 늦어졌습니다."(대본 원문 꼴) | 둘 다 모름: "마키를 두 단계로 나누고 네루(교복)를 미룬 쪽과 예시 안이 필요한 크레딧 · 첫 병목에서 어떻게 다른지 보십시오." | 많음: "…가량 많고" · 같음: "필요한 크레딧은 예시 안과 같고" · 병목 앞당김: "첫 병목은 P3에서 P1로 앞당겨졌습니다." · B만 없음: "첫 병목도 없어졌습니다." · C만 없음: "예시 안에는 없던 병목이 Pn에 생겼습니다." · 같은 페이즈: "첫 병목은 두 안 모두 Pn입니다." · 둘 다 없음: "병목은 두 안 모두 없습니다." · 한쪽만 앎: 아는 것만("…미룬 쪽이 필요한 크레딧이 1.5K가량 적습니다." / "…미룬 쪽이, 첫 병목은 …"). '도'는 크레딧이 적고 병목이 늦거나 없어졌을 때만 |
+
+- 프롬프트 예시 대체 문장 "필요한 크레딧이 줄고 첫 병목도 늦어졌습니다."는 쓰지 않았다(워커 판단). 값을 모르면서 방향을 말하는 것이 '거짓 대사 금지'와 맞지 않아서, 방향 없는 문장으로 바꿨다(CF 검수).
+- 프라나 07(아이템 검토)에는 대사 속 수치가 없다 → 바꾸지 않았다. 6단계 카드만 바꿨다.
+- 형식: 치환자 줄은 대본 안의 `const` 문자열이다. `tutorialScriptText(text, values)`가 그 줄일 때만 문장을 고르고 다른 줄은 그대로 둔다. 장면은 `tutorialSceneForValues` · `tutorialSceneWithTexts`, 카드는 `tutorialStepForValues`(할 일 · 왜 · 하위 체크 — `_stepWith`에 `checks` 추가)로 채운다.
+
+### 그대로 둔 지시 수(대본 그대로)
+
+| 자리 | 수 | 이유 |
+|---|---|---|
+| 7-1 할 일 · 프라나 08 대사 4 · 08c 대사 3 | '일곱 명' · 학생 7명 이름 | 사용자에게 시키는 고르기 |
+| 7-2 할 일 · 7-2b · 7-2c 체크 | '고른 7명' · '7명 한 번에 MAX' | 버튼 이름 · 지시(7명을 고르게 한 결과) |
+| 7-2b · 7-2c · 프라나 08g | M/M/1/1 · M/M/7/7 · '7까지' · '1로' · '2단계' | 마키 목표 지시 |
+| 7-3 · 프라나 08d · 09 대사 1 · 09c 대사 2 | 1 · 2 · 3순위, 페이즈 1~3, '2순위 페이즈' | 순서 지시 · 예시 시나리오 구성 설명(seed 내용) |
+| 5단계 할 일 | '아이템 2종' | 고를 종류 지시 |
+| 프라나 08 대사 3 | '네 단계' | 계획 만들기 화면 구조 |
+| 프라나 10 대사 1 | '두 가지' | 남은 단계 수(흐름 구조) |
+| 카드 'n / 10' · 끝 화면 '써 본 기능 10개' | 단계 번호 · 단계 수 | 흐름 구조 |
+
+### '씨' 제거 표(사본 줄 → 전 · 후 · 조사)
+
+조사는 이름(괄호 앞 말)의 받침에 맞춘다. 국어 표기 관례이고, 대본 카드 7-3 "히마리(무장)는" · 7-4 "칸나(수영복)를" · 7-5 "'네루(교복)'와"와도 같다. 대본의 학생 이름 7개는 괄호 앞이 모두 받침 없음(아카네 · 칸나 · 마키 · 미카 · 히마리 · 시로코 · 네루)이다. 그래서 '씨'(받침 없음) 뒤에 오던 조사가 그대로 맞고 문장을 다듬을 곳이 없었다. 이름이 데이터로 들어오는 곳이 없어 기존 받침 함수(`koreanEuro` · `koreanEulReul`)를 부를 자리도 없다(`koreanEulReul`은 괄호 안 끝 글자를 보는 아이템 이름용이라 학생 이름에는 맞지 않는다 — 발견 3). 새 시험의 조사 검사기는 받침 있는 이름('카린') · 없는 이름('마키') · 괄호 이름('칸나(수영복)' · '세리카(정월)')에서 틀린 조사를 잡는지 스스로 확인한 뒤, 모든 렌더 문자열에 적용한다.
+
+| 장면 · 줄 | 전 → 후(24곳) |
+|---|---|
+| 08g 683 · 685 | 마키 씨입니다 → 마키입니다 · 마키 씨의 → 마키의 |
+| 08d 710 | 칸나(수영복) 씨, → 칸나(수영복), · 마키 씨의 → 마키의 · 미카 씨는 → 미카는 · 시로코(수영복) 씨와 → 시로코(수영복)와 · 히마리(무장) 씨는 → 히마리(무장)는 |
+| 08d 713 | 아카네 씨는 → 아카네는 |
+| 08e 724 · 733 · 737 | 아카네 씨는 → 아카네는 · 칸나(수영복) 씨의 → 칸나(수영복)의 / 칸나(수영복) 씨를 → 칸나(수영복)를 · 아카네 씨를 → 아카네를 / 칸나(수영복) 씨의 → 칸나(수영복)의 · 아카네 씨가 → 아카네가 |
+| 08f 749 · 751 | 칸나(수영복) 씨에서 → 칸나(수영복)에서 · 아카네 씨로 → 아카네로 / 네루(교복) 씨와 → 네루(교복)와 · 마키 씨의 → 마키의 |
+| 09 771 | 네루(교복) 씨와 → 네루(교복)와 · 마키 씨의 → 마키의 |
+| 09c 805 | 마키 씨도 → 마키도 · 네루(교복) 씨도 → 네루(교복)도 |
+| 09d 825(치환자 줄) | 마키 씨를 → 마키를 · 네루(교복) 씨를 → 네루(교복)를 |
+
+- 프라나 자기 호칭 · '아로나 선배'는 그대로다(시험). 대사 · 카드 렌더 문자열의 '씨'는 값 묶음 8가지 모두 0건이다.
+
+### 값 고정 규칙(`TutorialValueHold`, `tutorial_overlay.dart`)
+
+- **대사**: 줄이 처음 보일 때의 값으로 그 줄을 고정한다(흐름 칸 · 그만둘 때 · 장면 id가 열쇠). 늦게 온 값은 이미 나온 줄과 지금 줄(한 글자씩 나오는 중)을 바꾸지 않는다. 아직 안 나온 줄만 새 값을 쓴다. 그만두기 확인에서 '계속하기'로 돌아와도 같은 글이다.
+- **카드**: 그 단계에서 처음 알게 된 값으로 묶음(학생 · 아이템 · 비교)마다 고정한다. 모르면 대체 문구이고, 알게 되면 한 번만 바뀐다. 일괄 적용 중이나 완료 체크 동안 보드의 수가 줄어도 카드 수는 흔들리지 않는다. 다음 흐름 칸은 새로 잡는다.
+- **알림**: 화면은 빌드 · 레이아웃 중에 `TutorialHooksScope.factsOf(context)?.report…`로 알린다. 같은 값이면 무시하고, 듣는 쪽(덧그림)에는 프레임 뒤에 한 번 알린다(등록표 `_scheduleNotify`와 같은 규칙). 튜토리얼을 시작할 때(`TutorialSession._begin`) 비운다. 셸 밖이면 아무것도 하지 않는다.
+
+### 목록 밖 · 화면 파일을 고친 이유(읽기 전용)
+
+- `tutorial_targets/tutorial_hooks.dart`: 화면 → 튜토리얼 값 통로(`TutorialScriptFacts`, `factsOf`). F3c-10 `calculatorChange` 선례를 따랐다. 덧그림은 보드 · 비교 화면의 State에 닿을 수 없어 getter만으로는 값을 읽을 수 없다.
+- 검토 보드 2 · 비교 화면: 각 build에 알림 한 문장(+9 · +14 · +22줄)을 더했다. 그림 · 동작 · 상태 변화는 0이고, 렌더 0px로 확인했다. 화면이 그린 바로 그 값(분류 버튼 · 일괄 행 · 주 버튼 범위 · 비교 표)을 보내므로 대사와 화면이 어긋나지 않는다.
+
+### golden 변화(장면별 이유)
+
+| 장면 | 결과 · 이유 |
+|---|---|
+| `tutorial-compare-reveal` | **바뀜(whole)** — 09d 대사 2 글 한 줄만 바뀐다(15,982px, `(305,1179)–(1582,1206)`). 전: "마키 씨를 … 네루(교복) 씨를 미룬 쪽이, 필요한 크레딧이 32M가량 적고 첫 병목도 P1에서 P2로 늦어졌습니다." 후: "마키를 두 단계로 나누고 네루(교복)를 미룬 쪽이, 필요한 크레딧은 예시 안과 같고 병목은 두 안 모두 없습니다." Golden Mock 비교 표의 B · C가 필요 크레딧 0 · 0, 첫 병목 '없음' · '없음'이라 그 값을 그대로 말한다('씨' 제거 + 수치). 렌더 `debug/frontend_f3c11/render/tutorial-compare-reveal.png` |
+| `tutorial-dialogue-review` | **변화 0(렌더 0px)** — 프롬프트는 whole을 예상했지만, 04 대사 2의 Mock 확인 필요 수가 2라 글이 대본과 같다('씨'도 없던 줄). `whole`에 넣지 않았다 |
+| `tutorial-card-parts` · `plana-dialogue` | 변화 0(0px) — 부품 보드가 대본 원본을 시안 예시 값(`tutorialF3aSampleValues` 6 · 1 · 2 · 6 / 56 · 2 / 32M · P1 → P2)으로 채워 그린다 |
+| `tutorial-step-scan` · `tutorial-plan-order` | 변화 0(0px) |
+| 그 밖 | 검토 보드 · 비교 화면의 알림은 그리지 않는다. 새 장면 0 |
+
+### 미검증("미실행")
+
+- **MC1 뒤 실제 Mock 값**(Lane B가 Mock 계산을 목표에 따라 바꾸는 중) — 미실행. 지금 Mock에서 09d는 "크레딧 같음 · 병목 없음" 문장이다. MC1이 비교 값을 바꾸면 같은 출처로 다른 문장이 되고, `tutorial-compare-reveal`이 다시 바뀔 수 있다(CF gate에서 확인).
+- golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, process E2E 9파일, Python, 실제 백엔드, Windows 실제 앱(mock) 눈 확인 — 미실행.
+
+### 검수표(사용자 · CF — Windows mock 앱)
+
+| 곳 | 여는 방법 | 확인 |
+|---|---|---|
+| 프라나 04 | 튜토리얼 → 학생 가상 스캔 끝 | 대사 1 · 2 · 5의 수 = 보드 분류 버튼 '바뀐 학생' · '새 학생' · '확인 필요'와 일괄 행 'n명 한 번에 적용'. '{' 없음 |
+| 3단계 카드 | 04 뒤 | "'n명 한 번에 적용'을 눌러 주십시오."의 n = 버튼, 적용 중 · 완료 체크에도 그대로 |
+| 6단계 카드 | 프라나 07 뒤 | "'승인한 56칸 …'"과 '확인 필요 2칸 승인'(지금 Mock). 버튼은 처음 54, 확인 필요 2칸을 승인하면 56 |
+| 프라나 08g~09d | 계획 장면 | 학생 이름 뒤 '씨' 없음, 조사 자연스러움 |
+| 프라나 09d 대사 2 | 나란히 비교 뒤 | 문장 = 열 B · C의 필요 크레딧 · 첫 병목(지금 Mock: 같음 · 없음). 1280에서 두 줄 이내 |
+
+### 발견 사항
+
+1. **Mock 비교 값이 대본과 달랐다**: 지금 Mock 나란히 비교에서 B · C 필요 크레딧이 모두 0이고 첫 병목이 모두 '없음'이다. 예전 대사 "32M가량 적고 · P1에서 P2로"는 Mock 화면과 맞지 않는 대사였다. 이제 화면대로 말한다. MC1 이후 다시 확인(CF).
+2. **'확인 필요' 수의 뜻이 화면마다 다르다**: 아이템 보드의 분류 · 부제 '확인 필요 n칸'은 읽지 못함 · 미식별을 포함한다(Mock: 2 + 읽지 못함 4). 카드는 대본 뜻(승인할 수 있는 확인 필요 칸 = 2)을 쓴다. 그래서 카드 '확인 필요 2칸 승인'과 보드 부제가 다른 수로 보일 수 있다(부제 수는 화면 미확인). 또 F3c-2 신호 `itemReviewUncertainApproved`는 확인 필요 묶음 전부(읽지 못함 포함)가 승인돼야 나서, Mock에서는 실제로 나지 않을 수 있다(한 바퀴 시험은 hooks 출구 — 코드 읽기로 본 추정). 이번 범위 밖, CF 판단.
+3. `koreanEulReul`(9단계 아이템 이름용)은 괄호 안 끝 글자로 조사를 고른다. 학생 이름에 쓰면 '칸나(수영복)을'이 된다. 지금 학생 이름에 쓰는 곳은 없다(정보).
+4. 09d 대사의 열 B = 방금 만든 안, C = 예시 안은 대사 1("왼쪽부터 활성 계획, 방금 만든 안, 예시 안")과 밝히기(B · C)의 전제를 그대로 따른다(열 순서 = 비교에 담은 순서). 사용자가 비교 순서를 바꾸면 대사 1부터 맞지 않는다(기존과 같음).
+5. `test/goldens/f3c10_tutorial_compare_golden_test.dart` · `f3a_tutorial_parts_golden_test.dart` 머리말 주석에 옛 대사("마키 씨를 …", "'6명 한 번에 적용'")가 남아 있다. golden 시험 파일이라 고치지 않았다(CF 판단).
+6. 지운 파일: 일회성 렌더 사본 5개(프롬프트 허용), 시험 묶음 분할 파일 `debug/frontend_f3c11/related_part_0*` 3개(돌린 뒤 — 이 slice가 만든 debug 파일). 편집 도구 백업 파일 0. 작업트리의 미추적 `frontend/assets/item_icons/...`는 이 slice 것이 아니다.
+
+### 사본 · commit.json
+
+- pre 사본 11개(`debug/frontend_f3c11/pre/frontend/...`)는 모두 착수 때 HEAD와 같다 → `post_dir` 없음. 이 status 문서는 `status=true`라 `modified`에 넣지 않았다.
+- `debug/frontend_f3c11/commit.json`: slice `f3c11`, modified 11, added 1, `whole` = [`frontend/test/goldens/baseline/tutorial-compare-reveal.png`], `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f3c11/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B MC1 등 레인 워커가 모두 멈춘 뒤) `fe_gate.ps1` → golden RED 1 예상(`tutorial-compare-reveal` — `failures/` 검토, 대사 글 한 줄만 달라야 한다. MC1 뒤라면 그 Mock 값의 문장) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f3c11 -DryRun` → `fe_commit.ps1 -Slice f3c11`.
+- CF 결정: 워커 문구(치환 표의 대체 · 0 · 반대 문장, 09d 방향 없는 대체 문장), 발견 2 · 5.
+- 사용자: 위 검수표로 Windows mock 한 바퀴(1280 포함).
+
+## F4 착수 기록 (2026-10-25 02:06, Lane A 워커)
+
+- 상태: **진행 중**. 범위: 설정 탭 '자동 업데이트' 줄을 런처(X2) 플래그 파일로 실제 동작시킨다 — 스위치 ↔ `auto_update_disabled.flag`, '지금 확인' ↔ `check_now.flag`(다음 런처 시작 때 소비), 지금 버전(설치 descriptor `appVersion`, 모르면 '—'), 개발 실행이면 줄 비활성 + 이유. 네트워크 접근 0. 근거: CM 알림 2026-10-25 00:15(알파-1, F4 = X1-b latest-app/latest-data 기준 · X2 런처 실기와 짝), CF 배정 10:00 항목, `contracts/release-package-v1.md`, `frontend/windows/release_launcher/Program.cs` · `DistributionUpdater.cs`(읽기만).
+- 시작 SHA: `da3cc19ae86ea89199767bf0a71b724c2ab590a1`(브랜치 `scanner-consolidation`). 이 status 끝에 다른 "F4 착수 기록" 없음 확인.
+- 고칠 기존 파일(사본 `debug/frontend_f4/pre/<v7 기준 경로>`, 3개 모두 `git diff HEAD` 차이 없음 = **기존 미커밋 변경(WIP) 없음**, 사본 = 작업 트리 바이트 같음):
+  `frontend/lib/ui/pages/settings_page.dart`(줄 동작 · 문구 상수 · 주입 자리, CRLF), `frontend/lib/ui/settings/settings_sections.dart`(줄 설명 오류 색 자리 최소, LF), `frontend/test/settings_help_f3e_test.dart`(자리만 → 개발 실행 비활성 확인으로 갱신, LF).
+- `frontend/lib/ui/studio/settings_studio_layout.dart`: 줄 높이 · 치수 변경이 필요 없으면 고치지 않는다(필요해지면 사본을 먼저 두고 이 기록에 덧붙인다).
+- 새 파일(예정): `frontend/lib/services/update_preferences.dart`, `frontend/test/update_preferences_f4_test.dart`, `debug/frontend_f4/commit.json` · `output.md`.
+- 고치지 않음: Lane B X4D 파일(`planning_protocol_client.dart` · `repository_service.dart` · `process_app_service.dart` · `app_service.dart` · `mock_tutorial_practice.dart` · 튜토리얼 practice 시험), CF 미커밋 MC1(`mock_app_service.dart` · `mock_student_calculation_fixture.dart`) · F3c-11(`lib/ui/tutorial/**` · `tutorial_host/**` · `tutorial_targets/**` · 검토 보드 2 · `plan_scenario_compare.dart` · 튜토리얼 시험), XB X4 23경로(`backend/**` · `contracts/**`), `frontend/windows/**` · `frontend/tool/**`, `lib/ui/kit/**`, golden harness · 기준 이미지, pubspec, 택틱 · 스캐너 소유 파일.
+- 실제 사용자 폴더 착수 전 지문(읽기만, PowerShell `Get-ChildItem -Recurse -Force` → 상대 경로 · 크기(폴더 D) · 수정 시각 ticks 정렬 → UTF-8 SHA-256): `%LOCALAPPDATA%\BA Planner` 항목 **5984개**, SHA `f70e5db49c481bd07197fba06f8bc975091b5eccc6d7de018fb1af2c8626a9fa`, `v7\update` 폴더 **없음**.
+
+## F4 종료 기록 (2026-10-25 02:25, Lane A 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden `settings` 1장 변화 예상 → `-UpdateGoldens`) 남음. 시작 SHA `da3cc19a`, 커밋 없음(git 쓰기 안 함).
+- 결과: 설정 탭 Backend 연결 "자동 업데이트" 줄이 배포 런처(X2)가 읽는 플래그 파일을 실제로 다룬다. 규칙은 새 `frontend/lib/services/update_preferences.dart` 한 곳(`updatePreferencesRoot` · `UpdateInstall.detect` · `UpdatePreferences`)에 런처 줄 번호 주석과 함께 있다. 앱 안 네트워크 접근 0 — 확인 · 내려받기는 런처가 다음 시작 때 한다.
+- 기존 파일 diff: `settings_page.dart` +129/−25(CRLF 유지), `settings_sections.dart` +6/−1(`SettingsActionLine.error` — 설명 오류 색), `test/settings_help_f3e_test.dart` +4/−3. 새 파일: `update_preferences.dart` 175줄, `test/update_preferences_f4_test.dart` 464줄(둘 다 LF · 끝 개행 하나). `settings_studio_layout.dart` **변경 0**(줄 높이 · 치수 그대로 — 사본도 두지 않음). 설정 화면 인자 `SettingsPage(updatePreferences:)`는 선택(null = 지금 실행 파일 · 환경 변수) — `app_shell.dart` 변경 0.
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집 뒤 3회 · 서식 뒤 마지막) | `No issues found!`(info 0) |
+| `flutter test --exclude-tags golden test/update_preferences_f4_test.dart`(1회째) | +16 −1 — "a development run never touches the preferences folder": `requestCheck()`가 사용 가능 확인 전에 폴더를 먼저 만들었다(서비스 버그, 시험이 잡음) → 확인을 앞으로 옮겨 고침 |
+| 같은 명령(2회째) | **+17 All passed** |
+| `flutter test --exclude-tags golden test/settings_help_f3e_test.dart` | **+10 All passed** |
+| 관련 기존 시험 43파일(grep `SettingsPage\|settings_page\.dart\|settings_sections\|SettingsActionLine\|update_preferences\|BAPlannerApp\(\|AppShell\(\|top-tab-settings\|settings_studio_layout`, golden 폴더 제외 · golden 태그/`expectGoldenScene` grep 0건 · fe_gate process 패턴 파일 2개는 따로) 2묶음 `--exclude-tags golden` | 묶음 A(22파일) **+256 All passed**, 묶음 B(21파일, 새 F4 · F3e 시험 포함 — 서식 뒤 실행) **+260 All passed** |
+| `flutter test --exclude-tags golden --concurrency=1 test/startup_user_data_su1_test.dart test/startup_user_data_su2_test.dart`(process 패턴에 걸리지만 `FakeBackendProcess`만 씀 — Python 실행 0) | **+40 All passed** |
+| 일회성 측정(사본 `test/f4_debug_tmp_test.dart`, `@Tags` · `expectGoldenScene` · `matchesGoldenFile` grep 0건): 설치 실행 줄 설명의 `RenderParagraph.didExceedMaxLines` at 1280×720 · 1920×1032 · 2560×1392, 보통 · 확인 예정 | +6 통과, 6경우 모두 **잘림 없음**(설명 폭 539 · 428.75). 실행 직후 사본 삭제 |
+| 서식: 기존 3파일은 임시 사본(세션 scratchpad)에 `dart format` 후 비교 | 차이 0. 새 2파일은 파일 하나씩 `dart format`(줄 바꿈만 6곳) |
+| `git diff --check HEAD -- <고친 기존 3파일>` | 출력 없음(rc 0) |
+
+로그: `debug/frontend_f4/logs/`(`f4-test-1.log` · `f4-test-2.log` · `f3e-test-1.log` · `related-a.log` · `related-b.log` · `related-startup.log`), 시험 목록 `debug/frontend_f4/related_all.txt` · `related_process.txt` · `related_tests.txt` · `related_a.txt` · `related_b.txt`.
+
+### 경로 규칙 표(런처 줄 ↔ Dart)
+
+| 규칙 | 런처(`frontend/windows/release_launcher/`, `da3cc19a`) | Dart(`lib/services/update_preferences.dart`) |
+|---|---|---|
+| 사용자 폴더 | Program.cs 117-120: `BA_PLANNER_USER_DIR`가 `IsNullOrEmpty`가 아니면 그것, 아니면 `GetFolderPath(LocalApplicationData)\BA Planner\v7` | `updatePreferencesRoot`: 같은 순서, 빈 문자열 = 없음. 기본은 환경 변수 `LOCALAPPDATA`(없으면 null → 줄 끔 "설정 폴더를 찾지 못했습니다") |
+| `preferencesRoot` | Program.cs 121: `Path.Combine(userRoot, "update")` | `… + 'update'`(`Path.Combine`처럼 끝 구분자가 있으면 그대로 붙임) |
+| 끔 플래그 | DistributionUpdater.cs 382: `File.Exists(preferencesRoot\auto_update_disabled.flag)`면 업데이트 안 함(내용 안 봄) | `autoUpdateDisabledFlagName` — 끔 = 빈 파일 만듦, 켬 = 그 파일만 지움 |
+| 지금 확인 | DistributionUpdater.cs 381-383: `check_now.flag`가 있으면 끔이어도 한 번 확인, 확인 전에 지움 | `checkNowFlagName` — 빈 파일 만듦(런처가 소비). 있으면 "확인 예정" |
+| 배포 실행 | Program.cs 101-115: 루트에 `frontend\tool\sync_windows_release.ps1`이 없으면 배포 모드, 앱 = `<루트>\app\ba_planner_v7.exe` | `UpdateInstall.detect`: 실행 파일 이름 `ba_planner_v7.exe` · 부모 폴더 `app` · 루트에 sync 스크립트 없음 |
+| 업데이트 설정 | DistributionUpdater.cs 378-380: `<루트>\update-channel.json` 또는 `<루트>\app\update-channel.json` 없으면 플래그도 안 읽고 끝 | 둘 다 없으면 개발 실행(줄 끔) |
+| 지금 버전 | DistributionUpdater.cs 400-412: `app\.ba_planner_install.json`, 없으면 `release-manifest.json`의 `appVersion`(101-105 문법) · JSON 16 MiB 한도(70) | `_installedVersion`: 같은 순서 · 같은 정규식 · 같은 한도, 하나라도 안 맞으면 '—' |
+
+### 줄 상태 표
+
+| 실행 | 스위치 | "지금 확인" 버튼 | 설명 줄 |
+|---|---|---|---|
+| 설치 실행 · 끔 플래그 없음 | 켜짐 · 누를 수 있음 | "지금 확인" 켜짐 | "켜 두면 앱을 열 때 새 버전을 받습니다 · 지금 버전 7.0.0-alpha.1" |
+| 설치 실행 · 끔 플래그 있음 | 꺼짐 · 누를 수 있음 | 그대로(끔이어도 한 번 확인 — 런처 규칙) | 위와 같음 |
+| 설치 실행 · 방금 "지금 확인" | 그대로 | "확인 예정"(시계 아이콘) 꺼짐 + 마우스 올림 "다음에 앱을 시작할 때 확인합니다" | "다음에 앱을 시작할 때 확인합니다 · 지금 버전 …" |
+| 설치 실행 · 화면을 열 때(또는 새로고침) `check_now.flag` 있음 | 그대로 | "확인 예정" 꺼짐 | "다음 시작 때 확인 예정 · 지금 버전 …" |
+| 설치 실행 · descriptor 못 읽음 | 위와 같음 | 위와 같음 | "… · 지금 버전 —" |
+| 설치 실행 · 쓰기 실패 | 실제 파일 상태로 다시 읽음 | 그대로(다시 누를 수 있음) | "업데이트 설정을 저장하지 못했습니다 · 지금 버전 …"(오류 색, 경로 · 예외 글 없음). 다음 성공 쓰기 · 새로고침에서 지워짐 |
+| 설치 실행 · 사용자 폴더 모름(`BA_PLANNER_USER_DIR` · `LOCALAPPDATA` 둘 다 없음) | 꺼짐 · 비활성 | 비활성 + 이유 | "켜 두면 앱을 열 때 새 버전을 받습니다 · 설정 폴더를 찾지 못했습니다" |
+| 개발 실행(시험 · `flutter run` · 개발 런처 `release\` · `build\…\Release\`) | 꺼짐 · 비활성(파일을 읽지도 않음) | 비활성 + 이유 | "켜 두면 앱을 열 때 새 버전을 받습니다 · 개발 실행에서는 자동 업데이트를 쓰지 않습니다" |
+
+플래그 상태는 화면을 만들 때와 `_reload`(새로고침 · 연결 변화) 때 다시 읽는다. 앱은 플래그만 만들고 지운다 — 다른 파일 · 폴더 삭제 0, 폴더는 `preferencesRoot`가 없을 때만 그 경로를 만든다(`createSync(recursive: true)` — 사용자 폴더 `v7`이 없으면 그것도 경로로 생긴다).
+
+### 문구 표(워커 문구 = CF 검수 대상, 상수는 `settings_page.dart`)
+
+| 상수 | 문구 | 이전(F3e) |
+|---|---|---|
+| `settingsAutoUpdateDescription` | 켜 두면 앱을 열 때 새 버전을 받습니다 | 켜 두면 앱을 열 때 새 버전을 받습니다 · 다음 버전에 들어갑니다(시안 — 뒤쪽은 자리 이유였다) |
+| `settingsAutoUpdateDisabledReason` | 개발 실행에서는 자동 업데이트를 쓰지 않습니다 | 자동 업데이트는 다음 버전에 들어갑니다 |
+| `settingsAutoUpdateNoFolderReason`(새) | 설정 폴더를 찾지 못했습니다 | — |
+| `settingsAutoUpdateCheckRequested`(새) | 다음에 앱을 시작할 때 확인합니다 | — |
+| `settingsAutoUpdateCheckPending`(새) | 다음 시작 때 확인 예정 | — |
+| `settingsAutoUpdateWriteFailed`(새) | 업데이트 설정을 저장하지 못했습니다 | — |
+| `settingsAutoUpdateVersionLabel`(새) | 지금 버전 | — |
+| 버튼 | 지금 확인 / 확인 예정 | 지금 확인(늘 꺼짐) |
+
+### 실제 사용자 폴더 전후 같음 근거
+
+- 착수 전 · 끝(02:18) 모두 같은 방법(읽기만: `Get-ChildItem -Recurse -Force` → 상대 경로 · 크기 · 수정 시각 ticks 정렬 → SHA-256)으로 `%LOCALAPPDATA%\BA Planner` 항목 **5984개 · SHA `f70e5db49c481bd07197fba06f8bc975091b5eccc6d7de018fb1af2c8626a9fa`로 같음**, `v7\update` 폴더 전후 **없음**.
+- 시험은 `Directory.systemTemp.createTempSync('ba_planner_f4_')` 폴더와 주입한 환경 맵(`BA_PLANNER_USER_DIR` = 그 아래 `user`, `LOCALAPPDATA` 키 없음)만 쓴다. 경로 규칙 단위 시험의 `LOCALAPPDATA`는 가짜 문자열(`X:\local`)이고 파일을 보지 않는다. 기본값으로 만드는 다른 시험(F3e · golden · 설정 시험)은 실행 파일이 `flutter_tester.exe`라 개발 실행 → 플래그 파일을 읽지도 않는다. 끝난 뒤 `%TEMP%\ba_planner_f4*` 남은 폴더 0.
+
+### golden 변화 예상(기존 장면 1장 — 새 장면 0)
+
+| 장면 | 바뀌는 이유 |
+|---|---|
+| `settings`(`test/goldens/fe10s_settings_golden_test.dart`) | 시험 실행 = 개발 실행이라 Backend 연결 "자동 업데이트" 설명 뒤쪽만 "다음 버전에 들어갑니다" → "개발 실행에서는 자동 업데이트를 쓰지 않습니다". 스위치(꺼짐 · 흐림) · "지금 확인"(흐림) · 줄 높이 · 다른 줄 변화 0 |
+| 그 밖 | 변화 0 예상(설정 탭은 다른 장면에서 IndexedStack 뒤에 있어 그려지지 않음) |
+
+commit.json `whole` = `frontend/test/goldens/baseline/settings.png`(파일 단위), `optional_added` = [].
+
+### 미검증("미실행")
+
+- 미실행: golden 비교 · 기준 PNG 갱신, 전체 `fe_gate.ps1`, almanac validate, Python, 런처 빌드 · 실행.
+- 미실행: **실제 런처 설치본에서 확인(사용자 X2 실기)** — 실제 `BA Planner v7.exe` → `app\ba_planner_v7.exe` 배치에서 줄이 켜지는지, 런처가 다음 시작 때 `check_now.flag`를 소비하는지, 끔 플래그로 업데이트를 건너뛰는지. 실제 `%LOCALAPPDATA%\BA Planner\v7\update`에 쓰는 것(시험은 임시 폴더만).
+- 미실행: 실제 앱 mock 실행 눈 검수(아래 검수표), 키보드 Tab 순서.
+
+### 검수표(사용자 X2 실기 · CF)
+
+| 자리 | 여는 방법 | 확인 |
+|---|---|---|
+| 개발 실행 | `flutter run -d windows --dart-define=BA_PLANNER_USE_REAL_BACKEND=false` → 설정 탭 | "자동 업데이트" 꺼진 스위치 · 흐린 "지금 확인" · 설명 "… · 개발 실행에서는 자동 업데이트를 쓰지 않습니다" · 마우스 올림 같은 이유 |
+| 설치 실행 · 켬 | X2 실기: 첫 alpha 앱 ZIP을 새 폴더에 풀고 `update-channel.json`을 둔 뒤 `BA Planner v7.exe`로 시작 → 설정 탭 | 스위치 켜짐 · 설명 "… · 지금 버전 <ZIP appVersion>" |
+| 설치 실행 · 끔 | 위에서 스위치 끔 | `%LOCALAPPDATA%\BA Planner\v7\update\auto_update_disabled.flag`(0바이트) 생김 → 앱 닫고 런처 다시 시작 → 업데이트 확인 없이 바로 실행. 다시 켜면 그 파일만 사라짐 |
+| 지금 확인 | 설정 → "지금 확인" | `check_now.flag` 생김 · 버튼 "확인 예정" · 설명 "다음에 앱을 시작할 때 확인합니다" → 앱을 다시 열면(새로고침도) "다음 시작 때 확인 예정" → 앱 닫고 런처로 시작 → 런처가 플래그를 지우고 확인(끔이어도 한 번) → 다음 설정 화면에서 "지금 확인"으로 돌아옴 |
+| `BA_PLANNER_USER_DIR` | 런처를 그 변수와 함께 시작 | 플래그가 `<그 폴더>\update\`에 생김 |
+
+### 발견 사항
+
+1. **워크플로 표의 F4 행이 옛 뜻이다**: `frontend-redesign-workflow.md` "알파 차단 항목" F4 = "스캔 문제 신고 UI(XB X5)"인데, CM 2026-10-25 00:15 알림과 CF 10:00 배정은 F4 = 자동 갱신 설정 UI다. 설정 줄 "스캔 문제 신고"의 주석(`_scanReportRow` "F4 · XB X5 전", F3e)도 옛 뜻이다(이 slice에서 고치지 않음 — CF가 표 · 이름 정리).
+2. **"다음에 앱을 시작할 때"는 런처로 시작할 때만 맞다**: 런처를 거치지 않고 `app\ba_planner_v7.exe`를 바로 열면 확인하지 않는다. 또 런처는 앱이 이미 실행 중이면 업데이트 없이 끝나고(Program.cs 116), `check_now.flag`는 네트워크 확인 **전에** 지운다(DistributionUpdater.cs 383) — 오프라인이면 요청이 조용히 사라진다. 계약(`release-package-v1.md` "explicit check bypasses … once, at the next safe launcher invocation")과는 맞는다. 문구 조정은 CF 판단.
+3. **사용자 폴더 기본값 출처 차이(정보)**: 런처는 `Environment.GetFolderPath(LocalApplicationData)`(셸 known folder), Dart는 환경 변수 `LOCALAPPDATA`. 보통 같은 값이다. 상대 경로 `BA_PLANNER_USER_DIR`는 런처 작업 폴더 기준, 앱은 작업 폴더가 `app\`이라 다르게 풀릴 수 있다(런처 코드 기준이라 그대로 둠 — XB와 "절대 경로만" 규칙 조율 여지).
+4. **런처의 `Installed`는 `dataSnapshotSha256`도 확인한다**(DistributionUpdater.cs 410). 앱은 버전 표시만 하므로 해시가 틀린 descriptor에서도 버전이 보일 수 있다(그때 런처는 업데이트하지 않음). 정보.
+5. 시안 Settings-Help는 스위치 켜짐으로 그렸다 — 개발 실행 golden은 꺼짐(F3e 발견 3과 같음). 설치 실행 기본은 켜짐(플래그 없음).
+6. 지운 파일: 일회성 측정 사본 `frontend/test/f4_debug_tmp_test.dart` 1개(프롬프트 허용, 실행 직후). 시험이 만든 임시 폴더는 각 시험 tearDown이 지운다. 편집 도구 백업 파일 0. `flutter analyze`가 `pub get`을 돌렸지만 `pubspec.yaml` · `pubspec.lock` 변경 0(git status 확인).
+
+### 사본 · commit.json
+
+- pre 사본 3개(`debug/frontend_f4/pre/frontend/...`)는 모두 착수 때 HEAD와 같다 → `post_dir` 없음. 이 status 문서는 `status=true`라 `modified`에 넣지 않았다.
+- `debug/frontend_f4/commit.json`: slice `f4`, modified 3, added 2, `whole` = [`frontend/test/goldens/baseline/settings.png`], `optional_added` = []. 메시지 ASCII.
+- 인계: `debug/frontend_f4/output.md`.
+
+### 다음 행동
+
+- CF: (Lane B X4D 등 레인 워커가 모두 멈춘 뒤, CF 10:00 계획대로 MC1 · F3c-11 · X4D · F4 한 gate) `fe_gate.ps1` → golden RED 1 예상(`settings` — `failures/` 검토, 자동 업데이트 설명 뒤쪽 글만 달라야 한다) → `-UpdateGoldens` → 재비교 GREEN → `fe_commit.ps1 -Slice f4 -DryRun` → `fe_commit.ps1 -Slice f4`.
+- CF 결정: 워커 문구(위 표), 발견 1 · 2.
+- 사용자: X2 런처 실기 때 위 검수표 "설치 실행" 행.
+
+### f3c11 commit record (2026-10-25 13:51, written by fe_commit.ps1)
+
+- gate: C:\Users\brigh\planner_of_plana\BA Planner\v7\debug\frontend_gate\20261025_133747\summary.txt (result         : GREEN)
+- method: 3-way merge of pre copy / HEAD / slice end, staged to the index only. Working-tree diffs left: none

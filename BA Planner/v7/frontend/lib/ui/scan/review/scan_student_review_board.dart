@@ -607,6 +607,15 @@ class _ScanStudentReviewBoardState extends State<ScanStudentReviewBoard> {
   @override
   Widget build(BuildContext context) {
     final view = _view();
+    // F3c-11: 프라나 04 · 3단계 카드가 이 보드가 그린 수를 쓴다(분류 버튼 · 일괄 행과 같은 값).
+    TutorialHooksScope.factsOf(context)?.reportStudentReview(
+      TutorialStudentReviewCounts(
+        changed: view.counts[ScanReviewFilter.changed] ?? 0,
+        newStudents: view.counts[ScanReviewFilter.newStudent] ?? 0,
+        uncertain: view.counts[ScanReviewFilter.needsReview] ?? 0,
+        applicable: view.bulkTargets.length,
+      ),
+    );
     return BaModal(
       controller: _discardModal,
       scrim: BaScrim.scan,

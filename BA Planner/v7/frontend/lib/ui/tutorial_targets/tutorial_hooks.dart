@@ -10,6 +10,8 @@
 //   듣는 쪽([TutorialSignalBus.listener])이 없으면 버린다.
 // - [TutorialHooks.active]: 튜토리얼 활성 표시. 켜지면 모든 탭 머리글 제목 옆에 `TutorialHeaderChip`이 보인다
 //   ([TutorialHeaderChipSlot]). 기본 꺼짐.
+// - F3c-11 [TutorialHooks.facts]: 화면이 그린 결과 수(학생 · 아이템 검토 보드, 나란히 비교 표)를 알린다
+//   ([TutorialHooksScope.factsOf]). 튜토리얼 대사 · 카드의 치환자가 이 값을 쓴다(화면과 대사가 어긋나지 않게).
 // 셸 밖(탭 하나만 띄운 시험 등)에서는 [TutorialHooksScope]가 없어 등록 · 신호 모두 아무것도 하지 않는다.
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -17,7 +19,13 @@ import 'package:flutter/widgets.dart';
 
 import '../tutorial/tutorial_highlight.dart'
     show TutorialHighlightShape, tutorialHighlightPath;
-import '../tutorial/tutorial_script.dart' show TutorialCalculatorChange;
+import '../tutorial/tutorial_script.dart'
+    show
+        TutorialCalculatorChange,
+        TutorialCompareValues,
+        TutorialItemReviewCounts,
+        TutorialScriptValues,
+        TutorialStudentReviewCounts;
 
 export '../tutorial/tutorial_highlight.dart' show TutorialHighlightShape;
 
@@ -249,6 +257,59 @@ class TutorialSignalBus {
   void emit(String signal) => listener?.call(signal);
 }
 
+/// F3c-11: 화면이 그린 결과 수. 화면은 빌드(· 레이아웃) 중에 알리므로 듣는 쪽(덧그림)에는 프레임 뒤에 한 번 알린다.
+class TutorialScriptFacts extends ChangeNotifier {
+  TutorialScriptValues _values = const TutorialScriptValues();
+  bool _notifyScheduled = false;
+  bool _disposed = false;
+
+  TutorialScriptValues get values => _values;
+
+  void reportStudentReview(TutorialStudentReviewCounts? counts) => _set(
+    TutorialScriptValues(
+      studentReview: counts,
+      itemReview: _values.itemReview,
+      compare: _values.compare,
+    ),
+  );
+
+  void reportItemReview(TutorialItemReviewCounts? counts) => _set(
+    TutorialScriptValues(
+      studentReview: _values.studentReview,
+      itemReview: counts,
+      compare: _values.compare,
+    ),
+  );
+
+  void reportCompare(TutorialCompareValues? compare) => _set(
+    TutorialScriptValues(
+      studentReview: _values.studentReview,
+      itemReview: _values.itemReview,
+      compare: compare,
+    ),
+  );
+
+  /// 튜토리얼을 (다시) 시작할 때 지난 값을 비운다.
+  void clear() => _set(const TutorialScriptValues());
+
+  void _set(TutorialScriptValues next) {
+    if (_disposed || next == _values) return;
+    _values = next;
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+}
+
 /// 셸 하나가 가지는 튜토리얼 자리 묶음.
 class TutorialHooks {
   TutorialHooks();
@@ -263,10 +324,14 @@ class TutorialHooks {
   final ValueNotifier<TutorialCalculatorChange?> calculatorChange =
       ValueNotifier(null);
 
+  /// 화면이 그린 결과 수(F3c-11 — 대사 · 카드 치환자). 기본 비어 있음.
+  final TutorialScriptFacts facts = TutorialScriptFacts();
+
   void dispose() {
     registry.dispose();
     active.dispose();
     calculatorChange.dispose();
+    facts.dispose();
     signals.listener = null;
   }
 }
@@ -294,6 +359,10 @@ class TutorialHooksScope extends InheritedWidget {
         .signals
         .emit(signal);
   }
+
+  /// 결과 수를 알릴 자리(F3c-11, 의존을 만들지 않는다). 셸 밖이면 null.
+  static TutorialScriptFacts? factsOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<TutorialHooksScope>()?.hooks.facts;
 
   @override
   bool updateShouldNotify(TutorialHooksScope oldWidget) =>

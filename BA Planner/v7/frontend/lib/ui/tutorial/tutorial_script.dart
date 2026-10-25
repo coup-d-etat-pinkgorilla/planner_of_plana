@@ -559,9 +559,9 @@ const tutorialScenes = <String, PlanaScene>{
     context: '2단계 뒤 · 3단계 전 · 학생 결과 검토 · 바탕 Scan-Student-Review',
     nextStepId: '3',
     lines: [
-      PlanaLine('스캔을 마쳤습니다. 지난 기록과 달라진 학생은 6명, 새 학생은 1명입니다.', expression: _n),
+      PlanaLine(tutorialLineReviewCounts, expression: _n),
       PlanaLine(
-        "다만 2명은 읽은 값을 확신할 수 없어, '확인 필요'로 따로 모아 두었습니다.",
+        tutorialLineReviewUncertain,
         expression: _th,
         revealKeys: [TutorialTargets.studentReviewUncertainGroup],
         figureLeft: 1950,
@@ -576,10 +576,7 @@ const tutorialScenes = <String, PlanaScene>{
         revealKeys: [TutorialTargets.studentReviewFallbackCheck],
         figureLeft: 900,
       ),
-      PlanaLine(
-        '지금은 그대로 두셔도 괜찮습니다. 계산이 화면과 맞는 6명만 먼저 한 번에 적용하겠습니다.',
-        expression: _ss,
-      ),
+      PlanaLine(tutorialLineReviewApply, expression: _ss),
     ],
   ),
   'plana-05': PlanaScene(
@@ -680,9 +677,9 @@ const tutorialScenes = <String, PlanaScene>{
     context: '7-2 뒤 · 계획 만들기 2 · 마키 탭 · 바탕 계획 만들기 2 · 마키',
     nextStepId: '7-2b',
     lines: [
-      PlanaLine('한 명만 다르게 키워 보겠습니다. 코누리 마키 씨입니다.', expression: _ss),
+      PlanaLine('한 명만 다르게 키워 보겠습니다. 코누리 마키입니다.', expression: _ss),
       PlanaLine(
-        '이번 비나전에는 마키 씨의 EX와 기본 스킬만 M까지 올리고, 강화 · 서브 스킬은 1로 둡니다.',
+        '이번 비나전에는 마키의 EX와 기본 스킬만 M까지 올리고, 강화 · 서브 스킬은 1로 둡니다.',
         expression: _se,
         revealKeys: [TutorialTargets.planMakiStage1Skills],
         figureLeft: 60,
@@ -707,10 +704,10 @@ const tutorialScenes = <String, PlanaScene>{
         figureLeft: 1950,
       ),
       PlanaLine(
-        '비나전의 중심인 칸나(수영복) 씨, 마키 씨의 1단계, 미카 씨는 1순위에 둡니다. 시로코(수영복) 씨와 히마리(무장) 씨는 2순위입니다.',
+        '비나전의 중심인 칸나(수영복), 마키의 1단계, 미카는 1순위에 둡니다. 시로코(수영복)와 히마리(무장)는 2순위입니다.',
         expression: _se,
       ),
-      PlanaLine('아카네 씨는 3순위에 둡니다. 이유는 놓은 뒤에 말씀드리겠습니다.', expression: _ss),
+      PlanaLine('아카네는 3순위에 둡니다. 이유는 놓은 뒤에 말씀드리겠습니다.', expression: _ss),
     ],
   ),
   'plana-08e': PlanaScene(
@@ -721,7 +718,7 @@ const tutorialScenes = <String, PlanaScene>{
     nextStepId: '7-4',
     lines: [
       PlanaLine(
-        '아카네 씨는 칸나(수영복) 씨의 대체 학생으로, 더 높은 난이도에서 쓰입니다.',
+        '아카네는 칸나(수영복)의 대체 학생으로, 더 높은 난이도에서 쓰입니다.',
         expression: _th,
         revealKeys: [
           TutorialTargets.planOrderCardKannaSwimsuit,
@@ -730,11 +727,11 @@ const tutorialScenes = <String, PlanaScene>{
         figureLeft: 1500,
       ),
       PlanaLine(
-        '그래서 칸나(수영복) 씨를 다 키운 다음에 아카네 씨를 키우도록 두 카드를 이어 두겠습니다.',
+        '그래서 칸나(수영복)를 다 키운 다음에 아카네를 키우도록 두 카드를 이어 두겠습니다.',
         expression: _se,
       ),
       PlanaLine(
-        '이어 두면 칸나(수영복) 씨의 목표가 끝나기 전에는 아카네 씨가 앞 칸으로 올라가지 않습니다.',
+        '이어 두면 칸나(수영복)의 목표가 끝나기 전에는 아카네가 앞 칸으로 올라가지 않습니다.',
         expression: _n,
       ),
     ],
@@ -746,9 +743,9 @@ const tutorialScenes = <String, PlanaScene>{
     context: '7-4 뒤 · 단계 순서 · 네루(교복) · 바탕 계획 만들기 3 · 이은 뒤',
     nextStepId: '7-5',
     lines: [
-      PlanaLine('이어졌습니다. 칸나(수영복) 씨에서 아카네 씨로 내려오는 선이 보입니다.', expression: _ss),
+      PlanaLine('이어졌습니다. 칸나(수영복)에서 아카네로 내려오는 선이 보입니다.', expression: _ss),
       PlanaLine(
-        "네루(교복) 씨와 마키 씨의 2단계는 이번 비나전에서는 급하지 않습니다. 둘 다 '나중에' 칸으로 옮겨 두겠습니다.",
+        "네루(교복)와 마키의 2단계는 이번 비나전에서는 급하지 않습니다. 둘 다 '나중에' 칸으로 옮겨 두겠습니다.",
         expression: _n,
         revealKeys: [
           TutorialTargets.planOrderCardNeruUniform,
@@ -768,7 +765,7 @@ const tutorialScenes = <String, PlanaScene>{
     nextStepId: '7-6',
     lines: [
       PlanaLine(
-        '마지막으로 저장합니다. 1순위는 페이즈 1, 2순위는 페이즈 2, 3순위는 페이즈 3이 되고, 나중에 칸의 네루(교복) 씨와 마키 씨의 2단계는 페이즈에 들어가지 않습니다.',
+        '마지막으로 저장합니다. 1순위는 페이즈 1, 2순위는 페이즈 2, 3순위는 페이즈 3이 되고, 나중에 칸의 네루(교복)와 마키의 2단계는 페이즈에 들어가지 않습니다.',
         expression: _n,
         revealKeys: [TutorialTargets.planSavePhases],
         figureLeft: 1950,
@@ -802,7 +799,7 @@ const tutorialScenes = <String, PlanaScene>{
         figureLeft: 1650,
       ),
       PlanaLine(
-        "'비나 대비 · 한 번에 MAX'는 마키 씨도 한 번에 MAX로 키우고, 네루(교복) 씨도 2순위 페이즈에 넣은 안입니다.",
+        "'비나 대비 · 한 번에 MAX'는 마키도 한 번에 MAX로 키우고, 네루(교복)도 2순위 페이즈에 넣은 안입니다.",
         expression: _n,
       ),
       PlanaLine(
@@ -822,7 +819,7 @@ const tutorialScenes = <String, PlanaScene>{
         expression: _n,
       ),
       PlanaLine(
-        '마키 씨를 두 단계로 나누고 네루(교복) 씨를 미룬 쪽이, 필요한 크레딧이 32M가량 적고 첫 병목도 P1에서 P2로 늦어졌습니다.',
+        tutorialLineCompareResult,
         expression: _se,
         revealKeys: [
           TutorialTargets.scenarioCompareColumnB,
@@ -1072,12 +1069,326 @@ TutorialStep tutorialStepForCalculator(
   return _stepWith(step, doneWhy: tutorialCalculatorChangeText(change));
 }
 
+// --- F3c-11: 결과 수치 치환자(CM 2026-10-24 18:15 — 사용자 승인) ---
+//
+// 대본에 박힌 결과 수(학생 · 아이템 검토 수, 두 시나리오의 크레딧 차 · 첫 병목)는 아래 치환자 줄로 두고, 보일 때 화면이
+// 그린 값([TutorialScriptValues])으로 채운다([tutorialScriptText]). 값을 모르면 수치 없는 대체 문장, 0이거나 반대
+// 방향이면 그에 맞는 문장이다(워커 문구 — status F3c-11 종료 기록). 사용자에게 시키는 계획 지시(순위 · 마키 단계 · 일곱 명 ·
+// n / 10)는 대본 그대로다.
+
+/// 프라나 04 대사 1(바뀐 학생 · 새 학생 수).
+const tutorialLineReviewCounts =
+    '스캔을 마쳤습니다. 지난 기록과 달라진 학생은 {changedStudents}명, 새 학생은 {newStudents}명입니다.';
+
+/// 프라나 04 대사 2(확인 필요 학생 수).
+const tutorialLineReviewUncertain =
+    "다만 {uncertainStudents}명은 읽은 값을 확신할 수 없어, '확인 필요'로 따로 모아 두었습니다.";
+
+/// 프라나 04 대사 5(한 번에 적용할 학생 수).
+const tutorialLineReviewApply =
+    '지금은 그대로 두셔도 괜찮습니다. 계산이 화면과 맞는 {applyStudents}명만 먼저 한 번에 적용하겠습니다.';
+
+/// 프라나 09d 대사 2(열 B '방금 만든 안' 대비 열 C '예시 안'의 필요 크레딧 차 · 첫 병목).
+const tutorialLineCompareResult =
+    '마키를 두 단계로 나누고 네루(교복)를 미룬 쪽이, 필요한 크레딧이 {creditGap}가량 적고 첫 병목도 '
+    '{bottleneckFrom}에서 {bottleneckTo}로 늦어졌습니다.';
+
+/// 3단계 할 일(일괄 행 버튼 'n명 한 번에 적용').
+const tutorialStepApplyStudentsTitle = "'{applyStudents}명 한 번에 적용'을 눌러 주십시오.";
+
+/// 6단계 할 일(주 버튼 '승인한 n칸 인벤토리에 적용' — 확인 필요 칸까지 승인한 뒤의 수).
+const tutorialStepApplyCellsTitle = "'승인한 {approvedCells}칸 인벤토리에 적용'을 눌러 주십시오.";
+
+/// 6단계 하위 체크(승인할 수 있는 확인 필요 칸 수).
+const tutorialStepReviewCellsCheck = '확인 필요 {reviewCells}칸 승인';
+
+/// 학생 결과 검토 보드가 그린 수: 분류 버튼 '바뀐 학생' · '새 학생' · '확인 필요'와 일괄 행 'n명 한 번에 적용'.
+class TutorialStudentReviewCounts {
+  const TutorialStudentReviewCounts({
+    required this.changed,
+    required this.newStudents,
+    required this.uncertain,
+    required this.applicable,
+  });
+
+  final int changed;
+  final int newStudents;
+  final int uncertain;
+
+  /// 한 번에 적용할 학생(바뀐 학생 중 문제 없음 · 계산 일치 — 일괄 행 버튼의 n).
+  final int applicable;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TutorialStudentReviewCounts &&
+      other.changed == changed &&
+      other.newStudents == newStudents &&
+      other.uncertain == uncertain &&
+      other.applicable == applicable;
+
+  @override
+  int get hashCode => Object.hash(changed, newStudents, uncertain, applicable);
+}
+
+/// 아이템 결과 검토 보드가 그린 칸 수(주 버튼과 같은 범위 · 같은 승인 규칙).
+class TutorialItemReviewCounts {
+  const TutorialItemReviewCounts({
+    required this.approvedAfterReview,
+    required this.reviewCells,
+  });
+
+  /// 승인할 수 있는 확인 필요 칸까지 승인했을 때 주 버튼의 n('승인한 n칸').
+  final int approvedAfterReview;
+
+  /// 승인할 수 있는 확인 필요 칸(값이 있는 확인 필요 · 읽지 못함 칸).
+  final int reviewCells;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TutorialItemReviewCounts &&
+      other.approvedAfterReview == approvedAfterReview &&
+      other.reviewCells == reviewCells;
+
+  @override
+  int get hashCode => Object.hash(approvedAfterReview, reviewCells);
+}
+
+/// 나란히 비교 표의 열 B(방금 만든 안) · 열 C(예시 안) 값(화면 표와 같은 계산 결과).
+class TutorialCompareValues {
+  const TutorialCompareValues({
+    this.madeCredits,
+    this.exampleCredits,
+    this.creditGap,
+    this.madeBottleneckPhase,
+    this.exampleBottleneckPhase,
+  });
+
+  /// 필요 크레딧. 모르면 null.
+  final int? madeCredits;
+  final int? exampleCredits;
+
+  /// 두 필요 크레딧 차이의 크기를 화면과 같은 단위로 쓴 글(예: '32.4M'). 하나라도 모르면 null.
+  final String? creditGap;
+
+  /// 첫 병목 페이즈(비교 표와 같은 뜻 — 0 = 병목 없음, null = 모름).
+  final int? madeBottleneckPhase;
+  final int? exampleBottleneckPhase;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TutorialCompareValues &&
+      other.madeCredits == madeCredits &&
+      other.exampleCredits == exampleCredits &&
+      other.creditGap == creditGap &&
+      other.madeBottleneckPhase == madeBottleneckPhase &&
+      other.exampleBottleneckPhase == exampleBottleneckPhase;
+
+  @override
+  int get hashCode => Object.hash(
+    madeCredits,
+    exampleCredits,
+    creditGap,
+    madeBottleneckPhase,
+    exampleBottleneckPhase,
+  );
+}
+
+/// 대사 · 카드의 치환자를 채울 값. 모르는 묶음은 null(대체 문장).
+class TutorialScriptValues {
+  const TutorialScriptValues({
+    this.studentReview,
+    this.itemReview,
+    this.compare,
+  });
+
+  final TutorialStudentReviewCounts? studentReview;
+  final TutorialItemReviewCounts? itemReview;
+  final TutorialCompareValues? compare;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TutorialScriptValues &&
+      other.studentReview == studentReview &&
+      other.itemReview == itemReview &&
+      other.compare == compare;
+
+  @override
+  int get hashCode => Object.hash(studentReview, itemReview, compare);
+}
+
+/// 치환자 줄([tutorialLineReviewCounts] 등)이면 [values]로 채운 문장, 아니면 [text] 그대로.
+String tutorialScriptText(String text, TutorialScriptValues values) =>
+    switch (text) {
+      tutorialLineReviewCounts => _reviewCountsLine(values.studentReview),
+      tutorialLineReviewUncertain => _reviewUncertainLine(values.studentReview),
+      tutorialLineReviewApply => _reviewApplyLine(values.studentReview),
+      tutorialLineCompareResult => _compareLine(values.compare),
+      tutorialStepApplyStudentsTitle =>
+        switch (values.studentReview?.applicable) {
+          null => "'한 번에 적용'을 눌러 주십시오.",
+          0 => '지금은 한 번에 적용할 학생이 없습니다.',
+          final count => "'$count명 한 번에 적용'을 눌러 주십시오.",
+        },
+      tutorialStepApplyCellsTitle =>
+        switch (values.itemReview?.approvedAfterReview) {
+          null => "'인벤토리에 적용'을 눌러 주십시오.",
+          0 => '지금은 인벤토리에 적용할 칸이 없습니다.',
+          final count => "'승인한 $count칸 인벤토리에 적용'을 눌러 주십시오.",
+        },
+      tutorialStepReviewCellsCheck => switch (values.itemReview?.reviewCells) {
+        null => '확인 필요 칸 승인',
+        0 => '확인 필요 칸 없음',
+        final count => '확인 필요 $count칸 승인',
+      },
+      _ => text,
+    };
+
+String _reviewCountsLine(TutorialStudentReviewCounts? counts) {
+  const lead = '스캔을 마쳤습니다. 지난 기록과';
+  if (counts == null) return '$lead 달라진 학생과 새 학생을 나눠 두었습니다.';
+  return switch ((counts.changed, counts.newStudents)) {
+    (0, 0) => '$lead 달라진 학생도, 새 학생도 없습니다.',
+    (final changed, 0) => '$lead 달라진 학생은 $changed명이고, 새 학생은 없습니다.',
+    (0, final fresh) => '$lead 달라진 학생은 없고, 새 학생은 $fresh명입니다.',
+    (final changed, final fresh) =>
+      '$lead 달라진 학생은 $changed명, 새 학생은 $fresh명입니다.',
+  };
+}
+
+String _reviewUncertainLine(TutorialStudentReviewCounts? counts) =>
+    switch (counts?.uncertain) {
+      null => "다만 읽은 값을 확신할 수 없는 학생은 '확인 필요'로 따로 모아 두었습니다.",
+      0 => "이번에는 읽은 값을 확신할 수 없는 학생이 없어, '확인 필요'는 비어 있습니다.",
+      final count => "다만 $count명은 읽은 값을 확신할 수 없어, '확인 필요'로 따로 모아 두었습니다.",
+    };
+
+String _reviewApplyLine(TutorialStudentReviewCounts? counts) {
+  const lead = '지금은 그대로 두셔도 괜찮습니다.';
+  return switch (counts?.applicable) {
+    null => '$lead 계산이 화면과 맞는 학생만 먼저 한 번에 적용하겠습니다.',
+    0 => '$lead 다만 이번에는 계산이 화면과 맞아 바로 적용할 학생이 없습니다.',
+    final count => '$lead 계산이 화면과 맞는 $count명만 먼저 한 번에 적용하겠습니다.',
+  };
+}
+
+/// 첫 병목이 늦은 순서(0 = 병목 없음이 가장 늦다 — 비교 화면 '늦을수록 좋음').
+int _bottleneckRank(int phase) => phase == 0 ? 1 << 20 : phase;
+
+/// 프라나 09d 대사 2: 열 B(방금 만든 안)를 열 C(예시 안)와 견준다. 크레딧 · 병목 중 아는 것만 말하고, 둘 다 모르면 수치
+/// 없는 문장이다.
+String _compareLine(TutorialCompareValues? values) {
+  const lead = '마키를 두 단계로 나누고 네루(교복)를 미룬 쪽이';
+  final made = values?.madeCredits;
+  final example = values?.exampleCredits;
+  final gap = values?.creditGap;
+  // (이어 쓰는 꼴, 끝맺는 꼴, 나아졌는가)
+  final (String, String, bool)? credits = made == null || example == null
+      ? null
+      : made < example && gap != null
+      ? ('필요한 크레딧이 $gap가량 적고', '필요한 크레딧이 $gap가량 적습니다.', true)
+      : made > example && gap != null
+      ? ('필요한 크레딧이 $gap가량 많고', '필요한 크레딧이 $gap가량 많습니다.', false)
+      : made == example
+      ? ('필요한 크레딧은 예시 안과 같고', '필요한 크레딧은 예시 안과 같습니다.', false)
+      : null;
+  final madePhase = values?.madeBottleneckPhase;
+  final examplePhase = values?.exampleBottleneckPhase;
+  String? bottleneck;
+  if (madePhase != null && examplePhase != null) {
+    final also = (credits?.$3 ?? false) ? '도' : '은';
+    final later = _bottleneckRank(madePhase) > _bottleneckRank(examplePhase);
+    final earlier = _bottleneckRank(madePhase) < _bottleneckRank(examplePhase);
+    bottleneck = later
+        ? (madePhase == 0
+              ? '첫 병목$also 없어졌습니다.'
+              : '첫 병목$also P$examplePhase에서 P$madePhase로 늦어졌습니다.')
+        : earlier
+        ? (examplePhase == 0
+              ? '예시 안에는 없던 병목이 P$madePhase에 생겼습니다.'
+              : '첫 병목은 P$examplePhase에서 P$madePhase로 앞당겨졌습니다.')
+        : madePhase == 0
+        ? '병목은 두 안 모두 없습니다.'
+        : '첫 병목은 두 안 모두 P$madePhase입니다.';
+  }
+  return switch ((credits, bottleneck)) {
+    ((final joined, _, _)?, final ending?) => '$lead, $joined $ending',
+    ((_, final ending, _)?, null) => '$lead $ending',
+    (null, final ending?) => '$lead, $ending',
+    (null, null) =>
+      '마키를 두 단계로 나누고 네루(교복)를 미룬 쪽과 예시 안이 필요한 크레딧 · 첫 병목에서 어떻게 다른지 보십시오.',
+  };
+}
+
+/// [scene]의 대사 글을 [texts]로 바꾼 장면(밝히기 · 그림 자리 · 표정은 그대로). 글이 모두 같으면 [scene] 그대로.
+PlanaScene tutorialSceneWithTexts(PlanaScene scene, List<String> texts) {
+  var same = true;
+  for (final (index, line) in scene.lines.indexed) {
+    if (texts[index] != line.text) same = false;
+  }
+  if (same) return scene;
+  return PlanaScene(
+    id: scene.id,
+    title: scene.title,
+    label: scene.label,
+    context: scene.context,
+    nextStepId: scene.nextStepId,
+    lines: [
+      for (final (index, line) in scene.lines.indexed)
+        PlanaLine(
+          texts[index],
+          expression: line.expression,
+          revealKeys: line.revealKeys,
+          figureLeft: line.figureLeft,
+        ),
+    ],
+  );
+}
+
+/// [scene]의 치환자 대사를 [values]로 채운 장면.
+PlanaScene tutorialSceneForValues(
+  PlanaScene scene,
+  TutorialScriptValues values,
+) => tutorialSceneWithTexts(scene, [
+  for (final line in scene.lines) tutorialScriptText(line.text, values),
+]);
+
+/// [step]의 할 일 · 왜 · 하위 체크 중 치환자 줄을 [values]로 채운 단계. 바뀐 것이 없으면 [step] 그대로.
+TutorialStep tutorialStepForValues(
+  TutorialStep step,
+  TutorialScriptValues values,
+) {
+  String? fill(String? text) =>
+      text == null ? null : tutorialScriptText(text, values);
+  final title = fill(step.title);
+  final why = fill(step.why);
+  final checks = [
+    for (final check in step.checks)
+      TutorialCheckItem(
+        tutorialScriptText(check.label, values),
+        signal: check.signal,
+        doneAtStart: check.doneAtStart,
+      ),
+  ];
+  final checksChanged = [
+    for (final (index, check) in step.checks.indexed)
+      checks[index].label != check.label,
+  ].any((changed) => changed);
+  if (title == step.title && why == step.why && !checksChanged) return step;
+  return _stepWith(
+    step,
+    title: title,
+    why: why,
+    checks: checksChanged ? checks : null,
+  );
+}
+
 TutorialStep _stepWith(
   TutorialStep step, {
   String? title,
   String? why,
   String? doneTitle,
   String? doneWhy,
+  List<TutorialCheckItem>? checks,
 }) => TutorialStep(
   id: step.id,
   number: step.number,
@@ -1086,7 +1397,7 @@ TutorialStep _stepWith(
   why: why ?? step.why,
   completeSignal: step.completeSignal,
   highlightKey: step.highlightKey,
-  checks: step.checks,
+  checks: checks ?? step.checks,
   waitSignal: step.waitSignal,
   waitTitle: step.waitTitle,
   waitWhy: step.waitWhy,
@@ -1147,7 +1458,7 @@ const tutorialSteps = <String, TutorialStep>{
     id: '3',
     number: 3,
     feature: '학생 결과 적용',
-    title: "'6명 한 번에 적용'을 눌러 주십시오.",
+    title: tutorialStepApplyStudentsTitle,
     why: '지난 스캔보다 바뀐 값 중 계산이 화면과 맞는 학생만 한 번에 확정합니다.',
     highlightKey: TutorialTargets.studentReviewApplyChanged,
     completeSignal: TutorialSignals.studentReviewApplied,
@@ -1195,14 +1506,14 @@ const tutorialSteps = <String, TutorialStep>{
     id: '6',
     number: 6,
     feature: '아이템 결과 적용',
-    title: "'승인한 56칸 인벤토리에 적용'을 눌러 주십시오.",
+    title: tutorialStepApplyCellsTitle,
     why: '승인한 칸만 인벤토리에 들어갑니다.',
     highlightKey: TutorialTargets.itemReviewApplyApproved,
     completeSignal: TutorialSignals.itemReviewApplied,
     doneTitle: '적용했습니다',
     checks: [
       TutorialCheckItem(
-        '확인 필요 2칸 승인',
+        tutorialStepReviewCellsCheck,
         signal: TutorialSignals.itemReviewUncertainApproved,
       ),
       TutorialCheckItem('승인한 칸 적용'),

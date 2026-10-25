@@ -20,6 +20,7 @@
 //   비었으면([shortageEmpty]) 대체 문구로 바로 다음 단계로 간다.
 // - 4단계 완료(F3c-10): 실제 성장 계산기가 화면에 있으면 완료 체크를 [tutorialCalculatorHoldFactor]배 보인다(늘어난 재화
 //   요약 · 행 강조를 읽을 시간). 4단계에 들어갈 때 계산기 변화 알림([TutorialHooks.calculatorChange])을 비운다.
+// - 결과 수(F3c-11): 시작할 때 화면이 알린 결과 수([TutorialHooks.facts])를 비운다(지난 회차 값이 대사에 남지 않게).
 // 늦은 응답은 generation으로 버린다. 실제 백엔드는 지금 unsupported(XB X4 짝 라운드 전)다.
 import 'dart:async';
 
@@ -305,6 +306,7 @@ class TutorialSession extends ChangeNotifier {
     _planApplied = false;
     _shortageEmpty = false;
     hooks.calculatorChange.value = null;
+    hooks.facts.clear();
     final flow = TutorialFlowController(completeHold: completeHold)
       ..addListener(_flowChanged);
     _flow = flow;
