@@ -7617,3 +7617,215 @@ S1 레일 높이 = (창 높이 − 184) × 94/96: 1280×720 **524.8**, 1600×900
 ### 다음 행동
 
 - CF: `debug/frontend_su2/output.md` 검토(발견 1 · 2 · 3). 레인 워커(F3c-10 포함)가 모두 멈춘 뒤 같은-소스 `fe_gate.ps1`(golden 변화 0, `startup_user_data_su1/su2` · `planning_protocol_client_test` GREEN, 전후 `%LOCALAPPDATA%\BA Planner` 목록 같음 기대) → `fe_commit.ps1 -Slice su2`(post_dir 기본, whole = 이 문서).
+
+## MC1 착수 기록 (2026-10-25 00:30, Lane B 워커)
+
+- 상태: **진행 중** — MC1(Mock `calculateStudent`가 현재 → 목표 차이에 따라 그럴듯하게 달라지게, 근거: 사용자 튜토리얼 검수 피드백 2026-10-24 ① · F3c-10 종료 기록 발견 1). 시작 SHA `da3cc19ae86ea89199767bf0a71b724c2ab590a1`(브랜치 `scanner-consolidation`; `git log --oneline -5`에 F3c-10 `e271edd2` 있음, 프롬프트 작성 뒤 docs 커밋 `da3cc19a` 하나가 더 올라옴 — 문서만). 이 문서 끝에 다른 "MC1 착수 기록" 없음.
+- 동시 작업: 프롬프트는 "Lane A 대기"지만 status.md 끝에 **F3c-11 착수 기록(Lane A, 진행 중)** 이 있다 — 그 slice는 MC1 파일(`mock_app_service.dart` · `mock_student_calculation_fixture.dart` · `test/mock_calculation_mc1_test.dart`)을 고치지 않는다고 적었고, 이 slice는 F3c-11 파일(`lib/ui/tutorial*/**` · `test/tutorial_f3c10_test.dart` 등)을 고치지 않는다(읽기만).
+- 사용자 결정(이 세션, 2026-10-25): 인연(`bond_rank`) 목표 차이는 **성장 재화 0** — 실제 백엔드처럼 `calculateStudent`는 인연에 재화를 매기지 않고, 인연 선물은 기존 `bond` 블록(`calculateStudentWithBond`) 몫.
+- 고칠 파일 · 착수 때 기존 미커밋 변경(WIP) · 사본(`debug/frontend_mc1/pre/<v7 기준 경로>`, 모두 HEAD와 같음 · CRLF · 끝 개행 하나):
+
+| 파일 | WIP | 고칠 것 |
+|---|---|---|
+| `frontend/lib/services/mock_app_service.dart` | 없음 | `calculateStudent` 최소 — 목표 반영 경로 분기, 고정 예시 경로 유지 |
+| `frontend/lib/services/mock_student_calculation_fixture.dart` | 없음 | 목표 차이 규칙 표(주석) · 계산 함수 |
+| 새 `frontend/test/mock_calculation_mc1_test.dart` | 새 파일 | 단조 증가 · 0 차이 0 · null 유지 · 고정 예시 유지 · 튜토리얼 4단계 요약 |
+
+## MC1 종료 기록 (2026-10-25 00:40, Lane B 워커)
+
+- 상태: **완료(워커 검증 범위)** — CF 몫 `fe_gate.ps1` 1회(golden 변화 0 기대) 남음. 시작 SHA `da3cc19a`, 커밋 없음(git 쓰기 안 함), 지운 파일 0, 편집 도구 백업 파일 0, `pubspec.*` 변경 0.
+- 기존 파일 diff(+/−, CRLF 유지 · 끝 개행 하나 · `git diff --check` 깨끗): `lib/services/mock_app_service.dart` +32/−4 · `lib/services/mock_student_calculation_fixture.dart` +286/−0. 새 파일: `test/mock_calculation_mc1_test.dart`(628줄 LF, 시험 32개 — 규칙 키 18개 반복 · 4단계 2560 · 1280 변형 포함).
+- 고친 내용: `MockAppService`에 `goalAwareCalculation`(생성자 `bool?`, 기본 = `fullStudentCatalog`) → 켜져 있고 입력이 공유 fixture `mixed_growth` 입력이 아니면 `mockGoalAwareStudentCalculationWire`(학생 카탈로그에서 이름 · 학교 · 장비 칸)를, 아니면 기존 고정 예시를 쓴다. 보유 반영(owned · shortage)은 기존 루프 그대로. fixture 파일에 규칙 표(주석, "NOT real game values") · 공유 fixture 입력 상수 · 계산 함수.
+
+### 실제로 실행한 명령과 결과(frontend 폴더)
+
+| 명령 | 결과 |
+|---|---|
+| `flutter analyze`(구현 뒤 · 마지막) | **No issues found!** 2회(pub get이 돌았지만 `pubspec.*` 변경 0) |
+| `flutter test test/mock_calculation_mc1_test.dart` | 1회차 +30 −2(4단계 시험 끝의 완료 체크 · 늘어난 강조 타이머가 남음 — 시험 쪽, 단언은 모두 통과) → 타이머를 흘려 보내고 다음 장면 확인 추가 → 2회차 **+32 All passed** |
+| `dart format -o show`(고친 파일마다, 사본의 형식 차이와 비교) · `dart format test/mock_calculation_mc1_test.dart`(새 파일 — 줄 전부 이 slice) | `mock_app_service.dart` 새 형식 차이 0(기존 미포맷 덩어리는 사본과 같음), fixture 차이 0 |
+| 관련 기존 시험 75파일 한 번에 `flutter test --exclude-tags golden <75파일>`(목록 `debug/frontend_mc1/related_run.txt`: `growth_calculator_*` · `student_*` · `tutorial_*` · `plan_*` · `planning_*` · `mock_*` · `widget_test` + `fullStudentCatalog: true` · `createMockAppService` · `MockDesignReviewScenario` · `calculateStudent` · `GrowthCalculator`를 쓰는 시험; golden · process E2E 제외 — 계산에 닿는 process E2E 7개는 `related_process_excluded.txt`) | **+1096 All passed**(새 MC1 시험 포함, `[E]` 0). `registered twice` 1줄은 F3c-2의 일부러 겹친 'dup' |
+| `git diff --check`(고친 두 파일) · 바이트 검사 | 출력 없음(rc 0), CRLF 3945/3945 · 506/506 유지, 새 시험 LF · 줄 끝 공백 0 |
+
+로그: `debug/frontend_mc1/logs/`(`analyze-1` · `mc1-test-1~2` · `related-1`). golden 비교 · 전체 fe_gate · process E2E · Python은 실행하지 않았다.
+
+### 규칙 표(목표 한 칸마다 — 실제 게임 값 아님, 개발 · 검수용)
+
+| 목표 키 | 크레딧(내역 범주) | 재화 |
+|---|---|---|
+| `level` | 6,825 (`level`) | 활동 보고서 ×2 — 새 레벨 ≤40 일반(`Item_Icon_ExpItem_1`), ≤70 상급(`_2`), 그 위 최상급(`_3`) |
+| `student_star` | 600,000 (`student_star`) | `Item_Icon_SecretStone_<id>`(「이름의 엘레프」) ×100 |
+| `weapon_star` | 500,000 (`weapon_star`) | 같은 엘레프 ×70(한 행으로 합침) |
+| `weapon_level` | 50,000 (`weapon_level`) | `Equipment_Icon_WeaponExpGrowthA_0`(스프링 T1) ×1 — 무기 종류는 늘 A |
+| `ex_skill` | 80,000 (`ex_skill`) | `Item_Icon_Material_ExSkill_<학교>_<g>` ×12, g = 새 레벨 − 2(0..3) |
+| `skill1` · `skill2` · `skill3` | 15,000 (`skill`) | `Item_Icon_SkillBook_<학교>_<g>` ×7, g = (새 레벨 − 2) ~/ 2(0..3) |
+| `equip1..3_tier` | 5,000 (`equipment`) | `Equipment_Icon_<칸>_Tier<새 티어>`(「<칸> T<n>」) ×15 |
+| `equip1..3_level` | 100 (`equipment`) | `Equipment_Icon_Exp_0`(하급 강화석) ×1 |
+| `equip4_tier`(애장품) | 250,000 (`favorite_item`) | `Item_Icon_Favor_Selection` ×2 |
+| `stat_hp` · `stat_atk` · `stat_heal` | 100,000 (`potential`) | `Item_Icon_WorkBook_PotentialMaxHP` · `…Attack` · `…HealPower` ×2 |
+| `bond_rank` | 0 | 없음 — **사용자 결정**(이 세션): 실제 백엔드처럼 성장 계산은 인연에 재화를 매기지 않고 선물은 `bond` 블록 몫 |
+
+- 목표 ≤ 현재면 0. 모르는 현재 값(키 없음 · null · 숫자 아님, 장비 티어는 `T<n>`이 아닌 글자)은 그 키를 계산하지 않는다(0으로 추정하지 않음). 현재 장비 티어가 null이면 '장비 없음' = 0(공유 fixture와 같음). 카탈로그에 없는 학생 · 노트가 없는 학교(SRT 등) · 모르는 장비 칸이면 그 재화 행만 빠지고 크레딧은 남는다. 학교 이름의 공백은 지우고 대소문자 무시로 아이템 키에 맞춘다(Red Winter → RedWinter, Wild Hunt → Wildhunt). 크레딧 행과 재화 행은 0보다 클 때만, 같은 키는 합친다. 보유를 모르면 owned · shortage null.
+- 크레딧 단가는 공유 fixture에 맞췄다: `level_only`(30 → 31) = 6,825 · 일반 활동 보고서 2와 **정확히 같고**, `no_growth`도 같다(시험). 그 밖 단가는 고정 예시 `mixed_growth`의 범주 합(성급 1.2M/2칸 · 전무 성급 1M/2칸 · 애장품 500K/2칸 · EX 80K/1칸 · 스킬 90K/6칸 · 능력 개방 300K/3칸 · 엘레프 340)을 칸당으로 나눈 값.
+
+### 고정 예시 유지 방법(이유)
+
+- **Mock 설정으로 나눔**: `goalAwareCalculation` 기본값 = `fullStudentCatalog`. Windows mock 앱(`main.dart` → `createMockAppService()` = `MockAppService(fullStudentCatalog: true)`)과 `design-review`(`super(fullStudentCatalog: true)`)는 목표 반영, 시험이 쓰는 `MockAppService()`(기본 false)는 고정 예시 그대로. 이유: F3c-10 시험(`_GrowingCalculationService extends MockAppService()`)이 기본 계산 위에 레벨당 1,000을 더해 '+1,000'을 정확히 단언한다 — 기본 계산이 목표를 따르면 깨진다. 그 파일은 지금 F3c-11(Lane A)이 고치는 중이라 손대지 않는다. 명시 인자(`goalAwareCalculation: true/false`)로 어느 쪽이든 고를 수 있다.
+- **공유 fixture 입력은 두 경로 모두 고정 예시**: 목표 반영이 켜져 있어도 입력이 `mixed_growth` 입력과 정확히 같으면 기존 `mockStudentCalculationWire`(시험: `mixed_growth` · `mixed_inventory` 응답과 같음, goalAware false · true 둘 다).
+- `main.dart` · `mock_design_review_scenario.dart`는 고치지 않았다(기본값 연결로 충분).
+
+### 4단계 요약 예시(실제 Mock 값)
+
+| 서비스 | '+' 한 번 뒤 완료 카드 '왜' 줄 |
+|---|---|
+| 계산 전(디바운스 250ms) | 레벨 목표 +1 → 크레딧 — · 재화 — |
+| **Windows mock**(`createMockAppService()`, 연습 학생 — 레벨 ≤40) | **레벨 목표 +1 → 크레딧 +6,825 · 일반 활동 보고서 +2**(2560 · 1280 둘 다, 크레딧 타일 '+6,825', 보고서 행 강조) → 완료 체크 뒤 `plana-06` |
+| 시험 기본 `MockAppService()` | 그대로 '늘어난 재화가 없습니다'(고정 예시) |
+
+### golden 변화 0 근거
+
+- `calculateStudent`를 부르는 곳은 lib 전체에서 성장 계산기 어댑터(`growth_calculator_adapter.dart` — `app_service.dart` 확장 경유)뿐. golden 장면 중 계산기를 여는 것은 `fe1g` `students-calculator` · `students-calculator-bond-popover`뿐이고 둘 다 `GoldenCalculatorMockAppService`가 `calculateStudent`를 덮어쓴다(인연 경로도 가상 호출로 그 덮어쓰기를 씀). 다른 golden 서비스는 `GoldenMockAppService() : super()`(목표 반영 꺼짐), `fe9a`의 `fullStudentCatalog: true`는 전술 화면(계산 없음), `fe8g1`은 getter만 덮어써 생성자 값은 false. 튜토리얼 golden(f3c3 · f3c5 · f3c10)은 계산기 신호만 낸다. golden harness · 기준 이미지 손대지 않음, 새 장면 0. golden 비교는 돌리지 않았다(CF gate).
+
+### 미검증("미실행")
+
+- golden 비교, 전체 `fe_gate.ps1`, process E2E(계산 관련 7파일 포함), almanac validate, Python, Windows 실제 앱(mock) 눈 확인, 레벨 41 이상 학생의 4단계(상급 · 최상급 보고서 — 단위 시험만), `design-review` 시나리오 계산기 눈 확인.
+
+### 발견 사항
+
+1. **동시 작업**: 프롬프트는 "Lane A 대기"였지만 F3c-11(Lane A, 00:40 착수)이 진행 중이다 — `lib/ui/tutorial*/**` · `scan_*_review_board.dart` · `plan_scenario_compare.dart` · `test/tutorial_f3c10_test.dart` 등에 미커밋 변경이 있는 작업 트리 위에서 75파일을 돌렸다(겹치는 파일 0, 그 파일은 읽기만). F3c-11은 대사 수치를 'MC1이 만드는 계산 결과'에서 읽으므로 CF gate는 두 slice를 함께 본다.
+2. 목표 반영은 `fullStudentCatalog`에 묶여 있다 — 앞으로 시험이 `MockAppService(fullStudentCatalog: true)`로 계산기 숫자를 단언하면 규칙 표 값이 나온다(지금 그런 시험 0, 75파일 통과). 의도를 분명히 하려면 `createMockAppService`에서 `goalAwareCalculation: true`를 명시하는 한 줄(이 slice 범위 밖)도 가능.
+3. 4단계 Windows mock 요약은 연습 학생 레벨에 따라 보고서 등급 이름이 바뀐다(≤40 일반). XB 데이터셋 v3로 옮겨 연습 학생 레벨이 바뀌면 시험의 등급 이름도 바뀐다.
+4. 장비 설계도 이름은 백엔드 대체 이름 모양(「Hat T3」)이다 — 실제 이름표(「어그 부츠」 등)는 백엔드 표라 옮기지 않았다. 학생별 오파츠(EX · 스킬 · 능력 개방 주재료)는 Mock에 메타가 없어 행 없음.
+5. 관련 실행에서 실패 0, `registered twice` 1줄(F3c-2 'dup', 기존).
+
+### 사본 · commit.json
+
+- pre 사본 2개(`debug/frontend_mc1/pre/frontend/lib/services/…`) 모두 착수 때 HEAD와 같음.
+- `debug/frontend_mc1/commit.json`: slice `mc1`, modified 2, added 1, `status=false`, `whole` = [`almanac/workflows/frontend-redesign-status-lane-b.md`]. 메시지 ASCII.
+- 인계: `debug/frontend_mc1/output.md`.
+
+### 다음 행동
+
+- CF: `debug/frontend_mc1/output.md` 검토(규칙 표 · 발견 1 · 2). 레인 워커(F3c-11 포함)가 모두 멈춘 뒤 같은-소스 `fe_gate.ps1`(golden 변화 0, `mock_calculation_mc1_test` · `tutorial_f3c10_test` · `growth_calculator_*` · `student_calculation_service_test` GREEN 기대) → `fe_commit.ps1 -Slice mc1 -DryRun` → `fe_commit.ps1 -Slice mc1`.
+- 사용자: Windows mock(`--dart-define=BA_PLANNER_USE_REAL_BACKEND=false`) 튜토리얼 4단계에서 '+' 한 번 → 완료 카드 '레벨 목표 +1 → 크레딧 +6,825 · 일반 활동 보고서 +2', 계산기 크레딧 타일 · 보고서 행 '+n' 강조 확인.
+
+## X4D 착수 기록 (2026-10-25, Lane B)
+
+- 진행 중: **X4D** — XB X4 짝 라운드(전역 `practice_cleanup_failed` strict 해독 · practice 오류 허용 목록 · `is_practice` · 추적 fixture 출처 · 실제 runtime process E2E · 튜토리얼 시작 process 시험). 시작 SHA `da3cc19ae86ea89199767bf0a71b724c2ab590a1`(브랜치 scanner-consolidation). 이 status 끝에 다른 X4D 착수 기록 없음 확인.
+- 근거: contracts/tutorial-practice-v1 · startup-practice-v1(+schema), 오케스트레이터 로그 XB 2026-10-24 23:38 · 2026-10-25 00:11 · 00:15 · 00:16, `debug/xb_fixture_x4_main_20261024/output.md`(읽기만).
+- 고칠 파일(pre 사본 = `debug/frontend_x4d/pre/<v7 기준 경로>`, 지금 작업 트리에서 복사 · cmp 같음):
+
+| 파일 | 기존 미커밋 변경(WIP) |
+|---|---|
+| `frontend/lib/services/planning_protocol_client.dart` | 없음(HEAD와 같음) |
+| `frontend/lib/services/repository_service.dart` | 없음 |
+| `frontend/lib/services/process_app_service.dart` | 없음 |
+| `frontend/lib/services/mock_tutorial_practice.dart` | 없음 — 출처 경로 · SHA 상수만 고친다 |
+| `frontend/test/tutorial_practice_process_e2e_test.dart` | 없음 |
+| `frontend/test/tutorial_practice_contract_test.dart` | 없음 |
+| `frontend/test/startup_user_data_su1_test.dart` | 없음 |
+| `frontend/test/tutorial_data_v2_f3c9_test.dart` | 없음 |
+| 새 파일 `frontend/test/tutorial_practice_runtime_x4d_test.dart` · `frontend/test/tutorial_session_process_x4d_test.dart` | — |
+
+- 손대지 않는 다른 레인 진행 파일: MC1(`mock_app_service.dart` · `mock_student_calculation_fixture.dart`), F3c-11(`lib/ui/tutorial/**` · `tutorial_host/**` · `tutorial_targets/**` · 검토 보드 2 · `plan_scenario_compare.dart` · 튜토리얼 시험), Lane A F4(settings 계열). `app_service.dart`는 필요할 때만(지금 계획 0).
+- 실제 사용자 폴더 전 목록(읽기만, 이름 · 크기 · mtime 지문): `debug/frontend_x4d/user-folder-before.json` — 5984항목, sha256 `c09f52c6dff2cfb7113f0a1d1c09dbe6a41540d948c78591e22c35865dc2ae16`.
+
+## X4D 종료 기록 (2026-10-25, Lane B)
+
+- 상태: **완료(미커밋)**. 시작 SHA `da3cc19ae86ea89199767bf0a71b724c2ab590a1`. 인계 `debug/frontend_x4d/output.md`, `debug/frontend_x4d/commit.json`(slice `x4d`, modified 8 · added 3, `status=false`, whole = 이 문서).
+- 바뀐 파일: `lib/services/planning_protocol_client.dart` · `repository_service.dart` · `process_app_service.dart`(주석만) · `mock_tutorial_practice.dart`(출처 경로 · SHA 상수만), 시험 `tutorial_practice_process_e2e_test.dart`(새로 씀) · `tutorial_practice_contract_test.dart` · `startup_user_data_su1_test.dart` · `tutorial_data_v2_f3c9_test.dart`. 새 파일 `test/tutorial_practice_runtime_x4d_test.dart` · `test/tutorial_session_process_x4d_test.dart` · `test/fixtures/isolated_backend_x4d.dart`. `app_service.dart`는 고치지 않았다.
+- 줄바꿈: CRLF 파일은 CRLF 유지. Edit 도구가 `planning_protocol_client.dart`의 원래 LF 줄 18개를 CRLF로 바꿨던 것을 원래대로 되돌렸다(diff = 14+ · 1−, 내 줄만). `dart format`은 고친 줄 · 새 파일에만 반영(고치지 않은 기존 줄 3곳의 format 차이는 그대로 둠).
+
+### 실제로 실행한 명령과 결과
+
+| 명령(frontend 폴더) | 결과 |
+|---|---|
+| `flutter analyze`(편집 뒤 · 마지막 포함 3회) | No issues found(info 포함 0) |
+| `flutter test test/tutorial_practice_runtime_x4d_test.dart test/tutorial_practice_contract_test.dart test/tutorial_data_v2_f3c9_test.dart test/startup_user_data_su1_test.dart --concurrency=1` | +92, 실패 0 |
+| `flutter test test/tutorial_practice_process_e2e_test.dart --concurrency=1` | +2, 실패 0 — fixture 수정 뒤 재실행 +2 |
+| `flutter test test/tutorial_session_process_x4d_test.dart --concurrency=1` | +1, 실패 0 — fixture 수정 뒤 재실행 +1 |
+| 관련 unit/widget 99파일(`repository_*` · `scanner_*` · `planning_*` · `tutorial_*` · `startup_*` · `mock_*` · `widget_test` + 바뀐 서비스 · practice를 쓰는 시험, golden 제외) `flutter test --exclude-tags golden` 40개씩 3묶음 | +570 · +658 · +259 = **1487, 실패 0** |
+| 관련 process 38파일 `flutter test --exclude-tags golden --concurrency=1`(fe_gate 분류 규칙과 같음) | **+201 −1** — 실패 1 = `tutorial_session_process_x4d_test`: 내 fixture `realBytes()`가 백엔드의 원자 쓰기 중간 파일(`..repository.lock.<hex>.tmp`)을 목록에 넣은 뒤 읽기 전에 지워져 `PathNotFoundException`(시험 경합, 제품 동작 아님). `.tmp` 제외 + 사라진 파일 건너뛰기로 고침 |
+| 수정 뒤 X4D 3파일(process 2 + strict 해독 1) `--concurrency=1` 2회 | +49 · +49, 실패 0 |
+| `git diff --check`(고친 파일) · 새 파일 공백 검사 | 0 |
+
+- 목록 · 로그: `debug/frontend_x4d/logs/`(related-unit.txt · related-process.txt · 각 로그). fixture 수정 뒤 나머지 35 process 파일은 다시 돌리지 않았다(수정은 X4D 두 시험만 쓰는 fixture).
+
+### 해독 규칙 표
+
+| 코드 · 위치 | 받는 키 · 값 | 거부(프로토콜 오류 · 연결 끊김) |
+|---|---|---|
+| 전역 `practice_cleanup_failed`(모든 method, method별 목록보다 **먼저** — SU1 `user_data_migration_failed`와 같은 자리, `_validRemoteError`) | error = 정확히 `code` · `message`(비어 있지 않은 문자열) · `retryable: true`. payload는 `error` 하나. 응답 `id` · `method`는 요청과 같아야(기존 봉투 검사) | `retryable` false · 없음 · 문자열 · 1, `details` 있음(빈 객체 포함), 다른 키, message 없음 · 빈 문자열 · 문자열 아님, payload에 다른 키, method 불일치 |
+| → `BackendRemoteException` | code · message 그대로, `retryable: true`, `details: null`, SU1 `startupFailure`는 건드리지 않음 | — |
+| `user_data_migration_failed`(SU1) | 그대로(details strict) | 그대로 |
+| 일반 profile read(`RepositoryProfile.fromWire` — list · current · create) | 선택 `is_practice`: 없으면 false, bool이면 그 값 | `is_practice`가 null · 문자열 · 숫자 · 객체 |
+
+- 화면 안내: `practiceCleanupFailedNotice` = **"임시 계정 정리에 실패했습니다 — 다시 시도해 주세요"**(워커 문구), 도우미 `practiceErrorNotice(error)`(전역 정리 실패면 그 문구, 아니면 null) — `repository_service.dart`.
+
+### 허용 목록 변경
+
+| 목록 | 전 | 후 |
+|---|---|---|
+| client `repository`(일반 repository.*) | practice 코드 없음 | + `practice_profile_required` · `practice_session_active` |
+| client `scanner` | practice 코드 없음 | + `practice_profile_required` · `practice_session_active` |
+| client practice 메서드 5개 | 일반 repository 목록을 씀(`practice_session_active` · `storage_error`가 오면 연결 끊김 — F3c-1 발견 4) | 계약 9코드(`practiceErrorWireCodes`) + 옛 백엔드 `unknown_method`(미지원 해독). `practice_cleanup_failed`는 전역 규칙이 먼저 잡는다 |
+| `isValidRepositoryProtocolMessage`(repository schema 거울) | — | + `practice_profile_required`(repository-protocol-v1 enum 그대로. `practice_session_active`는 그 schema enum에 없어 넣지 않음) |
+
+### fixture 경로 전 · 후(값 변화 0)
+
+| 쓰는 곳 | 전 | 후 |
+|---|---|---|
+| `mock_tutorial_practice.dart` 상수 · contract · f3c9 시험 | `debug/xb_resume_20261023/artifacts/tutorial-dataset-v2.json`(ec7be3e5…) | `contracts/fixtures/tutorial_practice/dataset-v3.json`(42239 bytes, `3d9bd7b1970dd501e214ba62a97b7325d23d038e8a329e10bb42d54525082721`) |
+| f3c9 값 변화 근거 | — | `contracts/fixtures/tutorial_practice/dataset-v2.json`(역사, 원 debug와 같은 바이트) |
+| f3c9 유우카 근거 · 그림 | `debug/xb_resume_20261023/artifacts/yuuka-*` | `contracts/fixtures/tutorial_practice/yuuka-fallback-evidence.json` · `yuuka-synthetic-basic-info.png` |
+| SU1 예시 | `debug/xb_x3_long_paths_20261023/artifacts/startup-error-examples.json`(없으면 skip) | `contracts/fixtures/startup_user_data_v1_examples.json`(skip 없앰) |
+| process E2E 대조 | — | `dataset-v3.json` |
+
+- 값 변화 0 근거(시험 `v2 → v3: value change 0`): v2↔v3 전체 비교 차이는 `content_revision` 2→3과 마키 skill2 · skill3(이전 · 재생 각 2값) 4→1뿐. 대본 덮어쓰기를 얹은 v2 = 덮어쓰기 없는 v3 = Mock 상수(이전 학생 6 · 학생 예시 9). 사전 확인: 추적 v1 · v2 · 유우카 2 · startup 예시가 원 debug 파일과 크기 · SHA 같음.
+- 저장소 안에 `debug/` 경로를 **읽는** lib · test = 0(남은 `debug/xb_` 문자열은 기존 주석뿐 — `mock_tutorial_practice.dart` 머리말 주석은 "상수만" 범위라 그대로).
+
+### process E2E 수용 기준 대조(XB 2026-10-24 23:38)
+
+| XB 항목 | 시험 · 확인 |
+|---|---|
+| 실제 임시 root | `IsolatedBackend`: `BA_PLANNER_USER_DIR` · `BA_PLANNER_STORAGE_ROOT` · `BA_PLANNER_V6_DIR` 모두 새 임시 폴더(명시 override → 백엔드 이관 건너뜀), 실제 `core.backend_process` |
+| "unknown_method로 미지원" 가정 교체 | `probePracticeSupport()` = **supported** |
+| create · current | revision 2(base 0 + 2), 선택 = 임시 계정, 같은 key 재시도 같은 결과, 다른 key = `practice_session_active`, current = create 결과, 소유 폴더 1 |
+| 가상 학생 · tech_notes · tactical_bd(기존 이벤트 모양) | 1부터 빈틈없는 sequence, phase → progress → candidate → terminal(completed), progress total = 9 · 30 · 30. 후보 학생 순서 · review_required = v3, 아이템 entries = v3 그대로 |
+| 기존 review · commit | 학생 1명 승인 → commit revision +1, 상태에 반영. 아이템 제안 승인 칸만 부분 승인(FD146) 26 + 28 = **54** → 각각 commit revision +1. 아이템은 차례로(FD-143). `recognition_samples` 폴더 생기지 않음 |
+| 실계정 목록 · 통계 분리 | 목록 = 진짜 계정 하나(`isPractice` false, 임시 계정 선택 중 selected false), 진짜 계정 history summary 처음과 같음(스캔 · reset 뒤에도), 임시 계정 scoped 통계 = 합성 지난 스캔 1회 · 이벤트 2, 섞은 history 조회 · 임시 계정 일반 삭제 = `practice_profile_required` |
+| native target 분리 | 임시 계정 선택 중 대상 = 가상 하나(id · 제목 · ready · 1280×720 · blue_archive), 진짜 계정 id로 가상 대상 시작 · 임시 계정 id로 native 대상 시작 = `practice_profile_required`, end 뒤 진짜 계정 목록에 가상 대상 없음 · 가상 시작 거부 |
+| 교차 적용 거부 | 임시 계정 후보를 진짜 계정에 commit = `practice_profile_required` |
+| reset · 옛 session 거부 | 같은 profile id, revision +2, 씨앗 값으로 돌아감, 옛 session snapshot · commit = `practice_profile_required` |
+| end · bytes 보존 · 선택 복원 | deleted = 임시 계정, selected = 원래 계정, already_deleted false. 같은 key 재시도 같은 결과, 새 key = already_deleted true. current null, 소유 폴더 0, 목록 원래 계정 selected true, **원래 계정 저장소 bytes = create 전과 같음**(`tutorial-practice/` · guard · lock · `.tmp` 제외), 옛 임시 계정 id 조회 = `practice_profile_required` |
+| process 재시작 orphan 정리 | 끝내지 않고 `restartBackend()` → current null · 원래 계정 선택 · 소유 폴더 0 · bytes 같음 · 옛 id 거부, 명시 recover = 지울 것 없음(멱등) |
+| 앱 동작(첫 실행 ③ · 설정 다시 하기) | `tutorial_session_process_x4d_test`: `TutorialSession.start` → running · 임시 계정 · 프라나 01 첫 대사 → 진행 중 다시 시작 = reset(같은 id, revision +2, epoch 2, 첫 대사) → 그만두기 확인 · 그만둘 때 대사 → `endPractice(dismissed)` → idle · 홈 · 원래 계정 selected · 소유 폴더 0 · bytes 같음. 화면 코드 변경 0 |
+
+### 실제 사용자 폴더 전후 같음
+
+- `%LOCALAPPDATA%\BA Planner` 이름 · 크기 · mtime 지문(읽기만, `os.walk` + `lstat`): 전 `debug/frontend_x4d/user-folder-before.json`, 후(모든 시험 뒤) `user-folder-after.json` — 둘 다 **5984항목, sha256 `c09f52c6dff2cfb7113f0a1d1c09dbe6a41540d948c78591e22c35865dc2ae16`**. 시험 임시 폴더 남은 것 0.
+
+### golden 변화 0 근거
+
+- golden 시험(`test/goldens`)은 `ProcessAppService` · `PlanningProtocolClient`를 쓰지 않는다(grep 0). 바뀐 해독은 wire 경로뿐이고 Mock은 `RepositoryProfile`을 생성자로 만든다. `tutorialPracticeDatasetPath` · SHA 상수는 lib 어디서도 그리지 않는다(정의만). 새 안내 문구는 아직 화면에 연결하지 않았다. harness · 기준 이미지 손대지 않음, 새 장면 0. golden 비교는 돌리지 않았다(CF gate).
+
+### 미검증("미실행")
+
+- 전체 `fe_gate.ps1`(golden 비교 · almanac validate 포함), Python 시험(XB 몫), Windows 실제 앱에서 튜토리얼 눈 확인(실제 백엔드), 실제 사용자 폴더 위의 runtime(금지), fixture 수정 뒤 나머지 35 process 파일 재실행, `practice_cleanup_failed` 화면 안내의 실제 표시(연결 전 — 발견 2).
+
+### 발견 사항
+
+1. **계약 ↔ 실제 백엔드 차이(CF → XB 조율 필요)**: practice 메서드는 `practice_cleanup_failed`를 **`retryable: false`**로도 낸다(`tutorial_practice_store.fail()`은 retryable 기본 false — 소유 표시 불일치 · 등록 안 된 폴더 · 경로 탈출 등). 전역 schema(`startup-practice-v1`)와 XB 요구는 `retryable: true` 정확히이므로 지금 클라이언트는 이것을 **프로토콜 오류로 보고 연결을 끊는다**. 같은 상황에서 일반 method는 안전한 한국어 문구 + `retryable: true`(전역 차단). 재현(격리 임시 폴더, 실제 `core.backend_process`, `debug/frontend_x4d/repro-practice-cleanup-retryable.jsonl`): profile.create → practice.create → `tutorial-practice/owned/ffff…(32자)` 빈 폴더 하나 만들기 →
+   - 요청 `{"protocol":1,"id":"r3","type":"request","method":"repository.practice.current","payload":{}}` → 응답 `{"protocol":1,"id":"r3","type":"response","method":"repository.practice.current","payload":{"error":{"code":"practice_cleanup_failed","message":"unregistered tutorial state must be reviewed","retryable":false}}}`
+   - 요청 `repository.profile.list {}`(id r4) → `{"error":{"code":"practice_cleanup_failed","retryable":true,"message":"임시 계정 정리를 완료하지 못했습니다. …"}}`(전역 모양 맞음)
+   - 선택지(CF · XB): (a) 백엔드가 practice 메서드의 이 코드도 `retryable: true` · 안전 문구로 낸다 (b) 클라이언트가 practice 메서드에서만 `retryable: false`를 method별 계약 오류로 받는다(tutorial-practice-v1 schema는 retryable boolean 허용). 지금은 XB 요구대로 strict(고치지 않음).
+2. **화면 안내 연결은 F3c-11 파일**: `tutorial_session.dart`의 `tutorialErrorText`가 `practiceErrorCodeOf(error)?.wireName`만 써서 지금 시작 실패는 "튜토리얼을 시작하지 못했습니다: practice_cleanup_failed", 끝 실패는 endError "practice_cleanup_failed"(다시 시도 버튼 있음)로 보인다. 요구 문구를 보이려면 한 줄: `String tutorialErrorText(Object error) => practiceErrorNotice(error) ?? practiceErrorCodeOf(error)?.wireName ?? '$error';`(F3c-11 진행 파일이라 손대지 않음 — CF 조율). 진짜 계정은 백엔드가 그대로 둔다(시험 확인).
+3. 시작 정리 실패(전역 차단)는 시작 probe(`repository.profile.list`)가 원격 오류로 실패 → 연결 안 됨(일반 시작 실패와 같은 길)이다. SU1처럼 별도 차단 상태 · 덮개는 없다(범위 밖 — 필요하면 후속).
+4. `fe_gate.ps1`은 본문에 `ProcessAppService` 등이 있어야 process 시험으로 고른다. 새 process 시험 두 개는 공용 fixture를 써서 머리말 주석에 그 이름을 적어 분류되게 했다(확인: 분류 목록에 둘 다 들어감).
+5. 원래 계정 bytes 비교에서 백엔드의 원자 쓰기 중간 파일(`..repository.lock.<hex>.tmp`)이 잠깐 보인다 — 시험 fixture가 제외한다(제품 동작 정상).
+6. 동시 작업: Lane A F4가 settings 계열 · `settings_help_f3e_test.dart`를 고치는 중인 작업 트리에서 돌렸다(겹치는 파일 0). 편집 도구 백업 파일 0.
+
+### 다음 행동
+
+- CF: `debug/frontend_x4d/output.md` 검토(발견 1 · 2). 레인 워커(F4 포함)가 모두 멈춘 뒤 XB X4 23경로와 같은-소스 `fe_gate.ps1`(golden 변화 0, `tutorial_practice_process_e2e_test` · `tutorial_session_process_x4d_test` · `tutorial_practice_runtime_x4d_test` GREEN 기대) → XB 소스 커밋(추적 fixture 포함 — 시험이 그 경로를 읽는다) → `fe_commit.ps1 -Slice x4d -DryRun` → `fe_commit.ps1 -Slice x4d`.
+- XB(CF 경유): 발견 1의 retryable 차이 결정.

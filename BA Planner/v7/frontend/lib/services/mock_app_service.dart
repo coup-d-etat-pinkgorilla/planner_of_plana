@@ -70,7 +70,9 @@ class MockAppService
     this.assetPreparationScenario = MockAssetPreparationScenario.firstRun,
     this.assetPreparationStep = const Duration(milliseconds: 250),
     this.tutorialPracticeSupported = true,
-  }) : _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
+    bool? goalAwareCalculation,
+  }) : goalAwareCalculation = goalAwareCalculation ?? fullStudentCatalog,
+       _historyClock = historyClock ?? (() => DateTime.now().toUtc()),
        _scannerTargets = List.unmodifiable(
          scannerTargets ??
              const [
@@ -173,6 +175,12 @@ class MockAppService
         _scannerHistory.keys.any((id) => !_scannerTerminals.containsKey(id)),
   );
   final bool fullStudentCatalog;
+
+  /// MC1: [calculateStudent] follows current → target (rule table in
+  /// `mock_student_calculation_fixture.dart`). Defaults to [fullStudentCatalog], so the Windows mock
+  /// app (`createMockAppService`) grows with the goal while `MockAppService()` in tests keeps the canned
+  /// sample. The shared fixture input always returns the canned sample.
+  final bool goalAwareCalculation;
   final List<ScannerTarget> _scannerTargets;
   final Map<String, dynamic> _scannerReadiness;
 
@@ -1668,7 +1676,8 @@ class MockAppService
     required Map<String, int> targets,
     Map<String, dynamic>? inventory,
   }) async {
-    // Deterministic mixed-growth sample, not a second implementation of costs.
+    // Deterministic mixed-growth sample, or (MC1) the goal-aware mock rule table — neither is a
+    // second implementation of real costs.
     final owned = <String, int?>{};
     for (final raw in (inventory?['entries'] as List? ?? const [])) {
       final entry = Map<String, dynamic>.from(raw as Map);
@@ -1676,10 +1685,29 @@ class MockAppService
       owned[(entry['item_id'] ?? entry['key']) as String] =
           quantity == null ? null : int.parse(quantity as String);
     }
+    var wire = mockStudentCalculationWire;
+    if (goalAwareCalculation &&
+        !mockStudentCalculationIsSample(currentStudent, targets)) {
+      final studentId = currentStudent['student_id'];
+      final student = (await _loadStudentCatalog())
+          .where((entry) => entry.studentId == studentId)
+          .firstOrNull;
+      wire = mockGoalAwareStudentCalculationWire(
+        currentStudent: currentStudent,
+        targets: targets,
+        displayName: student?.displayName,
+        school: student?.school,
+        equipmentSlots: [
+          student?.equipmentSlot1,
+          student?.equipmentSlot2,
+          student?.equipmentSlot3,
+        ],
+      );
+    }
     return StudentCalculationResult.fromWire({
-      ...mockStudentCalculationWire,
+      ...wire,
       'resources': [
-        for (final raw in mockStudentCalculationWire['resources'] as List)
+        for (final raw in wire['resources'] as List)
           (() {
             final row = Map<String, dynamic>.from(raw as Map);
             final holding = owned[row['resource_key']];
