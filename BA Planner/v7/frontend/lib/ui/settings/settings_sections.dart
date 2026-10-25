@@ -427,12 +427,14 @@ class SettingsActionButton extends StatelessWidget {
 }
 
 /// F3e 줄 내용: 제목 · 흐린 설명 한 줄, 오른쪽에 [progress](선택)와 [trailing](버튼 · 스위치).
+/// F4: [error]면 설명을 오류 색으로 쓴다(쓰기 실패 한 줄).
 class SettingsActionLine extends StatelessWidget {
   const SettingsActionLine({
     super.key,
     required this.title,
     required this.description,
     this.descriptionKey,
+    this.error = false,
     this.progress,
     this.trailing = const [],
   });
@@ -440,6 +442,7 @@ class SettingsActionLine extends StatelessWidget {
   final String title;
   final String description;
   final Key? descriptionKey;
+  final bool error;
   final Widget? progress;
   final List<Widget> trailing;
 
@@ -470,7 +473,9 @@ class SettingsActionLine extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: settingsTextStyle(
                   AppType.bodySmallSize,
-                  color: AppColors.textMuted,
+                  color: error
+                      ? AppTones.danger.foreground
+                      : AppColors.textMuted,
                 ),
               ),
             ],

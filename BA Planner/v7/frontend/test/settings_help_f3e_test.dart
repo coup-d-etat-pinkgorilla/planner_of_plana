@@ -1,7 +1,8 @@
 // F3e: 설정 탭 첫 실행 · 안내 줄(시안 Settings-Help, FD-182, D-ALPHA-SPLIT, contracts/asset-preparation-v1).
 // 머리 띠 "첫 실행 안내 다시 열기"(F3b 패널 entry full을 설정 위 모달로 — ③은 새 계정) · "도움말"(꺼짐 + 이유),
 // "그림 다시 준비"(cache.state 문구 · 진행 표시 · ready여도 다시 시작 · ②만 성공 끝 닫힘 · scanner_busy 꺼짐 + 이유),
-// "튜토리얼 다시 하기"(콜백 없으면 꺼짐 + 이유, 있으면 지금 계정), "스캔 문제 신고" · "자동 업데이트"(자리만), 1280×720 넘침 0.
+// "튜토리얼 다시 하기"(콜백 없으면 꺼짐 + 이유, 있으면 지금 계정), "스캔 문제 신고"(자리만), 1280×720 넘침 0.
+// "자동 업데이트"는 F4 — 여기서는 시험 실행(= 개발 실행)이라 꺼짐 + 이유만 본다(설치 실행은 update_preferences_f4_test).
 // 실제 게임 설치 폴더는 읽지 않는다(Mock 준비 서비스의 합성 경로 · 가짜 폴더 고르기만).
 import 'package:ba_planner_v7/app/theme.dart';
 import 'package:ba_planner_v7/services/asset_preparation_service.dart';
@@ -422,7 +423,7 @@ void main() {
     },
   );
 
-  testWidgets('scan report and auto update are placeholders with reasons', (
+  testWidgets('scan report is a placeholder; auto update is off in a dev run', (
     tester,
   ) async {
     final service = _service();
@@ -439,7 +440,7 @@ void main() {
     expect(find.text('자동 업데이트'), findsOneWidget);
     expect(
       _text(tester, 'settings-auto-update-description'),
-      settingsAutoUpdateDescription,
+      '$settingsAutoUpdateDescription · $settingsAutoUpdateDisabledReason',
     );
     final toggle = tester.widget<BaSwitch>(
       find.byKey(const ValueKey('settings-auto-update-switch')),

@@ -1,6 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'dart:async';
+import 'dart:io' show FileSystemException;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import '../../services/diagnostics_service.dart';
 import '../../services/idempotency_keys.dart';
 import '../../services/repository_service.dart';
 import '../../services/scanner_service.dart';
+import '../../services/update_preferences.dart';
 import '../first_run/asset_preparation_controller.dart';
 import '../first_run/first_run_folder_picker.dart';
 import '../first_run/first_run_modal.dart';
@@ -33,8 +35,14 @@ const settingsHelpDisabledReason = '설명서 주소가 아직 정해지지 않�
 const settingsTutorialDescription = '임시 계정에서 처음부터 · 끝나면 지워짐';
 const settingsTutorialDisabledReason = '튜토리얼은 아직 다시 시작할 수 없습니다';
 const settingsTutorialNoAccountReason = '지금 쓰는 계정이 없습니다';
-const settingsAutoUpdateDescription = '켜 두면 앱을 열 때 새 버전을 받습니다 · 다음 버전에 들어갑니다';
-const settingsAutoUpdateDisabledReason = '자동 업데이트는 다음 버전에 들어갑니다';
+// F4 자동 업데이트 줄(워커 문구 — CF 검수, status F4 종료 기록 문구 표). 설치 실행이면 설명 뒤에 " · 지금 버전 x".
+const settingsAutoUpdateDescription = '켜 두면 앱을 열 때 새 버전을 받습니다';
+const settingsAutoUpdateDisabledReason = '개발 실행에서는 자동 업데이트를 쓰지 않습니다';
+const settingsAutoUpdateNoFolderReason = '설정 폴더를 찾지 못했습니다';
+const settingsAutoUpdateCheckRequested = '다음에 앱을 시작할 때 확인합니다';
+const settingsAutoUpdateCheckPending = '다음 시작 때 확인 예정';
+const settingsAutoUpdateWriteFailed = '업데이트 설정을 저장하지 못했습니다';
+const settingsAutoUpdateVersionLabel = '지금 버전';
 const settingsImagesDescription = '② 이미지 준비를 다시 합니다';
 const settingsImagesUnavailableReason = '이 연결에서는 그림을 준비할 수 없습니다';
 const settingsImagesStatusFailedReason = '준비 상태를 읽지 못했습니다';
@@ -52,8 +60,10 @@ const settingsScanReportDisabledReason = '신고 기능은 아직 쓸 수 없습
 ///   만든다). "도움말 · GitHub 설명서"는 주소가 정해지지 않아 꺼 둔다.
 /// - Scanner 준비 상태 "그림 다시 준비" → entry imagesOnly(ready여도 다시 시작). 줄에 지금 cache.state와 진행 중이면 진행을
 ///   보인다. 준비 상태는 이 화면의 [AssetPreparationController] 하나를 줄과 모달이 함께 본다.
-/// - 프로필 "튜토리얼 다시 하기"는 [onRestartTutorial](F3c)이 없으면 꺼진다. "스캔 문제 신고"(XB X5 전) · "자동 업데이트"
-///   (XB X2 전 — 플래그 파일을 쓰지 않는다)는 자리만 둔다.
+/// - 프로필 "튜토리얼 다시 하기"는 [onRestartTutorial](F3c)이 없으면 꺼진다. "스캔 문제 신고"(XB X5 전)는 자리만 둔다.
+///
+/// F4: Backend 연결 "자동 업데이트"는 배포 런처(X2)가 읽는 플래그 파일만 다룬다([UpdatePreferences]) — 스위치 끔 =
+/// `auto_update_disabled.flag`, "지금 확인" = `check_now.flag`(다음 런처 시작 때 확인). 런처로 설치된 실행이 아니면 줄을 끈다.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
@@ -64,6 +74,7 @@ class SettingsPage extends StatefulWidget {
     required this.onRecoveryCompleted,
     this.onRestartTutorial,
     this.folderPicker = const NativeFirstRunFolderPicker(),
+    this.updatePreferences,
   });
 
   final AppService service;
@@ -78,6 +89,9 @@ class SettingsPage extends StatefulWidget {
 
   /// 설정에서 다시 연 첫 실행 ①의 폴더 고르기(시험은 가짜).
   final FirstRunFolderPicker folderPicker;
+
+  /// F4 자동 업데이트 설정. null이면 지금 실행 파일 · 환경 변수로 정한다(시험은 임시 폴더로 만든 것을 넘긴다).
+  final UpdatePreferences? updatePreferences;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -112,6 +126,14 @@ class _SettingsPageState extends State<SettingsPage> {
   FirstRunEntry? _firstRunEntry;
   bool _firstRunRestart = false;
 
+  /// F4: 자동 업데이트 플래그 상태(설치 실행일 때만 읽는다). [_checkRequested]는 이 화면에서 방금 누른 "지금 확인".
+  late UpdatePreferences _update =
+      widget.updatePreferences ?? UpdatePreferences.resolve();
+  bool _autoUpdate = false;
+  bool _checkPending = false;
+  bool _checkRequested = false;
+  bool _updateWriteFailed = false;
+
   RepositoryProfile? get _selected {
     for (final profile in _profiles) {
       if (profile.selected) return profile;
@@ -132,6 +154,10 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void didUpdateWidget(SettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.updatePreferences != widget.updatePreferences) {
+      _update = widget.updatePreferences ?? UpdatePreferences.resolve();
+      _readUpdatePreferences();
+    }
     if (oldWidget.service == widget.service) return;
     oldWidget.service.state.removeListener(_connectionChanged);
     if (oldWidget.service is DiagnosticsService) {
@@ -237,6 +263,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _reload() async {
     final generation = ++_generation;
+    _readUpdatePreferences();
     if (widget.service.state.value.connection != BackendConnection.connected) {
       setState(() => _loading = false);
       return;
@@ -743,27 +770,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        _lineRow(
-          id,
-          key: 'settings-auto-update',
-          title: '자동 업데이트',
-          description: settingsAutoUpdateDescription,
-          trailing: const [
-            BaSwitch(
-              key: ValueKey('settings-auto-update-switch'),
-              value: false,
-              onChanged: null,
-              semanticLabel: '자동 업데이트',
-            ),
-            SettingsActionButton(
-              key: ValueKey('settings-auto-update-check'),
-              label: '지금 확인',
-              icon: Icons.refresh,
-              onPressed: null,
-              disabledReason: settingsAutoUpdateDisabledReason,
-            ),
-          ],
-        ),
+        _autoUpdateRow(),
       ],
       actions: [
         TonalButton(
@@ -1058,6 +1065,101 @@ class _SettingsPageState extends State<SettingsPage> {
     ],
   );
 
+  // --- F4 자동 업데이트 줄 ------------------------------------------------------
+
+  /// 플래그 파일을 다시 읽는다(설치 실행일 때만 — 개발 실행은 파일을 보지 않는다). 쓰기 오류 · 방금 누름 표시는 지운다.
+  void _readUpdatePreferences() {
+    _updateWriteFailed = false;
+    _checkRequested = false;
+    _readUpdateFlags();
+  }
+
+  void _readUpdateFlags() {
+    if (!_update.available) return;
+    try {
+      _autoUpdate = _update.autoUpdateEnabled;
+      _checkPending = _update.checkPending;
+    } on FileSystemException {
+      // 읽지 못하면 이전 값을 둔다(런처도 같은 파일을 있는지만 본다).
+    }
+  }
+
+  void _setAutoUpdate(bool enabled) {
+    try {
+      _update.setAutoUpdate(enabled);
+      setState(() {
+        _autoUpdate = enabled;
+        _updateWriteFailed = false;
+      });
+    } on FileSystemException {
+      setState(() {
+        _updateWriteFailed = true;
+        _readUpdateFlags();
+      });
+    }
+  }
+
+  void _requestUpdateCheck() {
+    try {
+      _update.requestCheck();
+      setState(() {
+        _checkPending = true;
+        _checkRequested = true;
+        _updateWriteFailed = false;
+      });
+    } on FileSystemException {
+      setState(() {
+        _updateWriteFailed = true;
+        _readUpdateFlags();
+      });
+    }
+  }
+
+  /// 시안 "자동 업데이트": 스위치(켬 = `auto_update_disabled.flag` 없음) · "지금 확인"(`check_now.flag`) · 지금 버전.
+  /// 개발 실행(런처 설치 아님)이면 둘 다 끄고 이유를 붙인다. 쓰기 실패는 설명 자리에 오류 한 줄(경로 · 예외 없이).
+  SettingsRowSpec _autoUpdateRow() {
+    final available = _update.available;
+    final reason = available
+        ? null
+        : _update.installed
+        ? settingsAutoUpdateNoFolderReason
+        : settingsAutoUpdateDisabledReason;
+    final pending = available && _checkPending;
+    final status = _updateWriteFailed
+        ? settingsAutoUpdateWriteFailed
+        : _checkRequested
+        ? settingsAutoUpdateCheckRequested
+        : pending
+        ? settingsAutoUpdateCheckPending
+        : settingsAutoUpdateDescription;
+    return _lineRow(
+      settingsBackendSectionId,
+      key: 'settings-auto-update',
+      title: '자동 업데이트',
+      description: available
+          ? '$status · $settingsAutoUpdateVersionLabel '
+                '${_update.appVersion ?? '—'}'
+          : settingsAutoUpdateDescription,
+      reason: reason,
+      error: available && _updateWriteFailed,
+      trailing: [
+        BaSwitch(
+          key: const ValueKey('settings-auto-update-switch'),
+          value: available && _autoUpdate,
+          onChanged: available ? _setAutoUpdate : null,
+          semanticLabel: '자동 업데이트',
+        ),
+        SettingsActionButton(
+          key: const ValueKey('settings-auto-update-check'),
+          label: pending ? '확인 예정' : '지금 확인',
+          icon: pending ? Icons.schedule : Icons.refresh,
+          onPressed: available && !pending ? _requestUpdateCheck : null,
+          disabledReason: reason ?? settingsAutoUpdateCheckRequested,
+        ),
+      ],
+    );
+  }
+
   /// F3e 줄(제목 · 설명 · 오른쪽 버튼). 꺼진 이유가 있으면 설명 뒤에 " · 이유"로 붙인다(시안 "… · 다음 버전에 들어갑니다").
   SettingsRowSpec _lineRow(
     String sectionId, {
@@ -1065,6 +1167,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required String description,
     String? reason,
+    bool error = false,
     Widget? progress,
     required List<Widget> trailing,
   }) => SettingsRowSpec(
@@ -1077,6 +1180,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: title,
         description: reason == null ? description : '$description · $reason',
         descriptionKey: ValueKey('$key-description'),
+        error: error,
         progress: progress,
         trailing: trailing,
       ),
